@@ -1,0 +1,1 @@
+xsd updates.xsd /classes /namespace:Burntime.Launcher.Update.Xsd

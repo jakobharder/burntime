@@ -1,0 +1,172 @@
+﻿
+#region GNU General Public License - Burntime
+/*
+ *  Burntime
+ *  Copyright (C) 2008-2013 Jakob Harder
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * 
+*/
+#endregion
+
+using System;
+using System.Text;
+
+using Burntime.Platform;
+using Burntime.Platform.IO;
+using Burntime.Framework;
+using Burntime.Classic.Logic;
+
+namespace Burntime.Classic
+{
+    enum ActionAfterImageScene
+    {
+        None,
+        Trader,
+        Doctor,
+        Pub,
+        Restaurant
+    }
+
+    class BurntimeClassic : Module
+    {
+        public static new BurntimeClassic Instance
+        {
+            get { return (BurntimeClassic)instance; }
+        }
+
+        public static string SavegameVersion = "0.1.2";
+        public static string FontName = "font.txt";
+
+        // external use
+        public override String Title { get { return "Burntime"; } }
+        //public override Vector2[] Resolutions { get { return new Vector2[] { new Vector2(320, 200) }; } }
+        public override Vector2[] Resolutions { get { return new Vector2[] { new Vector2(480, 225), new Vector2(384, 240) }; } }
+
+        public bool IsWideScreen { get { return Engine.Resolution.x / (float)Engine.Resolution.y > 1.5f; } }
+
+        // burntime's 8:5 to 4:3 ratio correction
+        public override float VerticalRatio { get { return 1.0f / 200.0f * 240.0f; } }
+
+        public override System.Drawing.Icon Icon
+        {
+            get
+            {
+                return new System.Drawing.Icon(GetType(), "icon256.ico");
+            }
+        }
+
+        public override void Start()
+        {
+            Engine.Music.Enabled = (!DisableMusic) & MusicPlayback;
+
+            MouseImage = ResourceManager.GetImage("munt.raw");
+            SceneManager.SetScene("IntroScene");
+        }
+
+        protected override void OnRun()
+        {
+            FileSystem.AddPackage("music", "game/classic_music");
+
+            // set user folder to "burntime/" to get systems settings.txt for language code
+            FileSystem.SetUserFolder("Burntime");
+
+            Settings = new ConfigFile();
+            Settings.Open("settings.txt");
+
+            // set language code
+            FileSystem.LocalizationCode = Settings["game"].GetString("language");
+            ResourceManager.Encoding = Encoding.GetEncoding(852); // DOS central europe
+
+            // set user folder to game specific location
+            FileSystem.SetUserFolder("Burntime/Classic");
+
+            // reload settings
+            Settings.Open("settings.txt");
+
+            Engine.Resolution = Settings["system"].GetVector2("resolution");
+            Engine.FullScreen = !Settings["system"].GetBool("windowmode");
+            Engine.UseTextureFilter = Settings["system"].GetBool("filter");
+
+            // check music playback settings
+            MusicPlayback = Settings["system"].GetBool("music");
+            // check if ogg files are available
+            DisableMusic = !FileSystem.ExistsFile("01_MUS 01_HSC.ogg"); //  || System.IntPtr.Size != 4
+
+            bool useHighResFont = Settings["system"].GetBool("highres_font");
+
+            // add gfx packages
+            /*if (Settings["system"].GetBool("2xgfx"))
+            {
+                FileSystem.AddPackage("gfx", "game/gfx");
+                FileSystem.AddPackage("tiles", "game/tiles");
+                ResourceManager.SetResourceReplacement("2xgfx.txt");
+            }*/
+
+            // add newgfx package
+            if (Settings["system"].GetBool("newgfx"))
+            {
+                FileSystem.AddPackage("newgfx", "game/classic_newgfx");
+                if (FileSystem.ExistsFile("newgfx.txt"))
+                {
+                    ResourceManager.SetResourceReplacement("newgfx.txt");
+
+                    // use highres font anyway
+                    useHighResFont = true;
+                }
+            }
+            else if (DateTime.Now.Month == 12 && 
+                (DateTime.Now.Day >= 24 && DateTime.Now.Day <= 31 || DateTime.Now.Day == 6))
+            {
+                ResourceManager.SetResourceReplacement("santa.txt");
+            }
+
+            // set highres font
+            if (useHighResFont)
+            {
+                if (FileSystem.ExistsFile("highres-font.txt"))
+                    FontName = "highres-font.txt";
+            }
+        }
+
+        protected override void OnClose()
+        {
+            Settings["system"].Set("music", MusicPlayback);
+            Settings.Save("settings.txt");
+        }
+
+        // internal use
+        public bool IsInGame = false;
+        public int InfoCity = -1;
+        public int InventoryBackground = -1;
+        public Room InventoryRoom = null;
+        public String ImageScene = null;
+        public PickItemList PickItems = null;
+        public ActionAfterImageScene ActionAfterImageScene = ActionAfterImageScene.None;
+        public bool MusicPlayback;
+        public bool DisableMusic;
+        public int PreviousPlayerId = -1;
+
+        public Character SelectedCharacter
+        {
+            get { return ((Player)GameState.CurrentPlayer).SelectedCharacter; }
+            set { ((Player)GameState.CurrentPlayer).SelectedCharacter = value; }
+        }
+
+        public ClassicGame Game
+        {
+            get { return GameState as ClassicGame; }
+        }
+    }
+}

@@ -1,0 +1,14 @@
+﻿
+Simple refactor:
+
+-Burntime.Framework.Network.VictoryNews, DeathNews
+ --> different namespace
+
+
+Redesign:
+
+-Target.Layer
+ --> to 0.0 - 1.0 space
+ 
+-insert item into room should automatically fill up empty bottles
+ --> make room an item collection?

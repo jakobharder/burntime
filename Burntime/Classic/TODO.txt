@@ -1,0 +1,15 @@
+﻿
+milestone 1: playable version
+-all remaining fixes
+-license headers
+>> v0.1
+-network
+-ai
+-unload unused gfx
+>> v0.2
+
+bugs/fixes:
+-progressive animation flag
+-use events in MusicPlayback.MusicThread
+-stuck npcs
+-npc class info for revive
