@@ -154,6 +154,7 @@
     <ProjectReference Include="..\Platform\Platform.csproj">
       <Project>{26df8ca5-a349-4e35-a0b9-5048af6c20c3}</Project>
       <Name>Platform</Name>
+      <Private>False</Private>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
