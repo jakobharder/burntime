@@ -92,7 +92,7 @@ namespace Burntime.Game
 
             bool safeMode = engineSettings["engine"].GetBool("safemode");
 
-            if (safeMode)
+            /*if (safeMode)
             {
                 try
                 {
@@ -121,7 +121,7 @@ namespace Burntime.Game
                     Environment.Exit(1);
                 }
             }
-            else
+            else*/
                 runInternal(paketManager, assemblyControl, PakName);
         }
 

@@ -1,1 +1,1 @@
-..\game\burntime.pak
+..\game\Burntime
