@@ -1,0 +1,38 @@
+﻿Recientemente por fin}
+encontré un pedazo de alambre...}
+Lo usé con otras partes para}
+hacer una trampa para ratas.}
+}#
+Estoy buscando mi trampa para ratas.}
+}
+¿La has visto?}
+}
+}#
+¿Has visto una trampa para ratas?}
+}
+}#
+¿Qué más hay ahí?}
+}
+}#
+Si me das |C.}
+}
+}#
+¡Tráeme |C y}
+recién entonces}
+hablaremos!}
+}
+}#
+Fabrico cosas útiles...}
+Como trampas para ratas.}
+}#
+Tal vez después...}
+}
+}#
+}#
+}}
+
+
+
+
+
+

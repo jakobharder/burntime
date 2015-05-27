@@ -1,0 +1,30 @@
+﻿Estoy buscando partes}
+para un traje protector.}
+Todavía me falta una máscara,}
+botas, guantes, una cubierta...}
+...y un técnico para ayudarme}
+a poner todo junto.}
+}#
+¡La radiación es}
+terrible!}
+}#
+¿Quieres algo?}
+}
+}#
+¡Dime qué quieres!}
+}
+}#
+Dame |C!}
+}
+}#
+Tráeme |C.}
+}
+}#
+|A}
+}
+}#
+No, tal vez después.}
+}
+}#
+}#
+}}

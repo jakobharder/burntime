@@ -1,0 +1,6 @@
+version=0.0.13
+type=language
+game=launcher
+language=ES
+default_language=EN
+hidden=yes

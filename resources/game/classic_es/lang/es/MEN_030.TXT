@@ -1,0 +1,48 @@
+﻿La comida es cada vez}
+mas escasa...}
+Ya no sé dónde}
+encontrar...}
+...Haría lo que sea}
+por algo de comer.}
+}#
+¿Qué quieres de mi?}
+}
+}#
+¿Tienes algo para comer?}
+}
+}#
+¡Sólo dime qué quieres!}
+}
+}#
+Primero quiero algo sólido}
+para comer. Dame |C.}
+}#
+No tienes nada decente}
+para comer. Consígueme |C...}
+...y soy todo tuyo.}
+}
+}#
+|A}
+}
+}#
+Prefiero morir de inanición!}
+}
+}#
+}#
+}}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

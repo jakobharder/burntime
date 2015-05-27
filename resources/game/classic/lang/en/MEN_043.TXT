@@ -1,0 +1,41 @@
+I need screws, a piece of wood}
+and another part...}
+...then I could build a nice}
+rat trap!}
+}#
+I'm a great inventor and I'm}
+always looking for parts..}
+..that I can use!}
+}
+}#
+Do you have a few things}
+that I could use for my...}
+...inventions?}
+}
+}#
+Do you want anything else}
+from me?}
+}#
+Give me |C...}
+}
+...and I'll share my skills}
+with you!}
+}
+}#
+Find |C for me.}
+}
+}#
+Didn't I already tell you}
+that I'm an inventor!}
+}#
+Get back to me when you've}
+got more experience!}
+}#
+}#
+}}
+
+
+
+
+
+

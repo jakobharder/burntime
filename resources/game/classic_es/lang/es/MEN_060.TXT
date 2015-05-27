@@ -1,0 +1,30 @@
+﻿Lo que dice la gente no tiene}
+sentido. Muchos pacientes...}
+...han sobrevivido mis}
+tratamientos.}
+}#
+No pareces muy saludable.}
+}
+}#
+Uuggghh... ¡¿Qué es eso?!}
+¡Parece asqueroso!}
+}#
+¡Di lo que quieres!}
+¡No tengo mucho tiempo!}
+}#
+Dame |C}
+e iré contigo y...}
+...trataré tus heridas.}
+Ja, ja, ja.}
+}#
+¡Pero antes necesito}
+|C!}
+}#
+|A}
+}
+}#
+Hmmmm... ¡No!}
+}
+}#
+}#
+}}

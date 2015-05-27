@@ -1,0 +1,40 @@
+If you've been attacked,}
+survived several weeks of}
+poisonous fumes, haven't had}
+anything to eat or drink}
+for a few days, you don't}
+give a rip about discussing}
+what's new with somebody.}
+}
+}#
+Hello!}
+}
+}#
+What's up?}
+}
+}#
+Anything else?}
+}
+}#
+Yes, but give me}
+|C}
+}#
+First you've got to get me}
+|C!}
+}#
+|A}
+}
+}#
+No thanks, I'd rather starve.}
+}
+}#
+}#
+}}
+
+
+
+
+
+
+
+

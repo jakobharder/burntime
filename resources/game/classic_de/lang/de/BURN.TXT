@@ -1,0 +1,691 @@
+Neu Sandez}
+Sana}
+Death Town}
+BÑrwalde}
+Nob Hill}
+Muarab}
+Hîhlen}
+Nakkara}
+Lost Hope}
+Desert Point}
+Stove Vent}
+Left End}
+Kloster}
+Antella}
+Numea}
+Dead Wood}
+Big Hole}
+Dogshit City}
+Acit Town}
+Devil Rock}
+Gold Town}
+Haevens Gate}
+Fabrik}
+MAX Canyon}
+Sherwood}
+RaststÑtte}
+One Man's Heaven}
+Raffinerie}
+Outback}
+Snake Hills}
+Paradise Camp}
+Hard Mens Dead}
+Eagles Nest}
+Nameless Town}
+Nirvana}
+Right End}
+Anif}
+38}
+39}
+40}
+KÑmpfer}
+Techniker}
+Arzt}
+Chef}
+kein Beruf}
+HÑndler}
+}
+}
+}
+}
+Maden}
+Ratte}
+Schlange}
+Fleisch}
+Wasserflasche}
+Flasche}
+volle Feldflasche}
+leere Feldflasche}
+voller Wassersack}
+leerer Wassersack}
+Messer}
+Axt}
+Mistgabel}
+geladenes Gewehr}
+ungeladenes Gewehr}
+Mine}
+Rattenfalle}
+Fangeisen}
+Schlangenkorb}
+Handpumpe}
+Fîrderpumpe}
+Minendedektor}
+FunkgerÑt}
+kaputte Pumpe}
+Maschinenteile}
+kaputter Minendedector}
+kaputtes FunkgerÑt}
+Elektronikschrott}
+Batterien}
+LCD-Display}
+Draht}
+HolzstÅck}
+Schrauben}
+Blechteile}
+Stahlfeder}
+Schlauch}
+Stoffreste}
+Eisenrohr}
+Munition}
+Gasmaske}
+Schutzanzug}
+Handschuhe}
+Schutzkleidung}
+Stiefel}
+Seil}
+Eisenstangen}
+Knochen}
+SchÑdel}
+Benzinkanister}
+Gold}
+Werkzeug}
+Bibel}
+Fell}
+Lederjacke}
+Autoreifen}
+Stahlhelm}
+Pullover}
+Hose}
+}
+}
+Maden}
+eine Ratte}
+eine Schlange}
+etwas Fleisch}
+eine Wasserflasche}
+eine Flasche}
+eine volle Feldflasche}
+eine leere Feldflasche}
+einen vollen Wassersack}
+einen leeren Wassersack}
+ein Messer}
+eine Axt}
+eine Mistgabel}
+ein geladenes Gewehr}
+ein ungeladenes Gewehr}
+eine Mine}
+eine Rattenfalle}
+ein Fangeisen}
+ein Schlangenkorb}
+eine Handpumpe}
+eine Fîrderpumpe}
+einen Minendedektor}
+ein FunkgerÑt}
+eine kaputte Pumpe}
+Maschinenteile}
+ein kaputter Minendedektor}
+ein kaputtes FunkgerÑt}
+Elektronicschrott}
+Baterien}
+ein LCD-Display}
+Draht}
+ein HolzstÅck}
+Schrauben}
+Blechteile}
+eine Stahlfeder}
+einen Schlauch}
+Stoffreste}
+ein Eisenrohr}
+Munition}
+eine Gasmaske}
+einen Schutzanzug}
+Handschuhe}
+Schutzkleidung}
+Stiefel}
+ein Seil}
+Eisenstangen}
+einen Knochen}
+einen SchÑdel}
+einen Benzinkanister}
+etwas Gold}
+Werkzeug}
+eine Bibel}
+ein Fell}
+eine Lederjacke}
+einen Autoreifen}
+einen Stahlhelm}
+einen Pullover}
+eine Hose}
+}
+}
+Gregor}
+Martin}
+Marion}
+Albert}
+Lisi}
+Wiff}
+Mutant}
+Hund}
+Mad Marty}
+Chuck}
+Jack the Nepper}
+Sharky}
+Lester}
+Wolf}
+Ralf Gier}
+Holger}
+Zocker Joe}
+Django}
+Don Camillo}
+John}
+Monkey}
+Kaiser}
+Trademan}
+Black Eye}
+Iceman}
+Donald}
+Mark}
+Willy}
+Ivan}
+Steelman}
+Bill}
+Billy}
+Jones}
+Sly}
+Joe}
+Sean}
+Mick}
+Curd}
+Babe}
+Denis}
+Whity}
+Rose}
+Andi}
+Wanze}
+Slug}
+Mac}
+Rich}
+Chang}
+Ratman}
+The Snake}
+Bug}
+Buck}
+Roger}
+Funky}
+Punkman}
+Fatty}
+Black Mac}
+Thunder}
+Master}
+Brainman}
+Junkie}
+Blackface}
+Dr. Max}
+Mad Dog}
+Regg}
+Junk}
+Creature}
+Vinz}
+Jamp}
+Jerry}
+Tom}
+Jim}
+Judge}
+Abe}
+Lewis}
+Lex}
+Mr. Marvel}
+Mayday}
+Jens}
+Barry}
+Larry}
+Cop}
+Peanut}
+Burt}
+Poky}
+Pokerface}
+Fist}
+Pug}
+Red}
+Wayne}
+Paul}
+Moodie}
+Richard}
+Walker}
+Fred}
+Sven}
+Boneman}
+Skull}
+Warren}
+Will}
+Rumble}
+Miguel}
+Tex}
+Luke}
+Han}
+Ace}
+Skippy}
+Dave}
+Pete}
+Ken}
+Gordon}
+Bret}
+Crush}
+Randy}
+Brian}
+Olaf}
+Stinger}
+Markus}
+Brenner}
+Simon}
+Cooper}
+Armin}
+Alex}
+Buzz}
+Socks}
+Skinny}
+Timo}
+Kevin}
+Jeff}
+Rachnow}
+Henri}
+Bart}
+Bruno}
+Jean}
+Dave}
+Dick}
+Ted}
+Frank}
+Benjie}
+Guido}
+Antonio}
+Arsehole}
+Axle}
+Sledge}
+Pete}
+Athur}
+Guy}
+Kayne}
+Pigface}
+Egghead}
+Alko}
+Angel}
+Tunte}
+Mudeater}
+General}
+Roy}
+Leo}
+Terry}
+Blubber Man}
+Cody}
+Hamton}
+Chicken}
+Sid}
+Nigel}
+Rigg}
+Skipp}
+Pang}
+Raiden}
+Blade}
+Sick}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+REDEN}
+INFO}
+KéMPFEN}
+HANDEL OK !}
+HINAUSGEHEN}
+????}
+ALLE}
+NéCHSTER}
+EINZELN}
+STATISTIK}
+REISEN}
+OPTIONEN}
+HAUPTKARTE}
+ENTLASSEN}
+ZUM LAGER}
+ZUM TRUPP}
+EIGENER}
+INVENTORY}
+ABBRECHEN}
+HEILEN}
+BESTENLISTE}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+Erf. |A%}
+Vit. |B%}
+LADEN}
+SPEICHERN}
+LôSCHEN}
+...|A laden}
+...|A speichern}
+...|A lîschen}
+Zur Karte}
+Musik EIN}
+Neustart}
+Beenden}
+Speed 0}
+Speed 1}
+Speed 2}
+Speed 3}
+Kmpf.}
+Tech.}
+Arzt}
+Lager}
+|A}
+|B}
+WA. |C Tage}
+NG. |D Tage}
+|A Tag}
+|A ist von uns gegangen !}
+Vorkommen}
+Wasser}
+|E rem}
+|C}
+|D}
+|E}
+|F}
+CO2 |E ppm}
+TRINKEN}
+ESSEN}
+XXXXXXXXXXXXXXXXXXXX}
+[ |A ]}
+Berechne Spieldaten...}
+Bitte geben Sie von Seite |C}
+in der Zeile |D das Wort |E ein.}
+|J TR.}
+|D TR.}
+|C TR.}
+Musik AUS}
+}
+}
+}
+}
+}
+Ich bin |B !}
+Ich bin ein guter |B !}
+Ich bin ein sehr guter |B !}
+Ich bin einer der besten |B !}
+}
+}
+}
+}
+}
+}
+ZBuff_01}
+ZBuff_02}
+ZBuff_03}
+ZBuff_04}
+ZBuff_05}
+ZBuff_06}
+ZBuff_07}
+ZBuff_08}
+ZBuff_09}
+ZBuff_10}
+ZBuff_11}
+ZBuff_12}
+ZBuff_13}
+ZBuff_14}
+ZBuff_15}
+ZBuff_16}
+ZBuff_17}
+ZBuff_18}
+ZBuff_19}
+ZBuff_20}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+-------------}
+-------------}
+[ |A ]}
+[ |B ]}
+}
+}
+}
+}
+}
+}
+Unterhaltung beenden.}
+Willst du einen Job.}
+Gibts es Neuigkeiten ?}
+OK, ich geb dir den Job !}
+Nein, du bleibst im StÅtzpunkt !}
+Ok, du bleibst im StÅtzpunkt !}
+Na und, ...Verschwinde !}
+Welchen Beruf hast du !}
+OK, hier hast du |C.}
+( weiter... )}
+OK, zeig was du hast.}
+OK, bau mir |I.}
+Gibt es noch weitere Mîglichkeiten.}
+Danke fÅr die Information.}
+Lass uns ein GeschÑft machen.}
+Na und, ich nehm Dich mit}
+}
+}
+}
+}
+Etwas mehr sollte dir Deine}
+Gesundheit schon Wert sein.}
+}
+FÅr diesen Hungerlohn wÅrde}
+ein anderer nicht einmal}
+zum Messer greifen !}
+Deinen erbÑrmlichen Zustand}
+wieder zu verbessern wird}
+dich etwas mehr kosten!}
+Ich liebe Leute, die in der Lage}
+sind, den Wert Ihrer Gesundheit}
+richtig einzuschÑtzen!}
+Also gratis gibt es bei mir nicht}
+einmal den Tod!}
+}
+}
+}
+}
+}
+}
+DafÅr kînnt ihr ganze |E}
+Tagesrationen verschlingen.}
+}
+Wohl bekommt's...}
+Ha, Ha, Ha !}
+}
+Sieht es hier vieleicht aus}
+wie in einer Hilfsmission ?}
+}
+So ein fantastisches Essen wie bei}
+mir, bekommt Ihr sicher nie wieder.}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+FÅr das Zeug kînnt Ihr |E}
+Tagesrationen versaufen !}
+}
+Prost,!!}
+und beehrt mich bald wieder !}
+}
+Ich bin doch nicht bei der}
+Heilsarmee !}
+}
+So erstklassige Drinks wie}
+bei mir kînnt Ihr lange suchen !}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+In}
+|J Tagen}
+haben Sie |A Orte besetzt}
+und kontrollieren damit |I% der zu erobernden Orte.}
+}
+FÅr Sie arbeiten :}
+|B KÑmpfer}
+|G Techniker}
+|H érzte}
+}
+in Ihren Lagern liegen :}
+|C Maden}
+|D Ratten}
+|E Schlangen}
+|F Fleisch}
+}
+}
+}
+}
+}
+Und der vierte Engel goss aus seine...}
+Schale in die Sonne, und ward ihr...}
+gegeben die Menschen zu versengen mit Feuer...}
+}
+Und der sechste Engel goss aus seine Schale...}
+auf dem grossen Wasserstrom Euphrat...}
+und sein Wasser vertrocknete...}
+damit bereitet wÅrde der Weg...}
+den Kînigen vom Aufgang der Sonne...}
+}
+|A ist von uns gegangen !}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+Nach einem harten Kampf...}
+...ist es |A gelungen...}
+...die Kontrolle Åber alle StÑdte...}
+...zu erringen. Die Menschen hoffen darauf...}
+...das er sie nun in eine bessere Zukunft...}
+...fÅhren wÅrde.}
+}
+}
+}
+}
+}
+}
+Welch ein ergreifendes Ende!}
+}
+Finden Sie nicht auch??}
+}
+Sie kînnen jetzt eigentlich...}
+...ein neues Spiel beginnen!}
+Oder "1869" zur Hand nehmen..}
+..und sich im îkologisch noch..}
+..mehr intakten 19. Jahrhundert..}
+..als Reeder versuchen!}
+Was, Sie besitzen dieses..}
+..fantastische Spiel noch gar nicht?}
+Also dann, ab zum nÑchsten HÑndler..}
+..um es sofort zu kaufen.}
+Åbrigens - In ein paar Monaten gibt..}
+..es natÅrlich wieder ein fasziniertes..}
+MAX DESIGN-Spiel.}
+Halten Sie also jetzt schon die Augen..}
+..danach offen. - Sie werden es sicher..}
+..nicht bereuen.}
+Sie kînnen jetzt abbrechen, denn es..}
+werden keine weiteren Meldungen mehr..}
+..erscheinen!}
+}
+}
+}
+Sie glauben uns anscheinend nicht..}
+..auch gut, wenn Sie sonst nichts..}
+..zu tun haben, als diese Animation..}
+..zu bewundern.}
+}
+}
+}
+Ganz schîn hartnÑckig!!}
+}
+}
+OK, also dann zeigen wir Ihnen nun die Bestenliste!}
+}
+Eingang}
+Eingang}
+Zelt}
+Hîhle}
+Eingang}
+Eingang}
+Brunnen}
+Hîhle}
+Wasserstelle}
+Hîhle}
+Eingang}
+Ruine}
+Eingang}
+HÑndler}
+Kneipe}
+RÑuber}
+Eingang}
+HÑndler}
+Ansicht}
+Leer8}
+Arzt}
+Bar}
+Restaurant}
+Pub}
+Wirtshaus}
+}
+}
+}
+}
+}
+}}

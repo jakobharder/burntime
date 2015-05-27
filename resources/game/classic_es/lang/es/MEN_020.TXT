@@ -1,0 +1,32 @@
+﻿Me robaron mi máscara de gas.}
+Me había servido mucho.}
+}#
+Hola, amigo,}
+¿cómo andas?}
+}#
+Hola, ¿todo bien?}
+}
+}#
+¿Qué hay de nuevo hoy?}
+}
+¿Sabes casi lo que quieres,}
+aunque sea?}
+}#
+¡Dame |C!}
+}
+}#
+Si me das una máscara de gas...}
+Hmmm...}
+No, por ti lo haré por}
+menos. Consígueme |C.}
+}
+}
+}#
+Soy un mercenario, ¡y}
+orgulloso de ello!}
+}#
+No me quiero matar.}
+}
+}#
+}#
+}}

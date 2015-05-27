@@ -1,0 +1,38 @@
+﻿Te diré un consejo.}
+Lo único que sirve...}
+...contra la radiación}
+es un traje protector.}
+Una máscara de gas está}
+bien contra gases tóxicos.}
+}#
+¿Has visto perros por aquí?}
+}
+¡Tengo hambre!}
+}
+}#
+¿Qué?}
+}
+}#
+¿Tienes un perro?}
+}
+}#
+Tienes suerte que no tengo}
+mucho para hacer ahora...}
+¡Pero me tienes que}
+dar |C!}
+}#
+¡Primero tráeme}
+|C!}
+}#
+¡Ja, ja!}
+¡Soy el mejor técnico que}
+haya vivido jamás!}
+}#
+¡No trabajo para novatos!}
+}
+}#
+}#
+}}
+
+
+

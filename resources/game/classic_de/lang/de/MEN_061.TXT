@@ -1,0 +1,28 @@
+Nein! Was soll es denn}
+auch schon neues geben.}
+}#
+Hi, alles in Ordnung?}
+}
+}#
+Hi, alles okay?}
+}
+}#
+Ja was gibt es denn noch?}
+}
+}#
+Ja schon, ich will aber}
+etwas |C...}
+...als Bezahlung!}
+}
+}#
+Bring mir zuerst}
+|C!}
+}#
+|A}
+}
+}#
+Nein danke. Du bist noch}
+zu unerfahren.}
+}#
+}#
+}}

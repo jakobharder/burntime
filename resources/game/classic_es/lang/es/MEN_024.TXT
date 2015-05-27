@@ -1,0 +1,46 @@
+﻿He oído que del otro}
+lado del gran desierto...}
+supuestamente hay}
+un valle lleno de verdes...}
+árboles, y agua en todos lados.}
+Agua clara y pura...}
+Y todo tipo de frutas.}
+No he visto una fruta en...}
+muchos años.}
+}
+}#
+¡Hola, amigo!}
+}
+}#
+¡Hola, viajero!}
+}
+}#
+¿Qué esperas de mi?}
+}
+}#
+Bueno, pero quiero |C}
+de ti...}
+...y luego estaré}
+a tu servicio.}
+}#
+Hmmm, tráeme}
+|C...}
+...y después te seguiré.}
+}
+}#
+Soy bueno con armas.}
+}
+}#
+No. No puedo ahora.}
+}
+}#
+}#
+}}
+
+
+
+
+
+
+
+

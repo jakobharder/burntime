@@ -1,0 +1,46 @@
+﻿Estoy tras el ladrón que robó}
+mi arma. Por suerte no le}
+quedaban balas.}
+Sino estoy seguro que}
+me hubiese liquidado.}
+}
+}#
+¡Dime qué quieres, pero}
+brevemente!}
+}#
+¿Necesitas algo?}
+}
+}#
+¡Vamos, no tengo todo el día!}
+}
+}#
+¡Dame |C y no}
+lo dudaré!}
+}#
+¡Consígueme |C}
+y no lo dudaré!}
+}#
+|A}
+}
+}#
+Primero tengo que encontrar}
+al que robó mi arma.}
+}#
+}#
+}}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,30 @@
+﻿Ah, ¿qué?}
+No, ehh...}
+...no creo estar al tanto}
+de nada.}
+}#
+¡Hola, amigo!}
+}
+}#
+Hola, ¿cómo estás?}
+}
+}#
+¿Tienes un problema?}
+}
+}#
+Dame |C primero.}
+Luego veré.}
+}#
+¡Consígueme |C!}
+}
+}#
+|A}
+}
+}#
+Tal vez algún dia, pero ahora no.}
+}
+}#
+}#
+}}
+
+

@@ -1,0 +1,30 @@
+﻿¡Los docs en las ciudades}
+están cada vez más caros!}
+Tuve que pagar con dos trozos}
+de carne sólo para curarme.}
+¡Si no les pagas nada,}
+dejarán que te mueras!}
+}#
+Veo que todavía estás por aquí.}
+}
+}#
+Estoy buscando compañeros.}
+}
+}#
+¡Dime qué quieres o}
+déjame en paz!}
+}#
+Con gusto ayudaré por |C.}
+}
+}#
+Primero tráeme |C.}
+}
+}#
+|A}
+}
+}#
+¡Preferiría no andar con}
+alguien como tú!}
+}#
+}#
+}}

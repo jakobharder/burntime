@@ -1,0 +1,18 @@
+﻿<html xmlns:burn>
+<link rel="stylesheet" type="text/css" href="sub.css" />
+</header>
+<body>
+   <form name="options">
+    Auflösung: <select name="resolution">
+     <option value="windowmode@system=off">Vollbild
+     <option value="windowmode@system=on;resolution@system=768x576" selected="true">Fenster, 2x gestreckt
+     <option value="windowmode@system=on;resolution@system=1152x864">Fenster, 3x gestreckt
+    </select><br/>
+    <input type="checkbox" value="music@system=on" not="music@system=off" depend="classic_music">Musik</input><br/>
+    <input type="checkbox" value="highres_font@system=on" not="highres_font@system=off" id="highresfont">Hochaufgelöste Schrift</input><br/>
+    <input type="checkbox" value="newgfx@system=on" not="newgfx@system=off" depend="classic_newgfx" disable="highresfont" checkon="highresfont">Neue Grafiken</input><br/>
+    <br/>
+    <input type="checkbox" value="disable_ai@game=yes" not="disable_ai@game=no">Deaktiviere KI Spieler</input><br/>
+   </form>
+</body>
+</html>

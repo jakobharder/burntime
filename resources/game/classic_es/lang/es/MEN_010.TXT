@@ -1,0 +1,37 @@
+﻿¿Cómo sabría yo?}
+}
+}#
+Amigo, tienes cara}
+familiar.}
+}#
+Si...}
+}
+¿Qué quieres de mi?}
+}
+}#
+¿Qué pasa?}
+}
+}#
+Está bien, amigo. ¡Por |C}
+seré el que estás buscando!}
+}#
+Hmmm...}
+Consígueme |C, amigo, y haré}
+lo que quieras.}
+}
+}#
+¡Soluciono problemas, amigo!}
+}
+Cualquier problema con dos patas.}
+¡Ja, ja, ja!}
+}#
+Cuídate o serás mi}
+desayuno.}
+}#
+}#
+}}
+
+
+
+
+

@@ -1,0 +1,30 @@
+It's tragic. A friend of mine...}
+}
+...I warned him about going}
+without a gasmask in this town.}
+}#
+Would you like something from me?}
+}
+}#
+Do you want to know something?}
+}
+}#
+Tell me what you want?}
+}
+}#
+Good, but only on one}
+condition!}
+Give me |C!}
+}
+}#
+Come back when you}
+have |C...}
+}#
+|A}
+}
+}#
+I'd rather be eaten by mutants!}
+}
+}#
+}#
+}}

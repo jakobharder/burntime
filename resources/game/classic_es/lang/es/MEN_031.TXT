@@ -1,0 +1,41 @@
+﻿Cuidado con los mutantes.}
+Nos quieren matar a todos.}
+}#
+Hola...}
+}
+¿Has visto mutantes por aquí?}
+}
+}#
+¡No me molestes, estoy ocupado!}
+}
+}#
+Apúrate y dime que}
+quieres o piérdete.}
+}#
+En realidad estoy}
+ocupado, pero con |C}
+me podrías persuadir.}
+}
+}#
+¡Vete! ¡Y deja}
+de joderme!}
+}#
+A quien le pego nunca se mueve más.}
+}
+}#
+No. ¡Todavía tengo que llevar}
+a cabo una misión!}
+}#
+}#
+}}
+
+
+
+
+
+
+
+
+
+
+

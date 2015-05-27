@@ -1,0 +1,41 @@
+Watch out for mutants.}
+They're after us all.}
+}#
+Hello...}
+}
+Did you see a few mutants here?}
+}
+}#
+Don't bother me, I'm busy!}
+}
+}#
+Hurry up, tell me what}
+you want or get lost.}
+}#
+Actually I'm busy}
+but for |C}
+I could be had persuaded.}
+}
+}#
+Go away! And quit}
+bothering me!}
+}#
+Whatever I hit never moves again.}
+}
+}#
+No I still have an assignment}
+to carry out!}
+}#
+}#
+}}
+
+
+
+
+
+
+
+
+
+
+

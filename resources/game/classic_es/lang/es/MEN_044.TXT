@@ -1,0 +1,38 @@
+﻿Hace poco reparé una}
+bomba manual y la instalé...}
+...en un pozo que casi}
+se había secado.}
+Salvé la vida de varias}
+personas haciendo eso.}
+}#
+¿Cómo puedo ayudarte?}
+}
+}#
+¿Qué esperas de mi?}
+}
+}#
+Bien, ¿necesitas}
+algo más?}
+}#
+Dame |C}
+y te acompañaré}
+en tus viajes.}
+}
+}#
+Primero tráeme}
+|C, y luego...}
+iré contigo.}
+}
+}#
+|A}
+}
+}#
+¿Con un debilucho como tú?}
+¡No, gracias!}
+}#
+}#
+}}
+
+
+
+

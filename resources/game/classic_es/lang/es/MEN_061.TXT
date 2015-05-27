@@ -1,0 +1,28 @@
+﻿Nada. ¿Qué quieres que diga?}
+}
+}#
+Hola, ¿todo bien?}
+}
+}#
+¿Cómo andas? ¿Todo en orden?}
+}
+}#
+Bueno, ¿Qué más quieres?}
+}
+}#
+Seguro, ¡pero quiero}
+|C...}
+...como pago!}
+}
+}#
+¡Antes consígueme}
+|C!}
+}#
+|A}
+}
+}#
+No, gracias. No tienes}
+mucha experiencia.}
+}#
+}#
+}}

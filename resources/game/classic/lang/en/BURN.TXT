@@ -1,0 +1,691 @@
+New Sandez}
+Sana}
+Death Town}
+Bearwoods}
+Nob Hill}
+Muarab}
+Caves}
+Nakkara}
+Lost Hope}
+Desert Point}
+Stove Vent}
+Left End}
+Monastery}
+Antella}
+Numea}
+Dead Wood}
+Big Hole}
+Dogshit City}
+Acid Town}
+Devil Rock}
+Gold Town}
+Heavens Gate}
+Factory}
+MAX Canyon}
+Sherwood}
+Reststop}
+One Man's Heaven}
+Refinery}
+Outback}
+Snake Hills}
+Paradise Camp}
+Hard Mans Death}
+Eagles Nest}
+Nameless Town}
+Nirvana}
+Right End}
+Anif}
+38}
+39}
+40}
+Mercenary}
+Technician}
+Doctor}
+Boss}
+unqualified}
+Trader}
+}
+}
+}
+}
+maggots}
+rats}
+snake}
+meat}
+water bottle}
+bottle}
+full canteen}
+empty canteen}
+full wineskin}
+empty wineskin}
+knife}
+axe}
+pitchfork}
+loaded rifle}
+unloaded rifle}
+mine}
+rat trap}
+trap}
+snake trap}
+hand pump}
+industrial pump}
+mine detector}
+two-way radio}
+broken pump}
+spare parts}
+defective mine detector}
+defective two-way radio}
+electrical odds-and-ends}
+batteries}
+LCD-display}
+wire}
+woodpile}
+screws}
+tin}
+spring}
+hose}
+rags}
+iron pipe}
+ammunition}
+gas mask}
+protective suit}
+gloves}
+protective overall}
+boots}
+rope}
+iron bars}
+bones}
+skull}
+gas canister}
+gold}
+tools}
+bible}
+fur}
+leather jacket}
+tires}
+steel helmet}
+sweater}
+pants}
+}
+}
+maggots}
+rats}
+a snake}
+meat}
+a water bottle}
+a bottle}
+a full canteen}
+an empty canteen}
+a full wineskin}
+an empty wineskin}
+a knife}
+an axe}
+a pitchfork}
+a loaded rifle}
+an unloaded rifle}
+a mine}
+a rat trap}
+a trap}
+a snake trap}
+a hand pump}
+an industrial pump}
+a mine detector}
+a two-way radio}
+a broken pump}
+spare parts}
+a defective mine detector}
+a defective two-way radio}
+electrical odds-and-ends}
+batteries}
+an LCD-display}
+wire}
+a woodpile}
+screws}
+tin}
+a spring}
+a hose}
+rags}
+an iron pipe}
+ammunition}
+a gas mask}
+a protective suit}
+gloves}
+a protective overall}
+boots}
+a rope}
+iron bars}
+bones}
+a skull}
+a gas canister}
+gold}
+tools}
+a bible}
+a fur}
+a leather jacket}
+tires}
+a steel helmet}
+a sweater}
+pants}
+}
+}
+Gregory}
+Martin}
+Marion}
+Albert}
+Liz}
+Wilf}
+Mutant}
+Dog}
+Mad Marty}
+Chuck}
+Jack the Conman}
+Sharky}
+Lester}
+Wolf}
+Greedy Ralph}
+Holger}
+Gambler Joe}
+Django}
+Don Camillo}
+John}
+Monkey}
+Caeser}
+Trademan}
+Black Eye}
+Iceman}
+Donald}
+Mark}
+Willy}
+Ivan}
+Steelman}
+Bill}
+Billy}
+Jones}
+Sly}
+Joe}
+Sean}
+Mick}
+Curd}
+Babe}
+Dennis}
+Whitey}
+Rose}
+Andy}
+Bug}
+Slug}
+Mack}
+Rich}
+Chang}
+Ratman}
+The Snake}
+Phil}
+Buck}
+Roger}
+Funky}
+Punk}
+Fatso}
+Black Mack}
+Thunder}
+Master}
+Brainman}
+Junky}
+Blackface}
+Dr. Max}
+Mad Dog}
+Reg}
+Junk}
+Creature}
+Vince}
+Jim}
+Jerry}
+Tom}
+James}
+Judge}
+Abe}
+Lewis}
+Lex}
+Mr. Marvel}
+Mayday}
+Jens}
+Barry}
+Larry}
+Cop}
+Peanut}
+Burt}
+Pokey}
+Pokerface}
+Fist}
+Pug}
+Red}
+Wayne}
+Paul}
+Moody}
+Richard}
+Walker}
+Fred}
+Sven}
+Boneman}
+Skull}
+Warren}
+Will}
+Rumble}
+Michele}
+Tex}
+Luke}
+Han}
+Ace}
+Skippy}
+Dave}
+Pete}
+Ken}
+Gordon}
+Bret}
+Crush}
+Randy}
+Brian}
+Olaf}
+Stinger}
+Mark}
+Brenner}
+Simon}
+Cooper}
+Armin}
+Alex}
+Buzz}
+Socks}
+Skinny}
+Timmy}
+Kevin}
+Jeff}
+Rachnow}
+Henry}
+Bart}
+Bruno}
+Gene}
+Dave}
+Dick}
+Ted}
+Frank}
+Benjy}
+Guido}
+Antonio}
+Asshole}
+Axle}
+Sledge}
+Peter}
+Arthur}
+Guy}
+Cain}
+Pigface}
+Egghead}
+Wino}
+Angel}
+Kinky}
+Mudface}
+General}
+Roy}
+Leo}
+Terry}
+Blubber Man}
+Cody}
+Hampton}
+Chicken}
+Sid}
+Nigel}
+Reggy}
+Skipp}
+Pong}
+Radman}
+Blade}
+Sick}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+SPEAK}
+INFO}
+FIGHT}
+ACCEPT DEAL}
+EXIT}
+????}
+ALL}
+NEXT}
+SINGULAR}
+STATISTIC}
+TRAVEL}
+OPTIONS}
+MAIN MAP}
+DISMISS}
+STAY THERE}
+REJOIN RUST}
+RETURN SELF}
+INVENTORY}
+CANCEL}
+HEAL}
+HIGHSCORE}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+Exper.: |A%}
+Condit.: |B%}
+LOAD}
+SAVE}
+DELETE}
+...|A load}
+...|A save}
+...|A delete}
+Go to map}
+Music ON}
+Restart}
+Exit}
+Speed 0}
+Speed 1}
+Speed 2}
+Speed 3}
+Fighter}
+Technician}
+Doctor}
+Storage}
+|A}
+|B}
+Water: |C D.}
+Food:  |D D.}
+Day |A}
+|A has departed from us}
+available:}
+Water:}
+|E REM}
+|C}
+|D}
+|E}
+|F}
+Toxic gas}
+DRINK}
+EAT}
+XXXXXXXXXXXXXXXXXXXX}
+[ |A ]}
+calculate data...}
+Please take the word |E}
+from line |D on page |C}
+|J days}
+|D days}
+|C days}
+Music OFF}
+}
+}
+}
+}
+}
+I am a |B !}
+I am a good |B !}
+I am a very good |B !}
+I am an excellent |B !}
+}
+}
+}
+}
+}
+}
+ZBuff_01}
+ZBuff_02}
+ZBuff_03}
+ZBuff_04}
+ZBuff_05}
+ZBuff_06}
+ZBuff_07}
+ZBuff_08}
+ZBuff_09}
+ZBuff_10}
+ZBuff_11}
+ZBuff_12}
+ZBuff_13}
+ZBuff_14}
+ZBuff_15}
+ZBuff_16}
+ZBuff_17}
+ZBuff_18}
+ZBuff_19}
+ZBuff_20}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+-------------}
+-------------}
+[ |A ]}
+[ |B ]}
+}
+}
+}
+}
+}
+}
+End conversation.}
+Would you like to work for me?}
+What's up?}
+Allright, you've got the job.}
+No, stay where you are.}
+Allright, you stay here.}
+So what? Get lost!}
+What's your profession?}
+OK, you'll get |C}
+( continue... )}
+OK, let's see what you have.}
+OK, make me |I.}
+What else can you make?}
+Thanks for telling me.}
+Let's make a deal.}
+So what? You're coming with me.}
+}
+}
+}
+}
+Your complete recovery should}
+be worth a bit more than}
+that to you.}
+Another doctor wouldn't even}
+look at you for that.}
+}
+To improve your horrendous}
+condition is going to cost}
+you alot more than that.}
+I appreciate people who}
+realize the true value of}
+there health.}
+I won't even kill you for}
+nothing.}
+}
+}
+}
+}
+}
+}
+For that you can have grub}
+for |E days.}
+}
+Enjoy it ...}
+Ha, ha, ha !}
+}
+Does this look like a}
+soup kitchen?}
+}
+You won't get great food}
+like this anywhere else.}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+For that you can get enough}
+water for |E days.}
+}
+Cheers, and drop by again}
+sometime.}
+}
+This isn't the Salvation Army!}
+}
+}
+No one else serves fabulous}
+drinks like I do.}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+In}
+|J days you have}
+captured |A locations}
+and now control |I% of the assigned area.}
+}
+Your employees:}
+|B Fighters}
+|G Technicians}
+|H Doctors}
+}
+You have in storage:}
+|C Maggots}
+|D Rats}
+|E Snakes}
+|F Pieces of meat}
+}
+}
+}
+}
+}
+The fourth angel poured out his bowl..}
+on the sun, and the sun was given..}
+power to scorch people with fire.}
+}
+The sixth angel poured out his bowl..}
+on the great river Euphrates, and..}
+its water was dried up to prepare..}
+the way for the kings from the East.}
+}
+}
+|A has departed from us}
+}
+}
+}
+}
+}
+}
+}
+After a fierce battle..}
+..|A has managed to..}
+..gain control of all the..}
+..cities. The people hope that..}
+..he will lead them into a..}
+..brighter future.}
+}
+}
+}
+}
+}
+}
+What a moving finish!}
+}
+Wouldn't you agree??}
+}
+Actually you could now start..}
+..a new game!}
+Or you could try your hand as..}
+..ship owner in the ecologically..}
+..sounder 19th century in '1869'.}
+What? You don't have this..}
+..fantastic game yet?}
+Allright, hustle down to your..}
+..nearest dealer and pick it up.}
+By the way - in a few months there..}
+..will be another fascinating..}
+..game by MAX DESIGN.}
+So keep your eyes open - you won't..}
+..regret it!}
+You can stop here, because there..}
+..won't be any more messages.}
+}
+}
+}
+Apparently you don't believe us..}
+..that's OK, if you don't have..}
+..anything else to do, but to admire..}
+..this animations.}
+}
+}
+}
+Wow, are you ever stubborn!!}
+}
+}
+Allright we'll showing your results again!}
+}
+}
+}
+}
+}
+}
+Entrance}
+Entrance}
+Tent}
+Cave}
+House with water}
+Shack with water}
+Well}
+Cave with water}
+Source}
+Cave}
+Entrance}
+Ruin}
+Entrance}
+Merchant}
+Bar}
+Thieves}
+Entrance}
+Merchant}
+View}
+empty8}
+Doctor}
+Bar}
+Restaurant}
+Bar}
+Diner}
+}
+}
+}
+}
+}
+}}

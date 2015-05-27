@@ -1,0 +1,38 @@
+Recently I repaired a}
+hand pump and installed...}
+...it on a well that had}
+nearly run dry.}
+I saved a few people's lives.}
+by doing that.}
+}#
+How can I help you?}
+}
+}#
+What do you want from me?}
+}
+}#
+Well, is there something}
+else?}
+}#
+Give me |C}
+and I'll accompany you}
+on your travels.}
+}
+}#
+First get me}
+|C, and then...}
+I'll go with you.}
+}
+}#
+|A}
+}
+}#
+With a weakling like you?}
+No, thanks!}
+}#
+}#
+}}
+
+
+
+

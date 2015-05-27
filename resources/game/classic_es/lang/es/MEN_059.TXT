@@ -1,0 +1,32 @@
+﻿Estoy juntando donaciones}
+para construir un hospital.}
+No dudes en donar lo}
+que creas necesario.}
+Si es comestible,}
+mejor. ¡Ñam!}
+}#
+¡Hola, amigo mío!}
+}
+}#
+Hola, extraño.}
+¿Qué hay?}
+}#
+¿Pasó algo?}
+}
+}#
+¡Con gusto! ¡Pero primero}
+quiero |C!}
+}#
+Me gustaría. Pero}
+sin |C...}
+...no puedo hacer nada.}
+}
+}#
+|A}
+}
+}#
+¡No! ¡No eres más que}
+un principiante!}
+}#
+}#
+}}

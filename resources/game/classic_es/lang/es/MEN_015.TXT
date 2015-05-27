@@ -1,0 +1,40 @@
+﻿Cuando te han atacado,}
+has sobrevivido a gases venenosos}
+por varias semanas, y no has tenido}
+nada para comer o beber}
+por varios días, la verdad}
+no tienes ganas de hablar}
+de novedades con nadie.}
+}
+}#
+¡Hola!}
+}
+}#
+¿Qué hay de nuevo?}
+}
+}#
+¿Algo más?}
+}
+}#
+Si, pero dame}
+|C.}
+}#
+¡Primero tienes que}
+conseguirme |C!}
+}#
+|A}
+}
+}#
+No, gracias. Prefiero el hambre.}
+}
+}#
+}#
+}}
+
+
+
+
+
+
+
+

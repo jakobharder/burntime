@@ -1,0 +1,28 @@
+﻿Nada que yo sepa.}
+}
+}#
+¿Qué quieres?}
+}
+}#
+¿Qué?}
+}
+}#
+¡Dime qué quieres o}
+vete al carajo!}
+}#
+De acuerdo, pero quiero |C.}
+}
+}#
+Dame |C y pelearé}
+por ti.}
+}#
+Peleo por el que me pague.}
+}
+}#
+No trabajaré para ti.}
+}
+}#
+}#
+}}
+
+

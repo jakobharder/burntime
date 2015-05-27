@@ -1,0 +1,30 @@
+I'm looking for parts}
+for a protective suit.}
+I still need a gasmask,}
+boots, gloves, a coverall...}
+...and a technician to help me}
+put it together.}
+}#
+Radioactivity is very}
+dangerous!}
+}#
+Do you want something?}
+}
+}#
+Tell me what you want!}
+}
+}#
+Give me |C!}
+}
+}#
+Bring me |C}
+}
+}#
+|A}
+}
+}#
+No, maybe sometime later.}
+}
+}#
+}#
+}}

@@ -1,0 +1,51 @@
+﻿title=バーンタイム (エンジン v{0})
+autoupdate_question=アップデートがあります。
+autoupdate_list="	{0} v{1}"
+autoupdate_question1=
+autoupdate_question1=ダウンロードしますか。
+autoupdate_warning=
+autoupdate_warning=注意：
+settings_warning=ユーザー設定はこのアップデートで削除されます。
+savegame_warning=保存したゲームは新しいバージョンで使うことができません。
+tab_downloads=ダウンロード
+error=エラー
+error1='{0}'を実行できません。
+
+[download]
+title=パッケージ ダウンロード
+close=閉じる
+cancelbutton=キャンセル
+retrieve=ファイル情報を取得しています…
+download=ダウンロードしています…
+download={1}から{0}
+download_file={0}をダウンロードしています…
+download_file={2}から{1}
+rollback=中止しています…
+cancel=ダウンロードがキャンセルされました。
+finish=ダウンロードが終わりました。
+finish={0}をダウンロードしました。
+kb=0.00 KB
+mb=0.00 MB
+error=エラー
+error1=エラー：{0}をアクセスできませんでした。
+error2=エラー：{0}をダウンロードできませんでした。
+
+[autoupdate]
+title=バーンタイム　自動更新
+close=閉じる
+cancelbutton=キャンセル
+backup=バックアップを作成しています…
+retrieve=ファイル情報を取得しています…
+download=ダウンロードしています…
+download={1}から{0}
+download_file={0}をダウンロードしています…
+download_file={2}から{1}
+rollback=中止しています…
+cancel=更新がキャンセルされました。
+finish=更新が終わりました。
+finish={0}をダウンロードしました。
+kb=0.00 KB
+mb=0.00 MB
+error=エラー
+error1=エラー：{0}をアクセスできませんでした。
+error2=エラー：{0}をダウンロードできませんでした。

@@ -1,0 +1,39 @@
+﻿Si supiese algo}
+no te lo diría.}
+}#
+¡Oh, el cara de perro!}
+}
+}#
+¿Qué quieres, cara de perro?}
+}
+}#
+Vamos, ¿qué quieres?}
+}
+}#
+Normalmente no,}
+cara de perro, pero si...}
+me das |C hare una excepción.}
+}
+}#
+Si me quieres}
+vas a tener que pagar |C.}
+}#
+|A}
+}
+}#
+¡No trabajo para}
+caras de perro!}
+}#
+}#
+}}
+
+
+
+
+
+
+
+
+
+
+

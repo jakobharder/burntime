@@ -1,0 +1,16 @@
+[engine]
+safemode	= off
+delay_blend 	= 0	' ms time
+scene_blend	= 4	' speed factor 1 = 1s
+debug		= no
+video_memory 	= 64	' MB
+
+[game]
+language	= EN
+last		= classic
+
+[autoupdate]
+location	= "../server/burntime/updates/"
+downloads	= "../server/burntime/downloads/"
+disable_online	= no
+autoupdate	= no

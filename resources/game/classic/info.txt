@@ -1,0 +1,9 @@
+version=0.2.2
+type=game
+game=classic
+language=EN
+default_language=EN
+
+modules=burngfx classic
+start=classic
+dependencies=burntime gfx

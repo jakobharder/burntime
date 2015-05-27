@@ -1,0 +1,691 @@
+﻿Nueva Sández}
+Sana}
+Pueblo de la Muerte}
+Bearwoods}
+Monte Cabeza}
+Muarab}
+Cuevas}
+Nakkara}
+Esperanza Perdida}
+Desert Point}
+Hornos}
+Punto Oeste}
+Monasterio}
+Antella}
+Numea}
+Bosque Muerto}
+Gran Hoyo}
+Mierdópolis}
+Pueblo Ácido}
+Roca del Diablo}
+El Dorado}
+Puerta del Cielo}
+Fábrica}
+Cañón MAX}
+Sherwood}
+Parador}
+One Man's Heaven}
+Refinería}
+Outback}
+Monte Víbora}
+Campo Paraíso}
+Fin del Hombre Duro}
+Nido del Águila}
+Pueblo Sinnombre}
+Nirvana}
+Punto Este}
+Anif}
+38}
+39}
+40}
+Mercenario}
+Técnico}
+Doctor}
+Jefe}
+No calificado}
+Comerciante}
+}
+}
+}
+}
+bichos}
+ratas}
+serpiente}
+carne}
+botella de agua}
+botella}
+cantimplora llena}
+cantimplora vacía}
+saco de vino lleno}
+saco de vino vacío}
+cuchillo}
+hacha}
+rastrillo}
+rifle cargado}
+rifle descargado}
+mina}
+trampa de rata}
+trampa}
+trampa de serpiente}
+bomba manual}
+bomba industrial}
+detector de minas}
+radio}
+bomba rota}
+repuestos}
+detector de minas defectuoso}
+radio defectuosa}
+cosas eléctricas}
+baterías}
+pantalla LCD}
+alambre}
+pila de madera}
+tornillos}
+hojalata}
+resorte}
+manguera}
+harapos}
+tubo de hierro}
+municiones}
+máscara de gas}
+traje protector}
+guantes}
+cubierta protectora}
+botas}
+cuerda}
+barras de hierro}
+huesos}
+cráneo}
+tanque de gas}
+oro}
+herramientas}
+biblia}
+pieles}
+chaqueta de cuero}
+gomas}
+casco de acero}
+sweater}
+pantalones}
+}
+}
+bichos}
+ratas}
+una serpiente}
+carne}
+una botella de agua}
+una botella}
+una cantimplora llena}
+una cantimplora vacía}
+un saco de vino lleno}
+un saco de vino vacío}
+un cuchillo}
+un hacha}
+un rastrillo}
+un rifle cargado}
+un rifle descargado}
+una mina}
+una trampa de rata}
+una trampa}
+una trampa de serpiente}
+una bomba manual}
+una bomba industrial}
+un detector de minas}
+una radio}
+una bomba rota}
+repuestos}
+un detector de minas defectuoso}
+una radio defectuosa}
+cosas eléctricas}
+baterías}
+una pantalla LCD}
+alambre}
+una pila de madera}
+tornillos}
+hojalata}
+un resorte}
+una manguera}
+harapos}
+un tubo de hierro}
+municiones}
+una máscara de gas}
+un traje protector}
+guantes}
+una cubierta protectora}
+botas}
+una cuerda}
+barras de hierro}
+huesos}
+un cráneo}
+un tanque de gas}
+oro}
+herramientas}
+una biblia}
+pieles}
+una chaqueta de cuero}
+gomas}
+un casco de acero}
+un sweater}
+pantalones}
+}
+}
+Gregorio}
+Martin}
+Marion}
+Alberto}
+Liz}
+Wilf}
+Mutante}
+Perro}
+Loco Marty}
+Chuck}
+Jack el Estafador}
+Sharky}
+Lester}
+Wolf}
+Avaricioso Ralph}
+Holger}
+Apostador Joe}
+Django}
+Don Camilo}
+John}
+Monkey}
+Cesar}
+Trademan}
+Ojo Negro}
+Iceman}
+Donald}
+Mark}
+Willy}
+Ivan}
+Steelman}
+Bill}
+Billy}
+Jones}
+Sly}
+Joe}
+Sean}
+Mick}
+Curd}
+Babe}
+Dennis}
+Blanquito}
+Rose}
+Andy}
+Bicho}
+Slug}
+Mack}
+Rich}
+Chang}
+Ratman}
+Snake}
+Phil}
+Buck}
+Roger}
+Funky}
+Punk}
+Fatso}
+Negro Mack}
+Thunder}
+Maestro}
+Brainman}
+Junky}
+Caranegra}
+Dr. Max}
+Perro Loco}
+Reg}
+Junk}
+Criatura}
+Vince}
+Jim}
+Jerry}
+Tom}
+James}
+Judge}
+Abe}
+Lewis}
+Lex}
+Sr. Maravilla}
+Mayday}
+Jens}
+Barry}
+Larry}
+Cop}
+Peanut}
+Burt}
+Pokey}
+Pokerface}
+Fist}
+Pug}
+Rojo}
+Wayne}
+Paul}
+Moody}
+Richard}
+Walker}
+Fred}
+Sven}
+Boneman}
+Skull}
+Warren}
+Will}
+Rumble}
+Michele}
+Tex}
+Luke}
+Han}
+Ace}
+Skippy}
+Dave}
+Pete}
+Ken}
+Gordon}
+Bret}
+Crush}
+Randy}
+Brian}
+Olaf}
+Stinger}
+Mark}
+Brenner}
+Simon}
+Cooper}
+Armin}
+Alex}
+Buzz}
+Socks}
+Skinny}
+Timmy}
+Kevin}
+Jeff}
+Rachnow}
+Henry}
+Bart}
+Bruno}
+Gene}
+Dave}
+Dick}
+Ted}
+Frank}
+Benjy}
+Guido}
+Antonio}
+Culo}
+Axle}
+Martillo}
+Peter}
+Arthur}
+Guy}
+Cain}
+Cerdo}
+Huevón}
+Wino}
+Angel}
+Kinky}
+Mudface}
+General}
+Roy}
+Leo}
+Terry}
+Grasoso}
+Cody}
+Hampton}
+Gallina}
+Sid}
+Nigel}
+Reggy}
+Skipp}
+Pong}
+Radman}
+Blade}
+Sick}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+HABLAR}
+INFO}
+LUCHAR}
+TRATO HECHO}
+SALIR}
+????}
+TODOS}
+SIGUIENTE}
+INDIVIDUAL}
+ESTADÍSTICAS}
+VIAJAR}
+OPCIONES}
+MAPA}
+DESPEDIR}
+QUÉDATE AQUÍ}
+REUNIRSE}
+VOLVER A MI}
+INVENTARIO}
+CANCELAR}
+CURAR}
+PUNTAJES}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+Exper.: |A%}
+Condic.: |B%}
+CARGAR}
+GUARDAR}
+BORRAR}
+Cargar ...|A}
+Guardar ...|A}
+Borrar ...|A}
+Ir a mapa}
+Música SI}
+Reiniciar}
+Salir}
+Veloc. 0}
+Veloc. 1}
+Veloc. 2}
+Veloc. 3}
+Mercenario}
+Técnico}
+Doctor}
+Almacén}
+|A}
+|B}
+Agua: |C D.}
+Comida: |D D.}
+Día |A}
+|A ya no esta con nosotros.}
+Disponible:}
+Agua:}
+|E REM}
+|C}
+|D}
+|E}
+|F}
+Gas tóxico}
+BEBER}
+COMER}
+XXXXXXXXXXXXXXXXXXXX}
+[ |A ]}
+calcular datos...}
+Por favor escriba la palabra |E}
+de la línea |D en la página |C}
+|J días}
+|D días}
+|C días}
+Música NO}
+}
+}
+}
+}
+}
+¡Soy un |B!}
+¡Soy un buen |B!}
+¡Soy un muy buen |B!}
+¡Soy un excelente |B!}
+}
+}
+}
+}
+}
+}
+ZBuff_01}
+ZBuff_02}
+ZBuff_03}
+ZBuff_04}
+ZBuff_05}
+ZBuff_06}
+ZBuff_07}
+ZBuff_08}
+ZBuff_09}
+ZBuff_10}
+ZBuff_11}
+ZBuff_12}
+ZBuff_13}
+ZBuff_14}
+ZBuff_15}
+ZBuff_16}
+ZBuff_17}
+ZBuff_18}
+ZBuff_19}
+ZBuff_20}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+----------------}
+-------------}
+-------------}
+[ |A ]}
+[ |B ]}
+}
+}
+}
+}
+}
+}
+Eso es todo.}
+¿Te gustaría trabajar para mi?}
+¿Qué hay de nuevo?}
+Muy bien, tienes el trabajo.}
+No, quédate donde estás.}
+Bien, quédate aquí.}
+¿Y qué? ¡Piérdete!}
+¿Cuál es tu profesión?}
+OK, tendrás |C.}
+( continuar... )}
+Bueno, veamos lo que tienes.}
+OK, hazme |I.}
+¿Qué más puedes hacer?}
+Gracias por decirme.}
+Hagamos negocios.}
+¿Y qué? Vienes conmigo.}
+}
+}
+}
+}
+Su completa recuperacion tendría}
+que valer más que eso}
+para usted.}
+Otro doctor ni siquiera lo}
+vería por eso.}
+}
+Mejorar su horrenda condición}
+le costara muchísimo}
+más que eso.}
+Respeto a la gente que}
+reconoce el verdadero valor}
+de su salud.}
+Ni siquiera te voy a matar}
+por nada.}
+}
+}
+}
+}
+}
+}
+Por eso puedes tener comida}
+para |E días.}
+}
+Disfrútalo...}
+¡Ja, ja, ja!}
+}
+¿Te parece este lugar un}
+comedor de caridad?}
+}
+No conseguirás comida tan}
+buena en ningún otro lugar.}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+Por eso puedo darte suficiente}
+agua para |E días.}
+}
+Gracias, y no dudes en}
+volver pronto.}
+}
+¡Éste no es el Ejercito de Salvación!}
+}
+}
+Nadie más sirve tragos tan}
+fabulosos como los míos.}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+En}
+|J días has}
+capturado |A lugares}
+y ahora controlas |I% del territorio.}
+}
+Tus empleados:}
+|B Mercenarios}
+|G Técnicos}
+|H Doctores}
+}
+Tienes almacenados:}
+|C Bichos}
+|D Ratas}
+|E Serpientes}
+|F Pedazos de carne}
+}
+}
+}
+}
+}
+El cuarto ángel derramó su copa...} 
+sobre el sol, y al sol le fue dado...}
+quemar a los hombres con fuego.}
+}
+El sexto ángel derramó su copa...}
+sobre el gran río Éufrates, y...}
+sus aguas se secaron para que fuera...}
+preparado el camino para los reyes del oriente.}
+}
+}
+|A ya no está con nosotros.}
+}
+}
+}
+}
+}
+}
+}
+Después de una dura batalla...}
+...|A logró ganar...}
+...control de todas las...}
+...ciudades. La gente ahora espera...}
+...que su líder los lleve a...}
+..un futuro mejor.}
+}
+}
+}
+}
+}
+}
+¡Que final conmovedor!}
+}
+¿No te parece?}
+}
+¡Ahora podrías empezar...}
+...una nueva partida!}
+O podrías intentar ser capitán...}
+...de un barco en el más ecológico...}
+...siglo XIX en '1869'.}
+¿Qué? ¿No tienes este...}
+...fantástico juego todavía?}
+Bueno, ¡entonces corre a tu...}
+...vendedor más cercano y cómpralo!}
+Por cierto, en algunos meses...}
+...saldrá otro fascinante juego...}
+...hecho por MAX DESIGN.}
+Asi que mantén tus ojos abiertos...}
+...¡y no te arrepentirás!}
+Puedes parar aquí, porque...}
+...no aparecerán más mensajes.}
+}
+}
+}
+Parece que no nos crees.}
+Está bien, si no tienes nada...}
+...más que hacer excepto admirar...}
+...estas animaciones.}
+}
+}
+}
+¡Wow, pero que terco!}
+}
+}
+Bueno, ¡aquí van tus resultados de nuevo!}
+}
+}
+}
+}
+}
+}
+Entrada}
+Entrada}
+Carpa}
+Cueva}
+Casa con agua}
+Choza con agua}
+Pozo}
+Cueva con agua}
+Fuente}
+Cueva}
+Entrada}
+Ruinas}
+Entrada}
+Comerciante}
+Bar}
+Ladrones}
+Entrada}
+Comerciante}
+Ver}
+vacío8}
+Doctor}
+Bar}
+Restaurant}
+Bar}
+Comedor}
+}
+}
+}
+}
+}
+}}

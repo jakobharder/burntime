@@ -1,0 +1,55 @@
+﻿Cuidado...}
+}
+Estos son tiempos peligrosos.}
+Algunos hasta matarían por}
+un pedazo de carne de rata.}
+}
+}#
+Buen día y saludos.}
+}
+}#
+¡Saludos, viajero!}
+}
+}#
+¡No me hagas perder el tiempo!}
+}
+}#
+Si, trabajaré para ti}
+pero solo si me das...}
+|C.}
+}
+}#
+No, a menos que me}
+traigas |C.}
+}#
+Trato de sobrevivir...}
+}
+...y si quieres}
+pelearé por ti.}
+}#
+Bueno, mirándote}
+más de cerca...}
+...No, mejor no.}
+}
+}#
+}#
+}}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

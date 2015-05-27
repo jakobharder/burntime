@@ -1,0 +1,37 @@
+﻿Con una trampa}
+cualquiera puede conseguirse...}
+...mucha carne.}
+}
+}#
+¡Hola, hijo!}
+}
+}#
+Hola, ¿cómo andas?}
+}
+}#
+Bien, ¿algo más?}
+}
+}#
+¡Si me encuentras |C}
+trabajaré para ti!}
+}#
+Tráeme |C}
+y trabajaremos juntos.}
+}#
+¡Hago y arreglo muchas}
+cosas!}
+}#
+¡No trabajo para}
+novatos!}
+}#
+}#
+}}
+
+
+
+
+
+
+
+
+

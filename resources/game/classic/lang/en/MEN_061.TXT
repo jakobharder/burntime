@@ -1,0 +1,28 @@
+Nothing. What should be?}
+}
+}#
+Hi, everything allright?}
+}
+}#
+Hi, everything okay?}
+}
+}#
+Well, what else do you want?}
+}
+}#
+Sure, but I want}
+|C...}
+...in payment!}
+}
+}#
+First get me}
+|C!}
+}#
+|A}
+}
+}#
+No thanks. You're still too}
+inexperienced.}
+}#
+}#
+}}

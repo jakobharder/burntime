@@ -1,0 +1,51 @@
+title=Burntime
+autoupdate_question=There are updates for Burntime available.
+autoupdate_list="	{0} v{1}"
+autoupdate_question1=
+autoupdate_question1=Download now?
+autoupdate_warning=
+autoupdate_warning=Warning:
+settings_warning=User settings will be deleted with this update.
+savegame_warning=Old savegames do not work with this version.
+tab_downloads=Downloads
+error=Error
+error1=Could not execute '{0}'!
+
+[download]
+title=Package Download
+close=Close
+cancelbutton=Cancel
+retrieve=retrieve file information...
+download=download files ...
+download={0} of {1}
+download_file=download {0}...
+download_file={1} of {2}
+rollback=rollback...
+cancel=download canceled
+finish=download finished
+finish={0} downloaded
+kb=0.00 KB
+mb=0.00 MB
+error=Error
+error1=Error: Cannot access {0}.
+error2=Error: Cannot download {0}.
+
+[autoupdate]
+title=Burntime Auto-Update
+close=Close
+cancelbutton=Cancel
+backup=create backup...
+retrieve=retrieve file information...
+download=download files ...
+download={0} of {1}
+download_file=download {0}...
+download_file={1} of {2}
+rollback=rollback...
+cancel=update canceled
+finish=update finished
+finish={0} downloaded
+kb=0.00 KB
+mb=0.00 MB
+error=Error
+error1=Error: Cannot access {0}.
+error2=Error: Cannot download {0}.

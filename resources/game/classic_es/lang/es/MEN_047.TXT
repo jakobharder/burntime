@@ -1,0 +1,37 @@
+﻿Estoy buscando botellas y}
+cantimploras para mi pozo.}
+¡Sino demasiada agua}
+se escapa!}
+}#
+Hola, ¿cómo andas?}
+}
+}#
+¿Has visto botellas por aquí?}
+}
+}#
+¡Estoy buscando botellas}
+y cantimploras!}
+}#
+¡Si me das |C}
+iré contigo!}
+}#
+Primero consigue |C}
+y luego veremos.}
+}#
+|A}
+}
+}#
+¡No! No creo que podría}
+sobrevivir a tu lado.}
+}#
+}#
+}}
+
+
+
+
+
+
+
+
+

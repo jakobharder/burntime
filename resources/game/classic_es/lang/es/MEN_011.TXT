@@ -1,0 +1,51 @@
+﻿Oh...}
+}
+La lluvia sigue siendo}
+ácida, y apenas puedes}
+respirar el aire.}
+}
+Es un verdadero milagro que algunos}
+de nosotros sigamos vivos.}
+}#
+¿Qué? ¿Sigues vivo?}
+}
+}#
+¿Cómo andas?}
+Estás un poco pálido.}
+Asi empezó un amigo.}
+Primero se volvió bien}
+pálido, después se cayó su pelo,}
+luego sus dientes, y más tarde...}
+Bueno, déjame decirte que ahora}
+no tiene ningún problema.}
+}#
+¿Qué otra cosa quieres?}
+}
+}#
+¡Si me das |C}
+haré cualquier cosa!}
+}#
+No iré contigo hasta}
+que me des |C.}
+}#
+¡Peleo!}
+}
+}#
+¡Ja, que buen chiste!}
+}
+}#
+}#
+}}
+
+
+
+
+
+
+
+
+
+
+
+
+

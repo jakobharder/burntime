@@ -1,0 +1,37 @@
+Do you know somebody}
+who could use me?}
+I repair old equipment and}
+build useful things.}
+}#
+Greetings, friend!}
+}
+}#
+What's up, stranger?}
+}
+}#
+Anything else?}
+}
+}#
+Give me |C}
+and then I'll work for you!}
+}#
+Only if you get me}
+|C}
+}#
+I'm known for constructing}
+various equipments!}
+}#
+No, I don't associate with}
+failures!}
+}#
+}#
+}}
+
+
+
+
+
+
+
+
+

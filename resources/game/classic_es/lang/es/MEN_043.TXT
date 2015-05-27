@@ -1,0 +1,41 @@
+﻿Necesito tornillos, un poco de}
+madera y otra cosa más...}
+...¡Y entonces podré hacer una}
+buena trampa para ratas!}
+}#
+¡Soy un gran inventor y}
+siempre estoy buscando...}
+...partes que pueda usar!}
+}
+}#
+¿Tienes cosas que}
+pueda usar...}
+...para mis inventos?}
+}
+}#
+¿Quieres algo}
+más de mi?}
+}#
+Dame |C...}
+}
+...y compartiré mis}
+habilidades contigo!}
+}
+}#
+Encuéntrame |C.}
+}
+}#
+¡Ya te dije que soy}
+un inventor!}
+}#
+¡Vuelve cuando hayas}
+ganado más experiencia!}
+}#
+}#
+}}
+
+
+
+
+
+

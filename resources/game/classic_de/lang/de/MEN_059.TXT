@@ -1,0 +1,34 @@
+Ich sammle Spenden fÅr}
+den Bau eines...} 
+grossen Hospitals!} 
+}
+Du kannst gerne Spenden.}
+}
+Besonders gern nehme ich}
+alles Essbare. (Schmatz!)}
+}#
+Hallo, mein Freund!}
+}
+}#
+Hallo Fremder}
+wohin des Wegs?}
+}#
+Was ist los?}
+}
+}#
+Gerne! Aber zuerst mîchte}
+ich |C!}
+}#
+Ich mîchte schon. Aber ohne}
+|C...}
+...ist da wenig zu machen.}
+}
+}#
+|A}
+}
+}#
+Nein! Du bist ja noch}
+ein Greenhorn!}
+}#
+}#
+}}

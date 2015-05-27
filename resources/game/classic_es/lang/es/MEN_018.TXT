@@ -1,0 +1,31 @@
+﻿Mutantes, mutantes...}
+Esas criaturas repulsivas}
+están dondequiera que vayas.}
+Los odio.}
+}#
+¡Saludos, amigo!}
+}
+}#
+Al fin un ser humano}
+normal.}
+}#
+¿Qué quiere de mi?}
+}
+}#
+Deme |C e iré}
+con usted.}
+}#
+No lo seguiré}
+sin |C.}
+}#
+Lo mejor que hago es luchar.}
+}
+}#
+No, obviamente usted es}
+un novato.}
+}#
+}#
+}}
+
+
+

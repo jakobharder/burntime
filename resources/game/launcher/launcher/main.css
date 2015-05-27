@@ -1,0 +1,7 @@
+body { margin-left:3px; margin-top:3px; margin-right:0px; margin-bottom:0px; background-color: #191919; color: #ffffff; font-size: 9pt; font-family: "Microsoft Sans Serif" }
+th, td { font-size: 9pt; color: #ffffff; }
+a:link { color: #d00000; text-decoration:none; }
+a:visited { color: #d00000; text-decoration:none; }
+a:hover { color: #f0e810; text-decoration:underline; }
+a:active { color: #2470a0; text-decoration:none; }
+button.menu { font-size: 8pt; width:100px;height:25px;margin-bottom:0.2em; font-family: "Microsoft Sans Serif" }

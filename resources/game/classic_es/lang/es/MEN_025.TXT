@@ -1,0 +1,29 @@
+﻿¡Ni idea!}
+}
+}#
+Hola, ¿cómo va?}
+}
+}#
+¡Hola, viajero!}
+}
+}#
+¿Algo más?}
+}
+}#
+Dame |C}
+y trabajaré para ti.}
+}#
+¡Primero consígueme |C!}
+}
+}#
+¡Soy un guerrero!
+}
+}#
+¡No!}
+}
+}#
+}#
+}}
+
+
+

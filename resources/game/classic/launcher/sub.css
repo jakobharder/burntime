@@ -1,0 +1,16 @@
+body { 
+  margin:4px; 
+  background-color: #191919; 
+  color: #ffffff; 
+  font-size: 8pt; 
+  font-family: "Microsoft Sans Serif"; 
+  background-image: url('background.png');
+  background-repeat: no-repeat; 
+  background-attachment: fixed;
+}
+th, td { font-size: 9pt; color: #ffffff; }
+a:link { color: #2470a0; text-decoration:none; }
+a:visited { color: #2470a0; text-decoration:none; }
+a:hover { color: #f0e810; text-decoration:underline; }
+a:active { color: #2470a0; text-decoration:none; }
+select { font-size: 8pt; font-family: "Microsoft Sans Serif" }

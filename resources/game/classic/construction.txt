@@ -1,0 +1,49 @@
+dialog=503
+
+[item_rat_trap]
+items=item_wire item_woodpile item_screws
+dialog=505
+main_items=item_wire item_woodpile item_screws
+class=technician
+
+[item_trap]
+items=item_spring item_tin item_wire
+dialog=505
+main_items=item_spring item_tin item_wire
+class=technician
+
+[item_hand_pump]
+items=item_broken_pump item_rags item_hose
+dialog=508
+main_items=item_broken_pump
+class=technician
+
+[item_industrial_pump]
+items=item_spare_parts item_iron_pipe item_rags item_hose
+dialog=506
+main_items=item_spare_parts
+class=technician
+
+[item_two_way_radio]
+items=item_defective_two_way_radio item_electrical_odds_and_ends item_batteries
+dialog=508
+dialog_items=item_defective_two_way_radio
+class=technician
+
+[item_protective_suit]
+items=item_gas_mask item_gloves item_protective_overall item_boots
+dialog=506
+main_items=item_protective_overall
+class=technician
+
+[item_loaded_rifle]
+items=item_unloaded_rifle item_ammunition
+dialog=512
+main_items=item_unloaded_rifle
+class=mercenary
+
+[item_loaded_pistol]
+items=item_unloaded_pistol item_ammunition
+dialog=512
+main_items=item_unloaded_pistol
+class=mercenary

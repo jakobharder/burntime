@@ -1,0 +1,5 @@
+version=0.1.0
+type=language
+game=classic
+language=ES
+default_language=EN

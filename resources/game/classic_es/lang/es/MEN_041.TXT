@@ -1,0 +1,27 @@
+﻿Si estás atento puedes}
+encontrar muchas cosas útiles.}
+}#
+¡Saludos!}
+}
+}#
+¡Saludos, extraño!}
+}
+}#
+¿Pasó algo malo?}
+}
+}#
+Está bien. ¡Pero dame}
+|C!}
+}#
+OK, si me das}
+|C!}
+}#
+|A}
+}
+}#
+No, en lo posible no.}
+}
+}#
+}#
+}}
+

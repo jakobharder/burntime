@@ -1,0 +1,47 @@
+Did you know that you could}
+get water out of dried-out...}
+wells and springs with a}
+water pump.}
+}#
+I think I've seen you}
+somewhere before.}
+}#
+Haven't we met?}
+}
+}#
+Tell me what you want!}
+}
+}#
+Well...}
+}
+I can see myself working for}
+you, but...}
+...I want |C}
+as payment!}
+}#
+Come back when you have}
+|C}
+}#
+I'm a very good technician.}
+}
+}#
+No, I don't want to work}
+for you.}
+}#
+}#
+}}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,47 @@
+﻿¿Sabías que se puede}
+extraer agua de pozos...}
+y fuentes secas con una}
+bomba de agua?}
+}#
+Creo que te he visto en}
+algún lado antes.}
+}#
+¿Nos conocemos?}
+}
+}#
+¡Dime qué quieres!}
+}
+}#
+Bueno...}
+}
+Puedo trabajar para}
+ti, pero...}
+...¡quiero |C}
+como pago!}
+}#
+Vuelve cuando}
+tengas |C.}
+}#
+Soy un muy buen técnico.}
+}
+}#
+No, no quiero trabajar}
+para ti.}
+}#
+}#
+}}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

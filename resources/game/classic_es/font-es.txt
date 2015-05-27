@@ -1,0 +1,9 @@
+﻿image=font.png
+offset=-2
+lines=1
+height=12
+char0=" !""#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyzñÑáÁéÉíÍóÓúÚ¡¿"
+//       ! " # $ % & ' ( ) * + , - . / 0 1 2 3 4 5 6 7 8 9 : ; < = > ? @ A B C D E F G H I J K L M N O P Q R S T U V W X Y Z [ \ ] ^ _ ` a b c d e f g h i j k l m n o p q r s t u v w x y z ñ Ñ á Á é É í Í ó Ó ú Ú ¡ ¿"
+width0=6 2 4 4 6 6 4 3 4 4 6 4 3 5 2 6 5 3 5 5 5 5 5 5 5 5 2 4 5 5 5 5 2 5 5 5 5 5 5 5 5 2 5 5 4 6 5 5 5 5 5 5 5 5 5 6 5 5 5 3 6 3 6 5 3 6 5 6 5 5 4 5 5 2 5 5 3 6 5 5 5 5 5 5 4 5 5 6 6 5 5 5 5 6 5 5 5 3 3 5 5 5 5 2 5
+y0=0
+

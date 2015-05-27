@@ -1,0 +1,6 @@
+version=0.1
+type=language
+game=launcher
+language=JA
+default_language=EN
+hidden=yes

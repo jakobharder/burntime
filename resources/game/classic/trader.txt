@@ -1,0 +1,66 @@
+[trader]
+'Mad Marty
+179=item_meat item_knife item_loaded_rifle item_snake_trap item_broken_pump item_hose item_protective_overall
+
+'Chuck
+180=item_meat item_batteries item_wire item_screws item_rags item_boots item_tools
+
+'Jack the Nepper
+181=item_snake item_meat item_empty_canteen item_knife item_axe item_snake_trap item_wire item_woodpile item_ammunition
+
+'Sharky
+182=item_meat item_empty_canteen item_pitchfork item_woodpile item_screws item_gas_mask item_tools
+
+'Lester
+183=item_meat item_empty_wineskin item_axe item_snake_trap item_screws item_tin item_spring
+
+'Wolf
+184=item_meat item_pitchfork item_wire item_gloves item_leather_jacket item_sweater item_pants
+
+'Ralf Gier
+185=item_snake item_meat item_empty_canteen item_pitchfork item_woodpile item_screws item_tin item_gas_mask
+
+'Holger
+186=item_meat item_empty_canteen item_knife item_broken_pump item_screws item_tin item_boots
+
+'Zocker Joe
+187=item_snake item_meat item_empty_wineskin item_axe item_snake_trap item_batteries item_wire item_protective_overall
+
+'Django
+188=item_meat item_axe item_batteries item_wire item_screws item_rags item_protective_suit
+
+'Don Camillo
+189=item_meat item_knife item_electrical_odds_and_ends item_wire item_screws item_tin item_iron_pipe
+
+'John
+190=item_snake item_meat item_empty_wineskin item_pitchfork item_snake_trap item_spare_parts item_hose item_iron_pipe
+
+'Monkey
+191=item_snake item_meat item_knife item_woodpile item_screws item_hose item_rags item_gas_mask
+
+'Kaiser
+192=item_meat item_knife item_broken_pump item_wire item_woodpile item_tin item_hose
+
+'Trademan
+193=item_meat item_water_bottle item_empty_wineskin item_pitchfork item_spare_parts item_wire item_woodpile item_rags item_iron_pipe
+
+'Black Eye
+194=item_snake item_meat item_empty_wineskin item_axe item_wire item_woodpile item_rags item_gold item_tools
+
+'Iceman
+195=item_meat item_knife item_industrial_pump item_broken_pump item_wire item_woodpile item_tin item_spring
+
+'Donald
+196=item_meat item_bottle item_empty_canteen item_empty_wineskin item_knife item_broken_pump item_wire
+
+'Mark
+197=item_meat item_empty_wineskin item_knife item_wire item_spring item_hose item_gloves
+
+'Willy
+198=item_meat item_empty_wineskin item_pitchfork item_spare_parts item_hose item_iron_pipe item_gas_mask
+
+'Ivan
+199=item_meat item_knife item_axe item_loaded_rifle item_woodpile item_ammunition item_tools
+
+'Steelman
+200=item_meat item_empty_wineskin item_knife item_screws item_tin item_spring item_gas_mask

@@ -1,0 +1,48 @@
+Food is always getting}
+scarcer..}
+..I don't know where I}
+can find any more..}
+...I'd do anything for}
+something to eat.}
+}#
+What do you want from me?}
+}
+}#
+Do you have something to eat?}
+}
+}#
+Just tell me what you want!}
+}
+}#
+First I want something solid}
+to eat. Give me |C.}
+}#
+You don't have anything decent}
+to eat. Get me |C..}
+..and I'm all yours.}
+}
+}#
+|A}
+}
+}#
+I'd rather starve!}
+}
+}#
+}#
+}}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

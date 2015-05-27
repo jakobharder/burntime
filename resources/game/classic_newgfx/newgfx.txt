@@ -1,0 +1,15 @@
+sprite_resolution=0.5
+
+[replacement]
+zei_009.raw=gfx/tiles/009_{0:00}.png
+zei_012.raw=gfx/tiles/012_{0:00}.png
+zei_013.raw=gfx/tiles/013_{0:00}.png
+zei_018.raw=gfx/tiles/018_{0:00}.png
+zei_022.raw=gfx/tiles/022_{0:00}.png
+gst.raw=gfx/items/{0}.png
+syssze.raw=pngani@gfx/char/{0}.png
+burngfxani@munt.raw=pngani@gfx/munt_{0}.png
+munt.raw=gfx/munt_{0}.png
+sta.pac=gfx/sta.png
+syst.raw=gfx/syst_{0}.png
+ges_00.ani=pngani@gfx/faces/ges_00/{0}.png

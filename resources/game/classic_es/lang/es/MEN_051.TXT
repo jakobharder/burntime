@@ -1,0 +1,34 @@
+﻿En general puedes conseguir}
+partes útiles de vendedores.}
+¡Una vez pude comprar algo}
+de hojalata, un resorte...}
+...y algo de alambre con}
+lo que pude hacer una trampa!}
+}#
+¡Hola, amigo mío!}
+}
+}#
+¡Hola!}
+}
+}#
+¿Algo más?}
+}
+}#
+¡Dame |C, por favor}
+y entonces con gusto...}
+...trabajaré para ti!}
+}
+}#
+Trabajaré para ti, pero}
+primero consígueme}
+|C.}
+}
+}#
+|A}
+}
+}#
+¡No, gracias! No puedo.}
+}
+}#
+}#
+}}

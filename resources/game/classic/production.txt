@@ -1,0 +1,21 @@
+[item_knife]
+maxcombination=1
+amount=1 2
+amount2=1 3
+produce=item_maggots
+alternatives=item_axe item_pitchfork
+
+[item_rat_trap]
+maxcombination=2
+amount=0 3 4
+produce=item_rats
+
+[item_snake_trap]
+maxcombination=2
+amount=0 3 5
+produce=item_snake
+
+[item_trap]
+maxcombination=2
+amount=0 5 7
+produce=item_meat

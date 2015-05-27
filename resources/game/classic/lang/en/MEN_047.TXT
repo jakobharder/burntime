@@ -1,0 +1,37 @@
+I'm looking for bottles and}
+canisters for my well.}
+Otherwise far too much}
+water drains out!}
+}#
+Hello, how are you?}
+}
+}#
+Have you seen bottles anywhere?}
+}
+}#
+I'm looking for bottles and}
+and canisters!}
+}#
+If you give me |C}
+I'll go with you!}
+}#
+First get |C}
+for me and then come back.}
+}#
+|A}
+}
+}#
+No! I don't think I'd survive}
+very long on your side.}
+}#
+}#
+}}
+
+
+
+
+
+
+
+
+

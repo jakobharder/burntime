@@ -1,0 +1,10 @@
+version=0.1.4
+type=game
+game=launcher
+language=EN DE
+default_language=EN
+hidden=yes
+
+modules=
+start=
+dependencies=

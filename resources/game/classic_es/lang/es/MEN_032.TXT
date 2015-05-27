@@ -1,0 +1,37 @@
+﻿Hace un tiempo encontré un}
+vendedor con varias cosas...}
+...útiles como tornillos, cuerdas,}
+botellas y repuestos...}
+Me comentó que se pueden usar}
+canastas para capturar serpientes.}
+}#
+Ey, ¿no te he visto en}
+algún lado?.}
+}#
+¿Quién eres? ¿Qué quieres}
+de mi?}
+}#
+¿Quieres algo más?}
+}
+}#
+Si me das |C}
+estaré a tu servicio.}
+}#
+Tienes que conseguirme |C}
+y después veremos.}
+}#
+|A}
+}
+}#
+No puedo. Tengo que ir al norte.}
+Alguien me está esperando allí.}
+}#
+}#
+}}
+
+
+
+
+
+
+

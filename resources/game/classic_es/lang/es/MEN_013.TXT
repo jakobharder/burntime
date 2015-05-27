@@ -1,0 +1,36 @@
+﻿Anoche nos atacaron unos}
+salvajes mutantes. Le cortaron la}
+pierna izquierda a mi amigo}
+y se escaparon con ella.}
+Tratamos de perseguirlos}
+pero mi amigo no era muy}
+móvil que digamos.}
+}
+}#
+Hola, amigo,}
+¿cómo estas?}
+}#
+Hola, ¿qué hay de nuevo?}
+}
+}#
+¿Algo más?}
+}
+}#
+Seguro, pero quiero}
+|C primero.}
+}#
+¡Dame |C, y pelearé}
+por ti!}
+}#
+No tengo educación, asi que}
+me hice luchador.}
+}#
+Hmmmm....}
+No, no creo que sería}
+inteligente seguir a}
+alguien como tú.}
+}#
+}#
+}}
+
+

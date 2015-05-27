@@ -1,0 +1,31 @@
+Mutants, mutants...}
+these repulsive creatures}
+are everywhere you go.}
+I hate them.}
+}#
+Greetings friend!}
+}
+}#
+Finally a normal human}
+being.}
+}#
+What do you want from me?}
+}
+}#
+Give me |C and I'll}
+go with you.}
+}#
+I won't go along without}
+|C.}
+}#
+What I do best is fight.}
+}
+}#
+No, you're too much}
+of a greenhorn.}
+}#
+}#
+}}
+
+
+

@@ -1,0 +1,44 @@
+﻿He oído que mucha gente}
+se ha unido a un tipo del este...}
+...y están tratando de tomar}
+todas las ciudades y pueblos.}
+}#
+Me parece que}
+necesitas algo.}
+}#
+¡Parece que buscas poder,}
+extraño!}
+}#
+¡Entonces dime qué es lo}
+que quieres!}
+}#
+Si, pero sólo si me}
+das |C.}
+}#
+¡Dame |C!}
+}
+}#
+|A}
+}
+}#
+No, todavía no tienes}
+experiencia, ¡y eso...}
+...sería muy peligroso!}
+}
+}#
+}#
+}}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

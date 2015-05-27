@@ -1,0 +1,32 @@
+﻿No he visto ni oído nada.}
+}
+}#
+¿Tienes un traje}
+protector?}
+¡Algunos lugares son muy}
+peligrosos sin protección!}
+}#
+¡Maldita radiación!}
+No la puedes ver..}
+...ni oler.}
+}
+}#
+¡Cuidado con los gases tóxicos}
+y la radioactividad!}
+}#
+Dame |C}
+y trabajaré para ti!}
+}#
+Me arriesgaré si me}
+consigues |C.}
+}#
+|A}
+}
+}#
+Si quisiese matarme...}
+}
+...¡lo haría de una manera}
+diferente!}
+}#
+}#
+}}

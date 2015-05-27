@@ -1,0 +1,18 @@
+﻿<html xmlns:burn>
+<link rel="stylesheet" type="text/css" href="sub.css" />
+</header>
+<body>
+   <form name="options">
+    Resolution: <select name="resolution">
+     <option value="windowmode@system=off">Fullscreen
+     <option value="windowmode@system=on;resolution@system=768x576" selected="true">2x Zoomed Window
+     <option value="windowmode@system=on;resolution@system=1152x864">3x Zoomed Window
+    </select><br/>
+    <input type="checkbox" value="music@system=on" not="music@system=off" depend="classic_music">Music</input><br/>
+    <input type="checkbox" value="highres_font@system=on" not="highres_font@system=off" id="highresfont">Use high-resolution fonts</input><br/>
+    <input type="checkbox" value="newgfx@system=on" not="newgfx@system=off" depend="classic_newgfx" disable="highresfont" checkon="highresfont">Use new graphics</input><br/>
+    <br/>
+    <input type="checkbox" value="disable_ai@game=yes" not="disable_ai@game=no">Disable AI player</input><br/>
+   </form>
+</body>
+</html>

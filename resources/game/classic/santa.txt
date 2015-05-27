@@ -1,0 +1,4 @@
+sprite_resolution=1
+
+[replacement]
+syssze.raw=pngani@gfx/santa/{0}.png
