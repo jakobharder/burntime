@@ -43,7 +43,7 @@ namespace Burntime.Launcher
 #if !(DEBUG)
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(handler.OnThreadException);
 #endif
-            AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(CurrentDomain_AssemblyResolve);
+            //AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(CurrentDomain_AssemblyResolve);
 
             string pak = null;
             if (args.Length > 0)
