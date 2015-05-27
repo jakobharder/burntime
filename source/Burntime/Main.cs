@@ -40,10 +40,10 @@ namespace Burntime.Launcher
             CustomExceptionHandler handler = new CustomExceptionHandler();
 
             // automatically catch exceptions in release builds
-//#if !(DEBUG)
+#if !(DEBUG)
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(handler.OnThreadException);
-//#endif
-           // AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(CurrentDomain_AssemblyResolve);
+#endif
+            AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(CurrentDomain_AssemblyResolve);
 
             string pak = null;
             if (args.Length > 0)
