@@ -382,7 +382,7 @@ namespace Burntime.Classic.AI
                     continue;
 
                 // only travel through if not controlled by enemy
-                if (Player.CanTravel(current, current.Neighbors[i]))
+                if (!Player.CanTravel(current, current.Neighbors[i]))
                     continue;
 
                 days = 0;
