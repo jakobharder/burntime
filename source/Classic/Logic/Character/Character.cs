@@ -796,7 +796,7 @@ namespace Burntime.Classic.Logic
 
         int ICharacterCollection.Eat(Character leader, int foodValue)
         {
-            int eat = System.Math.Max(MaxFood - Food, foodValue);
+            int eat = System.Math.Min(MaxFood - Food, foodValue);
             Food += eat;
 
             return foodValue - eat;
