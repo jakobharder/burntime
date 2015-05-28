@@ -60,40 +60,43 @@ namespace Burntime.Classic.Maps
 
         public void RenderOverlay(RenderTarget target, Vector2 offset, Vector2 size)
         {
-            ClassicGame game = (ClassicGame)app.GameState;
-
-            for (int i = 0; i < 4; i++)
+            if (map != null)
             {
-                Player p = game.World.Players[i];
-                if (p.IsDead)
-                    continue;
+                ClassicGame game = (ClassicGame)app.GameState;
 
-                int[] icons = new int[] { 17, 16, 19, 18 };
-
-                Sprite sprite = app.ResourceManager.GetImage("syst.raw?" + icons[p.IconID]);
-
-                Vector2 pos = new Vector2();
-
-                if (p.IsTraveling)
+                for (int i = 0; i < 4; i++)
                 {
-                    Vector2 start = map.Entrances[p.Location].Area.Center + offset;
-                    Vector2 end = map.Entrances[p.Destination].Area.Center + offset;
+                    Player p = game.World.Players[i];
+                    if (p.IsDead)
+                        continue;
 
-                    pos = end + ((start - end) * p.RemainingDays / p.TravelDays);
-                }
-                else
-                {
-                    pos.x = map.Entrances[p.Location].Area.Position.x + offset.x;
-                    pos.y = map.Entrances[p.Location].Area.Center.y + offset.y;
+                    int[] icons = new int[] { 17, 16, 19, 18 };
 
-                    for (int j = 0; j < i; j++)
+                    Sprite sprite = app.ResourceManager.GetImage("syst.raw?" + icons[p.IconID]);
+
+                    Vector2 pos = new Vector2();
+
+                    if (p.IsTraveling)
                     {
-                        if (game.World.Players[j].Location == p.Location)
-                            pos += 3;
-                    }
-                }
+                        Vector2 start = map.Entrances[p.Location].Area.Center + offset;
+                        Vector2 end = map.Entrances[p.Destination].Area.Center + offset;
 
-                target.DrawSprite(pos + new Vector2(-sprite.Width / 2, -15), sprite);
+                        pos = end + ((start - end) * p.RemainingDays / p.TravelDays);
+                    }
+                    else
+                    {
+                        pos.x = map.Entrances[p.Location].Area.Position.x + offset.x;
+                        pos.y = map.Entrances[p.Location].Area.Center.y + offset.y;
+
+                        for (int j = 0; j < i; j++)
+                        {
+                            if (game.World.Players[j].Location == p.Location)
+                                pos += 3;
+                        }
+                    }
+
+                    target.DrawSprite(pos + new Vector2(-sprite.Width / 2, -15), sprite);
+                }
             }
         }
 
