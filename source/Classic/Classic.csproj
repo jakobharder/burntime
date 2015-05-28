@@ -160,6 +160,7 @@
     <Compile Include="GUI\MenuWindow.cs" />
     <Compile Include="Logic\Generation\GameCreation.cs" />
     <None Include="GUI\MapGuiWindowNew.cs" />
+    <Compile Include="Maps\MapViewOverlayPlayer.cs" />
     <Compile Include="Maps\MapViewOverlayFlags.cs" />
     <Compile Include="Maps\MapViewOverlayHoverText.cs" />
     <Compile Include="ResourceProcessor\BurnmapProcessor.cs" />

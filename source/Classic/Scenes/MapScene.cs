@@ -59,6 +59,7 @@ namespace Burntime.Classic
             //view.Position = new Vector2(0, 0);
             //view.Size = new Vector2(Size.x, Size.y - 16);
             view.Overlays.Add(new Maps.MapViewOverlayFlags(app));
+            view.Overlays.Add(new Maps.MapViewOverlayPlayer(app));
             view.Overlays.Add(new Maps.MapViewOverlayHoverText(app));
             view.Scroll += new EventHandler<MapScrollArgs>(view_Scroll);
             Windows += view;
