@@ -75,7 +75,7 @@
     <Compile Include="Event\LogicEvent.cs" />
     <Compile Include="Event\MouseClickEvent.cs" />
     <Compile Include="Exceptions.cs" />
-    <Compile Include="FrameworkDllAcess.cs" />
+    <Compile Include="FrameworkDllAccess.cs" />
     <Compile Include="GUI\Button.cs" />
     <Compile Include="GUI\Container.cs" />
     <Compile Include="GUI\GuiFont.cs" />

@@ -99,18 +99,27 @@ namespace Burntime.Framework
             if (package.ToLower() == "burntime")
             {
                 Burntime.Common.BurntimePath path = new Burntime.Common.BurntimePath(FileSystem.BasePath + "system/");
+                while (!path.IsValid)
+                {
+                    if (!path.ShowSelector())
+                        Environment.Exit(0);
+                    if (path.IsValid)
+                        path.Save();
+                }
+
                 string burntimePackage = path.Path;
                 if (burntimePackage.EndsWith(".pak"))
                     burntimePackage = burntimePackage.Substring(0, burntimePackage.Length - 4);
                 
                 // make absolute path to avoid using basePath from FileSystem
-                IPackage burntime = FileSystem.OpenPackage(System.IO.Path.GetFullPath(FileSystem.BasePath + "system/" + burntimePackage), "BURN_GFX/");
-
+                string absolutePath = burntimePackage;
+                if (!System.IO.Path.IsPathRooted(absolutePath))
+                    absolutePath = System.IO.Path.GetFullPath(FileSystem.BasePath + "system/" + absolutePath);
+                IPackage burntime = FileSystem.OpenPackage(absolutePath, "BURN_GFX/");
                 if (burntime == null)
                 {
-#warning // TODO if the package is not available then ask for a new path
+                    // something went wrong
                     throw new Exception("BURN_GFX folder was not found. Please make sure to set the correct path in system/path.txt to where the BURN_GFX and BURN.EXE are!");
-                    //return;
                 }
 
                 vfs.Mount(package, burntime);
