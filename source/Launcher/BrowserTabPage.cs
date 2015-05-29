@@ -134,7 +134,7 @@ namespace Burntime.Launcher
                         }
 
                         element.SetAttribute("url", element.GetAttribute("href"));
-                        element.SetAttribute("href", null);
+                        element.SetAttribute("href", "javascript:;");
                     }
                     else
                     {
@@ -166,7 +166,7 @@ namespace Burntime.Launcher
                         }
 
                         element.SetAttribute("url", element.GetAttribute("href"));
-                        element.SetAttribute("href", "#");
+                        element.SetAttribute("href", "javascript:;");
                     }
                 }
             }
