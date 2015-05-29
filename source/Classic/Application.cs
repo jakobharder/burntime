@@ -166,7 +166,6 @@ namespace Burntime.Classic
         public Character SelectedCharacter
         {
             get { return ((Player)GameState.CurrentPlayer).SelectedCharacter; }
-            set { ((Player)GameState.CurrentPlayer).SelectedCharacter = value; }
         }
 
         public ClassicGame Game

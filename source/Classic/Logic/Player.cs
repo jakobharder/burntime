@@ -49,9 +49,8 @@ namespace Burntime.Classic.Logic
     [DebuggerDisplay("{Name}{Index} at {Location.Title}")]
     public class Player : PlayerState, IUpdateable, ITurnable
     {
-        protected bool singleMode;
         protected bool onMainMap;
-        protected StateLink<Character> selectedCharacter;
+        
         protected int index;
         protected int baseExperience;
         protected PlayerType type;
@@ -87,22 +86,10 @@ namespace Burntime.Classic.Logic
             get { return index; }
         }
 
-        public bool SingleMode
-        {
-            get { return singleMode; }
-            set { singleMode = value; }
-        }
-
         public bool OnMainMap
         {
             get { return onMainMap; }
             set { onMainMap = value; }
-        }
-
-        public Character SelectedCharacter
-        {
-            get { return selectedCharacter; }
-            set { selectedCharacter = value; }
         }
 
         public Vector2 MapScrollPosition
@@ -168,10 +155,9 @@ namespace Burntime.Classic.Logic
         public PixelColor ColorDark;
         public int BodyColorSet;
         public int IconID;
-        StateLink<Character> character;
         StateLink<Location> city;
         public StateLinkList<Fog> Fogs;
-        StateLink<Group> group;
+
 
         protected int remainingTravelDays = 0;
         protected int travelDays = 0;
@@ -186,22 +172,15 @@ namespace Burntime.Classic.Logic
             set { flag = value; }
         }
 
-        protected override void InitInstance(object[] parameter)
+        // character, group, selections
+        protected bool singleMode;
+        public bool SingleMode
         {
-            group = container.Create<Group>();
-            Group.RangeFilterValue = 50;
-            refreshScrollPosition = true;
-            refreshMapScrollPosition = true;
-            index = (int)parameter[0];
+            get { return singleMode; }
+            //set { singleMode = value; }
         }
 
-        // attribute accessor
-        public Group Group
-        {
-            get { return group; }
-            set { group = value; }
-        }
-
+        StateLink<Character> character;
         public Character Character
         {
             get { return character; }
@@ -214,6 +193,53 @@ namespace Burntime.Classic.Logic
                     Group.Insert(0, character);
                 selectedCharacter = character;
             }
+        }
+
+        StateLink<Group> group;
+        public Group Group
+        {
+            get { return group; }
+            set { group = value; }
+        }
+
+        protected StateLink<Character> selectedCharacter;
+        public Character SelectedCharacter
+        {
+            get { return selectedCharacter; }
+        }
+        protected StateLink<Group> selectedGroup;
+
+        public bool SelectCharacter(Character targetCharacter)
+        {
+            if (SelectedCharacter == targetCharacter)
+                return false;
+
+            // select single character
+            selectedCharacter = targetCharacter;
+            targetCharacter.Mind = container.Create<AI.PlayerControlledMind>(new object[] { targetCharacter });
+            singleMode = true;
+            return true;
+        }
+
+        public void SelectGroup(ICharacterCollection targetGroup)
+        {
+            // for now assume the player's character is the leader
+            selectedCharacter = Character;
+            foreach (Character member in targetGroup)
+            {
+                if (member != Character)
+                    member.Mind = container.Create<AI.FellowerMind>(new object[] { member, SelectedCharacter });
+            }
+            singleMode = targetGroup.Count == 1;
+        }
+
+        protected override void InitInstance(object[] parameter)
+        {
+            group = container.Create<Group>();
+            Group.RangeFilterValue = 50;
+            refreshScrollPosition = true;
+            refreshMapScrollPosition = true;
+            index = (int)parameter[0];
         }
 
         public int FaceID
@@ -288,8 +314,7 @@ namespace Burntime.Classic.Logic
         /// <param name="destination">destination location</param>
         public void Travel(Location destination)
         {
-            SelectedCharacter = Character;
-            SingleMode = false;
+            SelectGroup(Group);
             RefreshScrollPosition = true;
             RefreshMapScrollPosition = true;
 

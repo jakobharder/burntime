@@ -117,7 +117,7 @@ namespace Burntime.Classic
                 if (dialog.Result == ConversationActionType.Yes)
                 {
                     charOverlay.SelectedCharacter.Dismiss();
-                    charOverlay.SelectedCharacter = view.Player.Character;
+                    view.Player.SelectGroup(view.Player.Group);
                 }
             }
             else if (dialog.Type == ConversationType.Abandon)
@@ -137,53 +137,10 @@ namespace Burntime.Classic
 
             if (e.Object is Character)
             {
-                Character ch = e.Object as Character;
-
-                if (!fightMode && (view.Player.Group.Contains(ch) || ch.Player == view.Player))
-                {
-                    charOverlay.SelectedCharacter.CancelAction();
-
-                    if (charOverlay.SelectedCharacter != ch)
-                    {
-                        charOverlay.SelectedCharacter = ch;
-                        view.Player.SingleMode = true;
-                    }
-                    else
-                        OnMenuInventory();
-                }
-                else if (!fightMode)
-                {
-                    if (ch.Class != CharClass.Dog && !view.Player.Group.Contains(ch))
-                    {
-                        if (30 > (charOverlay.SelectedCharacter.Position - ch.Position).Length)
-                        {
-                            dialog.SetCharacter(charOverlay.SelectedCharacter, ch);
-                            dialog.Show();
-
-                            charOverlay.SelectedCharacter.CancelAction();
-                        }
-                        else
-                        {
-                            MoveCharacter(e.Object);
-                            ch.Mind.RequestToTalk();
-                        }
-                    }
-                }
+                if (fightMode)
+                    AttackCharacter(e.Object as Character);
                 else
-                {
-                    if (!view.Player.Group.Contains(ch))
-                    {
-                        if (30 > (charOverlay.SelectedCharacter.Position - ch.Position).Length)
-                        {
-                            charOverlay.SelectedCharacter.Attack(ch);
-                            charOverlay.SelectedCharacter.CancelAction();
-                        }
-                        else
-                        {
-                            MoveCharacter(e.Object);
-                        }
-                    }
-                }
+                    ClickCharacter(e.Object as Character);
             }
             else if (!fightMode && e.Object is DroppedItem)
             {
@@ -191,6 +148,53 @@ namespace Burntime.Classic
                     OnMenuInventory();
                 else
                     MoveCharacter(e.Object);
+            }
+        }
+
+        void AttackCharacter(Character targetCharacter)
+        {
+            // only if not player owned
+            if (view.Player != targetCharacter.Player)
+            {
+                if (30 > (charOverlay.SelectedCharacter.Position - targetCharacter.Position).Length)
+                {
+                    charOverlay.SelectedCharacter.Attack(targetCharacter);
+                    charOverlay.SelectedCharacter.CancelAction();
+                }
+                else
+                {
+                    MoveCharacter(targetCharacter);
+                }
+            }
+        }
+
+        void ClickCharacter(Character clickedCharacter)
+        {
+            // select if player owned char in group or location
+            if (clickedCharacter.Player == view.Player)
+            {
+                charOverlay.SelectedCharacter.CancelAction();
+                if (!view.Player.SelectCharacter(clickedCharacter)) // false if already selected
+                    OnMenuInventory();
+            }
+            else
+            {
+                // otherwise try to talk
+                if (clickedCharacter.Class != CharClass.Dog && !view.Player.Group.Contains(clickedCharacter))
+                {
+                    if (30 > (charOverlay.SelectedCharacter.Position - clickedCharacter.Position).Length)
+                    {
+                        dialog.SetCharacter(charOverlay.SelectedCharacter, clickedCharacter);
+                        dialog.Show();
+
+                        charOverlay.SelectedCharacter.CancelAction();
+                    }
+                    else
+                    {
+                        MoveCharacter(clickedCharacter);
+                        clickedCharacter.Mind.RequestToTalk();
+                    }
+                }
             }
         }
 
@@ -281,7 +285,7 @@ namespace Burntime.Classic
             }
 
             if (charOverlay.SelectedCharacter.IsDead)
-                charOverlay.SelectedCharacter = view.Player.Character;
+                view.Player.SelectGroup(view.Player.Group);
         }
 
         protected override void OnActivateScene(object parameter)
@@ -418,13 +422,14 @@ namespace Burntime.Classic
 
         public void OnMenuAll()
         {
-            charOverlay.SelectedCharacter = view.Player.Character;
-            view.Player.SingleMode = false;
+            // set group selection to complete player group
+            view.Player.SelectGroup(view.Player.Group);
         }
 
         public void OnMenuSingle()
         {
-            view.Player.SingleMode = true;
+            // set group selection to selected character only
+            view.Player.SelectGroup(view.Player.SelectedCharacter);
         }
 
         public void OnMenuDismiss()
@@ -437,7 +442,7 @@ namespace Burntime.Classic
             }
 
             charOverlay.SelectedCharacter.Dismiss();
-            charOverlay.SelectedCharacter = view.Player.Character;
+            view.Player.SelectGroup(view.Player.Group);
         }
 
         public void OnMenuMakeCamp()
@@ -452,13 +457,13 @@ namespace Burntime.Classic
                 else
                 {
                     charOverlay.SelectedCharacter.JoinCamp();
-                    charOverlay.SelectedCharacter = view.Player.Character;
+                    view.Player.SelectGroup(view.Player.Group);
                 }
             }
             else
             {
                 charOverlay.SelectedCharacter.JoinCamp();
-                charOverlay.SelectedCharacter = view.Player.Character;
+                view.Player.SelectGroup(view.Player.Group);
 
                 view.Location.Player = view.Player;
                 BurntimeClassic.Instance.Engine.Music.PlayOnce("08_MUS 08_HSC.ogg");

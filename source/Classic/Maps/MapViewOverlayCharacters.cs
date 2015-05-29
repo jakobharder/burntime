@@ -45,11 +45,10 @@ namespace Burntime.Classic.Maps
         SpriteAnimation ani;
         bool debugRender;
 
-        //Character selectedCharacter;
+        Character selectedCharacter;
         public Character SelectedCharacter
         {
-            get { return BurntimeClassic.Instance.SelectedCharacter; }
-            set { BurntimeClassic.Instance.SelectedCharacter = value; }
+            get { return selectedCharacter; }
         }
 
         public bool IsVisible
@@ -97,6 +96,7 @@ namespace Burntime.Classic.Maps
         {
             mapState = world.CurrentLocation as Location;
             player = world.CurrentPlayer as Player;
+            selectedCharacter = player == null ? null : player.SelectedCharacter;
 
             ani.Update(elapsed);
         }
