@@ -7,7 +7,7 @@ newgfx		= on
 [game]
 pathfinding_cycles 	= 50		' cycles per second
 always_synchronize 	= no		' use network synchronization in local games too
-roundtime		= 600
+roundtime		= 240
 disable_ai		= yes
 
 [debug]
