@@ -207,7 +207,6 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="icon256.ico" />
-    <Content Include="Refactor.txt" />
     <Content Include="TODO.txt" />
   </ItemGroup>
   <ItemGroup>
