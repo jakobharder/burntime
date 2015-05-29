@@ -42,10 +42,10 @@ namespace Burntime.Classic.Logic
             get { return name; }
             set { name = value; }
         }
-
+        
         public override void Die()
         {
-            if (Player.Type == PlayerType.Human && BurntimeClassic.Instance.Settings["Debug"].GetBool("godmode"))
+            if (Player.Type == PlayerType.Human && BurntimeClassic.Instance.Settings["debug"].GetBool("godmode") && BurntimeClassic.Instance.Settings["debug"].GetBool("enable_cheats"))
                 health = 100; // magic!
             else
                 base.Die();
