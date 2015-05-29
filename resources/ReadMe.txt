@@ -127,6 +127,7 @@ Game logic/Balancing:
 Additional graphics:
 -Krystian Rabe
 -Juernjakob Harder
+-Tristan Mühlbacher
 
 Translations:
 -Spanish: Germán Jakob
