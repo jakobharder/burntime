@@ -457,13 +457,11 @@ namespace Burntime.Classic
                 else
                 {
                     charOverlay.SelectedCharacter.JoinCamp();
-                    view.Player.SelectGroup(view.Player.Group);
                 }
             }
             else
             {
                 charOverlay.SelectedCharacter.JoinCamp();
-                view.Player.SelectGroup(view.Player.Group);
 
                 view.Location.Player = view.Player;
                 BurntimeClassic.Instance.Engine.Music.PlayOnce("08_MUS 08_HSC.ogg");
