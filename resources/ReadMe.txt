@@ -118,20 +118,20 @@ http://www.burntime.org
 Credits to anyone who has contributed this project.
 
 Program:
--Juernjakob Harder
+-Jakob Harder
 
 Game logic/Balancing:
--Juernjakob Harder
+-Jakob Harder
 -Felix Stolle
 
 Additional graphics:
 -Krystian Rabe
--Juernjakob Harder
+-Jakob Harder
 -Tristan Mühlbacher
 
 Translations:
 -Spanish: Germán Jakob
--Japanese: Juernjakob Harder
+-Japanese: Jakob Harder
 
 Testing and other help from:
 -Felix Stolle
