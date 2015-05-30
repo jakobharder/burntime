@@ -106,7 +106,7 @@ namespace Burntime.Classic.Logic.Generation
             AddPlayer(game, Info, gamdat, settings);
 
             // set main map
-            game.World.Map = container.Create<Map>(new object[] { "classicmap@burntime:mat_000.raw" });
+            game.World.Map = container.Create<Map>(new object[] { "maps/mat_000.burnmap" });
             game.World.Ways = container.Create<Ways>(new object[] { "burngfxways@gam.dat" });
 
             // set constructions
