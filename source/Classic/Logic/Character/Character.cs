@@ -697,7 +697,7 @@ namespace Burntime.Classic.Logic
 
                     if (rate > 0)
                     {
-                        health -= Location.Danger.HealthDecrease * elapsed;
+                        health -= Location.Danger.HealthDecrease * elapsed * rate;
                         if (IsDead)
                         {
                             Die();
