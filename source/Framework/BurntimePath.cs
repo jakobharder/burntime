@@ -96,11 +96,11 @@ namespace Burntime.Common
         {
             if (!System.IO.Path.IsPathRooted(path))
             {
-                path = dir + "\\" + path;
+                path = dir + path;
             }
 
             // check if there is a pak
-            if (path.EndsWith(".pak", StringComparison.InvariantCultureIgnoreCase) && System.IO.File.Exists(path + ".pak"))
+            if (path.EndsWith(".pak", StringComparison.InvariantCultureIgnoreCase) && System.IO.File.Exists(path))
             {
                 return true;
             }
