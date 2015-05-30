@@ -1,0 +1,34 @@
+﻿OK-walkable view
+OK-walkable edit
+OK-walkable save
+OK-way edit
+OK-way day edit
+>> release 0.2
+-fill mode
+ single, fill, same
+-tile manage features (new set, move, delete, ...)
+
+fixes:
+OK-add entrance at click pos not left,top
+OK-toolbar (new, open, save)
+OK-tile/entrance mode in menu
+OK-license
+OK-walkable edit: mouse leave > hide cursor
+OK-show/hide for entrance/ways on other views
+OK-walkable burngfx view
+OK-separate entrance and way modes
+OK-prefere entrance before way in selection
+OK-bug:move entrance does select way
+OK-way remove
+OK-check open dialog, walkable click
+OK-walkable edit mouse move
+OK-walkable edit: do not change save flag
+OK-edit ways: save flag
+OK-do not add entrance above other
+OK-do not add waypoint above other (move mode)
+OK-bug:file>save 2 times in a row will crash
+-tile max check
+-way point remove
+-save view options
+-do not save mask.txt for classic tiles if mask hasnt changed
+-resize: change waypoints

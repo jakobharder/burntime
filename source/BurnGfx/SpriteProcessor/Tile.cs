@@ -82,38 +82,37 @@ namespace Burntime.Data.BurnGfx
             //Sprite = SpriteManager.AddSprite(Stream.Name + "?" + id.ToString(), this);
         }
 
-        //public void Render(IntPtr pRender)
-        //{
-        //    unsafe
-        //    {
-        //        ColorTable table = BurnGfxData.Instance.GetMapColorTable(mapId);
+        public void Render(IntPtr pRender)
+        {
+            unsafe
+            {
+                ColorTable table = BurnGfxData.Instance.GetMapColorTable(mapId);
 
-        //        PixelColor* ptr = (PixelColor*)pRender;
-        //        int pos = 0;
-        //        int nextstep = 0;
+                PixelColor* ptr = (PixelColor*)pRender;
+                int pos = 0;
+                int nextstep = 0;
 
-        //        for (int i = 0; i < Width * Height; i++)
-        //        {
-        //            byte fileData = data[i];
+                for (int i = 0; i < Width * Height; i++)
+                {
+                    byte fileData = data[i];
 
-        //            int x = pos % Width;
-        //            int y = (pos - x) / Width;
+                    int x = pos % Width;
+                    int y = (pos - x) / Width;
 
-        //            ptr[(x + y * Width)] = table.GetColor(fileData);
+                    ptr[(x + y * Width)] = table.GetColor(fileData);
 
-        //            pos += 4;
-        //            nextstep += 4;
+                    pos += 4;
+                    nextstep += 4;
 
-        //            if (nextstep >= Width * Height)
-        //            {
-        //                pos -= Width * Height;
-        //                pos++;
-        //                nextstep = 0;
-        //            }
-        //        }
-
-        //    }
-        //}
+                    if (nextstep >= Width * Height)
+                    {
+                        pos -= Width * Height;
+                        pos++;
+                        nextstep = 0;
+                    }
+                }
+            }
+        }
 
         public void Render(System.IO.Stream s, int stride)
         {
