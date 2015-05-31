@@ -81,9 +81,9 @@ namespace MapEditor
             TileSets.Add(classicSet);
 
             String path = "tiles";
-            String[] sets = new string[] { };
-            if (Directory.Exists(path))
-                sets = Directory.GetDirectories(path);
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path);
+            String[] sets = Directory.GetDirectories(path);
 
             foreach (String set in sets)
             {

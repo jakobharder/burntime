@@ -507,6 +507,7 @@ namespace MapEditor
                     }
                     else
                     {
+#warning // crashes if tile set was removed
                         tiles[x, y] = TileSets[indices2[indices[set]]].Find(subset, id);
                     }
                 }

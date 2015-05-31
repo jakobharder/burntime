@@ -256,6 +256,14 @@ namespace MapEditor
                 }
             }
 
+            // add another tab "more" explaining tiles location
+            editTabs.TabPages.Add("more");
+            Label text = new Label();
+            text.Location = new Point(8, 8);
+            text.Text = "Add more tiles:\n- create a new folder under \"tiles\"\n - store tiles in format \"setname/000_00.png\"";
+            text.AutoSize = true;
+            editTabs.TabPages[editTabs.TabPages.Count - 1].Controls.Add(text);
+
             tilePages = new TabPage[editTabs.TabPages.Count];
             for (int i = 0; i < editTabs.TabPages.Count; i++)
             {
@@ -369,7 +377,7 @@ namespace MapEditor
         {
             if (mapWindow.Mode == MapWindow.EditMode.Tile)
             {
-                if (editTabs.SelectedIndex != -1 && tileViews[editTabs.SelectedIndex].SelectedIndices.Count > 0)
+                if (editTabs.SelectedIndex != -1 && editTabs.SelectedIndex < tileViews.Count && tileViews[editTabs.SelectedIndex].SelectedIndices.Count > 0)
                 {
                     activeTile = allTiles[editTabs.SelectedIndex].Tiles[tileViews[editTabs.SelectedIndex].SelectedIndices[0]];
                 }
@@ -461,7 +469,7 @@ namespace MapEditor
             btnWayMode.Checked = false;
             editTabs.TabPages.Clear();
 
-            for (int i = 0; i < allTiles.Count; i++)
+            for (int i = 0; i < tilePages.Length; i++)
             {
                 //tabTiles.TabPages.Add(allTiles[i].Name);
                 //tileViews[i].Width = tabTiles.TabPages[tabTiles.TabPages.Count - 1].ClientSize.Width;
