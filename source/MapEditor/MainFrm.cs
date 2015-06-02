@@ -63,6 +63,13 @@ namespace MapEditor
             walkableEditPage = editTabs.TabPages[2];
 
             burntimePath = "";
+
+            if (!File.Exists("path.txt"))
+            {
+                var file = File.CreateText("path.txt");
+                file.Close();
+            }
+
             TextReader reader = new StreamReader("path.txt");
             burntimePath = reader.ReadLine();
             reader.Close();
