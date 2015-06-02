@@ -81,6 +81,8 @@ namespace Burntime.Classic.Logic.Generation
 
         public void CreateNewGame(NewGameInfo Info)
         {
+            new LogicFactory();
+
             // load game settings
             settings = new GameSettings("gamesettings.txt");
             settings.SetDifficulty(Info.Difficulty);
@@ -90,10 +92,11 @@ namespace Burntime.Classic.Logic.Generation
 
             // get root game object
             ClassicGame game = container.Root as ClassicGame;
-
+            
             // open gam.dat
-            Burntime.Data.BurnGfx.Save.SaveGame gamdat = new Burntime.Data.BurnGfx.Save.SaveGame();
-            gamdat.Open();
+            IGameObjectCreator creator = new ClassicBurnGfxCreator();
+            creator.Create(game);
+            var gamdat = LogicFactory.GetParameter<Burntime.Data.BurnGfx.Save.SaveGame>("gamdat");
 
             // create world object
             game.World = container.Create<ClassicWorld>();
@@ -120,9 +123,11 @@ namespace Burntime.Classic.Logic.Generation
             game.World.Respawn = container.Create<CharacterRespawn>(new object[] { settings.Respawn.NPC, settings.Respawn.Trader,
                 settings.Respawn.Mutant, settings.Respawn.Dog });
 
-            // create cities
-            LoadCities(game, gamdat);
-            LoadLocations(game);
+            // create locations
+            creator = new OriginalLocationCreator();
+            creator.Create(game);
+            creator = new LocationCreator();
+            creator.Create(game);
 
             // place npcs
             LoadNPCs(game, gamdat);
@@ -362,125 +367,6 @@ namespace Burntime.Classic.Logic.Generation
                 }
 
                 game.Productions.Add(p);
-            }
-        }
-
-        void LoadCities(ClassicGame game, Burntime.Data.BurnGfx.Save.SaveGame gamdat)
-        {
-            int i = 1;
-            foreach (Burntime.Data.BurnGfx.Save.Location city in gamdat.Locations)
-            {
-                Location loc = container.Create<Location>();
-                loc.Id = i - 1;
-                loc.Source.Water = city.WaterSource;
-                loc.Source.Reserve = city.Water;
-                loc.Source.Capacity = city.WaterCapacity;
-                loc.Production = city.Producing == -1 ? null : game.Productions[city.Producing];
-                loc.AvailableProducts = (int[])city.Production.Clone();
-                if (city.Danger != 0)
-                    loc.Danger = Danger.Instance((city.Danger == 3) ? "radiation" : "gas", city.DangerAmount);
-                loc.IsCity = city.IsCity;
-                loc.EntryPoint = city.EntryPoint;
-                loc.Ways = city.Ways;
-                loc.WayLengths = city.WayLengths;
-
-                loc.Map = container.Create<Map>(new object[] { "maps/mat_" + i.ToString("D3") + ".burnmap??" + i });
-
-                loc.Rooms = container.CreateLinkList<Room>();
-
-                for (int j = 0; j < loc.Map.Entrances.Length; j++)
-                {
-                    RoomType type = loc.Map.Entrances[j].RoomType;
-
-                    Room room = container.Create<Room>();
-                    room.IsWaterSource = type == RoomType.WaterSource;
-                    if (type != RoomType.Normal && type != RoomType.Rope && type != RoomType.WaterSource)
-                        room.Items.MaxCount = 0;
-                    else
-                        room.Items.MaxCount = room.IsWaterSource ? 8 : 32;
-                    room.EntryCondition.MaxDistanceOnMap = 15;
-                    if (loc.Map.Entrances[j].RoomType == RoomType.Rope)
-                    {
-                        room.EntryCondition.MaxDistanceOnMap = 75;
-                        room.EntryCondition.RequiredItem = game.ItemTypes["item_rope"];
-                    }
-                    room.EntryCondition.RegionOnMap = loc.Map.Entrances[j].Area;
-                    room.EntryCondition.HasRegionOnMap = true;
-                    room.TitleId = loc.Map.Entrances[j].TitleId;
-                    loc.Rooms += room;
-                }
-
-                game.World.Locations += loc;
-                i++;
-            }
-
-            for (int n = 0; n < game.World.Locations.Count; n++)
-            {
-                Burntime.Data.BurnGfx.Save.Location info = gamdat.Locations[n];
-                for (int k = 0; k < 4; k++)
-                {
-                    if (info.Neighbors[k] != -1)
-                        game.World.Locations[n].Neighbors.Add(game.World.Locations[info.Neighbors[k]]);
-                }
-            }
-        }
-
-        void LoadLocations(ClassicGame game)
-        {
-            // for the time being only add to existing locations
-            for (int i = game.World.Locations.Count + 1; i < game.World.Map.Entrances.Length + 1; i++)
-            {
-                Location loc = container.Create<Location>();
-                loc.Id = i - 1;
-                loc.Source.Water = 0; //city.WaterSource;
-                loc.Source.Reserve = 0; //city.Water;
-                loc.Source.Capacity = 0; //city.WaterCapacity;
-                loc.Production = null;// city.Producing == -1 ? null : game.Productions[city.Producing];
-                loc.AvailableProducts = new int[] { };// (int[])city.Production.Clone();
-                //if (city.Danger != 0)
-                //    loc.Danger = Danger.Instance((city.Danger == 3) ? "radiation" : "gas", city.DangerAmount);
-                //loc.IsCity = city.IsCity;
-                
-                ConfigFile cfg = new ConfigFile();
-                cfg.Open("maps/MAT_" + i.ToString("D3") + ".txt");
-
-                if (loc.EntryPoint != Vector2.Zero)
-                {
-                    loc.EntryPoint = cfg[""].GetVector2("entry_point");
-                }
-                
-                //loc.EntryPoint = city.EntryPoint;
-                //loc.Ways = city.Ways;
-                //loc.WayLengths = city.WayLengths;
-
-                loc.Map = container.Create<Map>(new object[] { "maps/mat_" + i.ToString("D3") + ".burnmap??" + i });
-
-                loc.Rooms = container.CreateLinkList<Room>();
-
-                for (int j = 0; j < loc.Map.Entrances.Length; j++)
-                {
-                    RoomType type = loc.Map.Entrances[j].RoomType;
-
-                    Room room = container.Create<Room>();
-                    room.IsWaterSource = type == RoomType.WaterSource;
-                    if (type != RoomType.Normal && type != RoomType.Rope && type != RoomType.WaterSource)
-                        room.Items.MaxCount = 0;
-                    else
-                        room.Items.MaxCount = room.IsWaterSource ? 8 : 32;
-                    room.EntryCondition.MaxDistanceOnMap = 15;
-                    if (loc.Map.Entrances[j].RoomType == RoomType.Rope)
-                    {
-                        room.EntryCondition.MaxDistanceOnMap = 75;
-                        room.EntryCondition.RequiredItem = game.ItemTypes["item_rope"];
-                    }
-                    room.EntryCondition.RegionOnMap = loc.Map.Entrances[j].Area;
-                    room.EntryCondition.HasRegionOnMap = true;
-                    room.TitleId = loc.Map.Entrances[j].TitleId;
-                    loc.Rooms += room;
-                }
-
-                game.World.Locations += loc;
-                i++;
             }
         }
 

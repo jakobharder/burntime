@@ -4,6 +4,10 @@ item_insert = 528x224
 item_insert = 487x404
 rooms = 6
 
+water_refresh = 3
+water_capacity = 6
+city = false
+
 [room0]
 type = normal
 title = burn?662

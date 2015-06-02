@@ -119,9 +119,14 @@
     <Compile Include="Logic\Character\Mutant.cs" />
     <Compile Include="Logic\Character\PlayerCharacter.cs" />
     <Compile Include="Logic\Data\ItemTypeData.cs" />
+    <Compile Include="Logic\Generation\ClassicBurnGfxCreator.cs" />
     <Compile Include="Logic\Generation\GameSettings.cs" />
     <Compile Include="Logic\Data\ItemTypesData.cs" />
     <Compile Include="Logic\Character\Group.cs" />
+    <Compile Include="Logic\Generation\IGameObjectCreator.cs" />
+    <Compile Include="Logic\Generation\LogicFactory.cs" />
+    <Compile Include="Logic\Generation\LocationCreator.cs" />
+    <Compile Include="Logic\Generation\OriginalLocationCreator.cs" />
     <Compile Include="Logic\Interaction\Condition.cs" />
     <Compile Include="Logic\Data\Constructions.cs" />
     <Compile Include="Logic\Interaction\Danger.cs" />

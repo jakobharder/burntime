@@ -138,6 +138,7 @@ namespace Burntime.Classic.Logic
         // for debug
         public string Title
         {
+#warning // incorrect string
             get { return ResourceManager.GetString("burn?" + this.Id); }
         }
 
