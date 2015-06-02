@@ -1,0 +1,36 @@
+entry_point = 222x169
+item_insert = 116x380
+item_insert = 528x224
+item_insert = 487x404
+rooms = 6
+
+[room0]
+type = normal
+title = burn?662
+image = raum_01.pac
+
+[room1]
+type = normal
+title = burn?662
+image = raum_01.pac
+
+[room2]
+type = normal
+title = burn?662
+image = raum_01.pac
+
+[room3]
+type = normal
+title = burn?665
+image = raum_05.pac
+
+[room4]
+type = normal
+title = burn?662
+image = raum_01.pac
+
+[room5]
+type = normal
+title = burn?662
+image = raum_01.pac
+

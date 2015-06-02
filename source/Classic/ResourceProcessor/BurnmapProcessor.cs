@@ -46,7 +46,9 @@ namespace Burntime.Deluxe.ResourceProcessor
                 map = int.Parse(id.Custom);
 
             IDataProcessor processor = ResourceManager.GetDataProcessor("burngfxmap");
-            MapData raw = processor.Process(System.IO.Path.GetFileNameWithoutExtension(id.File) + ".raw??" + map, ResourceManager) as MapData;
+            MapData raw = null;
+            if (FileSystem.ExistsFile(System.IO.Path.GetFileNameWithoutExtension(id.File) + ".raw"))
+                raw = processor.Process(System.IO.Path.GetFileNameWithoutExtension(id.File) + ".raw??" + map, ResourceManager) as MapData;
 
             MapData data = new MapData();
 
@@ -75,6 +77,8 @@ namespace Burntime.Deluxe.ResourceProcessor
             ConfigFile settings = new ConfigFile();
             if (FileSystem.ExistsFile(id.File.Replace(".burnmap", ".txt")))
                 settings.Open(FileSystem.GetFile(id.File.Replace(".burnmap", ".txt")));
+            else
+                settings = null;
 
             //Dictionary<String, int> indices2 = new Dictionary<string, int>();
             //for (int i = 0; i < TileSets.Count; i++)
@@ -184,7 +188,7 @@ namespace Burntime.Deluxe.ResourceProcessor
 
                 // take data from original Burntime as default
 #warning        // TODO this should be only temporary
-                if (raw.Entrances.Length > i)
+                if (raw != null && raw.Entrances.Length > i)
                     e = raw.Entrances[i];
 
 //                e.RoomType = Burntime.Data.BurnGfx.RoomType.Normal;
@@ -196,7 +200,8 @@ namespace Burntime.Deluxe.ResourceProcessor
 
 //#warning TODO insert proper images and titles
 //                e.Background = 0;// settings["room" + i].GetString("image");
-                e.TitleId = settings["room" + i].GetString("title");
+                if (settings != null)
+                    e.TitleId = settings["room" + i].GetString("title");
 //                //e.Key = settings["room" + i].GetString("key");
 
                 data.Entrances[i] = e;
