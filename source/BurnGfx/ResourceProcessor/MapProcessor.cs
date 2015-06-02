@@ -49,7 +49,7 @@ namespace Burntime.Data.BurnGfx.ResourceProcessor
                 else
                     data.Entrances[i].RoomType = RoomType.Scene;
                 data.Entrances[i].Background = map.Doors[i].RoomID;
-                data.Entrances[i].TitleId = 660 + map.Doors[i].RoomID;
+                data.Entrances[i].TitleId = "burn?" + (660 + map.Doors[i].RoomID);
             }
 
             data.Mask = new PathMask(data.Width * 4, data.Height * 4, 8);

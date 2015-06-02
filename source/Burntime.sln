@@ -19,6 +19,17 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PakConverter", "PakConverte
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MapEditor", "MapEditor\MapEditor.csproj", "{57D4100B-13FC-48DA-AE8E-606959AF6B95}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "resources", "resources", "{1C04537C-30C9-4D81-8A51-4B7D514D9CBA}"
+	ProjectSection(SolutionItems) = preProject
+		..\resources\ChangeLog.txt = ..\resources\ChangeLog.txt
+		..\resources\ReadMe.txt = ..\resources\ReadMe.txt
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "maps", "maps", "{C858236C-E64D-4CCD-B414-5C80B7A8BC7B}"
+	ProjectSection(SolutionItems) = preProject
+		..\resources\game\classic\maps\MAT_000.txt = ..\resources\game\classic\maps\MAT_000.txt
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -59,5 +70,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C858236C-E64D-4CCD-B414-5C80B7A8BC7B} = {1C04537C-30C9-4D81-8A51-4B7D514D9CBA}
 	EndGlobalSection
 EndGlobal

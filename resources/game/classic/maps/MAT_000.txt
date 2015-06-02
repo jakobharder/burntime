@@ -1,0 +1,199 @@
+entry_point = 0x0
+rooms = 39
+
+[room0]
+type = 
+title = burn?0
+image = 
+
+[room1]
+type = 
+title = burn?1
+image = 
+
+[room2]
+type = 
+title = burn?2
+image = 
+
+[room3]
+type = 
+title = burn?3
+image = 
+
+[room4]
+type = 
+title = burn?4
+image = 
+
+[room5]
+type = 
+title = burn?5
+image = 
+
+[room6]
+type = 
+title = burn?6
+image = 
+
+[room7]
+type = 
+title = burn?7
+image = 
+
+[room8]
+type = 
+title = burn?8
+image = 
+
+[room9]
+type = 
+title = burn?9
+image = 
+
+[room10]
+type = 
+title = burn?10
+image = 
+
+[room11]
+type = 
+title = burn?11
+image = 
+
+[room12]
+type = 
+title = burn?12
+image = 
+
+[room13]
+type = 
+title = burn?13
+image = 
+
+[room14]
+type = 
+title = burn?14
+image = 
+
+[room15]
+type = 
+title = burn?15
+image = 
+
+[room16]
+type = 
+title = burn?16
+image = 
+
+[room17]
+type = 
+title = burn?17
+image = 
+
+[room18]
+type = 
+title = burn?18
+image = 
+
+[room19]
+type = 
+title = burn?19
+image = 
+
+[room20]
+type = 
+title = burn?20
+image = 
+
+[room21]
+type = 
+title = burn?21
+image = 
+
+[room22]
+type = 
+title = burn?22
+image = 
+
+[room23]
+type = 
+title = burn?23
+image = 
+
+[room24]
+type = 
+title = burn?24
+image = 
+
+[room25]
+type = 
+title = burn?25
+image = 
+
+[room26]
+type = 
+title = burn?26
+image = 
+
+[room27]
+type = 
+title = burn?27
+image = 
+
+[room28]
+type = 
+title = burn?28
+image = 
+
+[room29]
+type = 
+title = burn?29
+image = 
+
+[room30]
+type = 
+title = burn?30
+image = 
+
+[room31]
+type = 
+title = burn?31
+image = 
+
+[room32]
+type = 
+title = burn?32
+image = 
+
+[room33]
+type = 
+title = burn?33
+image = 
+
+[room34]
+type = 
+title = burn?34
+image = 
+
+[room35]
+type = 
+title = burn?35
+image = 
+
+[room36]
+type = 
+title = burn?36
+image = 
+
+[room37]
+type = 
+title = newlocations?0
+image = 
+
+[room38]
+type = 
+title = newlocations?0
+image = 
+
+

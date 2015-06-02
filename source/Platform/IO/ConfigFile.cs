@@ -128,7 +128,7 @@ namespace Burntime.Platform.IO
         {
             get
             {
-                if (!sections.ContainsKey(name.ToLower()))
+                if (sections == null || !sections.ContainsKey(name.ToLower()))
                     return ConfigSection.NullSection;
 
                 return sections[name.ToLower()];

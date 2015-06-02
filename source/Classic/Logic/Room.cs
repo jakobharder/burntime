@@ -39,9 +39,9 @@ namespace Burntime.Classic.Logic
         StateLink<Condition> entryCondition;
         StateLink<ItemList> items;
         bool isWaterSource;
-        int titleId;
+        string titleId;
 
-        public int TitleId
+        public string TitleId
         {
             get { return titleId; }
             set { titleId = value; }
@@ -80,7 +80,7 @@ namespace Burntime.Classic.Logic
 
         public String GetTitle(ResourceManager resourceManager)
         {
-            return resourceManager.GetString("burn?" + titleId);
+            return resourceManager.GetString(titleId);
         }
     }
 }

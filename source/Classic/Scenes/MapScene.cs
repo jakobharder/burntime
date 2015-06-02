@@ -110,7 +110,7 @@ namespace Burntime.Classic
 
         public override bool OnKeyPress(char key)
         {
-            if (key == '9')
+            if (app.Settings["debug"].GetBool("enable_cheats") && key == '9')
             {
                 view.Player.Character.Food = 9;
                 view.Player.Character.Water = 5;

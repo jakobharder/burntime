@@ -497,7 +497,7 @@ namespace Burntime.Classic
         {
             BurntimeClassic classic = app as BurntimeClassic;
             Location loc = classic.Game.World.ActiveLocationObj;
-            return app.ResourceManager.GetString("burn?" + loc.Map.Entrances[Number].TitleId);
+            return app.ResourceManager.GetString(loc.Map.Entrances[Number].TitleId);
         }
 
         public bool OnClickEntrance(int Number, MouseButton Button)

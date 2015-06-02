@@ -356,7 +356,7 @@ namespace Burntime.Classic.GUI
                     if (game.MainMapView)
                     {
                         Burntime.Data.BurnGfx.MapEntrance e = game.World.Map.Entrances[entrance];
-                        game.World.ActiveLocationObj.Hover = new MapViewHoverInfo(app.ResourceManager.GetString("burn?" + entrance), e.Area.Center, new PixelColor(212, 212, 212));
+                        game.World.ActiveLocationObj.Hover = new MapViewHoverInfo(app.ResourceManager.GetString(e.TitleId), e.Area.Center, new PixelColor(212, 212, 212));
                     }
                     else if (entrance < game.World.ActiveLocationObj.Rooms.Count)
                     {

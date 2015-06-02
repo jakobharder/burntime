@@ -34,7 +34,7 @@ namespace Burntime.Data.BurnGfx
         public Rect Area;
         public RoomType RoomType;
         public int Background;
-        public int TitleId;
+        public string TitleId;
     }
 
     public class PathMask

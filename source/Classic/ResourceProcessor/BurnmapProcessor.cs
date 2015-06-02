@@ -72,8 +72,9 @@ namespace Burntime.Deluxe.ResourceProcessor
             for (int i = 0; i < count; i++)
                 indices.Add(reader.ReadString());
 
-            //ConfigFile settings = new ConfigFile();
-            //settings.Open(FileSystem.GetFile(id.File.Replace(".burnmap", ".txt")));
+            ConfigFile settings = new ConfigFile();
+            if (FileSystem.ExistsFile(id.File.Replace(".burnmap", ".txt")))
+                settings.Open(FileSystem.GetFile(id.File.Replace(".burnmap", ".txt")));
 
             //Dictionary<String, int> indices2 = new Dictionary<string, int>();
             //for (int i = 0; i < TileSets.Count; i++)
@@ -180,7 +181,11 @@ namespace Burntime.Deluxe.ResourceProcessor
             for (int i = 0; i < count; i++)
             {
                 MapEntrance e = new MapEntrance();
-                e = raw.Entrances[i];
+
+                // take data from original Burntime as default
+#warning        // TODO this should be only temporary
+                if (raw.Entrances.Length > i)
+                    e = raw.Entrances[i];
 
 //                e.RoomType = Burntime.Data.BurnGfx.RoomType.Normal;
 
@@ -191,7 +196,7 @@ namespace Burntime.Deluxe.ResourceProcessor
 
 //#warning TODO insert proper images and titles
 //                e.Background = 0;// settings["room" + i].GetString("image");
-//                e.TitleId = 0;//settings["room" + i].GetString("title");
+                e.TitleId = settings["room" + i].GetString("title");
 //                //e.Key = settings["room" + i].GetString("key");
 
                 data.Entrances[i] = e;
