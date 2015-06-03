@@ -28,6 +28,7 @@
 using System;
 using System.Collections.Generic;
 using Burntime.Platform;
+using Burntime.Platform.Resource;
 using Burntime.Platform.IO;
 using Burntime.Framework;
 using Burntime.Data.BurnGfx;
@@ -43,6 +44,7 @@ namespace Burntime.Classic.Logic.Generation
     {
         public void Create(ClassicGame game)
         {
+            var resources = LogicFactory.GetParameter<ResourceManager>("resource");
             var container = game.Container;
 
             // for the time being only add to existing locations
@@ -58,8 +60,7 @@ namespace Burntime.Classic.Logic.Generation
                 loc.Source.Capacity = cfg[""].GetInt("water_capacity");
                 loc.Production = null;// city.Producing == -1 ? null : game.Productions[city.Producing];
                 loc.AvailableProducts = new int[] { };// (int[])city.Production.Clone();
-                //if (city.Danger != 0)
-                //    loc.Danger = Danger.Instance((city.Danger == 3) ? "radiation" : "gas", city.DangerAmount);
+                loc.Danger = resources.GetData(cfg[""].GetString("danger")) as Danger;
                 loc.IsCity = cfg[""].GetBool("city");
                 loc.EntryPoint = cfg[""].GetVector2("entry_point");
 

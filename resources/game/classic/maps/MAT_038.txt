@@ -7,6 +7,7 @@ rooms = 6
 water_refresh = 3
 water_capacity = 6
 city = false
+danger = danger@radiation??10
 
 [room0]
 type = normal
