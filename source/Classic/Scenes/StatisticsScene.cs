@@ -48,7 +48,8 @@ namespace Burntime.Classic.Scenes
         int rats;
         int snakes;
         int locations;
-        int reqLocations;
+        int controlledCities;
+        int cities;
 
         int fighter;
         int doctor;
@@ -79,7 +80,8 @@ namespace Burntime.Classic.Scenes
             txt.AddArgument("|E", snakes);
             txt.AddArgument("|F", meat);
             txt.AddArgument("|A", locations);
-            txt.AddArgument("|I", reqLocations * 100 / MaxLocations);
+            txt.AddArgument("|I", controlledCities);
+            txt.AddArgument("|K", cities);
 
             for (int i = 0; i < 16; i++)
             {
@@ -120,23 +122,34 @@ namespace Burntime.Classic.Scenes
             technician = 0;
 
             locations = 0;
-            reqLocations = 0;
+            cities = 0;
+            controlledCities = 0;
 
             for (int i = 0; i < world.Locations.Count; i++)
             {
                 Location l = world.Locations[i];
-                if (l.Player == world.ActivePlayerObj)
+                // add controlled city
+                if (l.IsCity)
                 {
-                    locations ++;
-
+                    bool controlled = true;
                     foreach (Location n in l.Neighbors)
                     {
-                        if (n.IsCity)
+                        if (!n.IsCity && n.Player != world.ActivePlayerObj)
                         {
-                            reqLocations++;
+                            controlled = false;
                             break;
                         }
                     }
+
+                    cities++;
+                    if (controlled)
+                        controlledCities++;
+                }
+
+                // add player camp info to stats
+                if (l.Player == world.ActivePlayerObj)
+                {
+                    locations ++;
 
                     for (int j = 0; j < l.Rooms.Count; j++)
                     {

@@ -571,7 +571,7 @@ bei mir k”nnt Ihr lange suchen !}
 In}
 |J Tagen}
 haben Sie |A Orte besetzt}
-und kontrollieren damit |I% der zu erobernden Orte.}
+und kontrollieren damit |I von |K St„dten.}
 }
 Fr Sie arbeiten :}
 |B K„mpfer}
@@ -635,7 +635,7 @@ Was, Sie besitzen dieses..}
 Also dann, ab zum n„chsten H„ndler..}
 ..um es sofort zu kaufen.}
 brigens - In ein paar Monaten gibt..}
-..es natrlich wieder ein fasziniertes..}
+..es natrlich wieder ein faszinierendes..}
 MAX DESIGN-Spiel.}
 Halten Sie also jetzt schon die Augen..}
 ..danach offen. - Sie werden es sicher..}
@@ -662,10 +662,10 @@ Eingang}
 Eingang}
 Zelt}
 H”hle}
-Eingang}
-Eingang}
+Haus mit Wasser}
+Htte mit Wasser}
 Brunnen}
-H”hle}
+H”hle mit Wasser}
 Wasserstelle}
 H”hle}
 Eingang}

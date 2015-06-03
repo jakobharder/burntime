@@ -570,8 +570,8 @@ drinks like I do.}
 }
 In}
 |J days you have}
-captured |A locations}
-and now control |I% of the assigned area.}
+captured |A camps}
+and now control |I of |K cities.}
 }
 Your employees:}
 |B Fighters}

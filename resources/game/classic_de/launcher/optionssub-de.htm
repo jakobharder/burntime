@@ -5,8 +5,10 @@
    <form name="options">
     Auflösung: <select name="resolution">
      <!--<option value="windowmode@system=off">Vollbild-->
-     <option value="windowmode@system=on;resolution@system=768x576" selected="true">Fenster, 2x gestreckt
-     <option value="windowmode@system=on;resolution@system=1152x864">Fenster, 3x gestreckt
+     <option value="windowmode@system=on;resolution@system=1024x576" selected="true">Fenster, 2x (16:9)
+     <option value="windowmode@system=on;resolution@system=1536x864">Fenster, 3x (16:9)
+     <option value="windowmode@system=on;resolution@system=768x576" selected="true">Fenster, 2x
+     <option value="windowmode@system=on;resolution@system=1152x864">Fenster, 3x
     </select><br/>
     <input type="checkbox" value="music@system=on" not="music@system=off" depend="classic_music">Musik</input><br/>
     <input type="checkbox" value="highres_font@system=on" not="highres_font@system=off" id="highresfont">Hochaufgelöste Schrift</input><br/>
