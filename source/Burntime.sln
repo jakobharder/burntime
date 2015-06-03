@@ -23,7 +23,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "resources", "resources", "{
 	ProjectSection(SolutionItems) = preProject
 		..\resources\game\classic\lang\en\BURN.TXT = ..\resources\game\classic\lang\en\BURN.TXT
 		..\resources\ChangeLog.txt = ..\resources\ChangeLog.txt
+		..\resources\game\classic\items.txt = ..\resources\game\classic\items.txt
 		..\resources\ReadMe.txt = ..\resources\ReadMe.txt
+		..\resources\game\classic\trader.txt = ..\resources\game\classic\trader.txt
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "maps", "maps", "{C858236C-E64D-4CCD-B414-5C80B7A8BC7B}"

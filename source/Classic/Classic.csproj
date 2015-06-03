@@ -172,6 +172,7 @@
     <Compile Include="ResourceProcessor\ConstructionsProcessor.cs" />
     <Compile Include="ResourceProcessor\DangerProcessor.cs" />
     <Compile Include="ResourceProcessor\DangerProtectionProcessor.cs" />
+    <Compile Include="ResourceProcessor\WayProcessor.cs" />
     <Compile Include="Scenes\ChurchScene.cs" />
     <Compile Include="Scenes\DeathScene.cs" />
     <Compile Include="Scenes\DoctorScene.cs" />

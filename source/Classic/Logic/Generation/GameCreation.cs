@@ -92,7 +92,9 @@ namespace Burntime.Classic.Logic.Generation
 
             // get root game object
             ClassicGame game = container.Root as ClassicGame;
-            
+
+            LogicFactory.SetParameter("resource", app.ResourceManager);
+
             // open gam.dat
             IGameObjectCreator creator = new ClassicBurnGfxCreator();
             creator.Create(game);
@@ -110,7 +112,8 @@ namespace Burntime.Classic.Logic.Generation
 
             // set main map
             game.World.Map = container.Create<Map>(new object[] { "maps/mat_000.burnmap" });
-            game.World.Ways = container.Create<Ways>(new object[] { "burngfxways@gam.dat" });
+            LogicFactory.SetParameter("mainmap", game.World.Map);
+            game.World.Ways = container.Create<Ways>(new object[] { "ways@maps/mat_000-ways.txt" });
 
             // set constructions
             game.Constructions = (Constructions)app.ResourceManager.GetData("constructions@construction.txt");

@@ -1,0 +1,9 @@
+burngfx=yes
+burngfx_offset=0x0
+ways=0
+
+[ways]
+way0=4 54
+
+[images]
+way0=maps/ways/way0.png
