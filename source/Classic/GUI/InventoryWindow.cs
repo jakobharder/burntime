@@ -243,7 +243,7 @@ namespace Burntime.Classic.GUI
             txt.AddArgument("|D", activePage.Character.Food);
 
             txt.AddArgument("{attack}", (int)activePage.Character.AttackValue);
-            txt.AddArgument("{defence}", (int)activePage.Character.DefenseValue);
+            txt.AddArgument("{defense}", (int)activePage.Character.DefenseValue);
 
             int fontSpacing = 10;
 

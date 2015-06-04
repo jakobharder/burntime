@@ -165,6 +165,25 @@ namespace Burntime.Classic.Logic
             return item;
         }
 
+        public Item FindWater()
+        {
+            Item item = null;
+
+            for (int i = 0; i < Rooms.Count; i++)
+            {
+                for (int j = 0; j < Rooms[i].Items.Count; j++)
+                {
+                    if (Rooms[i].Items[j].WaterValue != 0 &&
+                        (item == null || Rooms[i].Items[j].WaterValue > item.WaterValue))
+                    {
+                        item = Rooms[i].Items[j];
+                    }
+                }
+            }
+
+            return item;
+        }
+
         public void RemoveItem(Item item)
         {
 

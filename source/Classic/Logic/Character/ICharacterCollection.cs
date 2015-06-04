@@ -40,6 +40,8 @@ namespace Burntime.Classic.Logic
 
         int Eat(Character leader, int foodValue);
         int Drink(Character leader, int waterValue);
+        Item FindFood(out IItemCollection owner);
+        Item FindWater();
 
         // item methods
         int GetFreeSlotCount();

@@ -590,7 +590,11 @@ namespace Burntime.Classic.Logic
                 else if (Food == 0)
                 {
                     IItemCollection owner;
+                    // search for food in rooms
                     Item item = Location.FindFood(out owner);
+                    // if not available then try the inventory
+                    if (item == null)
+                        item = group.FindFood(out owner);
                     if (item != null)
                     {
                         group.Eat(null, item.FoodValue);
@@ -598,8 +602,20 @@ namespace Burntime.Classic.Logic
                     }
                 }
 
-                //if (Water == 0)
                 Location.Source.Reserve = group.Drink(null, Location.Source.Reserve);
+                if (Water == 0)
+                {
+                    // search for stored water in rooms
+                    Item item = Location.FindWater();
+                    // if not available then try the inventory
+                    if (item == null)
+                        item = group.FindWater();
+                    if (item != null)
+                    {
+                        group.Drink(null, item.WaterValue);
+                        item.Type = item.Type.Empty;
+                    }
+                }
             }
 
             if (Food == 0)
@@ -808,6 +824,40 @@ namespace Burntime.Classic.Logic
             Water += drink;
 
             return waterValue - drink;
+        }
+
+        Item ICharacterCollection.FindFood(out IItemCollection owner)
+        {
+            Item item = null;
+            owner = null;
+
+            for (int j = 0; j < Items.Count; j++)
+            {
+                if (Items[j].FoodValue != 0 &&
+                    (item == null || Items[j].FoodValue > item.FoodValue))
+                {
+                    item = Items[j];
+                    owner = Items;
+                }
+            }
+
+            return item;
+        }
+
+        Item ICharacterCollection.FindWater()
+        {
+            Item item = null;
+
+            for (int j = 0; j < Items.Count; j++)
+            {
+                if (Items[j].WaterValue != 0 &&
+                    (item == null || Items[j].WaterValue > item.WaterValue))
+                {
+                    item = Items[j];
+                }
+            }
+
+            return item;
         }
 
         int ICharacterCollection.GetFreeSlotCount()

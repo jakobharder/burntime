@@ -98,6 +98,6 @@ Mavados Keks
 
 
 Angriff {attack}}
-Vert. {defence}}
+Vert. {defense}}
 % Gas 
 % Rad. 

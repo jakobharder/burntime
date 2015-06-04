@@ -98,6 +98,6 @@ mavado's cookie
 
 
 Attack {attack}}
-Def. {defence}}
+Def. {defense}}
 % gas 
 % rad. 
