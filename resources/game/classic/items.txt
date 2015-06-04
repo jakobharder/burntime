@@ -293,7 +293,7 @@ class=special protection
 title=@newburn?4
 text=@newburn?4
 image=gfx/paper_helmet.png
-protection=protection@radiation??50 protection@gas??70
+protection=protection@radiation??20 protection@gas??20
 value=8
 
 [item_advice]

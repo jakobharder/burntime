@@ -40,10 +40,10 @@ class=technician
 items=item_unloaded_rifle item_ammunition
 dialog=512
 main_items=item_unloaded_rifle
-class=mercenary
+class=mercenary boss technician doctor
 
 [item_loaded_pistol]
 items=item_unloaded_pistol item_ammunition
 dialog=512
 main_items=item_unloaded_pistol
-class=mercenary
+class=mercenary boss technician doctor

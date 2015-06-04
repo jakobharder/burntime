@@ -95,7 +95,7 @@ namespace Burntime.Classic.GUI
         {
             side = (Side == InventorySide.Right);
 
-            back = side ? "inv.raw?2" : "inv.raw?0";
+            back = side ? "inv.raw?2" : "gfx/inventory_left.png";
 
             basePos = new Vector2(15, 15);
             Size = new Vector2(back.Width, back.Height) + basePos;
@@ -107,8 +107,8 @@ namespace Burntime.Classic.GUI
 
             grid = new ItemGridWindow(App);
             grid.LockPositions = true;
-            grid.Position = new Vector2(side ? 9 : 19, 72) + basePos;
-            grid.Spacing = new Vector2(4, 16);
+            grid.Position = new Vector2(side ? 9 : 19, side ? 72 : 83) + basePos;
+            grid.Spacing = new Vector2(4, side ? 16 : 5);
             grid.Grid = new Vector2(3, 2);
             grid.LeftClickItemEvent += OnLeftClickItem;
             grid.RightClickItemEvent += OnRightClickItem;
@@ -242,23 +242,48 @@ namespace Burntime.Classic.GUI
             txt.AddArgument("|C", activePage.Character.Water);
             txt.AddArgument("|D", activePage.Character.Food);
 
+            txt.AddArgument("{attack}", (int)activePage.Character.AttackValue);
+            txt.AddArgument("{defence}", (int)activePage.Character.DefenseValue);
+
+            int fontSpacing = 10;
 
             Vector2 textPos = new Vector2();
             textPos.x = basePos.x + (side ? 11 : 73);
             textPos.y = basePos.y + 11;
             font.DrawText(Target, textPos, txt[40 + (int)activePage.Character.Class], TextAlignment.Left, VerticalTextAlignment.Top);
-            textPos.y += 11;
+            textPos.y += fontSpacing;
             font.DrawText(Target, textPos, txt[380], TextAlignment.Left, VerticalTextAlignment.Top);
-            textPos.y += 11;
+            textPos.y += fontSpacing;
             font.DrawText(Target, textPos, txt[381], TextAlignment.Left, VerticalTextAlignment.Top);
-            textPos.y += 11;
+            textPos.y += fontSpacing;
 
             if (activePage.Character.Class != CharClass.Trader)
             {
                 font.DrawText(Target, textPos, txt[403], TextAlignment.Left, VerticalTextAlignment.Top);
-                textPos.y += 11;
+                textPos.y += fontSpacing;
                 font.DrawText(Target, textPos, txt[402], TextAlignment.Left, VerticalTextAlignment.Top);
-                textPos.y += 11;
+                textPos.y += fontSpacing;
+
+                font.DrawText(Target, textPos, txt.Get("newburn?100"), TextAlignment.Left, VerticalTextAlignment.Top);
+                textPos.x = basePos.x + 20;
+                font.DrawText(Target, textPos, txt.Get("newburn?99"), TextAlignment.Left, VerticalTextAlignment.Top);
+                textPos.y += fontSpacing;
+
+                if (activePage.Character.Protection != null)
+                {
+                    string text = "";
+                    foreach (var protection in activePage.Character.Protection.Type.Protection)
+                    {
+                        var p = protection.Object;
+                        text += (int)(System.Math.Round(p.Rate * 100));
+                        if (p.Type == "gas")
+                            text += app.ResourceManager.GetString("newburn?101");
+                        else
+                            text += app.ResourceManager.GetString("newburn?102");
+                    }
+                    font.DrawText(Target, textPos, text, TextAlignment.Left, VerticalTextAlignment.Top);
+                }
+                textPos.y += fontSpacing;
             }
 
             pageName = "";

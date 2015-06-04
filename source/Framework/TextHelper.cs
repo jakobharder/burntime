@@ -42,9 +42,14 @@ namespace Burntime.Framework
             listArguments.Clear();
         }
 
-        public String Get(int Index)
+        public String Get(int index)
         {
-            String str = resMan.GetString(file + "?" + Index);
+            return Get(file + "?" + index);
+        }
+
+        public String Get(string id)
+        {
+            String str = resMan.GetString(id);
             foreach (Replacement r in listArguments)
             {
                 str = str.Replace(r.Argument, r.Value);

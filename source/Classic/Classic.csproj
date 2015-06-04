@@ -75,16 +75,6 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Framework, Version=0.0.10.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\bin\burntime\system\Framework.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Platform, Version=0.0.10.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\bin\burntime\system\Platform.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
@@ -95,6 +85,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AI\GetWaterGoal.cs" />
+    <Compile Include="AI\IAiGoal.cs" />
     <Compile Include="AI\AiItemPool.cs" />
     <Compile Include="AI\AiPlayer.cs" />
     <Compile Include="AI\AiState.cs" />
@@ -209,6 +201,16 @@
       <Project>{C66A2C4B-CE17-4DDE-B7AF-14D8C4B4F7E1}</Project>
       <Name>BurnGfx</Name>
       <Private>True</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\Framework\Framework.csproj">
+      <Project>{d7f6b52a-1e43-486e-815e-394ddddcd534}</Project>
+      <Name>Framework</Name>
+      <Private>False</Private>
+    </ProjectReference>
+    <ProjectReference Include="..\Platform\Platform.csproj">
+      <Project>{26df8ca5-a349-4e35-a0b9-5048af6c20c3}</Project>
+      <Name>Platform</Name>
+      <Private>False</Private>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
