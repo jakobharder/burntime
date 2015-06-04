@@ -286,7 +286,7 @@ namespace Burntime.Classic.Scenes
             else if (item.Type.Full != null)
             {
                 // fill up empty bottles
-                if (classic.InventoryRoom.IsWaterSource)
+                if (classic.InventoryRoom != null && classic.InventoryRoom.IsWaterSource)
                 {
                     if (item.Type.Full != null && item.Type.Full.WaterValue != 0)
                     {
