@@ -43,15 +43,31 @@ namespace Burntime.Platform.Music
             set { enabled = value; }
         }
 
+        bool isMuted = false;
+        public bool IsMuted
+        {
+            get { return isMuted; }
+            set 
+            { 
+                isMuted = value;
+                Volume = volume;
+            }
+        }
+
+        float volume;
         public float Volume
         {
             get { if (music == null) return 0; return music.Volume * 0.01f; }
             set
             {
+                volume = value;
                 if (music != null)
                 {
                     int old = music.Volume;
-                    music.Volume = (int)(value * 100);
+                    if (!isMuted)
+                        music.Volume = (int)(value * 100);
+                    else
+                        music.Volume = 0;
                     if (old != music.Volume)
                         music.UpdateVolume();
                 }

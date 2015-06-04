@@ -71,6 +71,8 @@ namespace Burntime.Classic.Scenes
         float time;
         int activeAni;
 
+        float delayedMusicStart;
+
         public IntroScene(Module App)
             : base(App)
         {
@@ -134,8 +136,11 @@ namespace Burntime.Classic.Scenes
         {
             if (oldSpeed == 0)
                 oldSpeed = app.Engine.BlendSpeed;
+            app.Engine.Music.Volume = 0;
             app.Engine.BlendSpeed = 0.9f;
             app.Engine.MusicBlend = false;
+            app.Engine.Music.IsMuted = true;
+            delayedMusicStart = 2.0f;
             index = 0;
             scroll = 0;
             time = 0;
@@ -166,6 +171,14 @@ namespace Burntime.Classic.Scenes
 
         public override void OnUpdate(float elapsed)
         {
+            if (delayedMusicStart >= 0)
+            {
+#warning // dirty hack: mute the music for ~2 seconds to get rid of the starting sound/distortion that is part of the original music file
+                delayedMusicStart -= elapsed;
+                if (delayedMusicStart <= 0)
+                    app.Engine.Music.IsMuted = false;
+            }
+
             timeout.Update(elapsed);
             scroll += elapsed * pages[index].Scrolling;
             view.ScrollPosition = new Vector2((int)(-scroll + 0.5f), 0);
