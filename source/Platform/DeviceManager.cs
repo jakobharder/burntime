@@ -48,6 +48,10 @@ namespace Burntime.Platform
     {
         Vector2 Position { get; }
         Nullable<Rect> Boundings { get; set; }
+
+        /// <summary>
+        /// thread-safe
+        /// </summary>
         IEnumerable<MouseClickInfo> Clicks { get; }
     }
 
@@ -98,9 +102,18 @@ namespace Burntime.Platform
             }
         }
 
+        /// <summary>
+        /// returns a copy, thread-safe
+        /// </summary>
         public IEnumerable<MouseClickInfo> Clicks
         {
-            get { return clicks; }
+            get 
+            {
+                IEnumerable<MouseClickInfo> copy;
+                lock (this)
+                    copy = clicks.ToArray();
+                return copy; 
+            }
         }
 
         public Nullable<Rect> Boundings
@@ -109,14 +122,23 @@ namespace Burntime.Platform
             set { boundings = value; }
         }
 
+        /// <summary>
+        /// thread-safe
+        /// </summary>
+        /// <param name="click"></param>
         public void AddClick(MouseClickInfo click)
         {
-            clicks.Add(click);
+            lock (this)
+                clicks.Add(click);
         }
 
+        /// <summary>
+        /// thread-safe
+        /// </summary>
         public void ClearClicks()
         {
-            clicks.Clear();
+            lock (this)
+                clicks.Clear();
         }
     }
 
@@ -166,10 +188,38 @@ namespace Burntime.Platform
 
     public class Keyboard
     {
-        internal List<Key> keys = new List<Key>();
+        List<Key> keys = new List<Key>();
+        /// <summary>
+        /// returns a copy, thread-safe
+        /// </summary>
         public Key[] Keys
         {
-            get { return keys.ToArray(); }
+            get 
+            {
+                Key[] copy;
+                lock (this)
+                    copy =  keys.ToArray();
+                return copy;
+            }
+        }
+
+        /// <summary>
+        /// thread-safe
+        /// </summary>
+        /// <param name="key"></param>
+        public void AddKey(Key key)
+        {
+            lock (this)
+                keys.Add(key);
+        }
+
+        /// <summary>
+        /// thread-safe
+        /// </summary>
+        public void ClearKeys()
+        {
+            lock (this)
+                keys.Clear();
         }
     }
 
@@ -225,18 +275,18 @@ namespace Burntime.Platform
 
         internal void KeyPress(char key)
         {
-            keyboard.keys.Add(new Key(key));
+            keyboard.AddKey(new Key(key));
         }
 
         internal void VKeyPress(Keys key)
         {
-            keyboard.keys.Add(new Key(key));
+            keyboard.AddKey(new Key(key));
         }
 
         public void Refresh()
         {
-            mouse.ClearClicks(); // TODO: critical section
-            keyboard.keys.Clear();
+            mouse.ClearClicks();
+            keyboard.ClearKeys();
         }
     }
 }
