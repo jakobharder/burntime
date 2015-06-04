@@ -94,8 +94,12 @@ namespace Burntime.Classic.Scenes
 
                 inventory.OnSelectPage();
 
-                grid.Clear();
-                grid.Add(right);
+                // grid is not available if inventory is shown while on main map
+                if (grid != null)
+                {
+                    grid.Clear();
+                    grid.Add(right);
+                }
             }
         }
 

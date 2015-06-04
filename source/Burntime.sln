@@ -21,7 +21,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MapEditor", "MapEditor\MapE
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "resources", "resources", "{1C04537C-30C9-4D81-8A51-4B7D514D9CBA}"
 	ProjectSection(SolutionItems) = preProject
-		..\resources\game\classic\lang\en\BURN.TXT = ..\resources\game\classic\lang\en\BURN.TXT
 		..\resources\ChangeLog.txt = ..\resources\ChangeLog.txt
 		..\resources\game\classic\construction.txt = ..\resources\game\classic\construction.txt
 		..\resources\game\classic\gamesettings.txt = ..\resources\game\classic\gamesettings.txt
@@ -42,6 +41,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "de", "de", "{BA3A19CA-00BB-
 	ProjectSection(SolutionItems) = preProject
 		..\resources\game\classic_de\lang\de\BURN.TXT = ..\resources\game\classic_de\lang\de\BURN.TXT
 		..\resources\game\classic_de\lang\de\newburn.txt = ..\resources\game\classic_de\lang\de\newburn.txt
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "en", "en", "{9EBE441F-3F89-44D4-B8A6-E0A4761DD32B}"
+	ProjectSection(SolutionItems) = preProject
+		..\resources\game\classic\lang\en\BURN.TXT = ..\resources\game\classic\lang\en\BURN.TXT
+		..\resources\game\classic\lang\en\newburn.txt = ..\resources\game\classic\lang\en\newburn.txt
 	EndProjectSection
 EndProject
 Global
@@ -89,5 +94,6 @@ Global
 		{C858236C-E64D-4CCD-B414-5C80B7A8BC7B} = {1C04537C-30C9-4D81-8A51-4B7D514D9CBA}
 		{486630E5-05BD-494D-8C4B-D87D1951634F} = {1C04537C-30C9-4D81-8A51-4B7D514D9CBA}
 		{BA3A19CA-00BB-43E9-88EB-6DDC660C5E88} = {486630E5-05BD-494D-8C4B-D87D1951634F}
+		{9EBE441F-3F89-44D4-B8A6-E0A4761DD32B} = {486630E5-05BD-494D-8C4B-D87D1951634F}
 	EndGlobalSection
 EndGlobal
