@@ -11,17 +11,17 @@ danger = danger@radiation??10
 
 [room0]
 type = normal
-title = burn?662
+title = burn?661
 image = raum_01.pac
 
 [room1]
 type = normal
-title = burn?662
+title = burn?661
 image = raum_01.pac
 
 [room2]
 type = normal
-title = burn?662
+title = burn?661
 image = raum_01.pac
 
 [room3]
@@ -31,11 +31,11 @@ image = raum_05.pac
 
 [room4]
 type = normal
-title = burn?662
+title = burn?661
 image = raum_01.pac
 
 [room5]
 type = normal
-title = burn?662
+title = burn?661
 image = raum_01.pac
 

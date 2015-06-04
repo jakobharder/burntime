@@ -67,7 +67,7 @@ namespace Burntime.Classic.Logic.Generation
                 //loc.Ways = city.Ways;
                 //loc.WayLengths = city.WayLengths;
 
-                loc.Map = container.Create<Map>(new object[] { "maps/mat_" + i.ToString("D3") + ".burnmap??" + i });
+                loc.Map = container.Create<Map>(new object[] { "maps/mat_" + i.ToString("D3") + ".burnmap??4" });
 
                 loc.Rooms = container.CreateLinkList<Room>();
 
