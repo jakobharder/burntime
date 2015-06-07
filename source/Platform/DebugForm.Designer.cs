@@ -43,34 +43,40 @@
             this.dataGrid.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.Var,
             this.Value});
-            this.dataGrid.Location = new System.Drawing.Point(8, 8);
+            this.dataGrid.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dataGrid.Location = new System.Drawing.Point(0, 0);
+            this.dataGrid.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.dataGrid.MultiSelect = false;
             this.dataGrid.Name = "dataGrid";
             this.dataGrid.ReadOnly = true;
             this.dataGrid.RowHeadersVisible = false;
             this.dataGrid.RowTemplate.Height = 21;
-            this.dataGrid.Size = new System.Drawing.Size(376, 184);
+            this.dataGrid.Size = new System.Drawing.Size(1543, 1003);
             this.dataGrid.TabIndex = 0;
             // 
             // Var
             // 
+            this.Var.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.AllCells;
             this.Var.HeaderText = "Name";
             this.Var.Name = "Var";
             this.Var.ReadOnly = true;
+            this.Var.Width = 5;
             // 
             // Value
             // 
+            this.Value.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
             this.Value.HeaderText = "Value";
             this.Value.Name = "Value";
-            this.Var.ReadOnly = true;
+            this.Value.ReadOnly = true;
             // 
             // DebugForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 25F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(391, 198);
+            this.ClientSize = new System.Drawing.Size(1543, 1003);
             this.ControlBox = false;
             this.Controls.Add(this.dataGrid);
+            this.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "DebugForm";

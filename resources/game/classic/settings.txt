@@ -3,6 +3,7 @@ resolution	= 320x200
 windowmode 	= off
 music		= on
 newgfx		= on
+highres_font    = on
 
 [game]
 pathfinding_cycles 	= 50		' cycles per second

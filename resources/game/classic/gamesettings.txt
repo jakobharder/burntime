@@ -20,7 +20,7 @@ trader_respawn			= 20
 mutant_respawn			= 30
 dog_respawn			= 30
 ai_camp_interval		= 3 6 ' creates every 3 - 6 turns
-ai_camp_max_advance		= 0 ' creates not more camps than human player has
+ai_camp_max_advance		= 1 ' creates not more camps than human player has
 
 [1] ' difficulty normal
 start_locations 			= 9 12 15 23 25 26 28 30 34 36

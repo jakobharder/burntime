@@ -186,7 +186,26 @@ namespace Burntime.Classic.AI
                 // refresh health, food and water
                 RefreshGroupAttributes();
             }
+
+            DebugOutput();
         }
+
+        #region debug
+        private void DebugOutput()
+        {
+            var ch = player.Object.Character;
+            DebugLog("", player.Object.IsDead ? "dead" : ("in " + ch.Location.Title));
+            DebugLog(" mode", mode.ToString());
+            DebugLog(" values", "health=" + ch.Health + " food=" + ch.Food + " water=" + ch.Water);
+            DebugLog(" npcs", "count=" + player.Object.Group.Count);
+            DebugLog(" items", ch.Items.ToString());
+        }
+
+        private void DebugLog(string key, string info)
+        {
+            Burntime.Platform.Debug.SetInfo("AI " + player.Object.Character.Name + key, info);
+        }
+        #endregion
 
         #region turn modes
         private bool TurnModeNone()

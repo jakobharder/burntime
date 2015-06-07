@@ -138,5 +138,14 @@ namespace Burntime.Classic
         {
             return new ItemCollectionEnumerator(this);
         }
+
+        // for debug
+        public override string ToString()
+        {
+            string text = "[" + list.Count + "]";
+            foreach (var item in this)
+                text += " \"" + item.ToString() + "\"";
+            return text;
+        }
     }
 }
