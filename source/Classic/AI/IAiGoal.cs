@@ -35,6 +35,13 @@ namespace Burntime.Classic.AI
     {
         bool InProgress { get; }
 
-        float CalculateImportance();
+        /// <summary>
+        /// Score in days
+        /// </summary>
+        /// <returns></returns>
+        float CalculateScore();
+
+        void AlwaysDo();
+        void Act();
     }
 }

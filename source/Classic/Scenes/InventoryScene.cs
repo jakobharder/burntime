@@ -218,16 +218,7 @@ namespace Burntime.Classic.Scenes
 
                 // fill up empty bottles
                 if (classic.InventoryRoom.IsWaterSource)
-                {
-                    if (item.Type.Full != null && item.Type.Full.WaterValue != 0)
-                    {
-                        if (classic.Game.World.ActiveLocationObj.Source.Reserve >= item.Type.Full.WaterValue)
-                        {
-                            classic.Game.World.ActiveLocationObj.Source.Reserve -= item.Type.Full.WaterValue;
-                            item.MakeFull();
-                        }
-                    }
-                }
+                    classic.Game.World.ActiveLocationObj.Source.RefillItem(item);
 
                 grid.Add(item);
                 inventory.Grid.Remove(item);

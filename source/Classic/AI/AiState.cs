@@ -187,11 +187,17 @@ namespace Burntime.Classic.AI
                 RefreshGroupAttributes();
             }
 
-            DebugOutput();
+            List<IAiGoal> goals = new List<IAiGoal>();
+            goals.Add(new WaterGoal(player));
+
+            foreach (var goal in goals)
+                goal.AlwaysDo();
+
+            DebugOutput(goals);
         }
 
         #region debug
-        private void DebugOutput()
+        private void DebugOutput(IEnumerable<IAiGoal> goals)
         {
             var ch = player.Object.Character;
             DebugLog("", player.Object.IsDead ? "dead" : ("in " + ch.Location.Title));
@@ -199,6 +205,9 @@ namespace Burntime.Classic.AI
             DebugLog(" values", "health=" + ch.Health + " food=" + ch.Food + " water=" + ch.Water);
             DebugLog(" npcs", "count=" + player.Object.Group.Count);
             DebugLog(" items", ch.Items.ToString());
+
+            foreach (var goal in goals)
+                DebugLog(" " + goal.ToString(), "score=" + goal.CalculateScore());
         }
 
         private void DebugLog(string key, string info)

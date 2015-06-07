@@ -34,7 +34,7 @@ using Burntime.Framework.States;
 namespace Burntime.Classic.AI
 {
     [Serializable]
-    class GetWaterGoal : StateObject, IAiGoal 
+    class WaterGoal : /*StateObject, */IAiGoal 
     {
         bool inProgress = false;
         public bool InProgress { get { return inProgress; } }
@@ -42,30 +42,39 @@ namespace Burntime.Classic.AI
         StateLink<Player> player;
         protected Player Player { get { return player; } }
 
-        public GetWaterGoal(Player player)
+        public WaterGoal(Player player)
         {
             this.player = player;
         }
 
-        public float CalculateImportance()
+        public float CalculateScore()
         {
             var ch = Player.Character;
-            
-            // next water source
-            int daysToNextFreeWaterSource = 0;
-            if (Player.Location.IsCity || (Player.Location.Player != null && Player.Location.Player != Player))
-            {
-                // find next location
-            }
-            if (Player.Location.IsCity)
-            {
-                // AI will cheat here
-                daysToNextFreeWaterSource = 0;
-            }
+            var group = Player.Group;
+            float score = 0;
 
-            // days stock for the group
+            // water reserves in the group
+            score += (group.GetWaterReserve() + group.GetWaterInInventory()) / (float)group.Count;
 
-            return 0;
+            return score;
+        }
+
+        public void AlwaysDo()
+        {
+            // refresh from free sources
+            if (Player.Location.Source != null)
+                Player.Location.Source.Reserve = Player.Group.Drink(Player.Character, Player.Location.Source.Reserve);
+
+            // refill empty items in inventory
+            foreach (var item in Player.Group.GetEmptyWaterItems())
+                Player.Location.Source.RefillItem(item);
+
+            // put still empty items into own camps storage
+        }
+
+        public void Act()
+        {
+            //
         }
     }
 }

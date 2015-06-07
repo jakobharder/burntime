@@ -85,7 +85,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AI\GetWaterGoal.cs" />
+    <Compile Include="AI\WaterGoal.cs" />
     <Compile Include="AI\IAiGoal.cs" />
     <Compile Include="AI\AiItemPool.cs" />
     <Compile Include="AI\AiPlayer.cs" />

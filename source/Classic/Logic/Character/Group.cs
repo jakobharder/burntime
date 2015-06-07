@@ -27,6 +27,7 @@
 
 using System;
 using System.Collections;
+using System.Collections.Generic;
 
 using Burntime.Framework.States;
 using Burntime.Platform;
@@ -67,6 +68,7 @@ namespace Burntime.Classic.Logic
             characterList = container.CreateLinkList<Character>();
         }
 
+        #region add, insert, remove & contains
         public void Add(Character character)
         {
             characterList.Add(character);
@@ -86,7 +88,9 @@ namespace Burntime.Classic.Logic
         {
             return characterList.Contains(character);
         }
+        #endregion
 
+        #region eat, drink & heal actions
         public int Eat(Character leader, int eatValue)
         {
             if (characterList.Count == 0)
@@ -143,6 +147,34 @@ namespace Burntime.Classic.Logic
             return drinkValue;
         }
 
+        public void Heal(Character leader, int healValue)
+        {
+            if (characterList.Count == 0)
+                return;
+
+            for (int step = 0; step < 100 && healValue > 0; step++)
+            {
+                foreach (Character ch in characterList)
+                {
+                    // skip if out of range
+                    if (IsRangeFiltered && leader != null &&
+                        (leader.Position - ch.Position).Length >= RangeFilterValue)
+                        continue;
+
+                    if (ch.Health == step)
+                    {
+                        healValue--;
+                        ch.Health++;
+
+                        if (healValue == 0)
+                            break;
+                    }
+                }
+            }
+        }
+        #endregion
+
+        #region find and move items
         public int GetFreeSlotCount()
         {
             int count = 0;
@@ -159,32 +191,6 @@ namespace Burntime.Classic.Logic
         {
             foreach (Character ch in characterList)
                 ch.Items.Move(items);
-        }
-
-        public void Heal(Character leader, int healValue)
-        {
-            if (characterList.Count == 0)
-                return;
-
-            for (int step = 0; step < 100 && healValue > 0; step++)
-            {
-                foreach (Character ch in characterList)
-                {
-                    // skip if out of range
-                    if (IsRangeFiltered && leader != null && 
-                        (leader.Position - ch.Position).Length >= RangeFilterValue)
-                        continue;
-
-                    if (ch.Health == step)
-                    {
-                        healValue--;
-                        ch.Health++;
-
-                        if (healValue == 0)
-                            break;
-                    }
-                }
-            }
         }
 
         public Item FindFood(out IItemCollection owner)
@@ -227,6 +233,46 @@ namespace Burntime.Classic.Logic
             return item;
         }
 
+        public IEnumerable<Item> GetEmptyWaterItems()
+        {
+            List<Item> items = new List<Item>();
+            foreach (Character ch in this)
+                foreach (Item item in ch.Items)
+                {
+                    if (item.Type.DrinkValue != 0)
+                        items.Add(item);
+                }
+            return items;
+        }
+        #endregion
+
+        #region group stats
+        public int GetWaterReserve()
+        {
+            int water = 0;
+            foreach (Character ch in this)
+                water += ch.Water;
+            return water;
+        }
+
+        public int GetWaterInInventory()
+        {
+            int water = 0;
+            foreach (Character ch in this)
+                water += ch.GetWaterInInventory();
+            return water;
+        }
+
+        public int GetFoodReserve()
+        {
+            int food = 0;
+            foreach (Character ch in this)
+                food += ch.Food;
+            return food;
+        }
+        #endregion
+
+        #region ICharacter, IEnumerable implementations
         // IEnumerable interface implementation
         IEnumerator IEnumerable.GetEnumerator()
         {
@@ -280,5 +326,6 @@ namespace Burntime.Classic.Logic
 
             return RangeFilterValue > (leader.Position - character.Position).Length;
         }
+        #endregion
     }
 }

@@ -129,5 +129,20 @@ namespace Burntime.Classic.Logic
 
             return boost;
         }
+
+        public bool RefillItem(Item item)
+        {
+            if (item.Type.Full != null && item.Type.Full.WaterValue != 0)
+            {
+                if (Reserve >= item.Type.Full.WaterValue)
+                {
+                    Reserve -= item.Type.Full.WaterValue;
+                    item.MakeFull();
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }

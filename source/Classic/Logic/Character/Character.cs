@@ -180,6 +180,7 @@ namespace Burntime.Classic.Logic
             set { health = value; if (IsDead) Die(); if (health > 100) health = 100; }
         }
 
+        #region character stats
         public int Experience;
         public int Food;
         public int Water;
@@ -193,6 +194,15 @@ namespace Burntime.Classic.Logic
         {
             get { return 5; }
         }
+
+        public int GetWaterInInventory()
+        {
+            int water = 0;
+            foreach (Item item in Items)
+                water += item.WaterValue;
+            return water;
+        }
+        #endregion
 
         protected override void InitInstance(object[] parameter)
         {
@@ -777,6 +787,7 @@ namespace Burntime.Classic.Logic
             return this;
         }
 
+        #region ICharacterCollection, IEnumerable implementations
         // IEnumerable interface implementation
         IEnumerator IEnumerable.GetEnumerator()
         {
@@ -874,5 +885,6 @@ namespace Burntime.Classic.Logic
         {
             return this == character && leader == character;
         }
+        #endregion
     }
 }
