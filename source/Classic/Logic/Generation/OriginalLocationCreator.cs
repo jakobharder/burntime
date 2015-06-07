@@ -26,6 +26,7 @@
 #endregion
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using Burntime.Data.BurnGfx;
 using Burntime.Data.BurnGfx.Save;
@@ -61,8 +62,9 @@ namespace Burntime.Classic.Logic.Generation
                     loc.Danger = Danger.Instance((city.Danger == 3) ? "radiation" : "gas", city.DangerAmount);
                 loc.IsCity = city.IsCity;
                 loc.EntryPoint = city.EntryPoint;
-                loc.Ways = city.Ways;
-                loc.WayLengths = city.WayLengths;
+                loc.Ways = (from x in city.Ways where x != -1 select x).ToArray();
+                loc.WayLengths = (from x in city.WayLengths where x > 0 select x).ToArray();
+                loc.NeighborIds = (from x in city.Neighbors where x != -1 select x).ToArray();
 
                 loc.Map = container.Create<Map>(new object[] { "maps/mat_" + i.ToString("D3") + ".burnmap??4" });
 
@@ -93,14 +95,10 @@ namespace Burntime.Classic.Logic.Generation
                 game.World.Locations += loc;
             }
 
-            for (int n = 0; n < game.World.Locations.Count; n++)
+            foreach (Location location in game.World.Locations)
             {
-                Burntime.Data.BurnGfx.Save.Location info = gamdat.Locations[n];
-                for (int k = 0; k < 4; k++)
-                {
-                    if (info.Neighbors[k] != -1)
-                        game.World.Locations[n].Neighbors.Add(game.World.Locations[info.Neighbors[k]]);
-                }
+                foreach (int id in location.NeighborIds)
+                    location.Neighbors.Add(game.World.Locations[id]);
             }
         }
     }

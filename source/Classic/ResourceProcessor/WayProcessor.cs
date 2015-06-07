@@ -84,25 +84,26 @@ namespace Burntime.Classic.ResourceProcessor
                 ways.Add(add);
             }
 
-            //// add ways defined in ways.txt
-            //for (int i = 0; i < wayCount; i++)
-            //{
-            //    Way way = new Way();
-            //    way.Start = config["ways"].GetInts("way" + i)[0];
-            //    way.End = config["ways"].GetInts("way" + i)[1];
+            // add ways defined in ways.txt
+            for (int i = 0; i < wayCount; i++)
+            {
+                Way way = new Way();
+                way.Start = config["ways"].GetInts("way" + i)[0];
+                way.End = config["ways"].GetInts("way" + i)[1];
 
-            //    way.Position = new Vector2();
-            //    way.Position.x = System.Math.Min(map.Entrances[way.Start].Area.Center.x, map.Entrances[way.End].Area.Center.x);
-            //    way.Position.y = System.Math.Min(map.Entrances[way.Start].Area.Center.y, map.Entrances[way.End].Area.Center.y);
+                way.Position = new Vector2();
+                way.Position.x = System.Math.Min(map.Entrances[way.Start].Area.Center.x, map.Entrances[way.End].Area.Center.x);
+                way.Position.y = System.Math.Min(map.Entrances[way.Start].Area.Center.y, map.Entrances[way.End].Area.Center.y);
 
-            //    //way.Images = new Sprite[1];
-            //    //way.Images[0] = resourceManager.GetImage(config["images"].GetString("way" + i), ResourceLoadType.Delayed);
+                way.Images = new Platform.Graphics.Sprite[1];
+                way.Images[0] = resourceManager.GetImage(config["images"].GetString("way" + i), ResourceLoadType.Delayed);
 
-            //    ways.Add(way);
+                ways.Add(way);
 
-            //    data.Cross[way.Start].Ways = data.Cross[way.Start].Ways.Push(ways.Count - 1);
-            //    data.Cross[way.End].Ways = data.Cross[way.End].Ways.Push(ways.Count - 1);
-            //}
+#warning // TODO make more performant
+                data.Cross[way.Start].Ways = data.Cross[way.Start].Ways.Concat(new int [] { ways.Count - 1}).ToArray();
+                data.Cross[way.End].Ways = data.Cross[way.End].Ways.Concat(new int[] { ways.Count - 1 }).ToArray();
+            }
 
             //// add ways defined in burnmap
             //for (int i = 0; i < map.MapData.Ways.Length; i++)

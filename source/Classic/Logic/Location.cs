@@ -111,6 +111,8 @@ namespace Burntime.Classic.Logic
         //StateList CampCharacters;
         public StateLink<Trader> LocalTrader;
 
+        public int[] NeighborIds;
+
         StateLinkList<Location> neighbors;
         public StateLinkList<Location> Neighbors
         {

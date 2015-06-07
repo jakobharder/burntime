@@ -27,6 +27,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
+
 using Burntime.Platform;
 using Burntime.Platform.Resource;
 using Burntime.Platform.IO;
@@ -42,6 +44,31 @@ namespace Burntime.Classic.Logic.Generation
     /// </summary>
     public class LocationCreator : IGameObjectCreator
     {
+        private void updateBurngfxLocation(int id, int[] ways, int[] wayLengths, Framework.States.StateLinkList<Location> locations)
+        {
+            for (int i = 0; i < ways.Length; i++)
+            {
+                if (ways[i] < id)
+                {
+                    bool found = false;
+                    foreach (int alreadyAdded in locations[ways[i]].NeighborIds)
+                    {
+                        if (alreadyAdded == id)
+                        {
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found)
+                    {
+                        locations[ways[i]].NeighborIds = locations[ways[i]].NeighborIds.Concat(new int[] { id }).ToArray();
+                        locations[ways[i]].WayLengths = locations[ways[i]].WayLengths.Concat(new int[] { wayLengths[i] }).ToArray();
+                    }
+                }
+            }
+        }
+
         public void Create(ClassicGame game)
         {
             var resources = LogicFactory.GetParameter<ResourceManager>("resource");
@@ -64,8 +91,12 @@ namespace Burntime.Classic.Logic.Generation
                 loc.IsCity = cfg[""].GetBool("city");
                 loc.EntryPoint = cfg[""].GetVector2("entry_point");
 
-                //loc.Ways = city.Ways;
-                //loc.WayLengths = city.WayLengths;
+                loc.Ways = new int[] { };
+                loc.NeighborIds = cfg[""].GetInts("ways");
+                loc.WayLengths = cfg[""].GetInts("way_lengths");
+
+                // in case of a burngfx location we need to add new ways
+                updateBurngfxLocation(loc.Id, loc.NeighborIds, loc.WayLengths, game.World.Locations);
 
                 loc.Map = container.Create<Map>(new object[] { "maps/mat_" + i.ToString("D3") + ".burnmap??4" });
 
@@ -95,6 +126,21 @@ namespace Burntime.Classic.Logic.Generation
 
                 game.World.Locations += loc;
                 i++;
+            }
+
+            // update neighbor links
+            foreach (Location location in game.World.Locations)
+            {
+                for (int k = 0; k < location.NeighborIds.Length; k++)
+                {
+                    if (location.NeighborIds[k] != -1)
+                    {
+                        var neighbor = game.World.Locations[location.NeighborIds[k]];
+                        // only add if not already in the list
+                        if (!location.Neighbors.Contains(neighbor))
+                            location.Neighbors.Add(neighbor);
+                    }
+                }
             }
         }
     }

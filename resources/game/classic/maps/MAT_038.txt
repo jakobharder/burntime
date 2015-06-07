@@ -9,6 +9,9 @@ water_capacity = 6
 city = false
 danger = danger@radiation??10
 
+ways = 8
+way_lengths = 3
+
 [room0]
 type = normal
 title = burn?661

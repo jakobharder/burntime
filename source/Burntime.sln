@@ -31,6 +31,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "resources", "resources", "{
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "maps", "maps", "{C858236C-E64D-4CCD-B414-5C80B7A8BC7B}"
 	ProjectSection(SolutionItems) = preProject
+		..\resources\game\classic\maps\MAT_000-ways.txt = ..\resources\game\classic\maps\MAT_000-ways.txt
 		..\resources\game\classic\maps\MAT_000.txt = ..\resources\game\classic\maps\MAT_000.txt
 		..\resources\game\classic\maps\MAT_038.txt = ..\resources\game\classic\maps\MAT_038.txt
 	EndProjectSection
