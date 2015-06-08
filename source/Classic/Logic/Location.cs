@@ -389,5 +389,15 @@ namespace Burntime.Classic.Logic
             character.Path.MoveTo = EntryPoint;
             character.Location = this;
         }
+
+        #region get helpers
+        public Room GetSourceRoom()
+        {
+            foreach (Room room in Rooms)
+                if (room.IsWaterSource)
+                    return room;
+            return null;
+        }
+        #endregion
     }
 }

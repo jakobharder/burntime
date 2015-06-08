@@ -128,6 +128,7 @@
     <Compile Include="Logic\Data\Ways.cs" />
     <Compile Include="Logic\Item\ItemType.cs" />
     <Compile Include="Logic\Item\ItemTypes.cs" />
+    <Compile Include="Logic\Item\OwnedItem.cs" />
     <Compile Include="Maps\EntranceObject.cs" />
     <Compile Include="Logic\Interaction\IInteractionHandler.cs" />
     <Compile Include="Logic\Interaction\InteractionObject.cs" />

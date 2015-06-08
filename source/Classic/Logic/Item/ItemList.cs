@@ -117,6 +117,11 @@ namespace Burntime.Classic
             set { max = value; }
         }
 
+        public bool IsFull
+        {
+            get { return Count != Infinite && MaxCount <= Count; }
+        }
+
         public int Count
         {
             get { return list.Count; }

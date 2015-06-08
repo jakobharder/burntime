@@ -48,8 +48,6 @@ namespace Burntime.Classic
     [Serializable]
     public class Item : StateObject
     {
-        protected int ammo;
-
         public string ID
         {
             get { return Type.ID; }
@@ -133,6 +131,7 @@ namespace Burntime.Classic
         }
 
         // remaining bullets
+        protected int ammo;
         public int AmmoValue
         {
             get { return ammo; }

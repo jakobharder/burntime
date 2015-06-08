@@ -233,14 +233,14 @@ namespace Burntime.Classic.Logic
             return item;
         }
 
-        public IEnumerable<Item> GetEmptyWaterItems()
+        public IEnumerable<OwnedItem> GetEmptyWaterItems()
         {
-            List<Item> items = new List<Item>();
+            List<OwnedItem> items = new List<OwnedItem>();
             foreach (Character ch in this)
                 foreach (Item item in ch.Items)
                 {
                     if (item.Type.DrinkValue != 0)
-                        items.Add(item);
+                        items.Add(new OwnedItem(item, ch.Items));
                 }
             return items;
         }
