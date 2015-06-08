@@ -39,5 +39,6 @@ namespace Burntime.Classic.Maps
     {
         String GetTitle(ResourceManager ResourceManager);
         Vector2 MapPosition { get; }
+        Rect MapArea { get; }
     }
 }

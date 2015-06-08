@@ -61,12 +61,7 @@ namespace Burntime.Classic.Maps
 
             IMapObject obj = GetObjectAt(position);
             if (obj != null)
-            {
                 mapState.Hover = new MapViewHoverInfo(obj, app.ResourceManager, new PixelColor(180, 152, 112));
-                Vector2 t = mapState.Hover.Position;
-                t.y += 8;
-                mapState.Hover.Position = t;
-            }
         }
 
         public void UpdateOverlay(WorldState world, float elapsed)
@@ -94,9 +89,9 @@ namespace Burntime.Classic.Maps
             for (int i = 0; i < mapState.Items.Count; i++)
             {
                 DroppedItem item = mapState.Items.MapObjects[i];
-                Vector2 pos = item.Position - position;
+                Vector2 distance = item.Position - position;
 
-                if (pos.Length < 10)
+                if (distance.Length < 10)
                     return item;
             }
 

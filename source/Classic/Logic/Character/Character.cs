@@ -315,6 +315,11 @@ namespace Burntime.Classic.Logic
             get { return Position; }
         }
 
+        public Rect MapArea
+        {
+            get { return new Rect(Position.x - Body.Object.Width / 2, Position.y - Body.Object.Height, Body.Object.Width, Body.Object.Height); }
+        }
+
         // logic
         public bool IsDead
         {

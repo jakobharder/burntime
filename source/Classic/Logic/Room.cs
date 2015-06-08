@@ -78,6 +78,11 @@ namespace Burntime.Classic.Logic
             get { return EntryCondition.RegionOnMap.Center; }
         }
 
+        public Rect MapArea
+        {
+            get { return EntryCondition.RegionOnMap; }
+        }
+
         public String GetTitle(ResourceManager resourceManager)
         {
             return resourceManager.GetString(titleId);

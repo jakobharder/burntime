@@ -64,5 +64,10 @@ namespace Burntime.Classic.Maps
         {
             get { return entrance.Area.Center; }
         }
+
+        Rect IMapObject.MapArea
+        {
+            get { return entrance.Area; }
+        }
     }
 }

@@ -125,7 +125,10 @@ namespace Burntime.Classic.Maps
                         continue;
                     }
 
-                    Vector2 pos = chr.Position + offset - Vector2.One * 8;
+                    Vector2 pos = chr.Position + offset;
+                    // align character sprite to bottom center
+                    pos.x -= chr.Body.Object.Width / 2;
+                    pos.y -= chr.Body.Object.Height;
 
                     if (!chr.IsDead && SelectedCharacter == chr && chr.Animation == 0)
                         chr.Body.Object.Animation.Frame = ani.Frame;
@@ -155,9 +158,11 @@ namespace Burntime.Classic.Maps
                 if (chr.IsDead)
                     continue;
 
-                Vector2 pos = chr.Position - position;
+                Vector2 distance = chr.Position - position;
+                // align to bottom center
+                distance.y -= chr.Body.Object.Height / 2;
 
-                if (pos.Length < 10)
+                if (distance.Length < 10)
                     obj = chr;
             }
 
@@ -165,9 +170,11 @@ namespace Burntime.Classic.Maps
             {
                 for (int i = 0; i < player.Group.Count; i++)
                 {
-                    Vector2 pos = player.Group[i].Position - position;
-                    
-                    if (pos.Length < 10)
+                    Vector2 distance = player.Group[i].Position - position;
+                    // align to bottom center
+                    distance.y -= player.Group[i].Body.Object.Height / 2;
+
+                    if (distance.Length < 10)
                         obj = player.Group[i];
                 }
             }

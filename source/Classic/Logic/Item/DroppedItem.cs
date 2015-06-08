@@ -58,5 +58,10 @@ namespace Burntime.Classic
         {
             get { return Position; }
         }
+
+        public Rect MapArea
+        {
+            get { return new Rect(Position.x - 4, Position.y - 4, 8, 8); }
+        }
     }
 }

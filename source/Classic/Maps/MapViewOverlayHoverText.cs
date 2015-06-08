@@ -70,7 +70,7 @@ namespace Burntime.Classic.Maps
         public MapViewHoverInfo(IMapObject obj, ResourceManager manager, PixelColor color)
         {
             title = obj.GetTitle(manager);
-            position = new Vector2(obj.MapPosition);
+            position = new Vector2(obj.MapArea.Left + obj.MapArea.Width / 2, obj.MapArea.Top - 10);
             this.color = color;
         }
     }
@@ -109,7 +109,7 @@ namespace Burntime.Classic.Maps
             if (mapState != null && mapState.Hover != null)
             {
                 Font font = resMan.GetFont(BurntimeClassic.FontName, mapState.Hover.Color);
-                font.DrawText(Target, mapState.Hover.Position + Offset - new Vector2(0, 15), mapState.Hover.Title, TextAlignment.Center);
+                font.DrawText(Target, mapState.Hover.Position + Offset, mapState.Hover.Title, TextAlignment.Center);
             }
         }
 
