@@ -1,4 +1,4 @@
-entry_point = 222x169
+entry_point = 252x229
 item_insert = 116x380
 item_insert = 528x224
 item_insert = 487x404
