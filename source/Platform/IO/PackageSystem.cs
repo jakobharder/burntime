@@ -120,15 +120,15 @@ namespace Burntime.Platform.IO
             localized = true;
         }
 
-        public void Mount(string name, IPackage package)
+        public bool Mount(string name, IPackage package)
         {
-            Mount(name, package, "en");
+            return Mount(name, package, "en");
         }
 
-        public void Mount(string name, IPackage package, string defaultLocalization)
+        public bool Mount(string name, IPackage package, string defaultLocalization)
         {
             if (package == null)
-                throw new Exception();
+                return false;
 
             if (nameMountMap.ContainsKey(name))
                 Unmount(name);
@@ -137,6 +137,7 @@ namespace Burntime.Platform.IO
             mounts.Add(mount);
 
             RefreshFileMountMap();
+            return true;
         }
 
         public void Unmount(string name)

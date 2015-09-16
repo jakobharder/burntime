@@ -325,7 +325,12 @@ namespace Burntime.Launcher
         static bool InitializeVFS(string basePath)
         {
             // mount system folder
-            vfs.Mount("system", FileSystem.OpenPackage(basePath + "system"));
+            if (!vfs.Mount("system", FileSystem.OpenPackage(basePath + "system")))
+            {
+                MessageBox.Show("Could not find system folder in working directory!\nWorking directory: " + System.IO.Path.GetFullPath(basePath + "/"), "File not found",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
 
             // load launcher package (with additional languages)
             PackageManager pakman = new PackageManager(basePath + "game/");
