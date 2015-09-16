@@ -67,14 +67,14 @@ namespace Burntime.Framework
             modules = new string[0];
         }
 
-        public void LoadPackages(string game, PackageSystem vfs, AssemblyControl assembly)
+        public bool LoadPackages(string game, PackageSystem vfs, AssemblyControl assembly)
         {
-            Add(game, vfs, assembly, true);
+            return Add(game, vfs, assembly, true);
         }
 
-        public void LoadPackages(string game, PackageSystem vfs, AssemblyControl assembly, bool loadExtras)
+        public bool LoadPackages(string game, PackageSystem vfs, AssemblyControl assembly, bool loadExtras)
         {
-            Add(game, vfs, assembly, loadExtras);
+            return Add(game, vfs, assembly, loadExtras);
         }
 
         public PackageInfo GetInfo(string package)
@@ -94,7 +94,7 @@ namespace Burntime.Framework
                 Add(pak, vfs, assembly, loadExtras);
         }
 
-        private void Add(string package, PackageSystem vfs, AssemblyControl assembly, bool loadExtras)
+        private bool Add(string package, PackageSystem vfs, AssemblyControl assembly, bool loadExtras)
         {
             if (package.ToLower() == "burntime")
             {
@@ -123,10 +123,12 @@ namespace Burntime.Framework
                 }
 
                 vfs.Mount(package, burntime);
-                return;
+                return true;
             }
 
-            PackageInfo info = new PackageInfo(basePath + package, vfs);
+            PackageInfo info = PackageInfo.TryCreate(basePath + package, vfs);
+            if (info == null)
+                return false;
 
             if (info.Type == PackageType.Game)
             {
@@ -157,6 +159,8 @@ namespace Burntime.Framework
                 if (assembly != null)
                     assembly.Load(info.Modules, package);
             }
+
+            return true;
         }
 
         private string[] GetAllPaks()
@@ -203,8 +207,9 @@ namespace Burntime.Framework
             List<PackageInfo> list = new List<PackageInfo>();
             foreach (string str in paks)
             {
-                PackageInfo info = new PackageInfo(basePath + str, FileSystem.VFS);
-                list.Add(info);
+                PackageInfo info = PackageInfo.TryCreate(basePath + str, FileSystem.VFS);
+                if (info != null)
+                    list.Add(info);
             }
 
             packageInfos = list.ToArray();

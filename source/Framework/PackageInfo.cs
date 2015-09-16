@@ -77,59 +77,56 @@ namespace Burntime.Framework
             get { return game; }
         }
 
-        public PackageInfo(string fileName, PackageSystem vfs)
+        static public PackageInfo TryCreate(string inFileName, PackageSystem inVFS)
         {
-            package = System.IO.Path.GetFileName(fileName);
+            string package = System.IO.Path.GetFileName(inFileName);
 
             File file;
             // open file from package if available
-            if (vfs.ExistsMount(package))
-                file = vfs.GetFile(package + ":info.txt", FileOpenMode.Read);
+            if (inVFS.ExistsMount(package))
+                file = inVFS.GetFile(package + ":info.txt", FileOpenMode.Read);
             // open file without loading the package
             else
-                file = vfs.GetFile(fileName + ":info.txt", FileOpenMode.NoPackage);
-            
+                file = inVFS.GetFile(inFileName + ":info.txt", FileOpenMode.NoPackage);
+
             if (file != null)
             {
                 ConfigFile config = new ConfigFile();
                 config.Open(file);
 
-                dependencies = config[""].GetStrings("dependencies");
-                mainModule = config[""].GetString("start");
-                modules = config[""].GetStrings("modules");
-                languages = config[""].GetStrings("language");
-                version = config[""].GetVersion("version");
-                baseVersion = config[""].GetVersion("base");
+                PackageInfo info = new PackageInfo();
+                info.package = package;
+                info.dependencies = config[""].GetStrings("dependencies");
+                info.mainModule = config[""].GetString("start");
+                info.modules = config[""].GetStrings("modules");
+                info.languages = config[""].GetStrings("language");
+                info.version = config[""].GetVersion("version");
+                info.baseVersion = config[""].GetVersion("base");
                 switch (config[""].Get("type"))
                 {
                     case "patch":
-                        type = PackageType.Patch;
+                        info.type = PackageType.Patch;
                         break;
                     case "game":
-                        type = PackageType.Game;
+                        info.type = PackageType.Game;
                         break;
                     case "language":
-                        type = PackageType.Language;
+                        info.type = PackageType.Language;
                         break;
                     default:
-                        type = PackageType.Data;
+                        info.type = PackageType.Data;
                         break;
                 }
-                game = config[""].GetString("game");
-                hidden = config[""].GetBool("hidden");
+                info.game = config[""].GetString("game");
+                info.hidden = config[""].GetBool("hidden");
+                return info;
             }
-            else
-            {
-                dependencies = new string[0];
-                mainModule = "";
-                modules = new string[0];
-                languages = new string[0];
-                version = new Version();
-                baseVersion = new Version();
-                type = PackageType.Data;
-                game = "";
-                hidden = false;
-            }
+
+            return null;
+        }
+
+        private PackageInfo()
+        {
         }
     }
 }

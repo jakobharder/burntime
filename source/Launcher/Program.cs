@@ -151,7 +151,11 @@ namespace Burntime.Launcher
 
                 // load vfs
                 vfs = new PackageSystem();
-                RefreshVFS(false);
+                if (!RefreshVFS(false))
+                {
+                    RemoveTemporary(); // code structure in this function is not nice
+                    return;
+                }
 
                 // find all packages
                 CheckPackages("");
@@ -318,14 +322,19 @@ namespace Burntime.Launcher
                 noConnection = true;
         }
 
-        static void InitializeVFS(string basePath)
+        static bool InitializeVFS(string basePath)
         {
             // mount system folder
             vfs.Mount("system", FileSystem.OpenPackage(basePath + "system"));
 
             // load launcher package (with additional languages)
             PackageManager pakman = new PackageManager(basePath + "game/");
-            pakman.LoadPackages("launcher", vfs, null);
+            if (!pakman.LoadPackages("launcher", vfs, null))
+            {
+                MessageBox.Show("Could not find launcher packages in game folder!\nPlease check: " + System.IO.Path.GetFullPath(basePath + "game/"), "File not found", 
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
 
             // get available languages
             languages = pakman.Languages;
@@ -342,7 +351,7 @@ namespace Burntime.Launcher
 
             text = new ConfigFile();
             text.Open(vfs.GetFile("lang.txt", FileOpenMode.Read));
-
+            return true;
         }
 
         static public void RefreshLanguage()
@@ -354,10 +363,11 @@ namespace Burntime.Launcher
             text.Open(vfs.GetFile("lang.txt", FileOpenMode.Read));
         }
 
-        static public void RefreshVFS(bool recheckPackages)
+        static public bool RefreshVFS(bool recheckPackages)
         {
             vfs.UnmountAll();
-            InitializeVFS("");
+            if (!InitializeVFS(""))
+                return false;
 
             if (form != null)
             {
@@ -372,6 +382,8 @@ namespace Burntime.Launcher
                 RefreshGamePackages();
                 CheckUpdates("");
             }
+
+            return true;
         }
 
         static public void SaveSettings()
