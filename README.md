@@ -1,10 +1,19 @@
-# burntime
-Remake of PC classic Burntime
+# Burntime
 
-After building once (tested with Visual Studio 2013 Community), place original Burntime files into bin/burntime/game/Burntime 
-So that the original BURN.EXE has the path game/Burntime/BURN.EXE
+Remake of the PC strategy game 'Burntime' from Max Design.
 
-Without the original Burntime files the game won't start.
+## Play the Game
 
-For more infos take a look at the original home at https://code.google.com/p/burntimedeluxe/
-There are also binaries to download.
+Download from [Releases](https://github.com/jakobharder/burntime/releases).
+
+The game asks you for the location of the original Burntime game files.
+It won't run without.
+
+## Build and Debug the Game
+
+- Open `source/Burntime.sln` in Visual Studio
+- Build solution (it will generate a `bin/burntime` folder)
+- Mark `Burntime` as the start-up project
+- Start
+
+You can also mark the `Launcher` as start-up project to change settings and debug that part.
