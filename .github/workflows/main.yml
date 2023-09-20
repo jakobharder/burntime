@@ -1,0 +1,36 @@
+name: main
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    # - name: Setup .NET Core
+    #   uses: actions/setup-dotnet@v1
+    #   with:
+    #     dotnet-version: 4.8.x
+
+    # - name: Restore dependencies
+    #   run: (cd source && dotnet restore && cd ..)
+
+    - name: Build
+      run: (cd source && dotnet build && cd ..)
+
+    - name: Package
+      run: tar -caf burntime.zip -C ./bin/ *
+
+    - name: Upload Build Artifact
+      uses: actions/upload-artifact@v2.2.4
+      with:
+        name: burntime
+        path: burntime.zip
