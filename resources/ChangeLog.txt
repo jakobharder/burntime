@@ -1,4 +1,8 @@
 ﻿
+[unreleased]
+
+* Updated .NET to 4.8
+
 Burntime v0.2.3 (2015-5-30)
 
 * Added exit button to the main menu
