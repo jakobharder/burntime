@@ -17,3 +17,12 @@ It won't run without.
 - Start
 
 You can also mark the `Launcher` as start-up project to change settings and debug that part.
+
+## Changes
+
+See [Changelog.txt](./resources/ChangeLog.txt)
+
+## Credits
+
+The original game, graphics and other assets are the property of Max Designs and their original authors.
+This project is not affiliated them.

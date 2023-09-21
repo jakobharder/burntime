@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Launcher", "Launcher\Launcher.csproj", "{1B1DEC0B-7C65-444E-8336-DF14842C0A20}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BurnGfx", "BurnGfx\BurnGfx.csproj", "{C66A2C4B-CE17-4DDE-B7AF-14D8C4B4F7E1}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Classic", "Classic\Classic.csproj", "{30EA843D-FC52-4653-9FAF-AA1AC2669F5E}"
@@ -17,7 +15,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Burntime", "Burntime\Burnti
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PakConverter", "PakConverter\PakConverter.csproj", "{74955E9B-D49A-4883-A266-F9E6D6A4E42E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MapEditor", "MapEditor\MapEditor.csproj", "{57D4100B-13FC-48DA-AE8E-606959AF6B95}"
+# Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MapEditor", "MapEditor\MapEditor.csproj", "{57D4100B-13FC-48DA-AE8E-606959AF6B95}"
+# EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Launcher", "Launcher\Launcher.csproj", "{1B1DEC0B-7C65-444E-8336-DF14842C0A20}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "resources", "resources", "{1C04537C-30C9-4D81-8A51-4B7D514D9CBA}"
 	ProjectSection(SolutionItems) = preProject
