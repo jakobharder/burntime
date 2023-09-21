@@ -10,6 +10,10 @@
     <Platforms>x86</Platforms>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>false</SelfContained>
+    <RuntimeIdentifier>win-x86</RuntimeIdentifier>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
@@ -19,8 +23,6 @@
     <PlatformTarget>x86</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <Prefer32Bit>false</Prefer32Bit>
-    <RunCodeAnalysis>false</RunCodeAnalysis>
-    <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
     <OutputPath>..\..\bin\burntime\</OutputPath>
@@ -67,7 +69,6 @@
     <Compile Include="Update\Xsd\updates.cs">
       <DependentUpon>updates.xsd</DependentUpon>
     </Compile>
-    <None Include="App.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -89,8 +90,7 @@
     <Content Include="icon256.ico" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Framework\Framework.csproj" />
-    <ProjectReference Include="..\Platform\Platform.csproj" />
+    <ProjectReference Include="..\Burntime.Core\Burntime.Core.csproj" />
   </ItemGroup>
   <PropertyGroup>
     <PostBuildEvent>xcopy $(SolutionDir)..\resources\*.txt $(SolutionDir)..\bin\burntime\ /Y /E /Q

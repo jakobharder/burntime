@@ -27,10 +27,9 @@
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="ManagedZLib, Version=1.1.1.0, Culture=neutral">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>.\ManagedZLib.dll</HintPath>
-    </Reference>
+    <ProjectReference Include="..\Burntime.Core\Burntime.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <Reference Include="OggVorbisDecoder, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Ogg\OggVorbisDecoder.dll</HintPath>

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net7.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Burntime.Core</RootNamespace>
+    <AssemblyName>Burntime.Core</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="ManagedZLib, Version=1.1.1.0, Culture=neutral">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>.\ManagedZLib.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>

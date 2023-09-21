@@ -24,7 +24,7 @@ jobs:
     #   run: (cd source && dotnet restore && cd ..)
 
     - name: Build
-      run: (cd source && dotnet build && cd ..)
+      run: (cd source && dotnet build -c Release && cd ..)
 
     - name: Package
       run: tar -caf burntime.zip -C ./bin/ *

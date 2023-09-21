@@ -1,26 +1,4 @@
-﻿
-#region GNU General Public License - Burntime Deluxe
-/*
- *  Burntime Deluxe
- *  Copyright (C) 2009-2011 Jakob Harder
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- * 
-*/
-#endregion
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 
@@ -37,7 +15,7 @@ namespace Burntime.Framework
     //    public Assembly Asm;
     //}
 
-    public class AssemblyControl
+    public class AssemblyControl : Core.IAssemblyControl
     {
         Dictionary<String, Module> modules = new Dictionary<string, Module>();
         Dictionary<String, Assembly> assemblies = new Dictionary<string, Assembly>();

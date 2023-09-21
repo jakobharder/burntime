@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Windows.Forms;
-using System.Diagnostics;
 using System.ComponentModel;
 
-using Burntime.Framework;
 using System.IO;
 
 namespace Burntime.Launcher
@@ -156,7 +153,7 @@ namespace Burntime.Launcher
                         Burntime.Platform.IO.ConfigSection section = sections[i];
                         Burntime.Platform.IO.ConfigSection txt = txts[i];
 
-                        PackageInfo localPackage = Program.PackageManager.GetInfo(section.Name);
+                        Framework.PackageInfo localPackage = Program.PackageManager.GetInfo(section.Name);
                         bool alreadyDownloaded = localPackage != null;
                         bool isUpdateable = false;// localPackage != null && section.GetVersion("version") > localPackage.Version;
 
