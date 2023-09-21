@@ -197,33 +197,33 @@ namespace Burntime.Launcher
         {
             // try to load dlls
 
-            // Platform.dll
-            try
-            {
-                Burntime.Platform.PlatformDllAccess access = new Burntime.Platform.PlatformDllAccess();
-                if (!access.Initialize())
-                    throw new Exception();
-            }
-            catch
-            {
-                MessageBox.Show("Error: Could not load Platform.dll!", "Error");
-                Environment.Exit(1);
-                return false;
-            }
+            //// Platform.dll
+            //try
+            //{
+            //    Burntime.Platform.PlatformDllAccess access = new Burntime.Platform.PlatformDllAccess();
+            //    if (!access.Initialize())
+            //        throw new Exception();
+            //}
+            //catch
+            //{
+            //    MessageBox.Show("Error: Could not load Platform.dll!", "Error");
+            //    Environment.Exit(1);
+            //    return false;
+            //}
 
-            // Framework.dll
-            try
-            {
-                Burntime.Framework.FrameworkDllAccess access = new Burntime.Framework.FrameworkDllAccess();
-                if (!access.Initialize())
-                    throw new Exception();
-            }
-            catch
-            {
-                MessageBox.Show("Error: Could not load Framework.dll!", "Error");
-                Environment.Exit(1);
-                return false;
-            }
+            //// Framework.dll
+            //try
+            //{
+            //    Burntime.Framework.FrameworkDllAccess access = new Burntime.Framework.FrameworkDllAccess();
+            //    if (!access.Initialize())
+            //        throw new Exception();
+            //}
+            //catch
+            //{
+            //    MessageBox.Show("Error: Could not load Framework.dll!", "Error");
+            //    Environment.Exit(1);
+            //    return false;
+            //}
 
             return true;
         }

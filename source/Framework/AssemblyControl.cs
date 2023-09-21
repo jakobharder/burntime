@@ -37,7 +37,7 @@ namespace Burntime.Framework
     //    public Assembly Asm;
     //}
 
-    public class AssemblyControl
+    public class AssemblyControl : Core.IAssemblyControl
     {
         Dictionary<String, Module> modules = new Dictionary<string, Module>();
         Dictionary<String, Assembly> assemblies = new Dictionary<string, Assembly>();

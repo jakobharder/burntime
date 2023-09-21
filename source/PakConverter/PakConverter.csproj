@@ -28,6 +28,6 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Platform\Platform.csproj" />
+    <ProjectReference Include="..\Burntime.Core\Burntime.Core.csproj" />
   </ItemGroup>
 </Project>
