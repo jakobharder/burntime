@@ -409,18 +409,18 @@ namespace Burntime.Launcher
                         package.SaveSettings();
                         break;
                     case "run":
-                        try
+                        //try
                         {
-                            ProcessStartInfo startInfo = new ProcessStartInfo("burntime.exe");
+                            ProcessStartInfo startInfo = new ProcessStartInfo("system/burntime.exe");
                             startInfo.WorkingDirectory = "system";
                             startInfo.Arguments = command.Substring(3).Trim();
                             Process.Start(startInfo);
                         }
-                        catch
-                        {
-                            MessageBox.Show(string.Format(Program.Text[""].Get("error1"), command), Program.Text[""].Get("error"));
-                            return;
-                        }
+                        //catch
+                        //{
+                        //    MessageBox.Show(string.Format(Program.Text[""].Get("error1"), command), Program.Text[""].Get("error"));
+                        //    return;
+                        //}
                         break;
                     case "exit":
                         Application.Exit();

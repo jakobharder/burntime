@@ -2,6 +2,14 @@
 
 Remake of the PC strategy game 'Burntime' from Max Design.
 
+![](./doc/screens.png)
+
+## Features
+
+- wide-screen support
+- complete port of the original game to Windows
+- to be done: AI players
+
 ## Play the Game
 
 Download from [Releases](https://github.com/jakobharder/burntime/releases).
