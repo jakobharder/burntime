@@ -47,12 +47,16 @@ namespace Burntime.Framework.States
 
         public void Serialize(Stream serializationStream, object graph)
         {
+#pragma warning disable SYSLIB0011
             formatter.Serialize(serializationStream, graph);
+#pragma warning restore SYSLIB0011
         }
 
         public object Deserialize(Stream serializationStream)
         {
+#pragma warning disable SYSLIB0011
             return formatter.Deserialize(serializationStream);
+#pragma warning restore SYSLIB0011
         }
 
         internal sealed class GenericSerializationBinder : System.Runtime.Serialization.SerializationBinder

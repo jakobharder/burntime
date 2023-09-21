@@ -1,43 +1,12 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="12.0">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.21022</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{D7F6B52A-1E43-486E-815E-394DDDDCD534}</ProjectGuid>
+    <TargetFramework>net7.0-windows</TargetFramework>
+    <Platforms>x86</Platforms>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Burntime.Framework</RootNamespace>
     <AssemblyName>Framework</AssemblyName>
-    <FileUpgradeFlags>
-    </FileUpgradeFlags>
-    <OldToolsVersion>3.5</OldToolsVersion>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <UpgradeBackupLocation>
-    </UpgradeBackupLocation>
-    <TargetFrameworkProfile />
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>..\..\bin\burntime\system\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x86</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>..\..\bin\burntime\system\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x86</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
@@ -46,7 +15,6 @@
     <DebugType>full</DebugType>
     <PlatformTarget>x86</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>ManagedMinimumRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
@@ -56,78 +24,9 @@
     <DebugType>pdbonly</DebugType>
     <PlatformTarget>x86</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>ManagedMinimumRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
+    <ProjectReference Include="..\Platform\Platform.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="AI\AIControl.cs" />
-    <Compile Include="AI\GameClientAI.cs" />
-    <Compile Include="AssemblyControl.cs" />
-    <Compile Include="BurntimePath.cs" />
-    <Compile Include="Event\CommandEvent.cs" />
-    <Compile Include="Event\LogicEvent.cs" />
-    <Compile Include="Event\MouseClickEvent.cs" />
-    <Compile Include="Exceptions.cs" />
-    <Compile Include="FrameworkDllAccess.cs" />
-    <Compile Include="GUI\Button.cs" />
-    <Compile Include="GUI\Container.cs" />
-    <Compile Include="GUI\GuiFont.cs" />
-    <Compile Include="GUI\GuiString.cs" />
-    <Compile Include="GUI\Radio.cs" />
-    <Compile Include="GUI\GuiImage.cs" />
-    <Compile Include="GUI\Switch.cs" />
-    <Compile Include="Network\GameClient.cs" />
-    <Compile Include="Network\GameServer.cs" />
-    <Compile Include="Network\IGameServer.cs" />
-    <Compile Include="Network\TurnNews.cs" />
-    <Compile Include="SaveGame.cs" />
-    <Compile Include="Scene.cs" />
-    <Compile Include="Module.cs" />
-    <Compile Include="PackageInfo.cs" />
-    <Compile Include="GUI\Image.cs" />
-    <Compile Include="GUI\Window.cs" />
-    <Compile Include="PackageManager.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SceneManager.cs" />
-    <Compile Include="State.cs" />
-    <Compile Include="States\AiState.cs" />
-    <Compile Include="States\ILogicNotifycation.cs" />
-    <Compile Include="States\ILogicNotifycationHandler.cs" />
-    <Compile Include="States\ITurnable.cs" />
-    <Compile Include="States\PlayerRelativeStateLink.cs" />
-    <Compile Include="States\PlayerState.cs" />
-    <Compile Include="States\StateChangeRecord.cs" />
-    <Compile Include="States\StateClient.cs" />
-    <Compile Include="States\StateContainer.cs" />
-    <Compile Include="States\StateFormatter.cs" />
-    <Compile Include="States\StateLink.cs" />
-    <Compile Include="States\StateLinkList.cs" />
-    <Compile Include="States\StateManager.cs" />
-    <Compile Include="States\StateObject.cs" />
-    <Compile Include="States\StateReference.cs" />
-    <Compile Include="States\StateServer.cs" />
-    <Compile Include="States\WorldState.cs" />
-    <Compile Include="TextHelper.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Platform\Platform.csproj">
-      <Project>{26DF8CA5-A349-4E35-A0B9-5048AF6C20C3}</Project>
-      <Name>Platform</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>

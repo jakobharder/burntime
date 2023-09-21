@@ -1,14 +1,17 @@
 ﻿<html xmlns:burn>
-<link rel="stylesheet" type="text/css" href="sub.css" />
+<header>
+   <link rel="stylesheet" type="text/css" href="sub.css" />
 </header>
 <body>
    <form name="options">
     Resolution: <select name="resolution">
-     <!--<option value="windowmode@system=off">Fullscreen-->
-     <option value="windowmode@system=on;resolution@system=1024x576" selected="true">2x Window (16:9)
-     <option value="windowmode@system=on;resolution@system=1536x864">3x Window (16:9)
-     <option value="windowmode@system=on;resolution@system=768x576" selected="true">2x Window
+     <option value="windowmode@system=off">Fullscreen
+      <option value="windowmode@system=on;resolution@system=960x540">2x Window (16:9)
+      <option value="windowmode@system=on;resolution@system=1440x810" selected="true">3x Window (16:9)
+      <option value="windowmode@system=on;resolution@system=1920x1080"> 4x Window (16:9)
+     <option value="windowmode@system=on;resolution@system=768x576">2x Window
      <option value="windowmode@system=on;resolution@system=1152x864">3x Window
+     <option value="windowmode@system=on;resolution@system=1536x1152">4x Window
     </select><br/>
     <input type="checkbox" value="music@system=on" not="music@system=off" depend="classic_music">Music</input><br/>
     <input type="checkbox" value="highres_font@system=on" not="highres_font@system=off" id="highresfont">Use high-resolution fonts</input><br/>

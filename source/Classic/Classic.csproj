@@ -1,58 +1,11 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="12.0">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.21022</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{30EA843D-FC52-4653-9FAF-AA1AC2669F5E}</ProjectGuid>
+    <TargetFramework>net7.0-windows</TargetFramework>
+    <Platforms>x86</Platforms>
     <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Burntime.Classic</RootNamespace>
     <AssemblyName>Classic</AssemblyName>
-    <FileUpgradeFlags>
-    </FileUpgradeFlags>
-    <OldToolsVersion>3.5</OldToolsVersion>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <UpgradeBackupLocation>
-    </UpgradeBackupLocation>
-    <TargetFrameworkProfile />
-    <PublishUrl>publish\</PublishUrl>
-    <Install>true</Install>
-    <InstallFrom>Disk</InstallFrom>
-    <UpdateEnabled>false</UpdateEnabled>
-    <UpdateMode>Foreground</UpdateMode>
-    <UpdateInterval>7</UpdateInterval>
-    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
-    <UpdatePeriodically>false</UpdatePeriodically>
-    <UpdateRequired>false</UpdateRequired>
-    <MapFileExtensions>true</MapFileExtensions>
-    <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
-    <UseApplicationTrust>false</UseApplicationTrust>
-    <BootstrapperEnabled>true</BootstrapperEnabled>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>..\..\bin\burntime\game\classic\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x86</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>..\..\bin\burntime\game\classic\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x86</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
@@ -61,7 +14,6 @@
     <DebugType>full</DebugType>
     <PlatformTarget>x86</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>ManagedMinimumRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
@@ -71,181 +23,21 @@
     <DebugType>pdbonly</DebugType>
     <PlatformTarget>x86</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
-    <CodeAnalysisRuleSet>ManagedMinimumRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core">
-      <RequiredTargetFramework>3.5</RequiredTargetFramework>
-    </Reference>
-    <Reference Include="System.Data" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
+    <Compile Remove="GUI\MapGuiWindowNew.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AI\WaterGoal.cs" />
-    <Compile Include="AI\IAiGoal.cs" />
-    <Compile Include="AI\AiItemPool.cs" />
-    <Compile Include="AI\AiPlayer.cs" />
-    <Compile Include="AI\AiState.cs" />
-    <Compile Include="AI\CampMemberMind.cs" />
-    <Compile Include="AI\CharacterMind.cs" />
-    <Compile Include="AI\PlayerControlledMind.cs" />
-    <Compile Include="AI\FellowerMind.cs" />
-    <Compile Include="AI\SimpleMind.cs" />
-    <Compile Include="AI\CreatureMind.cs" />
-    <Compile Include="Application.cs" />
-    <Compile Include="GUI\ClassicMapView.cs" />
-    <Compile Include="GUI\DialogWindow.cs" />
-    <Compile Include="GUI\ExchangeWindow.cs" />
-    <Compile Include="GUI\FaceWindow.cs" />
-    <Compile Include="GUI\MapGuiWindow.cs" />
-    <Compile Include="GUI\ProgressWindow.cs" />
-    <Compile Include="Helper.cs" />
-    <Compile Include="Logic\AttackNotify.cs" />
-    <Compile Include="Logic\Character\CharacterRespawn.cs" />
-    <Compile Include="Logic\Character\Dog.cs" />
-    <Compile Include="Logic\Character\ICharacterCollection.cs" />
-    <Compile Include="Logic\Character\Mutant.cs" />
-    <Compile Include="Logic\Character\PlayerCharacter.cs" />
-    <Compile Include="Logic\Data\ItemTypeData.cs" />
-    <Compile Include="Logic\Generation\ClassicBurnGfxCreator.cs" />
-    <Compile Include="Logic\Generation\GameSettings.cs" />
-    <Compile Include="Logic\Data\ItemTypesData.cs" />
-    <Compile Include="Logic\Character\Group.cs" />
-    <Compile Include="Logic\Generation\IGameObjectCreator.cs" />
-    <Compile Include="Logic\Generation\LogicFactory.cs" />
-    <Compile Include="Logic\Generation\LocationCreator.cs" />
-    <Compile Include="Logic\Generation\OriginalLocationCreator.cs" />
-    <Compile Include="Logic\Interaction\Condition.cs" />
-    <Compile Include="Logic\Data\Constructions.cs" />
-    <Compile Include="Logic\Interaction\Danger.cs" />
-    <Compile Include="Logic\Interaction\DangerProtection.cs" />
-    <Compile Include="Logic\Interaction\Dialog.cs" />
-    <Compile Include="Logic\Data\Map.cs" />
-    <Compile Include="Logic\Data\Ways.cs" />
-    <Compile Include="Logic\Item\ItemType.cs" />
-    <Compile Include="Logic\Item\ItemTypes.cs" />
-    <Compile Include="Logic\Item\OwnedItem.cs" />
-    <Compile Include="Maps\EntranceObject.cs" />
-    <Compile Include="Logic\Interaction\IInteractionHandler.cs" />
-    <Compile Include="Logic\Interaction\InteractionObject.cs" />
-    <Compile Include="Logic\Interaction\VictoryCondition.cs" />
-    <Compile Include="Logic\Item\DroppedItem.cs" />
-    <Compile Include="Logic\Item\DroppedItemList.cs" />
-    <Compile Include="Logic\Item\IItemCollection.cs" />
-    <Compile Include="Logic\Item\Item.cs" />
-    <Compile Include="Logic\Item\ItemList.cs" />
-    <Compile Include="Logic\Item\PickItemList.cs" />
-    <Compile Include="Logic\Item\RoomItemList.cs" />
-    <Compile Include="Logic\IUpdateable.cs" />
-    <Compile Include="Logic\Player.cs" />
-    <Compile Include="Logic\Character\Trader.cs" />
-    <Compile Include="Logic\Data\Production.cs" />
-    <Compile Include="Logic\Room.cs" />
-    <Compile Include="Logic\WaterSource.cs" />
-    <Compile Include="Logic\World.cs" />
-    <Compile Include="Maps\IMapObject.cs" />
-    <Compile Include="Maps\IMapViewOverlay.cs" />
-    <Compile Include="GUI\InventoryWindow.cs" />
-    <Compile Include="GUI\ItemGridWindow.cs" />
-    <Compile Include="GUI\ItemWindow.cs" />
-    <Compile Include="GUI\MapView.cs" />
-    <Compile Include="Maps\MapViewOverlayCharacters.cs" />
-    <Compile Include="Maps\MapViewOverlayDroppedItems.cs" />
-    <Compile Include="GUI\MenuWindow.cs" />
-    <Compile Include="Logic\Generation\GameCreation.cs" />
-    <None Include="GUI\MapGuiWindowNew.cs" />
-    <Compile Include="Maps\MapViewOverlayPlayer.cs" />
-    <Compile Include="Maps\MapViewOverlayFlags.cs" />
-    <Compile Include="Maps\MapViewOverlayHoverText.cs" />
-    <Compile Include="ResourceProcessor\BurnmapProcessor.cs" />
-    <Compile Include="ResourceProcessor\ConstructionsProcessor.cs" />
-    <Compile Include="ResourceProcessor\DangerProcessor.cs" />
-    <Compile Include="ResourceProcessor\DangerProtectionProcessor.cs" />
-    <Compile Include="ResourceProcessor\WayProcessor.cs" />
-    <Compile Include="Scenes\ChurchScene.cs" />
-    <Compile Include="Scenes\DeathScene.cs" />
-    <Compile Include="Scenes\DoctorScene.cs" />
-    <Compile Include="Scenes\PubScene.cs" />
-    <Compile Include="Scenes\RestaurantScene.cs" />
-    <Compile Include="Scenes\TraderScene.cs" />
-    <Compile Include="Scenes\WaitScene.cs" />
-    <Compile Include="Logic\Character\Character.cs" />
-    <Compile Include="Logic\Location.cs" />
-    <Compile Include="Scenes\VictoryScene.cs" />
-    <Compile Include="Scenes\IntroScene.cs" />
-    <Compile Include="Scenes\PauseScene.cs" />
-    <Compile Include="States\States2.cs" />
-    <Compile Include="PathFinding\ComplexPath.cs" />
-    <Compile Include="PathFinding\PathState.cs" />
-    <Compile Include="PathFinding\SimplePath.cs" />
-    <Compile Include="ResourceProcessor\ClassicMapProcessor.cs" />
-    <Compile Include="ResourceProcessor\LocationMapProcessor.cs" />
-    <Compile Include="Scenes\ImageScene.cs" />
-    <Compile Include="Scenes\InfoScene.cs" />
-    <Compile Include="Scenes\InventoryScene.cs" />
-    <Compile Include="Scenes\LocationScene.cs" />
-    <Compile Include="Scenes\MapScene.cs" />
-    <Compile Include="GUI\NameWindow.cs" />
-    <Compile Include="Scenes\OptionsScene.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Scenes\MenuScene.cs" />
-    <Compile Include="GUI\SavegameInputWindow.cs" />
-    <Compile Include="States\States.cs" />
-    <Compile Include="Scenes\StatisticsScene.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\BurnGfx\BurnGfx.csproj">
-      <Project>{C66A2C4B-CE17-4DDE-B7AF-14D8C4B4F7E1}</Project>
-      <Name>BurnGfx</Name>
-      <Private>True</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\Framework\Framework.csproj">
-      <Project>{d7f6b52a-1e43-486e-815e-394ddddcd534}</Project>
-      <Name>Framework</Name>
-      <Private>False</Private>
-    </ProjectReference>
-    <ProjectReference Include="..\Platform\Platform.csproj">
-      <Project>{26df8ca5-a349-4e35-a0b9-5048af6c20c3}</Project>
-      <Name>Platform</Name>
-      <Private>False</Private>
-    </ProjectReference>
+    <ProjectReference Include="..\BurnGfx\BurnGfx.csproj" />
+    <ProjectReference Include="..\Framework\Framework.csproj" />
+    <ProjectReference Include="..\Platform\Platform.csproj" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="icon256.ico" />
     <Content Include="TODO.txt" />
   </ItemGroup>
   <ItemGroup>
-    <BootstrapperPackage Include=".NETFramework,Version=v4.0">
-      <Visible>False</Visible>
-      <ProductName>Microsoft .NET Framework 4 %28x86 and x64%29</ProductName>
-      <Install>true</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
-      <Install>false</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1</ProductName>
-      <Install>false</Install>
-    </BootstrapperPackage>
-    <BootstrapperPackage Include="Microsoft.Windows.Installer.3.1">
-      <Visible>False</Visible>
-      <ProductName>Windows Installer 3.1</ProductName>
-      <Install>true</Install>
-    </BootstrapperPackage>
+    <None Include="GUI\MapGuiWindowNew.cs" />
   </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
 </Project>

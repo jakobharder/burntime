@@ -92,6 +92,7 @@ namespace Burntime.Classic
 
             // set language code
             FileSystem.LocalizationCode = Settings["game"].GetString("language");
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             ResourceManager.Encoding = Encoding.GetEncoding(852); // DOS central europe
 
             // set user folder to game specific location
