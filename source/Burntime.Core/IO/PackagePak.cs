@@ -1,6 +1,4 @@
-﻿using ManagedZLib;
-
-namespace Burntime.Platform.IO;
+﻿namespace Burntime.Platform.IO;
 
 public enum PackageType
 {
