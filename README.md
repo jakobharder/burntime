@@ -32,5 +32,7 @@ See [Changelog.txt](./resources/ChangeLog.txt)
 
 ## Credits
 
-The original game, graphics and other assets are the property of Max Designs and their original authors.
-This project is not affiliated them.
+This project is not affiliated with Max Design and the original authors.
+The original game, graphics and other assets are the property of Max Design and their original authors.
+
+Thank you Martin Lasser for allowing community remake efforts to use the original graphics!
