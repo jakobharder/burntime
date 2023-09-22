@@ -57,6 +57,7 @@ namespace MapEditor
             mapWindow.ClickEntrance += new EventHandler(mapWindow_ClickEntrance);
             mapWindow.Click += new EventHandler(mapWindow_Click);
             mapWindow.RightClick += new EventHandler(mapWindow_RightClick);
+            mapWindow.TilePicked += MapWindow_TilePicked;
 
             mapWindow.AllwaysShowEntrances = showEntrances.Checked;
             mapWindow.AllwaysShowWays = showWaysToolStripMenuItem.Checked;
@@ -64,6 +65,33 @@ namespace MapEditor
             mapWindow.AllwaysShowWalkable = showWalkableToolStripMenuItem.Checked;
 
             Cursor = Cursors.Default;
+        }
+
+        private void MapWindow_TilePicked(object sender, EventArgs e)
+        {
+            var tile = mapWindow.Tile;
+            SwitchMode(MapWindow.EditMode.Tile);
+
+            for (int tileset = 0; tileset < tileViews.Count; tileset++)
+            {
+                for (int tileId = 0; tileId < allTiles[tileset].Tiles.Count; tileId++)
+                {
+                    if (tile != null && allTiles[tileset].Tiles[tileId] == tile)
+                    {
+                        activeTile = tile;
+                        editTabs.SelectedIndex = tileset;
+                        tileViews[tileset].Items[tileId].Selected = true;
+                        return;
+                    }
+                    else if (tile == null && tileViews[tileset].Items[tileId].Selected)
+                    {
+                        tileViews[tileset].Items[tileId].Selected = false;
+                    }
+                }
+            }
+
+            activeTile = null;
+            mapWindow.Tile = null;
         }
 
         void mapWindow_RightClick(object sender, EventArgs e)
@@ -153,7 +181,7 @@ namespace MapEditor
                 btnWayMode.Checked = false;
                 btnWalkableMode.Checked = false;
 
-                btnTileMode_Click(this, new EventArgs());
+                SwitchMode(MapWindow.EditMode.Tile);
             }
 
             btnSaveWalkable.Enabled = TileManager.Changed;
@@ -441,37 +469,45 @@ namespace MapEditor
             OnSaveAsDocument();
         }
 
-        private void btnTileMode_Click(object sender, EventArgs e)
+        private void SwitchMode(MapWindow.EditMode mode)
         {
-            mapWindow.Mode = MapWindow.EditMode.Tile;
-            btnEntranceMode.Checked = false;
-            btnWalkableMode.Checked = false;
-            btnWayMode.Checked = false;
+            mapWindow.Mode = mode;
+            btnTileMode.Checked = mode == MapWindow.EditMode.Tile;
+            btnEntranceMode.Checked = mode == MapWindow.EditMode.Entrance;
+            btnWalkableMode.Checked = mode == MapWindow.EditMode.Walkable;
+            btnWayMode.Checked = mode == MapWindow.EditMode.Way;
+            btnPickerMode.Checked = mode == MapWindow.EditMode.Picker;
             editTabs.TabPages.Clear();
 
-            for (int i = 0; i < tilePages.Length; i++)
+            switch (mode)
             {
-                //tabTiles.TabPages.Add(allTiles[i].Name);
-                //tileViews[i].Width = tabTiles.TabPages[tabTiles.TabPages.Count - 1].ClientSize.Width;
-                //tileViews[i].Height = tabTiles.TabPages[tabTiles.TabPages.Count - 1].ClientSize.Height;
-                //tabTiles.TabPages[tabTiles.TabPages.Count - 1].Controls.Add(tileViews[i]);
-                editTabs.TabPages.Add(tilePages[i]);
+                case MapWindow.EditMode.Tile:
+                    for (int i = 0; i < tilePages.Length; i++)
+                        editTabs.TabPages.Add(tilePages[i]);
+                    break;
+                case MapWindow.EditMode.Entrance:
+                    editTabs.TabPages.Add(entranceEditPage);
+                    break;
+                case MapWindow.EditMode.Walkable:
+                    editTabs.TabPages.Add(walkableEditPage);
+                    break;
+                case MapWindow.EditMode.Way:
+                    editTabs.TabPages.Add(wayEditPage);
+                    break;
             }
 
-            UpdateMode();
-        }
+            btnAddEntrance.Checked = false;
+            btnAddWay.Checked = false;
+            btnAddPoint.Checked = false;
 
-        private void btnEntranceMode_Click(object sender, EventArgs e)
-        {
-            mapWindow.Mode = MapWindow.EditMode.Entrance;
-            btnTileMode.Checked = false;
-            btnWalkableMode.Checked = false;
-            btnWayMode.Checked = false;
-
-            editTabs.TabPages.Clear();
-            editTabs.TabPages.Add(entranceEditPage);
-
-            UpdateMode();
+            switch (mode)
+            {
+                case MapWindow.EditMode.Way:
+                    btnAddWay.Enabled = false;
+                    numDays.Enabled = false;
+                    numDays.Value = 1;
+                    break;
+            }
         }
 
         private void btnRemoveEntrance_Click(object sender, EventArgs e)
@@ -640,28 +676,29 @@ namespace MapEditor
             SelectBurntimePath();
         }
 
+        private void btnTileMode_Click(object sender, EventArgs e)
+        {
+            SwitchMode(MapWindow.EditMode.Tile);
+        }
+
+        private void btnEntranceMode_Click(object sender, EventArgs e)
+        {
+            SwitchMode(MapWindow.EditMode.Entrance);
+        }
+
         private void btnWalkableMode_Click(object sender, EventArgs e)
         {
-            mapWindow.Mode = MapWindow.EditMode.Walkable;
-            btnEntranceMode.Checked = false;
-            btnWayMode.Checked = false;
-            btnTileMode.Checked = false;
-            editTabs.TabPages.Clear();
-            editTabs.TabPages.Add(walkableEditPage);
-
-            UpdateMode();
+            SwitchMode(MapWindow.EditMode.Walkable);
         }
 
         private void btnWayMode_Click(object sender, EventArgs e)
         {
-            mapWindow.Mode = MapWindow.EditMode.Way;
-            btnEntranceMode.Checked = false;
-            btnWalkableMode.Checked = false;
-            btnTileMode.Checked = false;
-            editTabs.TabPages.Clear();
-            editTabs.TabPages.Add(wayEditPage);
+            SwitchMode(MapWindow.EditMode.Way);
+        }
 
-            UpdateMode();
+        private void btnPickerMode_Click(object sender, EventArgs e)
+        {
+            SwitchMode(MapWindow.EditMode.Picker);
         }
 
         int addWayEntrance = -1;
@@ -732,22 +769,6 @@ namespace MapEditor
         {
             btnAddEntrance.Checked = false;
             btnAddWay.Checked = false;
-        }
-
-        void UpdateMode()
-        {
-            btnAddEntrance.Checked = false;
-            btnAddWay.Checked = false;
-            btnAddPoint.Checked = false;
-
-            switch (mapWindow.Mode)
-            {
-                case MapWindow.EditMode.Way:
-                    btnAddWay.Enabled = false;
-                    numDays.Enabled = false;
-                    numDays.Value = 1;
-                    break;
-            }
         }
 
         private void numDays_ValueChanged(object sender, EventArgs e)
