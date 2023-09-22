@@ -3,7 +3,8 @@
 
 * Updated to .NET 7
 * Enabled fullscreen
-* Included original grahpics package - no original game install is required anymore
+* Included original graphics package - no original game install is required anymore
+* Center maps when they are smaller than the screen
 
 Burntime v0.2.3 (2015-5-30)
 
@@ -12,7 +13,7 @@ Burntime v0.2.3 (2015-5-30)
 * Fixed 9 food with maggots issue
 * Added cheats to the Launcher
 * Fixed some NPC selection and path finding issues
-* Paper helmet now protects only 50% radiation and 70% gas
+* Paper helmet now protects only 20% radiation and gas
 * updated code to work with .NET 4.5
 known issues:
 * fullscreen does not work with Windows 8 / 10
@@ -33,7 +34,7 @@ Burntime v0.2.1 (2011-11-13)
 Burntime v0.2 (2011-10-24)
 
 * Increased size of all other maps to fit screen size
-* Added a whole in the Monastry's walls on the east side
+* Added a small gap in the Monastry's walls on the east side
 * Fixed glitch in intro video
 
 Burntime v0.1.5 (2011-10-22)
