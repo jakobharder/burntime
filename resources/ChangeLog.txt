@@ -1,5 +1,5 @@
 ﻿
-[unreleased]
+Burntime v0.3-rc1 (2023-09-22)
 
 * Updated to .NET 7
 * Enabled fullscreen
