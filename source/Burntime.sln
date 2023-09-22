@@ -5,7 +5,7 @@ VisualStudioVersion = 17.4.33205.214
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BurnGfx", "BurnGfx\BurnGfx.csproj", "{C66A2C4B-CE17-4DDE-B7AF-14D8C4B4F7E1}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Burntime.Core", "Burntime.Core\Burntime.Core.csproj", "{8A3F3861-B877-4049-96C4-C83F9B615B77}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Burntime.Core", "Burntime.Core\Burntime.Core.csproj", "{8A3F3861-B877-4049-96C4-C83F9B615B77}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Classic", "Classic\Classic.csproj", "{30EA843D-FC52-4653-9FAF-AA1AC2669F5E}"
 EndProject
@@ -13,9 +13,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Platform", "Platform\Platfo
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Framework", "Framework\Framework.csproj", "{D7F6B52A-1E43-486E-815E-394DDDDCD534}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Burntime", "Burntime\Burntime.csproj", "{73F80529-9314-47ED-B4C7-18E8A9785685}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Burntime", "Burntime\Burntime.csproj", "{73F80529-9314-47ED-B4C7-18E8A9785685}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PakConverter", "PakConverter\PakConverter.csproj", "{74955E9B-D49A-4883-A266-F9E6D6A4E42E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PakConverter", "PakConverter\PakConverter.csproj", "{74955E9B-D49A-4883-A266-F9E6D6A4E42E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Launcher", "Launcher\Launcher.csproj", "{1B1DEC0B-7C65-444E-8336-DF14842C0A20}"
 EndProject
@@ -50,6 +50,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "en", "en", "{9EBE441F-3F89-
 		..\resources\game\classic\lang\en\newburn.txt = ..\resources\game\classic\lang\en\newburn.txt
 	EndProjectSection
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MapEditor", "MapEditor\MapEditor.csproj", "{E5457E40-E243-4FEA-9F5C-D3BD9CD24A80}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x86 = Debug|x86
@@ -60,6 +62,10 @@ Global
 		{C66A2C4B-CE17-4DDE-B7AF-14D8C4B4F7E1}.Debug|x86.Build.0 = Debug|x86
 		{C66A2C4B-CE17-4DDE-B7AF-14D8C4B4F7E1}.Release|x86.ActiveCfg = Release|x86
 		{C66A2C4B-CE17-4DDE-B7AF-14D8C4B4F7E1}.Release|x86.Build.0 = Release|x86
+		{8A3F3861-B877-4049-96C4-C83F9B615B77}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{8A3F3861-B877-4049-96C4-C83F9B615B77}.Debug|x86.Build.0 = Debug|Any CPU
+		{8A3F3861-B877-4049-96C4-C83F9B615B77}.Release|x86.ActiveCfg = Release|Any CPU
+		{8A3F3861-B877-4049-96C4-C83F9B615B77}.Release|x86.Build.0 = Release|Any CPU
 		{30EA843D-FC52-4653-9FAF-AA1AC2669F5E}.Debug|x86.ActiveCfg = Debug|x86
 		{30EA843D-FC52-4653-9FAF-AA1AC2669F5E}.Debug|x86.Build.0 = Debug|x86
 		{30EA843D-FC52-4653-9FAF-AA1AC2669F5E}.Release|x86.ActiveCfg = Release|x86
@@ -84,10 +90,10 @@ Global
 		{1B1DEC0B-7C65-444E-8336-DF14842C0A20}.Debug|x86.Build.0 = Debug|x86
 		{1B1DEC0B-7C65-444E-8336-DF14842C0A20}.Release|x86.ActiveCfg = Release|x86
 		{1B1DEC0B-7C65-444E-8336-DF14842C0A20}.Release|x86.Build.0 = Release|x86
-		{8A3F3861-B877-4049-96C4-C83F9B615B77}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{8A3F3861-B877-4049-96C4-C83F9B615B77}.Debug|x86.Build.0 = Debug|Any CPU
-		{8A3F3861-B877-4049-96C4-C83F9B615B77}.Release|x86.ActiveCfg = Release|Any CPU
-		{8A3F3861-B877-4049-96C4-C83F9B615B77}.Release|x86.Build.0 = Release|Any CPU
+		{E5457E40-E243-4FEA-9F5C-D3BD9CD24A80}.Debug|x86.ActiveCfg = Debug|x86
+		{E5457E40-E243-4FEA-9F5C-D3BD9CD24A80}.Debug|x86.Build.0 = Debug|x86
+		{E5457E40-E243-4FEA-9F5C-D3BD9CD24A80}.Release|x86.ActiveCfg = Release|x86
+		{E5457E40-E243-4FEA-9F5C-D3BD9CD24A80}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

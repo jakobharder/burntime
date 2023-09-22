@@ -57,7 +57,8 @@ namespace MapEditor
             Tile,
             Entrance,
             Way,
-            Walkable
+            Walkable,
+            Picker
         };
 
         Image mapImage;
@@ -183,6 +184,7 @@ namespace MapEditor
         public event EventHandler ClickEntrance;
         public new event EventHandler Click;
         public event EventHandler RightClick;
+        public event EventHandler TilePicked;
 
         // --- methods
         public MapWindow()
@@ -732,6 +734,21 @@ namespace MapEditor
             base.OnMouseClick(e);
         }
 
+        private void PickTile(Point pt)
+        {
+            if (doc != null)
+            {
+                pt.X = (pt.X - AutoScrollPosition.X) / doc.TileSize;
+                pt.Y = (pt.Y - AutoScrollPosition.Y) / doc.TileSize;
+
+                if (pt.X >= 0 && pt.Y >= 0 && pt.X < doc.Size.Width && pt.Y < doc.Size.Height)
+                {
+                    Tile = doc.GetTile(pt.X, pt.Y);
+                    TilePicked?.Invoke(this, new());
+                }
+            }
+        }
+
         protected override void OnMouseDown(MouseEventArgs e)
         {
             if (doc == null)
@@ -756,6 +773,20 @@ namespace MapEditor
 
                         tilePainting = true;
                     }
+                    else if (e.Button == MouseButtons.Middle)
+                    {
+                        PickTile(e.Location);
+                    }
+                    else if (e.Button == MouseButtons.Right)
+                    {
+                        Tile = null;
+                        TilePicked?.Invoke(this, new());
+                    }
+                    break;
+
+                case EditMode.Picker:
+                    if (e.Button == MouseButtons.Left)
+                        PickTile(e.Location);   
                     break;
 
                 case EditMode.Entrance:

@@ -31,6 +31,7 @@ namespace Burntime.Classic
         public override String Title { get { return "Burntime"; } }
         //public override Vector2[] Resolutions { get { return new Vector2[] { new Vector2(320, 200) }; } }
         public override Vector2[] Resolutions { get { return new Vector2[] { new Vector2(480, 225), new Vector2(384, 240) }; } }
+        //public override Vector2[] Resolutions { get { return new Vector2[] { new Vector2(640, 300), new Vector2(384, 240) }; } }
 
         public bool IsWideScreen { get { return Engine.Resolution.x / (float)Engine.Resolution.y > 1.5f; } }
 

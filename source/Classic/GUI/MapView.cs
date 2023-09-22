@@ -313,6 +313,12 @@ namespace Burntime.Classic.GUI
             position.ThresholdGT(0);
             position.ThresholdLT(Boundings.Size - map.TileSize * map.Size);
 
+            // map is smaller than screen, center it
+            if (map.TileSize.x * map.Size.x < Boundings.Size.x)
+                position.x = (Boundings.Size.x - map.TileSize.x * map.Size.x) / 2;
+            if (map.TileSize.y * map.Size.y < Boundings.Size.y)
+                position.y = (Boundings.Size.y - map.TileSize.y * map.Size.y) / 2;
+
             if (handler != null)
             {
                 ClassicGame game = app.GameState as ClassicGame;
