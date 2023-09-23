@@ -257,29 +257,13 @@ burngfx=56
 class=useless
 burngfx=57
 
-[item_cookie_juern]
-class=nodrop cookie
-title=@newburn?0
-text=@newburn?0
-image=gfx/cookie.png
-value=45
-food=1
-
-[item_cookie_phoenix]
-class=nodrop cookie
-title=@newburn?1
-text=@newburn?1
-image=gfx/cookie.png
-value=45
-food=1
-
 [item_dogshit]
-class=nodrop
+class=useless nodrop
 title=@newburn?2
 text=@newburn?2
 image=gfx/dogshit.png
-value=4
-food=1
+value=1
+food=0
 
 [item_dish]
 class=useless
@@ -327,43 +311,3 @@ title=@newburn?8
 text=@newburn?9
 image=gfx/pistol_unloaded.png
 value=100
-
-[item_cookie_german]
-class=nodrop cookie
-title=@newburn?12
-text=@newburn?12
-image=gfx/cookie.png
-value=45
-food=1
-
-[item_cookie_chris1982]
-class=nodrop cookie
-title=@newburn?13
-text=@newburn?13
-image=gfx/cookie.png
-value=45
-food=1
-
-[item_cookie_graysonwall]
-class=nodrop cookie
-title=@newburn?14
-text=@newburn?14
-image=gfx/cookie.png
-value=45
-food=1
-
-[item_cookie_shadow]
-class=nodrop cookie
-title=@newburn?15
-text=@newburn?15
-image=gfx/cookie.png
-value=45
-food=1
-
-[item_cookie_mavado]
-class=nodrop cookie
-title=@newburn?16
-text=@newburn?16
-image=gfx/cookie.png
-value=45
-food=1
