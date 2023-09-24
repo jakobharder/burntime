@@ -7,10 +7,11 @@ public class Toggle : Button
 {
     struct StateVisuals
     {
-        public string Text;
+        public GuiString Text;
         public GuiImage Image;
         public GuiImage HoverImage;
         public GuiImage DownImage;
+        public GuiString ToolTip;
     }
 
     private List<StateVisuals> states_ = new();
@@ -26,6 +27,7 @@ public class Toggle : Button
             Image = states_[state_].Image;
             HoverImage = states_[state_].HoverImage;
             DownImage = states_[state_].DownImage;
+            ToolTipText = states_[state_].ToolTip;
         }
     }
 
@@ -34,9 +36,9 @@ public class Toggle : Button
     {
     }
 
-    public void AddState(string text, GuiImage image, GuiImage hoverImage, GuiImage downImage)
+    public void AddState(string text, GuiImage image, GuiImage hoverImage, GuiImage downImage, string toolTip)
     {
-        states_.Add(new() { Text = text, Image = image, HoverImage = hoverImage, DownImage = downImage });
+        states_.Add(new() { Text = text, Image = image, HoverImage = hoverImage, DownImage = downImage, ToolTip = toolTip });
 
         if (states_.Count == 1)
             State = 0;

@@ -128,29 +128,26 @@ namespace Burntime.Classic
             // difficulty
             Difficulty = new(App);
             Difficulty.Position = new(100, 149);
-            Difficulty.ToolTipText = "@newburn?0";
             Difficulty.ToolTipFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(212, 212, 212)) { Borders = TextBorders.Screen };
-            Difficulty.AddState(null, "gfx/ui/start_button_level1.png", "gfx/ui/start_button_level1_down.png", "gfx/ui/start_button_level1_down.png");
-            Difficulty.AddState(null, "gfx/ui/start_button_level2.png", "gfx/ui/start_button_level2_down.png", "gfx/ui/start_button_level2_down.png");
-            Difficulty.AddState(null, "gfx/ui/start_button_level3.png", "gfx/ui/start_button_level3_down.png", "gfx/ui/start_button_level3_down.png");
+            Difficulty.AddState(null, "gfx/ui/start_button_level1.png", "gfx/ui/start_button_level1_down.png", "gfx/ui/start_button_level1_down.png", "@newburn?14");
+            Difficulty.AddState(null, "gfx/ui/start_button_level2.png", "gfx/ui/start_button_level2_down.png", "gfx/ui/start_button_level2_down.png", "@newburn?15");
+            Difficulty.AddState(null, "gfx/ui/start_button_level3.png", "gfx/ui/start_button_level3_down.png", "gfx/ui/start_button_level3_down.png", "@newburn?16");
             Windows += Difficulty;
 
             // mode
             GameMode = new(App);
             GameMode.Position = new(145, 149);
-            GameMode.ToolTipText = "@newburn?1";
             GameMode.ToolTipFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(212, 212, 212)) { Borders = TextBorders.Screen };
-            GameMode.AddState(null, "gfx/ui/start_button_remake.png", "gfx/ui/start_button_remake_down.png", "gfx/ui/start_button_remake_down.png");
-            GameMode.AddState(null, "gfx/ui/start_button_original.png", "gfx/ui/start_button_original_down.png", "gfx/ui/start_button_original_down.png");
+            GameMode.AddState(null, "gfx/ui/start_button_remake.png", "gfx/ui/start_button_remake_down.png", "gfx/ui/start_button_remake_down.png", "@newburn?1");
+            GameMode.AddState(null, "gfx/ui/start_button_original.png", "gfx/ui/start_button_original_down.png", "gfx/ui/start_button_original_down.png", "@newburn?0");
             Windows += GameMode;
 
             // ai
             AiPlayers = new(App);
             AiPlayers.Position = new(190, 149);
-            AiPlayers.ToolTipText = "@newburn?12";
             AiPlayers.ToolTipFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(212, 212, 212)) { Borders = TextBorders.Screen };
-            AiPlayers.AddState(null, "gfx/ui/start_button_ai.png", "gfx/ui/start_button_ai_down.png", "gfx/ui/start_button_ai_down.png");
-            AiPlayers.AddState(null, "gfx/ui/start_button_noai.png", "gfx/ui/start_button_noai_down.png", "gfx/ui/start_button_noai_down.png");
+            AiPlayers.AddState(null, "gfx/ui/start_button_ai.png", "gfx/ui/start_button_ai_down.png", "gfx/ui/start_button_ai_down.png", "@newburn?12");
+            AiPlayers.AddState(null, "gfx/ui/start_button_noai.png", "gfx/ui/start_button_noai_down.png", "gfx/ui/start_button_noai_down.png", "@newburn?13");
             Windows += AiPlayers;
 
             // input conversion

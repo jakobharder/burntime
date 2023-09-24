@@ -1,5 +1,5 @@
-Schwierigkeitsgrad
-Spielmodus
+Wie das Original
+Erweitertes Spiel
 Hundescheisse
 Teller
 Papierhelm
@@ -10,11 +10,11 @@ ungeladene Pistole
 eine ungeladene Pistole
 Warte auf andere Spieler...
 Pause
-KI Spieler
-
-
-
-
+Mit Computergegner
+Ohne Computergegner
+Einfach
+Normal
+Schwer
 
 
 

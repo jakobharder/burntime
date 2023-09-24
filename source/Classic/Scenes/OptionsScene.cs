@@ -46,7 +46,7 @@ namespace Burntime.Classic
             button.Font = red;
             button.HoverFont = hover;
             button.Text = "@burn?388";
-            button.Position = new Vector2(212, 61);
+            button.Position = new Vector2(214, 64);
             button.SetTextOnly();
             button.Command += app.SceneManager.PreviousScene;
             Windows += button;
@@ -63,7 +63,7 @@ namespace Burntime.Classic
                 button.Text = BurntimeClassic.Instance.MusicPlayback ? "@burn?389" : "@burn?424";
                 button.Command += OnButtonMusicSwitch;
             }
-            button.Position = new Vector2(212, 81);
+            button.Position = new Vector2(214, 84);
             button.SetTextOnly();
             music = button;
             Windows += button;
@@ -71,21 +71,21 @@ namespace Burntime.Classic
             button.Font = red;
             button.HoverFont = hover;
             button.Text = "@burn?390";
-            button.Position = new Vector2(212, 102);
+            button.Position = new Vector2(214, 105);
             button.SetTextOnly();
             button.Command += OnButtonRestart;
             Windows += button;
             button = new Button(App);
             button.Font = disabled;
             button.Text = "@burn?392";
-            button.Position = new Vector2(212, 124);
+            button.Position = new Vector2(214, 127);
             button.SetTextOnly();
             Windows += button;
             button = new Button(App);
             button.Font = red;
             button.HoverFont = hover;
             button.Text = "@burn?391";
-            button.Position = new Vector2(212, 145);
+            button.Position = new Vector2(214, 148);
             button.SetTextOnly();
             button.Command += OnButtonExit;
             Windows += button;

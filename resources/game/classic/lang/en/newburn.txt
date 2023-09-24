@@ -1,5 +1,5 @@
-Difficulty
-Game Mode
+like the original
+extended game
 dog shit
 dish
 paper helmet
@@ -10,11 +10,11 @@ unloaded pistol
 an unloaded pistol
 wait for other players...
 pause
-AI Players
-
-
-
-
+with AI players
+no AI players
+easy
+normal
+hard
 
 
 
