@@ -92,7 +92,7 @@ namespace Burntime.Classic.Logic.Generation
 
             // set constructions
             game.Constructions = (Constructions)app.ResourceManager.GetData("constructions@construction.txt");
-            game.ItemTypes = container.Create<ItemTypes>(new object[] { "items@items.txt" });
+            game.ItemTypes = container.Create<ItemTypes>(new object[] { Info.ExtendedGame ? "items@items.txt" : "items@items_original.txt" });
 
             // set productions
             LoadProductions(game, gamdat);
