@@ -217,14 +217,18 @@ namespace Burntime.Classic
 
             GameCreation creation = new GameCreation(app as BurntimeClassic);
 
-            NewGameInfo Info = new NewGameInfo();
-            Info.NameOne = PlayerOneSwitch.Name;
-            Info.NameTwo = PlayerTwoSwitch.Name;
-            Info.FaceOne = PlayerOneFace.FaceID;
-            Info.FaceTwo = PlayerTwoFace.FaceID;
-            Info.Difficulty = Difficulty.State;
-            Info.ColorOne = Color.IsDown ? BurntimePlayerColor.Red : BurntimePlayerColor.Green;
-            Info.ColorTwo = Color.IsDown ? BurntimePlayerColor.Green : BurntimePlayerColor.Red;
+            NewGameInfo Info = new()
+            {
+                NameOne = PlayerOneSwitch.Name,
+                NameTwo = PlayerTwoSwitch.Name,
+                FaceOne = PlayerOneFace.FaceID,
+                FaceTwo = PlayerTwoFace.FaceID,
+                Difficulty = Difficulty.State,
+                ColorOne = Color.IsDown ? BurntimePlayerColor.Red : BurntimePlayerColor.Green,
+                ColorTwo = Color.IsDown ? BurntimePlayerColor.Green : BurntimePlayerColor.Red,
+                ExtendedGame = GameMode.State == 0,
+                DisableAI = AiPlayers.State == 1
+            };
 
             creation.CreateNewGame(Info);
 
