@@ -1,5 +1,5 @@
-﻿Burntime Classic
-.NET Port von Max Designs Burntime (1993)
+﻿Burntime
+Weiterentwicklung von Max Designs Burntime (1993)
 
 OK
 Abbrechen
