@@ -10,12 +10,6 @@ namespace Burntime.Framework.GUI
 {
     public class Button : Window
     {
-        protected GuiImage image;
-        protected GuiImage hoverImage;
-        public GuiImage DownImage;
-        protected GuiString text;
-        protected  GuiFont font;
-        public GuiFont HoverFont;
         public VerticalTextAlignment TextVerticalAlign = VerticalTextAlignment.Center;
         public TextAlignment TextHorizontalAlign = TextAlignment.Center;
 
@@ -31,40 +25,21 @@ namespace Burntime.Framework.GUI
 
         public CommandEvent Command;
 
-        public GuiImage Image
-        {
-            get { return image; }
-            set
-            {
-                image = value;
-            }
-        }
+        public GuiImage Image { get; set; }
+        public GuiImage HoverImage { get; set; }
+        public GuiImage DownImage { get; set; }
 
-        public GuiImage HoverImage
-        {
-            get { return hoverImage; }
-            set
-            {
-                hoverImage = value;
-            }
-        }
+        public GuiString Text { get; set; }
+        public GuiFont Font { get; set; }
+        public GuiFont HoverFont { get; set; }
 
-        public GuiString Text
-        {
-            get { return text; }
-            set { text = value; }
-        }
-
-        public GuiFont Font
-        {
-            get { return font; }
-            set { font = value; }
-        }
+        public GuiString ToolTipText { get; set; }
+        public GuiFont ToolTipFont { get; set; }
 
         public void SetTextOnly()
         {
-            if (font != null && text != null)
-                Size = font.GetRect(0, 0, text).Size;
+            if (Font != null && Text != null)
+                Size = Font.GetRect(0, 0, Text).Size;
             TextVerticalAlign = VerticalTextAlignment.Top;
             TextHorizontalAlign = TextAlignment.Left;
             sizeSet = true;
@@ -135,6 +110,15 @@ namespace Burntime.Framework.GUI
                     HoverFont.DrawText(Target, textpos, Text, TextHorizontalAlign, TextVerticalAlign);
                 else
                     Font.DrawText(Target, textpos, Text, TextHorizontalAlign, TextVerticalAlign);
+            }
+
+            if (IsHover && ToolTipText is not null && ToolTipFont is not null)
+            {
+                Vector2 textpos;
+                textpos.x = Size.x / 2;
+                textpos.y = -2;
+
+                ToolTipFont.DrawText(Target, textpos, ToolTipText, TextAlignment.Center, VerticalTextAlignment.Bottom);
             }
         }
 

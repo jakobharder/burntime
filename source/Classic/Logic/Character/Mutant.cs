@@ -12,13 +12,6 @@ namespace Burntime.Classic.Logic
             // drop special item
             ClassicGame root = (ClassicGame)Container.Root;
 
-            if ((Burntime.Platform.Math.Random.Next() % 100) < 3)
-            {
-                // drop cookies instead at a chance of 3%
-                string[] cookies = root.ItemTypes.GetTypesWithClass(new string[] { "cookie" }, new string[0]);
-                Location.Items.DropAt(root.ItemTypes.Generate(cookies[Burntime.Platform.Math.Random.Next() % cookies.Length]), Position);
-            }
-
             base.Die();
         }
 

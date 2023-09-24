@@ -1,5 +1,5 @@
-Burntime Classic
-.NET port of Max Design's Burntime (1993)
+Burntime
+Extended version of Max Design's Burntime (1993)
 
 OK
 Cancel

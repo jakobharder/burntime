@@ -186,7 +186,7 @@ namespace Burntime.Launcher
         void OnExternal(object sender, HtmlElementEventArgs args)
         {
             HtmlElement element = sender as HtmlElement;
-            ProcessStartInfo sInfo = new ProcessStartInfo(element.GetAttribute("url"));
+            ProcessStartInfo sInfo = new(element.GetAttribute("url")) { UseShellExecute = true };
             Process.Start(sInfo);
         }
 

@@ -40,7 +40,7 @@ namespace Burntime.Classic.Logic
             {
                 ClassicGame root = (ClassicGame)Container.Root;
 
-                if ((Burntime.Platform.Math.Random.Next() % 100) == 0)
+                if ((Burntime.Platform.Math.Random.Next() % 1) == 0 && root.ItemTypes.Contains("item_dogshit"))
                 {
                     // drop dogshit at a change of 1% per minute
                     Location.Items.DropAt(root.ItemTypes.Generate("item_dogshit"), Position);

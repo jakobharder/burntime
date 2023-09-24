@@ -5,6 +5,7 @@ Burntime v0.3-rc1 (2023-09-22)
 * Enabled fullscreen
 * Included original graphics package - no original game install is required anymore
 * Center maps when they are smaller than the screen
+* Enlarged very small locations to fill 16:9 screens
 
 Burntime v0.2.3 (2015-5-30)
 

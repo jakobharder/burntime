@@ -21,6 +21,8 @@ namespace Burntime.Classic.Logic.Generation
         public int Difficulty;
         public BurntimePlayerColor ColorOne;
         public BurntimePlayerColor ColorTwo;
+        public bool DisableAI;
+        public bool ExtendedGame;
     }
 
     enum BurntimePlayerColor
@@ -90,7 +92,7 @@ namespace Burntime.Classic.Logic.Generation
 
             // set constructions
             game.Constructions = (Constructions)app.ResourceManager.GetData("constructions@construction.txt");
-            game.ItemTypes = container.Create<ItemTypes>(new object[] { "items@items.txt" });
+            game.ItemTypes = container.Create<ItemTypes>(new object[] { Info.ExtendedGame ? "items@items.txt" : "items@items_original.txt" });
 
             // set productions
             LoadProductions(game, gamdat);
@@ -132,9 +134,6 @@ namespace Burntime.Classic.Logic.Generation
             // if no synchronization mode is active, then share container with game server
             if (!BurntimeClassic.Instance.Settings["game"].GetBool("always_synchronize"))
                 sharedContainer = container;
-
-            // no ai mode
-            bool disableAI = BurntimeClassic.Instance.Settings["game"].GetBool("disable_ai");
 
             app.ActiveClient = Burntime.Framework.Network.GameClient.NoClient;
 
@@ -240,7 +239,7 @@ namespace Burntime.Classic.Logic.Generation
             }
 
             // kill all ai player
-            if (disableAI)
+            if (Info.DisableAI)
             {
                 foreach (Player p in game.World.Players)
                 {

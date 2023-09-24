@@ -1,6 +1,6 @@
-Juerns Keks
-Phoenixs Keks
-Hundescheisse
+Wie das Original
+Erweitertes Spiel
+Hundekacke
 Teller
 Papierhelm
 Du wirst sterben!
@@ -10,11 +10,11 @@ ungeladene Pistole
 eine ungeladene Pistole
 Warte auf andere Spieler...
 Pause
-Germans Keks
-Chris1982s Keks
-Graysonwalls Keks
-Shadows Keks
-Mavados Keks
+Mit Computergegner
+Ohne Computergegner
+Einfach
+Normal
+Schwer
 
 
 

@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Platforms>x86</Platforms>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net7.0-windows</TargetFramework>
+    <RootNamespace>BurnGfxRipper</RootNamespace>
+    <AssemblyName>BurnGfxRipper</AssemblyName>
+    <StartupObject>BurnGfxRipper.Program</StartupObject>
+    <IsPublishable>False</IsPublishable>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="BurnGfx">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\bin\burntime\system\BurnGfx.dll</HintPath>
+    </Reference>
+    <Reference Include="Burntime.Core">
+      <HintPath>..\..\bin\burntime\system\Burntime.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Framework">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\bin\burntime\system\Framework.dll</HintPath>
+    </Reference>
+    <Reference Include="Platform">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\bin\burntime\system\Platform.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Drawing.Common" Version="7.0.0" />
+  </ItemGroup>
+</Project>

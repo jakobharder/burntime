@@ -41,7 +41,7 @@ namespace Burntime.Classic
 
         void RefreshText()
         {
-            text = savegameModeStrings[(int)savegameMode].Replace("|A", name + ".SAV");
+            Text = savegameModeStrings[(int)savegameMode].Replace("|A", name + ".SAV");
         }
 
         string[] savegameModeStrings = new string[4];

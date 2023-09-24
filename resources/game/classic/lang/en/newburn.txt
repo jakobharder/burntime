@@ -1,5 +1,5 @@
-juern's cookie
-phoenix's cookie
+like the original
+extended game
 dog shit
 dish
 paper helmet
@@ -10,11 +10,11 @@ unloaded pistol
 an unloaded pistol
 wait for other players...
 pause
-german's cookie
-chris1982's cookie
-graysonwall's cookie
-shadow's cookie
-mavado's cookie
+with AI players
+no AI players
+easy
+normal
+hard
 
 
 

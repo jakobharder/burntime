@@ -11,6 +11,7 @@ using System.Diagnostics;
 
 using Burntime.Framework;
 using Burntime.Platform.IO;
+using System.Linq;
 
 namespace Burntime.Launcher
 {
@@ -22,7 +23,7 @@ namespace Burntime.Launcher
 
         public LauncherForm()
         {
-            ClientSize = new System.Drawing.Size(427, 294);
+            ClientSize = new System.Drawing.Size(387, 254);
 
             // get engines version
             ConfigFile config = new ConfigFile();
@@ -48,7 +49,8 @@ namespace Burntime.Launcher
         void InitializeTabs()
         {
             // add a tab for every game
-            foreach (GamePackage gamePackage in Program.Games)
+            //foreach (GamePackage gamePackage in Program.Games)
+            GamePackage gamePackage = Program.Games.First(e => e.Name == "classic");
             {
                 TabPage page = new GamePackageTabPage(gamePackage);
                 tabControl.TabPages.Add(page);

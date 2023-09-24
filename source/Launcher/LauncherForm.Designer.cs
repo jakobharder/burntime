@@ -37,7 +37,7 @@
             this.tabControl.Location = new System.Drawing.Point(8, 8);
             this.tabControl.Name = "tabControl";
             this.tabControl.SelectedIndex = 0;
-            this.tabControl.Size = new System.Drawing.Size(408, 272);
+            this.tabControl.Size = new System.Drawing.Size(368, 232);
             this.tabControl.TabIndex = 0;
             this.tabControl.Selected += new System.Windows.Forms.TabControlEventHandler(this.tabControl_Selected);
             // 
@@ -45,7 +45,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(427, 294);
+            this.ClientSize = new System.Drawing.Size(387, 254);
             this.Controls.Add(this.tabControl);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             //this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));

@@ -12,14 +12,14 @@ namespace Burntime.Framework.GUI
 
         public static implicit operator GuiString(string id)
         {
-            if (id.StartsWith("@"))
+            if (id?.StartsWith("@") == true)
                 return new GuiString(Module.Instance.ResourceManager.GetString(id.Substring(1)));
             return new GuiString(id);
         }
 
         public GuiString(string str)
         {
-            if (str.StartsWith("@"))
+            if (str?.StartsWith("@") == true)
                 this.str = Module.Instance.ResourceManager.GetString(str.Substring(1));
             else
                 this.str = str;
