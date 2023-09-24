@@ -4,20 +4,34 @@ Remake of the PC strategy game 'Burntime' from Max Design.
 
 ![](./doc/screens.png)
 
+## Get the Game
+
+Download it from [Releases](https://github.com/jakobharder/burntime/releases).
+
 ## Features
 
+The game is a complete port of the original game to Windows with some adjustments and an extended game mode.
+
 - wide-screen support
-- complete port of the original game to Windows
-- to be done: AI players
+- game adjustments
+  - toggle to switch between original and extended game
+  - toggle to disable AI players
+- UI adjustments
+  - attack/defense values displayed in inventory
+- minor location adjustments
+  - some locations are larger to fill wide screens
+  - Monastery got another gap in the wall to go through
 
-## Play the Game
+Note: unfortunately the game music is still missing due to an unclear license situation.
 
-Download from [Releases](https://github.com/jakobharder/burntime/releases).
+### Extended Game
 
-The game asks you for the location of the original Burntime game files.
-It won't run without.
+The extended game mode adds new items, locations and gameplay features.
+You can disable these changes in the start menu.
 
-## Build and Debug the Game
+- additional items
+
+## Build and Debug
 
 - Open `source/Burntime.sln` in Visual Studio
 - Build solution (it will generate a `bin/burntime` folder)

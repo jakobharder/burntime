@@ -1,9 +1,11 @@
 ﻿
-Burntime v0.3-rc1 (2023-09-22)
+Burntime v0.3 (2023-09-24)
 
 * Updated to .NET 7
 * Enabled fullscreen
 * Included original graphics package - no original game install is required anymore
+* Added no AI toggle to start menu
+* Added extended game mode to start menu
 * Center maps when they are smaller than the screen
 * Enlarged very small locations to fill 16:9 screens
 
