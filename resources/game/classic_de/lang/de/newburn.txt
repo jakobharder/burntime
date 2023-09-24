@@ -1,5 +1,5 @@
-Juerns Keks
-Phoenixs Keks
+Schwierigkeitsgrad
+Spielmodus
 Hundescheisse
 Teller
 Papierhelm
@@ -10,11 +10,11 @@ ungeladene Pistole
 eine ungeladene Pistole
 Warte auf andere Spieler...
 Pause
-Germans Keks
-Chris1982s Keks
-Graysonwalls Keks
-Shadows Keks
-Mavados Keks
+KI Spieler
+
+
+
+
 
 
 

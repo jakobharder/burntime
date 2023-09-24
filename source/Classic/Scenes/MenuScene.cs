@@ -18,7 +18,9 @@ namespace Burntime.Classic
         bool UsePlayerTwo = false;
         FaceWindow PlayerOneFace;
         FaceWindow PlayerTwoFace;
-        Radio Difficulty;
+        Toggle Difficulty;
+        Toggle GameMode;
+        Toggle AiPlayers;
         Radio Color;
         Burntime.Platform.IO.ConfigFile conversionTable;
 
@@ -124,21 +126,32 @@ namespace Burntime.Classic
             Windows += radio;
 
             // difficulty
-            for (int i = 0; i < 3; i++)
-            {
-                radio = new Radio(App);
-                if (i == 0)
-                {
-                    radio.IsDown = true;
-                    Difficulty = radio;
-                }
-                radio.Position = new Vector2(100 + 45 * i, 149);
-                radio.Image = "sta.ani?" + (i * 2).ToString();
-                radio.HoverImage = "sta.ani?" + (i * 2 + 1).ToString();
-                radio.DownImage = "sta.ani?" + (i * 2 + 1).ToString();
-                radio.Group = 1;
-                Windows += radio;
-            }
+            Difficulty = new(App);
+            Difficulty.Position = new(100, 149);
+            Difficulty.ToolTipText = "@newburn?0";
+            Difficulty.ToolTipFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(212, 212, 212)) { Borders = TextBorders.Screen };
+            Difficulty.AddState(null, "gfx/ui/start_button_level1.png", "gfx/ui/start_button_level1_down.png", "gfx/ui/start_button_level1_down.png");
+            Difficulty.AddState(null, "gfx/ui/start_button_level2.png", "gfx/ui/start_button_level2_down.png", "gfx/ui/start_button_level2_down.png");
+            Difficulty.AddState(null, "gfx/ui/start_button_level3.png", "gfx/ui/start_button_level3_down.png", "gfx/ui/start_button_level3_down.png");
+            Windows += Difficulty;
+
+            // mode
+            GameMode = new(App);
+            GameMode.Position = new(145, 149);
+            GameMode.ToolTipText = "@newburn?1";
+            GameMode.ToolTipFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(212, 212, 212)) { Borders = TextBorders.Screen };
+            GameMode.AddState(null, "gfx/ui/start_button_remake.png", "gfx/ui/start_button_remake_down.png", "gfx/ui/start_button_remake_down.png");
+            GameMode.AddState(null, "gfx/ui/start_button_original.png", "gfx/ui/start_button_original_down.png", "gfx/ui/start_button_original_down.png");
+            Windows += GameMode;
+
+            // ai
+            AiPlayers = new(App);
+            AiPlayers.Position = new(190, 149);
+            AiPlayers.ToolTipText = "@newburn?12";
+            AiPlayers.ToolTipFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(212, 212, 212)) { Borders = TextBorders.Screen };
+            AiPlayers.AddState(null, "gfx/ui/start_button_ai.png", "gfx/ui/start_button_ai_down.png", "gfx/ui/start_button_ai_down.png");
+            AiPlayers.AddState(null, "gfx/ui/start_button_noai.png", "gfx/ui/start_button_noai_down.png", "gfx/ui/start_button_noai_down.png");
+            Windows += AiPlayers;
 
             // input conversion
             conversionTable = new Burntime.Platform.IO.ConfigFile();
@@ -212,7 +225,7 @@ namespace Burntime.Classic
             Info.NameTwo = PlayerTwoSwitch.Name;
             Info.FaceOne = PlayerOneFace.FaceID;
             Info.FaceTwo = PlayerTwoFace.FaceID;
-            Info.Difficulty = Difficulty.Value;
+            Info.Difficulty = Difficulty.State;
             Info.ColorOne = Color.IsDown ? BurntimePlayerColor.Red : BurntimePlayerColor.Green;
             Info.ColorTwo = Color.IsDown ? BurntimePlayerColor.Green : BurntimePlayerColor.Red;
 
@@ -235,7 +248,9 @@ namespace Burntime.Classic
             PlayerOneSwitch.Name = "";
             PlayerTwoSwitch.IsDown = false;
             PlayerTwoSwitch.Name = "";
-            Difficulty.IsDown = true;
+            Difficulty.State = 0;
+            GameMode.State = 0;
+            AiPlayers.State = 0;
         }
 
         void OnButtonExit()

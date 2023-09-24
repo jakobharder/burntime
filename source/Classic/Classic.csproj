@@ -35,7 +35,6 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="icon256.ico" />
-    <Content Include="TODO.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="GUI\MapGuiWindowNew.cs" />
