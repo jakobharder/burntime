@@ -103,8 +103,9 @@ namespace Burntime.Classic.Logic.Data
                 type.Full = section.GetString("full");
                 type.Empty = section.GetString("empty");
                 type.AmmoValue = section.GetInt("ammo");
+                type.DefenseValue = section.GetInt("defense");
 
-                if (type.Protection.Length > 0 || type.DamageValue > 0)
+                if (type.Protection.Length > 0 || type.DamageValue > 0 || type.DefenseValue > 0)
                 {
                     type.IsSelectable = true;
                 }

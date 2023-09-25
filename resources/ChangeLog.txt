@@ -1,4 +1,8 @@
 ﻿
+[Unreleased]
+
+* Clothes increase defense value when equiped
+
 Burntime v0.3 (2023-09-24)
 
 * Updated to .NET 7

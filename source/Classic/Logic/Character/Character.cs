@@ -104,15 +104,8 @@ namespace Burntime.Classic.Logic
             set { protection = value; }
         }
 
-        public virtual float AttackValue
-        {
-            get { if (Weapon != null) return Weapon.DamageValue; return 10; }
-        }
-
-        public virtual float DefenseValue
-        {
-            get { return (int)(Experience / 10 + 0.5f); }
-        }
+        public virtual float AttackValue => Weapon?.DamageValue ?? 10;
+        public virtual float DefenseValue => (int)(Experience / 10 + 0.5f + (Protection?.DefenseValue ?? 0));
 
         protected DataID<Platform.Graphics.Sprite> body;
         public DataID<Platform.Graphics.Sprite> Body
