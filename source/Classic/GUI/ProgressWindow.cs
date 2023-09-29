@@ -78,7 +78,7 @@ namespace Burntime.Classic.GUI
             base.OnRender(target);
 
             target.Layer += 1;
-            target.RenderRect(Vector2.Zero, new Vector2((int)System.Math.Ceiling(Progress * (Size.x - border * 2)) + border, Size.y), color);
+            target.RenderRect(new Vector2(border, border), new Vector2((int)System.Math.Ceiling(Progress * (Size.x - border * 2)), Size.y - border * 2), color);
             target.Layer -= 1;
 
             target.Layer += 3;

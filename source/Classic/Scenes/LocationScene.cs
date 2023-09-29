@@ -19,7 +19,7 @@ namespace Burntime.Classic
     public class LocationScene : Scene, IMapEntranceHandler, IInteractionHandler, ILogicNotifycationHandler
     {
         MapView view;
-        MapGuiWindow gui;
+        MainUiOriginalWindow gui;
         MenuWindow menu;
         Image cursorAni;
         DialogWindow dialog;
@@ -61,7 +61,7 @@ namespace Burntime.Classic
             cursorAni.Layer += 59;
             Windows += cursorAni;
 
-            gui = new MapGuiWindow(App);
+            gui = new MainUiOriginalWindow(App);
             gui.Layer += 60;
             Windows += gui;
 

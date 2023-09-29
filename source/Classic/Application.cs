@@ -137,6 +137,7 @@ namespace Burntime.Classic
         public bool MusicPlayback;
         public bool DisableMusic;
         public int PreviousPlayerId = -1;
+        public bool NewGui = false;
 
         public Character SelectedCharacter
         {

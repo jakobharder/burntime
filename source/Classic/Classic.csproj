@@ -26,17 +26,11 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Remove="GUI\MapGuiWindowNew.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\BurnGfx\BurnGfx.csproj" />
     <ProjectReference Include="..\Framework\Framework.csproj" />
     <ProjectReference Include="..\Platform\Platform.csproj" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="icon256.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="GUI\MapGuiWindowNew.cs" />
   </ItemGroup>
 </Project>

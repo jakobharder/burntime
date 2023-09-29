@@ -7,17 +7,31 @@ using Burntime.Platform.Graphics;
 using Burntime.Framework;
 using Burntime.Framework.GUI;
 using Burntime.Classic.Logic;
+using System.Windows.Forms;
+using Burntime.Classic.GUI;
 
 namespace Burntime.Classic
 {
-    public class MapGuiWindow : Container
+    public abstract class IMapGuiWindow : Container
+    {
+        public IMapGuiWindow(Module App)
+            : base(App)
+        {
+
+        }
+
+        public abstract void UpdatePlayer();
+        public abstract void SetMapRenderArea(MapView mapView, Vector2 size);
+    }
+
+    public class MainUiOriginalWindow : IMapGuiWindow
     {
         GuiFont font;
         GuiFont playerColor;
         FaceWindow face;
         String name;
 
-        public MapGuiWindow(Module App)
+        public MainUiOriginalWindow(Module App)
             : base(App)
         {
             Size = app.Engine.GameResolution;
@@ -41,6 +55,12 @@ namespace Burntime.Classic
             face.DisplayOnly = true;
             face.Layer++;
             Windows += face;
+        }
+
+        public override void SetMapRenderArea(MapView mapView, Vector2 size)
+        {
+            mapView.Position = new Vector2(16, 0);
+            mapView.Size = new Vector2(size.x - 32, size.y - 40);
         }
 
         public override void OnRender(RenderTarget Target)
@@ -72,7 +92,7 @@ namespace Burntime.Classic
             font.DrawText(Target, day, txt[404], TextAlignment.Center, VerticalTextAlignment.Top);
         }
 
-        public void UpdatePlayer()
+        public override void UpdatePlayer()
         {
             ClassicGame game = app.GameState as ClassicGame;
             if (game.World.ActivePlayer == -1)
