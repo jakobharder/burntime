@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using SlimDX.Direct3D9;
@@ -439,7 +440,6 @@ namespace Burntime.Platform.Graphics
             //lineMatrix = SlimDX.Matrix.Transformation2D(new SlimDX.Vector2(), 0, new SlimDX.Vector2(engine.Scale.x, engine.Scale.y), new SlimDX.Vector2(), 0, new SlimDX.Vector2());
             lineMatrix = SlimDX.Matrix.Transformation2D(new SlimDX.Vector2(), 0, new SlimDX.Vector2(renderScale, renderScale), new SlimDX.Vector2(), 0, new SlimDX.Vector2());
             lineMatrix = spriteRenderer.Transform;
-            lineRenderer.Begin();
 
             // application render
             engine.MainTarget.elapsed = RenderTime.Elapsed;
@@ -475,21 +475,9 @@ namespace Burntime.Platform.Graphics
                         }
 
                         spriteRenderer.Draw(sprite.Texture, sprite.Rectangle, new SlimDX.Vector3(0, 0, 0), pos, sprite.Color);
-                        
-                    }
-                    else if (entity is LineEntity)
-                    {
-                        LineEntity line = entity as LineEntity;
-                        SlimDX.Vector3[] vec = new SlimDX.Vector3[] { line.Start, line.End };
-                        SlimDX.Vector4[] v = SlimDX.Vector3.Transform(vec, ref lineMatrix);
-
-                        SlimDX.Vector2[] vec2 = new SlimDX.Vector2[] { new SlimDX.Vector2(v[0].X, v[0].Y), new SlimDX.Vector2(v[1].X, v[1].Y) };
-                        lineRenderer.Draw(vec2, line.Color);
                     }
                 }
             }
-
-            lineRenderer.End();
 
             blendOverlay.BlockFadeOut = engine.IsLoading || blockBlend;
             blendOverlay.Render(RenderTime, spriteRenderer);
@@ -503,6 +491,19 @@ namespace Burntime.Platform.Graphics
             }
 
             spriteRenderer.End();
+            if (render != null)
+            {
+                lineRenderer.Begin();
+                foreach (var line in render.OfType<LineEntity>())
+                {
+                    SlimDX.Vector3[] vec = new SlimDX.Vector3[] { line.Start, line.End };
+                    SlimDX.Vector4[] v = SlimDX.Vector3.Transform(vec, ref lineMatrix);
+
+                    SlimDX.Vector2[] vec2 = new SlimDX.Vector2[] { new SlimDX.Vector2(v[0].X, v[0].Y), new SlimDX.Vector2(v[1].X, v[1].Y) };
+                    lineRenderer.Draw(vec2, line.Color);
+                }
+                lineRenderer.End();
+            }
 
             errorOverlay.Render(RenderTime, spriteRenderer);
 
