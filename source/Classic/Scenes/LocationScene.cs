@@ -66,7 +66,8 @@ namespace Burntime.Classic
             Windows += gui;
 
             dialog = new DialogWindow(app);
-            dialog.Position = new Vector2(33, 20);
+            //dialog.Position = new Vector2(33, 20);
+            dialog.Position = view.Position + (view.Size - dialog.Size) / 2 - new Vector2(0, 10);
             dialog.Hide();
             dialog.Layer += 55;
             dialog.WindowHide += new EventHandler(dialog_WindowHide);
