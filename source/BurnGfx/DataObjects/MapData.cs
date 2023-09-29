@@ -66,14 +66,9 @@ namespace Burntime.Data.BurnGfx
             set { Mask[x + y * Width] = value; }
         }
 
-        public Vector2 ConvertMapToMask(Vector2 pos)
+        public bool IsWalkableMapPosition(Vector2 mapPosition)
         {
-            return ((Vector2)pos + (Resolution / 2 - 1)) / Resolution;
-        }
-
-        public Vector2 ConvertMaskToMap(Vector2 pos)
-        {
-            return pos * Resolution + (Resolution / 2 - 1);
+            return this[mapPosition / Resolution];
         }
     }
 
