@@ -508,7 +508,7 @@ Na und, ich nehm Dich mit}
 }
 }
 }
-Etwas mehr sollte dir Deine}
+Etwas mehr sollte dir deine}
 Gesundheit schon Wert sein.}
 }
 Fr diesen Hungerlohn wrde}
@@ -528,7 +528,7 @@ einmal den Tod!}
 }
 }
 }
-Dafr k”nnt ihr ganze |E}
+Dafr kannst du ganze |E}
 Tagesrationen verschlingen.}
 }
 Wohl bekommt's...}
@@ -538,7 +538,7 @@ Sieht es hier vieleicht aus}
 wie in einer Hilfsmission ?}
 }
 So ein fantastisches Essen wie bei}
-mir, bekommt Ihr sicher nie wieder.}
+mir, bekommst du sicher nie wieder.}
 }
 }
 }
@@ -548,17 +548,17 @@ mir, bekommt Ihr sicher nie wieder.}
 }
 }
 }
-Fr das Zeug k”nnt Ihr |E}
+Fr das Zeug kannst du |E}
 Tagesrationen versaufen !}
 }
-Prost,!!}
+Prost!!}
 und beehrt mich bald wieder !}
 }
 Ich bin doch nicht bei der}
 Heilsarmee !}
 }
 So erstklassige Drinks wie}
-bei mir k”nnt Ihr lange suchen !}
+bei mir kannst du lange suchen !}
 }
 }
 }
@@ -570,15 +570,15 @@ bei mir k”nnt Ihr lange suchen !}
 }
 In}
 |J Tagen}
-haben Sie |A Orte besetzt}
-und kontrollieren damit |I von |K St„dten.}
+hast du |A Orte besetzt}
+und kontrollierst damit |I von |K St„dten.}
 }
-Fr Sie arbeiten :}
+Fr dich arbeiten :}
 |B K„mpfer}
 |G Techniker}
 |H rzte}
 }
-in Ihren Lagern liegen :}
+in deinen Lagern liegen :}
 |C Maden}
 |D Ratten}
 |E Schlangen}
