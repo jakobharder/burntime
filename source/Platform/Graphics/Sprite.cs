@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
 using Burntime.Platform.Resource;
@@ -164,6 +165,7 @@ namespace Burntime.Platform.Graphics
         }
     }
 
+    [DebuggerDisplay("Sprite = {id.ToString()}")]
     public class Sprite : DataObject
     {
         public ResourceLoadType LoadType = ResourceLoadType.Now;
