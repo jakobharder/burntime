@@ -5,6 +5,8 @@ using Burntime.Platform.Graphics;
 using Burntime.Framework;
 using Burntime.Framework.GUI;
 using Burntime.Classic.Logic.Generation;
+using Burntime.Platform.IO;
+using Burntime.Platform.Resource;
 
 namespace Burntime.Classic
 {
@@ -20,6 +22,7 @@ namespace Burntime.Classic
         Button save;
         Button delete;
         Button music;
+        Button newgfx;
 
         Button[] savegames = new Button[8];
 
@@ -75,12 +78,17 @@ namespace Burntime.Classic
             button.SetTextOnly();
             button.Command += OnButtonRestart;
             Windows += button;
-            button = new Button(App);
-            button.Font = disabled;
-            button.Text = "@burn?392";
-            button.Position = new Vector2(214, 127);
-            button.SetTextOnly();
-            Windows += button;
+
+            Windows += newgfx = new Button(App)
+            {
+                Font = red,
+                HoverFont = hover,
+                Text = "@newburn?17",
+                Position = new Vector2(214, 127),
+                IsTextOnly = true
+            };
+            newgfx.Command += OnButtonNewGfx;
+
             button = new Button(App);
             button.Font = red;
             button.HoverFont = hover;
@@ -138,6 +146,7 @@ namespace Burntime.Classic
         {
             RefreshSaveGames();
             input.Name = "";
+            newgfx.Text = BurntimeClassic.Instance.NewGfx ? "@newburn?17" : "@newburn?18";
         }
 
         void RefreshSaveGames()
@@ -268,6 +277,38 @@ namespace Burntime.Classic
         {
             app.StopGame();
             app.SceneManager.SetScene("MenuScene");
+        }
+
+        void OnButtonNewGfx()
+        {
+            var classic = BurntimeClassic.Instance;
+
+            classic.NewGfx = !classic.NewGfx;
+            newgfx.Text = classic.NewGfx ? "@newburn?17" : "@newburn?18";
+
+            if (classic.NewGfx)
+            {
+                FileSystem.AddPackage("newgfx", "game/classic_newgfx");
+                if (FileSystem.ExistsFile("newgfx.txt"))
+                {
+                    classic.ResourceManager.SetResourceReplacement("newgfx.txt");
+
+                    // use highres font anyway
+                    if (FileSystem.ExistsFile("highres-font.txt"))
+                        BurntimeClassic.FontName = "highres-font.txt";
+                }
+                else
+                {
+                    classic.ResourceManager.SetResourceReplacement(null);
+                }
+                classic.Engine.ReloadGraphics();
+            }
+            else
+            {
+                FileSystem.RemovePackage("newgfx");
+                classic.ResourceManager.SetResourceReplacement(null);
+                classic.Engine.ReloadGraphics();
+            }
         }
 
         void OnButtonExit()

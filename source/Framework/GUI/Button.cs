@@ -29,20 +29,61 @@ namespace Burntime.Framework.GUI
         public GuiImage HoverImage { get; set; }
         public GuiImage DownImage { get; set; }
 
-        public GuiString Text { get; set; }
-        public GuiFont Font { get; set; }
+        public GuiString Text
+        {
+            get { return text_; }
+            set
+            {
+                text_ = value;
+                if (isTextOnly_) RefreshTextSize_();
+            }
+        }
+        GuiString text_;
+
+        public GuiFont Font
+        { 
+            get { return font_; }
+            set
+            {
+                font_ = value;
+                if (isTextOnly_) RefreshTextSize_();
+            }
+        }
+        GuiFont font_;
+
         public GuiFont HoverFont { get; set; }
 
         public GuiString ToolTipText { get; set; }
         public GuiFont ToolTipFont { get; set; }
 
-        public void SetTextOnly()
+        public bool IsTextOnly
+        {
+            get { return isTextOnly_; }
+            set
+            {
+                if (value)
+                {
+                    RefreshTextSize_();
+                    TextVerticalAlign = VerticalTextAlignment.Top;
+                    TextHorizontalAlign = TextAlignment.Left;
+                }
+                isTextOnly_ = value;
+            }
+        }
+        private bool isTextOnly_;
+
+        private void RefreshTextSize_()
         {
             if (Font != null && Text != null)
+            {
                 Size = Font.GetRect(0, 0, Text).Size;
-            TextVerticalAlign = VerticalTextAlignment.Top;
-            TextHorizontalAlign = TextAlignment.Left;
-            sizeSet = true;
+                sizeSet = true;
+            }
+        }
+
+        public void SetTextOnly()
+        {
+            IsTextOnly = true;
         }
 
         public Button(Module App)

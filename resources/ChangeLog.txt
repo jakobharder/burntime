@@ -2,9 +2,10 @@
 [Unreleased]
 
 * Clothes increase defense value when equiped
-* Centered dialog on all resolutions
 * Dishes are no spawned rarely
+* Centered dialog on all resolutions
 * Replaced "Sie" with "du"
+* NewGfx setting in options to toggle between original and remastered graphics (incomplete!)
 * Fixed NPC characters going into unwalkable areas
 
 Burntime v0.3 (2023-09-24)

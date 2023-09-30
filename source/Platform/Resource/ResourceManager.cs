@@ -153,6 +153,7 @@ namespace Burntime.Platform.Resource
                 }
 
                 sprite.Unload();
+                Log.Debug("unload \"" + sprite.ID + "\"");
             }
 
             MemoryUsage = 0;
@@ -172,6 +173,7 @@ namespace Burntime.Platform.Resource
                 }
 
                 font.sprite.Unload();
+                Log.Debug("unload \"" + font.sprite.ID + "\"");
             }
         }
 
@@ -259,7 +261,7 @@ namespace Burntime.Platform.Resource
 
             SpriteFrame frame = new SpriteFrame(this, tex, processor.Size, systemCopy.ToArray());
             font.sprite = new Sprite(this, "", frame);
-            font.sprite.Resolution = processor.Factor;
+            font.sprite.internalFrames[0].Resolution = processor.Factor;
 
             font.charInfo = processor.CharInfo;
             font.offset = processor.Offset;
@@ -358,11 +360,10 @@ namespace Burntime.Platform.Resource
                 ResourceID newid = GetReplacementID(id);
                 if (newid != null)
                 {
-
                     // if available return newid sprite right away
-                    if (sprites.ContainsKey(newid))
+                    if (sprites.TryGetValue(newid, out Sprite value))
                     {
-                        return sprites[newid].Clone();
+                        return value.Clone();
                     }
                     // otherwise check if newid is available, if not fallback to old id
                     else if (CheckReplacementID(newid))
@@ -383,7 +384,15 @@ namespace Burntime.Platform.Resource
 
                 String format = id.Format;
 
-                Log.Debug("load \"" + id + "\"");
+                if (Log.DebugOut)
+                {
+                    string info = $"init \"{id}\"";
+                    if (factor != 1)
+                        info += $" {System.Math.Round(factor * 100)}%";
+                    if (realid != id)
+                        info += $" ({realid})";
+                    Log.Debug(info);
+                }
 
                 if (!spriteProcessors.ContainsKey(format))
                     return null;
@@ -419,7 +428,6 @@ namespace Burntime.Platform.Resource
 
                         s = new Sprite(this, realid, frames, new SpriteAnimation(loaderAni.FrameCount));
                         s.LoadType = LoadType;
-                        s.Resolution = factor;
 
                         sprites.Add(id, s);
                     }
@@ -438,7 +446,6 @@ namespace Burntime.Platform.Resource
                         SpriteFrame si = new SpriteFrame(this);
                         s = new Sprite(this, realid, si);
                         s.LoadType = LoadType;
-                        s.Resolution = factor;
 
                         sprites.Add(id, s);
                     }
@@ -504,8 +511,7 @@ namespace Burntime.Platform.Resource
 
         internal void Reload(Sprite Sprite, ResourceLoadType LoadType)
         {
-            if (Sprite.internalFrames != null)
-                Sprite.internalFrames[0].loading = true;
+            Sprite.internalFrames[0].loading = true;
 
             if (LoadType == ResourceLoadType.Delayed)
             {
@@ -535,26 +541,39 @@ namespace Burntime.Platform.Resource
             ResourceID realid = (string)id;
 
             // check replacements
+            Sprite.internalFrames[0].Resolution = 1;
             if (replacement != null)
             {
                 ResourceID newid = GetReplacementID(id);
                 if (newid != null)
                 {
                     if (CheckReplacementID(newid))
+                    {
                         id = newid;
+                        Sprite.internalFrames[0].Resolution = replacement[""].GetFloat("sprite_resolution");
+                    }
                 }
             }
 
             engine.IncreaseLoadingCount();
 
-            ISpriteProcessor loader = GetSpriteProcessor(id, true);
-            if (loader is ISpriteAnimationProcessor)
+            if (Log.DebugOut)
             {
-                ISpriteAnimationProcessor loaderAni = (ISpriteAnimationProcessor)loader;
+                string info = Sprite.IsNew ? "load" : "reload";
+                info += $" \"{id}\"";
+                if (Sprite.internalFrames[0].Resolution != 1)
+                    info += $" {System.Math.Round(Sprite.internalFrames[0].Resolution * 100)}%";
+                if (realid.ToString() != id.ToString())
+                    info += $" ({realid})";
+                Log.Debug(info);
+            }
+            Sprite.IsNew = false;
+            ISpriteProcessor loader = GetSpriteProcessor(id, true);
+            if (loader is ISpriteAnimationProcessor loaderAni)
+            {
                 loader.Process(id);
-                Log.Debug("reload \"" + id + "\"");
 
-                for (int i = 0; i < loaderAni.FrameCount; i++)
+                for (int i = 0; i < loaderAni.FrameCount && i < Sprite.internalFrames.Length; i++)
                 {
                     if (!loaderAni.SetFrame(i))
                     {
@@ -575,16 +594,16 @@ namespace Burntime.Platform.Resource
                     loader.Render(data.Data, data.Pitch);
                     tex.UnlockRectangle(0);
 
-                    Sprite.Frames[i].Texture = tex;
-                    Sprite.Frames[i].Width = loaderAni.FrameSize.x;
-                    Sprite.Frames[i].Height = loaderAni.FrameSize.y;
-                    Sprite.Frames[i].TimeStamp = System.Diagnostics.Stopwatch.GetTimestamp();
+                    Sprite.internalFrames[i].Texture = tex;
+                    Sprite.internalFrames[i].Width = loaderAni.FrameSize.x;
+                    Sprite.internalFrames[i].Height = loaderAni.FrameSize.y;
+                    Sprite.internalFrames[i].TimeStamp = System.Diagnostics.Stopwatch.GetTimestamp();
+                    Sprite.internalFrames[i].Resolution = Sprite.internalFrames[0].Resolution;
                 }
             }
             else
             {
                 loader.Process(id);
-                Log.Debug("reload \"" + id + "\"");
 
                 SlimDX.Direct3D9.Texture tex = engine.Device.CreateTexture(MakePowerOfTwo(loader.Size.x), MakePowerOfTwo(loader.Size.y));
 
@@ -595,17 +614,14 @@ namespace Burntime.Platform.Resource
                 loader.Render(data.Data, data.Pitch);
                 tex.UnlockRectangle(0);
 
-                Sprite.Frame.Texture = tex;
-                Sprite.Frame.Width = loader.Size.x;
-                Sprite.Frame.Height = loader.Size.y;
-                Sprite.Frame.TimeStamp = System.Diagnostics.Stopwatch.GetTimestamp();
+                Sprite.internalFrames[0].Texture = tex;
+                Sprite.internalFrames[0].Width = loader.Size.x;
+                Sprite.internalFrames[0].Height = loader.Size.y;
+                Sprite.internalFrames[0].TimeStamp = System.Diagnostics.Stopwatch.GetTimestamp();
             }
 
-            if (Sprite.internalFrames != null)
-            {
-                Sprite.internalFrames[0].loading = false;
-                Sprite.internalFrames[0].loaded = true;
-            }
+            Sprite.internalFrames[0].loading = false;
+            Sprite.internalFrames[0].loaded = true;
 
             engine.DecreaseLoadingCount();
         }

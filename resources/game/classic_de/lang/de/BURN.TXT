@@ -387,7 +387,7 @@ L™SCHEN}
 ...|A speichern}
 ...|A l”schen}
 Zur Karte}
-Musik EIN}
+Musik AN}
 Neustart}
 Beenden}
 Speed 0}

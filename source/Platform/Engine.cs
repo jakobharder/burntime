@@ -167,11 +167,16 @@ namespace Burntime.Platform
         }
         #endregion
 
+        public void ReloadGraphics()
+        {
+            ResourceManager.ReleaseAll();
+        }
+
         public void SetResolution(int width, int height)
         {
             resWidth = width;
             resHeight = height;
-            
+
             // select best game resolution
             SelectBestGameResolution();
         }
@@ -255,7 +260,7 @@ namespace Burntime.Platform
             Graphics.SpriteEntity entity = new Graphics.SpriteEntity();
             entity.Rectangle = new Rectangle(0, 0, sprite.OriginalSize.x, sprite.OriginalSize.y);
             entity.Color = new SlimDX.Color4(alpha, 1, 1, 1);
-            entity.Factor = sprite.Resolution;
+            entity.Factor = sprite.Frame.Resolution;
 
             long now = System.Diagnostics.Stopwatch.GetTimestamp();
             if (now - sprite.Frame.TimeStamp < (long)(Stopwatch.Frequency / popInSpeed) && popInSpeed != 0)
@@ -275,7 +280,7 @@ namespace Burntime.Platform
             entity2.Color = entity.Color;
             entity2.Texture = sprite.Frame.Texture;
             entity2.Position = new SlimDX.Vector3(pos.x, pos.y, CalcZ(layer));
-            entity2.Factor = sprite.Resolution;
+            entity2.Factor = sprite.Frame.Resolution;
             device.AddEntity(entity2);
         }
 
@@ -297,7 +302,7 @@ namespace Burntime.Platform
             Graphics.SpriteEntity entity = new Graphics.SpriteEntity();
             entity.Rectangle = new Rectangle(srcPos.x, srcPos.y, srcWidth, srcHeight);
             entity.Color = new SlimDX.Color4(color);
-            entity.Factor = sprite.Resolution;
+            entity.Factor = sprite.Frame.Resolution;
 
             long now = System.Diagnostics.Stopwatch.GetTimestamp();
             if (now - sprite.Frame.TimeStamp < (long)(Stopwatch.Frequency / popInSpeed) && popInSpeed != 0)
@@ -317,7 +322,7 @@ namespace Burntime.Platform
             entity2.Color = entity.Color;
             entity2.Texture = sprite.Frame.Texture;
             entity2.Position = new SlimDX.Vector3(pos.x, pos.y, CalcZ(layer));
-            entity2.Factor = sprite.Resolution;
+            entity2.Factor = sprite.Frame.Resolution;
             device.AddEntity(entity2);
         }
 

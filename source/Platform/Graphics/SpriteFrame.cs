@@ -12,6 +12,8 @@ namespace Burntime.Platform.Graphics
         Resource.ResourceManager resourceManager;
         byte[] systemCopy;
 
+        public float Resolution { get; set; } = -1;
+
         public bool HasSystemCopy
         {
             get { return systemCopy != null; }

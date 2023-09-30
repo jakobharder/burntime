@@ -200,7 +200,7 @@ namespace Burntime.Platform.Graphics
 
         public virtual int GetHeight()
         {
-            return (int)((height * sprite.Resolution + offset * 2));
+            return (int)((height * sprite.internalFrames[0].Resolution + offset * 2));
         }
 
         char translateChar(char ch)

@@ -35,8 +35,9 @@ namespace Burntime.Classic
 
         public bool IsWideScreen { get { return Engine.Resolution.x / (float)Engine.Resolution.y > 1.5f; } }
 
-        // burntime's 8:5 to 4:3 ratio correction
-        public override float VerticalRatio { get { return 1.0f / 200.0f * 240.0f; } }
+        // Burntime's ratio is 8:5. We need to scale height by 1.2 (320x200 where screens today would be multiple of 320x240).
+        // But to get a clean tile resolution of 32x38 use 1.1875
+        public override float VerticalRatio { get { return 1.0f / 32.0f * 38.0f; } }
 
         public override System.Drawing.Icon Icon
         {
@@ -138,6 +139,7 @@ namespace Burntime.Classic
         public bool DisableMusic;
         public int PreviousPlayerId = -1;
         public bool NewGui = false;
+        public bool NewGfx = false;
 
         public Character SelectedCharacter
         {

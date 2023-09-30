@@ -173,17 +173,11 @@ namespace Burntime.Platform.Graphics
         internal ResourceID id;
         internal SpriteAnimation ani;
 
-        // sprite resolution relative to global resolution
-        protected float resolution = 1;
-        public float Resolution
-        {
-            get { return resolution; }
-            set { resolution = value; }
-        }
-
         protected Sprite()
         {
         }
+
+        public bool IsNew { get; set; } = true;
 
         public bool IsLoaded
         {
@@ -197,11 +191,11 @@ namespace Burntime.Platform.Graphics
 
         public int Width
         {
-            get { /*Load();*/ if (internalFrames[0] == null) return 0; else return (int)(Frame.Width * resolution); }
+            get { /*Load();*/ if (internalFrames[0] == null) return 0; else return (int)(Frame.Width * Frame.Resolution); }
         }
         public int Height
         {
-            get { /*Load();*/ if (internalFrames[0] == null) return 0; else return (int)(Frame.Height * resolution); }
+            get { /*Load();*/ if (internalFrames[0] == null) return 0; else return (int)(Frame.Height * Frame.Resolution); }
         }
 
         public Vector2 Size
@@ -243,14 +237,11 @@ namespace Burntime.Platform.Graphics
             Sprite.LoadType = LoadType;
             if (ani != null)
                 Sprite.ani = new SpriteAnimation(ani.FrameCount);
-            Sprite.Resolution = Resolution;
         }
 
         public Sprite Clone()
         {
-            Sprite sprite = new Sprite(resMan, id, internalFrames, ani);
-            sprite.resolution = resolution;
-            return sprite;
+            return new (resMan, id, internalFrames, ani);
         }
 
         public void Update(float Elapsed)
