@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Windows.Forms;
 
 namespace Burntime.Common
 {
@@ -55,14 +54,15 @@ namespace Burntime.Common
 
         public bool ShowSelector()
         {
-            FolderBrowserDialog dlg = new FolderBrowserDialog();
-            dlg.Description = "Please locate your Burntime folder. It should contain a folder called BURN_GFX";
-            dlg.ShowNewFolderButton = false;
-            DialogResult res = dlg.ShowDialog();
-            if (DialogResult.OK == res)
-                Path = dlg.SelectedPath;
+            //FolderBrowserDialog dlg = new FolderBrowserDialog();
+            //dlg.Description = "Please locate your Burntime folder. It should contain a folder called BURN_GFX";
+            //dlg.ShowNewFolderButton = false;
+            //DialogResult res = dlg.ShowDialog();
+            //if (DialogResult.OK == res)
+            //    Path = dlg.SelectedPath;
 
-            return res == DialogResult.OK;
+            //return res == DialogResult.OK;
+            return false;
         }
 
         bool CheckPath(String path)

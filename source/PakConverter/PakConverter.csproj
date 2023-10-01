@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net7.0-windows</TargetFramework>
-    <UseWindowsForms>true</UseWindowsForms>
+    <TargetFramework>net6.0</TargetFramework>
+    <UseWindowsForms>False</UseWindowsForms>
     <ImplicitUsings>disable</ImplicitUsings>
     <RootNamespace>PakConverter</RootNamespace>
     <AssemblyName>PakConverter</AssemblyName>

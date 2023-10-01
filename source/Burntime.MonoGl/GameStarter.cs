@@ -6,19 +6,18 @@ using Burntime.Platform;
 using Burntime.Platform.IO;
 using Burntime.Platform.Resource;
 using Burntime.Framework;
-using Burntime.Classic;
 using Burntime.Data.BurnGfx;
+using Burntime.Classic;
 //using System.IO;
 
-namespace Burntime.Game
+namespace Burntime.MonoGl
 {
     public class GameStarter
     {
-        public void Run(String PakName)
+        public void Run()
         {
             Log.Initialize("log.txt");
-            if (PakName != null)
-                PakName = PakName.ToLower();
+            string PakName = "classic";
 
             FileSystem.BasePath = "";
             FileSystem.AddPackage("system", "system");
@@ -28,6 +27,7 @@ namespace Burntime.Game
 
             Log.DebugOut = engineSettings["engine"].GetBool("debug");
 
+            AssemblyControl assemblyControl = new AssemblyControl(AppDomain.CurrentDomain);
             PackageManager paketManager = new PackageManager("game/");
 
             // check if package is available
@@ -61,10 +61,15 @@ namespace Burntime.Game
                     throw new Exception("Could not find any game packages!");
                 }
             }
+            
+            runInternal(paketManager, assemblyControl, PakName);
+        }
 
-            paketManager.LoadPackages("classic", FileSystem.VFS, null);
-
+        void runInternal(PackageManager paketManager, AssemblyControl assembly, string pakName)
+        {
             Engine engine = new();
+
+            paketManager.LoadPackages(pakName, FileSystem.VFS, null);
 
             BurntimeClassic game = new();
 
@@ -80,11 +85,11 @@ namespace Burntime.Game
             BurnGfxModule burnGfx = new();
             burnGfx.Initialize(game.ResourceManager);
 
-            Log.Info("Run main module...");
+            //Log.Info("Run main module...");
             game.Run();
 
-            Log.Info("Start engine...");
-            engine.Start(new ApplicationInternal(game));
+            //Log.Info("Start engine...");
+            //engine.Start(new ApplicationInternal(module));
         }
     }
 }

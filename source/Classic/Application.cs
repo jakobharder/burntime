@@ -5,10 +5,12 @@ using Burntime.Platform;
 using Burntime.Platform.IO;
 using Burntime.Framework;
 using Burntime.Classic.Logic;
+using Burntime.Platform.Resource;
+using System.Collections.Generic;
 
 namespace Burntime.Classic
 {
-    enum ActionAfterImageScene
+    public enum ActionAfterImageScene
     {
         None,
         Trader,
@@ -17,7 +19,7 @@ namespace Burntime.Classic
         Restaurant
     }
 
-    class BurntimeClassic : Module
+    public class BurntimeClassic : Module
     {
         public static new BurntimeClassic Instance
         {
@@ -47,6 +49,11 @@ namespace Burntime.Classic
             }
         }
 
+        public BurntimeClassic()
+        {
+            FindClassesFromAssembly(typeof(BurntimeClassic).Assembly);
+        }
+
         public override void Start()
         {
 #warning slimdx todo
@@ -54,6 +61,13 @@ namespace Burntime.Classic
 
             MouseImage = ResourceManager.GetImage("munt.raw");
             SceneManager.SetScene("IntroScene");
+        }
+
+        protected override void OnInitialize()
+        {
+
+
+            base.OnInitialize();
         }
 
         protected override void OnRun()

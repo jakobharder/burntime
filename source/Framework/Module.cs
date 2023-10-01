@@ -22,8 +22,42 @@ namespace Burntime.Framework
 
         List<IDataProcessor> dataProcessors = new List<IDataProcessor>();
 
-        public void Initialize()
+        protected void FindClassesFromAssembly(System.Reflection.Assembly asm)
         {
+            Scenes = new();
+            List<Type> dataprocessor = new();
+
+            try
+            {
+                foreach (Type t in asm.GetTypes())
+                {
+                    if (t.IsSubclassOf(typeof(Scene)))
+                        Scenes.Add(t);
+
+                    if (typeof(IDataProcessor).IsAssignableFrom(t))
+                        dataprocessor.Add(t);
+                }
+
+                foreach (Type t in Scenes)
+                    Log.Info("   Load scene class: " + t.Name);
+                foreach (Type t in dataprocessor)
+                {
+                    Log.Info("   Load data processor: " + t.Name);
+                    AddProcessor((IDataProcessor)Activator.CreateInstance(t));
+                }
+
+            }
+            catch (Exception e)
+            {
+                // marker for debugging purposes
+                throw e;
+            }
+        }
+
+        public void Initialize(IResourceManager resourceManager)
+        {
+            ResourceManager = resourceManager;
+
             // initialize all data processors
             foreach (IDataProcessor processor in dataProcessors)
             {
@@ -50,17 +84,16 @@ namespace Burntime.Framework
         protected virtual void OnRun() { }
         protected virtual void OnClose() { }
 
-        internal IResourceManager resourceManager;
         public virtual void AddProcessor(String Extension, ISpriteProcessor Processor)
         {
             Log.Info("   Add resource processor for '" + Extension + "': " + Processor.GetType().Name);
-            resourceManager.AddSpriteProcessor(Extension, Processor);
+            ResourceManager.AddSpriteProcessor(Extension, Processor);
         }
 
         public virtual void AddProcessor(String Extension, IFontProcessor Processor)
         {
             Log.Info("   Add resource processor for '" + Extension + "': " + Processor.GetType().Name);
-            resourceManager.AddFontProcessor(Extension, Processor);
+            ResourceManager.AddFontProcessor(Extension, Processor);
         }
 
         public void AddProcessor(IDataProcessor processor)
@@ -89,7 +122,7 @@ namespace Burntime.Framework
 
         public IEngine Engine;
         public SceneManager SceneManager;
-        public IResourceManager ResourceManager;
+        public IResourceManager ResourceManager { get; private set; }
         public DeviceManager DeviceManager;
         public ConfigFile Settings;
 

@@ -30,7 +30,7 @@ public class PackageManager
 
     public PackageManager(string basePath)
     {
-        this.basePath = FileSystem.BasePath + basePath;
+        this.basePath = System.IO.Path.Combine(FileSystem.BasePath, basePath);
         languages = new List<string>();
 
         ReadPackageInfos();

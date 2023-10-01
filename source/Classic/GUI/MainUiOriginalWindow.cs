@@ -7,7 +7,6 @@ using Burntime.Platform.Graphics;
 using Burntime.Framework;
 using Burntime.Framework.GUI;
 using Burntime.Classic.Logic;
-using System.Windows.Forms;
 using Burntime.Classic.GUI;
 
 namespace Burntime.Classic

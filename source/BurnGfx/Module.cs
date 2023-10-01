@@ -7,6 +7,11 @@ namespace Burntime.Data.BurnGfx
 {
     public class BurnGfxModule : Module
     {
+        public BurnGfxModule()
+        {
+            FindClassesFromAssembly(typeof(BurnGfxModule).Assembly);
+        }
+
         protected override void OnInitialize()
         {
             AddProcessor("raw", (Burntime.Platform.Resource.ISpriteProcessor)new SpriteLoaderRaw());
