@@ -30,7 +30,8 @@ namespace Burntime.Framework.GUI
 
         public GuiImage(ISprite sprite)
         {
-            sprite_ = sprite;
+            // clone the sprite to have own animation state
+            sprite_ = sprite.Animation is null ? sprite : sprite.Clone();
         }
 
         public void Touch() => sprite_.Touch();

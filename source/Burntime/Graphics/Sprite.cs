@@ -55,9 +55,9 @@ namespace Burntime.Platform.Graphics
             set => internalFrames[0].Resolution = value;
         }
 
-        public Sprite Clone()
+        public override Sprite Clone()
         {
-            return new (resMan, id, internalFrames, ani);
+            return new(resMan, id, internalFrames, ani is null ? null : new SpriteAnimation(ani.FrameCount));
         }
 
         public override void Update(float elapsed)

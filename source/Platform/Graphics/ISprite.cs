@@ -17,4 +17,6 @@ public abstract class ISprite : DataObject
     public abstract void Touch();
     public abstract void Update(float elapsed);
     public abstract void Unload();
+
+    public abstract ISprite Clone();
 }
