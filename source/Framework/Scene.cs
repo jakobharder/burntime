@@ -32,13 +32,15 @@ namespace Burntime.Framework
         internal void ActivateScene(object parameter)
         {
             OnActivateScene(parameter);
-            if (music != null)
-                app.Engine.Music.Play(music);
+#warning slimdx todo
+            //if (music != null)
+            //    app.Engine.Music.Play(music);
         }
 
         internal void InactivateScene()
         {
-            app.Engine.Music.Stop();
+#warning slimdx todo
+            //app.Engine.Music.Stop();
 
             OnInactivateScene();
         }

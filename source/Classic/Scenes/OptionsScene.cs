@@ -258,18 +258,19 @@ namespace Burntime.Classic
                 BurntimeClassic.Instance.MusicPlayback = !BurntimeClassic.Instance.MusicPlayback;
                 music.Text = BurntimeClassic.Instance.MusicPlayback ? "@burn?389" : "@burn?424";
                 music.SetTextOnly();
-                if (BurntimeClassic.Instance.MusicPlayback)
-                {
-                    // start music
-                    app.Engine.Music.Enabled = true;
-                    app.Engine.Music.Play(Music);
-                }
-                else
-                {
-                    // stop music
-                    app.Engine.Music.Enabled = false;
-                    app.Engine.Music.Stop();
-                }
+#warning todo 
+                //if (BurntimeClassic.Instance.MusicPlayback)
+                //{
+                //    // start music
+                //    app.Engine.Music.Enabled = true;
+                //    app.Engine.Music.Play(Music);
+                //}
+                //else
+                //{
+                //    // stop music
+                //    app.Engine.Music.Enabled = false;
+                //    app.Engine.Music.Stop();
+                //}
             }
         }
 
@@ -281,34 +282,35 @@ namespace Burntime.Classic
 
         void OnButtonNewGfx()
         {
-            var classic = BurntimeClassic.Instance;
+#warning slimdx todo
+            //var classic = BurntimeClassic.Instance;
 
-            classic.NewGfx = !classic.NewGfx;
-            newgfx.Text = classic.NewGfx ? "@newburn?17" : "@newburn?18";
+            //classic.NewGfx = !classic.NewGfx;
+            //newgfx.Text = classic.NewGfx ? "@newburn?17" : "@newburn?18";
 
-            if (classic.NewGfx)
-            {
-                FileSystem.AddPackage("newgfx", "game/classic_newgfx");
-                if (FileSystem.ExistsFile("newgfx.txt"))
-                {
-                    classic.ResourceManager.SetResourceReplacement("newgfx.txt");
+            //if (classic.NewGfx)
+            //{
+            //    FileSystem.AddPackage("newgfx", "game/classic_newgfx");
+            //    if (FileSystem.ExistsFile("newgfx.txt"))
+            //    {
+            //        classic.ResourceManager.SetResourceReplacement("newgfx.txt");
 
-                    // use highres font anyway
-                    if (FileSystem.ExistsFile("highres-font.txt"))
-                        BurntimeClassic.FontName = "highres-font.txt";
-                }
-                else
-                {
-                    classic.ResourceManager.SetResourceReplacement(null);
-                }
-                classic.Engine.ReloadGraphics();
-            }
-            else
-            {
-                FileSystem.RemovePackage("newgfx");
-                classic.ResourceManager.SetResourceReplacement(null);
-                classic.Engine.ReloadGraphics();
-            }
+            //        // use highres font anyway
+            //        if (FileSystem.ExistsFile("highres-font.txt"))
+            //            BurntimeClassic.FontName = "highres-font.txt";
+            //    }
+            //    else
+            //    {
+            //        classic.ResourceManager.SetResourceReplacement(null);
+            //    }
+            //    classic.Engine.ReloadGraphics();
+            //}
+            //else
+            //{
+            //    FileSystem.RemovePackage("newgfx");
+            //    classic.ResourceManager.SetResourceReplacement(null);
+            //    classic.Engine.ReloadGraphics();
+            //}
         }
 
         void OnButtonExit()

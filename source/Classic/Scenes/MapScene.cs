@@ -90,7 +90,7 @@ namespace Burntime.Classic
             return base.OnKeyPress(key);
         }
 
-        public override void OnRender(RenderTarget Target)
+        public override void OnRender(IRenderTarget Target)
         {
             if (app.MouseImage != null)
             {
@@ -132,7 +132,8 @@ namespace Burntime.Classic
                 BurntimeClassic.Instance.PreviousPlayerId != game.CurrentPlayerIndex)
             {
                 // play player changed sound
-                BurntimeClassic.Instance.Engine.Music.PlayOnce("06_MUS 06_HSC.ogg");
+#warning slimdx todo
+                //BurntimeClassic.Instance.Engine.Music.PlayOnce("06_MUS 06_HSC.ogg");
             }
             BurntimeClassic.Instance.PreviousPlayerId = game.CurrentPlayerIndex;
 

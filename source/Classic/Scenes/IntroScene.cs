@@ -100,7 +100,7 @@ namespace Burntime.Classic.Scenes
         {
             for (int i = 0; i < animations.Length; i++)
             {
-                Sprite sprite = app.ResourceManager.GetImage(animations[i].File);
+                var sprite = app.ResourceManager.GetImage(animations[i].File);
                 sprite.Touch();
             }
         }
@@ -109,10 +109,12 @@ namespace Burntime.Classic.Scenes
         {
             if (oldSpeed == 0)
                 oldSpeed = app.Engine.BlendSpeed;
-            app.Engine.Music.Volume = 0;
+#warning slimdx todo
+            //app.Engine.Music.Volume = 0;
             app.Engine.BlendSpeed = 0.9f;
-            app.Engine.MusicBlend = false;
-            app.Engine.Music.IsMuted = true;
+#warning slimdx todo
+            //app.Engine.MusicBlend = false;
+            //app.Engine.Music.IsMuted = true;
             delayedMusicStart = 2.0f;
             index = 0;
             scroll = 0;
@@ -149,7 +151,10 @@ namespace Burntime.Classic.Scenes
 #warning // dirty hack: mute the music for ~2 seconds to get rid of the starting sound/distortion that is part of the original music file
                 delayedMusicStart -= elapsed;
                 if (delayedMusicStart <= 0)
-                    app.Engine.Music.IsMuted = false;
+                {
+#warning slimdx todo
+                    //app.Engine.Music.IsMuted = false;
+                }
             }
 
             timeout.Update(elapsed);
@@ -207,7 +212,7 @@ namespace Burntime.Classic.Scenes
             }
         }
 
-        public override void OnRender(RenderTarget target)
+        public override void OnRender(IRenderTarget target)
         {
             base.OnRender(target);
 
@@ -220,7 +225,8 @@ namespace Burntime.Classic.Scenes
 
         private void NextScene()
         {
-            app.Engine.MusicBlend = true;
+#warning slimdx todo
+            //app.Engine.MusicBlend = true;
             app.SceneManager.SetScene("MenuScene");
         }
     }

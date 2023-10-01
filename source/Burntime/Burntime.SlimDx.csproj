@@ -32,9 +32,25 @@
     <Content Include="icon256.ico" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Classic\Classic.csproj" />
-    <ProjectReference Include="..\Framework\Framework.csproj" />
-    <ProjectReference Include="..\Platform\Platform.csproj" />
+    <ProjectReference Include="..\Classic\Burntime.Game.csproj" />
+    <ProjectReference Include="..\Framework\Burntime.Framework.csproj" />
+    <ProjectReference Include="..\Platform\Burntime.Platform.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="OggVorbisDecoder">
+      <HintPath>Ogg\OggVorbisDecoder.dll</HintPath>
+    </Reference>
+    <Reference Include="SlimDX">
+      <HintPath>SlimDX\SlimDX.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="DebugForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="RenderForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
   </ItemGroup>
   <PropertyGroup>
     <PostBuildEvent>xcopy $(SolutionDir)..\resources\*.txt $(SolutionDir)..\bin\burntime\ /Y /E /Q

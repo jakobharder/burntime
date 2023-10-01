@@ -1,5 +1,4 @@
-﻿using SlimDX.Direct3D9;
-using System;
+﻿using System;
 using System.Diagnostics;
 
 namespace Burntime.Platform.Resource

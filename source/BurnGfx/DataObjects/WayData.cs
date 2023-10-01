@@ -10,7 +10,7 @@ namespace Burntime.Data.BurnGfx
 {
     public struct Way
     {
-        public Sprite[] Images;
+        public ISprite[] Images;
         public int Start;
         public int End;
         public Vector2 Position;

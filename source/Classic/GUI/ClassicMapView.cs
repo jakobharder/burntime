@@ -16,7 +16,7 @@ namespace Burntime.Classic.GUI
         {
         }
 
-        public override void OnRender(RenderTarget Target)
+        public override void OnRender(IRenderTarget Target)
         {
             base.OnRender(Target);
             Target.Layer += 2;
@@ -69,7 +69,7 @@ namespace Burntime.Classic.GUI
                 {
                     Vector2 pos = Ways.Ways[way].Position + offset;
 
-                    foreach (Sprite sprite in Ways.Ways[way].Images)
+                    foreach (ISprite sprite in Ways.Ways[way].Images)
                     {
                         Target.DrawSprite(pos, sprite);
                         pos.x += 32;

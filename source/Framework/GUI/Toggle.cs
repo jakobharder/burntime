@@ -52,7 +52,7 @@ public class Toggle : Button
         return true;
     }
 
-    public override void OnRender(RenderTarget Target)
+    public override void OnRender(IRenderTarget Target)
     {
         base.OnRender(Target);
 

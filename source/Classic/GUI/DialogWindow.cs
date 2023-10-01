@@ -61,14 +61,16 @@ namespace Burntime.Classic
             hover = -1;
             base.OnShow();
 
-            BurntimeClassic.Instance.Engine.Music.Play("18_MUS 18_HSC.ogg");
+#warning slimdx todo
+            //BurntimeClassic.Instance.Engine.Music.Play("18_MUS 18_HSC.ogg");
         }
 
         public override void OnHide()
         {
             base.OnHide();
 
-            BurntimeClassic.Instance.Engine.Music.Stop();
+#warning slimdx todo
+            //BurntimeClassic.Instance.Engine.Music.Stop();
         }
 
         public void SetCharacter(Character character, Conversation conversation)
@@ -191,7 +193,7 @@ namespace Burntime.Classic
             return base.OnMouseMove(Position);
         }
 
-        public override void OnRender(RenderTarget target)
+        public override void OnRender(IRenderTarget target)
         {
             target.RenderRect(FramePos, FrameSize, new PixelColor(128, 0, 0, 0));
 

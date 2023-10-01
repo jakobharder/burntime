@@ -3,13 +3,14 @@
     <TargetFramework>net7.0-windows</TargetFramework>
     <Platforms>x86</Platforms>
     <OutputType>Library</OutputType>
-    <RootNamespace>Burntime.Classic</RootNamespace>
-    <AssemblyName>Classic</AssemblyName>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Burntime.Framework</RootNamespace>
+    <AssemblyName>Framework</AssemblyName>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
-    <OutputPath>..\..\bin\burntime\game\classic\</OutputPath>
+    <OutputPath>..\..\bin\burntime\system\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <DebugType>full</DebugType>
     <PlatformTarget>x86</PlatformTarget>
@@ -17,7 +18,7 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <OutputPath>..\..\bin\burntime\game\classic\</OutputPath>
+    <OutputPath>..\..\bin\burntime\system\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
@@ -26,11 +27,6 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\BurnGfx\BurnGfx.csproj" />
-    <ProjectReference Include="..\Framework\Framework.csproj" />
-    <ProjectReference Include="..\Platform\Platform.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="icon256.ico" />
+    <ProjectReference Include="..\Platform\Burntime.Platform.csproj" />
   </ItemGroup>
 </Project>

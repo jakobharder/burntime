@@ -76,7 +76,7 @@ namespace Burntime.Classic.Scenes
             }
         }
 
-        public override void OnRender(RenderTarget target)
+        public override void OnRender(IRenderTarget target)
         {
             base.OnRender(target);
 

@@ -44,7 +44,7 @@ namespace Burntime.Classic.Logic.Generation
 
         public void Create(ClassicGame game)
         {
-            var resources = LogicFactory.GetParameter<ResourceManager>("resource");
+            var resources = LogicFactory.GetParameter<IResourceManager>("resource");
             var container = game.Container;
 
             // for the time being only add to existing locations

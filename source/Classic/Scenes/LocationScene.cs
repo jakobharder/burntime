@@ -231,7 +231,7 @@ namespace Burntime.Classic
             return true;
         }
 
-        public override void OnRender(RenderTarget Target)
+        public override void OnRender(IRenderTarget Target)
         {
             if (app.MouseImage != null)
             {
@@ -273,7 +273,8 @@ namespace Burntime.Classic
                 BurntimeClassic.Instance.PreviousPlayerId != game.CurrentPlayerIndex)
             {
                 // play player changed sound
-                BurntimeClassic.Instance.Engine.Music.PlayOnce("06_MUS 06_HSC.ogg");
+#warning slimdx todo
+                //BurntimeClassic.Instance.Engine.Music.PlayOnce("06_MUS 06_HSC.ogg");
             }
             BurntimeClassic.Instance.PreviousPlayerId = game.CurrentPlayerIndex;
 
@@ -438,7 +439,8 @@ namespace Burntime.Classic
                 charOverlay.SelectedCharacter.JoinCamp();
 
                 view.Location.Player = view.Player;
-                BurntimeClassic.Instance.Engine.Music.PlayOnce("08_MUS 08_HSC.ogg");
+#warning slimdx todo
+                //BurntimeClassic.Instance.Engine.Music.PlayOnce("08_MUS 08_HSC.ogg");
             }
         }
 
@@ -642,10 +644,11 @@ namespace Burntime.Classic
             {
                 AttackEvent eventArgs = (AttackEvent)notify;
 
-                Sprite sprite = (GuiImage)"burngfxani@syssze.raw?208-213";
+                var sprite = (GuiImage)"burngfxani@syssze.raw?208-213";
                 sprite.Animation.Speed = 10;
                 view.Particles.Add(new StaticAnimationParticle(sprite, eventArgs.Attacker));
-                view.Particles.Add(new StaticAnimationParticle(sprite.Clone(), eventArgs.Defender));
+#warning slimdx todo
+                //view.Particles.Add(new StaticAnimationParticle(sprite.Clone(), eventArgs.Defender));
             }
         }
     }

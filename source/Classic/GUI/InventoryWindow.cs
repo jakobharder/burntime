@@ -195,7 +195,7 @@ namespace Burntime.Classic.GUI
             }
         }
 
-        public override void OnRender(RenderTarget Target)
+        public override void OnRender(IRenderTarget Target)
         {
             if (side)
             {

@@ -8,7 +8,7 @@ using SlimDX.Direct3D9;
 
 namespace Burntime.Platform.Graphics
 {
-    public class RenderTarget
+    public class RenderTarget : IRenderTarget
     {
         Rect rc;
         Engine engine;
@@ -140,5 +140,12 @@ namespace Burntime.Platform.Graphics
             target.offset = offset;
             return target;
         }
+
+        void IRenderTarget.SelectSprite(ISprite sprite) => SelectSprite(sprite as Sprite);
+        void IRenderTarget.DrawSprite(ISprite sprite) => DrawSprite(sprite as Sprite);
+        void IRenderTarget.DrawSprite(Vector2 pos, ISprite sprite) => DrawSprite(pos, sprite as Sprite);
+        void IRenderTarget.DrawSprite(Vector2 pos, ISprite sprite, float alpha) => DrawSprite(pos, sprite as Sprite, alpha);
+        void IRenderTarget.DrawSprite(Vector2 pos, ISprite sprite, Rect srcRect) => DrawSprite(pos, sprite as Sprite, srcRect);
+        IRenderTarget IRenderTarget.GetSubBuffer(Rect rc) => GetSubBuffer(rc);
     }
 }

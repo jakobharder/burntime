@@ -22,6 +22,6 @@ namespace Burntime.Classic.PathFinding
 
         public abstract Vector2 MoveTo { get; set; }
         public abstract Vector2 Process(PathMask mask, Vector2 position, float elapsed);
-        public abstract void DebugRender(RenderTarget target);
+        public abstract void DebugRender(IRenderTarget target);
     }
 }

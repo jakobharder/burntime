@@ -76,7 +76,7 @@ namespace Burntime.Classic.Scenes
             Windows += temporarySpace;
         }
 
-        public override void OnRender(RenderTarget Target)
+        public override void OnRender(IRenderTarget Target)
         {
             base.OnRender(Target);
 

@@ -91,7 +91,7 @@ namespace Burntime.Framework.GUI
         {
         }
 
-        public override void OnRender(RenderTarget Target)
+        public override void OnRender(IRenderTarget Target)
         {
             if (!sizeSet)
             {

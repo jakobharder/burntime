@@ -99,7 +99,7 @@ namespace Burntime.Classic.Scenes
             technicianImage = "syssze.raw?48";
         }
 
-        public override void OnRender(RenderTarget target)
+        public override void OnRender(IRenderTarget target)
         {
             BurntimeClassic classic = app as BurntimeClassic;
             int city = classic.InfoCity;
@@ -144,7 +144,7 @@ namespace Burntime.Classic.Scenes
             txt.ClearArguments();
         }
 
-        private void RenderNPCLine(RenderTarget target, Vector2 position, int npcCount, Sprite image)
+        private void RenderNPCLine(IRenderTarget target, Vector2 position, int npcCount, ISprite image)
         {
             target.Layer += 2;
 

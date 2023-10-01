@@ -100,7 +100,7 @@ namespace Burntime.Game
 
         void runInternal(PackageManager paketManager, AssemblyControl assembly, string pakName)
         {
-            Engine engine = new Engine();
+            Engine engine = new();
 
             paketManager.LoadPackages(pakName, FileSystem.VFS, assembly);
             PackageInfo info = paketManager.GetInfo(pakName);
@@ -112,7 +112,8 @@ namespace Burntime.Game
             module.Engine = engine;
             module.SceneManager = new SceneManager(module);
             module.ResourceManager = new ResourceManager(engine);
-            module.DeviceManager = new DeviceManager(engine);
+            module.DeviceManager = new DeviceManager(engine.Resolution, engine.GameResolution);
+            module.Engine.DeviceManager = module.DeviceManager;
 
             assembly.InitAllModules(module.ResourceManager);
 

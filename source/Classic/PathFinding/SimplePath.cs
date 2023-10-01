@@ -52,7 +52,7 @@ namespace Burntime.Classic.PathFinding
             return this.position;
         }
 
-        public override void DebugRender(Burntime.Platform.Graphics.RenderTarget target)
+        public override void DebugRender(Burntime.Platform.Graphics.IRenderTarget target)
         {
             if (position != moveTo)
                 target.RenderLine(position, moveTo, new PixelColor(255, 0, 0));

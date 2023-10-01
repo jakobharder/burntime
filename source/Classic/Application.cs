@@ -49,7 +49,8 @@ namespace Burntime.Classic
 
         public override void Start()
         {
-            Engine.Music.Enabled = (!DisableMusic) & MusicPlayback;
+#warning slimdx todo
+            //Engine.Music.Enabled = (!DisableMusic) & MusicPlayback;
 
             MouseImage = ResourceManager.GetImage("munt.raw");
             SceneManager.SetScene("IntroScene");
@@ -77,8 +78,9 @@ namespace Burntime.Classic
             Settings.Open("settings.txt");
 
             Engine.Resolution = Settings["system"].GetVector2("resolution");
-            Engine.FullScreen = !Settings["system"].GetBool("windowmode");
-            Engine.UseTextureFilter = Settings["system"].GetBool("filter");
+#warning slimdx todo
+            //Engine.FullScreen = !Settings["system"].GetBool("windowmode");
+            //Engine.UseTextureFilter = Settings["system"].GetBool("filter");
 
             // check music playback settings
             MusicPlayback = Settings["system"].GetBool("music");

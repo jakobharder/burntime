@@ -10,7 +10,7 @@ using Burntime.Platform.IO;
 
 namespace Burntime.Platform.Graphics
 {
-    class FontProcessorTxt : IFontProcessor
+    public class FontProcessorTxt : IFontProcessor
     {
         Vector2 size;
         int offset;

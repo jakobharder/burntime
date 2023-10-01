@@ -15,13 +15,6 @@ namespace Burntime.Platform.Resource
         public String Value;
     }
 
-    public enum ResourceLoadType
-    {
-        Now,
-        Delayed,
-        LinkOnly
-    }
-
     struct ResourceInfoFont
     {
         public String Name;
@@ -29,7 +22,7 @@ namespace Burntime.Platform.Resource
         public PixelColor Back;
     }
 
-    public class ResourceManager : IDisposable
+    public class ResourceManager : IResourceManager, IDisposable
     {
         Engine engine;
         
@@ -87,7 +80,7 @@ namespace Burntime.Platform.Resource
             Debug.SetInfoMB("sprite memory usage", memoryUsage);
             Debug.SetInfoMB("sprite memory peak", memoryPeek);
 
-            delayLoader = new DelayLoader(Engine);
+            delayLoader = new DelayLoader(this);
         }
 
         public void Run()
@@ -160,20 +153,21 @@ namespace Burntime.Platform.Resource
 
             foreach (Font font in fonts.Values)
             {
-                if (font.sprite.internalFrames[0].texture == null)
-                    continue;
+#warning slimdx todo
+                //if (font.sprite.internalFrames[0].texture == null)
+                //    continue;
 
-                try
-                {
-                    SlimDX.Direct3D9.SurfaceDescription desc = font.sprite.internalFrames[0].texture.GetLevelDescription(0);
-                    MemoryUsage -= desc.Width * desc.Height * 4;
-                }
-                catch
-                {
-                }
+                //try
+                //{
+                //    SlimDX.Direct3D9.SurfaceDescription desc = font.sprite.internalFrames[0].texture.GetLevelDescription(0);
+                //    MemoryUsage -= desc.Width * desc.Height * 4;
+                //}
+                //catch
+                //{
+                //}
 
-                font.sprite.Unload();
-                Log.Debug("unload \"" + font.sprite.ID + "\"");
+                //font.sprite.Unload();
+                //Log.Debug("unload \"" + font.sprite.ID + "\"");
             }
         }
 
@@ -202,7 +196,7 @@ namespace Burntime.Platform.Resource
                 info.Back = PixelColor.Black;
             }
 
-            Font font = new Font(engine);
+            Font font = new Font();
             font.Info = new FontInfo();
             font.Info.Font = File.ToLower();
             font.Info.ForeColor = ForeColor;
@@ -261,7 +255,7 @@ namespace Burntime.Platform.Resource
 
             SpriteFrame frame = new SpriteFrame(this, tex, processor.Size, systemCopy.ToArray());
             font.sprite = new Sprite(this, "", frame);
-            font.sprite.internalFrames[0].Resolution = processor.Factor;
+            font.sprite.Resolution = processor.Factor;
 
             font.charInfo = processor.CharInfo;
             font.offset = processor.Offset;
@@ -274,14 +268,9 @@ namespace Burntime.Platform.Resource
         }
 
         // sprites
-        public Sprite GetImage(ResourceID ID)
+        public Sprite GetImage(ResourceID id, ResourceLoadType loadType = ResourceLoadType.Delayed)
         {
-            return GetSprite(ID, ResourceLoadType.Delayed);
-        }
-
-        public Sprite GetImage(ResourceID ID, ResourceLoadType LoadType)
-        {
-            return GetSprite(ID, LoadType);
+            return GetSprite(id, loadType);
         }
 
         //Sprite GetSprite(string id, int index)
@@ -460,12 +449,7 @@ namespace Burntime.Platform.Resource
         }
 
         #region DataObject accesss
-        public DataObject GetData(ResourceID id)
-        {
-            return GetData(id, ResourceLoadType.Now);
-        }
-
-        public DataObject GetData(ResourceID id, ResourceLoadType loadType)
+        public DataObject GetData(ResourceID id, ResourceLoadType loadType = ResourceLoadType.Now)
         {
             DataObject obj;
             if (dataObjects.ContainsKey(id))
@@ -479,7 +463,7 @@ namespace Burntime.Platform.Resource
                 engine.IncreaseLoadingCount();
                 obj = processor.Process(id, this);
                 Log.Debug("load \"" + id + "\"");
-                obj.resourceManager = this;
+                obj.ResourceManager = this;
                 obj.DataName = id;
                 obj.PostProcess();
                 engine.DecreaseLoadingCount();
@@ -497,7 +481,7 @@ namespace Burntime.Platform.Resource
         public void RegisterDataObject(ResourceID id, DataObject obj)
         {
             obj.DataName = id;
-            obj.resourceManager = this;
+            obj.ResourceManager = this;
 
             if (dataObjects.ContainsKey(id))
             {
@@ -523,7 +507,7 @@ namespace Burntime.Platform.Resource
             {
                 if (Sprite.internalFrames[i].HasSystemCopy)
                 {
-                    SlimDX.Direct3D9.Texture tex = engine.Device.CreateTexture(MakePowerOfTwo(Sprite.internalFrames[i].size.x), MakePowerOfTwo(Sprite.internalFrames[i].size.y));
+                    SlimDX.Direct3D9.Texture tex = engine.Device.CreateTexture(MakePowerOfTwo(Sprite.internalFrames[i].Size.x), MakePowerOfTwo(Sprite.internalFrames[i].Size.y));
                     SlimDX.Direct3D9.SurfaceDescription desc = tex.GetLevelDescription(0);
                     MemoryUsage += desc.Width * desc.Height * 4;
 
@@ -595,8 +579,7 @@ namespace Burntime.Platform.Resource
                     tex.UnlockRectangle(0);
 
                     Sprite.internalFrames[i].Texture = tex;
-                    Sprite.internalFrames[i].Width = loaderAni.FrameSize.x;
-                    Sprite.internalFrames[i].Height = loaderAni.FrameSize.y;
+                    Sprite.internalFrames[i].Size = loaderAni.FrameSize;
                     Sprite.internalFrames[i].TimeStamp = System.Diagnostics.Stopwatch.GetTimestamp();
                     Sprite.internalFrames[i].Resolution = Sprite.internalFrames[0].Resolution;
                 }
@@ -615,8 +598,7 @@ namespace Burntime.Platform.Resource
                 tex.UnlockRectangle(0);
 
                 Sprite.internalFrames[0].Texture = tex;
-                Sprite.internalFrames[0].Width = loader.Size.x;
-                Sprite.internalFrames[0].Height = loader.Size.y;
+                Sprite.internalFrames[0].Size = loader.Size;
                 Sprite.internalFrames[0].TimeStamp = System.Diagnostics.Stopwatch.GetTimestamp();
             }
 
@@ -748,7 +730,7 @@ namespace Burntime.Platform.Resource
             return strs;
         }
 
-        public String GetString(String id)
+        public string GetString(string id)
         {
             if (id.StartsWith("@"))
                 id = id.Substring(1);
@@ -757,11 +739,11 @@ namespace Burntime.Platform.Resource
             return GetString(id.Substring(0, atmark), int.Parse(id.Substring(atmark + 1)));
         }
 
-        public String GetString(String file, int index)
+        public string GetString(string file, int index)
         {
             if (!txtDB.ContainsKey(file))
                 AddDB(file);
-            String res = txtDB[file].Data[index];
+            string res = txtDB[file].Data[index];
 
             if (res.EndsWith("}"))
                 return res.Substring(0, res.Length - 1);
@@ -789,6 +771,9 @@ namespace Burntime.Platform.Resource
                 nValue >>= 1;
             return 1 << i;
         }
+
+        ISprite IResourceManager.GetImage(ResourceID id, ResourceLoadType loadType) => GetImage(id, loadType);
+        void IResourceManager.Reload(ISprite sprite, ResourceLoadType loadType) => Reload(sprite as Sprite, loadType);
 
         //public virtual String GetString(TextRegion region, int index)
         //{

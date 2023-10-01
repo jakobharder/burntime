@@ -116,7 +116,7 @@ namespace Burntime.Framework
             get { if (sceneQueue.Count == 0) return null; return sceneQueue[sceneQueue.Count - 1]; }
         }
 
-        internal void Render(RenderTarget Target)
+        internal void Render(IRenderTarget Target)
         {
             if (activeScene != null)
                 activeScene.Render(Target);

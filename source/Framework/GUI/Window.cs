@@ -249,7 +249,7 @@ namespace Burntime.Framework.GUI
                 OnVKeyPress(key);
         }
 
-        internal virtual void Render(RenderTarget Target)
+        internal virtual void Render(IRenderTarget Target)
         {
             if (!visible)
                 return;
@@ -291,6 +291,6 @@ namespace Burntime.Framework.GUI
         // frame update
         public virtual void OnUpdate(float Elapsed) { }
         // render
-        public virtual void OnRender(RenderTarget Target) { }
+        public virtual void OnRender(IRenderTarget Target) { }
     }
 }

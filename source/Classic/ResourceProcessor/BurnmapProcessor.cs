@@ -12,7 +12,7 @@ namespace Burntime.Deluxe.ResourceProcessor
 {
     class BurnmapProcessor : IDataProcessor
     {
-        public DataObject Process(ResourceID id, ResourceManager ResourceManager)
+        public DataObject Process(ResourceID id, IResourceManager ResourceManager)
         {
             int map = 0;
             if (id.Custom != null)

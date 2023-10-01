@@ -56,7 +56,7 @@ namespace Burntime.Classic.Logic
             get { return EntryCondition.RegionOnMap; }
         }
 
-        public String GetTitle(ResourceManager resourceManager)
+        public String GetTitle(IResourceManager resourceManager)
         {
             return resourceManager.GetString(titleId);
         }

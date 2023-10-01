@@ -15,7 +15,7 @@ namespace Burntime.Classic
         public Vector2 Position;
         public int Icon;
 
-        public String GetTitle(ResourceManager ResourceManager)
+        public String GetTitle(IResourceManager ResourceManager)
         {
             return ResourceManager.GetString("burn?355");
         }

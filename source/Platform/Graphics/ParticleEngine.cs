@@ -34,7 +34,7 @@ namespace Burntime.Platform.Graphics
             }
         }
 
-        public void Render(RenderTarget target)
+        public void Render(IRenderTarget target)
         {
             foreach (Particle p in particles)
             {

@@ -8,10 +8,10 @@ namespace Burntime.Platform.Graphics
     internal class SpriteFrame
     {
         internal Texture texture;
-        internal Vector2 size;
-        Resource.ResourceManager resourceManager;
-        byte[] systemCopy;
+        readonly Resource.ResourceManager resourceManager;
+        readonly byte[] systemCopy;
 
+        public Vector2 Size { get; set; }
         public float Resolution { get; set; } = -1;
 
         public bool HasSystemCopy
@@ -19,11 +19,11 @@ namespace Burntime.Platform.Graphics
             get { return systemCopy != null; }
         }
 
-        public SpriteFrame(Resource.ResourceManager ResourceManager, Texture Texture, Vector2 Size, byte[] systemCopy)
+        public SpriteFrame(Resource.ResourceManager ResourceManager, Texture Texture, Vector2 size, byte[] systemCopy)
         {
             resourceManager = ResourceManager;
             texture = Texture;
-            size = Size;
+            Size = size;
             loaded = Texture != null;
             this.systemCopy = systemCopy;
         }
@@ -32,7 +32,7 @@ namespace Burntime.Platform.Graphics
         {
             resourceManager = ResourceManager;
             texture = null;
-            size = new Vector2(1, 1);
+            Size = new(1, 1);
             loaded = false;
         }
 
@@ -55,18 +55,6 @@ namespace Burntime.Platform.Graphics
             {
                 texture = value;
             }
-        }
-
-        public int Width
-        {
-            get { return size.x; }
-            set { size.x = value; }
-        }
-
-        public int Height
-        {
-            get { return size.y; }
-            set { size.y = value; }
         }
 
         public long TimeStamp;

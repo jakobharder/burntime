@@ -14,7 +14,7 @@ namespace Burntime.Classic.Logic.Data
     {
         public sealed class DataProcessor : IDataProcessor
         {
-            public DataObject Process(ResourceID id, ResourceManager resourceManager)
+            public DataObject Process(ResourceID id, IResourceManager resourceManager)
             {
                 ConfigFile file = new ConfigFile();
                 file.Open(id.File);
@@ -41,7 +41,7 @@ namespace Burntime.Classic.Logic.Data
             get { return burnGfxIDs; }
         }
 
-        protected ItemTypesData(ConfigFile file, ResourceManager resourceManager)
+        protected ItemTypesData(ConfigFile file, IResourceManager resourceManager)
         {
             list = new List<ItemTypeData>();
 

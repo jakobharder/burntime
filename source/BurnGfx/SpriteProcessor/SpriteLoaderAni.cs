@@ -4,7 +4,6 @@ using System.Runtime.InteropServices;
 
 using Burntime.Platform;
 using Burntime.Platform.IO;
-using Burntime.Platform.Graphics;
 using Burntime.Platform.Resource;
 
 namespace Burntime.Data.BurnGfx
@@ -68,7 +67,7 @@ namespace Burntime.Data.BurnGfx
             lastFrame = null;
         }
 
-        public DataObject Process(ResourceID ID, ResourceManager ResourceManager)
+        public DataObject Process(ResourceID ID, IResourceManager ResourceManager)
         {
             return ResourceManager.GetImage(ID);
         }

@@ -26,7 +26,7 @@ namespace Burntime.Classic.Scenes
             CaptureAllMouseClicks = true;
         }
 
-        public override void OnRender(RenderTarget Target)
+        public override void OnRender(IRenderTarget Target)
         {
             font.DrawText(Target, new Vector2(160, 100), new GuiString("@newburn?11"), TextAlignment.Center, VerticalTextAlignment.Center);
         }

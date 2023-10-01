@@ -12,7 +12,7 @@ namespace Burntime.Data.BurnGfx
     {
         public short Section;
         public short Item;
-        public Sprite Image;
+        public ISprite Image;
     }
 
     [Serializable]

@@ -31,7 +31,7 @@ namespace Burntime.Classic.Maps
             map = (world as ClassicGame).World.Map;
         }
 
-        public void RenderOverlay(RenderTarget target, Vector2 offset, Vector2 size)
+        public void RenderOverlay(IRenderTarget target, Vector2 offset, Vector2 size)
         {
             if (map != null)
             {
@@ -45,7 +45,7 @@ namespace Burntime.Classic.Maps
 
                     int[] icons = new int[] { 17, 16, 19, 18 };
 
-                    Sprite sprite = app.ResourceManager.GetImage("syst.raw?" + icons[p.IconID]);
+                    ISprite sprite = app.ResourceManager.GetImage("syst.raw?" + icons[p.IconID]);
 
                     Vector2 pos = new Vector2();
 

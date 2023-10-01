@@ -8,7 +8,7 @@ namespace Burntime.Classic.Maps
 {
     class MapViewOverlayDroppedItems : IMapViewOverlay
     {
-        Sprite[] icons;
+        ISprite[] icons;
         Location mapState;
         Module app;
 
@@ -22,7 +22,7 @@ namespace Burntime.Classic.Maps
         {
             this.app = app;
 
-            icons = new Sprite[2];
+            icons = new ISprite[2];
             icons[0] = app.ResourceManager.GetImage("munt.raw?3");
             icons[1] = app.ResourceManager.GetImage("munt.raw?4");
         }
@@ -42,7 +42,7 @@ namespace Burntime.Classic.Maps
             mapState = world.CurrentLocation as Location;
         }
 
-        public void RenderOverlay(RenderTarget target, Vector2 offset, Vector2 size)
+        public void RenderOverlay(IRenderTarget target, Vector2 offset, Vector2 size)
         {
             if (mapState != null)
             {

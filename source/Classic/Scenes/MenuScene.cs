@@ -160,7 +160,7 @@ namespace Burntime.Classic
             PlayerTwoSwitch.Table = conversionTable;
         }
 
-        public override void OnRender(RenderTarget Target)
+        public override void OnRender(IRenderTarget Target)
         {
             base.OnRender(Target);
 

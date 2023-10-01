@@ -138,8 +138,8 @@ namespace Burntime.Classic.Logic
         protected StateLink<Location> destination;
         protected StateLink<Location> previousLocation;
 
-        protected DataID<Sprite> flag;
-        public DataID<Sprite> Flag
+        protected DataID<ISprite> flag;
+        public DataID<ISprite> Flag
         {
             get { return flag; }
             set { flag = value; }

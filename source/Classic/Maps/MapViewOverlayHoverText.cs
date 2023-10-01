@@ -40,7 +40,7 @@ namespace Burntime.Classic.Maps
             this.color = color;
         }
 
-        public MapViewHoverInfo(IMapObject obj, ResourceManager manager, PixelColor color)
+        public MapViewHoverInfo(IMapObject obj, IResourceManager manager, PixelColor color)
         {
             title = obj.GetTitle(manager);
             position = new Vector2(obj.MapArea.Left + obj.MapArea.Width / 2, obj.MapArea.Top - 10);
@@ -51,7 +51,7 @@ namespace Burntime.Classic.Maps
     class MapViewOverlayHoverText : IMapViewOverlay
     {
         Location mapState;
-        ResourceManager resMan;
+        IResourceManager resMan;
         bool isVisible = true;
 
         public bool IsVisible
@@ -74,7 +74,7 @@ namespace Burntime.Classic.Maps
             mapState = world.CurrentLocation as Location;
         }
 
-        public void RenderOverlay(RenderTarget Target, Vector2 Offset, Vector2 Size)
+        public void RenderOverlay(IRenderTarget Target, Vector2 Offset, Vector2 Size)
         {
             if (!isVisible)
                 return;

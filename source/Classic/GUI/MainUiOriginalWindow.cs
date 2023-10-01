@@ -63,7 +63,7 @@ namespace Burntime.Classic
             mapView.Size = new Vector2(size.x - 32, size.y - 40);
         }
 
-        public override void OnRender(RenderTarget Target)
+        public override void OnRender(IRenderTarget Target)
         {
             base.OnRender(Target);
 

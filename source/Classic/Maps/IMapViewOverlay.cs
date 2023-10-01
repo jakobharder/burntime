@@ -12,7 +12,7 @@ namespace Burntime.Classic.Maps
     {
         void MouseMoveOverlay(Vector2 Position);
         void UpdateOverlay(WorldState world, float elapsed);
-        void RenderOverlay(RenderTarget Target, Vector2 Offset, Vector2 Size);
+        void RenderOverlay(IRenderTarget Target, Vector2 Offset, Vector2 Size);
 
         bool IsVisible { get; set; }
         IMapObject GetObjectAt(Vector2 position);

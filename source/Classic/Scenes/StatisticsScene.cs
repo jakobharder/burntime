@@ -38,7 +38,7 @@ namespace Burntime.Classic.Scenes
             CaptureAllMouseClicks = true;
         }
 
-        public override void OnRender(RenderTarget Target)
+        public override void OnRender(IRenderTarget Target)
         {
 
             int y = -1;

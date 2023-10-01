@@ -50,7 +50,7 @@ namespace Burntime.Framework
         protected virtual void OnRun() { }
         protected virtual void OnClose() { }
 
-        internal ResourceManager resourceManager;
+        internal IResourceManager resourceManager;
         public virtual void AddProcessor(String Extension, ISpriteProcessor Processor)
         {
             Log.Info("   Add resource processor for '" + Extension + "': " + Processor.GetType().Name);
@@ -79,7 +79,7 @@ namespace Burntime.Framework
             get { return instance; }
         }
 
-        public Sprite MouseImage = null;
+        public ISprite MouseImage = null;
         public bool RenderMouse = true;
         public Nullable<Rect> MouseBoundings
         {
@@ -87,9 +87,9 @@ namespace Burntime.Framework
             set { DeviceManager.Mouse.Boundings = value; }
         }
 
-        public Engine Engine;
+        public IEngine Engine;
         public SceneManager SceneManager;
-        public ResourceManager ResourceManager;
+        public IResourceManager ResourceManager;
         public DeviceManager DeviceManager;
         public ConfigFile Settings;
 
@@ -124,7 +124,7 @@ namespace Burntime.Framework
             ActiveClient = null;
         }
 
-        internal void Render(RenderTarget Target)
+        internal void Render(IRenderTarget Target)
         {
             Target.Layer = 0;
 
@@ -168,7 +168,8 @@ namespace Burntime.Framework
 
             if (Server != null)
                 Server.Stop();
-            Engine.Close();
+#warning slimdx todo re-implement
+            //Engine.Close();
         }
     }
 
@@ -185,7 +186,7 @@ namespace Burntime.Framework
         public Vector2[] Resolutions { get { return wrap.Resolutions; } }
         public System.Drawing.Icon Icon { get { return wrap.Icon; } }
 
-        public void Render(RenderTarget Target)
+        public void Render(IRenderTarget Target)
         {
             wrap.Render(Target);
         }

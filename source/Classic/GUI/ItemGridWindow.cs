@@ -21,8 +21,8 @@ namespace Burntime.Classic.GUI
         ItemWindow[] itemWindows;
         IItemCollection mask;
         ItemList selection;
-        Sprite maskSprite;
-        Sprite selectionSprite;
+        ISprite maskSprite;
+        ISprite selectionSprite;
 
         int[] gridPositions;
         bool lockPositions = false;
@@ -77,7 +77,7 @@ namespace Burntime.Classic.GUI
             selectionSprite = App.ResourceManager.GetImage("inv.raw?3");
         }
 
-        public override void OnRender(RenderTarget Target)
+        public override void OnRender(IRenderTarget Target)
         {
             if (mask != null)
             {

@@ -6,7 +6,7 @@ namespace Burntime.Classic.ResourceProcessor
 {
     class ConstructionsProcessor : IDataProcessor
     {
-        public DataObject Process(ResourceID id, ResourceManager resourceManager)
+        public DataObject Process(ResourceID id, IResourceManager resourceManager)
         {
             ConfigFile file = new ConfigFile();
             file.Open(id.File);

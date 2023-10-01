@@ -7,49 +7,46 @@ using Burntime.Platform.Graphics;
 
 namespace Burntime.Platform.Resource
 {
-    class DelayLoader
+    public class DelayLoader
     {
-        ResourceManager resourceManager;
-        Engine engine;
-        List<Sprite> toLoad;
+        readonly IResourceManager resourceManager_;
+        readonly List<ISprite> toLoad_;
         Thread thread;
-        AutoResetEvent activate;
+        readonly AutoResetEvent activate_;
 
-        public bool IsLoading
+        public bool IsLoading => toLoad_.Count > 0;
+
+        public DelayLoader(IResourceManager resourceManager)
         {
-            get { return toLoad.Count > 0; }
+            resourceManager_ = resourceManager;
+            toLoad_ = new List<ISprite>();
+            activate_ = new AutoResetEvent(false);
         }
 
-        public DelayLoader(Engine Engine)
+        public void Enqueue(ISprite Sprite)
         {
-            resourceManager = Engine.ResourceManager;
-            engine = Engine;
-            toLoad = new List<Sprite>();
-            activate = new AutoResetEvent(false);
-        }
-
-        public void Enqueue(Sprite Sprite)
-        {
-            if (toLoad.Contains(Sprite))
+            if (toLoad_.Contains(Sprite))
                 return;
 
             // TODO: critical section
-            toLoad.Add(Sprite);
-            activate.Set();
+            toLoad_.Add(Sprite);
+            activate_.Set();
         }
 
         public void Run()
         {
             stop = false;
-            thread = new Thread(new ThreadStart(RunThread));
-            thread.IsBackground = true;
-            thread.Priority = ThreadPriority.BelowNormal;
+            thread = new(new ThreadStart(RunThread))
+            {
+                IsBackground = true,
+                Priority = ThreadPriority.BelowNormal
+            };
             thread.Start();
         }
 
         public void Reset()
         {
-            toLoad.Clear();
+            toLoad_.Clear();
         }
 
         void RunThread()
@@ -58,32 +55,32 @@ namespace Burntime.Platform.Resource
 
             while (!stop)
             {
-                if (toLoad.Count > 0)
+                if (toLoad_.Count > 0)
                 {
-                    if (engine.SafeMode)
+                    //if (engine.SafeMode)
+                    //{
+                    //    try
+                    //    {
+                    //        if (!engine.crashed)
+                    //        {
+                    //            resourceManager.Reload(toLoad_[0], ResourceLoadType.Now);
+                    //            toLoad_.RemoveAt(0);
+                    //        }
+                    //    }
+                    //    catch
+                    //    {
+                    //        engine.crashed = true;
+                    //    }
+                    //}
+                    //else
                     {
-                        try
-                        {
-                            if (!engine.crashed)
-                            {
-                                resourceManager.Reload(toLoad[0], ResourceLoadType.Now);
-                                toLoad.RemoveAt(0);
-                            }
-                        }
-                        catch
-                        {
-                            engine.crashed = true;
-                        }
-                    }
-                    else
-                    {
-                        resourceManager.Reload(toLoad[0], ResourceLoadType.Now);
-                        toLoad.RemoveAt(0);
+                        resourceManager_.Reload(toLoad_[0], ResourceLoadType.Now);
+                        toLoad_.RemoveAt(0);
                     }
                 }
 
-                if (toLoad.Count == 0)
-                    activate.WaitOne(200, true);
+                if (toLoad_.Count == 0)
+                    activate_.WaitOne(200, true);
             }
         }
 
@@ -91,7 +88,7 @@ namespace Burntime.Platform.Resource
         public void Stop()
         {
             stop = true;
-            activate.Set();
+            activate_.Set();
         }
     }
 }

@@ -198,68 +198,61 @@ namespace Burntime.Platform
 
     public class DeviceManager
     {
-        Engine engine;
+        private readonly MouseDevice mouse_;
+        public IMouseDevice Mouse => mouse_;
 
-        private MouseDevice mouse;
-        public IMouseDevice Mouse
+        public Keyboard Keyboard { get; } = new();
+
+        private readonly Vector2 gameResolution_;
+
+        public DeviceManager(Vector2 resolution, Vector2 gameResolution)
         {
-            get { return mouse; }
+            mouse_ = new MouseDevice(resolution);
+            gameResolution_ = gameResolution;
         }
 
-        Keyboard keyboard = new Keyboard();
-        public Keyboard Keyboard
+        public void MouseMove(Vector2 Position)
         {
-            get { return keyboard; }
+            mouse_.Position = new Vector2(Position);
         }
 
-        public DeviceManager(Engine Engine)
+        public void MouseClick(Vector2 Position, MouseButton Button)
         {
-            engine = Engine;
-            engine.DeviceManager = this;
-            mouse = new MouseDevice(engine.Resolution);
+            mouse_.AddClick(new()
+            {
+                Position = new Vector2(Position),
+                Button = Button
+            });
         }
 
-        internal void MouseMove(Vector2 Position)
+        public void MouseLeave()
         {
-            mouse.Position = new Vector2(Position);
-        }
+            Vector2 position = mouse_.Position;
 
-        internal void MouseClick(Vector2 Position, MouseButton Button)
-        {
-            MouseClickInfo info = new MouseClickInfo();
-            info.Position = new Vector2(Position);
-            info.Button = Button;
-            mouse.AddClick(info);
-        }
-
-        internal void MouseLeave()
-        {
-            Vector2 position = mouse.Position;
-
-            Vector2 direction = mouse.LastDirection;
+            Vector2 direction = mouse_.LastDirection;
             if (direction != Vector2.Zero)
             {
-                while (position.x > 0 && position.y > 0 && position.x <= engine.GameResolution.x && position.y <= engine.GameResolution.y)
+                while (position.x > 0 && position.y > 0 && position.x <= gameResolution_.x && position.y <= gameResolution_.y)
                     position += direction;
 
-                mouse.Position = position;
+                mouse_.Position = position;
             }
         }
 
-        internal void KeyPress(char key)
+        public void KeyPress(char key)
         {
-            keyboard.AddKey(new Key(key));
+            Keyboard.AddKey(new Key(key));
         }
 
-        internal void VKeyPress(Keys key)
+        public void VKeyPress(Keys key)
         {
-            keyboard.AddKey(new Key(key));
+            Keyboard.AddKey(new Key(key));
         }
 
         public void Refresh()
         {
-            mouse.ClearClicks();
-            keyboard.ClearKeys();
+            mouse_.ClearClicks();
+            Keyboard.ClearKeys();
         }
     }
 }

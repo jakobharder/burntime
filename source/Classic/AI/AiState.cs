@@ -185,7 +185,8 @@ namespace Burntime.Classic.AI
 
         private void DebugLog(string key, string info)
         {
-            Burntime.Platform.Debug.SetInfo("AI " + player.Object.Character.Name + key, info);
+#warning slimdx todo
+            //Burntime.Platform.Debug.SetInfo("AI " + player.Object.Character.Name + key, info);
         }
         #endregion
 

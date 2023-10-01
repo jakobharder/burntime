@@ -18,7 +18,7 @@ namespace Burntime.Framework.States
             get { return container; }
         }
 
-        public ResourceManager ResourceManager
+        public IResourceManager ResourceManager
         {
             get { return container.ResourceManager; }
         }

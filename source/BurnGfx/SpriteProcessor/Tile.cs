@@ -55,7 +55,7 @@ namespace Burntime.Data.BurnGfx
         }
 
         int mapId;
-        public Sprite Sprite;
+        public ISprite Sprite;
         byte[] data;
 
         //public Tile(ByteBuffer buffer, String id)

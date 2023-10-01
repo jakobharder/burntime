@@ -87,7 +87,7 @@
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\BurnGfx\BurnGfx.csproj" />
-    <ProjectReference Include="..\Platform\Platform.csproj" />
+    <ProjectReference Include="..\BurnGfx\Burntime.BurnGfx.csproj" />
+    <ProjectReference Include="..\Platform\Burntime.Platform.csproj" />
   </ItemGroup>
 </Project>

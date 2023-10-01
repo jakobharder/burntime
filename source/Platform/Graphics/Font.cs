@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace Burntime.Platform.Graphics
 {
@@ -47,10 +46,11 @@ namespace Burntime.Platform.Graphics
     {
         public FontInfo Info;
 
-        internal Sprite sprite;
-        internal Dictionary<char, CharInfo> charInfo;
-        internal int offset;
-        internal int height;
+#warning slimdx todo below for parameters were internal
+        public ISprite sprite;
+        public Dictionary<char, CharInfo> charInfo;
+        public int offset;
+        public int height;
 
         TextBorders borders = TextBorders.Window;
         public TextBorders Borders
@@ -59,28 +59,22 @@ namespace Burntime.Platform.Graphics
             set { borders = value; }
         }
 
-        Engine engine;
-        public Font(Engine Engine)
-        {
-            engine = Engine;
-        }
-
-        public void DrawText(RenderTarget Target, Vector2 Position, String Text)
+        public void DrawText(IRenderTarget Target, Vector2 Position, String Text)
         {
             DrawText(Target, Position, Text, TextAlignment.Left);
         }
 
-        public void DrawText(RenderTarget Target, Vector2 Position, String Text, TextAlignment Align)
+        public void DrawText(IRenderTarget Target, Vector2 Position, String Text, TextAlignment Align)
         {
             DrawText(Target, Position, Text, Align, VerticalTextAlignment.Center);
         }
 
-        public void DrawText(RenderTarget Target, Vector2 Position, String Text, TextAlignment Align, VerticalTextAlignment VertAlign)
+        public void DrawText(IRenderTarget Target, Vector2 Position, String Text, TextAlignment Align, VerticalTextAlignment VertAlign)
         {
             DrawText(Target, Position, Text, Align, VertAlign, 1);
         }
 
-        public void DrawText(RenderTarget Target, Vector2 Position, String Text, TextAlignment Align, VerticalTextAlignment VertAlign, float alpha)
+        public void DrawText(IRenderTarget Target, Vector2 Position, String Text, TextAlignment Align, VerticalTextAlignment VertAlign, float alpha)
         {
             Target.Layer++;
             if (Info.UseBackColor)
@@ -95,7 +89,7 @@ namespace Burntime.Platform.Graphics
             Target.Layer--;
         }
 
-        void DrawText(RenderTarget target, Vector2 pos, String text, TextAlignment Align, VerticalTextAlignment VertAlign, PixelColor color)
+        void DrawText(IRenderTarget target, Vector2 pos, String text, TextAlignment Align, VerticalTextAlignment VertAlign, PixelColor color)
         {
             // TODO: text align
             if (text == null || text.Length == 0)
@@ -148,7 +142,7 @@ namespace Burntime.Platform.Graphics
             }
         }
 
-        int DrawChar(RenderTarget target, char ch, Vector2 pos, PixelColor color)
+        int DrawChar(IRenderTarget target, char ch, Vector2 pos, PixelColor color)
         {
             CharInfo info = charInfo[translateChar(ch)];
             target.DrawSelectedSprite(pos + new Vector2(0, offset), new Rect(info.spritePos, new Vector2(info.imgWidth, info.imgHeight)), color);
@@ -200,7 +194,7 @@ namespace Burntime.Platform.Graphics
 
         public virtual int GetHeight()
         {
-            return (int)((height * sprite.internalFrames[0].Resolution + offset * 2));
+            return (int)((height * sprite.Resolution + offset * 2));
         }
 
         char translateChar(char ch)

@@ -27,7 +27,7 @@ namespace Burntime.Classic.Scenes
             font = new GuiFont(BurntimeClassic.FontName, new PixelColor(255, 255, 255));
         }
 
-        public override void OnRender(RenderTarget Target)
+        public override void OnRender(IRenderTarget Target)
         {
             if (timer >= WAIT_DISPLAY_DELAY)
                 font.DrawText(Target, new Vector2(160, 100), new GuiString("@newburn?10"), TextAlignment.Center, VerticalTextAlignment.Center);

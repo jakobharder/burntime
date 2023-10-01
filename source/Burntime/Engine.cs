@@ -12,7 +12,7 @@ using SlimDX.Direct3D9;
 
 namespace Burntime.Platform
 {
-    public class Engine
+    public class Engine : IEngine
     {
         Graphics.RenderDevice device;
         internal Graphics.RenderDevice Device
@@ -527,7 +527,7 @@ namespace Burntime.Platform
             device.Stop();
         }
 
-        internal DeviceManager DeviceManager = null;
+        public DeviceManager DeviceManager { get; set; }
         internal Resource.ResourceManager ResourceManager = null;
         
         Graphics.RenderTarget mainTarget;

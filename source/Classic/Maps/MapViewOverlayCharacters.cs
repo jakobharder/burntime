@@ -74,7 +74,7 @@ namespace Burntime.Classic.Maps
             ani.Update(elapsed);
         }
 
-        public void RenderOverlay(RenderTarget target, Vector2 offset, Vector2 size)
+        public void RenderOverlay(IRenderTarget target, Vector2 offset, Vector2 size)
         {
             if (mapState != null)
             {
@@ -111,7 +111,7 @@ namespace Burntime.Classic.Maps
 
                     if (debugRender)
                     {
-                        RenderTarget lineTarget = target.GetSubBuffer(new Rect(Vector2.Zero, target.Size));
+                        IRenderTarget lineTarget = target.GetSubBuffer(new Rect(Vector2.Zero, target.Size));
                         lineTarget.Offset = offset;
                         chr.Path.DebugRender(lineTarget);
                     }

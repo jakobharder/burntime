@@ -146,7 +146,7 @@ namespace Burntime.Framework
             return null;
         }
 
-        public void InitAllModules(ResourceManager ResourceManager)
+        public void InitAllModules(IResourceManager ResourceManager)
         {
             Log.Info("Initialize modules");
 

@@ -107,8 +107,8 @@ namespace Burntime.Classic.Logic
         public virtual float AttackValue => Weapon?.DamageValue ?? 10;
         public virtual float DefenseValue => (int)(Experience / 10 + 0.5f + (Protection?.DefenseValue ?? 0));
 
-        protected DataID<Platform.Graphics.Sprite> body;
-        public DataID<Platform.Graphics.Sprite> Body
+        protected DataID<Platform.Graphics.ISprite> body;
+        public DataID<Platform.Graphics.ISprite> Body
         {
             get { return body; }
             set { body = value; if (body.Object != null && body.Object.Animation != null) body.Object.Animation.Progressive = false; }
@@ -271,7 +271,7 @@ namespace Burntime.Classic.Logic
         }
 
         // map object implementation
-        public virtual String GetTitle(ResourceManager ResourceManager)
+        public virtual String GetTitle(IResourceManager ResourceManager)
         {
             return Name;
         }

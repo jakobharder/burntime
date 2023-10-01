@@ -7,9 +7,9 @@ namespace Burntime.Platform.Graphics
     public class StaticAnimationParticle : Particle
     {
         protected Vector2 position;
-        protected Sprite sprite;
+        protected ISprite sprite;
 
-        public StaticAnimationParticle(Sprite sprite, Vector2 position)
+        public StaticAnimationParticle(ISprite sprite, Vector2 position)
         {
             this.sprite = sprite;
             this.sprite.Animation.Endless = false;
@@ -26,7 +26,7 @@ namespace Burntime.Platform.Graphics
             get { return 1.0f; }
         }
 
-        public override Sprite Sprite
+        public override ISprite Sprite
         {
             get { return sprite; }
         }

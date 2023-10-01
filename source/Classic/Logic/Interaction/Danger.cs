@@ -21,7 +21,7 @@ namespace Burntime.Classic.Logic.Interaction
             get { return infoString; }
         }
 
-        public Sprite InfoIcon
+        public ISprite InfoIcon
         {
             get { return infoIcon; }
         }
@@ -33,10 +33,10 @@ namespace Burntime.Classic.Logic.Interaction
 
         protected string infoString;
         protected int infoValue;
-        protected Sprite infoIcon;
+        protected ISprite infoIcon;
         protected string type;
 
-        public Danger(string type, int value, string str, Sprite icon)
+        public Danger(string type, int value, string str, ISprite icon)
         {
             this.type = type;
             infoValue = value;

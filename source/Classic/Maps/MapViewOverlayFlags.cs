@@ -34,7 +34,7 @@ namespace Burntime.Classic.Maps
             ani.Update(elapsed);
         }
 
-        public void RenderOverlay(RenderTarget target, Vector2 offset, Vector2 size)
+        public void RenderOverlay(IRenderTarget target, Vector2 offset, Vector2 size)
         {
             if (state != null)
             {

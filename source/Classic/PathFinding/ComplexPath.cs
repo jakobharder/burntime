@@ -445,7 +445,7 @@ namespace Burntime.Classic.PathFinding
                 return grid * mask.Resolution + mask.Resolution / 2;
             }
 
-            public void DebugRender(Burntime.Platform.Graphics.RenderTarget target, Vector2f position)
+            public void DebugRender(Burntime.Platform.Graphics.IRenderTarget target, Vector2f position)
             {
                 if (mask == null)
                     return;
@@ -589,7 +589,7 @@ namespace Burntime.Classic.PathFinding
             return this.position;
         }
 
-        public override void DebugRender(Burntime.Platform.Graphics.RenderTarget target)
+        public override void DebugRender(Burntime.Platform.Graphics.IRenderTarget target)
         {
             if (position != move)
                 path.DebugRender(target, position);

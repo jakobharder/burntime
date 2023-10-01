@@ -158,7 +158,7 @@ namespace Burntime.Classic.GUI
             get { return entrance; }
         }
 
-        public override void OnRender(RenderTarget Target)
+        public override void OnRender(IRenderTarget Target)
         {
             base.OnRender(Target);
 
@@ -206,7 +206,7 @@ namespace Burntime.Classic.GUI
                     {
                         Vector2 pos = ways.Ways[way].Position + offset;
 
-                        foreach (Sprite sprite in ways.Ways[way].Images)
+                        foreach (var sprite in ways.Ways[way].Images)
                         {
                             Target.DrawSprite(pos, sprite);
                             pos.x += 32;
