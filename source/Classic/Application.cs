@@ -141,6 +141,8 @@ namespace Burntime.Classic
         public bool DisableMusic;
         public int PreviousPlayerId = -1;
         public bool NewGui = false;
+
+#warning TODO make this a setting
         public bool NewGfx = true;
 
         public Character SelectedCharacter

@@ -295,7 +295,7 @@ namespace Burntime.MonoGl
             if (sprite.Animation != null && sprite.Animation.Progressive && nativeSprite.Frames != null)
             {
                 entity.SpriteFrame = nativeSprite.Frames[0];
-                entity.Position = new Vector3(pos.x, pos.y, CalcZ(Layer) + 0.001f);
+                entity.Position = new Vector3(pos.x, pos.y, CalcZ(Layer) - 0.001f);
                 RenderDevice.AddEntity(entity);
             }
 
@@ -330,7 +330,7 @@ namespace Burntime.MonoGl
             if (nativeSprite.Animation != null && nativeSprite.Animation.Progressive && nativeSprite.Frames != null)
             {
                 entity.SpriteFrame = nativeSprite.Frames[0];
-                entity.Position = new Vector3(pos.x, pos.y, CalcZ(Layer) + 0.001f);
+                entity.Position = new Vector3(pos.x, pos.y, CalcZ(Layer) - 0.001f);
                 RenderDevice.AddEntity(entity);
             }
 

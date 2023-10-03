@@ -239,17 +239,21 @@ namespace Burntime.Platform.Resource
 
             if (loader is ISpriteAnimationProcessor loaderAni)
             {
-                for (int i = 0; i < loaderAni.FrameCount && i < Sprite.internalFrames.Length; i++)
+                if (Sprite.internalFrames.Length != loaderAni.FrameCount)
+                    Array.Resize(ref Sprite.internalFrames, loaderAni.FrameCount);
+                Sprite.Animation.Frame = System.Math.Min(loaderAni.FrameCount - 1, Sprite.Animation.Frame);
+                Sprite.Animation.FrameCount = loaderAni.FrameCount;
+
+                for (int i = 0; i < loaderAni.FrameCount; i++)
                 {
                     if (!loaderAni.SetFrame(i))
                     {
-                        SpriteFrame[] frames = new SpriteFrame[i];
-                        for (int j = 0; j < i; j++)
-                            frames[j] = Sprite.Frames[j];
-                        Sprite.internalFrames = frames;
-                        Sprite.ani.frameCount = i;
+                        Array.Resize(ref Sprite.internalFrames, loaderAni.FrameCount);
+                        Sprite.Animation.FrameCount = i;
                         break;
                     }
+
+                    Sprite.internalFrames[i] = Sprite.internalFrames[i] ?? new SpriteFrame();
 
                     lock (sprites)
                         MemoryUsage += Sprite.internalFrames[i].LoadFromProcessor(loader);
