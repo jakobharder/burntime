@@ -68,7 +68,7 @@ namespace Burntime.Framework.States
 
         protected void UpdateDebugInfo()
         {
-#warning slimdx todo
+#warning TODO SlimDX/Mono debug info
             //Burntime.Platform.Debug.SetInfo("[" + debugName + "] state objects", objects.Count.ToString());
             //Burntime.Platform.Debug.SetInfo("[" + debugName + "] state objects [add]", added.Count.ToString());
             //Burntime.Platform.Debug.SetInfo("[" + debugName + "] state objects [sync]", syncCopy.Count.ToString());

@@ -132,7 +132,7 @@ namespace Burntime.Classic
                 BurntimeClassic.Instance.PreviousPlayerId != game.CurrentPlayerIndex)
             {
                 // play player changed sound
-#warning slimdx todo
+#warning TODO SlimDX/Mono Music
                 //BurntimeClassic.Instance.Engine.Music.PlayOnce("06_MUS 06_HSC.ogg");
             }
             BurntimeClassic.Instance.PreviousPlayerId = game.CurrentPlayerIndex;

@@ -6,19 +6,21 @@
     <PublishReadyToRun>false</PublishReadyToRun>
     <TieredCompilation>false</TieredCompilation>
     <AssemblyName>Burntime</AssemblyName>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Icon.ico</ApplicationIcon>
-    <BaseOutputPath>bin\</BaseOutputPath>
+    <BaseOutputPath>..\..\bin</BaseOutputPath>
   </PropertyGroup>
   <ItemGroup>
-    <None Remove="Icon.bmp" />
-    <None Remove="Icon.ico" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Icon.bmp" />
-    <EmbeddedResource Include="Icon.ico" />
+    <EmbeddedResource Include="Icon.ico">
+      <LogicalName>Icon.ico</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Icon.bmp">
+      <LogicalName>Icon.bmp</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.1.303" />
@@ -34,4 +36,14 @@
     <Message Text="Restoring dotnet tools" Importance="High" />
     <Exec Command="dotnet tool restore" />
   </Target>
+  <PropertyGroup>
+    <PostBuildEvent>
+      xcopy $(SolutionDir)..\resources\*.txt $(SolutionDir)..\bin\Debug\ /Y /E /Q
+      xcopy $(SolutionDir)..\resources\game\* $(SolutionDir)..\bin\Debug\game\ /Y /E /Q
+      xcopy $(SolutionDir)..\resources\system\* $(SolutionDir)..\bin\Debug\system\ /Y /E /Q
+      xcopy $(SolutionDir)..\resources\*.txt $(SolutionDir)..\bin\Release\ /Y /E /Q
+      xcopy $(SolutionDir)..\resources\game\* $(SolutionDir)..\bin\Release\game\ /Y /E /Q
+      xcopy $(SolutionDir)..\resources\system\* $(SolutionDir)..\bin\Release\system\ /Y /E /Q
+    </PostBuildEvent>
+  </PropertyGroup>
 </Project>

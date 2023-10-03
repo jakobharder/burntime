@@ -42,7 +42,7 @@ public class ResourceManagerBase
 
         delayLoader = new DelayLoader(this as IResourceManager);
 
-#warning slimdx todo
+#warning TODO SlimDX/Mono debug info
         //Debug.SetInfoMB("sprite memory usage", MemoryUsage);
         //Debug.SetInfoMB("sprite memory peak", _memoryPeek);
     }
@@ -374,7 +374,7 @@ public class ResourceManagerBase
         set
         {
             _memoryUsage = value; if (value > _memoryPeek) _memoryPeek = value;
-#warning slimdx todo
+#warning TODO SlimDX/Mono debug info
             //Debug.SetInfoMB("sprite memory usage", _memoryUsage);
             //Debug.SetInfoMB("sprite memory peek", _memoryPeek);
         }

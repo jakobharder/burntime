@@ -267,7 +267,7 @@ namespace Burntime.Classic
                 BurntimeClassic.Instance.MusicPlayback = !BurntimeClassic.Instance.MusicPlayback;
                 music.Text = BurntimeClassic.Instance.MusicPlayback ? "@burn?389" : "@burn?424";
                 music.SetTextOnly();
-#warning todo 
+#warning TODO SlimDX/Mono Music
                 //if (BurntimeClassic.Instance.MusicPlayback)
                 //{
                 //    // start music
@@ -293,7 +293,6 @@ namespace Burntime.Classic
 
         void OnButtonNewGfx()
         {
-#warning slimdx todo
             var classic = BurntimeClassic.Instance;
 
             classic.NewGfx = !classic.NewGfx;

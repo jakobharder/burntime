@@ -132,7 +132,7 @@ namespace Burntime.Framework.Network
 
                 // send changes to server and update local object ids with global id
                 System.IO.Stream buf = stateContainer.GetChanges(1);
-#warning slimdx todo
+#warning TODO SlimDX/Mono debug info
                 //Burntime.Platform.Debug.SetInfoMB("sync out message size client #" + player, (int)buf.Length);
 
                 buf = server.SendChanges(buf);
@@ -155,7 +155,7 @@ namespace Burntime.Framework.Network
 
         internal void Activate(System.IO.Stream stateChanges)
         {
-#warning slimdx todo
+#warning TODO SlimDX/Mono debug info
             //Burntime.Platform.Debug.SetInfoMB("sync in message size client #" + player, (int)stateChanges.Length);
 
             //stateContainer.CheckConsistency(); // DEBUG
