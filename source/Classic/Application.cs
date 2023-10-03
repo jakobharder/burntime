@@ -56,7 +56,7 @@ namespace Burntime.Classic
 
         public override void Start()
         {
-#warning slimdx todo
+#warning TODO SlimDX/Mono Music
             //Engine.Music.Enabled = (!DisableMusic) & MusicPlayback;
 
             MouseImage = ResourceManager.GetImage("munt.raw");
@@ -97,8 +97,7 @@ namespace Burntime.Classic
             bool useHighResFont = Settings["system"].GetBool("highres_font");
 
             // add newgfx package
-#warning TODO slimdx
-            //if (Settings["system"].GetBool("newgfx"))
+            if (NewGfx)
             {
                 FileSystem.AddPackage("newgfx", "game/classic_newgfx");
                 if (FileSystem.ExistsFile("newgfx.txt"))
@@ -109,7 +108,7 @@ namespace Burntime.Classic
                     useHighResFont = true;
                 }
             }
-#warning TODO slimdx
+#warning TODO Santa for NewGfx (only)
             //else if (DateTime.Now.Month == 12 && 
             //    (DateTime.Now.Day >= 24 && DateTime.Now.Day <= 31 || DateTime.Now.Day == 6))
             //{
@@ -142,7 +141,7 @@ namespace Burntime.Classic
         public bool DisableMusic;
         public int PreviousPlayerId = -1;
         public bool NewGui = false;
-        public bool NewGfx = false;
+        public bool NewGfx = true;
 
         public Character SelectedCharacter
         {

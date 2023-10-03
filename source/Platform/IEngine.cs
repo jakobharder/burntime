@@ -23,6 +23,8 @@ public interface IEngine
     void CenterMouse();
     void ExitApplication();
 
+    void ReloadGraphics();
+
     void RenderRect(Vector2 pos, Vector2 size, PixelColor color);
 
     void RenderSprite(ISprite sprite, Vector2 pos, float alpha = 1);

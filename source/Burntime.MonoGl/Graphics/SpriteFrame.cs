@@ -14,6 +14,7 @@ public class SpriteFrame : Platform.Graphics.GenericSpriteFrame<Texture2D>
 {
     int _usedMemory;
     Vector2 _textureSize;
+    bool _keepSystemCopy = false;
 
     public SpriteFrame()
     {
@@ -26,6 +27,7 @@ public class SpriteFrame : Platform.Graphics.GenericSpriteFrame<Texture2D>
     public int LoadFromProcessor(ISpriteProcessor loader, bool keepSystemCopy = false)
     {
         const int PIXEL_BYTES = 4;
+        _keepSystemCopy = keepSystemCopy;
 
         _textureSize = new(MakePowerOfTwo(loader.Size.x), MakePowerOfTwo(loader.Size.y));
         _usedMemory = _textureSize.Count * PIXEL_BYTES;
@@ -77,24 +79,22 @@ public class SpriteFrame : Platform.Graphics.GenericSpriteFrame<Texture2D>
 
     public override int Unload()
     {
-        IsLoaded = false;
-        IsLoading = false;
-
-#warning TODO slimdx, unload systemCopy?
+        if (_keepSystemCopy)
+        {
+            // system copied sprites don't unload actually
+        }
+        else
+        {
+            IsLoaded = false;
+            IsLoading = false;
+            _systemCopy = null;
+        }
 
         if (_texture is null || _texture.IsDisposed) return 0;
 
         _texture.Dispose();
         _texture = null;
 
-        return _usedMemory;
-    }
-
-    internal void RestoreFromSystemCopy()
-    {
-#warning TODO restore system copy for fonts
-        //SlimDX.DataRectangle data = _texture.LockRectangle(0, SlimDX.Direct3D9.LockFlags.Discard);
-        //data.Data.Write(systemCopy, 0, systemCopy.Length);
-        //_texture.UnlockRectangle(0);
+        return _keepSystemCopy ? 0 : _usedMemory;
     }
 }

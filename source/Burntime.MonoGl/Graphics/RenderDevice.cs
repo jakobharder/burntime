@@ -279,10 +279,6 @@ public class RenderDevice : IDisposable
         //lineMatrix = SlimDX.Matrix.Transformation2D(new SlimDX.Vector2(), 0, new SlimDX.Vector2(renderScale, renderScale), new SlimDX.Vector2(), 0, new SlimDX.Vector2());
         //lineMatrix = spriteRenderer.Transform;
 
-        // application render
-
-        float currentFactor = 1;
-
         if (_renderEntities != null)
         {
             foreach (RenderEntity entity in _renderEntities)
@@ -293,22 +289,10 @@ public class RenderDevice : IDisposable
                     if ((sprite.Texture ?? sprite.SpriteFrame.Texture).IsDisposed)
                         continue;
 
-                    // if sprite resolution changed, then update transform matrix
-                    if (currentFactor != sprite.Factor)
-                    {
-                        currentFactor = sprite.Factor;
-                        // TODO engine scale
-#warning TODO
-                        //spriteRenderer.Transform = SlimDX.Matrix.Scaling(new SlimDX.Vector3(renderScale * sprite.Factor, renderScale * sprite.Factor, 1));
-                    }
-
                     // recompute position for not 1:1 sprite resolutions
                     var pos = new Microsoft.Xna.Framework.Vector2(sprite.Position.X, sprite.Position.Y);
-                    //if (currentFactor != 1)
-                    {
-                        pos.X = pos.X * _engine.Resolution.Scale.x;
-                        pos.Y = pos.Y * _engine.Resolution.Scale.y;
-                    }
+                    pos.X *= _engine.Resolution.Scale.x;
+                    pos.Y *= _engine.Resolution.Scale.y;
 
                     _spriteBatch.Draw(sprite.Texture ?? sprite.SpriteFrame.Texture, pos, sprite.Rectangle, sprite.Color, 0, 
                         Microsoft.Xna.Framework.Vector2.Zero,

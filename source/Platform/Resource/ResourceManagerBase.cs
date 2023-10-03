@@ -69,21 +69,20 @@ public class ResourceManagerBase
 
     public void ReleaseAll()
     {
-#warning Critical section: unloading should not happen while rendering or loading
-        foreach (ISprite sprite in sprites.Values)
+        lock (sprites)
         {
-            MemoryUsage -= sprite.Unload();
-            Log.Debug("unload \"" + sprite.ID + "\"");
-        }
+            foreach (ISprite sprite in sprites.Values)
+            {
+                MemoryUsage -= sprite.Unload();
+                Log.Debug("unload \"" + sprite.ID + "\"");
+            }
 
-        foreach (Font font in fonts.Values)
-        {
-            MemoryUsage -= font.sprite.Unload();
-            Log.Debug("unload \"" + font.sprite.ID + "\"");
+            foreach (Font font in fonts.Values)
+            {
+                MemoryUsage -= font.sprite.Unload();
+                Log.Debug("unload \"" + font.sprite.ID + "\"");
+            }
         }
-
-#warning do warnings here when not zero?
-        MemoryUsage = 0;
     }
 
     public void ReloadAll()

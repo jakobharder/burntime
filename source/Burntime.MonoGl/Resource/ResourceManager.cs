@@ -67,7 +67,8 @@ namespace Burntime.Platform.Resource
             processor.Shadow = BackColor;
 
             SpriteFrame frame = new();
-            MemoryUsage += frame.LoadFromProcessor(processor, keepSystemCopy: true);
+            lock (sprites)
+                MemoryUsage += frame.LoadFromProcessor(processor, keepSystemCopy: true);
 
             font.sprite = new Sprite(this, "", frame);
             font.sprite.Resolution = processor.Factor;
@@ -78,7 +79,8 @@ namespace Burntime.Platform.Resource
 
             _engine.DecreaseLoadingCount();
 
-            fonts.Add(info, font);
+            lock (fonts)
+                fonts.Add(info, font);
             return font;
         }
         #endregion
@@ -189,20 +191,14 @@ namespace Burntime.Platform.Resource
                 return;
             }
 
-            for (int i = 0; i < Sprite.internalFrames.Length; i++)
-            {
-                //if (Sprite.internalFrames[i].HasSystemCopy)
-                //{
-                //    SlimDX.Direct3D9.Texture tex = _engine.Device.CreateTexture(MakePowerOfTwo(Sprite.internalFrames[i].Size.x), MakePowerOfTwo(Sprite.internalFrames[i].Size.y));
-                //    SlimDX.Direct3D9.SurfaceDescription desc = tex.GetLevelDescription(0);
-                //    MemoryUsage += desc.Width * desc.Height * 4;
-
-                //    Sprite.internalFrames[i].texture = tex;
-                //    Sprite.internalFrames[i].RestoreFromSystemCopy();
-                //    Sprite.internalFrames[i].loading = false;
-                //    Sprite.internalFrames[i].loaded = true;
-                //}
-            }
+            // System copied sprites like fonts
+            //for (int i = 0; i < Sprite.internalFrames.Length; i++)
+            //{
+            //    if (Sprite.internalFrames[i].HasSystemCopy)
+            //    {
+            //        // nothing to do
+            //    }
+            //}
 
             ResourceID id = Sprite.ID;
             if (id.File == "" || !spriteProcessors.ContainsKey(id.Format))
@@ -255,13 +251,15 @@ namespace Burntime.Platform.Resource
                         break;
                     }
 
-                    MemoryUsage += Sprite.internalFrames[i].LoadFromProcessor(loader);
+                    lock (sprites)
+                        MemoryUsage += Sprite.internalFrames[i].LoadFromProcessor(loader);
                     Sprite.internalFrames[i].Resolution = Sprite.internalFrames[0].Resolution;
                 }
             }
             else
             {
-                MemoryUsage += Sprite.internalFrames[0].LoadFromProcessor(loader);
+                lock (sprites)
+                    MemoryUsage += Sprite.internalFrames[0].LoadFromProcessor(loader);
             }
 
             _engine.DecreaseLoadingCount();

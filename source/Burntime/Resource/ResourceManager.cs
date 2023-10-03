@@ -67,7 +67,8 @@ namespace Burntime.Platform.Resource
             SlimDX.Direct3D9.Texture tex = _engine.Device.CreateTexture(MakePowerOfTwo(processor.Size.x), MakePowerOfTwo(processor.Size.y));
 
             SlimDX.Direct3D9.SurfaceDescription desc = tex.GetLevelDescription(0);
-            MemoryUsage += desc.Width * desc.Height * 4;
+            lock (sprites)
+                MemoryUsage += desc.Width * desc.Height * 4;
 
             SlimDX.DataRectangle data = tex.LockRectangle(0, SlimDX.Direct3D9.LockFlags.Discard);
             System.IO.MemoryStream systemCopy = new System.IO.MemoryStream();
@@ -224,7 +225,8 @@ namespace Burntime.Platform.Resource
                 {
                     SlimDX.Direct3D9.Texture tex = _engine.Device.CreateTexture(MakePowerOfTwo(Sprite.internalFrames[i].Size.x), MakePowerOfTwo(Sprite.internalFrames[i].Size.y));
                     SlimDX.Direct3D9.SurfaceDescription desc = tex.GetLevelDescription(0);
-                    MemoryUsage += desc.Width * desc.Height * 4;
+                    lock (sprites)
+                        MemoryUsage += desc.Width * desc.Height * 4;
 
                     Sprite.internalFrames[i].Texture = tex;
                     Sprite.internalFrames[i].RestoreFromSystemCopy();
@@ -286,7 +288,8 @@ namespace Burntime.Platform.Resource
                     SlimDX.Direct3D9.Texture tex = _engine.Device.CreateTexture(MakePowerOfTwo(loaderAni.FrameSize.x), MakePowerOfTwo(loaderAni.FrameSize.y));
 
                     SlimDX.Direct3D9.SurfaceDescription desc = tex.GetLevelDescription(0);
-                    MemoryUsage += desc.Width * desc.Height * 4;
+                    lock (sprites)
+                        MemoryUsage += desc.Width * desc.Height * 4;
 
                     SlimDX.DataRectangle data = tex.LockRectangle(0, SlimDX.Direct3D9.LockFlags.Discard);
                     loader.Render(data.Data, data.Pitch);
@@ -305,7 +308,8 @@ namespace Burntime.Platform.Resource
                 SlimDX.Direct3D9.Texture tex = _engine.Device.CreateTexture(MakePowerOfTwo(loader.Size.x), MakePowerOfTwo(loader.Size.y));
 
                 SlimDX.Direct3D9.SurfaceDescription desc = tex.GetLevelDescription(0);
-                MemoryUsage += desc.Width * desc.Height * 4;
+                lock (sprites)
+                    MemoryUsage += desc.Width * desc.Height * 4;
 
                 SlimDX.DataRectangle data = tex.LockRectangle(0, SlimDX.Direct3D9.LockFlags.Discard);
                 loader.Render(data.Data, data.Pitch);

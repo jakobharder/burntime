@@ -203,6 +203,13 @@ namespace Burntime.MonoGl
             Exit();
         }
 
+        void IEngine.ReloadGraphics()
+        {
+            BlendOverlay.FadeOut();
+            ResourceManager.ReleaseAll();
+            BlendOverlay.FadeIn();
+        }
+
         #region render methods
         const float MAX_LAYERS = 256.0f;
         const float popInSpeed = 16.0f;

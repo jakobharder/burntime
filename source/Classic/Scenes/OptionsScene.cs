@@ -18,8 +18,8 @@ namespace Burntime.Classic
         Button save;
         Button delete;
         Button music;
-        Button newgfx;
-        Button _buttonRestart;
+        readonly Button _buttonNewGfx;
+        readonly Button _buttonRestart;
 
         Button[] savegames = new Button[8];
 
@@ -31,9 +31,9 @@ namespace Burntime.Classic
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
             disabled = new GuiFont(BurntimeClassic.FontName, new PixelColor(100, 100, 100));
-            red = new GuiFont(BurntimeClassic.FontName, new PixelColor(164, 0, 0));
-            hover = new GuiFont(BurntimeClassic.FontName, new PixelColor(108, 116, 168));
-            hoverRed = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
+            red = new GuiFont(BurntimeClassic.FontName, new PixelColor(134, 44, 4));
+            hover = new GuiFont(BurntimeClassic.FontName, new PixelColor(109, 117, 170));
+            hoverRed = new GuiFont(BurntimeClassic.FontName, new PixelColor(190, 77, 12));
             green = new GuiFont(BurntimeClassic.FontName, new PixelColor(0, 108, 0));
 
             Image image = new Image(App);
@@ -78,7 +78,7 @@ namespace Burntime.Classic
             };
             _buttonRestart.Command += OnButtonRestart;
 
-            Windows += newgfx = new Button(App)
+            Windows += _buttonNewGfx = new Button(App)
             {
                 Font = red,
                 HoverFont = hover,
@@ -86,7 +86,7 @@ namespace Burntime.Classic
                 Position = new Vector2(214, 127),
                 IsTextOnly = true
             };
-            newgfx.Command += OnButtonNewGfx;
+            _buttonNewGfx.Command += OnButtonNewGfx;
 
             button = new Button(App);
             button.Font = red;
@@ -135,7 +135,7 @@ namespace Burntime.Classic
             button.Image = "opta.raw?0";
             button.HoverImage = "opta.raw?1";
             button.Position = new Vector2(186, 51);
-            button.Layer+=2;
+            button.Layer += 2;
             Windows += button;
 
             CreateSaveGameButtons();
@@ -145,7 +145,7 @@ namespace Burntime.Classic
         {
             RefreshSaveGames();
             input.Name = "";
-            newgfx.Text = BurntimeClassic.Instance.NewGfx ? "@newburn?17" : "@newburn?18";
+            _buttonNewGfx.Text = BurntimeClassic.Instance.NewGfx ? "@newburn?17" : "@newburn?18";
 
             if (app.SceneManager.LastScene == "MenuScene")
             {
@@ -294,34 +294,34 @@ namespace Burntime.Classic
         void OnButtonNewGfx()
         {
 #warning slimdx todo
-            //var classic = BurntimeClassic.Instance;
+            var classic = BurntimeClassic.Instance;
 
-            //classic.NewGfx = !classic.NewGfx;
-            //newgfx.Text = classic.NewGfx ? "@newburn?17" : "@newburn?18";
+            classic.NewGfx = !classic.NewGfx;
+            _buttonNewGfx.Text = classic.NewGfx ? "@newburn?17" : "@newburn?18";
 
-            //if (classic.NewGfx)
-            //{
-            //    FileSystem.AddPackage("newgfx", "game/classic_newgfx");
-            //    if (FileSystem.ExistsFile("newgfx.txt"))
-            //    {
-            //        classic.ResourceManager.SetResourceReplacement("newgfx.txt");
+            if (classic.NewGfx)
+            {
+                FileSystem.AddPackage("newgfx", "game/classic_newgfx");
+                if (FileSystem.ExistsFile("newgfx.txt"))
+                {
+                    classic.ResourceManager.SetResourceReplacement("newgfx.txt");
 
-            //        // use highres font anyway
-            //        if (FileSystem.ExistsFile("highres-font.txt"))
-            //            BurntimeClassic.FontName = "highres-font.txt";
-            //    }
-            //    else
-            //    {
-            //        classic.ResourceManager.SetResourceReplacement(null);
-            //    }
-            //    classic.Engine.ReloadGraphics();
-            //}
-            //else
-            //{
-            //    FileSystem.RemovePackage("newgfx");
-            //    classic.ResourceManager.SetResourceReplacement(null);
-            //    classic.Engine.ReloadGraphics();
-            //}
+                    // use highres font anyway
+                    if (FileSystem.ExistsFile("highres-font.txt"))
+                        BurntimeClassic.FontName = "highres-font.txt";
+                }
+                else
+                {
+                    classic.ResourceManager.SetResourceReplacement(null);
+                }
+                classic.Engine.ReloadGraphics();
+            }
+            else
+            {
+                FileSystem.RemovePackage("newgfx");
+                classic.ResourceManager.SetResourceReplacement(null);
+                classic.Engine.ReloadGraphics();
+            }
         }
 
         void OnButtonExit()

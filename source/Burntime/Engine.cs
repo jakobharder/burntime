@@ -244,7 +244,7 @@ namespace Burntime.Platform
             form.Text = App.Title;
             form.engine = this;
             form.ClientSize = new Size(Resolution.Native.x, Resolution.Native.y);
-#warning slimdx todo
+#warning deprecated SlimDX
             //form.Icon = App.Icon;
 
             // add DEBUG to title in debug builds
