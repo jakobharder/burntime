@@ -7,16 +7,16 @@ namespace Burntime.Platform.Resource
 
     public interface IDataProcessor
     {
-        DataObject Process(ResourceID ID, ResourceManager ResourceManager);
+        DataObject Process(ResourceID ID, IResourceManager ResourceManager);
         string[] Names { get; }
     }
 
-    internal sealed class NullDataObject : DataObject
+    public sealed class NullDataObject : DataObject
     {
-        public NullDataObject(ResourceID ID, ResourceManager ResourceManager)
+        public NullDataObject(ResourceID ID, IResourceManager ResourceManager)
         {
             DataName = ID;
-            resourceManager = ResourceManager;
+            this.ResourceManager = ResourceManager;
         }
     }
 
@@ -24,11 +24,7 @@ namespace Burntime.Platform.Resource
     // data
     public class DataObject
     {
-        internal ResourceManager resourceManager;
-        protected ResourceManager ResourceManager
-        {
-            get { return resourceManager; }
-        }
+        public IResourceManager ResourceManager { get; set; }
         public String DataName;
 
         public virtual void PostProcess()
@@ -47,7 +43,7 @@ namespace Burntime.Platform.Resource
     public interface IDataID
     {
         string Name { get; }
-        ResourceManager ResMan { get; set; }
+        IResourceManager ResMan { get; set; }
     }
 
     //[Serializable]
@@ -77,7 +73,7 @@ namespace Burntime.Platform.Resource
     {
         String name;
         [NonSerialized]
-        ResourceManager resMan;
+        IResourceManager resMan;
         [NonSerialized]
         DataObject obj;
 
@@ -100,7 +96,7 @@ namespace Burntime.Platform.Resource
             else
                 this.obj = null;
             name = obj.DataName;
-            resMan = obj.resourceManager;
+            resMan = obj.ResourceManager;
         }
 
         // force to load object
@@ -157,7 +153,7 @@ namespace Burntime.Platform.Resource
             get { return name; }
         }
 
-        ResourceManager IDataID.ResMan
+        IResourceManager IDataID.ResMan
         {
             get { return resMan; }
             set { resMan = value; }

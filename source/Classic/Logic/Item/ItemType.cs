@@ -152,6 +152,11 @@ namespace Burntime.Classic.Logic
             get { return data.Object.DamageValue; }
         }
 
+        public int DefenseValue
+        {
+            get { return data.Object.DefenseValue; }
+        }
+
         public int AmmoValue
         {
             get { return data.Object.AmmoValue; }

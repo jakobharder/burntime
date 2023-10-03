@@ -23,7 +23,7 @@ namespace Burntime.Classic.Scenes
         {
             Background = "arzt.pac";
             Music = "03_MUS 03_HSC.ogg";
-            Position = (app.Engine.GameResolution - new Vector2(320, 200)) / 2;
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
             
             Image ani = new Image(app);
             ani.Position = new Vector2(211, 65);

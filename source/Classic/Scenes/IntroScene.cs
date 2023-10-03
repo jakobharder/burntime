@@ -51,7 +51,7 @@ namespace Burntime.Classic.Scenes
         {
             timeout = new FadingHelper();
             Music = "20_MUS 20_HSC.ogg";
-            Position = (app.Engine.GameResolution - new Vector2(320, 200)) / 2;
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
             Size = new Vector2(320, 200);
             app.RenderMouse = false;
@@ -100,7 +100,7 @@ namespace Burntime.Classic.Scenes
         {
             for (int i = 0; i < animations.Length; i++)
             {
-                Sprite sprite = app.ResourceManager.GetImage(animations[i].File);
+                var sprite = app.ResourceManager.GetImage(animations[i].File);
                 sprite.Touch();
             }
         }
@@ -108,11 +108,13 @@ namespace Burntime.Classic.Scenes
         protected override void OnActivateScene(object parameter)
         {
             if (oldSpeed == 0)
-                oldSpeed = app.Engine.BlendSpeed;
-            app.Engine.Music.Volume = 0;
-            app.Engine.BlendSpeed = 0.9f;
-            app.Engine.MusicBlend = false;
-            app.Engine.Music.IsMuted = true;
+                oldSpeed = app.Engine.BlendOverlay.Speed;
+#warning TODO SlimDX/Mono Music
+            //app.Engine.Music.Volume = 0;
+            app.Engine.BlendOverlay.Speed = 0.9f;
+#warning TODO SlimDX/Mono Music
+            //app.Engine.MusicBlend = false;
+            //app.Engine.Music.IsMuted = true;
             delayedMusicStart = 2.0f;
             index = 0;
             scroll = 0;
@@ -138,7 +140,7 @@ namespace Burntime.Classic.Scenes
 
         protected override void OnInactivateScene()
         {
-            app.Engine.BlendSpeed = oldSpeed;
+            app.Engine.BlendOverlay.Speed = oldSpeed;
             app.RenderMouse = true;
         }
 
@@ -149,7 +151,10 @@ namespace Burntime.Classic.Scenes
 #warning // dirty hack: mute the music for ~2 seconds to get rid of the starting sound/distortion that is part of the original music file
                 delayedMusicStart -= elapsed;
                 if (delayedMusicStart <= 0)
-                    app.Engine.Music.IsMuted = false;
+                {
+#warning TODO SlimDX/Mono Music
+                    //app.Engine.Music.IsMuted = false;
+                }
             }
 
             timeout.Update(elapsed);
@@ -159,10 +164,10 @@ namespace Burntime.Classic.Scenes
 
             if (timeout.IsOut)
             {
-                app.Engine.Blend = 1;
+                app.Engine.BlendOverlay.FadeOut();
             }
 
-            if (app.Engine.IsBlended)
+            if (app.Engine.BlendOverlay.IsBlended)
             {
                 if (index >= pages.Length - 1)
                 {
@@ -175,7 +180,7 @@ namespace Burntime.Classic.Scenes
                     timeout.Speed = 1 / pages[index].Time;
                     timeout.FadeOut();
                     scroll = 0;
-                    app.Engine.Blend = 0;
+                    app.Engine.BlendOverlay.FadeIn();
 
                     view.Map = pages[index].MapData;
                 }
@@ -220,7 +225,8 @@ namespace Burntime.Classic.Scenes
 
         private void NextScene()
         {
-            app.Engine.MusicBlend = true;
+#warning TODO SlimDX/Mono Music
+            //app.Engine.MusicBlend = true;
             app.SceneManager.SetScene("MenuScene");
         }
     }

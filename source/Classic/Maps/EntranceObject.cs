@@ -12,7 +12,7 @@ namespace Burntime.Classic.Maps
         MapEntrance entrance;
         int number;
 
-        public string GetTitle(Burntime.Platform.Resource.ResourceManager resourceManager)
+        public string GetTitle(Burntime.Platform.Resource.IResourceManager resourceManager)
         {
             return "";
         }

@@ -27,7 +27,7 @@ namespace Burntime.Classic.Scenes
         {
             Background = "hint1.pac";
             Music = "10_MUS 10_HSC.ogg";
-            Position = (app.Engine.GameResolution - new Vector2(320, 200)) / 2;
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
             inventory = new InventoryWindow(App, InventorySide.Left);
             inventory.Position = new Vector2(2, 5);

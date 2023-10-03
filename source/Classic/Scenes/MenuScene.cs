@@ -23,13 +23,16 @@ namespace Burntime.Classic
         Toggle AiPlayers;
         Radio Color;
         Burntime.Platform.IO.ConfigFile conversionTable;
+        GuiFont copyright;
 
         public MenuScene(Module App) 
             : base(App)
         {
             Background = "sta.pac";
             Music = "15_MUS 15_HSC.ogg";
-            Position = (app.Engine.GameResolution - new Vector2(320, 200)) / 2;
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+
+            copyright = new GuiFont(BurntimeClassic.FontName, new PixelColor(164, 164, 164)) { Borders = TextBorders.Screen };
 
             // face
             PlayerOneFace = new FaceWindow(App);
@@ -157,6 +160,13 @@ namespace Burntime.Classic
             PlayerTwoSwitch.Table = conversionTable;
         }
 
+        public override void OnRender(RenderTarget Target)
+        {
+            base.OnRender(Target);
+
+            copyright.DrawText(Target, new Vector2(Size.x / 2, Size.y + 2), "Remake by Jakob Harder. Original copyright 1993 by Max Design", TextAlignment.Center, VerticalTextAlignment.Top);
+        }
+
         void OnPlayerOneDown()
         {
             if (PlayerTwoSwitch.IsDown)
@@ -208,19 +218,24 @@ namespace Burntime.Classic
             app.SceneManager.SetScene("OptionsScene");
         }
 
+        private string GetRandomName()
+        {
+            return "Max";
+        }
+
         void OnButtonStart()
         {
-            if (PlayerOneSwitch.Name == "" && PlayerTwoSwitch.Name == "")
+            if (PlayerOneFace.FaceID == -1 && PlayerTwoFace.FaceID == -1)
                 return;
 
-            app.Engine.Blend = 1;
+            app.Engine.BlendOverlay.FadeOut();
 
             GameCreation creation = new GameCreation(app as BurntimeClassic);
 
             NewGameInfo Info = new()
             {
-                NameOne = PlayerOneSwitch.Name,
-                NameTwo = PlayerTwoSwitch.Name,
+                NameOne = (string.IsNullOrEmpty(PlayerOneSwitch.Name) && PlayerOneFace.FaceID >= 0) ? GetRandomName() : PlayerOneSwitch.Name,
+                NameTwo = (string.IsNullOrEmpty(PlayerTwoSwitch.Name) && PlayerTwoFace.FaceID >= 0) ? GetRandomName() : PlayerTwoSwitch.Name,
                 FaceOne = PlayerOneFace.FaceID,
                 FaceTwo = PlayerTwoFace.FaceID,
                 Difficulty = Difficulty.State,

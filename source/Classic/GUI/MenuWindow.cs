@@ -121,7 +121,7 @@ namespace Burntime.Classic.GUI
             if (itemtop >= 0)
             {
                 int item = (itemtop - itemtop % middle.Height) / middle.Height;
-                if (item < list.Count)
+                if (item < list.Count && item >= 0)
                 {
                     int w = font.GetWidth(list[item].Text);
 

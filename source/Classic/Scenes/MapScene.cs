@@ -1,20 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-using Burntime.Platform;
+﻿using Burntime.Platform;
 using Burntime.Platform.Graphics;
 using Burntime.Framework;
 using Burntime.Framework.GUI;
 using Burntime.Classic.GUI;
 using Burntime.Data.BurnGfx;
+using System;
 
 namespace Burntime.Classic
 {
     public class MapScene : Scene, IMapEntranceHandler
     {
         ClassicMapView view;
-        MapGuiWindow gui;
+        IMapGuiWindow gui;
         MenuWindow menu;
         Image cursorAni;
 
@@ -29,13 +26,14 @@ namespace Burntime.Classic
         public MapScene(Module App)
             : base(App)
         {
-            Size = app.Engine.GameResolution;
+            Size = app.Engine.Resolution.Game;
+            BurntimeClassic classic = app as BurntimeClassic;
+
+            gui = classic.NewGui ? new MainUiLeftWindow(App) : new MainUiOriginalWindow(App);
 
             view = new ClassicMapView(this, App);
-            view.Position = new Vector2(16, 0);
-            view.Size = new Vector2(Size.x - 32, Size.y - 40);
-            //view.Position = new Vector2(0, 0);
-            //view.Size = new Vector2(Size.x, Size.y - 16);
+            gui.SetMapRenderArea(view, Size);
+
             view.Overlays.Add(new Maps.MapViewOverlayFlags(app));
             view.Overlays.Add(new Maps.MapViewOverlayPlayer(app));
             view.Overlays.Add(new Maps.MapViewOverlayHoverText(app));
@@ -58,11 +56,9 @@ namespace Burntime.Classic
             cursorAni.Layer += 59;
             Windows += cursorAni;
 
-            gui = new MapGuiWindow(App);
-            gui.Layer += 60;
+            gui.Layer += classic.NewGui ? 40 : 60;
             Windows += gui;
 
-            BurntimeClassic classic = app as BurntimeClassic;
             debugNoTravel = classic.Settings["debug"].GetBool("no_travel") && classic.Settings["debug"].GetBool("enable_cheats");
         }
 
@@ -100,10 +96,13 @@ namespace Burntime.Classic
             {
                 cursorAni.Position = app.DeviceManager.Mouse.Position + new Vector2(8, 11);
 
-                int layer = Target.Layer;
-                Target.Layer = gui.Layer - 1;
-                Target.DrawSprite(app.DeviceManager.Mouse.Position, app.MouseImage);
-                Target.Layer = layer;
+                if (!BurntimeClassic.Instance.NewGui)
+                {
+                    int layer = Target.Layer;
+                    Target.Layer = gui.Layer - 1;
+                    Target.DrawSprite(app.DeviceManager.Mouse.Position, app.MouseImage);
+                    Target.Layer = layer;
+                }
             }
         }
 
@@ -121,7 +120,10 @@ namespace Burntime.Classic
 
         protected override void OnActivateScene(object parameter)
         {
-            app.RenderMouse = false;
+            if (!BurntimeClassic.Instance.NewGui)
+            {
+                app.RenderMouse = false;
+            }
             app.MouseBoundings = view.Boundings;
 
             ClassicGame game = app.GameState as ClassicGame;
@@ -130,7 +132,8 @@ namespace Burntime.Classic
                 BurntimeClassic.Instance.PreviousPlayerId != game.CurrentPlayerIndex)
             {
                 // play player changed sound
-                BurntimeClassic.Instance.Engine.Music.PlayOnce("06_MUS 06_HSC.ogg");
+#warning TODO SlimDX/Mono Music
+                //BurntimeClassic.Instance.Engine.Music.PlayOnce("06_MUS 06_HSC.ogg");
             }
             BurntimeClassic.Instance.PreviousPlayerId = game.CurrentPlayerIndex;
 
@@ -156,7 +159,10 @@ namespace Burntime.Classic
 
         protected override void OnInactivateScene()
         {
-            app.RenderMouse = true;
+            if (!BurntimeClassic.Instance.NewGui)
+            {
+                app.RenderMouse = true;
+            }
             app.MouseBoundings = null;
         }
 

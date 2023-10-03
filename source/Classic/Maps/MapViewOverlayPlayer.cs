@@ -45,7 +45,7 @@ namespace Burntime.Classic.Maps
 
                     int[] icons = new int[] { 17, 16, 19, 18 };
 
-                    Sprite sprite = app.ResourceManager.GetImage("syst.raw?" + icons[p.IconID]);
+                    ISprite sprite = app.ResourceManager.GetImage("syst.raw?" + icons[p.IconID]);
 
                     Vector2 pos = new Vector2();
 

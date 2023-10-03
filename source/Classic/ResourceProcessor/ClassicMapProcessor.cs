@@ -9,7 +9,7 @@ namespace Burntime.Classic.ResourceProcessor
 {
     class ClassicMapProcessor : IDataProcessor
     {
-        public DataObject Process(ResourceID ID, ResourceManager ResourceManager)
+        public DataObject Process(ResourceID ID, IResourceManager ResourceManager)
         {
             IDataProcessor processor = ResourceManager.GetDataProcessor("burngfxmap");
             MapData data = processor.Process(ID, ResourceManager) as MapData;

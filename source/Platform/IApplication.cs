@@ -11,7 +11,7 @@ namespace Burntime.Platform
     {
         String Title { get; }
         Vector2[] Resolutions { get; }
-        Icon Icon { get; }
+        //Icon Icon { get; }
 
         void Render(RenderTarget Target);
         void Process(float Elapsed);

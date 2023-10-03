@@ -14,7 +14,7 @@ namespace Burntime.Classic.ResourceProcessor
 {
     public class WayProcessor : IDataProcessor
     {
-        public DataObject Process(ResourceID id, ResourceManager resourceManager)
+        public DataObject Process(ResourceID id, IResourceManager resourceManager)
         {
             var burngfxProcessor = new Burntime.Data.BurnGfx.ResourceProcessor.WayProcessor();
             WayData burngfx = burngfxProcessor.Process("gam.dat", resourceManager) as WayData;
@@ -68,7 +68,7 @@ namespace Burntime.Classic.ResourceProcessor
                 way.Position.x = System.Math.Min(map.Entrances[way.Start].Area.Center.x, map.Entrances[way.End].Area.Center.x);
                 way.Position.y = System.Math.Min(map.Entrances[way.Start].Area.Center.y, map.Entrances[way.End].Area.Center.y);
 
-                way.Images = new Platform.Graphics.Sprite[1];
+                way.Images = new Platform.Graphics.ISprite[1];
                 way.Images[0] = resourceManager.GetImage(config["images"].GetString("way" + i), ResourceLoadType.Delayed);
 
                 ways.Add(way);

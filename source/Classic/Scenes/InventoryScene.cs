@@ -29,7 +29,7 @@ namespace Burntime.Classic.Scenes
         {
             Background = "hint2.pac";
             Size = new Vector2(320, 200);
-            Position = (app.Engine.GameResolution - new Vector2(320, 200)) / 2;
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
             inventory = new InventoryWindow(app, InventorySide.Left);
             inventory.Position = new Vector2(2, 5);

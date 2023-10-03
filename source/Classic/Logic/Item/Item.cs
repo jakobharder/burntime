@@ -97,11 +97,8 @@ namespace Burntime.Classic
             get { return Type.HealValue; }
         }
 
-        // damage
-        public int DamageValue
-        {
-            get { return Type.DamageValue; }
-        }
+        public int DamageValue => Type.DamageValue;
+        public int DefenseValue => Type.DefenseValue;
 
         // remaining bullets
         protected int ammo;

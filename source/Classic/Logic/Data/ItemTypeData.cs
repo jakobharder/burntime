@@ -34,6 +34,7 @@ namespace Burntime.Classic.Logic.Data
         public float HealValue;
         public int ExperienceValue;
         public int DamageValue;
+        public int DefenseValue;
         public int AmmoValue;
 
         public string Empty;

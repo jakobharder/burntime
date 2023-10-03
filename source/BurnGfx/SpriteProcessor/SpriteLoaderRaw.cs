@@ -3,7 +3,6 @@ using System.Runtime.InteropServices;
 using System.IO;
 
 using Burntime.Platform;
-using Burntime.Platform.Graphics;
 using Burntime.Platform.Resource;
 
 namespace Burntime.Data.BurnGfx
@@ -25,7 +24,7 @@ namespace Burntime.Data.BurnGfx
             size = new Vector2(image.Width, image.Height);
         }
 
-        public DataObject Process(ResourceID ID, ResourceManager ResourceManager)
+        public DataObject Process(ResourceID ID, IResourceManager ResourceManager)
         {
             return ResourceManager.GetImage(ID);
         }

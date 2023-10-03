@@ -14,7 +14,7 @@ namespace Burntime.Framework
             public String Value;
         }
 
-        ResourceManager resMan;
+        IResourceManager resMan;
         List<Replacement> listArguments = new List<Replacement>();
         String file;
 

@@ -33,7 +33,7 @@ namespace Burntime.Classic.Scenes
         {
             Background = "blz.pac";
             Music = "17_MUS 17_HSC.ogg";
-            Position = (app.Engine.GameResolution - new Vector2(320, 200)) / 2;
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
             font = new GuiFont(BurntimeClassic.FontName, new PixelColor(212, 212, 212), new PixelColor(92, 92, 96));
             CaptureAllMouseClicks = true;
         }

@@ -6,6 +6,8 @@ using Burntime.Platform;
 using Burntime.Platform.IO;
 using Burntime.Platform.Resource;
 using Burntime.Framework;
+using Burntime.Classic;
+using Burntime.Data.BurnGfx;
 //using System.IO;
 
 namespace Burntime.Game
@@ -18,7 +20,7 @@ namespace Burntime.Game
             if (PakName != null)
                 PakName = PakName.ToLower();
 
-            FileSystem.BasePath = "../";
+            FileSystem.BasePath = "";
             FileSystem.AddPackage("system", "system");
             
             ConfigFile engineSettings = new ConfigFile();
@@ -26,7 +28,6 @@ namespace Burntime.Game
 
             Log.DebugOut = engineSettings["engine"].GetBool("debug");
 
-            AssemblyControl assemblyControl = new AssemblyControl(AppDomain.CurrentDomain);
             PackageManager paketManager = new PackageManager("game/");
 
             // check if package is available
@@ -61,66 +62,30 @@ namespace Burntime.Game
                 }
             }
 
-            // TODO: redo this stuff
+            paketManager.LoadPackages("classic", FileSystem.VFS, null);
 
-            bool safeMode = engineSettings["engine"].GetBool("safemode");
+            Engine engine = new();
 
-            /*if (safeMode)
-            {
-                try
-                {
-                    runInternal(paketManager, assemblyControl, PakName);
-                }
-                catch (Exception e)
-                {
-                    System.Windows.Forms.MessageBox.Show("Error: " + e.Message, "Error", 
-                        System.Windows.Forms.MessageBoxButtons.OK, System.Windows.Forms.MessageBoxIcon.Stop);
+            BurntimeClassic game = new();
 
-                    File file = FileSystem.GetFile("system:errorlog.txt", FileOpenMode.NoPackage | FileOpenMode.Write);
-                    file.Seek(0, SeekPosition.End);
+            engine.Resolution.VerticalCorrection = game.VerticalCorrection;
+            engine.Resolution.GameResolutions = game.Resolutions;
 
-                    System.IO.StreamWriter writer = new System.IO.StreamWriter(file);
-                    writer.WriteLine();
-                    writer.WriteLine("----------------------------------------------------------------------");
-                    writer.WriteLine(System.DateTime.Now.ToLocalTime().ToString());
-                    writer.WriteLine("exception: " + e.Message);
-                    writer.WriteLine("trace:");
-                    writer.Write(e.StackTrace);
-                    writer.WriteLine();
-                    writer.Close();
+            game.Engine = engine;
+            game.SceneManager = new SceneManager(game);
+            game.DeviceManager = new DeviceManager(engine.Resolution.Native, engine.Resolution.Game);
+            game.Engine.DeviceManager = game.DeviceManager;
 
-                    file.Close();
+            game.Initialize(new ResourceManager(engine));
 
-                    Environment.Exit(1);
-                }
-            }
-            else*/
-                runInternal(paketManager, assemblyControl, PakName);
-        }
-
-        void runInternal(PackageManager paketManager, AssemblyControl assembly, string pakName)
-        {
-            Engine engine = new Engine();
-
-            paketManager.LoadPackages(pakName, FileSystem.VFS, assembly);
-            PackageInfo info = paketManager.GetInfo(pakName);
-
-            Module module = assembly.GetModule(info.MainModule, pakName);
-
-            engine.SetGameResolution(module.VerticalRatio, module.Resolutions);
-
-            module.Engine = engine;
-            module.SceneManager = new SceneManager(module);
-            module.ResourceManager = new ResourceManager(engine);
-            module.DeviceManager = new DeviceManager(engine);
-
-            assembly.InitAllModules(module.ResourceManager);
+            BurnGfxModule burnGfx = new();
+            burnGfx.Initialize(game.ResourceManager);
 
             Log.Info("Run main module...");
-            module.Run();
+            game.Run();
 
             Log.Info("Start engine...");
-            engine.Start(new ApplicationInternal(module));
+            engine.Start(new ApplicationInternal(game));
         }
     }
 }

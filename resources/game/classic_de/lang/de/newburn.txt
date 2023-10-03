@@ -15,8 +15,8 @@ Ohne Computergegner
 Einfach
 Normal
 Schwer
-
-
+NewGfx AN
+NewGfx AUS
 
 
 

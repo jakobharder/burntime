@@ -2,7 +2,7 @@
   <PropertyGroup>
     <Platforms>x86</Platforms>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net7.0-windows</TargetFramework>
+    <TargetFramework>net6.0-windows8.0</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>MapEditor</RootNamespace>
@@ -12,6 +12,7 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <SupportedOSPlatformVersion>8.0</SupportedOSPlatformVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
@@ -87,7 +88,7 @@
     <None Include="app.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\BurnGfx\BurnGfx.csproj" />
-    <ProjectReference Include="..\Platform\Platform.csproj" />
+    <ProjectReference Include="..\BurnGfx\Burntime.BurnGfx.csproj" />
+    <ProjectReference Include="..\Platform\Burntime.Platform.csproj" />
   </ItemGroup>
 </Project>

@@ -35,7 +35,8 @@ namespace Burntime.Platform
         private Vector2 current = Vector2.Zero;
         private Nullable<Vector2> previous;
         private List<MouseClickInfo> clicks = new List<MouseClickInfo>();
-        private Nullable<Rect> boundings;
+        
+        public Rect? Boundings { get; set; }
 
         public MouseDevice(Vector2 resolution)
         {
@@ -47,16 +48,10 @@ namespace Burntime.Platform
             get { return current; }
             set
             {
-                if (Boundings.HasValue)
-                {
-                    current.ThresholdLT(boundings.Value.Position);
-                    current.ThresholdGT(boundings.Value.Position + boundings.Value.Size);
-                }
+                if (Boundings is not null)
+                    current.Clamp(Boundings.Value);
                 else
-                {
-                    current.ThresholdLT(0);
-                    current.ThresholdGT(resolution);
-                }
+                    current.ClampMaxExcluding(Vector2.Zero, resolution);
 
                 if (!previous.HasValue || previous.Value != current)
                     previous = current;
@@ -75,6 +70,11 @@ namespace Burntime.Platform
             }
         }
 
+        public void ClearPrevious()
+        {
+            previous = null;
+        }
+
         /// <summary>
         /// returns a copy, thread-safe
         /// </summary>
@@ -87,12 +87,6 @@ namespace Burntime.Platform
                     copy = clicks.ToArray();
                 return copy; 
             }
-        }
-
-        public Nullable<Rect> Boundings
-        {
-            get { return boundings; }
-            set { boundings = value; }
         }
 
         /// <summary>
@@ -117,13 +111,13 @@ namespace Burntime.Platform
 
     public enum Keys
     {
-        None = System.Windows.Forms.Keys.None,
-        F1 = System.Windows.Forms.Keys.F1,
-        F2 = System.Windows.Forms.Keys.F2,
-        F3 = System.Windows.Forms.Keys.F3,
-        F4 = System.Windows.Forms.Keys.F4,
-        Escape = System.Windows.Forms.Keys.Escape,
-        Pause = System.Windows.Forms.Keys.Pause
+        None = 0,//,System.Windows.Forms.Keys.None,
+        F1 = 1,//System.Windows.Forms.Keys.F1,
+        F2 = 2,//System.Windows.Forms.Keys.F2,
+        F3 = 3,//System.Windows.Forms.Keys.F3,
+        F4 = 4,//System.Windows.Forms.Keys.F4,
+        Escape = 5,//System.Windows.Forms.Keys.Escape,
+        Pause = 6,//System.Windows.Forms.Keys.Pause
     }
 
     public struct Key
@@ -198,68 +192,63 @@ namespace Burntime.Platform
 
     public class DeviceManager
     {
-        Engine engine;
+        private readonly MouseDevice _mouse;
+        public IMouseDevice Mouse => _mouse;
 
-        private MouseDevice mouse;
-        public IMouseDevice Mouse
+        public Keyboard Keyboard { get; } = new();
+
+        private readonly Vector2 _gameResolution;
+
+        public DeviceManager(Vector2 resolution, Vector2 gameResolution)
         {
-            get { return mouse; }
+#warning TODO thread synchronization, update and UI thread may be different now
+            _mouse = new MouseDevice(resolution);
+            _gameResolution = gameResolution;
         }
 
-        Keyboard keyboard = new Keyboard();
-        public Keyboard Keyboard
+        public void MouseMove(Vector2 Position)
         {
-            get { return keyboard; }
+            _mouse.Position = new Vector2(Position);
         }
 
-        public DeviceManager(Engine Engine)
+        public void MouseClick(Vector2 Position, MouseButton Button)
         {
-            engine = Engine;
-            engine.DeviceManager = this;
-            mouse = new MouseDevice(engine.Resolution);
-        }
-
-        internal void MouseMove(Vector2 Position)
-        {
-            mouse.Position = new Vector2(Position);
-        }
-
-        internal void MouseClick(Vector2 Position, MouseButton Button)
-        {
-            MouseClickInfo info = new MouseClickInfo();
-            info.Position = new Vector2(Position);
-            info.Button = Button;
-            mouse.AddClick(info);
-        }
-
-        internal void MouseLeave()
-        {
-            Vector2 position = mouse.Position;
-
-            Vector2 direction = mouse.LastDirection;
-            if (direction != Vector2.Zero)
+            _mouse.AddClick(new()
             {
-                while (position.x > 0 && position.y > 0 && position.x <= engine.GameResolution.x && position.y <= engine.GameResolution.y)
-                    position += direction;
-
-                mouse.Position = position;
-            }
+                Position = new Vector2(Position),
+                Button = Button
+            });
         }
 
-        internal void KeyPress(char key)
+        public void MouseLeave()
         {
-            keyboard.AddKey(new Key(key));
+            if (_mouse.LastDirection == Vector2.Zero) return;
+
+            Vector2 position = _mouse.Position;
+
+            Rect bounds = new(Vector2.Zero, _gameResolution);
+            while (bounds.PointInside(position))
+                position += _mouse.LastDirection;
+
+            position.Clamp(bounds);
+            _mouse.Position = position;
+            _mouse.ClearPrevious();
         }
 
-        internal void VKeyPress(Keys key)
+        public void KeyPress(char key)
         {
-            keyboard.AddKey(new Key(key));
+            Keyboard.AddKey(new Key(key));
+        }
+
+        public void VKeyPress(Keys key)
+        {
+            Keyboard.AddKey(new Key(key));
         }
 
         public void Refresh()
         {
-            mouse.ClearClicks();
-            keyboard.ClearKeys();
+            _mouse.ClearClicks();
+            Keyboard.ClearKeys();
         }
     }
 }

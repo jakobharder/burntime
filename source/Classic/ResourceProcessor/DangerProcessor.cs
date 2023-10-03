@@ -9,7 +9,7 @@ namespace Burntime.Classic.ResourceProcessor
 {
     class DangerProcessor : IDataProcessor
     {
-        public DataObject Process(ResourceID id, ResourceManager resourceManager)
+        public DataObject Process(ResourceID id, IResourceManager resourceManager)
         {
             Danger danger;
 

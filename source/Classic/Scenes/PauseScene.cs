@@ -19,7 +19,7 @@ namespace Burntime.Classic.Scenes
             : base(App)
         {
             Size = new Burntime.Platform.Vector2(320, 200);
-            Position = (app.Engine.GameResolution - new Vector2(320, 200)) / 2;
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
             //Background = new SpriteImage(App, "blz.pac");
             font = new GuiFont(BurntimeClassic.FontName, new PixelColor(255, 255, 255));

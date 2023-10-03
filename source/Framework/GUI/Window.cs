@@ -181,8 +181,8 @@ namespace Burntime.Framework.GUI
 
         public void MoveInside(Rect Rectangle)
         {
-            pos.ThresholdLT(Rectangle.Position);
-            pos.ThresholdGT(Rectangle.Position + Rectangle.Size - Size);
+            pos.Min(Rectangle.Position);
+            pos.Max(Rectangle.Position + Rectangle.Size - Size);
             RefreshBoundings();
         }
 

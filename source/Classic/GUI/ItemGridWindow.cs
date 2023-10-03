@@ -21,8 +21,8 @@ namespace Burntime.Classic.GUI
         ItemWindow[] itemWindows;
         IItemCollection mask;
         ItemList selection;
-        Sprite maskSprite;
-        Sprite selectionSprite;
+        ISprite maskSprite;
+        ISprite selectionSprite;
 
         int[] gridPositions;
         bool lockPositions = false;

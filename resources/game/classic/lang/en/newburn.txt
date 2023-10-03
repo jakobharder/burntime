@@ -15,8 +15,8 @@ no AI players
 easy
 normal
 hard
-
-
+NewGfx ON
+NewGfx OFF
 
 
 

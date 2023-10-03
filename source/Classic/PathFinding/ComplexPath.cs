@@ -32,31 +32,48 @@ namespace Burntime.Classic.PathFinding
         {
             public int Compare(Node left, Node right)
             {
-                return right.Cost.CompareTo(left.Cost);
+                return right.TotalCost.CompareTo(left.TotalCost);
             }
         }
 
         sealed class Node : IComparable
         {
             public Vector2 Position;
-            public Node Parent;
-            public float cost;
+            public Node Parent
+            {
+                get => parent_;
+                set
+                {
+                    parent_ = value;
+                    TotalCost = (parent_ is null) ? cost_ : parent_.TotalCost + cost_;
+                }
+            }
+            private Node parent_;
+
+            public float TotalCost { get; private set; }
 
             public float Cost
             {
-                get { if (Parent == null) return cost; return Parent.Cost + cost; }
+                get => cost_;
+                set
+                {
+                    cost_ = value;
+                    TotalCost = (parent_ is null) ? cost_ : parent_.TotalCost + cost_;
+                }
             }
+            private float cost_;
+
             public float Remaining;
 
             public float Scoring
             {
-                get { return Cost + Remaining; }
+                get { return TotalCost + Remaining; }
             }
 
             public Node(Vector2 start, Vector2 goal)
             {
                 Position = start;
-                cost = 0;
+                Cost = 0;
                 Parent = null;
 
                 Vector2 dif = (Position - goal);
@@ -66,7 +83,7 @@ namespace Burntime.Classic.PathFinding
 
             public Node(Node from, Vector2 toRelative, Vector2 goal)
             {
-                cost = toRelative.Length;
+                Cost = toRelative.Length;
                 Position = from.Position + toRelative;
                 Parent = from;
 
@@ -99,29 +116,28 @@ namespace Burntime.Classic.PathFinding
 
         sealed class CycleCounter
         {
-            float cyclesPerSecond = 1;
-            int cycles = 0;
             float counter = 0;
 
-            public float CyclesPerSecond
-            {
-                get { return cyclesPerSecond; }
-                set { cyclesPerSecond = value; }
-            }
+            public float CyclesPerSecond { get; set; } = 1;
 
-            public int Cycles
+            public int Cycles { get; private set; } = 0;
+            public int CyclesTotal { get; private set; }
+
+            public void Reset()
             {
-                get { return cycles; }
-                set { cycles = value; }
+                counter = 0;
+                Cycles = 0;
+                CyclesTotal = 0;
             }
 
             public void Process(float elapsed)
             {
                 // do not process more then one second worth of cycles to prevent possible slow down
-                counter += System.Math.Min(0.03f, elapsed) * cyclesPerSecond;
+                counter += elapsed * CyclesPerSecond;
                 int c = (int)System.Math.Floor(counter);
                 counter -= c;
-                cycles += c;
+                Cycles = c;
+                CyclesTotal += c;
             }
         }
 
@@ -141,6 +157,7 @@ namespace Burntime.Classic.PathFinding
             PathMask mask;
             Node lastNode;
             bool reverse;
+            int scoreCap;
 
             Path reversePath;
 
@@ -241,6 +258,8 @@ namespace Burntime.Classic.PathFinding
                 nearestNode = node;
                 openList.Add(node);
 
+                cycles.Reset();
+                scoreCap = (int)(System.Math.Max(mask.Width, mask.Height) * 1.5f);
                 Process(elapsed, position);
             }
 
@@ -301,10 +320,10 @@ namespace Burntime.Classic.PathFinding
                     openList.RemoveAt(0);
 
                     if (first.Remaining < nearestNode.Remaining ||
-                        reverse && (first.Cost < nearestNode.Cost && first.Remaining == 0))
+                        reverse && (first.TotalCost < nearestNode.TotalCost && first.Remaining == 0))
                     {
                         nearestNode = first;
-                        
+
                         // update waypoints
                         nearest = ToMapPoint(nearestNode.Position);
                         wayPoints.Clear();
@@ -325,12 +344,6 @@ namespace Burntime.Classic.PathFinding
                                 leastCommon = j;
                             else 
                                 break;
-                        }
-
-                        if (leastCommon > 0)
-                        {
-                            int x = 1;
-                            x += 1;
                         }
 
                         // remove already passed waypoints
@@ -387,7 +400,7 @@ namespace Burntime.Classic.PathFinding
                         // out of area
                         if (!bounding.PointInside(neighbor.Position))
                             continue;
-                        
+
                         // neighbor is ok
                         if ((reverse && !mask[first.Position] || !reverse && mask[neighbor.Position]) && !closedList.Contains(neighbor))
                         {
@@ -396,16 +409,16 @@ namespace Burntime.Classic.PathFinding
                             if (found >= 0)
                             {
                                 // swap nodes if the new route is cheaper
-                                if (openList[found].Cost > neighbor.Cost)
+                                if (openList[found].TotalCost > neighbor.TotalCost)
                                 {
                                     openList[found].Parent = first;
-                                    openList[found].cost = neighbor.cost;
+                                    openList[found].Cost = neighbor.Cost;
                                     if (reverse)
                                         openList[found].Remaining = mask[neighbor.Position] ? 0 : 1;
                                     //openList[found].Scoring = neighbor.Scoring;
                                 }
                             }
-                            else // node not listed, just add
+                            else if (neighbor.Scoring < scoreCap) // node not listed, just add
                             {
                                 if (reverse)
                                     neighbor.Remaining = mask[neighbor.Position] ? 0 : 1;
@@ -415,7 +428,6 @@ namespace Burntime.Classic.PathFinding
                     }
                 }
 
-                cycles.Cycles = 0;
                 if (openList.Count == 0)
                 {
                     finishedCalculation = true;

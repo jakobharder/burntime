@@ -19,34 +19,32 @@ namespace Burntime.Classic.PathFinding
         public override Vector2 Process(PathMask mask, Vector2 position, float elapsed)
         {
             this.position = position;
-            Vector2f dif = moveTo - this.position;
+            Vector2f walkVector = moveTo - this.position;
+
+            // forecast position, half a mask tile ahead
+            Vector2f forecastVector = walkVector;
 
             float speedElapsed = elapsed * speed;
 
             // quit if goal is reached
-            if (dif.Length < 0.1f)
+            if (walkVector.Length < 0.1f)
                 return position;
 
-            // calculate distance
-            if (dif.Length > speedElapsed)
+            if (walkVector.Length > speedElapsed)
             {
-                dif.Normalize();
-                dif *= speedElapsed;
+                walkVector.Normalize();
+
+                forecastVector = walkVector * (speedElapsed + mask.Resolution / 2);
+                walkVector *= speedElapsed;
             }
 
             // calculate new position
-            Vector2f newpos = this.position + dif;
-            Rectf boundaries = new Rectf(0, 0, mask.Width * mask.Resolution, mask.Height * mask.Resolution);
-            if (boundaries.PointInside(newpos))
-            {
-                // transform to map mask position
-                Vector2 maskpos = mask.ConvertMapToMask(newpos);
+            Vector2f walkPosition = this.position + walkVector;
+            Vector2f forecastPosition = this.position + forecastVector;
 
-                // set new position if there is no obstacle
-                if (mask[maskpos])
-                    this.position = newpos;
-                else // otherwise just cancel walking
-                    moveTo = this.position;
+            if (mask.IsWalkableMapPosition(walkPosition) && mask.IsWalkableMapPosition(forecastPosition))
+            {
+                this.position = walkPosition;
             }
             else // otherwise just cancel walking
                 moveTo = this.position;

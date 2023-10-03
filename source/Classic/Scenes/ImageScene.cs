@@ -25,7 +25,7 @@ namespace Burntime.Classic.Scenes
             BurntimeClassic game = app as BurntimeClassic;
             Background = game.ImageScene;
             Size = new Vector2(320, 200);
-            Position = (app.Engine.GameResolution - new Vector2(320, 200)) / 2;
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
             app.RenderMouse = false;
             handled = false;
             CaptureAllMouseClicks = true;

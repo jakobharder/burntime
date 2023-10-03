@@ -10,7 +10,7 @@ namespace Burntime.Classic
 {
     class Helper
     {
-        static public DataID<Sprite> GetCharacterBody(int body, int colorSet)
+        static public DataID<ISprite> GetCharacterBody(int body, int colorSet)
         {
             int sprite = (body + 1) * 16 + 48 * colorSet;
             return BurntimeClassic.Instance.ResourceManager.GetData("burngfxani@syssze.raw?" + sprite + "-" + (sprite + 15));

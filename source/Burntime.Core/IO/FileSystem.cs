@@ -81,6 +81,11 @@ public class FileSystem
         vfs.Mount(name, package);
     }
 
+    static public void RemovePackage(string name)
+    {
+        vfs.Unmount(name);
+    }
+
     // open package from folder or .pak file
     static public IPackage OpenPackage(string path)
     {

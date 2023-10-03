@@ -206,7 +206,7 @@ namespace Burntime.Classic.GUI
                     {
                         Vector2 pos = ways.Ways[way].Position + offset;
 
-                        foreach (Sprite sprite in ways.Ways[way].Images)
+                        foreach (var sprite in ways.Ways[way].Images)
                         {
                             Target.DrawSprite(pos, sprite);
                             pos.x += 32;
@@ -310,8 +310,8 @@ namespace Burntime.Classic.GUI
             if (border != Vector2f.Zero && Scroll != null)
                 Scroll.Invoke(this, new MapScrollArgs(position));
 
-            position.ThresholdGT(0);
-            position.ThresholdLT(Boundings.Size - map.TileSize * map.Size);
+            position.Max(0);
+            position.Min(Boundings.Size - map.TileSize * map.Size);
 
             // map is smaller than screen, center it
             if (map.TileSize.x * map.Size.x < Boundings.Size.x)

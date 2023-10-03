@@ -22,8 +22,42 @@ namespace Burntime.Framework
 
         List<IDataProcessor> dataProcessors = new List<IDataProcessor>();
 
-        public void Initialize()
+        protected void FindClassesFromAssembly(System.Reflection.Assembly asm)
         {
+            Scenes = new();
+            List<Type> dataprocessor = new();
+
+            try
+            {
+                foreach (Type t in asm.GetTypes())
+                {
+                    if (t.IsSubclassOf(typeof(Scene)))
+                        Scenes.Add(t);
+
+                    if (typeof(IDataProcessor).IsAssignableFrom(t))
+                        dataprocessor.Add(t);
+                }
+
+                foreach (Type t in Scenes)
+                    Log.Info("   Load scene class: " + t.Name);
+                foreach (Type t in dataprocessor)
+                {
+                    Log.Info("   Load data processor: " + t.Name);
+                    AddProcessor((IDataProcessor)Activator.CreateInstance(t));
+                }
+
+            }
+            catch (Exception e)
+            {
+                // marker for debugging purposes
+                throw e;
+            }
+        }
+
+        public void Initialize(IResourceManager resourceManager)
+        {
+            ResourceManager = resourceManager;
+
             // initialize all data processors
             foreach (IDataProcessor processor in dataProcessors)
             {
@@ -50,17 +84,16 @@ namespace Burntime.Framework
         protected virtual void OnRun() { }
         protected virtual void OnClose() { }
 
-        internal ResourceManager resourceManager;
         public virtual void AddProcessor(String Extension, ISpriteProcessor Processor)
         {
             Log.Info("   Add resource processor for '" + Extension + "': " + Processor.GetType().Name);
-            resourceManager.AddSpriteProcessor(Extension, Processor);
+            ResourceManager.AddSpriteProcessor(Extension, Processor);
         }
 
         public virtual void AddProcessor(String Extension, IFontProcessor Processor)
         {
             Log.Info("   Add resource processor for '" + Extension + "': " + Processor.GetType().Name);
-            resourceManager.AddFontProcessor(Extension, Processor);
+            ResourceManager.AddFontProcessor(Extension, Processor);
         }
 
         public void AddProcessor(IDataProcessor processor)
@@ -70,7 +103,7 @@ namespace Burntime.Framework
 
         public virtual String Title { get { return ""; } }
         public virtual Vector2[] Resolutions { get { return new Vector2[] { new Vector2(640, 480) }; } }
-        public virtual float VerticalRatio { get { return 1; } }
+        public virtual float VerticalCorrection { get { return 1; } }
         public virtual System.Drawing.Icon Icon { get { return null; } }
 
         protected static Module instance;
@@ -79,7 +112,7 @@ namespace Burntime.Framework
             get { return instance; }
         }
 
-        public Sprite MouseImage = null;
+        public ISprite MouseImage = null;
         public bool RenderMouse = true;
         public Nullable<Rect> MouseBoundings
         {
@@ -87,9 +120,9 @@ namespace Burntime.Framework
             set { DeviceManager.Mouse.Boundings = value; }
         }
 
-        public Engine Engine;
+        public IEngine Engine;
         public SceneManager SceneManager;
-        public ResourceManager ResourceManager;
+        public IResourceManager ResourceManager { get; private set; }
         public DeviceManager DeviceManager;
         public ConfigFile Settings;
 
@@ -124,20 +157,20 @@ namespace Burntime.Framework
             ActiveClient = null;
         }
 
-        internal void Render(RenderTarget Target)
+        public void Render(RenderTarget target)
         {
-            Target.Layer = 0;
+            target.Layer = 0;
 
-            SceneManager.Render(Target);
+            SceneManager.Render(target);
 
             if (MouseImage != null && RenderMouse)
             {
-                Target.Layer = 255;
-                Target.DrawSprite(DeviceManager.Mouse.Position, MouseImage);
+                target.Layer = 255;
+                target.DrawSprite(DeviceManager.Mouse.Position, MouseImage);
             }
         }
 
-        internal void Process(float Elapsed)
+        public void Process(float Elapsed)
         {
             if (!running)
             {
@@ -166,9 +199,8 @@ namespace Burntime.Framework
         {
             OnClose();
 
-            if (Server != null)
-                Server.Stop();
-            Engine.Close();
+            Server?.Stop();
+            Engine.ExitApplication();
         }
     }
 

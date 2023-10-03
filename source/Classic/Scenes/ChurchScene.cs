@@ -17,7 +17,7 @@ namespace Burntime.Classic.Scenes
             : base(app)
         {
             Music = "14_MUS 14_HSC.ogg";
-            Position = (app.Engine.GameResolution - new Vector2(320, 200)) / 2;
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
             Image ani = new Image(app);
             ani.Position = new Vector2(200, 117);

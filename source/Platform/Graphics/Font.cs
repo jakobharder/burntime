@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace Burntime.Platform.Graphics
 {
@@ -47,22 +46,17 @@ namespace Burntime.Platform.Graphics
     {
         public FontInfo Info;
 
-        internal Sprite sprite;
-        internal Dictionary<char, CharInfo> charInfo;
-        internal int offset;
-        internal int height;
+#warning slimdx todo below for parameters were internal
+        public ISprite sprite;
+        public Dictionary<char, CharInfo> charInfo;
+        public int offset;
+        public int height;
 
         TextBorders borders = TextBorders.Window;
         public TextBorders Borders
         {
             get { return borders; }
             set { borders = value; }
-        }
-
-        Engine engine;
-        public Font(Engine Engine)
-        {
-            engine = Engine;
         }
 
         public void DrawText(RenderTarget Target, Vector2 Position, String Text)
@@ -125,15 +119,15 @@ namespace Burntime.Platform.Graphics
                 {
                     Vector2 lt = new Vector2();
                     Vector2 rb = lt + target.Size - new Vector2(GetWidth(str), GetHeight());
-                    offset.ThresholdLT(lt);
-                    offset.ThresholdGT(rb);
+                    offset.Min(lt);
+                    offset.Max(rb);
                 }
                 else if (borders == TextBorders.Screen)
                 {
                     Vector2 lt = -target.ScreenOffset + 2;
                     Vector2 rb = lt + target.ScreenSize - new Vector2(GetWidth(str), GetHeight()) - 2;
-                    offset.ThresholdLT(lt);
-                    offset.ThresholdGT(rb);
+                    offset.Min(lt);
+                    offset.Max(rb);
                 }
 
                 target.SelectSprite(sprite);

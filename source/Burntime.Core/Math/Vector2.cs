@@ -135,28 +135,61 @@ namespace Burntime.Platform
             return x.GetHashCode() + y.GetHashCode();
         }
 
-        public void ThresholdLT(int threshold)
+        public void Min(int min)
         {
-            if (x < threshold) x = threshold;
-            if (y < threshold) y = threshold;
+            if (x < min) x = min;
+            if (y < min) y = min;
         }
 
-        public void ThresholdLT(Vector2 threshold)
+        public void Min(Vector2 min)
         {
-            if (x < threshold.x) x = threshold.x;
-            if (y < threshold.y) y = threshold.y;
+            if (x < min.x) x = min.x;
+            if (y < min.y) y = min.y;
         }
 
-        public void ThresholdGT(int threshold)
+        public void Max(int max)
         {
-            if (x > threshold) x = threshold;
-            if (y > threshold) y = threshold;
+            if (x > max) x = max;
+            if (y > max) y = max;
         }
 
-        public void ThresholdGT(Vector2 threshold)
+        public void Max(Vector2 max)
         {
-            if (x > threshold.x) x = threshold.x;
-            if (y > threshold.y) y = threshold.y;
+            if (x > max.x) x = max.x;
+            if (y > max.y) y = max.y;
+        }
+
+        /// <summary>
+        /// Clamp between min and max.
+        /// </summary>
+        public void Clamp(Vector2 min, Vector2 max)
+        {
+            if (x < min.x) x = min.x;
+            if (y < min.y) y = min.y;
+            if (x > max.x) x = max.x;
+            if (y > max.y) y = max.y;
+        }
+
+        /// <summary>
+        /// Clamp between min and one below max.
+        /// </summary>
+        public void ClampMaxExcluding(Vector2 minIncluding, Vector2 maxExcluding)
+        {
+            if (x < minIncluding.x) x = minIncluding.x;
+            if (y < minIncluding.y) y = minIncluding.y;
+            if (x >= maxExcluding.x) x = maxExcluding.x - 1;
+            if (y >= maxExcluding.y) y = maxExcluding.y - 1;
+        }
+
+        /// <summary>
+        /// Clamp within rectangle
+        /// </summary>
+        public void Clamp(Rect rect)
+        {
+            if (x < rect.Left) x = rect.Left;
+            if (y < rect.Top) y = rect.Top;
+            if (x >= rect.Right) x = rect.Right - 1;
+            if (y >= rect.Bottom) y = rect.Bottom - 1;
         }
 
         public int GetIndex(Vector2 borders)
@@ -168,6 +201,8 @@ namespace Burntime.Platform
         {
             get { return x * y; }
         }
+
+        public float Ratio => y == 0 ? 1 : (float)x / (float)y;
     }
 
     [Serializable]
@@ -279,28 +314,39 @@ namespace Burntime.Platform
             return x.GetHashCode() + y.GetHashCode();
         }
 
-        public void ThresholdLT(float threshold)
+        public void Min(float min)
         {
-            if (x < threshold) x = threshold;
-            if (y < threshold) y = threshold;
+            if (x < min) x = min;
+            if (y < min) y = min;
         }
 
-        public void ThresholdLT(Vector2f threshold)
+        public void Min(Vector2f min)
         {
-            if (x < threshold.x) x = threshold.x;
-            if (y < threshold.y) y = threshold.y;
+            if (x < min.x) x = min.x;
+            if (y < min.y) y = min.y;
         }
 
-        public void ThresholdGT(float threshold)
+        public void Max(float Max)
         {
-            if (x > threshold) x = threshold;
-            if (y > threshold) y = threshold;
+            if (x > Max) x = Max;
+            if (y > Max) y = Max;
         }
 
-        public void ThresholdGT(Vector2f threshold)
+        public void Max(Vector2f max)
         {
-            if (x > threshold.x) x = threshold.x;
-            if (y > threshold.y) y = threshold.y;
+            if (x > max.x) x = max.x;
+            if (y > max.y) y = max.y;
+        }
+
+        /// <summary>
+        /// Clamp between min and max.
+        /// </summary>
+        public void Clamp(Vector2 min, Vector2 max)
+        {
+            if (x < min.x) x = min.x;
+            if (y < min.y) y = min.y;
+            if (x > max.x) x = max.x;
+            if (y > max.y) y = max.y;
         }
 
         public void Normalize()
@@ -317,6 +363,8 @@ namespace Burntime.Platform
                 y /= l;
             }
         }
+
+        public float Ratio => y == 0 ? 1 : x / y;
     }
 
 }

@@ -19,7 +19,7 @@ namespace Burntime.Classic
     public class LocationScene : Scene, IMapEntranceHandler, IInteractionHandler, ILogicNotifycationHandler
     {
         MapView view;
-        MapGuiWindow gui;
+        MainUiOriginalWindow gui;
         MenuWindow menu;
         Image cursorAni;
         DialogWindow dialog;
@@ -35,7 +35,7 @@ namespace Burntime.Classic
         public LocationScene(Module App)
             : base(App)
         {
-            Size = app.Engine.GameResolution;
+            Size = app.Engine.Resolution.Game;
 
             view = new MapView(this, App);
             view.Position = new Vector2(16, 0);
@@ -61,12 +61,13 @@ namespace Burntime.Classic
             cursorAni.Layer += 59;
             Windows += cursorAni;
 
-            gui = new MapGuiWindow(App);
+            gui = new MainUiOriginalWindow(App);
             gui.Layer += 60;
             Windows += gui;
 
             dialog = new DialogWindow(app);
-            dialog.Position = new Vector2(33, 20);
+            //dialog.Position = new Vector2(33, 20);
+            dialog.Position = view.Position + (view.Size - dialog.Size) / 2 - new Vector2(0, 10);
             dialog.Hide();
             dialog.Layer += 55;
             dialog.WindowHide += new EventHandler(dialog_WindowHide);
@@ -272,7 +273,8 @@ namespace Burntime.Classic
                 BurntimeClassic.Instance.PreviousPlayerId != game.CurrentPlayerIndex)
             {
                 // play player changed sound
-                BurntimeClassic.Instance.Engine.Music.PlayOnce("06_MUS 06_HSC.ogg");
+#warning TODO SlimDX/Mono Music
+                //BurntimeClassic.Instance.Engine.Music.PlayOnce("06_MUS 06_HSC.ogg");
             }
             BurntimeClassic.Instance.PreviousPlayerId = game.CurrentPlayerIndex;
 
@@ -437,7 +439,8 @@ namespace Burntime.Classic
                 charOverlay.SelectedCharacter.JoinCamp();
 
                 view.Location.Player = view.Player;
-                BurntimeClassic.Instance.Engine.Music.PlayOnce("08_MUS 08_HSC.ogg");
+#warning TODO SlimDX/Mono Music
+                //BurntimeClassic.Instance.Engine.Music.PlayOnce("08_MUS 08_HSC.ogg");
             }
         }
 
@@ -641,8 +644,8 @@ namespace Burntime.Classic
             {
                 AttackEvent eventArgs = (AttackEvent)notify;
 
-                Sprite sprite = (GuiImage)"burngfxani@syssze.raw?208-213";
-                sprite.Animation.Speed = 10;
+                var sprite = (GuiImage)"burngfxani@syssze.raw?208-213";
+                sprite.Animation.Speed = 20;
                 view.Particles.Add(new StaticAnimationParticle(sprite, eventArgs.Attacker));
                 view.Particles.Add(new StaticAnimationParticle(sprite.Clone(), eventArgs.Defender));
             }

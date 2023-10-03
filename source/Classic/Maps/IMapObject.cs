@@ -10,7 +10,7 @@ namespace Burntime.Classic.Maps
 {
     public interface IMapObject
     {
-        String GetTitle(ResourceManager ResourceManager);
+        String GetTitle(IResourceManager ResourceManager);
         Vector2 MapPosition { get; }
         Rect MapArea { get; }
     }

@@ -17,7 +17,7 @@ The game is a complete port of the original game to Windows with some adjustment
   - toggle to switch between original and extended game
   - toggle to disable AI players
 - UI adjustments
-  - attack/defense values displayed in inventory
+  - attack/defense/protection values displayed in inventory
 - minor location adjustments
   - some locations are larger to fill wide screens
   - Monastery got another gap in the wall to go through
@@ -30,6 +30,7 @@ The extended game mode adds new items, locations and gameplay features.
 You can disable these changes in the start menu.
 
 - additional items
+- clothes provide a small defense boost
 
 ## Build and Debug
 

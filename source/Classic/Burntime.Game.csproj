@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Burntime.Classic</RootNamespace>
+    <AssemblyName>Burntime.Game</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BurnGfx\Burntime.BurnGfx.csproj" />
+    <ProjectReference Include="..\Framework\Burntime.Framework.csproj" />
+    <ProjectReference Include="..\Platform\Burntime.Platform.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="icon256.ico" />
+  </ItemGroup>
+</Project>

@@ -11,5 +11,6 @@ syssze.raw=pngani@gfx/char/{0}.png
 burngfxani@munt.raw=pngani@gfx/munt_{0}.png
 munt.raw=gfx/munt_{0}.png
 sta.pac=gfx/sta.png
+raum_6.pac=gfx/raum_6.png
 syst.raw=gfx/syst_{0}.png
 ges_00.ani=pngani@gfx/faces/ges_00/{0}.png

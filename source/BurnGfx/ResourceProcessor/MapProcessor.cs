@@ -9,7 +9,7 @@ namespace Burntime.Data.BurnGfx.ResourceProcessor
 {
     public class MapProcessor : IDataProcessor
     {
-        public DataObject Process(ResourceID ID, ResourceManager ResourceManager)
+        public DataObject Process(ResourceID ID, IResourceManager ResourceManager)
         {
             MapData data = new MapData();
             data.DataName = ID;

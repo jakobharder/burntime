@@ -238,24 +238,28 @@ class=useless
 burngfx=52
 
 [item_leather_jacket]
-class=useless
+class=protection
 burngfx=53
+defense=1
 
 [item_tires]
 class=useless
 burngfx=54
 
 [item_steel_helmet]
-class=useless
+class=protection
 burngfx=55
+defense=1
 
 [item_sweater]
-class=useless
+class=protection
 burngfx=56
+defense=1
 
 [item_pants]
-class=useless
+class=protection
 burngfx=57
+defense=1
 
 [item_dogshit]
 class=useless nodrop
@@ -266,7 +270,7 @@ value=1
 food=0
 
 [item_dish]
-class=useless
+class=useless rare
 title=@newburn?3
 text=@newburn?3
 image=gfx/dish.png

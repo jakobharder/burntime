@@ -5,10 +5,12 @@ using Burntime.Platform;
 using Burntime.Platform.IO;
 using Burntime.Framework;
 using Burntime.Classic.Logic;
+using Burntime.Platform.Resource;
+using System.Collections.Generic;
 
 namespace Burntime.Classic
 {
-    enum ActionAfterImageScene
+    public enum ActionAfterImageScene
     {
         None,
         Trader,
@@ -17,7 +19,7 @@ namespace Burntime.Classic
         Restaurant
     }
 
-    class BurntimeClassic : Module
+    public class BurntimeClassic : Module
     {
         public static new BurntimeClassic Instance
         {
@@ -33,10 +35,11 @@ namespace Burntime.Classic
         public override Vector2[] Resolutions { get { return new Vector2[] { new Vector2(480, 225), new Vector2(384, 240) }; } }
         //public override Vector2[] Resolutions { get { return new Vector2[] { new Vector2(640, 300), new Vector2(384, 240) }; } }
 
-        public bool IsWideScreen { get { return Engine.Resolution.x / (float)Engine.Resolution.y > 1.5f; } }
+        public bool IsWideScreen { get { return Engine.Resolution.Native.Ratio > 1.5f; } }
 
-        // burntime's 8:5 to 4:3 ratio correction
-        public override float VerticalRatio { get { return 1.0f / 200.0f * 240.0f; } }
+        // Burntime's ratio is 8:5. We need to scale height by 1.2 (320x200 where screens today would be multiple of 320x240).
+        // But to get a clean tile resolution of 32x38 use 1.1875
+        public override float VerticalCorrection { get { return 1.0f / 32.0f * 38.0f; } }
 
         public override System.Drawing.Icon Icon
         {
@@ -46,9 +49,15 @@ namespace Burntime.Classic
             }
         }
 
+        public BurntimeClassic()
+        {
+            FindClassesFromAssembly(typeof(BurntimeClassic).Assembly);
+        }
+
         public override void Start()
         {
-            Engine.Music.Enabled = (!DisableMusic) & MusicPlayback;
+#warning TODO SlimDX/Mono Music
+            //Engine.Music.Enabled = (!DisableMusic) & MusicPlayback;
 
             MouseImage = ResourceManager.GetImage("munt.raw");
             SceneManager.SetScene("IntroScene");
@@ -75,9 +84,10 @@ namespace Burntime.Classic
             // reload settings
             Settings.Open("settings.txt");
 
-            Engine.Resolution = Settings["system"].GetVector2("resolution");
-            Engine.FullScreen = !Settings["system"].GetBool("windowmode");
-            Engine.UseTextureFilter = Settings["system"].GetBool("filter");
+            Engine.Resolution.Native = Settings["system"].GetVector2("resolution");
+#warning TODO SlimDX/Mono full screen
+            //Engine.FullScreen = !Settings["system"].GetBool("windowmode");
+            //Engine.UseTextureFilter = Settings["system"].GetBool("filter");
 
             // check music playback settings
             MusicPlayback = Settings["system"].GetBool("music");
@@ -86,16 +96,8 @@ namespace Burntime.Classic
 
             bool useHighResFont = Settings["system"].GetBool("highres_font");
 
-            // add gfx packages
-            /*if (Settings["system"].GetBool("2xgfx"))
-            {
-                FileSystem.AddPackage("gfx", "game/gfx");
-                FileSystem.AddPackage("tiles", "game/tiles");
-                ResourceManager.SetResourceReplacement("2xgfx.txt");
-            }*/
-
             // add newgfx package
-            if (Settings["system"].GetBool("newgfx"))
+            if (NewGfx)
             {
                 FileSystem.AddPackage("newgfx", "game/classic_newgfx");
                 if (FileSystem.ExistsFile("newgfx.txt"))
@@ -106,11 +108,12 @@ namespace Burntime.Classic
                     useHighResFont = true;
                 }
             }
-            else if (DateTime.Now.Month == 12 && 
-                (DateTime.Now.Day >= 24 && DateTime.Now.Day <= 31 || DateTime.Now.Day == 6))
-            {
-                ResourceManager.SetResourceReplacement("santa.txt");
-            }
+#warning TODO Santa for NewGfx (only)
+            //else if (DateTime.Now.Month == 12 && 
+            //    (DateTime.Now.Day >= 24 && DateTime.Now.Day <= 31 || DateTime.Now.Day == 6))
+            //{
+            //    ResourceManager.SetResourceReplacement("santa.txt");
+            //}
 
             // set highres font
             if (useHighResFont)
@@ -137,6 +140,8 @@ namespace Burntime.Classic
         public bool MusicPlayback;
         public bool DisableMusic;
         public int PreviousPlayerId = -1;
+        public bool NewGui = false;
+        public bool NewGfx = true;
 
         public Character SelectedCharacter
         {

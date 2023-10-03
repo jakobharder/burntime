@@ -51,7 +51,7 @@ namespace Burntime.Platform.Graphics
             size = new Vector2();
         }
 
-        public DataObject Process(ResourceID ID, ResourceManager ResourceManager)
+        public DataObject Process(ResourceID ID, IResourceManager ResourceManager)
         {
             return ResourceManager.GetImage(ID);
         }

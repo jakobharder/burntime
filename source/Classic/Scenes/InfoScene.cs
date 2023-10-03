@@ -37,7 +37,7 @@ namespace Burntime.Classic.Scenes
         {
             Background = "info.pac";
             Music = "13_MUS 13_HSC.ogg";
-            Position = (app.Engine.GameResolution - new Vector2(320, 200)) / 2;
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
 
             Button button = new Button(App);
@@ -144,7 +144,7 @@ namespace Burntime.Classic.Scenes
             txt.ClearArguments();
         }
 
-        private void RenderNPCLine(RenderTarget target, Vector2 position, int npcCount, Sprite image)
+        private void RenderNPCLine(RenderTarget target, Vector2 position, int npcCount, ISprite image)
         {
             target.Layer += 2;
 

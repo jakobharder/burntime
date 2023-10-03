@@ -10,7 +10,7 @@ namespace Burntime.Data.BurnGfx.ResourceProcessor
 {
     public class TileMaskProcessor : IDataProcessor
     {
-        public DataObject Process(ResourceID ID, ResourceManager ResourceManager)
+        public DataObject Process(ResourceID ID, IResourceManager ResourceManager)
         {
             File file = FileSystem.GetFile(ID.File);
 

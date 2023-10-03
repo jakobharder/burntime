@@ -61,14 +61,16 @@ namespace Burntime.Classic
             hover = -1;
             base.OnShow();
 
-            BurntimeClassic.Instance.Engine.Music.Play("18_MUS 18_HSC.ogg");
+#warning TODO SlimDX/Mono Music
+            //BurntimeClassic.Instance.Engine.Music.Play("18_MUS 18_HSC.ogg");
         }
 
         public override void OnHide()
         {
             base.OnHide();
 
-            BurntimeClassic.Instance.Engine.Music.Stop();
+#warning TODO SlimDX/Mono Music
+            //BurntimeClassic.Instance.Engine.Music.Stop();
         }
 
         public void SetCharacter(Character character, Conversation conversation)

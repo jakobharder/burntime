@@ -34,7 +34,7 @@ namespace Burntime.Framework.States
 
         StateChangeRecord changeRecord = new StateChangeRecord(10);
 
-        ResourceManager resourceManager;
+        IResourceManager resourceManager;
         bool temporaryMode = false;
         WorldState root;
         bool manageGlobalAddressing;
@@ -49,7 +49,7 @@ namespace Burntime.Framework.States
             get { return manageGlobalAddressing; }
         }
 
-        public ResourceManager ResourceManager
+        public IResourceManager ResourceManager
         {
             get { return resourceManager; }
         }
@@ -68,12 +68,13 @@ namespace Burntime.Framework.States
 
         protected void UpdateDebugInfo()
         {
-            Burntime.Platform.Debug.SetInfo("[" + debugName + "] state objects", objects.Count.ToString());
-            Burntime.Platform.Debug.SetInfo("[" + debugName + "] state objects [add]", added.Count.ToString());
-            Burntime.Platform.Debug.SetInfo("[" + debugName + "] state objects [sync]", syncCopy.Count.ToString());
+#warning TODO SlimDX/Mono debug info
+            //Burntime.Platform.Debug.SetInfo("[" + debugName + "] state objects", objects.Count.ToString());
+            //Burntime.Platform.Debug.SetInfo("[" + debugName + "] state objects [add]", added.Count.ToString());
+            //Burntime.Platform.Debug.SetInfo("[" + debugName + "] state objects [sync]", syncCopy.Count.ToString());
         }
 
-        public StateManager(ResourceManager resourceManager, bool manageGlobalAddressing)
+        public StateManager(IResourceManager resourceManager, bool manageGlobalAddressing)
         {
             this.resourceManager = resourceManager;
             this.debugName = "main";
@@ -86,7 +87,7 @@ namespace Burntime.Framework.States
             UpdateDebugInfo();
         }
 
-        public StateManager(ResourceManager resourceManager)
+        public StateManager(IResourceManager resourceManager)
         {
             this.resourceManager = resourceManager;
             this.debugName = "main";
@@ -99,7 +100,7 @@ namespace Burntime.Framework.States
             UpdateDebugInfo();
         }
 
-        public StateManager(ResourceManager resourceManager, string debugName)
+        public StateManager(IResourceManager resourceManager, string debugName)
         {
             this.resourceManager = resourceManager;
             this.debugName = debugName;
@@ -112,7 +113,7 @@ namespace Burntime.Framework.States
             UpdateDebugInfo();
         }
 
-        public StateManager(ResourceManager resourceManager, bool manageGlobalAddressing, string debugName)
+        public StateManager(IResourceManager resourceManager, bool manageGlobalAddressing, string debugName)
         {
             this.resourceManager = resourceManager;
             this.debugName = debugName;
