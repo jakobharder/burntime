@@ -76,11 +76,13 @@ namespace Burntime.Classic
             Vector2 health = new Vector2(Size.x / 2 + 64, Size.y - 30);
             int fullBar = 75;
             int healthBar = fullBar * game.World.ActivePlayerObj.Character.Health / 100;
-            Target.RenderRect(health, new Vector2(healthBar, 5), new PixelColor(240, 64, 56));
+            Target.RenderRect(health, new Vector2(healthBar, 6), new PixelColor(240, 64, 56));
 
             Vector2 timebar = new Vector2(Target.Width / 2 - 30, 2);
             int dayTime = (int)(game.World.Time * 60);
+            Target.Layer++;
             Target.RenderRect(timebar, new Vector2(dayTime, 3), new PixelColor(240, 64, 56));
+            Target.Layer--;
 
             Vector2 name = new Vector2(Size.x / 2 - 97, Size.y - 30);
             playerColor.DrawText(Target, name, this.name, TextAlignment.Center, VerticalTextAlignment.Top);

@@ -637,6 +637,9 @@ namespace Burntime.Classic.Logic.Generation
 
             ClassicGame classic = container.Root as ClassicGame;
 
+            _ = new LogicFactory();
+            LogicFactory.SetParameter("mainmap", classic.World.Map);
+
             // share container for all local player
             Burntime.Framework.States.StateManager sharedContainer = null;
             // if no synchronization mode is active, then share container with game server

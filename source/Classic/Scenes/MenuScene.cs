@@ -164,7 +164,7 @@ namespace Burntime.Classic
         {
             base.OnRender(Target);
 
-            copyright.DrawText(Target, new Vector2(Size.x / 2, Size.y + 2), "Remake by Jakob Harder. Original copyright 1993 by Max Design", TextAlignment.Center, VerticalTextAlignment.Top);
+            //copyright.DrawText(Target, new Vector2(Size.x - 2, Size.y + 2), "Remade by Jakob", TextAlignment.Right, VerticalTextAlignment.Top);
         }
 
         void OnPlayerOneDown()

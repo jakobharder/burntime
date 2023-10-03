@@ -11,6 +11,7 @@
 
 ### Technical
 
+- Fixed a crash when immediately loading a save
 - Ported game to MonoGame because SlimDX stopped development ~2012. This means also a step back to .NET 6
 - Improved path finding performance
 - Centered dialog on all resolutions
