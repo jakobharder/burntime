@@ -11,7 +11,7 @@ class SpriteEntity : RenderEntity
     public Rectangle Rectangle;
     public Vector3 Position;
     public Color Color;
-    public float Factor = 1;
+    public Platform.Vector2f Factor = Platform.Vector2f.One;
 }
 
 class LineEntity : RenderEntity

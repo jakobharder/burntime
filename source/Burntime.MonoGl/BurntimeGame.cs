@@ -220,7 +220,7 @@ namespace Burntime.MonoGl
             {
                 Rectangle = new Rectangle(0, 0, size.x, size.y),
                 Color = new Color(color.r, color.g, color.b, color.a),
-                Texture = SpriteFrame.EmptyTexture,
+                Texture = RenderDevice.WhiteTexture,
                 Position = new Vector3(pos.x, pos.y, CalcZ(Layer))
             };
             RenderDevice.AddEntity(entity);

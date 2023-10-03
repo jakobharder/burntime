@@ -23,13 +23,7 @@ public class RenderDevice : IDisposable
     LoadingOverlay loadingOverlay;
     public BlendOverlay BlendOverlay { get; private set; }
     //ErrorOverlay errorOverlay;
-
-    bool requestStop = false;
-    Thread renderThread;
-    AutoResetEvent renderFinished;
-    bool waitForReset;
-    bool wasLost;
-    bool deviceReadyForRender;
+    public Texture2D WhiteTexture { get; private set; }
 
     event EventHandler DeviceReset;
     event EventHandler DeviceLost;
@@ -153,6 +147,9 @@ public class RenderDevice : IDisposable
     {
         SpriteFrame.EmptyTexture = new Texture2D(_engine.GraphicsDevice, 1, 1, false, SurfaceFormat.Color);
         SpriteFrame.EmptyTexture.SetData(new Color[] { Color.Black });
+        WhiteTexture = new Texture2D(_engine.GraphicsDevice, 1, 1, false, SurfaceFormat.Color);
+        WhiteTexture.SetData(new Color[] { Color.White });
+
 
         //spriteRenderer = new SlimDX.Direct3D9.Sprite(device);
         //lineRenderer = new Line(device);
@@ -163,14 +160,10 @@ public class RenderDevice : IDisposable
 
         //renderToSurface = new RenderToSurface(device, engine.Resolution.Game.x * renderScale, engine.Resolution.Game.y * renderScale, Format.X8R8G8B8);
         //renderToTexture = new Texture(device, engine.Resolution.Game.x * renderScale, engine.Resolution.Game.y * renderScale, 1, Usage.RenderTarget, Format.X8R8G8B8, Pool.Default);
-
-        deviceReadyForRender = true;
     }
 
     void UnloadGraphicResources()
     {
-        deviceReadyForRender = false;
-
         //resourceManager.ReleaseAll();
 
         SpriteFrame.EmptyTexture.Dispose();
@@ -290,14 +283,19 @@ public class RenderDevice : IDisposable
                         continue;
 
                     // recompute position for not 1:1 sprite resolutions
-                    var pos = new Microsoft.Xna.Framework.Vector2(sprite.Position.X, sprite.Position.Y);
-                    pos.X *= _engine.Resolution.Scale.x;
-                    pos.Y *= _engine.Resolution.Scale.y;
+                    var position = new Microsoft.Xna.Framework.Vector2(sprite.Position.X, sprite.Position.Y);
+                    position.X *= _engine.Resolution.Scale.x;
+                    position.Y *= _engine.Resolution.Scale.y;
 
-                    _spriteBatch.Draw(sprite.Texture ?? sprite.SpriteFrame.Texture, pos, sprite.Rectangle, sprite.Color, 0, 
+                    _spriteBatch.Draw(sprite.Texture ?? sprite.SpriteFrame.Texture, 
+                        position, 
+                        sourceRectangle: sprite.Rectangle, 
+                        sprite.Color, 
+                        rotation: 0, 
                         Microsoft.Xna.Framework.Vector2.Zero,
-                        new Microsoft.Xna.Framework.Vector2(sprite.Factor * _engine.Resolution.Scale.x, sprite.Factor * _engine.Resolution.Scale.y), 
-                        SpriteEffects.None, sprite.Position.Z);
+                        (sprite.Factor * _engine.Resolution.Scale).ToXna(), 
+                        SpriteEffects.None, 
+                        sprite.Position.Z);
                 }
             }
         }
