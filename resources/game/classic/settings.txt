@@ -11,6 +11,13 @@ always_synchronize 	= no		' use network synchronization in local games too
 roundtime		= 240
 disable_ai		= yes
 
+[engine]
+safemode      = off
+delay_blend   = 0 ' ms time
+scene_blend   = 4 ' speed factor 1 = 1s
+debug         = no
+video_memory  = 256 ' MB
+
 [debug]
 enable_cheats   = no
 show_routes 	= no
