@@ -15,16 +15,8 @@ jobs:
       with:
         fetch-depth: 0
 
-    # - name: Setup .NET Core
-    #   uses: actions/setup-dotnet@v1
-    #   with:
-    #     dotnet-version: 4.8.x
-
-    # - name: Restore dependencies
-    #   run: (cd source && dotnet restore && cd ..)
-
     - name: Build
-      run: (cd source && dotnet build -c Release && cd ..)
+      run: (cd source && dotnet build Burntime.MonoGl -c Release && cd ..)
 
     - name: Package
       run: tar -caf burntime.zip -C ./bin/ *

@@ -71,14 +71,13 @@ namespace Burntime.MonoGl
             FileSystem.BasePath = "";
             FileSystem.AddPackage("system", "system");
 
-            ConfigFile engineSettings = new();
-            engineSettings.Open("system:settings.txt");
-
-            Log.DebugOut = engineSettings["engine"].GetBool("debug");
-
             PackageManager paketManager = new("game/");
 
             paketManager.LoadPackages("classic", FileSystem.VFS, null);
+
+            ConfigFile cfg = new();
+            cfg.Open("classic:settings.txt");
+            Log.DebugOut = cfg["engine"].GetBool("debug");
 
             RenderDevice = new RenderDevice(this);
             RenderDevice.Initialize();
@@ -112,7 +111,7 @@ namespace Burntime.MonoGl
         protected override void LoadContent()
         {
             ConfigFile cfg = new();
-            cfg.Open("system:settings.txt");
+            cfg.Open("classic:settings.txt");
 
             Log.Info("Setup render device...");
             RenderDevice = new RenderDevice(this);
