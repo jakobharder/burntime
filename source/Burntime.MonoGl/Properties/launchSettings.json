@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "Burntime.MonoGl": {
-      "commandName": "Project",
-      "workingDirectory": "C:\\burntime\\burntime\\bin\\burntime"
-    }
-  }
-}
