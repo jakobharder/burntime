@@ -7,6 +7,13 @@ namespace Burntime.SlimDx.Graphics;
 
 public class SpriteFrame : Platform.Graphics.GenericSpriteFrame<Texture>
 {
+    public void SetLoaded()
+    {
+        TimeStamp = System.Diagnostics.Stopwatch.GetTimestamp();
+        IsLoaded = true;
+        IsLoading = false;
+    }
+
     public SpriteFrame()
     {
     }

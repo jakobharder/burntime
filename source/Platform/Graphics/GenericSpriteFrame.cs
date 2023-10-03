@@ -12,17 +12,15 @@ public abstract class GenericSpriteFrame<TTexture> where TTexture : class
     public bool HasSystemCopy => _systemCopy is not null;
     protected byte[]? _systemCopy;
 
-#warning TODO public set access needed?
     /// <summary>
     /// Time stamp when the sprite was loaded.
     /// </summary>
-    public long TimeStamp { get; set; }
+    public long TimeStamp { get; protected set; }
 
-#warning TODO public set access needed?
     /// <summary>
     /// Texture is ready to use.
     /// </summary>
-    public bool IsLoaded { get; set; }
+    public bool IsLoaded { get; protected set; }
 
 #warning TODO public set access needed?
     public bool IsLoading { get; set; }

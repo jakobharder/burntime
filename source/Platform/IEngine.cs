@@ -21,6 +21,7 @@ public interface IEngine
     RenderTarget MainTarget { get; }
 
     void CenterMouse();
+    void ExitApplication();
 
     void RenderRect(Vector2 pos, Vector2 size, PixelColor color);
 

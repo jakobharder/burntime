@@ -228,8 +228,7 @@ namespace Burntime.Platform.Resource
 
                     Sprite.internalFrames[i].Texture = tex;
                     Sprite.internalFrames[i].RestoreFromSystemCopy();
-                    Sprite.internalFrames[i].IsLoading = false;
-                    Sprite.internalFrames[i].IsLoaded = true;
+                    Sprite.internalFrames[i].SetLoaded();
                 }
             }
  
@@ -295,7 +294,7 @@ namespace Burntime.Platform.Resource
 
                     Sprite.internalFrames[i].Texture = tex;
                     Sprite.internalFrames[i].Size = loaderAni.FrameSize;
-                    Sprite.internalFrames[i].TimeStamp = System.Diagnostics.Stopwatch.GetTimestamp();
+                    Sprite.internalFrames[i].SetLoaded();
                     Sprite.internalFrames[i].Resolution = Sprite.internalFrames[0].Resolution;
                 }
             }
@@ -314,11 +313,8 @@ namespace Burntime.Platform.Resource
 
                 Sprite.internalFrames[0].Texture = tex;
                 Sprite.internalFrames[0].Size = loader.Size;
-                Sprite.internalFrames[0].TimeStamp = System.Diagnostics.Stopwatch.GetTimestamp();
+                Sprite.internalFrames[0].SetLoaded();
             }
-
-            Sprite.internalFrames[0].IsLoading = false;
-            Sprite.internalFrames[0].IsLoaded = true;
 
             _engine.DecreaseLoadingCount();
         }

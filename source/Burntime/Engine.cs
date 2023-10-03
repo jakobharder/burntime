@@ -386,7 +386,7 @@ namespace Burntime.Platform
             app.Close();
         }
 
-        public void Close()
+        public void ExitApplication()
         {
             if (!requestExit)
                 form.CloseForm();
@@ -400,7 +400,7 @@ namespace Burntime.Platform
 
         public DeviceManager DeviceManager { get; set; }
         internal Resource.ResourceManager ResourceManager = null;
-        
+
         public RenderTarget MainTarget { get; private set; }
 
         internal void OnMouseMove(int x, int y)

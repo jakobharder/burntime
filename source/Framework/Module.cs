@@ -199,10 +199,8 @@ namespace Burntime.Framework
         {
             OnClose();
 
-            if (Server != null)
-                Server.Stop();
-#warning slimdx todo re-implement
-            //Engine.Close();
+            Server?.Stop();
+            Engine.ExitApplication();
         }
     }
 

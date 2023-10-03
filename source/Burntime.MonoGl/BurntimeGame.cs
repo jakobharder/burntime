@@ -198,6 +198,11 @@ namespace Burntime.MonoGl
             //throw new System.NotImplementedException();
         }
 
+        void IEngine.ExitApplication()
+        {
+            Exit();
+        }
+
         #region render methods
         const float MAX_LAYERS = 256.0f;
         const float popInSpeed = 16.0f;
