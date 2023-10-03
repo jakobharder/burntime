@@ -17,8 +17,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Burntime.SlimDx", "Burntime
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PakConverter", "PakConverter\PakConverter.csproj", "{74955E9B-D49A-4883-A266-F9E6D6A4E42E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Launcher", "Launcher\Launcher.csproj", "{1B1DEC0B-7C65-444E-8336-DF14842C0A20}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "resources", "resources", "{1C04537C-30C9-4D81-8A51-4B7D514D9CBA}"
 	ProjectSection(SolutionItems) = preProject
 		..\resources\ChangeLog.txt = ..\resources\ChangeLog.txt

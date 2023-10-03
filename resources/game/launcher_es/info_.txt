@@ -1,6 +1,0 @@
-version=0.2.3
-type=language
-game=launcher
-language=ES
-default_language=EN
-hidden=yes
