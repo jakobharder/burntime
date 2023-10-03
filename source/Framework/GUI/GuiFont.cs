@@ -25,22 +25,22 @@ namespace Burntime.Framework.GUI
             set { font.Borders = value; }
         }
 
-        public void DrawText(IRenderTarget target, Vector2 position, string text)
+        public void DrawText(RenderTarget target, Vector2 position, string text)
         {
             font.DrawText(target, position, text);
         }
 
-        public void DrawText(IRenderTarget target, Vector2 position, string text, TextAlignment align)
+        public void DrawText(RenderTarget target, Vector2 position, string text, TextAlignment align)
         {
             font.DrawText(target, position, text, align);
         }
 
-        public void DrawText(IRenderTarget target, Vector2 position, string text, TextAlignment align, VerticalTextAlignment vertAlign)
+        public void DrawText(RenderTarget target, Vector2 position, string text, TextAlignment align, VerticalTextAlignment vertAlign)
         {
             font.DrawText(target, position, text, align, vertAlign);
         }
 
-        public void DrawText(IRenderTarget target, Vector2 position, string text, TextAlignment align, VerticalTextAlignment vertAlign, float alpha)
+        public void DrawText(RenderTarget target, Vector2 position, string text, TextAlignment align, VerticalTextAlignment vertAlign, float alpha)
         {
             font.DrawText(target, position, text, align, vertAlign, alpha);
         }

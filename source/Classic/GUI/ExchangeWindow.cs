@@ -62,7 +62,7 @@ namespace Burntime.Classic.GUI
             font.Borders = TextBorders.Screen;
         }
 
-        public override void OnRender(IRenderTarget Target)
+        public override void OnRender(RenderTarget Target)
         {
             font.DrawText(Target, new Vector2(63, 6), title, TextAlignment.Center, VerticalTextAlignment.Top);
 

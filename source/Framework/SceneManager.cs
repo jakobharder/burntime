@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Burntime.Platform;
 using Burntime.Platform.Graphics;
 using Burntime.Framework.GUI;
+using System.Linq;
 
 namespace Burntime.Framework
 {
@@ -53,8 +54,7 @@ namespace Burntime.Framework
 
         public void SetScene(String Scene, bool DoNotQueue, object parameter)
         {
-            app.Engine.Blend = 1;
-            app.Engine.WaitForBlend();
+            app.Engine.BlendOverlay.FadeOut(wait: true);
             if (activeScene != null)
             {
                 if (!DoNotQueue)
@@ -69,29 +69,28 @@ namespace Burntime.Framework
 
             if (!scenes.ContainsKey(Scene))
             {
-                app.Engine.IncreaseLoadingCount();
+                //app.ResourceManager.LoadingCounter.IncreaseLoadingCount();
                 Add(Scene, Activator.CreateInstance(sceneTypes[Scene], new object[] { app }) as Scene);
-                app.Engine.DecreaseLoadingCount();
+                //app.ResourceManager.LoadingCounter.DecreaseLoadingCount();
             }
 
             activeScene = scenes[Scene];
             app.Engine.CenterMouse();
             activeScene.ActivateScene(parameter);
-            app.Engine.Blend = 0;
+            app.Engine.BlendOverlay.FadeIn();
         }
 
         public void PreviousScene()
         {
             if (sceneQueue.Count > 0)
             {
-                app.Engine.Blend = 1;
-                app.Engine.WaitForBlend();
+                app.Engine.BlendOverlay.FadeOut(wait: true);
                 activeScene.InactivateScene();
                 activeScene = scenes[sceneQueue[sceneQueue.Count - 1]];
                 app.Engine.CenterMouse();
                 activeScene.ActivateScene();
                 sceneQueue.RemoveAt(sceneQueue.Count - 1);
-                app.Engine.Blend = 0;
+                app.Engine.BlendOverlay.FadeIn();
             }
         }
 
@@ -100,7 +99,7 @@ namespace Burntime.Framework
             blockBlendIn++;
 
             if (blockBlendIn == 1)
-                app.Engine.BlockBlend = true;
+                app.Engine.BlendOverlay.Block = true;
         }
 
         public void UnblockBlendIn()
@@ -108,19 +107,12 @@ namespace Burntime.Framework
             blockBlendIn--;
 
             if (blockBlendIn == 0)
-                app.Engine.BlockBlend = false;
+                app.Engine.BlendOverlay.Block = false;
         }
 
-        public String LastScene
-        {
-            get { if (sceneQueue.Count == 0) return null; return sceneQueue[sceneQueue.Count - 1]; }
-        }
+        public string? LastScene => sceneQueue.LastOrDefault();
 
-        internal void Render(IRenderTarget Target)
-        {
-            if (activeScene != null)
-                activeScene.Render(Target);
-        }
+        internal void Render(RenderTarget Target) => activeScene?.Render(Target);
 
         internal void Process(float Elapsed)
         {
@@ -172,10 +164,7 @@ namespace Burntime.Framework
             modalStack.Push(window);
         }
 
-        internal void PopModalStack()
-        {
-            modalStack.Pop();
-        }
+        internal void PopModalStack() => modalStack.Pop();
 
         internal void Reset()
         {

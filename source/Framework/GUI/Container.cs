@@ -106,14 +106,14 @@ namespace Burntime.Framework.GUI
             windows.Layer = layer;
         }
 
-        internal override void Render(IRenderTarget Target)
+        internal override void Render(RenderTarget Target)
         {
             if (!visible)
                 return;
 
             base.Render(Target);
 
-            IRenderTarget thisTarget = Target.GetSubBuffer(Boundings);
+            RenderTarget thisTarget = Target.GetSubBuffer(Boundings);
 
             if (background != null)
             {

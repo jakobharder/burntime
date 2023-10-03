@@ -8,7 +8,7 @@ using SlimDX.Direct3D9;
 
 namespace Burntime.Platform.Graphics
 {
-    public class RenderTarget : IRenderTarget
+    public class RenderTarget : RenderTarget
     {
         Rect rc;
         Engine engine;
@@ -51,11 +51,6 @@ namespace Burntime.Platform.Graphics
             set { engine.Layer = value; }
         }
 
-        public float Blend
-        {
-            set { engine.Device.Blend = value; }
-            get { return engine.Device.Blend; }
-        }
         internal RenderTarget(Engine engine, Rect rc)
         {
             this.engine = engine;
@@ -69,7 +64,7 @@ namespace Burntime.Platform.Graphics
         }
 
         #region DrawSprite methods
-        public void DrawSprite(Sprite sprite)
+        public void DrawSprite(SlimDx.Graphics.Sprite sprite)
         {
             if (sprite == null)
                 return;
@@ -77,7 +72,7 @@ namespace Burntime.Platform.Graphics
             DrawSprite(Vector2.Zero, sprite);
         }
 
-        public void DrawSprite(Vector2 pos, Sprite sprite)
+        public void DrawSprite(Vector2 pos, SlimDx.Graphics.Sprite sprite)
         {
             if (sprite == null)
                 return;
@@ -85,7 +80,7 @@ namespace Burntime.Platform.Graphics
             engine.RenderSprite(sprite, pos + rc.Position + offset);
         }
 
-        public void DrawSprite(Vector2 pos, Sprite sprite, float alpha)
+        public void DrawSprite(Vector2 pos, SlimDx.Graphics.Sprite sprite, float alpha)
         {
             if (sprite == null)
                 return;
@@ -93,7 +88,7 @@ namespace Burntime.Platform.Graphics
             engine.RenderSprite(sprite, pos + rc.Position + offset, alpha);
         }
 
-        public void DrawSprite(Vector2 pos, Sprite sprite, Rect srcRect)
+        public void DrawSprite(Vector2 pos, SlimDx.Graphics.Sprite sprite, Rect srcRect)
         {
             if (sprite == null)
                 return;
@@ -101,15 +96,10 @@ namespace Burntime.Platform.Graphics
             engine.RenderSprite(sprite, pos + rc.Position + offset);
         }
 
-        Sprite selImage;
-        public void SelectSprite(Sprite sprite)
+        SlimDx.Graphics.Sprite selImage;
+        public void SelectSprite(SlimDx.Graphics.Sprite sprite)
         {
             selImage = sprite;
-        }
-
-        public void DrawSelectedSprite(Vector2 pos, Rect srcRect)
-        {
-            engine.RenderSprite(selImage, pos + rc.Position + offset, srcRect.Position, srcRect.Width, srcRect.Height);
         }
 
         public void DrawSelectedSprite(Vector2 pos, Rect srcRect, PixelColor color)
@@ -121,11 +111,6 @@ namespace Burntime.Platform.Graphics
         public void RenderRect(Vector2 pos, Vector2 size, PixelColor color)
         {
             engine.RenderRect(pos + rc.Position + offset, size, color.ToInt());
-        }
-
-        public void RenderFrame(Vector2 pos, Vector2 size, PixelColor color)
-        {
-            engine.RenderFrame(pos + rc.Position + offset, size, color.ToInt());
         }
 
         public void RenderLine(Vector2 start, Vector2 end, PixelColor color)
@@ -141,11 +126,10 @@ namespace Burntime.Platform.Graphics
             return target;
         }
 
-        void IRenderTarget.SelectSprite(ISprite sprite) => SelectSprite(sprite as Sprite);
-        void IRenderTarget.DrawSprite(ISprite sprite) => DrawSprite(sprite as Sprite);
-        void IRenderTarget.DrawSprite(Vector2 pos, ISprite sprite) => DrawSprite(pos, sprite as Sprite);
-        void IRenderTarget.DrawSprite(Vector2 pos, ISprite sprite, float alpha) => DrawSprite(pos, sprite as Sprite, alpha);
-        void IRenderTarget.DrawSprite(Vector2 pos, ISprite sprite, Rect srcRect) => DrawSprite(pos, sprite as Sprite, srcRect);
-        IRenderTarget IRenderTarget.GetSubBuffer(Rect rc) => GetSubBuffer(rc);
+        void RenderTarget.SelectSprite(ISprite sprite) => SelectSprite(sprite as SlimDx.Graphics.Sprite);
+        void RenderTarget.DrawSprite(ISprite sprite) => DrawSprite(sprite as SlimDx.Graphics.Sprite);
+        void RenderTarget.DrawSprite(Vector2 pos, ISprite sprite, float alpha) => DrawSprite(pos, sprite as SlimDx.Graphics.Sprite, alpha);
+        void RenderTarget.DrawSprite(Vector2 pos, ISprite sprite, Rect srcRect) => DrawSprite(pos, sprite as SlimDx.Graphics.Sprite, srcRect);
+        RenderTarget RenderTarget.GetSubBuffer(Rect rc) => GetSubBuffer(rc);
     }
 }

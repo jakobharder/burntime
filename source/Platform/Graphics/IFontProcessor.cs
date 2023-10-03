@@ -6,13 +6,13 @@ using Burntime.Platform.Graphics;
 
 namespace Burntime.Platform.Resource
 {
-    public interface IFontProcessor
+    public interface IFontProcessor : ISpriteProcessor
     {
-        void Process(ResourceID ID);
-        Vector2 Size { get; }
-        void Render(Stream Stream, int Stride, PixelColor Fore, PixelColor Back);
         Dictionary<char, CharInfo> CharInfo { get; }
         int Offset { get; }
         float Factor { get; }
+
+        PixelColor Color { get; set; }
+        PixelColor Shadow { get; set; }
     }
 }

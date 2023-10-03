@@ -16,7 +16,7 @@ namespace Burntime.Classic.GUI
         {
         }
 
-        public override void OnRender(IRenderTarget Target)
+        public override void OnRender(RenderTarget Target)
         {
             base.OnRender(Target);
             Target.Layer += 2;

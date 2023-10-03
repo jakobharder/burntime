@@ -27,6 +27,9 @@ namespace Burntime.Platform.Graphics
         byte[] image;
         int stride;
 
+        public PixelColor Color { get; set; } = PixelColor.White;
+        public PixelColor Shadow { get; set; } = PixelColor.Black;
+
         public void Process(ResourceID id)
         {
             ConfigFile config = new ConfigFile();
@@ -89,12 +92,12 @@ namespace Burntime.Platform.Graphics
             file.Close();
         }
 
-        public void Render(System.IO.Stream stream, int stride, PixelColor fore, PixelColor back)
+        public void Render(System.IO.Stream stream, int stride)
         {
             ByteBuffer buffer = new ByteBuffer(Size.x, Size.y, new PixelColor[Size.x * Size.y]);
 
             foreach (char c in charInfo.Keys)
-                DrawText(buffer, 0, 0, "" + c, false, fore, back);
+                DrawText(buffer, 0, 0, "" + c, false, Color, Shadow);
 
             buffer.Write(stream, stride);
         }

@@ -13,7 +13,7 @@ namespace Burntime.Platform
         Vector2[] Resolutions { get; }
         //Icon Icon { get; }
 
-        void Render(IRenderTarget Target);
+        void Render(RenderTarget Target);
         void Process(float Elapsed);
         void Reset();
         void Close();

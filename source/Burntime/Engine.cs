@@ -1,21 +1,20 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Imaging;
-using System.Windows.Forms;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Threading;
 
 using Burntime.Platform.IO;
 using SlimDX.Direct3D9;
+using Burntime.Platform.Utils;
+using Burntime.SlimDx.Graphics;
+using Burntime.Platform.Graphics;
 
 namespace Burntime.Platform
 {
-    public class Engine : IEngine
+    public class Engine : IEngine, ILoadingCounter
     {
-        Graphics.RenderDevice device;
-        internal Graphics.RenderDevice Device
+        RenderDevice device;
+        internal RenderDevice Device
         {
             get { return device; }
         }
@@ -31,33 +30,10 @@ namespace Burntime.Platform
 
         const float MAX_LAYERS = 256;
 
-        int resWidth = 640;
-        int resHeight = 480;
-        int gameWidth = 640;
-        int gameHeight = 480;
-        Vector2[] gameResolutions = new Vector2[] { new Vector2(640, 480) };
-        float verticalRatio = 1;
-
         float layer;
         bool musicBlend = true;
 
-        Vector2f scale;
-        public Vector2f Scale
-        {
-            get { return scale; }
-            set { scale = value; }
-        }
-
-        public Vector2 Resolution
-        {
-            set { SetResolution(value.x, value.y); }
-            get { return new Vector2(resWidth, resHeight); }
-        }
-
-        public Vector2 GameResolution
-        {
-            get { return new Vector2(gameWidth, gameHeight); }
-        }
+        public Resolution Resolution { get; } = new();
 
         bool fullScreen;
         public bool FullScreen
@@ -132,33 +108,8 @@ namespace Burntime.Platform
         }
 
         #region scene blending methods
-        public float Blend
-        {
-            get { return device.Blend; }
-            set { device.Blend = value; }
-        }
-
-        public bool IsBlended
-        {
-            get { return device.IsBlended; }
-        }
-
-        public float BlendSpeed
-        {
-            get { return device.BlendSpeed; }
-            set { device.BlendSpeed = value; }
-        }
-
-        public bool BlockBlend
-        {
-            get { return device.BlockBlend; }
-            set { device.BlockBlend = value; }
-        }
-
-        public void WaitForBlend()
-        {
-            device.WaitForBlend();
-        }
+        public BlendOverlay BlendOverlay => device?.BlendOverlay;
+        BlendOverlayBase IEngine.BlendOverlay => device?.BlendOverlay;
 
         public bool MusicBlend
         {
@@ -172,105 +123,35 @@ namespace Burntime.Platform
             ResourceManager.ReleaseAll();
         }
 
-        public void SetResolution(int width, int height)
-        {
-            resWidth = width;
-            resHeight = height;
-
-            // select best game resolution
-            SelectBestGameResolution();
-        }
-
-        public void SetGameResolution(float verticalRatio, params Vector2[] size)
-        {
-            gameResolutions = size;
-            this.verticalRatio = verticalRatio;
-
-            // select best game resolution
-            SelectBestGameResolution();
-        }
-
-        private bool IsCleanZoom(float zoom)
-        {
-            return zoom == 4 || zoom == 3 || zoom == 2 || zoom == 1 || zoom == 0.5f;
-        }
-
-        private void SelectBestGameResolution()
-        {
-            float bestRatio = -1000;
-            float bestZoom = 1000;
-            int bestIndex = 0;
-            float realRatio = resWidth / (float)resHeight;
-
-            for (int i = 0; i < gameResolutions.Length; i++)
-            {
-                float ratio = gameResolutions[i].x / (float)gameResolutions[i].y / verticalRatio;
-                float zoom = resHeight / (float)gameResolutions[i].y;
-
-                // select best ratio
-                if (System.Math.Abs(ratio - realRatio) < System.Math.Abs(bestRatio - realRatio))
-                {
-                    bestRatio = ratio;
-                    bestZoom = zoom;
-                    bestIndex = i;
-                }
-
-                // if more than one resolutions with that ratio is available, choose best size (prefere too big than too small)
-                else if (System.Math.Abs(ratio - realRatio) == System.Math.Abs(bestRatio - realRatio) &&
-                    (IsCleanZoom(zoom) && !IsCleanZoom(bestZoom) || zoom <= 1 && bestZoom < zoom || zoom >= 1 && bestZoom < 1))
-                {
-                    bestZoom = zoom;
-                    bestIndex = i;
-                }
-            }
-
-            gameWidth = gameResolutions[bestIndex].x;
-            gameHeight = gameResolutions[bestIndex].y;
-
-            scale = new Vector2f();
-            scale.x = (float)resWidth / (float)gameWidth;
-            scale.y = (float)resHeight / (float)gameHeight;
-        }
-
         #region render methods
-        public void RenderRect(Vector2 pos, Vector2 size, int color)
+        public void RenderRect(Vector2 pos, Vector2 size, uint color)
         {
             Graphics.SpriteEntity entity = new Graphics.SpriteEntity();
             entity.Rectangle = new Rectangle(0, 0, size.x, size.y);
-            entity.Color = new SlimDX.Color4(color);
-
-            entity.Texture = device.emptyTexture;
+            entity.Color = new SlimDX.Color4((int)color);
+            entity.Texture = SpriteFrame.EmptyTexture;
             entity.Position = new SlimDX.Vector3(pos.x, pos.y, CalcZ(layer));
             device.AddEntity(entity);
         }
 
-        public void RenderFrame(Vector2 pos, Vector2 size, int color)
+        public void RenderSprite(ISprite sprite, Vector2 pos, float alpha = 1)
         {
-            //Rectangle rc = new Rectangle(0, 0, size.x, size.y);
-            //spriteRenderer.Draw(emptyTexture, rc, new SlimDX.Vector3(0, 0, 0), new SlimDX.Vector3(pos.x, pos.y, CalcZ(layer)), new SlimDX.Color4(color));
-        }
+            if (sprite is not SlimDx.Graphics.Sprite nativeSprite) return;
 
-        public void RenderSprite(Graphics.Sprite sprite, Vector2 pos)
-        {
-            RenderSprite(sprite, pos, 1);
-        }
-
-        public void RenderSprite(Graphics.Sprite sprite, Vector2 pos, float alpha)
-        {
             Graphics.SpriteEntity entity = new Graphics.SpriteEntity();
-            entity.Rectangle = new Rectangle(0, 0, sprite.OriginalSize.x, sprite.OriginalSize.y);
+            entity.Rectangle = new Rectangle(0, 0, nativeSprite.OriginalSize.x, nativeSprite.OriginalSize.y);
             entity.Color = new SlimDX.Color4(alpha, 1, 1, 1);
-            entity.Factor = sprite.Frame.Resolution;
+            entity.Factor = nativeSprite.Frame.Resolution;
 
             long now = System.Diagnostics.Stopwatch.GetTimestamp();
-            if (now - sprite.Frame.TimeStamp < (long)(Stopwatch.Frequency / popInSpeed) && popInSpeed != 0)
+            if (now - nativeSprite.Frame.TimeStamp < (long)(Stopwatch.Frequency / popInSpeed) && popInSpeed != 0)
             {
-                entity.Color.Alpha *= (now - sprite.Frame.TimeStamp) / (float)Stopwatch.Frequency * popInSpeed;
+                entity.Color.Alpha *= (now - nativeSprite.Frame.TimeStamp) / (float)Stopwatch.Frequency * popInSpeed;
             }
 
-            if (sprite.Animation != null && sprite.Animation.Progressive && sprite.Frames != null)
+            if (sprite.Animation != null && sprite.Animation.Progressive && nativeSprite.Frames != null)
             {
-                entity.Texture = sprite.Frames[0].Texture;
+                entity.Texture = nativeSprite.Frames[0].Texture;
                 entity.Position = new SlimDX.Vector3(pos.x, pos.y, CalcZ(layer) + 0.001f);
                 device.AddEntity(entity);
             }
@@ -278,41 +159,30 @@ namespace Burntime.Platform
             Graphics.SpriteEntity entity2 = new Burntime.Platform.Graphics.SpriteEntity();
             entity2.Rectangle = entity.Rectangle;
             entity2.Color = entity.Color;
-            entity2.Texture = sprite.Frame.Texture;
+            entity2.Texture = nativeSprite.Frame.Texture;
             entity2.Position = new SlimDX.Vector3(pos.x, pos.y, CalcZ(layer));
-            entity2.Factor = sprite.Frame.Resolution;
+            entity2.Factor = nativeSprite.Frame.Resolution;
             device.AddEntity(entity2);
         }
 
-        public void RenderSprite(Graphics.Sprite sprite, Vector2 pos, Vector2 srcPos, int srcWidth, int srcHeight)
+        public void RenderSprite(ISprite sprite, Vector2 pos, Vector2 srcPos, int srcWidth, int srcHeight, int color)
         {
-            //Rectangle rc = new Rectangle(srcX, srcY, srcWidth, srcHeight);
-            //if (sprite.Animation != null && sprite.Animation.Progressive && sprite.Frames != null)
-            //    spriteRenderer.Draw(sprite.Frames[0].Texture, rc, new SlimDX.Vector3(0, 0, 0), new SlimDX.Vector3(x, y, CalcZ(layer) + 0.001f), new SlimDX.Color4(1, 1, 1, 1));
-            //spriteRenderer.Draw(sprite.Frame.Texture, rc, new SlimDX.Vector3(0, 0, 0), new SlimDX.Vector3(x, y, CalcZ(layer)), new SlimDX.Color4(1, 1, 1, 1));
-        }
-
-        public void RenderSprite(Graphics.Sprite sprite, Vector2 pos, Vector2 srcPos, int srcWidth, int srcHeight, int color)
-        {
-            //Rectangle rc = new Rectangle(srcX, srcY, srcWidth, srcHeight);
-            //if (sprite.Animation != null && sprite.Animation.Progressive && sprite.Frames != null)
-            //    spriteRenderer.Draw(sprite.Frames[0].Texture, rc, new SlimDX.Vector3(0, 0, 0), new SlimDX.Vector3(x, y, CalcZ(layer) + 0.001f), new SlimDX.Color4(color));
-            //spriteRenderer.Draw(sprite.Frame.Texture, rc, new SlimDX.Vector3(0, 0, 0), new SlimDX.Vector3(x, y, CalcZ(layer)), new SlimDX.Color4(color));
+            if (sprite is not SlimDx.Graphics.Sprite nativeSprite) return;
 
             Graphics.SpriteEntity entity = new Graphics.SpriteEntity();
             entity.Rectangle = new Rectangle(srcPos.x, srcPos.y, srcWidth, srcHeight);
             entity.Color = new SlimDX.Color4(color);
-            entity.Factor = sprite.Frame.Resolution;
+            entity.Factor = nativeSprite.Frame.Resolution;
 
             long now = System.Diagnostics.Stopwatch.GetTimestamp();
-            if (now - sprite.Frame.TimeStamp < (long)(Stopwatch.Frequency / popInSpeed) && popInSpeed != 0)
+            if (now - nativeSprite.Frame.TimeStamp < (long)(Stopwatch.Frequency / popInSpeed) && popInSpeed != 0)
             {
-                entity.Color.Alpha *= (now - sprite.Frame.TimeStamp) / (float)Stopwatch.Frequency * popInSpeed;
+                entity.Color.Alpha *= (now - nativeSprite.Frame.TimeStamp) / (float)Stopwatch.Frequency * popInSpeed;
             }
 
-            if (sprite.Animation != null && sprite.Animation.Progressive && sprite.Frames != null)
+            if (nativeSprite.Animation != null && nativeSprite.Animation.Progressive && nativeSprite.Frames != null)
             {
-                entity.Texture = sprite.Frames[0].Texture;
+                entity.Texture = nativeSprite.Frames[0].Texture;
                 entity.Position = new SlimDX.Vector3(pos.x, pos.y, CalcZ(layer) + 0.001f);
                 device.AddEntity(entity);
             }
@@ -320,9 +190,9 @@ namespace Burntime.Platform
             Graphics.SpriteEntity entity2 = new Burntime.Platform.Graphics.SpriteEntity();
             entity2.Rectangle = entity.Rectangle;
             entity2.Color = entity.Color;
-            entity2.Texture = sprite.Frame.Texture;
+            entity2.Texture = nativeSprite.Frame.Texture;
             entity2.Position = new SlimDX.Vector3(pos.x, pos.y, CalcZ(layer));
-            entity2.Factor = sprite.Frame.Resolution;
+            entity2.Factor = nativeSprite.Frame.Resolution;
             device.AddEntity(entity2);
         }
 
@@ -373,7 +243,7 @@ namespace Burntime.Platform
             form = new RenderForm();
             form.Text = App.Title;
             form.engine = this;
-            form.ClientSize = new Size(resWidth, resHeight);
+            form.ClientSize = new Size(Resolution.Native.x, Resolution.Native.y);
 #warning slimdx todo
             //form.Icon = App.Icon;
 
@@ -382,11 +252,11 @@ namespace Burntime.Platform
             form.Text += " DEBUG";
 #endif
 
-            device = new Graphics.RenderDevice(this);
+            device = new RenderDevice(this);
             if (!device.Initialize(form))
                 return;
 
-            mainTarget = new Graphics.RenderTarget(this, new Rect(new Vector2(), new Vector2(gameWidth, gameHeight)));
+            MainTarget = new Graphics.RenderTarget(this, new Rect(Vector2.Zero, Resolution.Game));
             music = new Burntime.Platform.Music.MusicPlayback(form);
 
             Log.Info("Start resource manager thread...");
@@ -398,7 +268,7 @@ namespace Burntime.Platform
             Log.Info("Start render thread...");
             // run render thread
             device.Start();
-            device.BlendSpeed = cfg["engine"].GetFloat("scene_blend");
+            BlendOverlay.Speed = cfg["engine"].GetFloat("scene_blend");
 
             Log.Info("Start game thread...");
             // run process thread
@@ -479,8 +349,8 @@ namespace Burntime.Platform
                         if (!crashed)
                         {
                             app.Process(processTime.Elapsed);
-                            mainTarget.elapsed = processTime.Elapsed;
-                            app.Render(mainTarget);
+                            MainTarget.Elapsed = processTime.Elapsed;
+                            app.Render(MainTarget);
                         }
                     }
                     catch (Exception e)
@@ -506,8 +376,8 @@ namespace Burntime.Platform
                 else
                 {
                     app.Process(processTime.Elapsed);
-                    mainTarget.elapsed = processTime.Elapsed;
-                    app.Render(mainTarget);
+                    MainTarget.Elapsed = processTime.Elapsed;
+                    app.Render(MainTarget);
                 }
 
                 device.End();
@@ -531,21 +401,21 @@ namespace Burntime.Platform
         public DeviceManager DeviceManager { get; set; }
         internal Resource.ResourceManager ResourceManager = null;
         
-        Graphics.RenderTarget mainTarget;
-
-        public Graphics.RenderTarget MainTarget
-        {
-            get { return mainTarget; }
-        }
+        public RenderTarget MainTarget { get; private set; }
 
         internal void OnMouseMove(int x, int y)
         {
-            DeviceManager.MouseMove(new Vector2((int)((float)x * gameWidth / form.ClientSize.Width), (int)((float)y * gameHeight / form.ClientSize.Height)));
+            DeviceManager.MouseMove(new Vector2(
+                (int)((float)x * Resolution.Game.x / form.ClientSize.Width), 
+                (int)((float)y * Resolution.Game.y / form.ClientSize.Height)));
         }
 
         internal void OnMouseClick(int x, int y, bool right)
         {
-            DeviceManager.MouseClick(new Vector2((int)((float)x * gameWidth / form.ClientSize.Width), (int)((float)y * gameHeight / form.ClientSize.Height)), right ? MouseButton.Right : MouseButton.Left);
+            DeviceManager.MouseClick(new Vector2(
+                (int)((float)x * Resolution.Game.x / form.ClientSize.Width), 
+                (int)((float)y * Resolution.Game.y / form.ClientSize.Height)), 
+                right ? MouseButton.Right : MouseButton.Left);
         }
 
         internal void OnMouseLeave()

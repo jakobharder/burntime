@@ -68,11 +68,12 @@ namespace Burntime.Game
 
             BurntimeClassic game = new();
 
-            engine.SetGameResolution(game.VerticalRatio, game.Resolutions);
+            engine.Resolution.VerticalCorrection = game.VerticalCorrection;
+            engine.Resolution.GameResolutions = game.Resolutions;
 
             game.Engine = engine;
             game.SceneManager = new SceneManager(game);
-            game.DeviceManager = new DeviceManager(engine.Resolution, engine.GameResolution);
+            game.DeviceManager = new DeviceManager(engine.Resolution.Native, engine.Resolution.Game);
             game.Engine.DeviceManager = game.DeviceManager;
 
             game.Initialize(new ResourceManager(engine));

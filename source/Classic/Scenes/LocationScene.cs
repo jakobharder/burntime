@@ -35,7 +35,7 @@ namespace Burntime.Classic
         public LocationScene(Module App)
             : base(App)
         {
-            Size = app.Engine.GameResolution;
+            Size = app.Engine.Resolution.Game;
 
             view = new MapView(this, App);
             view.Position = new Vector2(16, 0);
@@ -231,7 +231,7 @@ namespace Burntime.Classic
             return true;
         }
 
-        public override void OnRender(IRenderTarget Target)
+        public override void OnRender(RenderTarget Target)
         {
             if (app.MouseImage != null)
             {

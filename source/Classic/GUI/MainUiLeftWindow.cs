@@ -26,7 +26,7 @@ namespace Burntime.Classic
         public MainUiLeftWindow(Module App)
             : base(App)
         {
-            Size = app.Engine.GameResolution;
+            Size = app.Engine.Resolution.Game;
 
             font = new GuiFont(BurntimeClassic.FontName, PixelColor.White);
             playerColor = new GuiFont(BurntimeClassic.FontName, PixelColor.White);
@@ -116,7 +116,7 @@ namespace Burntime.Classic
             mapView.Size = new Vector2(size.x - 66, size.y);
         }
 
-        public override void OnRender(IRenderTarget Target)
+        public override void OnRender(RenderTarget Target)
         {
             Target.RenderRect(new Vector2(0, 0), new Vector2(66, Size.y), new PixelColor(0, 0, 0));
 

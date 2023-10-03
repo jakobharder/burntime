@@ -18,6 +18,9 @@ namespace Burntime.Data.BurnGfx
         Burntime.Platform.IO.File reader;
         Dictionary<char, CharInfo> charInfo;
 
+        public PixelColor Color { get; set; } = PixelColor.White;
+        public PixelColor Shadow { get; set; } = PixelColor.Black;
+
         public void Process(ResourceID id)
         {
             reader = Burntime.Platform.IO.FileSystem.GetFile(id.File).GetSubFile(0, -1);
@@ -46,7 +49,7 @@ namespace Burntime.Data.BurnGfx
 
         }
 
-        public void Render(System.IO.Stream stream, int stride, PixelColor fore, PixelColor back)
+        public void Render(System.IO.Stream stream, int stride)
         {
             ByteBuffer buffer = new ByteBuffer(Size.x, Size.y, new PixelColor[Size.x * Size.y]);
 
@@ -54,7 +57,7 @@ namespace Burntime.Data.BurnGfx
             for (char c = ' '; c <= 'z'; c++)
             {
                 chars[c - ' '].spritePos = new Vector2(pos, 0);
-                DrawText(buffer, pos, 0, "" + c, false, fore, back);
+                DrawText(buffer, pos, 0, "" + c, false, Color, Shadow);
                 pos += chars[c - ' '].width;
             }
 
@@ -62,7 +65,7 @@ namespace Burntime.Data.BurnGfx
             foreach (char c in german)
             {
                 chars[translateChar(c)].spritePos = new Vector2(pos, 0);
-                DrawText(buffer, pos, 0, "" + c, false, fore, back);
+                DrawText(buffer, pos, 0, "" + c, false, Color, Shadow);
                 pos += chars[translateChar(c)].width;
             }
 

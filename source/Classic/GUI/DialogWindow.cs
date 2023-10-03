@@ -193,7 +193,7 @@ namespace Burntime.Classic
             return base.OnMouseMove(Position);
         }
 
-        public override void OnRender(IRenderTarget target)
+        public override void OnRender(RenderTarget target)
         {
             target.RenderRect(FramePos, FrameSize, new PixelColor(128, 0, 0, 0));
 

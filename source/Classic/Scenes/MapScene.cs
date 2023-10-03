@@ -26,7 +26,7 @@ namespace Burntime.Classic
         public MapScene(Module App)
             : base(App)
         {
-            Size = app.Engine.GameResolution;
+            Size = app.Engine.Resolution.Game;
             BurntimeClassic classic = app as BurntimeClassic;
 
             gui = classic.NewGui ? new MainUiLeftWindow(App) : new MainUiOriginalWindow(App);
@@ -90,7 +90,7 @@ namespace Burntime.Classic
             return base.OnKeyPress(key);
         }
 
-        public override void OnRender(IRenderTarget Target)
+        public override void OnRender(RenderTarget Target)
         {
             if (app.MouseImage != null)
             {

@@ -42,7 +42,7 @@ namespace Burntime.Classic.Maps
             mapState = world.CurrentLocation as Location;
         }
 
-        public void RenderOverlay(IRenderTarget target, Vector2 offset, Vector2 size)
+        public void RenderOverlay(RenderTarget target, Vector2 offset, Vector2 size)
         {
             if (mapState != null)
             {

@@ -30,7 +30,7 @@ namespace Burntime.Classic
         {
             Background = "sta.pac";
             Music = "15_MUS 15_HSC.ogg";
-            Position = (app.Engine.GameResolution - new Vector2(320, 200)) / 2;
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
             copyright = new GuiFont(BurntimeClassic.FontName, new PixelColor(164, 164, 164)) { Borders = TextBorders.Screen };
 
@@ -160,7 +160,7 @@ namespace Burntime.Classic
             PlayerTwoSwitch.Table = conversionTable;
         }
 
-        public override void OnRender(IRenderTarget Target)
+        public override void OnRender(RenderTarget Target)
         {
             base.OnRender(Target);
 
@@ -228,7 +228,7 @@ namespace Burntime.Classic
             if (PlayerOneFace.FaceID == -1 && PlayerTwoFace.FaceID == -1)
                 return;
 
-            app.Engine.Blend = 1;
+            app.Engine.BlendOverlay.FadeOut();
 
             GameCreation creation = new GameCreation(app as BurntimeClassic);
 

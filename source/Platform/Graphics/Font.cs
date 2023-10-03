@@ -59,22 +59,22 @@ namespace Burntime.Platform.Graphics
             set { borders = value; }
         }
 
-        public void DrawText(IRenderTarget Target, Vector2 Position, String Text)
+        public void DrawText(RenderTarget Target, Vector2 Position, String Text)
         {
             DrawText(Target, Position, Text, TextAlignment.Left);
         }
 
-        public void DrawText(IRenderTarget Target, Vector2 Position, String Text, TextAlignment Align)
+        public void DrawText(RenderTarget Target, Vector2 Position, String Text, TextAlignment Align)
         {
             DrawText(Target, Position, Text, Align, VerticalTextAlignment.Center);
         }
 
-        public void DrawText(IRenderTarget Target, Vector2 Position, String Text, TextAlignment Align, VerticalTextAlignment VertAlign)
+        public void DrawText(RenderTarget Target, Vector2 Position, String Text, TextAlignment Align, VerticalTextAlignment VertAlign)
         {
             DrawText(Target, Position, Text, Align, VertAlign, 1);
         }
 
-        public void DrawText(IRenderTarget Target, Vector2 Position, String Text, TextAlignment Align, VerticalTextAlignment VertAlign, float alpha)
+        public void DrawText(RenderTarget Target, Vector2 Position, String Text, TextAlignment Align, VerticalTextAlignment VertAlign, float alpha)
         {
             Target.Layer++;
             if (Info.UseBackColor)
@@ -89,7 +89,7 @@ namespace Burntime.Platform.Graphics
             Target.Layer--;
         }
 
-        void DrawText(IRenderTarget target, Vector2 pos, String text, TextAlignment Align, VerticalTextAlignment VertAlign, PixelColor color)
+        void DrawText(RenderTarget target, Vector2 pos, String text, TextAlignment Align, VerticalTextAlignment VertAlign, PixelColor color)
         {
             // TODO: text align
             if (text == null || text.Length == 0)
@@ -119,15 +119,15 @@ namespace Burntime.Platform.Graphics
                 {
                     Vector2 lt = new Vector2();
                     Vector2 rb = lt + target.Size - new Vector2(GetWidth(str), GetHeight());
-                    offset.ThresholdLT(lt);
-                    offset.ThresholdGT(rb);
+                    offset.Min(lt);
+                    offset.Max(rb);
                 }
                 else if (borders == TextBorders.Screen)
                 {
                     Vector2 lt = -target.ScreenOffset + 2;
                     Vector2 rb = lt + target.ScreenSize - new Vector2(GetWidth(str), GetHeight()) - 2;
-                    offset.ThresholdLT(lt);
-                    offset.ThresholdGT(rb);
+                    offset.Min(lt);
+                    offset.Max(rb);
                 }
 
                 target.SelectSprite(sprite);
@@ -142,7 +142,7 @@ namespace Burntime.Platform.Graphics
             }
         }
 
-        int DrawChar(IRenderTarget target, char ch, Vector2 pos, PixelColor color)
+        int DrawChar(RenderTarget target, char ch, Vector2 pos, PixelColor color)
         {
             CharInfo info = charInfo[translateChar(ch)];
             target.DrawSelectedSprite(pos + new Vector2(0, offset), new Rect(info.spritePos, new Vector2(info.imgWidth, info.imgHeight)), color);

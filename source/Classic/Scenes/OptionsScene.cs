@@ -31,7 +31,7 @@ namespace Burntime.Classic
         {
             Background = "opti.pac";
             Music = "16_MUS 16_HSC.ogg";
-            Position = (app.Engine.GameResolution - new Vector2(320, 200)) / 2;
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
             disabled = new GuiFont(BurntimeClassic.FontName, new PixelColor(100, 100, 100));
             red = new GuiFont(BurntimeClassic.FontName, new PixelColor(164, 0, 0));

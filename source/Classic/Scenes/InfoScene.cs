@@ -37,7 +37,7 @@ namespace Burntime.Classic.Scenes
         {
             Background = "info.pac";
             Music = "13_MUS 13_HSC.ogg";
-            Position = (app.Engine.GameResolution - new Vector2(320, 200)) / 2;
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
 
             Button button = new Button(App);
@@ -99,7 +99,7 @@ namespace Burntime.Classic.Scenes
             technicianImage = "syssze.raw?48";
         }
 
-        public override void OnRender(IRenderTarget target)
+        public override void OnRender(RenderTarget target)
         {
             BurntimeClassic classic = app as BurntimeClassic;
             int city = classic.InfoCity;
@@ -144,7 +144,7 @@ namespace Burntime.Classic.Scenes
             txt.ClearArguments();
         }
 
-        private void RenderNPCLine(IRenderTarget target, Vector2 position, int npcCount, ISprite image)
+        private void RenderNPCLine(RenderTarget target, Vector2 position, int npcCount, ISprite image)
         {
             target.Layer += 2;
 

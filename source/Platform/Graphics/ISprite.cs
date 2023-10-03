@@ -14,9 +14,18 @@ public abstract class ISprite : DataObject
     public int Width => Size.x;
     public int Height => Size.y;
 
-    public abstract void Touch();
+    /// <summary>
+    /// Trigger texture loading.
+    /// </summary>
+    /// <returns>true when already loaded</returns>
+    public abstract bool Touch();
     public abstract void Update(float elapsed);
-    public abstract void Unload();
+
+    /// <summary>
+    /// Free all texture memory.
+    /// </summary>
+    /// <returns>freed memory in bytes</returns>
+    public abstract int Unload();
 
     public abstract ISprite Clone();
 }

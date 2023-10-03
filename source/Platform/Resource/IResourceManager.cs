@@ -34,4 +34,6 @@ public interface IResourceManager
     IDataProcessor GetDataProcessor(string format);
 
     void SetResourceReplacement(string file);
+
+    //LoadingCounter LoadingCounter { get; }
 }

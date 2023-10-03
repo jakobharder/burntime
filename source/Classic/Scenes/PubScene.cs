@@ -25,7 +25,7 @@ namespace Burntime.Classic.Scenes
             BurntimeClassic classic = app as BurntimeClassic;
             Background = classic.InventoryBackground == 14 ? "bar.pac" : "pub1.pac";
             Music = "19_MUS 19_HSC.ogg";
-            Position = (app.Engine.GameResolution - new Vector2(320, 200)) / 2;
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
             if (classic.InventoryBackground == 14)
             {
@@ -102,7 +102,7 @@ namespace Burntime.Classic.Scenes
             grid.Clear();
         }
 
-        public override void OnRender(IRenderTarget target)
+        public override void OnRender(RenderTarget target)
         {
             base.OnRender(target);
 

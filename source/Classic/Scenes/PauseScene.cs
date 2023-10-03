@@ -19,14 +19,14 @@ namespace Burntime.Classic.Scenes
             : base(App)
         {
             Size = new Burntime.Platform.Vector2(320, 200);
-            Position = (app.Engine.GameResolution - new Vector2(320, 200)) / 2;
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
             //Background = new SpriteImage(App, "blz.pac");
             font = new GuiFont(BurntimeClassic.FontName, new PixelColor(255, 255, 255));
             CaptureAllMouseClicks = true;
         }
 
-        public override void OnRender(IRenderTarget Target)
+        public override void OnRender(RenderTarget Target)
         {
             font.DrawText(Target, new Vector2(160, 100), new GuiString("@newburn?11"), TextAlignment.Center, VerticalTextAlignment.Center);
         }

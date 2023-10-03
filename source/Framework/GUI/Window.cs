@@ -181,8 +181,8 @@ namespace Burntime.Framework.GUI
 
         public void MoveInside(Rect Rectangle)
         {
-            pos.ThresholdLT(Rectangle.Position);
-            pos.ThresholdGT(Rectangle.Position + Rectangle.Size - Size);
+            pos.Min(Rectangle.Position);
+            pos.Max(Rectangle.Position + Rectangle.Size - Size);
             RefreshBoundings();
         }
 
@@ -249,7 +249,7 @@ namespace Burntime.Framework.GUI
                 OnVKeyPress(key);
         }
 
-        internal virtual void Render(IRenderTarget Target)
+        internal virtual void Render(RenderTarget Target)
         {
             if (!visible)
                 return;
@@ -291,6 +291,6 @@ namespace Burntime.Framework.GUI
         // frame update
         public virtual void OnUpdate(float Elapsed) { }
         // render
-        public virtual void OnRender(IRenderTarget Target) { }
+        public virtual void OnRender(RenderTarget Target) { }
     }
 }

@@ -84,7 +84,7 @@ namespace Burntime.Classic.GUI
 
         int hover;
 
-        public override void OnRender(IRenderTarget target)
+        public override void OnRender(RenderTarget target)
         {
             target.DrawSprite(Vector2.Zero, top);
 

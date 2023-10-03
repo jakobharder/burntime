@@ -158,7 +158,7 @@ namespace Burntime.Classic.GUI
             get { return entrance; }
         }
 
-        public override void OnRender(IRenderTarget Target)
+        public override void OnRender(RenderTarget Target)
         {
             base.OnRender(Target);
 
@@ -310,8 +310,8 @@ namespace Burntime.Classic.GUI
             if (border != Vector2f.Zero && Scroll != null)
                 Scroll.Invoke(this, new MapScrollArgs(position));
 
-            position.ThresholdGT(0);
-            position.ThresholdLT(Boundings.Size - map.TileSize * map.Size);
+            position.Max(0);
+            position.Min(Boundings.Size - map.TileSize * map.Size);
 
             // map is smaller than screen, center it
             if (map.TileSize.x * map.Size.x < Boundings.Size.x)

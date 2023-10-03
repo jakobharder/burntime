@@ -51,7 +51,7 @@ namespace Burntime.Classic.Scenes
         {
             timeout = new FadingHelper();
             Music = "20_MUS 20_HSC.ogg";
-            Position = (app.Engine.GameResolution - new Vector2(320, 200)) / 2;
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
             Size = new Vector2(320, 200);
             app.RenderMouse = false;
@@ -108,10 +108,10 @@ namespace Burntime.Classic.Scenes
         protected override void OnActivateScene(object parameter)
         {
             if (oldSpeed == 0)
-                oldSpeed = app.Engine.BlendSpeed;
+                oldSpeed = app.Engine.BlendOverlay.Speed;
 #warning slimdx todo
             //app.Engine.Music.Volume = 0;
-            app.Engine.BlendSpeed = 0.9f;
+            app.Engine.BlendOverlay.Speed = 0.9f;
 #warning slimdx todo
             //app.Engine.MusicBlend = false;
             //app.Engine.Music.IsMuted = true;
@@ -140,7 +140,7 @@ namespace Burntime.Classic.Scenes
 
         protected override void OnInactivateScene()
         {
-            app.Engine.BlendSpeed = oldSpeed;
+            app.Engine.BlendOverlay.Speed = oldSpeed;
             app.RenderMouse = true;
         }
 
@@ -164,10 +164,10 @@ namespace Burntime.Classic.Scenes
 
             if (timeout.IsOut)
             {
-                app.Engine.Blend = 1;
+                app.Engine.BlendOverlay.FadeOut();
             }
 
-            if (app.Engine.IsBlended)
+            if (app.Engine.BlendOverlay.IsBlended)
             {
                 if (index >= pages.Length - 1)
                 {
@@ -180,7 +180,7 @@ namespace Burntime.Classic.Scenes
                     timeout.Speed = 1 / pages[index].Time;
                     timeout.FadeOut();
                     scroll = 0;
-                    app.Engine.Blend = 0;
+                    app.Engine.BlendOverlay.FadeIn();
 
                     view.Map = pages[index].MapData;
                 }
@@ -212,7 +212,7 @@ namespace Burntime.Classic.Scenes
             }
         }
 
-        public override void OnRender(IRenderTarget target)
+        public override void OnRender(RenderTarget target)
         {
             base.OnRender(target);
 

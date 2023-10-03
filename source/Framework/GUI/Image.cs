@@ -32,7 +32,7 @@ namespace Burntime.Framework.GUI
             background = file;
         }
 
-        public override void OnRender(IRenderTarget Target)
+        public override void OnRender(RenderTarget Target)
         {
             if (background != null)
             {

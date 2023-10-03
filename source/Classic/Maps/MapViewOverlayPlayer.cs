@@ -31,7 +31,7 @@ namespace Burntime.Classic.Maps
             map = (world as ClassicGame).World.Map;
         }
 
-        public void RenderOverlay(IRenderTarget target, Vector2 offset, Vector2 size)
+        public void RenderOverlay(RenderTarget target, Vector2 offset, Vector2 size)
         {
             if (map != null)
             {

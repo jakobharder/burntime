@@ -73,7 +73,7 @@ namespace Burntime.Classic.GUI
             font = new GuiFont(BurntimeClassic.FontName, PixelColor.White);
         }
 
-        public override void OnRender(Platform.Graphics.IRenderTarget target)
+        public override void OnRender(Platform.Graphics.RenderTarget target)
         {
             base.OnRender(target);
 

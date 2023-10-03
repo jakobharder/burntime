@@ -28,7 +28,13 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="Graphics\RenderTarget.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Content Include="icon256.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Graphics\RenderTarget.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\BurnGfx\Burntime.BurnGfx.csproj" />

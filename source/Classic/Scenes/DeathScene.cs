@@ -21,7 +21,7 @@ namespace Burntime.Classic.Scenes
             Background = "film_00.pac";
             Music = "09_MUS 09_HSC.ogg";
             CaptureAllMouseClicks = true;
-            Position = (app.Engine.GameResolution - new Vector2(320, 200)) / 2;
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
             Image ani = new Image(app);
             ani.Background = "film_00.ani?0-10?p";
@@ -75,7 +75,7 @@ namespace Burntime.Classic.Scenes
             }
         }
 
-        public override void OnRender(IRenderTarget target)
+        public override void OnRender(RenderTarget target)
         {
             base.OnRender(target);
 

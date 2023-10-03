@@ -35,11 +35,11 @@ namespace Burntime.Classic
         public override Vector2[] Resolutions { get { return new Vector2[] { new Vector2(480, 225), new Vector2(384, 240) }; } }
         //public override Vector2[] Resolutions { get { return new Vector2[] { new Vector2(640, 300), new Vector2(384, 240) }; } }
 
-        public bool IsWideScreen { get { return Engine.Resolution.x / (float)Engine.Resolution.y > 1.5f; } }
+        public bool IsWideScreen { get { return Engine.Resolution.Native.Ratio > 1.5f; } }
 
         // Burntime's ratio is 8:5. We need to scale height by 1.2 (320x200 where screens today would be multiple of 320x240).
         // But to get a clean tile resolution of 32x38 use 1.1875
-        public override float VerticalRatio { get { return 1.0f / 32.0f * 38.0f; } }
+        public override float VerticalCorrection { get { return 1.0f / 32.0f * 38.0f; } }
 
         public override System.Drawing.Icon Icon
         {
@@ -63,13 +63,6 @@ namespace Burntime.Classic
             SceneManager.SetScene("IntroScene");
         }
 
-        protected override void OnInitialize()
-        {
-
-
-            base.OnInitialize();
-        }
-
         protected override void OnRun()
         {
             FileSystem.AddPackage("music", "game/classic_music");
@@ -91,7 +84,7 @@ namespace Burntime.Classic
             // reload settings
             Settings.Open("settings.txt");
 
-            Engine.Resolution = Settings["system"].GetVector2("resolution");
+            Engine.Resolution.Native = Settings["system"].GetVector2("resolution");
 #warning slimdx todo
             //Engine.FullScreen = !Settings["system"].GetBool("windowmode");
             //Engine.UseTextureFilter = Settings["system"].GetBool("filter");
@@ -103,16 +96,9 @@ namespace Burntime.Classic
 
             bool useHighResFont = Settings["system"].GetBool("highres_font");
 
-            // add gfx packages
-            /*if (Settings["system"].GetBool("2xgfx"))
-            {
-                FileSystem.AddPackage("gfx", "game/gfx");
-                FileSystem.AddPackage("tiles", "game/tiles");
-                ResourceManager.SetResourceReplacement("2xgfx.txt");
-            }*/
-
             // add newgfx package
-            if (Settings["system"].GetBool("newgfx"))
+#warning TODO slimdx
+            //if (Settings["system"].GetBool("newgfx"))
             {
                 FileSystem.AddPackage("newgfx", "game/classic_newgfx");
                 if (FileSystem.ExistsFile("newgfx.txt"))
@@ -123,11 +109,12 @@ namespace Burntime.Classic
                     useHighResFont = true;
                 }
             }
-            else if (DateTime.Now.Month == 12 && 
-                (DateTime.Now.Day >= 24 && DateTime.Now.Day <= 31 || DateTime.Now.Day == 6))
-            {
-                ResourceManager.SetResourceReplacement("santa.txt");
-            }
+#warning TODO slimdx
+            //else if (DateTime.Now.Month == 12 && 
+            //    (DateTime.Now.Day >= 24 && DateTime.Now.Day <= 31 || DateTime.Now.Day == 6))
+            //{
+            //    ResourceManager.SetResourceReplacement("santa.txt");
+            //}
 
             // set highres font
             if (useHighResFont)

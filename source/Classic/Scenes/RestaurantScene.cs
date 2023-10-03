@@ -24,7 +24,7 @@ namespace Burntime.Classic.Scenes
             : base(app)
         {
             Music = "01_MUS 01_HSC.ogg";
-            Position = (app.Engine.GameResolution - new Vector2(320, 200)) / 2;
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
             BurntimeClassic classic = app as BurntimeClassic;
 
@@ -85,7 +85,7 @@ namespace Burntime.Classic.Scenes
             grid.Clear();
         }
 
-        public override void OnRender(IRenderTarget target)
+        public override void OnRender(RenderTarget target)
         {
             base.OnRender(target);
 

@@ -103,7 +103,7 @@ namespace Burntime.Framework
 
         public virtual String Title { get { return ""; } }
         public virtual Vector2[] Resolutions { get { return new Vector2[] { new Vector2(640, 480) }; } }
-        public virtual float VerticalRatio { get { return 1; } }
+        public virtual float VerticalCorrection { get { return 1; } }
         public virtual System.Drawing.Icon Icon { get { return null; } }
 
         protected static Module instance;
@@ -157,20 +157,20 @@ namespace Burntime.Framework
             ActiveClient = null;
         }
 
-        internal void Render(IRenderTarget Target)
+        public void Render(RenderTarget target)
         {
-            Target.Layer = 0;
+            target.Layer = 0;
 
-            SceneManager.Render(Target);
+            SceneManager.Render(target);
 
             if (MouseImage != null && RenderMouse)
             {
-                Target.Layer = 255;
-                Target.DrawSprite(DeviceManager.Mouse.Position, MouseImage);
+                target.Layer = 255;
+                target.DrawSprite(DeviceManager.Mouse.Position, MouseImage);
             }
         }
 
-        internal void Process(float Elapsed)
+        public void Process(float Elapsed)
         {
             if (!running)
             {
@@ -219,7 +219,7 @@ namespace Burntime.Framework
         public Vector2[] Resolutions { get { return wrap.Resolutions; } }
         public System.Drawing.Icon Icon { get { return wrap.Icon; } }
 
-        public void Render(IRenderTarget Target)
+        public void Render(RenderTarget Target)
         {
             wrap.Render(Target);
         }

@@ -102,7 +102,7 @@ namespace Burntime.Classic.GUI
             return base.OnMouseClick(Position, Button);
         }
 
-        public override void OnRender(IRenderTarget Target)
+        public override void OnRender(RenderTarget Target)
         {
             base.OnRender(Target);
 
@@ -110,7 +110,7 @@ namespace Burntime.Classic.GUI
             if (GetTopMostItem() == this && text != null)
             {
                 Target.Layer++;
-                IRenderTarget bigger = Target.GetSubBuffer(new Rect(-50, -50, 132, 132));
+                RenderTarget bigger = Target.GetSubBuffer(new Rect(-50, -50, 132, 132));
                 font.DrawText(bigger, new Vector2(66, 41), text, TextAlignment.Center, VerticalTextAlignment.Top);
             }
         }

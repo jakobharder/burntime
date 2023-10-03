@@ -35,7 +35,8 @@ namespace Burntime.Platform
         private Vector2 current = Vector2.Zero;
         private Nullable<Vector2> previous;
         private List<MouseClickInfo> clicks = new List<MouseClickInfo>();
-        private Nullable<Rect> boundings;
+        
+        public Rect? Boundings { get; set; }
 
         public MouseDevice(Vector2 resolution)
         {
@@ -47,16 +48,10 @@ namespace Burntime.Platform
             get { return current; }
             set
             {
-                if (Boundings.HasValue)
-                {
-                    current.ThresholdLT(boundings.Value.Position);
-                    current.ThresholdGT(boundings.Value.Position + boundings.Value.Size);
-                }
+                if (Boundings is not null)
+                    current.Clamp(Boundings.Value);
                 else
-                {
-                    current.ThresholdLT(0);
-                    current.ThresholdGT(resolution);
-                }
+                    current.ClampMaxExcluding(Vector2.Zero, resolution);
 
                 if (!previous.HasValue || previous.Value != current)
                     previous = current;
@@ -75,6 +70,11 @@ namespace Burntime.Platform
             }
         }
 
+        public void ClearPrevious()
+        {
+            previous = null;
+        }
+
         /// <summary>
         /// returns a copy, thread-safe
         /// </summary>
@@ -87,12 +87,6 @@ namespace Burntime.Platform
                     copy = clicks.ToArray();
                 return copy; 
             }
-        }
-
-        public Nullable<Rect> Boundings
-        {
-            get { return boundings; }
-            set { boundings = value; }
         }
 
         /// <summary>
@@ -198,27 +192,27 @@ namespace Burntime.Platform
 
     public class DeviceManager
     {
-        private readonly MouseDevice mouse_;
-        public IMouseDevice Mouse => mouse_;
+        private readonly MouseDevice _mouse;
+        public IMouseDevice Mouse => _mouse;
 
         public Keyboard Keyboard { get; } = new();
 
-        private readonly Vector2 gameResolution_;
+        private readonly Vector2 _gameResolution;
 
         public DeviceManager(Vector2 resolution, Vector2 gameResolution)
         {
-            mouse_ = new MouseDevice(resolution);
-            gameResolution_ = gameResolution;
+            _mouse = new MouseDevice(resolution);
+            _gameResolution = gameResolution;
         }
 
         public void MouseMove(Vector2 Position)
         {
-            mouse_.Position = new Vector2(Position);
+            _mouse.Position = new Vector2(Position);
         }
 
         public void MouseClick(Vector2 Position, MouseButton Button)
         {
-            mouse_.AddClick(new()
+            _mouse.AddClick(new()
             {
                 Position = new Vector2(Position),
                 Button = Button
@@ -227,16 +221,17 @@ namespace Burntime.Platform
 
         public void MouseLeave()
         {
-            Vector2 position = mouse_.Position;
+            if (_mouse.LastDirection == Vector2.Zero) return;
 
-            Vector2 direction = mouse_.LastDirection;
-            if (direction != Vector2.Zero)
-            {
-                while (position.x > 0 && position.y > 0 && position.x <= gameResolution_.x && position.y <= gameResolution_.y)
-                    position += direction;
+            Vector2 position = _mouse.Position;
 
-                mouse_.Position = position;
-            }
+            Rect bounds = new(Vector2.Zero, _gameResolution);
+            while (bounds.PointInside(position))
+                position += _mouse.LastDirection;
+
+            position.Clamp(bounds);
+            _mouse.Position = position;
+            _mouse.ClearPrevious();
         }
 
         public void KeyPress(char key)
@@ -251,7 +246,7 @@ namespace Burntime.Platform
 
         public void Refresh()
         {
-            mouse_.ClearClicks();
+            _mouse.ClearClicks();
             Keyboard.ClearKeys();
         }
     }
