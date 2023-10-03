@@ -386,7 +386,7 @@ DELETE}
 ...|A load}
 ...|A save}
 ...|A delete}
-Go to map}
+Back}
 Music ON}
 Restart}
 Exit}

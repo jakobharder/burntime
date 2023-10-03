@@ -1,12 +1,8 @@
-﻿using System;
-
-using Burntime.Platform;
-using Burntime.Platform.Graphics;
+﻿using Burntime.Platform;
 using Burntime.Framework;
 using Burntime.Framework.GUI;
 using Burntime.Classic.Logic.Generation;
 using Burntime.Platform.IO;
-using Burntime.Platform.Resource;
 
 namespace Burntime.Classic
 {
@@ -23,6 +19,7 @@ namespace Burntime.Classic
         Button delete;
         Button music;
         Button newgfx;
+        Button _buttonRestart;
 
         Button[] savegames = new Button[8];
 
@@ -70,14 +67,16 @@ namespace Burntime.Classic
             button.SetTextOnly();
             music = button;
             Windows += button;
-            button = new Button(App);
-            button.Font = red;
-            button.HoverFont = hover;
-            button.Text = "@burn?390";
-            button.Position = new Vector2(214, 105);
-            button.SetTextOnly();
-            button.Command += OnButtonRestart;
-            Windows += button;
+
+            Windows += _buttonRestart = new Button(App)
+            {
+                Font = red,
+                HoverFont = hover,
+                Text = "@burn?390",
+                Position = new Vector2(214, 105),
+                IsTextOnly = true
+            };
+            _buttonRestart.Command += OnButtonRestart;
 
             Windows += newgfx = new Button(App)
             {
@@ -147,6 +146,17 @@ namespace Burntime.Classic
             RefreshSaveGames();
             input.Name = "";
             newgfx.Text = BurntimeClassic.Instance.NewGfx ? "@newburn?17" : "@newburn?18";
+
+            if (app.SceneManager.LastScene == "MenuScene")
+            {
+                _buttonRestart.Font = disabled;
+                _buttonRestart.HoverFont = null;
+            }
+            else
+            {
+                _buttonRestart.Font = red;
+                _buttonRestart.HoverFont = hover;
+            }
         }
 
         void RefreshSaveGames()
@@ -244,8 +254,7 @@ namespace Burntime.Classic
 
         void OnDelete()
         {
-            if (Burntime.Platform.IO.FileSystem.ExistsFile("savegame/" + input.Name + ".sav"))
-                Burntime.Platform.IO.FileSystem.RemoveFile("savegame/" + input.Name + ".sav");
+            FileSystem.RemoveFile("savegame/" + input.Name + ".sav");
 
             input.Name = "";
             RefreshSaveGames();
@@ -276,6 +285,8 @@ namespace Burntime.Classic
 
         void OnButtonRestart()
         {
+            if (app.SceneManager.LastScene == "MenuScene") return;
+
             app.StopGame();
             app.SceneManager.SetScene("MenuScene");
         }

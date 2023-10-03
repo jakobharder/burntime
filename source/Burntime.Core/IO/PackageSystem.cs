@@ -325,6 +325,11 @@ public class PackageSystem
         return true;
     }
 
+    /// <summary>
+    /// Remove file if it exists.
+    /// </summary>
+    /// <param name="path"></param>
+    /// <returns>True if file doesn't exist or has been removed.</returns>
     public bool RemoveFile(FilePath path)
     {
         // always remove files in user path package

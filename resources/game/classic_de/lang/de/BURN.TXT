@@ -386,7 +386,7 @@ L™SCHEN}
 ...|A laden}
 ...|A speichern}
 ...|A l”schen}
-Zur Karte}
+Zurck}
 Musik AN}
 Neustart}
 Beenden}
