@@ -43,7 +43,7 @@ You can also mark the `Launcher` as start-up project to change settings and debu
 
 ## Changes
 
-See [Changelog.txt](./resources/ChangeLog.txt)
+See [Changelog.md](./resources/ChangeLog.md)
 
 ## Credits
 
@@ -51,3 +51,5 @@ This project is not affiliated in any way with Max Design and/or the original cr
 The original game, graphics and other assets are the property of Max Design and their original creators.
 
 Thank you Martin Lasser for allowing non-commercial community remake efforts to use the original graphics!
+
+See full [list of contributors](./resources/README.md#notes)
