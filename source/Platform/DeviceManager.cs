@@ -118,6 +118,7 @@ namespace Burntime.Platform
         F4 = 4,//System.Windows.Forms.Keys.F4,
         Escape = 5,//System.Windows.Forms.Keys.Escape,
         Pause = 6,//System.Windows.Forms.Keys.Pause
+        Other = 7
     }
 
     public struct Key

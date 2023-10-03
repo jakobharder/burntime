@@ -169,6 +169,56 @@ namespace Burntime.MonoGl
             }
         }
 
+        Microsoft.Xna.Framework.Input.KeyboardState _previousKeyboardState;
+        static char ConvertKeyToChar(Microsoft.Xna.Framework.Input.Keys key, Microsoft.Xna.Framework.Input.KeyboardState state)
+        {
+            bool shift = state.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.LeftShift) || state.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.LeftShift);
+            if ((int)key > 64 && (int)key < 91)
+            {
+                return shift ? key.ToString()[0] : key.ToString().ToLower()[0];
+            }
+            else if (!shift && (int)key > 47 && (int)key < 58)
+            {
+                return key.ToString().TrimStart('D')[0];
+            }
+            else if (key == Microsoft.Xna.Framework.Input.Keys.Back)
+            {
+                return (char)8;
+            }
+            return '\0';
+        }
+
+        private void HandleKeyboardInput()
+        {
+            var keyboard = Microsoft.Xna.Framework.Input.Keyboard.GetState();
+            var keys = keyboard.GetPressedKeys();
+
+            foreach (var key in keys)
+            {
+                if (_previousKeyboardState.IsKeyUp(key))
+                {
+                    char charValue = ConvertKeyToChar(key, keyboard);
+                    if (charValue != 0)
+                        DeviceManager.KeyPress(charValue);
+                    else
+                    {
+                        DeviceManager.VKeyPress(key switch
+                            {
+                                Microsoft.Xna.Framework.Input.Keys.Escape => Platform.Keys.Escape,
+                                Microsoft.Xna.Framework.Input.Keys.Pause => Platform.Keys.Pause,
+                                Microsoft.Xna.Framework.Input.Keys.F1 => Platform.Keys.F1,
+                                Microsoft.Xna.Framework.Input.Keys.F2 => Platform.Keys.F2,
+                                Microsoft.Xna.Framework.Input.Keys.F3 => Platform.Keys.F3,
+                                Microsoft.Xna.Framework.Input.Keys.F4 => Platform.Keys.F4,
+                                _ => Platform.Keys.Other
+                            });
+                    }
+                }
+            }
+
+            _previousKeyboardState = keyboard;
+        }
+
         protected override void Update(Microsoft.Xna.Framework.GameTime gameTime)
         {
             //if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed
@@ -176,6 +226,7 @@ namespace Burntime.MonoGl
             //    Exit();
 
             HandleMouseInput();
+            HandleKeyboardInput();
 
             RenderDevice.Update();
 
