@@ -201,14 +201,14 @@ namespace Burntime.MonoGl
         #region render methods
         const float MAX_LAYERS = 256.0f;
         const float popInSpeed = 16.0f;
-        static float CalcZ(float Layer) => 1.0f - (Layer / MAX_LAYERS) * 0.9f;
+        static float CalcZ(float Layer) => 0.05f + (Layer / MAX_LAYERS) * 0.9f;
 
-        public void RenderRect(Platform.Vector2 pos, Platform.Vector2 size, uint color)
+        public void RenderRect(Platform.Vector2 pos, Platform.Vector2 size, PixelColor color)
         {
             SpriteEntity entity = new()
             {
                 Rectangle = new Rectangle(0, 0, size.x, size.y),
-                Color = new Color((uint)color),
+                Color = new Color(color.r, color.g, color.b, color.a),
                 Texture = SpriteFrame.EmptyTexture,
                 Position = new Vector3(pos.x, pos.y, CalcZ(Layer))
             };
@@ -248,14 +248,14 @@ namespace Burntime.MonoGl
             RenderDevice.AddEntity(entity2);
         }
 
-        public void RenderSprite(ISprite sprite, Platform.Vector2 pos, Platform.Vector2 srcPos, int srcWidth, int srcHeight, int color)
+        public void RenderSprite(ISprite sprite, Platform.Vector2 pos, Platform.Vector2 srcPos, int srcWidth, int srcHeight, PixelColor color)
         {
             if (sprite is not MonoGl.Graphics.Sprite nativeSprite || !nativeSprite.Touch()) return;
 
             Graphics.SpriteEntity entity = new()
             {
                 Rectangle = new Rectangle(srcPos.x, srcPos.y, srcWidth, srcHeight),
-                Color = new Color((uint)color),
+                Color = new Color(color.r, color.g, color.b, color.a),
                 Factor = nativeSprite.Frame.Resolution
             };
 

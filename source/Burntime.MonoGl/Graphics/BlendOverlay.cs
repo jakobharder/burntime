@@ -27,7 +27,7 @@ public class BlendOverlay : BlendOverlayBase
                 origin: Vector2.Zero,
                 scale: Vector2.One,
                 SpriteEffects.None,
-                layerDepth: 0.0f);
+                layerDepth: 1.0f);
         }
     }
 

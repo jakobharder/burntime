@@ -23,7 +23,7 @@ public class SpriteFrame : Platform.Graphics.GenericSpriteFrame<Texture2D>
     {
     }
 
-    public int LoadFromProcessor(ISpriteProcessor loader, RenderDevice renderDevice, bool keepSystemCopy = false)
+    public int LoadFromProcessor(ISpriteProcessor loader, bool keepSystemCopy = false)
     {
         const int PIXEL_BYTES = 4;
 
@@ -31,9 +31,8 @@ public class SpriteFrame : Platform.Graphics.GenericSpriteFrame<Texture2D>
         _usedMemory = _textureSize.Count * PIXEL_BYTES;
 
         _systemCopy = new byte[_usedMemory];
-        using MemoryStream stream = new(_systemCopy);
-        loader.Render(stream, _textureSize.x * PIXEL_BYTES);
-        stream.Dispose();
+        using (MemoryStream stream = new(_systemCopy))
+            loader.Render(stream, _textureSize.x * PIXEL_BYTES);
 
 #warning TODO how to avoid ARGB -> ABGR?
         for (int y = 0; y < _textureSize.y; y++)
@@ -45,15 +44,7 @@ public class SpriteFrame : Platform.Graphics.GenericSpriteFrame<Texture2D>
             }
         }
 
-        //var tex = renderDevice.CreateTexture(adjustedSize.x, adjustedSize.y);
-        //tex.SetData(_systemCopy);
-
-        //if (!keepSystemCopy)
-        //    _systemCopy = null;
-
-        //_texture = tex;
         Size = loader.Size;
-
         TimeStamp = Stopwatch.GetTimestamp();
         IsLoading = false;
         IsLoaded = true;

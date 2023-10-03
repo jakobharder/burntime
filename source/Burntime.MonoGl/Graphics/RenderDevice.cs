@@ -271,7 +271,7 @@ public class RenderDevice : IDisposable
     /// <param name="elapsedSeconds"></param>
     public void Render(float elapsedSeconds)
     {
-        _spriteBatch.Begin(SpriteSortMode.BackToFront, null, SamplerState.PointClamp);
+        _spriteBatch.Begin(SpriteSortMode.FrontToBack, Microsoft.Xna.Framework.Graphics.BlendState.NonPremultiplied, SamplerState.PointClamp);
 
         //SlimDX.Matrix lineMatrix = SlimDX.Matrix.AffineTransformation2D(1, new SlimDX.Vector2(), 0, new SlimDX.Vector2());
         //// TODO engine scale

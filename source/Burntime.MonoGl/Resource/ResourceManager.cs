@@ -67,7 +67,7 @@ namespace Burntime.Platform.Resource
             processor.Shadow = BackColor;
 
             SpriteFrame frame = new();
-            MemoryUsage += frame.LoadFromProcessor(processor, _engine.RenderDevice, keepSystemCopy: true);
+            MemoryUsage += frame.LoadFromProcessor(processor, keepSystemCopy: true);
 
             font.sprite = new Sprite(this, "", frame);
             font.sprite.Resolution = processor.Factor;
@@ -255,13 +255,13 @@ namespace Burntime.Platform.Resource
                         break;
                     }
 
-                    MemoryUsage += Sprite.internalFrames[i].LoadFromProcessor(loader, _engine.RenderDevice);
+                    MemoryUsage += Sprite.internalFrames[i].LoadFromProcessor(loader);
                     Sprite.internalFrames[i].Resolution = Sprite.internalFrames[0].Resolution;
                 }
             }
             else
             {
-                MemoryUsage += Sprite.internalFrames[0].LoadFromProcessor(loader, _engine.RenderDevice);
+                MemoryUsage += Sprite.internalFrames[0].LoadFromProcessor(loader);
             }
 
             _engine.DecreaseLoadingCount();

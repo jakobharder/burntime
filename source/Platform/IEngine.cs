@@ -22,10 +22,10 @@ public interface IEngine
 
     void CenterMouse();
 
-    void RenderRect(Vector2 pos, Vector2 size, uint color);
+    void RenderRect(Vector2 pos, Vector2 size, PixelColor color);
 
     void RenderSprite(ISprite sprite, Vector2 pos, float alpha = 1);
-    void RenderSprite(ISprite sprite, Vector2 pos, Vector2 srcPos, int srcWidth, int srcHeight, int color);
+    void RenderSprite(ISprite sprite, Vector2 pos, Vector2 srcPos, int srcWidth, int srcHeight, PixelColor color);
 
     void RenderLine(Vector2 start, Vector2 end, int color);
 }

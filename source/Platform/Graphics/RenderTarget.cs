@@ -67,13 +67,13 @@ public class RenderTarget
     {
         if (_selectedSprite is null) return;
 
-        _engine.RenderSprite(_selectedSprite, pos + _rc.Position + Offset, srcRect.Position, srcRect.Width, srcRect.Height, color.ToInt());
+        _engine.RenderSprite(_selectedSprite, pos + _rc.Position + Offset, srcRect.Position, srcRect.Width, srcRect.Height, color);
     }
     #endregion
 
     public void RenderRect(Vector2 pos, Vector2 size, PixelColor color)
     {
-        _engine.RenderRect(pos + _rc.Position + Offset, size, (uint)color.ToInt());
+        _engine.RenderRect(pos + _rc.Position + Offset, size, color);
     }
 
     public void RenderLine(Vector2 start, Vector2 end, PixelColor color)
