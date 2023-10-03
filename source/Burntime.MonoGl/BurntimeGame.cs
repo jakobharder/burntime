@@ -194,8 +194,8 @@ namespace Burntime.MonoGl
 
         void IEngine.CenterMouse()
         {
-#warning TODO slimdx 
-            //throw new System.NotImplementedException();
+            var center = Resolution.Native / 2;
+            Mouse.SetPosition(center.x, center.y);
         }
 
         void IEngine.ExitApplication()
