@@ -16,6 +16,6 @@ public class Sprite : GenericSprite<SpriteFrame, Texture>
 
     public override Sprite Clone()
     {
-        return new(resMan, id, internalFrames, ani is null ? null : new SpriteAnimation(ani.FrameCount));
+        return new(resMan, id, internalFrames, ani is null ? null : ani.Clone());
     }
 }

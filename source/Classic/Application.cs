@@ -85,7 +85,7 @@ namespace Burntime.Classic
             Settings.Open("settings.txt");
 
             Engine.Resolution.Native = Settings["system"].GetVector2("resolution");
-#warning slimdx todo
+#warning TODO SlimDX/Mono full screen
             //Engine.FullScreen = !Settings["system"].GetBool("windowmode");
             //Engine.UseTextureFilter = Settings["system"].GetBool("filter");
 

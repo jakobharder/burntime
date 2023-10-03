@@ -26,7 +26,7 @@ namespace Burntime.Framework.GUI
             return new GuiImage(Module.Instance.ResourceManager.GetImage(id, ResourceLoadType.Delayed));
         }
 
-        public static implicit operator ISprite(GuiImage image) => image?.sprite_;
+        public static implicit operator ISprite(GuiImage? image) => image?.sprite_;
 
         public GuiImage(ISprite sprite)
         {
@@ -34,6 +34,7 @@ namespace Burntime.Framework.GUI
             sprite_ = sprite.Animation is null ? sprite : sprite.Clone();
         }
 
+        public GuiImage Clone() => new GuiImage(sprite_);
         public void Touch() => sprite_.Touch();
         public void Update(float elapsed) => sprite_.Update(elapsed);
     }

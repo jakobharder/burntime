@@ -61,7 +61,7 @@ namespace Burntime.Classic
             hover = -1;
             base.OnShow();
 
-#warning slimdx todo
+#warning TODO SlimDX/Mono Music
             //BurntimeClassic.Instance.Engine.Music.Play("18_MUS 18_HSC.ogg");
         }
 
@@ -69,7 +69,7 @@ namespace Burntime.Classic
         {
             base.OnHide();
 
-#warning slimdx todo
+#warning TODO SlimDX/Mono Music
             //BurntimeClassic.Instance.Engine.Music.Stop();
         }
 

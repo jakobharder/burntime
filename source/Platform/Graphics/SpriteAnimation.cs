@@ -96,6 +96,11 @@ public class SpriteAnimation
         running = true;
     }
 
+    public SpriteAnimation Clone()
+    {
+        return new SpriteAnimation(frameCount) { Speed = Speed };
+    }
+
     bool ended;
     public bool End
     {
