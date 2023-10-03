@@ -22,10 +22,10 @@ namespace Burntime.Platform.Graphics
             _engine = engine;
         }
 
-        public void Render(GameTime renderTime, SpriteBatch spriteBatch)
+        public void Render(float elapsedSeconds, SpriteBatch spriteBatch)
         {
             // loading render
-            rotationState += rotationSpeed * renderTime.Elapsed;
+            rotationState += rotationSpeed * elapsedSeconds;
             if (rotationState >= 1)
                 rotationState -= (float)System.Math.Floor(rotationState);
 
@@ -33,7 +33,7 @@ namespace Burntime.Platform.Graphics
             {
                 if (_engine.loadingStack > 0 || _engine.ResourceManager.IsLoading)
                 {
-                    loadingDelayState += loadingDelay * renderTime.Elapsed;
+                    loadingDelayState += loadingDelay * elapsedSeconds;
                     if (loadingDelayState >= 1)
                     {
                         _engine.isLoading = true;
@@ -60,7 +60,7 @@ namespace Burntime.Platform.Graphics
 
                 //SpriteRenderer.End();
 
-                fadeOutState -= renderTime.Elapsed * fadeOutSpeed;
+                fadeOutState -= elapsedSeconds * fadeOutSpeed;
             }
         }
 

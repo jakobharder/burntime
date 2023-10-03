@@ -135,7 +135,6 @@ namespace Burntime.MonoGl
             });
         }
 
-        readonly Platform.GameTime _gameTime = new();
         bool _leftClicked = false;
         bool _rightClicked = false;
 
@@ -179,18 +178,14 @@ namespace Burntime.MonoGl
 
             HandleMouseInput();
 
-            //_burntimeApp.Process(_gameTime.Elapsed);
-
             base.Update(gameTime);
         }
 
         protected override void Draw(Microsoft.Xna.Framework.GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            GraphicsDevice.Clear(Color.Black);
 
-#warning replace own time with Xna game time?
-            _gameTime.Refresh(0);
-            RenderDevice.Render(_gameTime);
+            RenderDevice.Render((float)gameTime.ElapsedGameTime.TotalSeconds);
 
             base.Draw(gameTime);
         }

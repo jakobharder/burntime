@@ -241,7 +241,7 @@ public class RenderDevice : IDisposable
         //}
     }
 
-    public void Render(Platform.GameTime renderTime)
+    public void Render(float elapsedSeconds)
     {
         lock (queue)
         {
@@ -297,7 +297,7 @@ public class RenderDevice : IDisposable
         }
 
         BlendOverlay.BlockFadeOut = _engine.IsLoading || BlendOverlay.Block;
-        BlendOverlay.Render(renderTime.Elapsed, _spriteBatch);
+        BlendOverlay.Render(elapsedSeconds, _spriteBatch);
         //if (engine.MusicBlend)
         //{
         //    engine.Music.Volume = 1 - BlendState;
@@ -324,7 +324,7 @@ public class RenderDevice : IDisposable
 
         //errorOverlay.Render(RenderTime, spriteRenderer);
 
-        loadingOverlay.Render(renderTime, _spriteBatch);
+        loadingOverlay.Render(elapsedSeconds, _spriteBatch);
 
         _spriteBatch.End();
     }

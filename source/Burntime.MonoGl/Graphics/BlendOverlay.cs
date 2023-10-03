@@ -12,10 +12,10 @@ public class BlendOverlay : BlendOverlayBase
     {
     }
 
-    public void Render(float elapsed, SpriteBatch spriteBatch)
+    public void Render(float elapsedSeconds, SpriteBatch spriteBatch)
     {
         if (!(BlockFadeOut && _blendFade.IsFadingOut))
-            _blendFade.Update(elapsed);
+            _blendFade.Update(elapsedSeconds);
 
         if (!_blendFade.IsOut)
         {
