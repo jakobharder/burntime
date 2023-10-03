@@ -144,29 +144,6 @@ public class RenderDevice : IDisposable
         //direct3D.Dispose();
     }
 
-    public void Start(bool renderInUIThread)
-    {
-        _renderInUIThread = renderInUIThread;
-
-        if (!_renderInUIThread)
-        {
-            renderFinished = new AutoResetEvent(true);
-            renderThread = new Thread(new ThreadStart(RenderThread));
-            renderThread.IsBackground = true;
-            renderThread.Start();
-        }
-    }
-
-    public void Stop()
-    {
-        if (!_renderInUIThread)
-        {
-            requestStop = true;
-            renderFinished.Set();
-            renderThread.Join();
-        }
-    }
-
     public Texture2D CreateTexture(int Width, int Height)
     {
         return new Texture2D(_engine.GraphicsDevice, Width, Height, false, SurfaceFormat.Color);
@@ -214,80 +191,15 @@ public class RenderDevice : IDisposable
         current = new RenderEntityQueue();
     }
 
-    private bool _renderInUIThread = false;
-    public void End(Platform.GameTime renderTime = null)
+    public void End()
     {
-        if (!_renderInUIThread)
-        {
-            lock (queue)
-                queue.Enqueue(current);
-
-            renderFinished.WaitOne();
-        }
-        else
-        {
+        lock (queue)
             queue.Enqueue(current);
-            Render(renderTime);
-        }
     }
 
     public void AddEntity(RenderEntity Entity)
     {
         current.Add(Entity);
-    }
-
-    void RenderThread()
-    {
-        Thread.CurrentThread.Name = "RenderThread";
-
-        var renderTime = new Platform.GameTime();
-
-        while (!requestStop)
-        {
-            renderTime.Refresh(25);
-
-            if (waitForReset)
-            {
-                Thread.Sleep(100);
-                continue;
-            }
-
-            if (deviceReadyForRender)
-            {
-                //try
-                {
-                    //// render to texture
-                    //renderToSurface.BeginScene(renderToTexture.GetSurfaceLevel(0), 
-                    //    new Viewport(0, 0, engine.Resolution.Game.x * renderScale, engine.Resolution.Game.y * renderScale, 0f, 1f));
-                    //device.Clear(ClearFlags.Target, 0x000000, 5.0f, 0);                      
-                    Render(renderTime);
-                    //renderToSurface.EndScene(Filter.Triangle);
-
-                    //// render texture to screen
-                    //device.Clear(ClearFlags.Target | ClearFlags.ZBuffer, 0x00000000, 5.0f, 0);
-                    //device.BeginScene();
-                    //RenderTexture();
-                    //device.EndScene();
-
-                    renderFinished.Set();
-                }
-#warning TODO monogame re-enable catching
-                //catch (Exception)
-                //{
-                //}
-
-                try
-                {
-                    //device.Present();
-                }
-                catch (Exception)
-                {
-                    OnLostResetDevice();
-                }
-            }
-            else
-                OnLostResetDevice();
-        }
     }
 
     void OnLostResetDevice()
@@ -329,7 +241,7 @@ public class RenderDevice : IDisposable
         //}
     }
 
-    void Render(Platform.GameTime RenderTime)
+    public void Render(Platform.GameTime renderTime)
     {
         lock (queue)
         {
@@ -337,24 +249,7 @@ public class RenderDevice : IDisposable
                 render = queue.Dequeue();
         }
 
-        //spriteRenderer.Begin(SpriteFlags.SortTexture | SpriteFlags.SortDepthFrontToBack | SpriteFlags.AlphaBlend);
-        _spriteBatch.Begin(SpriteSortMode.Texture | SpriteSortMode.BackToFront, null, SamplerState.PointClamp);
-
-        ////if (engine.UseTextureFilter)
-        ////{
-        ////    device.SetSamplerState(0, SamplerState.MagFilter, TextureFilter.Anisotropic);
-        ////    device.SetSamplerState(0, SamplerState.MinFilter, TextureFilter.Anisotropic);
-        ////    device.SetSamplerState(0, SamplerState.MipFilter, TextureFilter.Anisotropic);
-        ////}
-        ////else
-        //{
-        //    device.SetSamplerState(0, SamplerState.MagFilter, TextureFilter.Point);
-        //    device.SetSamplerState(0, SamplerState.MinFilter, TextureFilter.Point);
-        //    device.SetSamplerState(0, SamplerState.MipFilter, TextureFilter.Point);
-        //}
-
-        //// TODO engine scale
-        //spriteRenderer.Transform = SlimDX.Matrix.Scaling(new SlimDX.Vector3(renderScale, renderScale, 1));
+        _spriteBatch.Begin(SpriteSortMode.BackToFront, null, SamplerState.PointClamp);
 
         //SlimDX.Matrix lineMatrix = SlimDX.Matrix.AffineTransformation2D(1, new SlimDX.Vector2(), 0, new SlimDX.Vector2());
         //// TODO engine scale
@@ -363,7 +258,6 @@ public class RenderDevice : IDisposable
         //lineMatrix = spriteRenderer.Transform;
 
         // application render
-        _engine.MainTarget.Elapsed = RenderTime.Elapsed;
 
         float currentFactor = 1;
 
@@ -403,7 +297,7 @@ public class RenderDevice : IDisposable
         }
 
         BlendOverlay.BlockFadeOut = _engine.IsLoading || BlendOverlay.Block;
-        BlendOverlay.Render(RenderTime.Elapsed, _spriteBatch);
+        BlendOverlay.Render(renderTime.Elapsed, _spriteBatch);
         //if (engine.MusicBlend)
         //{
         //    engine.Music.Volume = 1 - BlendState;
@@ -430,7 +324,7 @@ public class RenderDevice : IDisposable
 
         //errorOverlay.Render(RenderTime, spriteRenderer);
 
-        loadingOverlay.Render(RenderTime, _spriteBatch);
+        loadingOverlay.Render(renderTime, _spriteBatch);
 
         _spriteBatch.End();
     }

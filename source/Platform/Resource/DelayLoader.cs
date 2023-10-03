@@ -1,94 +1,108 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 
 using Burntime.Platform.Graphics;
 
-namespace Burntime.Platform.Resource
+namespace Burntime.Platform.Resource;
+
+public class DelayLoader
 {
-    public class DelayLoader
+    readonly IResourceManager _resourceManager;
+    readonly List<ISprite> _loadingQueue;
+    readonly Thread _thread;
+    readonly AutoResetEvent _loadingRequested;
+
+    public bool IsLoading => _loadingQueue.Count > 0;
+
+    public DelayLoader(IResourceManager resourceManager)
     {
-        readonly IResourceManager resourceManager_;
-        readonly List<ISprite> toLoad_;
-        Thread thread;
-        readonly AutoResetEvent activate_;
-
-        public bool IsLoading => toLoad_.Count > 0;
-
-        public DelayLoader(IResourceManager resourceManager)
+        _resourceManager = resourceManager;
+        _loadingQueue = new List<ISprite>();
+        _loadingRequested = new AutoResetEvent(false);
+        _thread = new(new ThreadStart(RunThread))
         {
-            resourceManager_ = resourceManager;
-            toLoad_ = new List<ISprite>();
-            activate_ = new AutoResetEvent(false);
-        }
+            IsBackground = true,
+            Priority = ThreadPriority.BelowNormal
+        };
+    }
 
-        public void Enqueue(ISprite Sprite)
+    public void Enqueue(ISprite Sprite)
+    {
+        lock (_loadingQueue)
         {
-            if (toLoad_.Contains(Sprite))
+            if (_loadingQueue.Contains(Sprite))
                 return;
-
-            // TODO: critical section
-            toLoad_.Add(Sprite);
-            activate_.Set();
+            _loadingQueue.Add(Sprite);
         }
 
-        public void Run()
+        _loadingRequested.Set();
+    }
+
+    public void Run()
+    {
+        _stopLoader = false;
+        _thread.Start();
+    }
+
+    public void Reset()
+    {
+        lock (_loadingQueue)
+            _loadingQueue.Clear();
+    }
+
+    void RunThread()
+    {
+        Thread.CurrentThread.Name = "DelayLoader";
+
+        while (!_stopLoader)
         {
-            stop = false;
-            thread = new(new ThreadStart(RunThread))
+            ISprite? nextToLoad = null;
+            lock (_loadingQueue)
+                nextToLoad = _loadingQueue.FirstOrDefault();
+
+            if (nextToLoad is not null)
             {
-                IsBackground = true,
-                Priority = ThreadPriority.BelowNormal
-            };
-            thread.Start();
-        }
-
-        public void Reset()
-        {
-            toLoad_.Clear();
-        }
-
-        void RunThread()
-        {
-            Thread.CurrentThread.Name = "DelayLoader";
-
-            while (!stop)
-            {
-                if (toLoad_.Count > 0)
+                //if (engine.SafeMode)
+                //{
+                //    try
+                //    {
+                //        if (!engine.crashed)
+                //        {
+                //            resourceManager.Reload(toLoad_[0], ResourceLoadType.Now);
+                //            toLoad_.RemoveAt(0);
+                //        }
+                //    }
+                //    catch
+                //    {
+                //        engine.crashed = true;
+                //    }
+                //}
+                //else
                 {
-                    //if (engine.SafeMode)
-                    //{
-                    //    try
-                    //    {
-                    //        if (!engine.crashed)
-                    //        {
-                    //            resourceManager.Reload(toLoad_[0], ResourceLoadType.Now);
-                    //            toLoad_.RemoveAt(0);
-                    //        }
-                    //    }
-                    //    catch
-                    //    {
-                    //        engine.crashed = true;
-                    //    }
-                    //}
-                    //else
+                    _resourceManager.Reload(nextToLoad, ResourceLoadType.Now);
+
+                    lock (_loadingQueue)
                     {
-                        resourceManager_.Reload(toLoad_[0], ResourceLoadType.Now);
-                        toLoad_.RemoveAt(0);
+                        // queue may have been cleared in the meantime
+                        if (_loadingQueue.Count > 0)
+                            _loadingQueue.RemoveAt(0);
                     }
                 }
+            }
 
-                if (toLoad_.Count == 0)
-                    activate_.WaitOne(200, true);
+            if (_loadingQueue.Count == 0)
+            {
+                // queue is empty, wait for new arrivals
+                _loadingRequested.WaitOne(200, true);
             }
         }
+    }
 
-        bool stop = false;
-        public void Stop()
-        {
-            stop = true;
-            activate_.Set();
-        }
+    bool _stopLoader = false;
+    public void Stop()
+    {
+        _stopLoader = true;
+        _loadingRequested.Set();
     }
 }

@@ -201,6 +201,7 @@ namespace Burntime.Platform
 
         public DeviceManager(Vector2 resolution, Vector2 gameResolution)
         {
+#warning TODO thread synchronization, update and UI thread may be different now
             _mouse = new MouseDevice(resolution);
             _gameResolution = gameResolution;
         }

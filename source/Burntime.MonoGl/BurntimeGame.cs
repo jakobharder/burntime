@@ -28,7 +28,8 @@ namespace Burntime.MonoGl
         BlendOverlayBase IEngine.BlendOverlay => RenderDevice?.BlendOverlay;
 
         BurntimeClassic _burntimeApp;
-        GraphicsDeviceManager _graphics;
+        readonly GraphicsDeviceManager _graphics;
+        readonly GameThread _gameThread = new();
 
         internal int loadingStack = 0;
         public int LoadingStack
@@ -97,41 +98,41 @@ namespace Burntime.MonoGl
             BurnGfxModule burnGfx = new();
             burnGfx.Initialize(_burntimeApp.ResourceManager);
 
-            //Log.Info("Run main module...");
+            Log.Info("Run main module...");
             _burntimeApp.Run();
 
+            Log.Info("Start engine...");
+            IsMouseVisible = false;
             _graphics.PreferredBackBufferWidth = Resolution.Native.x;
             _graphics.PreferredBackBufferHeight = Resolution.Native.y;
             _graphics.ApplyChanges();
-
-            IsMouseVisible = false;
-
-            //Log.Info("Start engine...");
-            //engine.Start(new ApplicationInternal(module));
-
             base.Initialize();
         }
-
-        ISprite _testTexture = null;
 
         protected override void LoadContent()
         {
             ConfigFile cfg = new();
             cfg.Open("system:settings.txt");
 
+            Log.Info("Setup render device...");
             RenderDevice = new RenderDevice(this);
             RenderDevice.Initialize();
-
+            BlendOverlay.Speed = cfg["engine"].GetFloat("scene_blend");
             MainTarget = new RenderTarget(this, new Rect(Platform.Vector2.Zero, Resolution.Game));
 
             Log.Info("Start resource manager thread...");
             ResourceManager.Run();
 
-            Log.Info("Start render thread...");
-            RenderDevice.Start(renderInUIThread: true);
-            BlendOverlay.Speed = cfg["engine"].GetFloat("scene_blend");
+            Log.Info("Start game thread...");
+            _gameThread.Start((Platform.GameTime gameTime) =>
+            {
+                _burntimeApp.Process(gameTime.Elapsed);
+                MainTarget.Elapsed = gameTime.Elapsed;
 
-            _testTexture = ResourceManager.GetImage("gfx/inventory_left.png", ResourceLoadType.Now);
+                RenderDevice.Begin();
+                _burntimeApp.Render(MainTarget);
+                RenderDevice.End();
+            });
         }
 
         readonly Platform.GameTime _gameTime = new();
@@ -172,16 +173,13 @@ namespace Burntime.MonoGl
 
         protected override void Update(Microsoft.Xna.Framework.GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed
-                || Microsoft.Xna.Framework.Input.Keyboard.GetState().IsKeyDown(Microsoft.Xna.Framework.Input.Keys.Escape))
-                Exit();
-
-#warning replace own time with Xna game time?
-            _gameTime.Refresh(0);
+            //if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed
+            //    || Microsoft.Xna.Framework.Input.Keyboard.GetState().IsKeyDown(Microsoft.Xna.Framework.Input.Keys.Escape))
+            //    Exit();
 
             HandleMouseInput();
 
-            _burntimeApp.Process(_gameTime.Elapsed);
+            //_burntimeApp.Process(_gameTime.Elapsed);
 
             base.Update(gameTime);
         }
@@ -190,9 +188,9 @@ namespace Burntime.MonoGl
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            RenderDevice.Begin();
-            _burntimeApp.Render(MainTarget);
-            RenderDevice.End(_gameTime);
+#warning replace own time with Xna game time?
+            _gameTime.Refresh(0);
+            RenderDevice.Render(_gameTime);
 
             base.Draw(gameTime);
         }
@@ -206,11 +204,7 @@ namespace Burntime.MonoGl
         #region render methods
         const float MAX_LAYERS = 256.0f;
         const float popInSpeed = 16.0f;
-
-        static float CalcZ(float Layer)
-        {
-            return 1.0f - (Layer / MAX_LAYERS) * 0.9f;
-        }
+        static float CalcZ(float Layer) => 1.0f - (Layer / MAX_LAYERS) * 0.9f;
 
         public void RenderRect(Platform.Vector2 pos, Platform.Vector2 size, uint color)
         {
