@@ -124,11 +124,11 @@ namespace Burntime.Platform
         }
 
         #region render methods
-        public void RenderRect(Vector2 pos, Vector2 size, uint color)
+        public void RenderRect(Vector2 pos, Vector2 size, PixelColor color)
         {
             Graphics.SpriteEntity entity = new Graphics.SpriteEntity();
             entity.Rectangle = new Rectangle(0, 0, size.x, size.y);
-            entity.Color = new SlimDX.Color4((int)color);
+            entity.Color = new SlimDX.Color4(color.ToInt());
             entity.Texture = SpriteFrame.EmptyTexture;
             entity.Position = new SlimDX.Vector3(pos.x, pos.y, CalcZ(layer));
             device.AddEntity(entity);
@@ -165,13 +165,13 @@ namespace Burntime.Platform
             device.AddEntity(entity2);
         }
 
-        public void RenderSprite(ISprite sprite, Vector2 pos, Vector2 srcPos, int srcWidth, int srcHeight, int color)
+        public void RenderSprite(ISprite sprite, Vector2 pos, Vector2 srcPos, int srcWidth, int srcHeight, PixelColor color)
         {
             if (sprite is not SlimDx.Graphics.Sprite nativeSprite) return;
 
             Graphics.SpriteEntity entity = new Graphics.SpriteEntity();
             entity.Rectangle = new Rectangle(srcPos.x, srcPos.y, srcWidth, srcHeight);
-            entity.Color = new SlimDX.Color4(color);
+            entity.Color = new SlimDX.Color4(color.ToInt());
             entity.Factor = nativeSprite.Frame.Resolution;
 
             long now = System.Diagnostics.Stopwatch.GetTimestamp();

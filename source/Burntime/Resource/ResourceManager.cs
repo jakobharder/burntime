@@ -229,7 +229,7 @@ namespace Burntime.Platform.Resource
                     Sprite.internalFrames[i].Texture = tex;
                     Sprite.internalFrames[i].RestoreFromSystemCopy();
                     Sprite.internalFrames[i].IsLoading = false;
-                    Sprite.internalFrames[i].loaded = true;
+                    Sprite.internalFrames[i].IsLoaded = true;
                 }
             }
  
@@ -318,7 +318,7 @@ namespace Burntime.Platform.Resource
             }
 
             Sprite.internalFrames[0].IsLoading = false;
-            Sprite.internalFrames[0].loaded = true;
+            Sprite.internalFrames[0].IsLoaded = true;
 
             _engine.DecreaseLoadingCount();
         }
