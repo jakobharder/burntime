@@ -34,8 +34,8 @@ public class SpriteFrame : Platform.Graphics.GenericSpriteFrame<Texture>
 
         _texture.Dispose();
         _texture = null;
-        loaded = false;
-        loading = false;
+        IsLoaded = false;
+        IsLoading = false;
 
         return freedMemory;
     }

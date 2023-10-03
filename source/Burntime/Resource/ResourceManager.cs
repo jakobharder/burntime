@@ -210,7 +210,7 @@ namespace Burntime.Platform.Resource
 
         internal void Reload(Sprite Sprite, ResourceLoadType LoadType)
         {
-            Sprite.internalFrames[0].loading = true;
+            Sprite.internalFrames[0].IsLoading = true;
 
             if (LoadType == ResourceLoadType.Delayed)
             {
@@ -228,7 +228,7 @@ namespace Burntime.Platform.Resource
 
                     Sprite.internalFrames[i].Texture = tex;
                     Sprite.internalFrames[i].RestoreFromSystemCopy();
-                    Sprite.internalFrames[i].loading = false;
+                    Sprite.internalFrames[i].IsLoading = false;
                     Sprite.internalFrames[i].loaded = true;
                 }
             }
@@ -317,7 +317,7 @@ namespace Burntime.Platform.Resource
                 Sprite.internalFrames[0].TimeStamp = System.Diagnostics.Stopwatch.GetTimestamp();
             }
 
-            Sprite.internalFrames[0].loading = false;
+            Sprite.internalFrames[0].IsLoading = false;
             Sprite.internalFrames[0].loaded = true;
 
             _engine.DecreaseLoadingCount();

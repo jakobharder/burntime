@@ -9,7 +9,7 @@ public interface ISpriteProcessor
     Vector2 Size { get; }
 }
 
-public interface ISpriteAnimationProcessor
+public interface ISpriteAnimationProcessor : ISpriteProcessor
 {
     int FrameCount { get; }
     Vector2 FrameSize { get; }

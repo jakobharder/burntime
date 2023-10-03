@@ -178,6 +178,8 @@ namespace Burntime.MonoGl
 
             HandleMouseInput();
 
+            RenderDevice.Update();
+
             base.Update(gameTime);
         }
 
@@ -230,7 +232,7 @@ namespace Burntime.MonoGl
 
             if (sprite.Animation != null && sprite.Animation.Progressive && nativeSprite.Frames != null)
             {
-                entity.Texture = nativeSprite.Frames[0].Texture;
+                entity.SpriteFrame = nativeSprite.Frames[0];
                 entity.Position = new Vector3(pos.x, pos.y, CalcZ(Layer) + 0.001f);
                 RenderDevice.AddEntity(entity);
             }
@@ -239,7 +241,7 @@ namespace Burntime.MonoGl
             {
                 Rectangle = entity.Rectangle,
                 Color = entity.Color,
-                Texture = nativeSprite.Frame.Texture,
+                SpriteFrame = nativeSprite.Frame,
                 Position = new Vector3(pos.x, pos.y, CalcZ(Layer)),
                 Factor = nativeSprite.Frame.Resolution
             };
@@ -265,7 +267,7 @@ namespace Burntime.MonoGl
 
             if (nativeSprite.Animation != null && nativeSprite.Animation.Progressive && nativeSprite.Frames != null)
             {
-                entity.Texture = nativeSprite.Frames[0].Texture;
+                entity.SpriteFrame = nativeSprite.Frames[0];
                 entity.Position = new Vector3(pos.x, pos.y, CalcZ(Layer) + 0.001f);
                 RenderDevice.AddEntity(entity);
             }
@@ -274,7 +276,7 @@ namespace Burntime.MonoGl
             {
                 Rectangle = entity.Rectangle,
                 Color = entity.Color,
-                Texture = nativeSprite.Frame.Texture,
+                SpriteFrame = nativeSprite.Frame,
                 Position = new Vector3(pos.x, pos.y, CalcZ(Layer)),
                 Factor = nativeSprite.Frame.Resolution
             };

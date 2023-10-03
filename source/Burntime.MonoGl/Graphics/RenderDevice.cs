@@ -12,8 +12,8 @@ namespace Burntime.MonoGl.Graphics;
 public class RenderDevice : IDisposable
 {
     RenderEntityQueue current;
-    RenderEntityQueue render;
-    readonly Queue<RenderEntityQueue> queue = new();
+    RenderEntityQueue _renderEntities;
+    readonly Queue<RenderEntityQueue> _renderQueue = new();
 
     readonly BurntimeGame _engine;
     readonly ResourceManager resourceManager;
@@ -193,8 +193,8 @@ public class RenderDevice : IDisposable
 
     public void End()
     {
-        lock (queue)
-            queue.Enqueue(current);
+        lock (_renderQueue)
+            _renderQueue.Enqueue(current);
     }
 
     public void AddEntity(RenderEntity Entity)
@@ -241,14 +241,36 @@ public class RenderDevice : IDisposable
         //}
     }
 
-    public void Render(float elapsedSeconds)
+    /// <summary>
+    /// Create render thread data for queued objects.
+    /// </summary>
+    public void Update()
     {
-        lock (queue)
+        lock (_renderQueue)
         {
-            if (queue.Count > 0)
-                render = queue.Dequeue();
+            if (_renderQueue.Count > 0)
+                _renderEntities = _renderQueue.Dequeue();
         }
 
+        if (_renderEntities is null)
+            return;
+
+        foreach (RenderEntity entity in _renderEntities)
+        {
+            if (entity is SpriteEntity sprite)
+            {
+                if (sprite.SpriteFrame is not null && sprite.SpriteFrame.IsLoaded)
+                    sprite.SpriteFrame.CreateTexture(this);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Render queued objects.
+    /// </summary>
+    /// <param name="elapsedSeconds"></param>
+    public void Render(float elapsedSeconds)
+    {
         _spriteBatch.Begin(SpriteSortMode.BackToFront, null, SamplerState.PointClamp);
 
         //SlimDX.Matrix lineMatrix = SlimDX.Matrix.AffineTransformation2D(1, new SlimDX.Vector2(), 0, new SlimDX.Vector2());
@@ -261,14 +283,14 @@ public class RenderDevice : IDisposable
 
         float currentFactor = 1;
 
-        if (render != null)
+        if (_renderEntities != null)
         {
-            foreach (RenderEntity entity in render)
+            foreach (RenderEntity entity in _renderEntities)
             {
                 if (entity is SpriteEntity sprite)
                 {
                     // diposed texture links may remain in queue after direct3d reset, just skip them
-                    if (sprite.Texture.IsDisposed)
+                    if ((sprite.Texture ?? sprite.SpriteFrame.Texture).IsDisposed)
                         continue;
 
                     // if sprite resolution changed, then update transform matrix
@@ -288,7 +310,7 @@ public class RenderDevice : IDisposable
                         pos.Y = pos.Y * _engine.Resolution.Scale.y;
                     }
 
-                    _spriteBatch.Draw(sprite.Texture, pos, sprite.Rectangle, sprite.Color, 0, 
+                    _spriteBatch.Draw(sprite.Texture ?? sprite.SpriteFrame.Texture, pos, sprite.Rectangle, sprite.Color, 0, 
                         Microsoft.Xna.Framework.Vector2.Zero,
                         new Microsoft.Xna.Framework.Vector2(sprite.Factor * _engine.Resolution.Scale.x, sprite.Factor * _engine.Resolution.Scale.y), 
                         SpriteEffects.None, sprite.Position.Z);

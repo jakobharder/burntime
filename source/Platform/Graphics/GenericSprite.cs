@@ -22,11 +22,11 @@ public abstract class GenericSprite<TSpriteFrame, TTexture> : ISprite where TTex
 
     public bool IsNew { get; set; } = true;
 
-    public override bool IsLoaded => (internalFrames != null && internalFrames[0].loaded);
+    public override bool IsLoaded => (internalFrames != null && internalFrames[0].IsLoaded);
 
     public bool IsLoading
     {
-        get { return (internalFrames != null && internalFrames[0].loading); }
+        get { return (internalFrames != null && internalFrames[0].IsLoading); }
     }
 
     public override Vector2 Size => Frame.Size * Frame.Resolution;

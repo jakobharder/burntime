@@ -2,6 +2,7 @@
 using Burntime.Platform;
 using Burntime.Platform.Resource;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -11,6 +12,9 @@ namespace Burntime.MonoGl.Graphics;
 
 public class SpriteFrame : Platform.Graphics.GenericSpriteFrame<Texture2D>
 {
+    int _usedMemory;
+    Vector2 _textureSize;
+
     public SpriteFrame()
     {
     }
@@ -21,42 +25,52 @@ public class SpriteFrame : Platform.Graphics.GenericSpriteFrame<Texture2D>
 
     public int LoadFromProcessor(ISpriteProcessor loader, RenderDevice renderDevice, bool keepSystemCopy = false)
     {
-        var tex = renderDevice.CreateTexture(MakePowerOfTwo(loader.Size.x), MakePowerOfTwo(loader.Size.y));
-        int usedMemory = tex.Width * tex.Height * 4;
+        const int PIXEL_BYTES = 4;
 
-        byte[] buffer = new byte[usedMemory];
-        using MemoryStream stream = new(buffer);
-        loader.Render(stream, tex.Width * 4);
+        _textureSize = new(MakePowerOfTwo(loader.Size.x), MakePowerOfTwo(loader.Size.y));
+        _usedMemory = _textureSize.Count * PIXEL_BYTES;
+
+        _systemCopy = new byte[_usedMemory];
+        using MemoryStream stream = new(_systemCopy);
+        loader.Render(stream, _textureSize.x * PIXEL_BYTES);
+        stream.Dispose();
 
 #warning TODO how to avoid ARGB -> ABGR?
-        for (int y = 0; y < tex.Height; y++)
+        for (int y = 0; y < _textureSize.y; y++)
         {
-            for (int x = 0; x < tex.Width; x++)
+            for (int x = 0; x < _textureSize.x; x++)
             {
-                byte t = 0;
-                t = buffer[(y * tex.Width + x) * 4 + 0];
-                buffer[(y * tex.Width + x) * 4 + 0] = buffer[(y * tex.Width + x) * 4 + 2];
-                buffer[(y * tex.Width + x) * 4 + 2] = t;
+                (_systemCopy[(y * _textureSize.x + x) * PIXEL_BYTES + 2], _systemCopy[(y * _textureSize.x + x) * PIXEL_BYTES + 0]) =
+                    (_systemCopy[(y * _textureSize.x + x) * PIXEL_BYTES + 0], _systemCopy[(y * _textureSize.x + x) * PIXEL_BYTES + 2]);
             }
         }
 
-        
-        if (keepSystemCopy)
-            _systemCopy = buffer.ToArray();
-        
-        tex.SetData(buffer);
+        //var tex = renderDevice.CreateTexture(adjustedSize.x, adjustedSize.y);
+        //tex.SetData(_systemCopy);
+
+        //if (!keepSystemCopy)
+        //    _systemCopy = null;
+
+        //_texture = tex;
+        Size = loader.Size;
+
+        TimeStamp = Stopwatch.GetTimestamp();
+        IsLoading = false;
+        IsLoaded = true;
+        return _usedMemory;
+    }
+
+    public void CreateTexture(RenderDevice renderDevice)
+    {
+        if (_texture is not null) return;
+
+        var tex = renderDevice.CreateTexture(_textureSize.x, _textureSize.y);
+        tex.SetData(_systemCopy);
+
+        //if (!keepSystemCopy)
+        //    _systemCopy = null;
 
         _texture = tex;
-
-        if (loader is ISpriteAnimationProcessor loaderAni)
-            Size = loaderAni.FrameSize;
-        else
-            Size = loader.Size;
-
-        TimeStamp = System.Diagnostics.Stopwatch.GetTimestamp();
-        loading = false;
-        loaded = true;
-        return usedMemory;
     }
 
     protected static int MakePowerOfTwo(int nValue)
@@ -72,26 +86,17 @@ public class SpriteFrame : Platform.Graphics.GenericSpriteFrame<Texture2D>
 
     public override int Unload()
     {
-        if (_texture is null || _texture.IsDisposed) return 0;
+        IsLoaded = false;
+        IsLoading = false;
 
-        int freedMemory = 0;
-#warning TODO count freed memory
-        //try
-        //{
-        //    SlimDX.Direct3D9.SurfaceDescription desc = _texture.GetLevelDescription(0);
-        //    freedMemory = desc.Width * desc.Height * 4;
-        //}
-        //catch (Exception)
-        //{
-        //    // TODO make cleaner
-        //}
+#warning TODO slimdx, unload systemCopy?
+
+        if (_texture is null || _texture.IsDisposed) return 0;
 
         _texture.Dispose();
         _texture = null;
-        loaded = false;
-        loading = false;
 
-        return freedMemory;
+        return _usedMemory;
     }
 
     internal void RestoreFromSystemCopy()

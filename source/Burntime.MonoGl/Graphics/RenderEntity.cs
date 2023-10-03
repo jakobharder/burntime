@@ -7,6 +7,7 @@ namespace Burntime.MonoGl.Graphics;
 class SpriteEntity : RenderEntity
 {
     public Texture2D Texture;
+    public SpriteFrame SpriteFrame;
     public Rectangle Rectangle;
     public Vector3 Position;
     public Color Color;

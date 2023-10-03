@@ -181,7 +181,7 @@ namespace Burntime.Platform.Resource
 
         internal void Reload(Sprite Sprite, ResourceLoadType LoadType)
         {
-            Sprite.internalFrames[0].loading = true;
+            Sprite.internalFrames[0].IsLoading = true;
 
             if (LoadType == ResourceLoadType.Delayed)
             {
