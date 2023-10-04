@@ -29,7 +29,8 @@ public abstract class GenericSprite<TSpriteFrame, TTexture> : ISprite where TTex
         get { return (internalFrames != null && internalFrames[0].IsLoading); }
     }
 
-    public override Vector2 Size => Frame.Size * Frame.Resolution;
+#warning TODO resolution down and up again for newgfx may lead to precision loss
+    public override Vector2 Size => (Vector2)((Vector2f)Frame.Size * Frame.Resolution);
     public Vector2 OriginalSize => Frame.Size;
 
     public int CurrentFrame
@@ -49,7 +50,7 @@ public abstract class GenericSprite<TSpriteFrame, TTexture> : ISprite where TTex
     }
 
     public override SpriteAnimation Animation => ani;
-    public override float Resolution
+    public override Vector2f Resolution
     {
         get => internalFrames[0].Resolution;
         set => internalFrames[0].Resolution = value;

@@ -5,6 +5,9 @@ public class Log
     static StreamWriter file;
     public static bool DebugOut;
 
+    public static string FormatPercentage(float factor) => System.Math.Round(factor * 100) + "%";
+    public static string FormatPercentage(Vector2f factor) => System.Math.Round(factor.x * 100) + "% x " + System.Math.Round(factor.y * 100) + "%";
+
     static public void Initialize(String file)
     {
         Log.file = new StreamWriter(file, false);

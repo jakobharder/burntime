@@ -13,9 +13,11 @@ Download it from [Releases](https://github.com/jakobharder/burntime/releases).
 The game is a complete port of the original game to Windows with some adjustments and an extended game mode.
 
 - wide-screen support
+- remastered graphics with doubled resolution
 - game adjustments
   - toggle to switch between original and extended game
   - toggle to disable AI players
+  - attacks are always followed by counter attacks to avoid attack spamming
 - UI adjustments
   - attack/defense/protection values displayed in inventory
 - minor location adjustments

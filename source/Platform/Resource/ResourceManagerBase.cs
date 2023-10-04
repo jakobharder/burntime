@@ -38,6 +38,8 @@ public class ResourceManagerBase
         AddDataProcessor("png", typeof(SpriteProcessorPng));
         AddSpriteProcessor("pngani", new AniProcessorPng());
         AddDataProcessor("pngani", typeof(AniProcessorPng));
+        AddSpriteProcessor("pngsheet", new PngSpriteSheetProcessor());
+        AddDataProcessor("pngsheet", typeof(PngSpriteSheetProcessor));
         AddFontProcessor("txt", new FontProcessorTxt());
 
         delayLoader = new DelayLoader(this as IResourceManager);
@@ -259,44 +261,75 @@ public class ResourceManagerBase
         }
     }
 
-    protected ResourceID GetReplacementID(ResourceID id)
+    public class ScaledResourceId
     {
-        if (replacement != null)
+        public ResourceID Id;
+        public Vector2f Factor;
+
+        public ScaledResourceId(ResourceID id, Vector2f factor)
         {
-            string idstring = null;
+            Id = id;
+            Factor = factor;
+        }
+    }
 
-            if (replacement["replacement"].ContainsKey(id.Format + "@" + id.File))
+    public ScaledResourceId? GetReplacement(ResourceID id)
+    {
+        if (replacement is null) return null;
+
+        foreach (var section in replacement.GetAllSections())
+        {
+            var replacedId = GetReplacementID(id, section);
+            if (replacedId is not null)
             {
-                idstring = replacement["replacement"].Get(id.Format + "@" + id.File);
-            }
-            else if (replacement["replacement"].ContainsKey(id.File))
-            {
-                idstring = replacement["replacement"].Get(id.File);
-            }
-
-            if (idstring != null)
-            {
-
-                // construct new resource id
-                if (id.IndexProvided)
-                {
-                    idstring += "?" + id.Index.ToString();
-                    if (id.EndIndex != -1)
-                        idstring += "-" + id.EndIndex.ToString();
-                    if (!string.IsNullOrEmpty(id.Custom))
-                        idstring += "?" + id.Custom;
-                }
-                else
-                {
-                    if (!string.IsNullOrEmpty(id.Custom))
-                        idstring += "??" + id.Custom;
-                }
-
-                return idstring;
+                var scale = section.GetVector2f("sprite_scale", Vector2f.One);
+                var factor = (scale != Vector2f.Zero) ? Vector2f.One / scale : 1;
+                return new ScaledResourceId(replacedId, factor);
             }
         }
 
         return null;
+    }
+
+    private static ResourceID? GetReplacementID(ResourceID id, ConfigSection section)
+    {
+        string? idstring = null;
+
+        if (section.ContainsKey(id.Format + "@" + id.File))
+        {
+            idstring = section.Get(id.Format + "@" + id.File);
+        }
+        else if (section.ContainsKey(id.File))
+        {
+            idstring = section.Get(id.File);
+        }
+
+        if (idstring is null)
+            return null;
+
+        // construct new resource id
+        if (id.IndexProvided)
+        {
+            if (idstring.Contains('?') && idstring.Split("?")[1].Contains("{0}"))
+            {
+                idstring = idstring.Replace("{0}", id.Index.ToString());
+            }
+            else
+            {
+                idstring += "?" + id.Index.ToString();
+                if (id.EndIndex != -1)
+                    idstring += "-" + id.EndIndex.ToString();
+                if (!string.IsNullOrEmpty(id.Custom))
+                    idstring += "?" + id.Custom;
+            }
+        }
+        else
+        {
+            if (!string.IsNullOrEmpty(id.Custom))
+                idstring += "??" + id.Custom;
+        }
+
+        return idstring;
     }
 
     protected bool CheckReplacementID(ResourceID id)

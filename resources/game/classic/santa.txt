@@ -1,4 +1,3 @@
-sprite_resolution=1
-
 [replacement]
+sprite_scale=1x1
 syssze.raw=pngani@gfx/santa/{0}.png

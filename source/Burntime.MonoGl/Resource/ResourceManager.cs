@@ -93,26 +93,22 @@ namespace Burntime.Platform.Resource
 
         ISprite GetSprite(ResourceID id, ResourceLoadType LoadType)
         {
-            float factor = 1;
+            Vector2f factor = Vector2f.One;
             ResourceID realid = (string)id;
 
-            // check replacements
-            if (replacement != null)
+            var replaced = GetReplacement(id);
+            if (replaced is not null)
             {
-                ResourceID newid = GetReplacementID(id);
-                if (newid != null)
+                // if available return newid sprite right away
+                if (sprites.TryGetValue(replaced.Id, out ISprite value))
                 {
-                    // if available return newid sprite right away
-                    if (sprites.TryGetValue(newid, out ISprite value))
-                    {
-                        return value.Clone();
-                    }
-                    // otherwise check if newid is available, if not fallback to old id
-                    else if (CheckReplacementID(newid))
-                    {
-                        id = newid;
-                        factor = replacement[""].GetFloat("sprite_resolution");
-                    }
+                    return value.Clone();
+                }
+                // otherwise check if newid is available, if not fallback to old id
+                else if (CheckReplacementID(replaced.Id))
+                {
+                    id = replaced.Id;
+                    factor = replaced.Factor;
                 }
             }
 
@@ -129,8 +125,8 @@ namespace Burntime.Platform.Resource
                 if (Log.DebugOut)
                 {
                     string info = $"init \"{id}\"";
-                    if (factor != 1)
-                        info += $" {System.Math.Round(factor * 100)}%";
+                    if (factor != Vector2f.One)
+                        info += $" {System.Math.Round(factor.x * 100)}% x {System.Math.Round(factor.y * 100)}%";
                     if (realid != id)
                         info += $" ({realid})";
                     Log.Debug(info);
@@ -210,13 +206,13 @@ namespace Burntime.Platform.Resource
             Sprite.internalFrames[0].Resolution = 1;
             if (replacement != null)
             {
-                ResourceID newid = GetReplacementID(id);
-                if (newid != null)
+                var replaced = GetReplacement(id);
+                if (replaced is not null)
                 {
-                    if (CheckReplacementID(newid))
+                    if (CheckReplacementID(replaced.Id))
                     {
-                        id = newid;
-                        Sprite.internalFrames[0].Resolution = replacement[""].GetFloat("sprite_resolution");
+                        id = replaced.Id;
+                        Sprite.internalFrames[0].Resolution = replaced.Factor;
                     }
                 }
             }
@@ -228,7 +224,7 @@ namespace Burntime.Platform.Resource
                 string info = Sprite.IsNew ? "load" : "reload";
                 info += $" \"{id}\"";
                 if (Sprite.internalFrames[0].Resolution != 1)
-                    info += $" {System.Math.Round(Sprite.internalFrames[0].Resolution * 100)}%";
+                    info += $" " + Log.FormatPercentage(Sprite.internalFrames[0].Resolution);
                 if (realid.ToString() != id.ToString())
                     info += $" ({realid})";
                 Log.Debug(info);

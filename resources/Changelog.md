@@ -4,7 +4,8 @@
 
 ### Game
 
-- NewGfx setting in options to toggle between original and remastered graphics (incomplete!)
+- NewGfx setting in options to toggle between original and remastered graphics
+- Remastered item and room background graphics
 - Clothes increase defense value when equipped
 - Replaced "Sie" with "du"
 - Dishes now spawned rarely
@@ -20,7 +21,7 @@
 
 ### Known Issues
 
-- Sound has not been ported yet
+- Sound and fullscreen support have not been ported yet
 
 ## Burntime v0.3 (2023-09-24)
 
