@@ -167,7 +167,7 @@ namespace Burntime.Classic.Scenes
                 app.Engine.BlendOverlay.FadeOut();
             }
 
-            if (app.Engine.BlendOverlay.IsBlended && time > 0)
+            if (app.Engine.BlendOverlay.IsBlended && time > 0.01f)
             {
                 if (index >= pages.Length - 1)
                 {

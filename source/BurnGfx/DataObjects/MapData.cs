@@ -12,6 +12,7 @@ namespace Burntime.Data.BurnGfx
     {
         public short Section;
         public short Item;
+        public short Set;
         public ISprite Image;
     }
 

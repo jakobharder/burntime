@@ -7,6 +7,7 @@ using Burntime.Platform.IO;
 using Burntime.Platform;
 using Burntime.Platform.Resource;
 using Burntime.Data.BurnGfx;
+using System.Linq;
 
 namespace Burntime.Deluxe.ResourceProcessor
 {
@@ -42,10 +43,10 @@ namespace Burntime.Deluxe.ResourceProcessor
             data.Mask = new Burntime.Data.BurnGfx.PathMask(data.Width * 4, data.Height * 4, 8);
 
             // set indices
-            List<String> indices = new List<string>();
+            List<string> tileSetNames = new List<string>();
             int count = reader.ReadInt32();
             for (int i = 0; i < count; i++)
-                indices.Add(reader.ReadString());
+                tileSetNames.Add(reader.ReadString());
 
             ConfigFile settings = new ConfigFile();
             if (FileSystem.ExistsFile(id.File.Replace(".burnmap", ".txt")))
@@ -74,6 +75,7 @@ namespace Burntime.Deluxe.ResourceProcessor
                         Burntime.Data.BurnGfx.MapTile tile = new Burntime.Data.BurnGfx.MapTile();
                         tile.Item = _id;
                         tile.Section = subset;
+                        tile.Set = set;
 
                         data.Tiles[x + y * data.Width] = tile;
 
@@ -203,8 +205,20 @@ namespace Burntime.Deluxe.ResourceProcessor
 
             file.Close();
 
+            int customTileSetIndex = tileSetNames.IndexOf("_");
+
             for (int i = 0; i < data.Tiles.Length; i++)
             {
+                if (data.Tiles[i].Set > 0)
+                {
+                    if (customTileSetIndex == data.Tiles[i].Set)
+                    {
+                        data.Tiles[i].Image = ResourceManager.GetImage($"pngsheet@maps/{Path.GetFileNameWithoutExtension(id.File)}_tiles.png?{data.Tiles[i].Item}?32x32", ResourceLoadType.Delayed);
+                    }
+                    if (data.Tiles[i].Image is not null)
+                        continue;
+                }
+                
                 if (data.Tiles[i].Section >= 90)
                     data.Tiles[i].Image = ResourceManager.GetImage("gfx/tiles/" + data.Tiles[i].Section.ToString("D3") + "_" + data.Tiles[i].Item.ToString("D2") + ".png", ResourceLoadType.Delayed);
                 else
