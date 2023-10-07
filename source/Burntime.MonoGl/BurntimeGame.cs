@@ -12,6 +12,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace Burntime.MonoGl
 {
@@ -67,6 +68,8 @@ namespace Burntime.MonoGl
         protected override void Initialize()
         {
             Log.Initialize("log.txt");
+
+            Window.Title = "Burntime " + FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion ?? "?";
 
             FileSystem.BasePath = "";
             FileSystem.AddPackage("system", "system");

@@ -1,6 +1,6 @@
-# Burntime
+# Burntime - Jakob's Remaster
 
-Remake of the PC strategy game 'Burntime' from Max Design.
+A remaster and continuation of the PC strategy game 'Burntime' from Max Design.
 
 ![](./doc/screens.png)
 

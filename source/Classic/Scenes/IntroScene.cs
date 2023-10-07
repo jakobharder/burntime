@@ -123,7 +123,7 @@ namespace Burntime.Classic.Scenes
             view.Map = pages[0].MapData;
             timeout.State = 1;
             timeout.Speed = 1 / pages[0].Time;
-            timeout.FadeOut();
+            //timeout.FadeOut();
         }
 
         public override bool OnMouseClick(Vector2 position, MouseButton button)
@@ -167,7 +167,7 @@ namespace Burntime.Classic.Scenes
                 app.Engine.BlendOverlay.FadeOut();
             }
 
-            if (app.Engine.BlendOverlay.IsBlended && time > 0.01f)
+            if (app.Engine.BlendOverlay.IsBlended && timeout.IsOut)
             {
                 if (index >= pages.Length - 1)
                 {

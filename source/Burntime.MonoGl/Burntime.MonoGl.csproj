@@ -13,7 +13,22 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Icon.ico</ApplicationIcon>
     <BaseOutputPath>..\..\bin</BaseOutputPath>
+    <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
+    <GenerateAssemblyInformationalVersionAttribute>true</GenerateAssemblyInformationalVersionAttribute>
   </PropertyGroup>
+
+  <!-- use git describe to set assembly version -->
+  <Target Name="SetGitVersion" BeforeTargets="InitializeSourceControlInformation">
+    <Exec Command="git describe --tags" ConsoleToMSBuild="True" IgnoreExitCode="False">
+      <Output PropertyName="GitDescribe" TaskParameter="ConsoleOutput" />
+    </Exec>
+    <PropertyGroup>
+      <!-- <AssemblyVersion>$(GitDescribe)</AssemblyVersion> -->
+      <FileVersion>$(GitDescribe)</FileVersion>
+      <InformationalVersion>$(GitDescribe)</InformationalVersion>
+    </PropertyGroup>
+  </Target>
+  
   <ItemGroup>
     <EmbeddedResource Include="Icon.ico">
       <LogicalName>Icon.ico</LogicalName>
