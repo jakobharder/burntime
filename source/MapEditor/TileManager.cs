@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.IO;
 using System.Drawing;
 using System.Drawing.Imaging;
-
+using Burntime.Platform.IO;
 namespace MapEditor
 {
     public class TileManager
@@ -72,7 +71,7 @@ namespace MapEditor
                     for (int i = 0; i < 64; i++)
                     {
                         String file = j.ToString("D3") + "_" + i.ToString("D2") + ".png";
-                        if (!File.Exists(set + "\\" + file))
+                        if (!System.IO.File.Exists(set + "\\" + file))
                         {
                             //stop = true;
                             //break;
@@ -87,7 +86,7 @@ namespace MapEditor
                         tile.SubSet = (byte)j;
 
                         String maskFile = j.ToString("D3") + "_" + i.ToString("D2") + ".txt";
-                        if (File.Exists(set + "\\" + maskFile))
+                        if (System.IO.File.Exists(set + "\\" + maskFile))
                         {
                             TextReader reader = new StreamReader(set + "\\" + maskFile);
 
@@ -119,7 +118,15 @@ namespace MapEditor
         {
             String path = "tiles";
 
-            Burntime.Platform.IO.FileSystem.AddPackage("burntime", Path + "\\burn_gfx");
+            IPackage burntime = FileSystem.OpenPackage(System.IO.Path.GetFullPath(Path), "BURN_GFX/");
+            if (burntime == null)
+            {
+                // something went wrong
+                throw new Exception("BURN_GFX folder was not found. Please make sure to set the correct path in system/path.txt to where the BURN_GFX and BURN.EXE are!");
+            }
+
+            Burntime.Platform.IO.FileSystem.AddPackage("burntime", burntime);
+
 
             Dictionary<int, int> dicColorTables = new Dictionary<int, int>();
             dicColorTables.Add(6, 23);
@@ -179,7 +186,7 @@ namespace MapEditor
                             t.Mask[k] = (mask & 1) == 1;
 
                         String maskFile = j.ToString("D3") + "_" + i.ToString("D2") + ".txt";
-                        if (File.Exists(path + "\\classic\\" + maskFile))
+                        if (System.IO.File.Exists(path + "\\classic\\" + maskFile))
                         {
                             TextReader reader = new StreamReader(path + "\\classic\\" + maskFile);
 

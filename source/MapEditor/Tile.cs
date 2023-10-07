@@ -14,6 +14,7 @@ namespace MapEditor
 
         public Size Size;
         public Image Image;
+        public Image Upscaled;
         public bool[] Mask = new bool[16];
 
         public String Set;

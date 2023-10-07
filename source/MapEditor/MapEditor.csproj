@@ -37,6 +37,7 @@
     <Compile Include="AboutBox.Designer.cs">
       <DependentUpon>AboutBox.cs</DependentUpon>
     </Compile>
+    <Compile Include="BitmapExtension.cs" />
     <Compile Include="Entrance.cs" />
     <Compile Include="IMapView.cs" />
     <Compile Include="Import.cs">
@@ -78,7 +79,6 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="mapeditor_icon_layers.ico" />
-    <Content Include="path.txt" />
     <Content Include="Readme.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -86,6 +86,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\..\resources\game\burntime.pak">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\BurnGfx\Burntime.BurnGfx.csproj" />

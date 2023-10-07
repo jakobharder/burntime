@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
 using System.IO;
+using System.Drawing.Imaging;
 
 namespace MapEditor
 {
@@ -35,19 +36,8 @@ namespace MapEditor
             wayEditPage = editTabs.TabPages[1];
             walkableEditPage = editTabs.TabPages[2];
 
-            burntimePath = "";
-
-            if (!File.Exists("path.txt"))
-            {
-                var file = File.CreateText("path.txt");
-                file.Close();
-            }
-
-            TextReader reader = new StreamReader("path.txt");
-            burntimePath = reader.ReadLine();
-            reader.Close();
-
-            burntimePathOK = CheckBurntimePath();
+            burntimePath = "burntime";
+            burntimePathOK = true;
 
             PopulateTiles();
             UpdateTitle();
@@ -349,9 +339,7 @@ namespace MapEditor
                 document.Title = Path.GetFileNameWithoutExtension(dlg.FileName);
             }
 
-            Stream file = new FileStream(document.FilePath, FileMode.Create, FileAccess.Write);
-            document.Save(file, allTiles);
-            file.Close();
+            document.Save(document.FilePath, allTiles);
             return true;
         }
 
@@ -445,7 +433,7 @@ namespace MapEditor
             if (DialogResult.OK == dlg.ShowDialog())
             {
                 document = new MapDocument(this);
-                if (!document.Open(new FileStream(dlg.FileName, FileMode.Open, FileAccess.Read), allTiles))
+                if (!document.Open(dlg.FileName, allTiles))
                 {
                     MessageBox.Show("Error while opening \"" + dlg.FileName + "\"", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     document = null;
@@ -542,91 +530,6 @@ namespace MapEditor
                 e.Cancel = true;
 
             base.OnClosing(e);
-        }
-
-        private void importToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            if (!OnCloseDocument())
-                return;
-
-            mapWindow.Tile = null;
-
-            OpenFileDialog dlg = new OpenFileDialog();
-            dlg.Title = "Select Burntime Raw or Png Image...";
-            dlg.Filter = "All Formats|mat_*.raw;*.png;*.bmp|Burntime Raw (mat_*.raw)|mat_*.raw|Image (*.png, *.bmp)|*.png;*.bmp";
-            dlg.CheckFileExists = true;
-            dlg.CheckPathExists = true;
-            if (DialogResult.OK == dlg.ShowDialog())
-            {
-                if (dlg.FileName.EndsWith(".raw", StringComparison.InvariantCultureIgnoreCase))
-                {
-                    FileStream file = new FileStream(dlg.FileName, FileMode.Open);
-
-                    // check & size selection dialog
-                    document = new MapDocument(this);
-                    document.Import(file, 32, allTiles[0]);
-                    document.Title = Path.GetFileNameWithoutExtension(dlg.FileName);
-                    UpdateTitle();
-
-                    mapWindow.SetDocument(document);
-
-                    file.Dispose();
-                }
-                else
-                {
-
-                    Import dlg2 = new Import(allTiles);
-                    if (DialogResult.OK != dlg2.ShowDialog())
-                        return;
-
-                    Cursor = Cursors.WaitCursor;
-
-                    TileSet addSet = (dlg2.Set == 0) ? null : allTiles[dlg2.Set];
-                    ListView addView = (dlg2.Set == 0) ? null : tileViews[dlg2.Set];
-
-                    int num = 0;
-                    if (addSet != null)
-                    {
-                        num = addSet.Tiles.Count;
-
-                        addSet.CalcLast();
-
-                        if (dlg2.SubSet > addSet.LastSubSet)
-                        {
-                            addSet.LastSubSet = (byte)(dlg2.SubSet - 1);
-                            addSet.LastId = Tile.LAST_ID;
-                        }
-                    }
-
-                    document = new MapDocument(this);
-                    document.Import(dlg.FileName, dlg2.TileSize, allTiles, addSet);
-                    document.Title = Path.GetFileNameWithoutExtension(dlg.FileName);
-                    UpdateTitle();
-
-                    if (addSet != null)
-                    {
-                        for (int i = num; i < addSet.Tiles.Count; i++)
-                        {
-                            addSet.Tiles[i].Image.Save("tiles\\" + addSet.Name + "\\" + addSet.Tiles[i].SubSet.ToString("D3") + "_" + addSet.Tiles[i].ID.ToString("D2") + ".png");
-
-                            addView.LargeImageList.Images.Add(addSet.Tiles[i].Image);
-                            addView.LargeImageList.ColorDepth = ColorDepth.Depth24Bit;
-
-                            ListViewItem item = new ListViewItem();
-                            item.ImageIndex = addView.LargeImageList.Images.Count - 1;
-                            item.ToolTipText = "[" + addSet.Tiles[i].SubSet.ToString("D3") + "x" + addSet.Tiles[i].ID.ToString("D2") + "]";
-
-                            addView.Items.Add(item);
-                        }
-
-                        addSet.Sort();
-                    }
-
-                    mapWindow.SetDocument(document);
-
-                    Cursor = Cursors.Default;
-                }
-            }
         }
 
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
@@ -826,6 +729,89 @@ namespace MapEditor
         {
             TileManager.Save();
             btnSaveWalkable.Enabled = TileManager.Changed;
+        }
+
+        private void importAsNewMapToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!OnCloseDocument())
+                return;
+
+            mapWindow.Tile = null;
+
+            OpenFileDialog dlg = new OpenFileDialog();
+            dlg.Title = "Select Burntime RAW or PNG image...";
+            dlg.Filter = "All Formats|mat_*.raw;*.png;*.bmp|Burntime Raw (mat_*.raw)|mat_*.raw|Image (*.png, *.bmp)|*.png;*.bmp";
+            dlg.CheckFileExists = true;
+            dlg.CheckPathExists = true;
+            if (DialogResult.OK == dlg.ShowDialog())
+            {
+                if (dlg.FileName.EndsWith(".raw", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    FileStream file = new FileStream(dlg.FileName, FileMode.Open);
+
+                    // check & size selection dialog
+                    document = new MapDocument(this);
+                    document.Import(file, 32, allTiles[0]);
+                    document.Title = Path.GetFileNameWithoutExtension(dlg.FileName);
+                    UpdateTitle();
+
+                    mapWindow.SetDocument(document);
+
+                    file.Dispose();
+                }
+                else
+                {
+                    var sharedTiles = allTiles;
+
+                    //Import dlg2 = new Import(allTiles);
+                    //if (DialogResult.OK != dlg2.ShowDialog())
+                    //    return;
+
+                    Cursor = Cursors.WaitCursor;
+
+                    var addSet = new TileSet() { Name = "_", LastId = Tile.LAST_ID };
+
+                    document = new MapDocument(this);
+                    document.Import(dlg.FileName, 32, sharedTiles, addSet);
+                    document.Title = Path.GetFileNameWithoutExtension(dlg.FileName);
+                    UpdateTitle();
+
+                    if (addSet?.Tiles.Count > 0)
+                    {
+                        document.CustomTiles = addSet;
+                    }
+
+                    mapWindow.SetDocument(document);
+
+                    Cursor = Cursors.Default;
+                }
+            }
+        }
+
+        private void convertToMegaTileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string directory = Path.GetDirectoryName(mapWindow.Document.FilePath);
+            string fileName = Path.GetFileNameWithoutExtension(mapWindow.Document.FilePath);
+
+            string filePath = Path.Combine(directory, fileName);
+
+            mapWindow.Document.ConvertToMegaTile();
+            mapWindow.MapImage.Save(filePath + ".png");
+        }
+
+        private void updateUpscaledTilesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog dlg = new()
+            {
+                Title = "Select upscaled PNG image...",
+                Filter = "Image (*.png)|*.png",
+                CheckFileExists = true,
+                CheckPathExists = true
+            };
+            if (DialogResult.OK == dlg.ShowDialog())
+            {
+                mapWindow.Document.UpdateUpscaled(dlg.FileName, allTiles, mapWindow.MapImage);
+            }
         }
     }
 }
