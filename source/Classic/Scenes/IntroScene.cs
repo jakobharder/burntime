@@ -167,7 +167,7 @@ namespace Burntime.Classic.Scenes
                 app.Engine.BlendOverlay.FadeOut();
             }
 
-            if (app.Engine.BlendOverlay.IsBlended)
+            if (app.Engine.BlendOverlay.IsBlended && time > 0)
             {
                 if (index >= pages.Length - 1)
                 {
@@ -204,7 +204,8 @@ namespace Burntime.Classic.Scenes
                     {
                         activeAni = i;
                         image.Background = animations[i].File;
-                        image.Background.Animation.Progressive = false;
+                        if (image.Background.Animation is not null)
+                            image.Background.Animation.Progressive = false;
                         image.Position = animations[i].Position;
                         aniTime = animations[i].Time - (time - animations[i].Start);
                     }
