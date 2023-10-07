@@ -143,6 +143,8 @@ namespace MapEditor
                 btnAddWay.Enabled = mapWindow.IsEntranceSelected;
                 numDays.Enabled = mapWindow.IsWaySelected;
                 btnRemoveWay.Enabled = mapWindow.IsWaySelected;
+                updateTilesToolStripMenuItem.Enabled = (document.FilePath is not null);
+                updateUpscaledTilesToolStripMenuItem.Enabled = (document.FilePath is not null);
 
                 btnTileMode.Enabled = true;
                 btnEntranceMode.Enabled = true;
@@ -165,6 +167,8 @@ namespace MapEditor
                 btnAddWay.Enabled = false;
                 numDays.Enabled = false;
                 btnRemoveWay.Enabled = false;
+                updateTilesToolStripMenuItem.Enabled = false;
+                updateUpscaledTilesToolStripMenuItem.Enabled = false;
 
                 btnTileMode.Checked = true;
                 btnEntranceMode.Checked = false;
@@ -811,6 +815,39 @@ namespace MapEditor
             if (DialogResult.OK == dlg.ShowDialog())
             {
                 mapWindow.Document.UpdateUpscaled(dlg.FileName, allTiles, mapWindow.MapImage);
+            }
+        }
+
+        private void updateTilesToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog dlg = new OpenFileDialog();
+            dlg.Title = "Select PNG image...";
+            dlg.Filter = "Image (*.png)|*.png";
+            dlg.CheckFileExists = true;
+            dlg.CheckPathExists = true;
+            if (DialogResult.OK == dlg.ShowDialog())
+            {
+                var sharedTiles = allTiles;
+
+                Cursor = Cursors.WaitCursor;
+
+                var addSet = new TileSet() { Name = "_", LastId = Tile.LAST_ID };
+
+                document.Import(dlg.FileName, 32, sharedTiles, addSet);
+                UpdateTitle();
+
+                if (addSet?.Tiles.Count > 0)
+                {
+                    document.CustomTiles = addSet;
+                }
+                else
+                {
+                    document.CustomTiles = null;
+                }
+
+                mapWindow.SetDocument(document);
+
+                Cursor = Cursors.Default;
             }
         }
     }
