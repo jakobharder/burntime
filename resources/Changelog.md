@@ -4,8 +4,8 @@
 
 ### Game
 
-- NewGfx setting in options to toggle between original and remastered graphics
-- Remastered item and room background graphics
+- Remastered graphics for items, backgrounds, maps.
+  Toggle between remastered and original with `F2` or in options menu.
 - Clothes increase defense value when equipped
 - Replaced "Sie" with "du"
 - Dishes now spawned rarely
@@ -13,7 +13,7 @@
 ### Technical
 
 - Fixed a crash when immediately loading a save
-- Ported game to MonoGame because SlimDX stopped development ~2012. This means also a step back to .NET 6
+- Ported game to MonoGame because SlimDX stopped development ~2012. This also means a step back to .NET 6
 - Improved path finding performance
 - Centered dialog on all resolutions
 - Fixed NPC characters going into unwalkable areas
@@ -21,7 +21,7 @@
 
 ### Known Issues
 
-- Sound and fullscreen support have not been ported yet
+- Sound has not been ported yet
 
 ## Burntime v0.3 (2023-09-24)
 
@@ -142,7 +142,7 @@ known issues:
 - User path (User/My Games/Burntime Classic) for settings and savegames
 - New special items
 - Fixed various bugs in game logic
-- Fixed various crashes 
+- Fixed various crashes
 - Fixed corrupt save game when overwriting a bigger save game with a smaller one fixed
 - Fixed crash when using 64 bit with music on
 - Many other bugs fixed
@@ -166,7 +166,7 @@ known issues:
 - Killed dogs drop meat
 - Bug report button in launcher
 - Bug fixed in reststop. It is not possible to enter view
-- Game freezes fixed when viewing two different scenes (trader, 
+- Game freezes fixed when viewing two different scenes (trader,
   view, ruin)
 - Other small bugs fixed
 

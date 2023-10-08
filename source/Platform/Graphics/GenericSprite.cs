@@ -14,7 +14,6 @@ public abstract class GenericSprite<TSpriteFrame, TTexture> : ISprite where TTex
 #warning TODO access levels
     public TSpriteFrame[] internalFrames;
     public ResourceID id;
-    public SpriteAnimation ani;
 
     protected GenericSprite()
     {
@@ -35,7 +34,7 @@ public abstract class GenericSprite<TSpriteFrame, TTexture> : ISprite where TTex
 
     public int CurrentFrame
     {
-        get { if (ani != null) return ani.Frame; return 0; }
+        get { if (Animation != null) return Animation.Frame; return 0; }
     }
 
     public bool ColorKey
@@ -49,7 +48,7 @@ public abstract class GenericSprite<TSpriteFrame, TTexture> : ISprite where TTex
         get { return id; }
     }
 
-    public override SpriteAnimation Animation => ani;
+    public override SpriteAnimation Animation { get; set; }
     public override Vector2f Resolution
     {
         get => internalFrames[0].Resolution;
@@ -60,8 +59,8 @@ public abstract class GenericSprite<TSpriteFrame, TTexture> : ISprite where TTex
 
     public override void Update(float elapsed)
     {
-        if (ani != null && internalFrames != null)
-            ani.Update(elapsed);
+        if (Animation != null && internalFrames != null)
+            Animation.Update(elapsed);
     }
 
     public override bool Touch()
@@ -102,7 +101,7 @@ public abstract class GenericSprite<TSpriteFrame, TTexture> : ISprite where TTex
         this.id = id;
         internalFrames = frames;
         this.resMan = resMan;
-        ani = animation;
+        Animation = animation;
     }
 
     public override int Unload()

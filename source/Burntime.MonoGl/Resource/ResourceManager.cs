@@ -237,6 +237,7 @@ namespace Burntime.Platform.Resource
             {
                 if (Sprite.internalFrames.Length != loaderAni.FrameCount)
                     Array.Resize(ref Sprite.internalFrames, loaderAni.FrameCount);
+                Sprite.Animation ??= new SpriteAnimation(loaderAni.FrameCount);
                 Sprite.Animation.Frame = System.Math.Min(loaderAni.FrameCount - 1, Sprite.Animation.Frame);
                 Sprite.Animation.FrameCount = loaderAni.FrameCount;
 
@@ -258,6 +259,11 @@ namespace Burntime.Platform.Resource
             }
             else
             {
+                if (Sprite.Animation is not null)
+                {
+                    Sprite.Animation.Frame = 0;
+                    Sprite.Animation.FrameCount = 1;
+                }
                 lock (sprites)
                     MemoryUsage += Sprite.internalFrames[0].LoadFromProcessor(loader);
             }

@@ -8,7 +8,7 @@ public abstract class ISprite : DataObject
 
     public abstract Vector2f Resolution { get; set; }
     public abstract Vector2 Size { get; }
-    public abstract SpriteAnimation Animation { get; }
+    public abstract SpriteAnimation Animation { get; set; }
     public abstract bool IsLoaded { get; }
 
     public int Width => Size.x;
