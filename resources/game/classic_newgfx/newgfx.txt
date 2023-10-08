@@ -3,13 +3,30 @@ sprite_scale=2x2
 zei_009.raw=gfx/tiles/009_{0:00}.png
 zei_012.raw=gfx/tiles/012_{0:00}.png
 zei_013.raw=gfx/tiles/013_{0:00}.png
-zei_018.raw=gfx/tiles/018_{0:00}.png
-zei_022.raw=gfx/tiles/022_{0:00}.png
 syssze.raw=pngani@gfx/char/{0}.png
 burngfxani@munt.raw=pngani@gfx/munt_{0}.png
 munt.raw=gfx/munt_{0}.png
 sta.pac=gfx/sta.png
 syst.raw=gfx/syst_{0}.png
+
+[replacement_60x72]
+sprite_scale=1.875x2.25
+zei_004.raw=pngsheet@maps/shared/set_4.png?{0}?60x72
+zei_005.raw=pngsheet@maps/shared/set_5.png?{0}?60x72
+zei_006.raw=pngsheet@maps/shared/set_6.png?{0}?60x72
+zei_007.raw=pngsheet@maps/shared/set_7.png?{0}?60x72
+zei_010.raw=pngsheet@maps/shared/set_10.png?{0}?60x72
+zei_011.raw=pngsheet@maps/shared/set_11.png?{0}?60x72
+zei_018.raw=pngsheet@maps/shared/set_18.png?{0}?60x72
+zei_019.raw=pngsheet@maps/shared/set_19.png?{0}?60x72
+zei_020.raw=pngsheet@maps/shared/set_20.png?{0}?60x72
+zei_021.raw=pngsheet@maps/shared/set_21.png?{0}?60x72
+zei_022.raw=pngsheet@maps/shared/set_22.png?{0}?60x72
+zei_023.raw=pngsheet@maps/shared/set_23.png?{0}?60x72
+zei_025.raw=pngsheet@maps/shared/set_25.png?{0}?60x72
+zei_026.raw=pngsheet@maps/shared/set_26.png?{0}?60x72
+zei_028.raw=pngsheet@maps/shared/set_28.png?{0}?60x72
+zei_029.raw=pngsheet@maps/shared/set_29.png?{0}?60x72
 
 [replacement_stretched]
 sprite_scale=2x2.375
@@ -37,7 +54,6 @@ gfx/pistol_loaded.png=pngsheet@gfx/items/gst.png?61?64x76
 gfx/pistol_unloaded.png=pngsheet@gfx/items/gst.png?62?64x76
 gfx/rifle.png=pngsheet@gfx/items/gst.png?63?64x76
 gfx/dish.png=pngsheet@gfx/items/gst.png?64?64x76
-' zei_018.raw=pngsheet@maps/shared/set_18.png?{0}?64x76
 zei_001.raw=pngsheet@maps/shared/set_1.png?{0}?64x76
 zei_002.raw=pngsheet@maps/shared/set_2.png?{0}?64x76
 zei_003.raw=pngsheet@maps/shared/set_3.png?{0}?64x76

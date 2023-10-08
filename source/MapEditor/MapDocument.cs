@@ -581,7 +581,7 @@ namespace MapEditor
                     var tile = tiles[x, y];
                     if (tile != null)
                     {
-                        tile.Upscaled = inputImage.ExtractTile(x, y, 64, 76);
+                        tile.Upscaled = inputImage.ExtractTile(x, y, Tile.UPSCALE_WIDTH, Tile.UPSCALE_HEIGHT);
                         if (tile.Set == "classic")
                         {
                             classicSubsets.Add(tile.SubSet);

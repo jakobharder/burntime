@@ -24,7 +24,7 @@
 
 ### Known Issues
 
-- Sound has not been ported yet
+- Sound has not been ported yet to MonoGame
 
 ## Burntime v0.3 (2023-09-24)
 

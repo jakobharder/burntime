@@ -87,24 +87,27 @@ namespace MapEditor
 
         public void Save(string filePath, bool upscaled = false, Bitmap paletteReference = null)
         {
-            int tileWidth = upscaled ? 64 : 32;
-            int tileHeight = upscaled ? 76 : 32;
+            int tileWidth = upscaled ? Tile.UPSCALE_WIDTH : 32;
+            int tileHeight = upscaled ? Tile.UPSCALE_HEIGHT : 32;
 
             int columns = Tiles.Count > 64 ? 16 : 8;
             int rows = (int)Math.Ceiling(Tiles.Count / (float)columns);
 
             Bitmap tileSheet = new Bitmap(columns * tileWidth, rows * tileHeight, PixelFormat.Format24bppRgb);
-            //if (System.IO.File.Exists(filePath))
-            //{
+            Graphics g = Graphics.FromImage(tileSheet);
 
-            //}
+            if (System.IO.File.Exists(filePath))
+            {
+                Image existingSheet = Image.FromFile(filePath);
+                g.DrawImage(existingSheet, 0, 0);
+                existingSheet.Dispose();
+            }
 
             int tileIndex = 0;
             for (int row = 0; row < rows; row++)
             {
                 for (int column = 0; column < columns && tileIndex < Tiles.Count; column++)
                 {
-                    Graphics g = Graphics.FromImage(tileSheet);
                     var tileImage = upscaled ? Tiles[tileIndex].Upscaled : Tiles[tileIndex].Image;
                     if (tileImage is not null)
                     {
@@ -120,7 +123,7 @@ namespace MapEditor
             }
 
             System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(filePath));
-            tileSheet.Save8Bit(filePath, paletteReference);
+            tileSheet.Save8Bit(filePath, tileSheet);
             //tileSheet.Save(filePath);
         }
 
@@ -167,6 +170,8 @@ namespace MapEditor
                     tileIndex++;
                 }
             }
+
+            tileSheet.Dispose();
         }
     }
 }

@@ -137,7 +137,7 @@ namespace MapEditor
             dicColorTables.Add(15, 14);
             dicColorTables.Add(12, 13);
             dicColorTables.Add(13, 13);
-            dicColorTables.Add(18, 2);
+            dicColorTables.Add(18, 11);
             dicColorTables.Add(25, 26);
             dicColorTables.Add(26, 26);
             dicColorTables.Add(32, 89);

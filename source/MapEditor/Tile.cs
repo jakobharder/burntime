@@ -7,6 +7,9 @@ namespace MapEditor
 {
     public class Tile
     {
+        public const int UPSCALE_WIDTH = 60;
+        public const int UPSCALE_HEIGHT = 72;
+
         public const int FIRST_ID = 0;
         public const int LAST_ID = 62;
         public const int FIRST_SUBSET = 1;

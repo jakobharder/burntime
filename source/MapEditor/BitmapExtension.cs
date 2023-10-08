@@ -40,8 +40,8 @@ internal static class BitmapExtensions
 
     public static Image EnsureProperScale(this Image image, int tileWidth, int tileHeight)
     {
-        int expectedWidth = tileWidth * 64;
-        int expectedHeight = tileHeight * 76;
+        int expectedWidth = tileWidth * Tile.UPSCALE_WIDTH;
+        int expectedHeight = tileHeight * Tile.UPSCALE_HEIGHT;
 
         if (image.Width == expectedWidth && image.Height == expectedHeight) return image;
 
