@@ -280,8 +280,9 @@ namespace Burntime.MonoGl
 
         void IEngine.ReloadGraphics()
         {
-            BlendOverlay.FadeOut();
+            BlendOverlay.FadeOut(wait: true);
             ResourceManager.ReleaseAll();
+            isLoading = true;
             BlendOverlay.FadeIn();
         }
 

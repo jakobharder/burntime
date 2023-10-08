@@ -12,7 +12,7 @@ public class BlendOverlay : BlendOverlayBase
 
     public void Render(GameTime RenderTime, SlimDX.Direct3D9.Sprite SpriteRenderer)
     {
-        if (!(BlockFadeOut && _blendFade.IsFadingOut))
+        if (!(BlockFadeOut && _blendFade.IsFadingOut) && !(BlockFadeOut && _blendFade.IsFadingIn))
             _blendFade.Update(RenderTime.Elapsed);
 
         if (!_blendFade.IsOut)

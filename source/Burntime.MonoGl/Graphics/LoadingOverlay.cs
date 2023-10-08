@@ -33,11 +33,11 @@ namespace Burntime.Platform.Graphics
             {
                 if (_engine.loadingStack > 0 || _engine.ResourceManager.IsLoading)
                 {
-                    loadingDelayState += loadingDelay * elapsedSeconds;
-                    if (loadingDelayState >= 1)
-                    {
+                    //loadingDelayState += loadingDelay * elapsedSeconds;
+                    //if (loadingDelayState >= 1)
+                    //{
                         _engine.isLoading = true;
-                    }
+                    //}
                 }
             }
             else

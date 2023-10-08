@@ -8,7 +8,7 @@
   Toggle between remastered and original with `F2` or in options menu.
 - Clothes increase defense value when equipped
 - Replaced "Sie" with "du"
-- Dishes now spawned rarely
+- Removed dish from random spawn
 
 ### Technical
 
@@ -18,6 +18,8 @@
 - Centered dialog on all resolutions
 - Fixed NPC characters going into unwalkable areas
 - Fixed location names on main map positioned too low
+- Preload map tiles to avoid pop in
+- Remove settings.txt from `<user>/Save Games/Burntime`
 
 ### Known Issues
 
