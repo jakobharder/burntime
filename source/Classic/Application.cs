@@ -74,8 +74,11 @@ namespace Burntime.Classic
             Settings = new ConfigFile();
             Settings.Open("settings.txt");
 
+            // legacy clean up
+            _ = FileSystem.RemoveFile("user:settings.txt");
+
             // set language code
-            FileSystem.LocalizationCode = Settings["game"].GetString("language");
+            FileSystem.LocalizationCode = Settings["system"].GetString("language");
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             ResourceManager.Encoding = Encoding.GetEncoding(852); // DOS central europe
 
@@ -83,7 +86,10 @@ namespace Burntime.Classic
             FileSystem.SetUserFolder("Burntime/Classic");
 
             // reload settings
+#warning TODO settings
             Settings.Open("settings.txt");
+            // legacy clean up
+            _ = FileSystem.RemoveFile("user:settings.txt");
 
             //Engine.Resolution.Native = new Vector2(512, 200);//Settings["system"].GetVector2("resolution");
 #warning TODO SlimDX/Mono full screen
@@ -126,8 +132,8 @@ namespace Burntime.Classic
 
         protected override void OnClose()
         {
-            Settings["system"].Set("music", MusicPlayback);
-            Settings.Save("settings.txt");
+            //Settings["system"].Set("music", MusicPlayback);
+            //Settings.Save("settings.txt");
         }
 
         // internal use

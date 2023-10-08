@@ -4,12 +4,12 @@ windowmode    = off
 music         = on
 newgfx        = on
 highres_font  = on
+language      = de
 
 [game]
-pathfinding_cycles 	= 50		' cycles per second
-always_synchronize 	= no		' use network synchronization in local games too
-roundtime		= 240
-disable_ai		= yes
+pathfinding_cycles = 50		' cycles per second
+always_synchronize = no		' use network synchronization in local games too
+roundtime          = 240
 
 [engine]
 safemode      = off
