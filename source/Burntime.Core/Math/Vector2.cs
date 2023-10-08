@@ -1,6 +1,7 @@
 ﻿namespace Burntime.Platform
 {
     [Serializable]
+    [System.Diagnostics.DebuggerDisplay("Vector2 {x}x{y}")]
     public struct Vector2
     {
         public static readonly Vector2 Zero = new(0, 0);
@@ -202,6 +203,7 @@
     }
 
     [Serializable]
+    [System.Diagnostics.DebuggerDisplay("Vector2f {x}x{y}")]
     public struct Vector2f
     {
         public static readonly Vector2f Zero = new(0, 0);

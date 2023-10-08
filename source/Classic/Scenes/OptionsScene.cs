@@ -211,6 +211,10 @@ namespace Burntime.Classic
                 input.Mode = SavegameMode.Delete;
             else
                 input.Mode = SavegameMode.None;
+
+            // can be triggered via F1 or option menu
+            var classic = BurntimeClassic.Instance;
+            _buttonNewGfx.Text = classic.NewGfx ? "@newburn?17" : "@newburn?18";
         }
 
         void OnSelect(int index)
@@ -296,8 +300,6 @@ namespace Burntime.Classic
             var classic = BurntimeClassic.Instance;
 
             classic.NewGfx = !classic.NewGfx;
-            _buttonNewGfx.Text = classic.NewGfx ? "@newburn?17" : "@newburn?18";
-
             if (classic.NewGfx)
             {
                 FileSystem.AddPackage("newgfx", "game/classic_newgfx");

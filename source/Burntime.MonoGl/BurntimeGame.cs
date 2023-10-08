@@ -58,6 +58,12 @@ namespace Burntime.MonoGl
             //  set { isLoading = value; if (value) fadeOutState = 1; }
         }
 
+#if (DEBUG)
+        public bool FullScreen { get; set; } = false;
+#else
+        public bool FullScreen { get; set; } = true;
+#endif
+
         public BurntimeGame()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -87,8 +93,8 @@ namespace Burntime.MonoGl
 
             _burntimeApp = new();
 
-            Resolution.VerticalCorrection = _burntimeApp.VerticalCorrection;
-            Resolution.GameResolutions = _burntimeApp.Resolutions;
+            Resolution.RatioCorrection = _burntimeApp.RatioCorrection;
+            Resolution.MaxVerticalResolution = _burntimeApp.MaxVerticalResolution;
 
             _burntimeApp.Engine = this;
             _burntimeApp.SceneManager = new SceneManager(_burntimeApp);
@@ -105,8 +111,24 @@ namespace Burntime.MonoGl
 
             Log.Info("Start engine...");
             IsMouseVisible = false;
-            _graphics.PreferredBackBufferWidth = Resolution.Native.x;
-            _graphics.PreferredBackBufferHeight = Resolution.Native.y;
+            if (FullScreen)
+            {
+                Resolution.Native = new Platform.Vector2(GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width, 
+                    GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height);
+
+                _graphics.PreferredBackBufferWidth = Resolution.Native.x;
+                _graphics.PreferredBackBufferHeight = Resolution.Native.y;
+                _graphics.HardwareModeSwitch = false;
+                _graphics.IsFullScreen = true;
+            }
+            else
+            {
+                Resolution.Native = new Platform.Vector2(GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
+                    GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height) / 2;
+
+                _graphics.PreferredBackBufferWidth = Resolution.Native.x;
+                _graphics.PreferredBackBufferHeight = Resolution.Native.y;
+            }
             _graphics.ApplyChanges();
             base.Initialize();
         }

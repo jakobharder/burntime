@@ -1,12 +1,9 @@
-﻿using System;
-using System.Text;
-
+﻿using Burntime.Classic.Logic;
+using Burntime.Framework;
 using Burntime.Platform;
 using Burntime.Platform.IO;
-using Burntime.Framework;
-using Burntime.Classic.Logic;
-using Burntime.Platform.Resource;
-using System.Collections.Generic;
+using System;
+using System.Text;
 
 namespace Burntime.Classic
 {
@@ -30,16 +27,20 @@ namespace Burntime.Classic
         public static string FontName = "font.txt";
 
         // external use
-        public override String Title { get { return "Burntime"; } }
+        public override string Title { get { return "Burntime"; } }
         //public override Vector2[] Resolutions { get { return new Vector2[] { new Vector2(320, 200) }; } }
-        public override Vector2[] Resolutions { get { return new Vector2[] { new Vector2(480, 225), new Vector2(384, 240) }; } }
+        //public override Vector2[] Resolutions { get { return new Vector2[] { new Vector2(480, 225), new Vector2(384, 240) }; } }
+        //public override Vector2[] Resolutions { get { return new Vector2[] { new Vector2(400, 188), new Vector2(384, 240) }; } }
         //public override Vector2[] Resolutions { get { return new Vector2[] { new Vector2(640, 300), new Vector2(384, 240) }; } }
+
+        public override int MaxVerticalResolution => 288;
 
         public bool IsWideScreen { get { return Engine.Resolution.Native.Ratio > 1.5f; } }
 
         // Burntime's ratio is 8:5. We need to scale height by 1.2 (320x200 where screens today would be multiple of 320x240).
         // But to get a clean tile resolution of 32x38 use 1.1875
-        public override float VerticalCorrection { get { return 1.0f / 32.0f * 38.0f; } }
+        //public override Vector2f RatioCorrection => new(1, 1.0f / 32.0f * 38.0f);
+        public override Vector2f RatioCorrection => new(1.0f/ 64.0f * 60.0f, 1.0f / 64.0f * 72.0f);
 
         public override System.Drawing.Icon Icon
         {
@@ -84,7 +85,7 @@ namespace Burntime.Classic
             // reload settings
             Settings.Open("settings.txt");
 
-            Engine.Resolution.Native = Settings["system"].GetVector2("resolution");
+            //Engine.Resolution.Native = new Vector2(512, 200);//Settings["system"].GetVector2("resolution");
 #warning TODO SlimDX/Mono full screen
             //Engine.FullScreen = !Settings["system"].GetBool("windowmode");
             //Engine.UseTextureFilter = Settings["system"].GetBool("filter");
@@ -153,6 +154,34 @@ namespace Burntime.Classic
         public ClassicGame Game
         {
             get { return GameState as ClassicGame; }
+        }
+
+        public override void ToggleNewGfx()
+        {
+            NewGfx = !NewGfx;
+            if (NewGfx)
+            {
+                FileSystem.AddPackage("newgfx", "game/classic_newgfx");
+                if (FileSystem.ExistsFile("newgfx.txt"))
+                {
+                    ResourceManager.SetResourceReplacement("newgfx.txt");
+
+                    // use highres font anyway
+                    if (FileSystem.ExistsFile("highres-font.txt"))
+                        FontName = "highres-font.txt";
+                }
+                else
+                {
+                    ResourceManager.SetResourceReplacement(null);
+                }
+                Engine.ReloadGraphics();
+            }
+            else
+            {
+                FileSystem.RemovePackage("newgfx");
+                ResourceManager.SetResourceReplacement(null);
+                Engine.ReloadGraphics();
+            }
         }
     }
 }

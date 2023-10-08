@@ -9,7 +9,7 @@ class SpriteEntity : RenderEntity
     public Rectangle Rectangle;
     public SlimDX.Vector3 Position;
     public SlimDX.Color4 Color;
-    public float Factor = 1;
+    public Vector2f Factor = Vector2f.One;
 }
 
 class LineEntity : RenderEntity
