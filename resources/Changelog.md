@@ -14,6 +14,7 @@
 
 - Fixed a crash when immediately loading a save
 - Ported game to MonoGame because SlimDX stopped development ~2012. This also means a step back to .NET 6
+- Adjust resolution on window resize
 - Improved path finding performance
 - Centered dialog on all resolutions
 - Fixed NPC characters going into unwalkable areas

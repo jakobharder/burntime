@@ -75,6 +75,16 @@ namespace Burntime.Classic
             Windows += dialog;
         }
 
+        public override void OnResizeScreen()
+        {
+            base.OnResizeScreen();
+
+            Size = app.Engine.Resolution.Game;
+            view.Size = new Vector2(Size.x - 32, Size.y - 40);
+            dialog.Position = view.Position + (view.Size - dialog.Size) / 2 - new Vector2(0, 10);
+            gui.SetMapRenderArea(view, Size);
+        }
+
         void dialog_WindowShow(object sender, EventArgs e)
         {
             hoverInfo.IsVisible = false;

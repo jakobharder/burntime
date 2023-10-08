@@ -141,6 +141,13 @@ namespace Burntime.Classic
             CreateSaveGameButtons();
         }
 
+        public override void OnResizeScreen()
+        {
+            base.OnResizeScreen();
+
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+        }
+
         protected override void OnActivateScene(object parameter)
         {
             RefreshSaveGames();

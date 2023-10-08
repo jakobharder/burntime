@@ -160,6 +160,13 @@ namespace Burntime.Classic
             PlayerTwoSwitch.Table = conversionTable;
         }
 
+        public override void OnResizeScreen()
+        {
+            base.OnResizeScreen();
+
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+        }
+
         public override void OnRender(RenderTarget Target)
         {
             base.OnRender(Target);

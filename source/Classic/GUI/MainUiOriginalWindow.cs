@@ -27,8 +27,11 @@ namespace Burntime.Classic
     {
         GuiFont font;
         GuiFont playerColor;
-        FaceWindow face;
+        FaceWindow _face;
         String name;
+
+        readonly Image _uiElement1;
+        readonly Image _uiElement2;
 
         public MainUiOriginalWindow(Module App)
             : base(App)
@@ -38,22 +41,35 @@ namespace Burntime.Classic
             font = new GuiFont(BurntimeClassic.FontName, new PixelColor(92, 92, 148));
             playerColor = new GuiFont(BurntimeClassic.FontName, PixelColor.White);
 
-            Image image = new Image(App);
-            image.Background = "munt.raw?1";
-            image.Position = new Vector2(Size.x / 2 - 60, Size.y - 40);
-            Windows += image;
+            Windows += _uiElement1 = new Image(App)
+            {
+                Background = "munt.raw?1",
+                Position = new Vector2(Size.x / 2 - 60, Size.y - 40)
+            };
 
-            image = new Image(App);
-            image.Background = "munt.raw?22";
-            image.Position = new Vector2(Size.x / 2 - 42, 0);
-            Windows += image;
+            Windows += _uiElement2 = new Image(App)
+            {
+                Background = "munt.raw?22",
+                Position = new Vector2(Size.x / 2 - 42, 0)
+            };
 
-            face = new FaceWindow(App);
-            face.Position = new Vector2(Size.x / 2 - 31, Size.y - 56);
-            face.FaceID = 0;
-            face.DisplayOnly = true;
-            face.Layer++;
-            Windows += face;
+            Windows += _face = new FaceWindow(App)
+            {
+                Position = new Vector2(Size.x / 2 - 31, Size.y - 56),
+                FaceID = 0,
+                DisplayOnly = true
+            };
+            _face.Layer++;
+        }
+
+        public override void OnResizeScreen()
+        {
+            base.OnResizeScreen();
+
+            Size = app.Engine.Resolution.Game;
+            _uiElement1.Position = new Vector2(Size.x / 2 - 60, Size.y - 40);
+            _uiElement2.Position = new Vector2(Size.x / 2 - 42, 0);
+            _face.Position = new Vector2(Size.x / 2 - 31, Size.y - 56);
         }
 
         public override void SetMapRenderArea(MapView mapView, Vector2 size)
@@ -67,8 +83,8 @@ namespace Burntime.Classic
             base.OnRender(Target);
 
             Target.RenderRect(new Vector2(0, 0), new Vector2(16, Size.y - 40), new PixelColor(0, 0, 0));
-            Target.RenderRect(new Vector2(Size.x - 16, 0), new Vector2(16, Size.y - 40), new PixelColor(0, 0, 0));
-            Target.RenderRect(new Vector2(0, Size.y - 40), new Vector2(Size.x, 40), new PixelColor(0, 0, 0));
+            Target.RenderRect(new Vector2(Size.x - 16, 0), new Vector2(17, Size.y - 40), new PixelColor(0, 0, 0));
+            Target.RenderRect(new Vector2(0, Size.y - 40), new Vector2(Size.x + 1, 41), new PixelColor(0, 0, 0));
 
             Target.Layer++;
             ClassicGame game = app.GameState as ClassicGame;
@@ -98,14 +114,14 @@ namespace Burntime.Classic
             ClassicGame game = app.GameState as ClassicGame;
             if (game.World.ActivePlayer == -1)
             {
-                face.FaceID = -1;
+                _face.FaceID = -1;
                 name = "";
                 return;
             }
 
             Player player = game.World.Players[game.World.ActivePlayer];
 
-            face.FaceID = player.FaceID;
+            _face.FaceID = player.FaceID;
             name = player.Name;
             playerColor = new GuiFont(BurntimeClassic.FontName, player.Color);
         }

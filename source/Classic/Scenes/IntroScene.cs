@@ -96,6 +96,13 @@ namespace Burntime.Classic.Scenes
             PreloadAnimations();
         }
 
+        public override void OnResizeScreen()
+        {
+            base.OnResizeScreen();
+
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+        }
+
         private void PreloadAnimations()
         {
             for (int i = 0; i < animations.Length; i++)

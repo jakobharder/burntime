@@ -56,6 +56,13 @@ namespace Burntime.Classic.Scenes
             Windows += dialog;
         }
 
+        public override void OnResizeScreen()
+        {
+            base.OnResizeScreen();
+
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+        }
+
         void dialog_WindowHide(object sender, EventArgs e)
         {
             if (dialog.Result == ConversationActionType.Yes)

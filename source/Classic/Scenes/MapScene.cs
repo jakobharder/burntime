@@ -62,6 +62,14 @@ namespace Burntime.Classic
             debugNoTravel = classic.Settings["debug"].GetBool("no_travel") && classic.Settings["debug"].GetBool("enable_cheats");
         }
 
+        public override void OnResizeScreen()
+        {
+            base.OnResizeScreen();
+
+            Size = app.Engine.Resolution.Game;
+            gui.SetMapRenderArea(view, Size);
+        }
+
         void view_Scroll(object sender, MapScrollArgs e)
         {
             ClassicGame game = app.GameState as ClassicGame;

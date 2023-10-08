@@ -46,6 +46,13 @@ namespace Burntime.Classic.Scenes
             font = new GuiFont(BurntimeClassic.FontName, new PixelColor(72, 72, 76));
         }
 
+        public override void OnResizeScreen()
+        {
+            base.OnResizeScreen();
+
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+        }
+
         protected override void OnActivateScene(object parameter)
         {
             BurntimeClassic game = app as BurntimeClassic;

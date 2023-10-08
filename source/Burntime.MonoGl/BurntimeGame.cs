@@ -110,6 +110,8 @@ namespace Burntime.MonoGl
             _burntimeApp.Run();
 
             Log.Info("Start engine...");
+            Window.AllowUserResizing = true;
+            Window.ClientSizeChanged += OnResize;
             IsMouseVisible = false;
             if (FullScreen)
             {
@@ -131,6 +133,31 @@ namespace Burntime.MonoGl
             }
             _graphics.ApplyChanges();
             base.Initialize();
+        }
+
+        private void OnResize(object sender, EventArgs e)
+        {
+            if (FullScreen)
+            {
+                Resolution.Native = new Platform.Vector2(GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
+                    GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height);
+
+                _graphics.PreferredBackBufferWidth = Resolution.Native.x;
+                _graphics.PreferredBackBufferHeight = Resolution.Native.y;
+                _graphics.HardwareModeSwitch = false;
+                _graphics.IsFullScreen = true;
+            }
+            else
+            {
+                Resolution.Native = new Platform.Vector2(Window.ClientBounds.Width,
+                    Window.ClientBounds.Height);
+
+                _graphics.PreferredBackBufferWidth = Resolution.Native.x;
+                _graphics.PreferredBackBufferHeight = Resolution.Native.y;
+            }
+            _graphics.ApplyChanges();
+            _burntimeApp.SceneManager.ResizeScene();
+            MainTarget = new RenderTarget(this, new Rect(Platform.Vector2.Zero, Resolution.Game));
         }
 
         protected override void LoadContent()

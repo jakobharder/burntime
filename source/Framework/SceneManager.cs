@@ -173,5 +173,10 @@ namespace Burntime.Framework
             modalStack.Clear();
             activeScene = null;
         }
+
+        public void ResizeScene()
+        {
+            activeScene?.OnResizeScreen();
+        }
     }
 }
