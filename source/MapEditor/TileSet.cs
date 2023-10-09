@@ -128,9 +128,12 @@ namespace MapEditor
             tileSheet.Save8Bit(filePath, tileSheet);
             //tileSheet.Save(filePath);
 
-            using TextWriter writer = new StreamWriter(filePath.Replace(".png", ".txt"));
-            foreach (var tile in Tiles)
-                tile.WriteToText(writer);
+            if (!upscaled)
+            {
+                using TextWriter writer = new StreamWriter(filePath.Replace(".png", ".txt"));
+                foreach (var tile in Tiles)
+                    tile.WriteToText(writer);
+            }
         }
 
         public TileSet GetSubset(int subset)

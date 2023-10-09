@@ -73,7 +73,7 @@ namespace MapEditor
             for (int k = 0; k < 4; k++)
             {
                 String line = reader.ReadLine();
-                if (line.Length < 4)
+                if (line is null || line.Length < 4)
                     continue;
 
                 char[] chrs = line.ToCharArray();

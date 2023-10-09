@@ -236,12 +236,13 @@ namespace Burntime.Deluxe.ResourceProcessor
                 {
                     if (customTileSetIndex == data.Tiles[i].Set)
                     {
-                        data.Tiles[i].Image = ResourceManager.GetImage($"pngsheet@maps/{Path.GetFileNameWithoutExtension(id.File)}_tiles.png?{data.Tiles[i].Item}?32x32", ResourceLoadType.Delayed);
+                        int index = ((int)data.Tiles[i].Section - 1) * 63 + (int)data.Tiles[i].Item;
+                        data.Tiles[i].Image = ResourceManager.GetImage($"pngsheet@maps/{Path.GetFileNameWithoutExtension(id.File)}_tiles.png?{index}?32x32", ResourceLoadType.Delayed);
                     }
                     if (data.Tiles[i].Image is not null)
                         continue;
                 }
-                
+
                 if (data.Tiles[i].Section >= 90)
                     data.Tiles[i].Image = ResourceManager.GetImage("gfx/tiles/" + data.Tiles[i].Section.ToString("D3") + "_" + data.Tiles[i].Item.ToString("D2") + ".png", ResourceLoadType.Delayed);
                 else
