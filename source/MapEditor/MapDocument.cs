@@ -446,7 +446,7 @@ namespace MapEditor
 
             writer.Flush();
 
-            CustomTiles?.Save(GetTilesPath(filePath));
+            CustomTiles?.Save(GetTilesPath(filePath), updateSheet: false);
 
             Saved = true;
             if (AttachedView != null)
@@ -596,7 +596,7 @@ namespace MapEditor
             {
                 var tileSetPath = GetTilesPath(FilePath);
                 tileSetPath = tileSetPath.Replace(".png", "_2x.png");
-                CustomTiles.Save(tileSetPath, true, mapImage);
+                CustomTiles.Save(tileSetPath, true, mapImage, updateSheet: false);
             }
 
             var classicSet = sharedTileSets.Find(e => e.Name == "classic");

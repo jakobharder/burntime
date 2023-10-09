@@ -23,17 +23,8 @@ namespace MapEditor
             {
                 String maskFile = tile.SubSet.ToString("D3") + "_" + tile.ID.ToString("D2") + ".txt";
                 TextWriter writer = new StreamWriter(path + "\\" + tile.Set + "\\" + maskFile);
-
-                for (int y = 0; y < 4; y++)
-                {
-                    for (int x = 0; x < 4; x++)
-                    {
-                        writer.Write(tile.Mask[y * 4 + x] ? "1" : "0");
-                    }
-                    writer.WriteLine();
-                }
-
-                writer.Close();
+                tile.WriteToText(writer);
+                writer.Dispose();
             }
 
             changed.Clear();
@@ -89,21 +80,8 @@ namespace MapEditor
                         if (System.IO.File.Exists(set + "\\" + maskFile))
                         {
                             TextReader reader = new StreamReader(set + "\\" + maskFile);
-
-                            for (int k = 0; k < 4; k++)
-                            {
-                                String line = reader.ReadLine();
-                                if (line.Length < 4)
-                                    continue;
-
-                                char[] chrs = line.ToCharArray();
-                                tile.Mask[k * 4 + 0] = (chrs[0] == '1');
-                                tile.Mask[k * 4 + 1] = (chrs[1] == '1');
-                                tile.Mask[k * 4 + 2] = (chrs[2] == '1');
-                                tile.Mask[k * 4 + 3] = (chrs[3] == '1');
-                            }
-
-                            reader.Close();
+                            tile.ReadFromText(reader);
+                            reader.Dispose();
                         }
 
                         tiles.Tiles.Add(tile);
@@ -131,6 +109,8 @@ namespace MapEditor
             Dictionary<int, int> dicColorTables = new Dictionary<int, int>();
             dicColorTables.Add(6, 23);
             dicColorTables.Add(7, 23);
+            dicColorTables.Add(8, 7);
+            dicColorTables.Add(9, 7);
             dicColorTables.Add(16, 23);
             dicColorTables.Add(10, 14);
             dicColorTables.Add(11, 14);
@@ -140,6 +120,7 @@ namespace MapEditor
             dicColorTables.Add(18, 11);
             dicColorTables.Add(25, 26);
             dicColorTables.Add(26, 26);
+            dicColorTables.Add(31, 32);
             dicColorTables.Add(32, 89);
             dicColorTables.Add(44, 84);
             dicColorTables.Add(46, 83);

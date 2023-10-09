@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Drawing;
+using System.IO;
+using Burntime.Data.BurnGfx;
 
 namespace MapEditor
 {
@@ -64,6 +66,34 @@ namespace MapEditor
             }
 
             return true;
+        }
+
+        public void ReadFromText(TextReader reader)
+        {
+            for (int k = 0; k < 4; k++)
+            {
+                String line = reader.ReadLine();
+                if (line.Length < 4)
+                    continue;
+
+                char[] chrs = line.ToCharArray();
+                Mask[k * 4 + 0] = (chrs[0] == '1');
+                Mask[k * 4 + 1] = (chrs[1] == '1');
+                Mask[k * 4 + 2] = (chrs[2] == '1');
+                Mask[k * 4 + 3] = (chrs[3] == '1');
+            }
+        }
+
+        public void WriteToText(TextWriter writer)
+        {
+            for (int y = 0; y < 4; y++)
+            {
+                for (int x = 0; x < 4; x++)
+                {
+                    writer.Write(Mask[y * 4 + x] ? "1" : "0");
+                }
+                writer.WriteLine();
+            }
         }
     }
 }

@@ -42,11 +42,13 @@ namespace Burntime.Deluxe.ResourceProcessor
             data.Tiles = new Burntime.Data.BurnGfx.MapTile[data.Width * data.Height];
             data.Mask = new Burntime.Data.BurnGfx.PathMask(data.Width * 4, data.Height * 4, 8);
 
-            // set indices
-            List<string> tileSetNames = new List<string>();
+            // get tile set names
+            List<string> tileSetNames = new();
             int count = reader.ReadInt32();
             for (int i = 0; i < count; i++)
                 tileSetNames.Add(reader.ReadString());
+            int customTileSetIndex = tileSetNames.IndexOf("_");
+            int originalTileSetIndex = tileSetNames.IndexOf("classic");
 
             ConfigFile settings = new ConfigFile();
             if (FileSystem.ExistsFile(id.File.Replace(".burnmap", ".txt")))
@@ -68,56 +70,79 @@ namespace Burntime.Deluxe.ResourceProcessor
                     byte set = reader.ReadByte();
 
                     if (subset == 0)
+                        continue;
+
+                    Burntime.Data.BurnGfx.MapTile tile = new()
                     {
+                        Item = _id,
+                        Section = subset,
+                        Set = set
+                    };
+                    data.Tiles[x + y * data.Width] = tile;
+
+                    for (int k = 0; k < 4; k++)
+                    {
+                        data.Mask[4 * x + 0, 4 * y + k] = true;
+                        data.Mask[4 * x + 1, 4 * y + k] = true;
+                        data.Mask[4 * x + 2, 4 * y + k] = true;
+                        data.Mask[4 * x + 3, 4 * y + k] = true;
                     }
-                    else
+
+                    if (customTileSetIndex == tile.Set)
                     {
-                        Burntime.Data.BurnGfx.MapTile tile = new Burntime.Data.BurnGfx.MapTile();
-                        tile.Item = _id;
-                        tile.Section = subset;
-                        tile.Set = set;
+                        string sheetMaskFile = $"maps/{Path.GetFileNameWithoutExtension(id.File)}_tiles.txt";
+                        if (!FileSystem.ExistsFile(sheetMaskFile))
+                            continue;
 
-                        data.Tiles[x + y * data.Width] = tile;
+                        Burntime.Platform.IO.File maskfile = Burntime.Platform.IO.FileSystem.GetFile(sheetMaskFile);
+                        using TextReader maskreader = new StreamReader(maskfile);
 
-                        String maskFile = "gfx/tiles/" + subset.ToString("D3") + "_" + _id.ToString("D2") + ".txt";
-                        if (Burntime.Platform.IO.FileSystem.ExistsFile(maskFile))
+                        for (int skip = 0; skip < tile.Item * 4; skip++)
+                            maskreader.ReadLine();
+
+                        for (int k = 0; k < 4; k++)
                         {
-                            Burntime.Platform.IO.File maskfile = Burntime.Platform.IO.FileSystem.GetFile(maskFile);
-                            TextReader maskreader = new StreamReader(maskfile);
+                            string line = maskreader.ReadLine();
+                            if (line is null || line.Length < 4)
+                                continue;
 
-                            for (int k = 0; k < 4; k++)
-                            {
-                                String line = maskreader.ReadLine();
-                                if (line.Length < 4)
-                                    continue;
-
-                                char[] chrs = line.ToCharArray();
-                                data.Mask[4 * x + 0, 4 * y + k] = (chrs[0] != '1');
-                                data.Mask[4 * x + 1, 4 * y + k] = (chrs[1] != '1');
-                                data.Mask[4 * x + 2, 4 * y + k] = (chrs[2] != '1');
-                                data.Mask[4 * x + 3, 4 * y + k] = (chrs[3] != '1');
-                            }
-
-                            maskreader.Close();
-                            maskfile.Close();
+                            char[] chrs = line.ToCharArray();
+                            data.Mask[4 * x + 0, 4 * y + k] = (chrs[0] != '1');
+                            data.Mask[4 * x + 1, 4 * y + k] = (chrs[1] != '1');
+                            data.Mask[4 * x + 2, 4 * y + k] = (chrs[2] != '1');
+                            data.Mask[4 * x + 3, 4 * y + k] = (chrs[3] != '1');
                         }
-                        else
+                    }
+
+#warning Deprecated: remove this after old style tiles/mask have been removed.
+                    String maskFile = "gfx/tiles/" + subset.ToString("D3") + "_" + _id.ToString("D2") + ".txt";
+                    if (Burntime.Platform.IO.FileSystem.ExistsFile(maskFile))
+                    {
+                        Burntime.Platform.IO.File maskfile = Burntime.Platform.IO.FileSystem.GetFile(maskFile);
+                        TextReader maskreader = new StreamReader(maskfile);
+
+                        for (int k = 0; k < 4; k++)
                         {
-                            for (int k = 0; k < 4; k++)
-                            {
-                                data.Mask[4 * x + 0, 4 * y + k] = true;
-                                data.Mask[4 * x + 1, 4 * y + k] = true;
-                                data.Mask[4 * x + 2, 4 * y + k] = true;
-                                data.Mask[4 * x + 3, 4 * y + k] = true;
-                            }
+                            String line = maskreader.ReadLine();
+                            if (line.Length < 4)
+                                continue;
+
+                            char[] chrs = line.ToCharArray();
+                            data.Mask[4 * x + 0, 4 * y + k] = (chrs[0] != '1');
+                            data.Mask[4 * x + 1, 4 * y + k] = (chrs[1] != '1');
+                            data.Mask[4 * x + 2, 4 * y + k] = (chrs[2] != '1');
+                            data.Mask[4 * x + 3, 4 * y + k] = (chrs[3] != '1');
                         }
+
+                        maskreader.Close();
+                        maskfile.Close();
                     }
                 }
             }
 
             foreach (Vector2 pos in new Rect(0, 0, data.Width, data.Height))
             {
-                if (data[pos].Section >= 90)
+                if (data[pos].Set != originalTileSetIndex)
                 {
                     foreach (Vector2 sub in new Rect(0, 0, 4, 4))
                     {
@@ -205,11 +230,9 @@ namespace Burntime.Deluxe.ResourceProcessor
 
             file.Close();
 
-            int customTileSetIndex = tileSetNames.IndexOf("_");
-
             for (int i = 0; i < data.Tiles.Length; i++)
             {
-                if (data.Tiles[i].Set > 0)
+                if (data.Tiles[i].Set != originalTileSetIndex)
                 {
                     if (customTileSetIndex == data.Tiles[i].Set)
                     {

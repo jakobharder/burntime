@@ -1,6 +1,5 @@
 [replacement]
 sprite_scale=2x2
-zei_009.raw=gfx/tiles/009_{0:00}.png
 zei_012.raw=gfx/tiles/012_{0:00}.png
 zei_013.raw=gfx/tiles/013_{0:00}.png
 syssze.raw=pngani@gfx/char/{0}.png
@@ -15,6 +14,8 @@ zei_004.raw=pngsheet@maps/shared/set_4.png?{0}?60x72
 zei_005.raw=pngsheet@maps/shared/set_5.png?{0}?60x72
 zei_006.raw=pngsheet@maps/shared/set_6.png?{0}?60x72
 zei_007.raw=pngsheet@maps/shared/set_7.png?{0}?60x72
+zei_008.raw=pngsheet@maps/shared/set_8.png?{0}?60x72
+zei_009.raw=pngsheet@maps/shared/set_9.png?{0}?60x72
 zei_010.raw=pngsheet@maps/shared/set_10.png?{0}?60x72
 zei_011.raw=pngsheet@maps/shared/set_11.png?{0}?60x72
 zei_018.raw=pngsheet@maps/shared/set_18.png?{0}?60x72
@@ -27,6 +28,8 @@ zei_025.raw=pngsheet@maps/shared/set_25.png?{0}?60x72
 zei_026.raw=pngsheet@maps/shared/set_26.png?{0}?60x72
 zei_028.raw=pngsheet@maps/shared/set_28.png?{0}?60x72
 zei_029.raw=pngsheet@maps/shared/set_29.png?{0}?60x72
+
+maps/mat_007_tiles.png=pngsheet@maps/mat_007_tiles_2x.png?{0}?60x72
 
 [replacement_stretched]
 sprite_scale=2x2.375
