@@ -2,7 +2,7 @@
 
 public class Log
 {
-    static StreamWriter file;
+    public static StreamWriter? File { get; private set; }
     public static bool DebugOut;
 
     public static string FormatPercentage(float factor) => System.Math.Round(factor * 100) + "%";
@@ -10,33 +10,33 @@ public class Log
 
     static public void Initialize(String file)
     {
-        Log.file = new StreamWriter(file, false);
+        Log.File = new StreamWriter(file, false);
     }
 
     static public void Info(String str)
     {
-        if (file != null)
+        if (File != null)
         {
-            file.WriteLine("[info] " + str);
-            file.Flush();
+            File.WriteLine("[info] " + str);
+            File.Flush();
         }
     }
 
     static public void Warning(String str)
     {
-        if (file != null)
+        if (File != null)
         {
-            file.WriteLine("[warning] " + str);
-            file.Flush();
+            File.WriteLine("[warning] " + str);
+            File.Flush();
         }
     }
 
     static public void Debug(String str)
     {
-        if (file != null && DebugOut)
+        if (File != null && DebugOut)
         {
-            file.WriteLine("[debug] " + str);
-            file.Flush();
+            File.WriteLine("[debug] " + str);
+            File.Flush();
         }
     }
 }

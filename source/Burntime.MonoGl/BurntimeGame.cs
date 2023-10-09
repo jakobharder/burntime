@@ -75,8 +75,11 @@ namespace Burntime.MonoGl
         protected override void Initialize()
         {
             Log.Initialize("log.txt");
+            Log.Info(System.DateTime.Now.ToLocalTime().ToString());
+            string version = FileVersionInfo.GetVersionInfo(System.IO.Path.Combine(System.AppContext.BaseDirectory, "burntime.exe")).ProductVersion ?? "?";
+            Log.Info("Burntime version " + version);
 
-            Window.Title = "Burntime " + FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion ?? "?";
+            Window.Title = "Burntime " + version;
 
             FileSystem.BasePath = "";
             FileSystem.AddPackage("system", "system");
