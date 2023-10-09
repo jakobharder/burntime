@@ -63,6 +63,7 @@ namespace Burntime.MonoGl
 #else
         public bool FullScreen { get; set; } = true;
 #endif
+        bool _initialized = false;
 
         public BurntimeGame()
         {
@@ -133,10 +134,16 @@ namespace Burntime.MonoGl
             }
             _graphics.ApplyChanges();
             base.Initialize();
+
+            _initialized = true;
         }
 
+        bool _resizing = false;
         private void OnResize(object sender, EventArgs e)
         {
+            if (!_initialized || _resizing) return;
+
+            _resizing = true;
             if (FullScreen)
             {
                 Resolution.Native = new Platform.Vector2(GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
@@ -158,6 +165,8 @@ namespace Burntime.MonoGl
             _graphics.ApplyChanges();
             _burntimeApp.SceneManager.ResizeScene();
             MainTarget = new RenderTarget(this, new Rect(Platform.Vector2.Zero, Resolution.Game));
+
+            _resizing = false;
         }
 
         protected override void LoadContent()
