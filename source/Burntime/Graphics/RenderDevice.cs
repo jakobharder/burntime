@@ -413,12 +413,12 @@ class RenderDevice : IDisposable
                         continue;
 
                     // if sprite resolution changed, then update transform matrix
-                    if (currentFactor != sprite.Factor)
+                    if (currentFactor != sprite.Factor.y)
                     {
-                        currentFactor = sprite.Factor;
+                        currentFactor = sprite.Factor.y;
                         // TODO engine scale
                         //spriteRenderer.Transform = SlimDX.Matrix.Scaling(new SlimDX.Vector3(engine.Scale.x * sprite.Factor, engine.Scale.y * sprite.Factor, 1));
-                        spriteRenderer.Transform = SlimDX.Matrix.Scaling(new SlimDX.Vector3(renderScale * sprite.Factor, renderScale * sprite.Factor, 1));
+                        spriteRenderer.Transform = SlimDX.Matrix.Scaling(new SlimDX.Vector3(renderScale * sprite.Factor.x, renderScale * sprite.Factor.y, 1));
                     }
 
                     // recompute position for not 1:1 sprite resolutions

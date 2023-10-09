@@ -108,6 +108,13 @@ namespace Burntime.Classic.Scenes
             }
         }
 
+        public override void OnResizeScreen()
+        {
+            base.OnResizeScreen();
+
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+        }
+
         public override bool OnMouseClick(Vector2 Position, MouseButton Button)
         {
             if (!handled)

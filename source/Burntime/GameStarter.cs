@@ -68,7 +68,7 @@ namespace Burntime.Game
 
             BurntimeClassic game = new();
 
-            engine.Resolution.VerticalCorrection = game.VerticalCorrection;
+            engine.Resolution.RatioCorrection = game.RatioCorrection;
             engine.Resolution.GameResolutions = game.Resolutions;
 
             game.Engine = engine;

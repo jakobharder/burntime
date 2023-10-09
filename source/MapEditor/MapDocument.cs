@@ -4,6 +4,10 @@ using System.Text;
 using System.Drawing;
 using System.IO;
 using System.Windows.Forms;
+using System.IO.Pipes;
+using System.Linq;
+using Burntime.Data.BurnGfx;
+using System.Reflection.Metadata;
 
 namespace MapEditor
 {
@@ -13,6 +17,8 @@ namespace MapEditor
         public String Title;
         public Size Size;
         public int TileSize;
+
+        public TileSet CustomTiles { get; set; }
 
         Tile[,] tiles;
         List<Entrance> entrances = new List<Entrance>();
@@ -263,15 +269,15 @@ namespace MapEditor
             return true;
         }
 
-        public void Import(String File, int Size, List<TileSet> TileSets, TileSet AddSet)
+        public void Import(string filePath, int tileSize, List<TileSet> sharedTiles, TileSet newTiles)
         {
-            Bitmap bmp = new Bitmap(File);
-            int tw = bmp.Width / Size;
-            int th = bmp.Height / Size;
+            var bmp = new Bitmap(filePath);
+            int widthTiles = bmp.Width / tileSize;
+            int heightTiles = bmp.Height / tileSize;
 
-            Dictionary<int, List<Tile>> dic = new Dictionary<int, List<Tile>>();
+            var dic = new Dictionary<int, List<Tile>>();
 
-            foreach (TileSet set in TileSets)
+            foreach (TileSet set in sharedTiles)
             {
                 foreach (Tile tile in set.Tiles)
                 {
@@ -282,28 +288,20 @@ namespace MapEditor
                     }
                     else
                     {
-                        List<Tile> list = new List<Tile>();
-                        list.Add(tile);
-                        dic.Add(tile.GetHashCode(), list);
+                        dic.Add(tile.GetHashCode(), new List<Tile>() { tile });
                     }
                 }
             }
 
-            this.Size = new Size(tw, th);
-            this.TileSize = Size;
-            tiles = new Tile[tw, th];
+            Size = new Size(widthTiles, heightTiles);
+            TileSize = tileSize;
+            tiles = new Tile[widthTiles, heightTiles];
 
-            for (int y = 0; y < th; y++)
+            for (int y = 0; y < heightTiles; y++)
             {
-                for (int x = 0; x < tw; x++)
+                for (int x = 0; x < widthTiles; x++)
                 {
-                    Bitmap tileImage = new Bitmap(Size, Size, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
-                    Graphics g = Graphics.FromImage(tileImage);
-                    g.DrawImage(bmp, new Rectangle(0, 0, Size, Size),
-                        new Rectangle(x * Size, y * Size, Size, Size), GraphicsUnit.Pixel);
-
-                    Tile tile = new Tile();
-                    tile.Image = tileImage;
+                    var tile = new Tile() { Image = bmp.ExtractTile(x, y, tileSize, tileSize) };
                     int hash = tile.GetHashCode();
 
                     bool found = false;
@@ -320,11 +318,11 @@ namespace MapEditor
                         }
                     }
 
-                    if (!found && AddSet != null && AddSet.Tiles.Count < 1000)
+                    if (!found && newTiles != null && newTiles.Tiles.Count < 1000)
                     {
-                        tile.Set = AddSet.Name;
-                        tile.Size = new Size(Size, Size);
-                        AddSet.Add(tile);
+                        tile.Set = newTiles.Name;
+                        tile.Size = new Size(tileSize, tileSize);
+                        newTiles.Add(tile);
 
                         if (dic.ContainsKey(hash))
                         {
@@ -332,9 +330,7 @@ namespace MapEditor
                         }
                         else
                         {
-                            List<Tile> list = new List<Tile>();
-                            list.Add(tile);
-                            dic.Add(tile.GetHashCode(), list);
+                            dic.Add(tile.GetHashCode(), new List<Tile>() { tile });
                         }
 
                         tiles[x, y] = tile;
@@ -343,21 +339,23 @@ namespace MapEditor
             }
         }
 
-        public void Save(Stream File, List<TileSet> TileSets)
+        static string GetTilesPath(string filePath)
         {
-            BinaryWriter writer = new BinaryWriter(File);
-            writer.Write("Burntime Map");
-            writer.Write("0.2");
-            
-            // header
-            writer.Write(Size.Width);
-            writer.Write(Size.Height);
-            writer.Write(TileSize);
+            return Path.Combine(Path.GetDirectoryName(filePath), Path.GetFileNameWithoutExtension(filePath) + "_tiles.png");
+        }
 
-            // get used tile set list
-            Dictionary<String, bool> used = new Dictionary<string, bool>();
-            for (int i = 0; i < TileSets.Count; i++)
-                used.Add(TileSets[i].Name, false);
+        static string GetSharedTilesPath(string filePath, int subset)
+        {
+            return Path.Combine(Path.GetDirectoryName(filePath), "shared", $"set_{subset}.png");
+        }
+
+        string[] GetUsedTileSets(List<TileSet> sharedTileSets)
+        {
+            Dictionary<string, bool> used = new();
+            for (int i = 0; i < sharedTileSets.Count; i++)
+                used.Add(sharedTileSets[i].Name, false);
+            if (CustomTiles is not null)
+                used.Add(CustomTiles.Name, false);
             for (int y = 0; y < Size.Height; y++)
             {
                 for (int x = 0; x < Size.Width; x++)
@@ -369,22 +367,35 @@ namespace MapEditor
                 }
             }
 
-            List<String> usedList = new List<string>();
-            for (int i = 0; i < TileSets.Count; i++)
-            {
-                if (!used[TileSets[i].Name])
-                    continue;
-                usedList.Add(TileSets[i].Name);
-            }
+            return used.Keys.ToArray();
+        }
 
-            // set indices
-            Dictionary<String, int> indices = new Dictionary<string,int>();
-            writer.Write(usedList.Count);
-            for (int i = 0; i < usedList.Count; i++)
-            {
-                indices.Add(usedList[i], i);
+        static Dictionary<string, int> GetTileSetMapping(string[] tileSets)
+        {
+            Dictionary<string, int> mapping = new();
+            for (int i = 0; i < tileSets.Length; i++)
+                mapping.Add(tileSets[i], i);
+            return mapping;
+        }
+
+        public void Save(string filePath, List<TileSet> sharedTileSets)
+        {
+            using FileStream fileStream = new(filePath, FileMode.Create, FileAccess.Write);
+
+            BinaryWriter writer = new BinaryWriter(fileStream);
+            writer.Write("Burntime Map");
+            writer.Write("0.2");
+            
+            // header
+            writer.Write(Size.Width);
+            writer.Write(Size.Height);
+            writer.Write(TileSize);
+
+            var usedList = GetUsedTileSets(sharedTileSets);
+            writer.Write(usedList.Length);
+            for (int i = 0; i < usedList.Length; i++)
                 writer.Write(usedList[i]);
-            }
+            var tileSets = GetTileSetMapping(usedList);
 
             // tiles
             for (int y = 0; y < Size.Height; y++)
@@ -395,7 +406,7 @@ namespace MapEditor
                     {
                         writer.Write(tiles[x, y].ID);
                         writer.Write(tiles[x, y].SubSet);
-                        writer.Write((byte)indices[tiles[x, y].Set]);
+                        writer.Write((byte)tileSets[tiles[x, y].Set]);
                     }
                     else
                     {
@@ -435,19 +446,30 @@ namespace MapEditor
 
             writer.Flush();
 
+            CustomTiles?.Save(GetTilesPath(filePath), updateSheet: false);
+
             Saved = true;
             if (AttachedView != null)
                 AttachedView.UpdateTitle();
         }
 
-        public bool Open(Stream File, List<TileSet> TileSets)
+        public bool Open(string filePath, List<TileSet> sharedTiles)
         {
+            using var File = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+
             BinaryReader reader = new BinaryReader(File);
             if (reader.ReadString() != "Burntime Map")
                 return false;
             String ver = reader.ReadString();
             if (ver != "0.1" && ver != "0.2")
                 return false;
+
+            string tilesPath = GetTilesPath(filePath);
+            if (System.IO.File.Exists(tilesPath))
+            {
+                CustomTiles = new TileSet() { Name = "_" };
+                CustomTiles.Load(tilesPath);
+            }
 
             // header
             Size.Width = reader.ReadInt32();
@@ -457,14 +479,15 @@ namespace MapEditor
             tiles = new Tile[Size.Width, Size.Height];
 
             // set indices
-            List<String> indices = new List<string>();
+            var usedTiles = new Dictionary<int, TileSet>();
             int count = reader.ReadInt32();
             for (int i = 0; i < count; i++)
-                indices.Add(reader.ReadString());
-
-            Dictionary<String, int> indices2 = new Dictionary<string,int>();
-            for (int i = 0; i < TileSets.Count; i++)
-                indices2.Add(TileSets[i].Name, i);
+            {
+                string tileSetName = reader.ReadString();
+                var tileSet = tileSetName == "_" ? CustomTiles : sharedTiles.Find((e) => e.Name == tileSetName);
+                if (tileSet is not null)
+                    usedTiles[i] = tileSet;
+            }
 
             // tiles
             for (int y = 0; y < Size.Height; y++)
@@ -480,8 +503,10 @@ namespace MapEditor
                     }
                     else
                     {
-#warning // crashes if tile set was removed
-                        tiles[x, y] = TileSets[indices2[indices[set]]].Find(subset, id);
+                        if (usedTiles.ContainsKey(set))
+                        {
+                            tiles[x, y] = usedTiles[set].Find(subset, id);
+                        }
                     }
                 }
             }
@@ -534,6 +559,55 @@ namespace MapEditor
 
         public void Close()
         {
+        }
+
+        public void ConvertToMegaTile()
+        {
+            tiles = null;
+            TileSize = 0;
+        }
+
+        public void UpdateUpscaled(string filePath, List<TileSet> sharedTileSets, Bitmap mapImage)
+        {
+            string[] usedList = GetUsedTileSets(sharedTileSets);
+            HashSet<int> classicSubsets = new();
+
+            Image inputImage = Image.FromFile(filePath).EnsureProperScale(Size.Width, Size.Height);
+
+            for (int y = 0; y < Size.Height; y++)
+            {
+                for (int x = 0; x < Size.Width; x++)
+                {
+                    var tile = tiles[x, y];
+                    if (tile != null)
+                    {
+                        tile.Upscaled = inputImage.ExtractTile(x, y, Tile.UPSCALE_WIDTH, Tile.UPSCALE_HEIGHT);
+                        if (tile.Set == "classic")
+                        {
+                            classicSubsets.Add(tile.SubSet);
+                        }
+                    }
+                }
+            }
+
+            inputImage.Dispose();
+
+            if (CustomTiles is not null)
+            {
+                var tileSetPath = GetTilesPath(FilePath);
+                tileSetPath = tileSetPath.Replace(".png", "_2x.png");
+                CustomTiles.Save(tileSetPath, true, mapImage, updateSheet: false);
+            }
+
+            var classicSet = sharedTileSets.Find(e => e.Name == "classic");
+            if (classicSet is not null)
+            {
+                foreach (int subset in classicSubsets)
+                {
+                    var tileSetPath = GetSharedTilesPath(FilePath, subset);
+                    classicSet.GetSubset(subset).Save(tileSetPath, true, mapImage);
+                }
+            }
         }
     }
 }

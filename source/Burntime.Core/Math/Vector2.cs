@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Burntime.Platform
+﻿namespace Burntime.Platform
 {
     [Serializable]
+    [System.Diagnostics.DebuggerDisplay("Vector2 {x}x{y}")]
     public struct Vector2
     {
-        public static readonly Vector2 Zero = new Vector2(0, 0);
-        public static readonly Vector2 One = new Vector2(1, 1);
+        public static readonly Vector2 Zero = new(0, 0);
+        public static readonly Vector2 One = new(1, 1);
 
         public int x, y;
 
@@ -206,9 +203,11 @@ namespace Burntime.Platform
     }
 
     [Serializable]
+    [System.Diagnostics.DebuggerDisplay("Vector2f {x}x{y}")]
     public struct Vector2f
     {
-        public static readonly Vector2f Zero = new Vector2f(0, 0);
+        public static readonly Vector2f Zero = new(0, 0);
+        public static readonly Vector2f One = new(1, 1);
 
         public float x, y;
 
@@ -301,6 +300,11 @@ namespace Burntime.Platform
         public static implicit operator Vector2 (Vector2f left)
         {
             return new Vector2((int)(left.x + 0.5f), (int)(left.y + 0.5f));
+        }
+
+        public static implicit operator Vector2f (float right)
+        {
+            return new Vector2f(right, right);
         }
 
         public override bool Equals(object obj)

@@ -13,32 +13,33 @@ public class Resolution
             SelectBestGameResolution();
         }
     }
-    Vector2 _native = new(1600, 960);
+    Vector2 _native = new(960, 540);
 
-    public Vector2[] GameResolutions
+    public int MaxVerticalResolution
     {
-        get => _gameResolutions;
+        get => _maxVerticalResolution;
         set
         {
-            _gameResolutions = value;
+            _maxVerticalResolution = value;
             SelectBestGameResolution();
         }
     }
-    Vector2[] _gameResolutions = System.Array.Empty<Vector2>();
+    int _maxVerticalResolution = 0;
 
-    float _verticalCorrection = 1;
-    public float VerticalCorrection
+    Vector2f _ratioCorrection = Vector2f.One;
+    public Vector2f RatioCorrection
     {
-        get => _verticalCorrection;
+        get => _ratioCorrection;
         set
         {
-            _verticalCorrection = value;
+            _ratioCorrection = value;
             SelectBestGameResolution();
         }
     }
 
     public Vector2f Scale { get; private set; } = new(1, 1);
-    public Vector2 Game { get; private set; } = new(800, 480);
+    public Vector2 Game { get; private set; } = new(960, 640);
+    public Vector2 BackBuffer { get; private set; } = new(960, 540);
 
     static bool IsCleanZoom(float zoom)
     {
@@ -47,36 +48,21 @@ public class Resolution
 
     void SelectBestGameResolution()
     {
-        if (_gameResolutions.Length == 0) return;
+        if (_maxVerticalResolution == 0) return;
 
-        float bestRatio = -1000;
-        float bestZoom = 1000;
-        int bestIndex = 0;
-        float realRatio = _native.Ratio;
+        const float DOUBLED_RESOLUTION = 2;
+        const float MaxHeight = 288.0f * DOUBLED_RESOLUTION;
+        int verticalFactor = 1;
 
-        for (int i = 0; i < _gameResolutions.Length; i++)
-        {
-            float ratio = _gameResolutions[i].Ratio / _verticalCorrection;
-            float zoom = _native.y / (float)_gameResolutions[i].y;
+        while (_native.y > MaxHeight * verticalFactor)
+            verticalFactor++;
 
-            // select best ratio
-            if (System.Math.Abs(ratio - realRatio) < System.Math.Abs(bestRatio - realRatio))
-            {
-                bestRatio = ratio;
-                bestZoom = zoom;
-                bestIndex = i;
-            }
+        BackBuffer = _native / verticalFactor;
 
-            // if more than one resolutions with that ratio is available, choose best size (prefere too big than too small)
-            else if (System.Math.Abs(ratio - realRatio) == System.Math.Abs(bestRatio - realRatio) &&
-                (IsCleanZoom(zoom) && !IsCleanZoom(bestZoom) || zoom <= 1 && bestZoom < zoom || zoom >= 1 && bestZoom < 1))
-            {
-                bestZoom = zoom;
-                bestIndex = i;
-            }
-        }
+        Scale = DOUBLED_RESOLUTION * _ratioCorrection;
+        Game = (Vector2)((Vector2f)BackBuffer / Scale);
 
-        Game = _gameResolutions[bestIndex];
-        Scale = (Vector2f)_native / (Vector2f)Game;
+#warning use render to texture instead and strech that by verticalfactor?
+        Scale *= verticalFactor;
     }
 }

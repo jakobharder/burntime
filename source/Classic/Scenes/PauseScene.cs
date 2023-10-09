@@ -26,6 +26,13 @@ namespace Burntime.Classic.Scenes
             CaptureAllMouseClicks = true;
         }
 
+        public override void OnResizeScreen()
+        {
+            base.OnResizeScreen();
+
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+        }
+
         public override void OnRender(RenderTarget Target)
         {
             font.DrawText(Target, new Vector2(160, 100), new GuiString("@newburn?11"), TextAlignment.Center, VerticalTextAlignment.Center);

@@ -1,6 +1,6 @@
 # Burntime
 
-Remake of the PC strategy game 'Burntime' from Max Design.
+Burntime is a remaster and expansion of Max Design's PC strategy game 'Burntime' from 1993.
 
 ![](./doc/screens.png)
 
@@ -13,9 +13,11 @@ Download it from [Releases](https://github.com/jakobharder/burntime/releases).
 The game is a complete port of the original game to Windows with some adjustments and an extended game mode.
 
 - wide-screen support
+- remastered graphics with doubled resolution
 - game adjustments
   - toggle to switch between original and extended game
   - toggle to disable AI players
+  - attacks are always followed by counter attacks to avoid attack spamming
 - UI adjustments
   - attack/defense/protection values displayed in inventory
 - minor location adjustments
@@ -43,7 +45,7 @@ You can also mark the `Launcher` as start-up project to change settings and debu
 
 ## Changes
 
-See [Changelog.txt](./resources/ChangeLog.txt)
+See [Changelog.md](./resources/ChangeLog.md)
 
 ## Credits
 
@@ -51,3 +53,5 @@ This project is not affiliated in any way with Max Design and/or the original cr
 The original game, graphics and other assets are the property of Max Design and their original creators.
 
 Thank you Martin Lasser for allowing non-commercial community remake efforts to use the original graphics!
+
+See full [list of contributors](./resources/README.md#notes)

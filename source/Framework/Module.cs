@@ -102,9 +102,10 @@ namespace Burntime.Framework
         }
 
         public virtual String Title { get { return ""; } }
-        public virtual Vector2[] Resolutions { get { return new Vector2[] { new Vector2(640, 480) }; } }
-        public virtual float VerticalCorrection { get { return 1; } }
-        public virtual System.Drawing.Icon Icon { get { return null; } }
+        //public virtual Vector2[] Resolutions { get { return new Vector2[] { new Vector2(640, 480) }; } }
+        public virtual int MaxVerticalResolution => 480;
+        public virtual Vector2f RatioCorrection => Vector2f.One;
+        public virtual System.Drawing.Icon? Icon => null;
 
         protected static Module instance;
         public static Module Instance
@@ -202,6 +203,8 @@ namespace Burntime.Framework
             Server?.Stop();
             Engine.ExitApplication();
         }
+
+        public virtual void ToggleNewGfx() { }
     }
 
     public class ApplicationInternal : IApplication
@@ -213,9 +216,9 @@ namespace Burntime.Framework
             wrap = Wrap;
         }
 
-        public String Title { get { return wrap.Title; } }
-        public Vector2[] Resolutions { get { return wrap.Resolutions; } }
-        public System.Drawing.Icon Icon { get { return wrap.Icon; } }
+        public string Title => wrap.Title;
+        public int MaxVerticalResolution => wrap.MaxVerticalResolution;
+        public System.Drawing.Icon? Icon => wrap.Icon;
 
         public void Render(RenderTarget Target)
         {

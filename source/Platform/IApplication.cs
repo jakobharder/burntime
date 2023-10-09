@@ -1,21 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Drawing;
+﻿using Burntime.Platform.Graphics;
 
-using Burntime.Platform.Graphics;
+namespace Burntime.Platform;
 
-namespace Burntime.Platform
+public interface IApplication
 {
-    public interface IApplication
-    {
-        String Title { get; }
-        Vector2[] Resolutions { get; }
-        //Icon Icon { get; }
+    string Title { get; }
+    int MaxVerticalResolution { get; }
 
-        void Render(RenderTarget Target);
-        void Process(float Elapsed);
-        void Reset();
-        void Close();
-    }
+    void Render(RenderTarget Target);
+    void Process(float Elapsed);
+    void Reset();
+    void Close();
 }

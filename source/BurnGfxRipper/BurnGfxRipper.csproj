@@ -18,18 +18,18 @@
   <ItemGroup>
     <Reference Include="BurnGfx">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\bin\burntime\system\BurnGfx.dll</HintPath>
+      <HintPath>..\..\bin\Debug\BurnGfx.dll</HintPath>
     </Reference>
     <Reference Include="Burntime.Core">
-      <HintPath>..\..\bin\burntime\system\Burntime.Core.dll</HintPath>
+      <HintPath>..\..\bin\Debug\Burntime.Core.dll</HintPath>
     </Reference>
     <Reference Include="Framework">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\bin\burntime\system\Framework.dll</HintPath>
+      <HintPath>..\..\bin\Debug\Burntime.Framework.dll</HintPath>
     </Reference>
     <Reference Include="Platform">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\bin\burntime\system\Platform.dll</HintPath>
+      <HintPath>..\..\bin\Debug\Burntime.Platform.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

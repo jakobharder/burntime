@@ -7,7 +7,7 @@ public abstract class GenericSpriteFrame<TTexture> where TTexture : class
     public static TTexture? EmptyTexture { get; set; }
 
     public Vector2 Size { get; set; }
-    public float Resolution { get; set; } = -1;
+    public Vector2f Resolution { get; set; } = -1;
 
     public bool HasSystemCopy => _systemCopy is not null;
     protected byte[]? _systemCopy;

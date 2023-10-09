@@ -9,86 +9,65 @@ using Burntime.Framework;
 using Burntime.Framework.States;
 using Burntime.Classic.Logic;
 
-namespace Burntime.Classic.Maps
+namespace Burntime.Classic.Maps;
+
+public class MapViewHoverInfo
 {
-    public class MapViewHoverInfo
+    public String Title { get; init; }
+    public Vector2 Position { get; set; }
+    public PixelColor Color { get; init; }
+
+    public MapViewHoverInfo(String title, Vector2 position, PixelColor color)
     {
-        PixelColor color;
-        String title;
-        Vector2 position;
+        Title = title;
+        Position = new Vector2(position.x, position.y - 9);
+        Color = color;
+    }
 
-        public String Title
-        {
-            get { return title; }
-        }
+    public MapViewHoverInfo(IMapObject obj, IResourceManager manager, PixelColor color)
+    {
+        Title = obj.GetTitle(manager);
+        Position = new Vector2(obj.MapArea.Left + obj.MapArea.Width / 2, obj.MapArea.Top - 10);
+        Color = color;
+    }
+}
 
-        public Vector2 Position
-        {
-            get { return position; }
-            set { position = value; }
-        }
+class MapViewOverlayHoverText : IMapViewOverlay
+{
+    Location mapState;
+    IResourceManager resMan;
+    bool isVisible = true;
 
-        public PixelColor Color
-        {
-            get { return color; }
-        }
+    public bool IsVisible { get; set; }
 
-        public MapViewHoverInfo(String title, Vector2 position, PixelColor color)
-        {
-            this.title = title;
-            this.position = new Vector2(position);
-            this.color = color;
-        }
+    public MapViewOverlayHoverText(Module App)
+    {
+        resMan = App.ResourceManager;
+    }
 
-        public MapViewHoverInfo(IMapObject obj, IResourceManager manager, PixelColor color)
+    public void MouseMoveOverlay(Vector2 Position)
+    {
+    }
+
+    public void UpdateOverlay(WorldState world, float elapsed)
+    {
+        mapState = world.CurrentLocation as Location;
+    }
+
+    public void RenderOverlay(RenderTarget Target, Vector2 Offset, Vector2 Size)
+    {
+        if (!isVisible)
+            return;
+
+        if (mapState != null && mapState.Hover != null)
         {
-            title = obj.GetTitle(manager);
-            position = new Vector2(obj.MapArea.Left + obj.MapArea.Width / 2, obj.MapArea.Top - 10);
-            this.color = color;
+            Font font = resMan.GetFont(BurntimeClassic.FontName, mapState.Hover.Color);
+            font.DrawText(Target, mapState.Hover.Position + Offset, mapState.Hover.Title, TextAlignment.Center);
         }
     }
 
-    class MapViewOverlayHoverText : IMapViewOverlay
+    public IMapObject GetObjectAt(Vector2 position)
     {
-        Location mapState;
-        IResourceManager resMan;
-        bool isVisible = true;
-
-        public bool IsVisible
-        {
-            get { return isVisible; }
-            set { isVisible = value; }
-        }
-
-        public MapViewOverlayHoverText(Module App)
-        {
-            resMan = App.ResourceManager;
-        }
-
-        public void MouseMoveOverlay(Vector2 Position)
-        {
-        }
-
-        public void UpdateOverlay(WorldState world, float elapsed)
-        {
-            mapState = world.CurrentLocation as Location;
-        }
-
-        public void RenderOverlay(RenderTarget Target, Vector2 Offset, Vector2 Size)
-        {
-            if (!isVisible)
-                return;
-
-            if (mapState != null && mapState.Hover != null)
-            {
-                Font font = resMan.GetFont(BurntimeClassic.FontName, mapState.Hover.Color);
-                font.DrawText(Target, mapState.Hover.Position + Offset, mapState.Hover.Title, TextAlignment.Center);
-            }
-        }
-
-        public IMapObject GetObjectAt(Vector2 position)
-        {
-            return null;
-        }
+        return null;
     }
 }

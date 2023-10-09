@@ -19,7 +19,7 @@ jobs:
       run: (cd source && dotnet build Burntime.MonoGl -c Release && cd ..)
 
     - name: Package
-      run: tar -caf burntime.zip -C ./bin/ *
+      run: tar -caf burntime.zip -C ./bin/Release *
 
     - name: Upload Build Artifact
       uses: actions/upload-artifact@v2.2.4

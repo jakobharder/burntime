@@ -2,11 +2,16 @@
 using System.Collections.Generic;
 using System.Text;
 using System.Drawing;
+using System.IO;
+using Burntime.Data.BurnGfx;
 
 namespace MapEditor
 {
     public class Tile
     {
+        public const int UPSCALE_WIDTH = 60;
+        public const int UPSCALE_HEIGHT = 72;
+
         public const int FIRST_ID = 0;
         public const int LAST_ID = 62;
         public const int FIRST_SUBSET = 1;
@@ -14,6 +19,7 @@ namespace MapEditor
 
         public Size Size;
         public Image Image;
+        public Image Upscaled;
         public bool[] Mask = new bool[16];
 
         public String Set;
@@ -60,6 +66,34 @@ namespace MapEditor
             }
 
             return true;
+        }
+
+        public void ReadFromText(TextReader reader)
+        {
+            for (int k = 0; k < 4; k++)
+            {
+                String line = reader.ReadLine();
+                if (line is null || line.Length < 4)
+                    continue;
+
+                char[] chrs = line.ToCharArray();
+                Mask[k * 4 + 0] = (chrs[0] == '1');
+                Mask[k * 4 + 1] = (chrs[1] == '1');
+                Mask[k * 4 + 2] = (chrs[2] == '1');
+                Mask[k * 4 + 3] = (chrs[3] == '1');
+            }
+        }
+
+        public void WriteToText(TextWriter writer)
+        {
+            for (int y = 0; y < 4; y++)
+            {
+                for (int x = 0; x < 4; x++)
+                {
+                    writer.Write(Mask[y * 4 + x] ? "1" : "0");
+                }
+                writer.WriteLine();
+            }
         }
     }
 }

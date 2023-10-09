@@ -8,7 +8,6 @@ public class SpriteAnimation
 {
     float frame;
 #warning slimdx todo
-    public int frameCount;
     float intervalMargin = 0;
     float pause = 0;
     bool endless = true;
@@ -20,10 +19,7 @@ public class SpriteAnimation
         set { frame = value; }
     }
 
-    public int FrameCount
-    {
-        get { return frameCount; }
-    }
+    public int FrameCount { get; set; }
 
     public float IntervalMargin
     {
@@ -80,7 +76,7 @@ public class SpriteAnimation
 
     public void GoLastFrame()
     {
-        frame = frameCount - 0.0001f;
+        frame = FrameCount - 0.0001f;
     }
 
     public void GoFirstFrame()
@@ -88,9 +84,9 @@ public class SpriteAnimation
         frame = 0;
     }
 
-    public SpriteAnimation(int FrameCount)
+    public SpriteAnimation(int frameCount)
     {
-        frameCount = FrameCount;
+        FrameCount = frameCount;
         frame = 0;
         endless = true;
         running = true;
@@ -98,7 +94,7 @@ public class SpriteAnimation
 
     public SpriteAnimation Clone()
     {
-        return new SpriteAnimation(frameCount) { Speed = Speed };
+        return new SpriteAnimation(FrameCount) { Speed = Speed };
     }
 
     bool ended;
@@ -110,7 +106,7 @@ public class SpriteAnimation
 
     public void Update(float elapsed)
     {
-        if (ended || frameCount == 0 || !running)
+        if (ended || FrameCount == 0 || !running)
             return;
 
         if (pause > 0)
@@ -124,9 +120,9 @@ public class SpriteAnimation
             if (!reverse)
             {
                 frame += elapsed * Speed;
-                if (frame > frameCount - 0.0001f)
+                if (frame > FrameCount - 0.0001f)
                 {
-                    frame = frameCount - 0.0001f;
+                    frame = FrameCount - 0.0001f;
                     ended = true;
                     running = false;
                 }
@@ -147,10 +143,10 @@ public class SpriteAnimation
             if (!reverse)
             {
                 frame += elapsed * Speed;
-                while (frame >= frameCount)
+                while (frame >= FrameCount)
                 {
                     pause = intervalMargin;
-                    frame -= frameCount;
+                    frame -= FrameCount;
                 }
             }
             else
@@ -159,7 +155,7 @@ public class SpriteAnimation
                 while (frame < 0)
                 {
                     pause = intervalMargin;
-                    frame += frameCount;
+                    frame += FrameCount;
                 }
             }
         }

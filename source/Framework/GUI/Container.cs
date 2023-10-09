@@ -198,5 +198,13 @@ namespace Burntime.Framework.GUI
 
             base.KeyPress(Key);
         }
+
+        public override void OnResizeScreen()
+        {
+            base.OnResizeScreen();
+
+            foreach (Window window in windows)
+                window.OnResizeScreen();
+        }
     }
 }

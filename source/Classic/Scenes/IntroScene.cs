@@ -96,6 +96,13 @@ namespace Burntime.Classic.Scenes
             PreloadAnimations();
         }
 
+        public override void OnResizeScreen()
+        {
+            base.OnResizeScreen();
+
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+        }
+
         private void PreloadAnimations()
         {
             for (int i = 0; i < animations.Length; i++)
@@ -123,7 +130,7 @@ namespace Burntime.Classic.Scenes
             view.Map = pages[0].MapData;
             timeout.State = 1;
             timeout.Speed = 1 / pages[0].Time;
-            timeout.FadeOut();
+            //timeout.FadeOut();
         }
 
         public override bool OnMouseClick(Vector2 position, MouseButton button)
@@ -167,7 +174,7 @@ namespace Burntime.Classic.Scenes
                 app.Engine.BlendOverlay.FadeOut();
             }
 
-            if (app.Engine.BlendOverlay.IsBlended)
+            if (app.Engine.BlendOverlay.IsBlended && timeout.IsOut)
             {
                 if (index >= pages.Length - 1)
                 {
@@ -204,7 +211,8 @@ namespace Burntime.Classic.Scenes
                     {
                         activeAni = i;
                         image.Background = animations[i].File;
-                        image.Background.Animation.Progressive = false;
+                        if (image.Background.Animation is not null)
+                            image.Background.Animation.Progressive = false;
                         image.Position = animations[i].Position;
                         aniTime = animations[i].Time - (time - animations[i].Start);
                     }

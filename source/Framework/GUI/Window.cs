@@ -292,5 +292,7 @@ namespace Burntime.Framework.GUI
         public virtual void OnUpdate(float Elapsed) { }
         // render
         public virtual void OnRender(RenderTarget Target) { }
+
+        public virtual void OnResizeScreen() { }
     }
 }

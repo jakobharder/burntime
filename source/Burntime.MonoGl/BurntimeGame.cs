@@ -12,6 +12,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace Burntime.MonoGl
 {
@@ -57,6 +58,13 @@ namespace Burntime.MonoGl
             //  set { isLoading = value; if (value) fadeOutState = 1; }
         }
 
+#if (DEBUG)
+        public bool FullScreen { get; set; } = false;
+#else
+        public bool FullScreen { get; set; } = true;
+#endif
+        bool _initialized = false;
+
         public BurntimeGame()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -67,6 +75,8 @@ namespace Burntime.MonoGl
         protected override void Initialize()
         {
             Log.Initialize("log.txt");
+
+            Window.Title = "Burntime " + FileVersionInfo.GetVersionInfo(Assembly.GetExecutingAssembly().Location).ProductVersion ?? "?";
 
             FileSystem.BasePath = "";
             FileSystem.AddPackage("system", "system");
@@ -84,8 +94,8 @@ namespace Burntime.MonoGl
 
             _burntimeApp = new();
 
-            Resolution.VerticalCorrection = _burntimeApp.VerticalCorrection;
-            Resolution.GameResolutions = _burntimeApp.Resolutions;
+            Resolution.RatioCorrection = _burntimeApp.RatioCorrection;
+            Resolution.MaxVerticalResolution = _burntimeApp.MaxVerticalResolution;
 
             _burntimeApp.Engine = this;
             _burntimeApp.SceneManager = new SceneManager(_burntimeApp);
@@ -101,11 +111,62 @@ namespace Burntime.MonoGl
             _burntimeApp.Run();
 
             Log.Info("Start engine...");
+            Window.AllowUserResizing = true;
+            Window.ClientSizeChanged += OnResize;
             IsMouseVisible = false;
-            _graphics.PreferredBackBufferWidth = Resolution.Native.x;
-            _graphics.PreferredBackBufferHeight = Resolution.Native.y;
+            if (FullScreen)
+            {
+                Resolution.Native = new Platform.Vector2(GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width, 
+                    GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height);
+
+                _graphics.PreferredBackBufferWidth = Resolution.Native.x;
+                _graphics.PreferredBackBufferHeight = Resolution.Native.y;
+                _graphics.HardwareModeSwitch = false;
+                _graphics.IsFullScreen = true;
+            }
+            else
+            {
+                Resolution.Native = new Platform.Vector2(GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
+                    GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height) / 2;
+
+                _graphics.PreferredBackBufferWidth = Resolution.Native.x;
+                _graphics.PreferredBackBufferHeight = Resolution.Native.y;
+            }
             _graphics.ApplyChanges();
             base.Initialize();
+
+            _initialized = true;
+        }
+
+        bool _resizing = false;
+        private void OnResize(object sender, EventArgs e)
+        {
+            if (!_initialized || _resizing) return;
+
+            _resizing = true;
+            if (FullScreen)
+            {
+                Resolution.Native = new Platform.Vector2(GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
+                    GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height);
+
+                _graphics.PreferredBackBufferWidth = Resolution.Native.x;
+                _graphics.PreferredBackBufferHeight = Resolution.Native.y;
+                _graphics.HardwareModeSwitch = false;
+                _graphics.IsFullScreen = true;
+            }
+            else
+            {
+                Resolution.Native = new Platform.Vector2(Window.ClientBounds.Width,
+                    Window.ClientBounds.Height);
+
+                _graphics.PreferredBackBufferWidth = Resolution.Native.x;
+                _graphics.PreferredBackBufferHeight = Resolution.Native.y;
+            }
+            _graphics.ApplyChanges();
+            _burntimeApp.SceneManager.ResizeScene();
+            MainTarget = new RenderTarget(this, new Rect(Platform.Vector2.Zero, Resolution.Game));
+
+            _resizing = false;
         }
 
         protected override void LoadContent()
@@ -169,6 +230,56 @@ namespace Burntime.MonoGl
             }
         }
 
+        Microsoft.Xna.Framework.Input.KeyboardState _previousKeyboardState;
+        static char ConvertKeyToChar(Microsoft.Xna.Framework.Input.Keys key, Microsoft.Xna.Framework.Input.KeyboardState state)
+        {
+            bool shift = state.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.LeftShift) || state.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.LeftShift);
+            if ((int)key > 64 && (int)key < 91)
+            {
+                return shift ? key.ToString()[0] : key.ToString().ToLower()[0];
+            }
+            else if (!shift && (int)key > 47 && (int)key < 58)
+            {
+                return key.ToString().TrimStart('D')[0];
+            }
+            else if (key == Microsoft.Xna.Framework.Input.Keys.Back)
+            {
+                return (char)8;
+            }
+            return '\0';
+        }
+
+        private void HandleKeyboardInput()
+        {
+            var keyboard = Microsoft.Xna.Framework.Input.Keyboard.GetState();
+            var keys = keyboard.GetPressedKeys();
+
+            foreach (var key in keys)
+            {
+                if (_previousKeyboardState.IsKeyUp(key))
+                {
+                    char charValue = ConvertKeyToChar(key, keyboard);
+                    if (charValue != 0)
+                        DeviceManager.KeyPress(charValue);
+                    else
+                    {
+                        DeviceManager.VKeyPress(key switch
+                            {
+                                Microsoft.Xna.Framework.Input.Keys.Escape => Platform.Keys.Escape,
+                                Microsoft.Xna.Framework.Input.Keys.Pause => Platform.Keys.Pause,
+                                Microsoft.Xna.Framework.Input.Keys.F1 => Platform.Keys.F1,
+                                Microsoft.Xna.Framework.Input.Keys.F2 => Platform.Keys.F2,
+                                Microsoft.Xna.Framework.Input.Keys.F3 => Platform.Keys.F3,
+                                Microsoft.Xna.Framework.Input.Keys.F4 => Platform.Keys.F4,
+                                _ => Platform.Keys.Other
+                            });
+                    }
+                }
+            }
+
+            _previousKeyboardState = keyboard;
+        }
+
         protected override void Update(Microsoft.Xna.Framework.GameTime gameTime)
         {
             //if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed
@@ -176,6 +287,7 @@ namespace Burntime.MonoGl
             //    Exit();
 
             HandleMouseInput();
+            HandleKeyboardInput();
 
             RenderDevice.Update();
 
@@ -204,8 +316,9 @@ namespace Burntime.MonoGl
 
         void IEngine.ReloadGraphics()
         {
-            BlendOverlay.FadeOut();
+            BlendOverlay.FadeOut(wait: true);
             ResourceManager.ReleaseAll();
+            isLoading = true;
             BlendOverlay.FadeIn();
         }
 
@@ -220,7 +333,7 @@ namespace Burntime.MonoGl
             {
                 Rectangle = new Rectangle(0, 0, size.x, size.y),
                 Color = new Color(color.r, color.g, color.b, color.a),
-                Texture = SpriteFrame.EmptyTexture,
+                Texture = RenderDevice.WhiteTexture,
                 Position = new Vector3(pos.x, pos.y, CalcZ(Layer))
             };
             RenderDevice.AddEntity(entity);
@@ -244,7 +357,7 @@ namespace Burntime.MonoGl
             if (sprite.Animation != null && sprite.Animation.Progressive && nativeSprite.Frames != null)
             {
                 entity.SpriteFrame = nativeSprite.Frames[0];
-                entity.Position = new Vector3(pos.x, pos.y, CalcZ(Layer) + 0.001f);
+                entity.Position = new Vector3(pos.x, pos.y, CalcZ(Layer) - 0.001f);
                 RenderDevice.AddEntity(entity);
             }
 
@@ -279,7 +392,7 @@ namespace Burntime.MonoGl
             if (nativeSprite.Animation != null && nativeSprite.Animation.Progressive && nativeSprite.Frames != null)
             {
                 entity.SpriteFrame = nativeSprite.Frames[0];
-                entity.Position = new Vector3(pos.x, pos.y, CalcZ(Layer) + 0.001f);
+                entity.Position = new Vector3(pos.x, pos.y, CalcZ(Layer) - 0.001f);
                 RenderDevice.AddEntity(entity);
             }
 

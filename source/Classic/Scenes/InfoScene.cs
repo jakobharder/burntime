@@ -99,6 +99,13 @@ namespace Burntime.Classic.Scenes
             technicianImage = "syssze.raw?48";
         }
 
+        public override void OnResizeScreen()
+        {
+            base.OnResizeScreen();
+
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+        }
+
         public override void OnRender(RenderTarget target)
         {
             BurntimeClassic classic = app as BurntimeClassic;

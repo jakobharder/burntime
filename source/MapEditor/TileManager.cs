@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using System.IO;
 using System.Drawing;
 using System.Drawing.Imaging;
-
+using Burntime.Platform.IO;
 namespace MapEditor
 {
     public class TileManager
@@ -24,17 +23,8 @@ namespace MapEditor
             {
                 String maskFile = tile.SubSet.ToString("D3") + "_" + tile.ID.ToString("D2") + ".txt";
                 TextWriter writer = new StreamWriter(path + "\\" + tile.Set + "\\" + maskFile);
-
-                for (int y = 0; y < 4; y++)
-                {
-                    for (int x = 0; x < 4; x++)
-                    {
-                        writer.Write(tile.Mask[y * 4 + x] ? "1" : "0");
-                    }
-                    writer.WriteLine();
-                }
-
-                writer.Close();
+                tile.WriteToText(writer);
+                writer.Dispose();
             }
 
             changed.Clear();
@@ -72,7 +62,7 @@ namespace MapEditor
                     for (int i = 0; i < 64; i++)
                     {
                         String file = j.ToString("D3") + "_" + i.ToString("D2") + ".png";
-                        if (!File.Exists(set + "\\" + file))
+                        if (!System.IO.File.Exists(set + "\\" + file))
                         {
                             //stop = true;
                             //break;
@@ -87,24 +77,11 @@ namespace MapEditor
                         tile.SubSet = (byte)j;
 
                         String maskFile = j.ToString("D3") + "_" + i.ToString("D2") + ".txt";
-                        if (File.Exists(set + "\\" + maskFile))
+                        if (System.IO.File.Exists(set + "\\" + maskFile))
                         {
                             TextReader reader = new StreamReader(set + "\\" + maskFile);
-
-                            for (int k = 0; k < 4; k++)
-                            {
-                                String line = reader.ReadLine();
-                                if (line.Length < 4)
-                                    continue;
-
-                                char[] chrs = line.ToCharArray();
-                                tile.Mask[k * 4 + 0] = (chrs[0] == '1');
-                                tile.Mask[k * 4 + 1] = (chrs[1] == '1');
-                                tile.Mask[k * 4 + 2] = (chrs[2] == '1');
-                                tile.Mask[k * 4 + 3] = (chrs[3] == '1');
-                            }
-
-                            reader.Close();
+                            tile.ReadFromText(reader);
+                            reader.Dispose();
                         }
 
                         tiles.Tiles.Add(tile);
@@ -119,20 +96,31 @@ namespace MapEditor
         {
             String path = "tiles";
 
-            Burntime.Platform.IO.FileSystem.AddPackage("burntime", Path + "\\burn_gfx");
+            IPackage burntime = FileSystem.OpenPackage(System.IO.Path.GetFullPath(Path), "BURN_GFX/");
+            if (burntime == null)
+            {
+                // something went wrong
+                throw new Exception("BURN_GFX folder was not found. Please make sure to set the correct path in system/path.txt to where the BURN_GFX and BURN.EXE are!");
+            }
+
+            Burntime.Platform.IO.FileSystem.AddPackage("burntime", burntime);
+
 
             Dictionary<int, int> dicColorTables = new Dictionary<int, int>();
             dicColorTables.Add(6, 23);
             dicColorTables.Add(7, 23);
+            dicColorTables.Add(8, 7);
+            dicColorTables.Add(9, 7);
             dicColorTables.Add(16, 23);
             dicColorTables.Add(10, 14);
             dicColorTables.Add(11, 14);
             dicColorTables.Add(15, 14);
             dicColorTables.Add(12, 13);
             dicColorTables.Add(13, 13);
-            dicColorTables.Add(18, 2);
+            dicColorTables.Add(18, 11);
             dicColorTables.Add(25, 26);
             dicColorTables.Add(26, 26);
+            dicColorTables.Add(31, 32);
             dicColorTables.Add(32, 89);
             dicColorTables.Add(44, 84);
             dicColorTables.Add(46, 83);
@@ -179,7 +167,7 @@ namespace MapEditor
                             t.Mask[k] = (mask & 1) == 1;
 
                         String maskFile = j.ToString("D3") + "_" + i.ToString("D2") + ".txt";
-                        if (File.Exists(path + "\\classic\\" + maskFile))
+                        if (System.IO.File.Exists(path + "\\classic\\" + maskFile))
                         {
                             TextReader reader = new StreamReader(path + "\\classic\\" + maskFile);
 

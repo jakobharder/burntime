@@ -32,6 +32,13 @@ namespace Burntime.Classic.Scenes
             CaptureAllMouseClicks = true;
         }
 
+        public override void OnResizeScreen()
+        {
+            base.OnResizeScreen();
+
+            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+        }
+
         protected override void OnActivateScene(object parameter)
         {
             BurntimeClassic game = app as BurntimeClassic;

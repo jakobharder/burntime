@@ -61,7 +61,9 @@ namespace MapEditor
             Picker
         };
 
-        Image mapImage;
+        public MapDocument Document => doc;
+
+        Bitmap mapImage;
         MapDocument doc;
         Tile tile;
         Point mouse;
@@ -122,7 +124,7 @@ namespace MapEditor
             }
         }
 
-        public Image MapImage
+        public Bitmap MapImage
         {
             get { return mapImage; }
         }

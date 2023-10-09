@@ -191,26 +191,52 @@ public class ConfigSection
         return false;
     }
 
-    public Vector2 GetVector2(String key)
-    {
-        Vector2 v = new Vector2();
-        String str = Get(key);
-        if (str == null || str == "")
-            return v;
+    public Vector2 GetVector2(string key) => GetVector2(key, Vector2.Zero);
+    public Vector2f GetVector2f(string key) => GetVector2f(key, Vector2f.Zero);
 
-        String[] token = str.Split(new char[] { 'x' });
+    public Vector2 GetVector2(string key, Vector2 defaultValue)
+    {
+        Vector2 v = new();
+        string str = Get(key);
+        if (string.IsNullOrEmpty(str))
+            return defaultValue;
+
+        string[] token = str.Split(new char[] { 'x' });
         if (token.Length == 1)
         {
             if (!int.TryParse(token[0], out v.x))
-                return Vector2.Zero;
+                return defaultValue;
             return v;
         }
         if (token.Length != 2)
             return v;
         if (!int.TryParse(token[0], out v.x))
-            return Vector2.Zero;
+            return defaultValue;
         if (!int.TryParse(token[1], out v.y))
-            return Vector2.Zero;
+            return defaultValue;
+        return v;
+    }
+
+    public Vector2f GetVector2f(string key, Vector2f defaultValue)
+    {
+        Vector2f v = new();
+        string str = Get(key);
+        if (string.IsNullOrEmpty(str))
+            return defaultValue;
+
+        string[] token = str.Split(new char[] { 'x' });
+        if (token.Length == 1)
+        {
+            if (!float.TryParse(token[0], out v.x))
+                return defaultValue;
+            return v;
+        }
+        if (token.Length != 2)
+            return v;
+        if (!float.TryParse(token[0], out v.x))
+            return defaultValue;
+        if (!float.TryParse(token[1], out v.y))
+            return defaultValue;
         return v;
     }
 

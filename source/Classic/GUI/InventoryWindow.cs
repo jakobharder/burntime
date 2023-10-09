@@ -76,6 +76,7 @@ namespace Burntime.Classic.GUI
             face = new FaceWindow(App);
             face.Position = side ? (basePos + new Vector2(67, 0)) : basePos;
             face.DisplayOnly = true;
+            face.Layer = this.Layer + 6;
             Windows += face;
 
             grid = new ItemGridWindow(App);
@@ -105,6 +106,7 @@ namespace Burntime.Classic.GUI
                 pageButtons[i].Hide();
                 pageButtons[i].Command += new CommandHandler(OnPage, i);
                 pageIndices[i] = i;
+                pageButtons[i].Layer = this.Layer + i + 1;
                 Windows += pageButtons[i];
             }
 
@@ -200,12 +202,18 @@ namespace Burntime.Classic.GUI
             if (side)
             {
                 for (int i = pages.Count - 1; i >= 0; i--)
+                {
                     Target.DrawSprite(basePos + new Vector2(3, -2) * i, back);
+                    Target.Layer++;
+                }
             }
             else
             {
                 for (int i = pages.Count - 1; i >= 0; i--)
+                {
                     Target.DrawSprite(basePos + -3 * i, back);
+                    Target.Layer++;
+                }
             }
 
             TextHelper txt = new TextHelper(app, "burn");
@@ -269,14 +277,14 @@ namespace Burntime.Classic.GUI
                 }
             }
 
-            Target.Layer += 5;
+            Target.Layer ++;
 
             if (pageName != "")
             {
                 nameFont.DrawText(Target, namePosition, pageName, TextAlignment.Center, VerticalTextAlignment.Top);
             }
 
-            Target.Layer -= 5;
+            Target.Layer --;
         }
 
         void OnLeftClickItem(Framework.States.StateObject State)
