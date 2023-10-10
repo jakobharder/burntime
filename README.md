@@ -45,7 +45,7 @@ You can also mark the `Launcher` as start-up project to change settings and debu
 
 ## Changes
 
-See [Changelog.md](./resources/ChangeLog.md)
+See [Changelog.md](./resources/Changelog.md)
 
 ## Credits
 
