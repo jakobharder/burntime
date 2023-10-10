@@ -1,6 +1,6 @@
 ﻿# Burntime Changelog
 
-## [Unreleased]
+## 0.4 - Remastered Graphics (2023-10-10)
 
 ### Game
 
@@ -26,7 +26,7 @@
 
 - Sound has not been ported yet to MonoGame
 
-## Burntime v0.3 (2023-09-24)
+## 0.3 - Comeback (2023-09-24)
 
 ### Game
 
