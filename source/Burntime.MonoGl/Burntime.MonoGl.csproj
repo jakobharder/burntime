@@ -15,17 +15,27 @@
     <BaseOutputPath>..\..\bin</BaseOutputPath>
     <GenerateAssemblyFileVersionAttribute>true</GenerateAssemblyFileVersionAttribute>
     <GenerateAssemblyInformationalVersionAttribute>true</GenerateAssemblyInformationalVersionAttribute>
+    <Authors>Jakob Harder</Authors>
+    <Copyright>Jakob Harder</Copyright>
+    <Title>Burntime</Title>
   </PropertyGroup>
 
   <!-- use git describe to set assembly version -->
   <Target Name="SetGitVersion" BeforeTargets="InitializeSourceControlInformation">
-    <Exec Command="git describe --tags" ConsoleToMSBuild="True" IgnoreExitCode="False">
-      <Output PropertyName="GitDescribe" TaskParameter="ConsoleOutput" />
+    <Exec Command="get-product-version" ConsoleToMSBuild="True" IgnoreExitCode="False">
+      <Output PropertyName="ProductVersion" TaskParameter="ConsoleOutput" />
+    </Exec>
+    <Exec Command="get-file-version" ConsoleToMSBuild="True" IgnoreExitCode="False">
+      <Output PropertyName="FileVersion" TaskParameter="ConsoleOutput" />
+    </Exec>
+    <Exec Command="get-semver-version" ConsoleToMSBuild="True" IgnoreExitCode="False">
+      <Output PropertyName="SemverVersion" TaskParameter="ConsoleOutput" />
     </Exec>
     <PropertyGroup>
-      <!-- <AssemblyVersion>$(GitDescribe)</AssemblyVersion> -->
-      <FileVersion>$(GitDescribe)</FileVersion>
-      <InformationalVersion>$(GitDescribe)</InformationalVersion>
+      <AssemblyVersion>$(FileVersion)</AssemblyVersion> 
+      <FileVersion>$(FileVersion)</FileVersion>
+      <InformationalVersion>$(ProductVersion)</InformationalVersion>
+      <Version>$(SemverVersion)</Version>
     </PropertyGroup>
   </Target>
   

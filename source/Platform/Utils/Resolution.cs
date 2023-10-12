@@ -51,7 +51,7 @@ public class Resolution
         if (_maxVerticalResolution == 0) return;
 
         const float DOUBLED_RESOLUTION = 2;
-        const float MaxHeight = 288.0f * DOUBLED_RESOLUTION;
+        float MaxHeight = _maxVerticalResolution * DOUBLED_RESOLUTION;
         int verticalFactor = 1;
 
         while (_native.y > MaxHeight * verticalFactor)
