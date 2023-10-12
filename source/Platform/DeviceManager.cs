@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Burntime.Platform.Utils;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -30,7 +31,7 @@ namespace Burntime.Platform
 
     sealed class MouseDevice : IMouseDevice
     {
-        private Vector2 resolution;
+        private readonly Resolution _resolution;
 
         private Vector2 current = Vector2.Zero;
         private Nullable<Vector2> previous;
@@ -38,9 +39,9 @@ namespace Burntime.Platform
         
         public Rect? Boundings { get; set; }
 
-        public MouseDevice(Vector2 resolution)
+        public MouseDevice(Resolution resolution)
         {
-            this.resolution = resolution;
+            _resolution = resolution;
         }
 
         public Vector2 Position
@@ -51,7 +52,7 @@ namespace Burntime.Platform
                 if (Boundings is not null)
                     current.Clamp(Boundings.Value);
                 else
-                    current.ClampMaxExcluding(Vector2.Zero, resolution);
+                    current.ClampMaxExcluding(Vector2.Zero, _resolution.Game);
 
                 if (!previous.HasValue || previous.Value != current)
                     previous = current;
@@ -198,13 +199,13 @@ namespace Burntime.Platform
 
         public Keyboard Keyboard { get; } = new();
 
-        private readonly Vector2 _gameResolution;
+        private readonly Resolution _resolution;
 
-        public DeviceManager(Vector2 resolution, Vector2 gameResolution)
+        public DeviceManager(Resolution resolution)
         {
 #warning TODO thread synchronization, update and UI thread may be different now
             _mouse = new MouseDevice(resolution);
-            _gameResolution = gameResolution;
+            _resolution = resolution;
         }
 
         public void MouseMove(Vector2 Position)
@@ -227,7 +228,7 @@ namespace Burntime.Platform
 
             Vector2 position = _mouse.Position;
 
-            Rect bounds = new(Vector2.Zero, _gameResolution);
+            Rect bounds = new(Vector2.Zero, _resolution.Game);
             while (bounds.PointInside(position))
                 position += _mouse.LastDirection;
 

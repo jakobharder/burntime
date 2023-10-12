@@ -68,6 +68,7 @@ namespace Burntime.Classic
 
             Size = app.Engine.Resolution.Game;
             gui.SetMapRenderArea(view, Size);
+            app.MouseBoundings = view.Boundings;
         }
 
         void view_Scroll(object sender, MapScrollArgs e)

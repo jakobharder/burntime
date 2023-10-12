@@ -69,7 +69,8 @@ public class RenderDevice : IDisposable
         //    Log.Info("Resolution: " + presentParams.BackBufferWidth + "x" + presentParams.BackBufferHeight);
         //}
 
-        Log.Info("Virtual resolution: " + _engine.Resolution.Game.x + "x" + _engine.Resolution.Game.y);
+        Log.Info("Game resolution: " + _engine.Resolution.Game.x + "x" + _engine.Resolution.Game.y);
+        Log.Info("Backbuffer resolution: " + _engine.Resolution.Native.x + "x" + _engine.Resolution.Native.y);
         Log.Info("Scale factor: " + _engine.Resolution.Scale.x.ToString("0.00") + "x" + _engine.Resolution.Scale.y.ToString("0.00"));
 
         //renderToSurface = new RenderToSurface(device, engine.Resolution.Game.x * renderScale, engine.Resolution.Game.y * renderScale, Format.X8R8G8B8);

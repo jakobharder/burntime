@@ -82,8 +82,6 @@ namespace Burntime.MonoGl
             Window.Title = "Burntime " + version;
 
             FileSystem.BasePath = "";
-            FileSystem.AddPackage("system", "system");
-
             PackageManager paketManager = new("game/");
 
             paketManager.LoadPackages("classic", FileSystem.VFS, null);
@@ -92,9 +90,6 @@ namespace Burntime.MonoGl
             cfg.Open("classic:settings.txt");
             Log.DebugOut = cfg["engine"].GetBool("debug");
 
-            RenderDevice = new RenderDevice(this);
-            RenderDevice.Initialize();
-
             _burntimeApp = new();
 
             Resolution.RatioCorrection = _burntimeApp.RatioCorrection;
@@ -102,7 +97,7 @@ namespace Burntime.MonoGl
 
             _burntimeApp.Engine = this;
             _burntimeApp.SceneManager = new SceneManager(_burntimeApp);
-            _burntimeApp.DeviceManager = new DeviceManager(Resolution.Native, Resolution.Game);
+            _burntimeApp.DeviceManager = new DeviceManager(Resolution);
             _burntimeApp.Engine.DeviceManager = _burntimeApp.DeviceManager;
 
             _burntimeApp.Initialize(new ResourceManager(this));
