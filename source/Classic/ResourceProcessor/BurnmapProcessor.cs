@@ -158,7 +158,7 @@ namespace Burntime.Deluxe.ResourceProcessor
 
                     foreach (Vector2 sub in new Rect(0, 0, 4, 4))
                     {
-                        data.Mask[pos * 4 + sub] = !(pos.x == 0 && sub.x == 0 || pos.y == 0 && sub.y == 0 ||
+                        data.Mask[pos * 4 + sub] &= !(pos.x == 0 && sub.x == 0 || pos.y == 0 && sub.y == 0 ||
                             (pos.x == data.Width - 1 && sub.x == 3) || (pos.y == data.Height - 1 && sub.y == 3));
                         data.Mask[pos * 4 + sub] &= tile[sub];
                     }
