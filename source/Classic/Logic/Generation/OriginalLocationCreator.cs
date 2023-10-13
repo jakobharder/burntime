@@ -39,7 +39,7 @@ namespace Burntime.Classic.Logic.Generation
                 loc.WayLengths = (from x in city.WayLengths where x > 0 select x).ToArray();
                 loc.NeighborIds = (from x in city.Neighbors where x != -1 select x).ToArray();
 
-                loc.Map = container.Create<Map>(new object[] { "maps/mat_" + i.ToString("D3") + ".burnmap??4" });
+                loc.Map = container.Create<Map>(new object[] { "maps/mat_" + i.ToString("D3") + ".burnmap??" + i });
 
                 loc.Rooms = container.CreateLinkList<Room>();
 
