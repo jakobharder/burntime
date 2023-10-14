@@ -41,6 +41,11 @@ maps/mat_030_tiles.png=pngsheet@maps/mat_030_tiles_2x.png?{0}?60x72
 maps/mat_032_tiles.png=pngsheet@maps/mat_032_tiles_2x.png?{0}?60x72
 maps/mat_033_tiles.png=pngsheet@maps/mat_033_tiles_2x.png?{0}?60x72
 
+film_02.pac=gfx/backgrounds/film2.png
+film_03.pac=gfx/backgrounds/film3.png
+film_04.pac=gfx/backgrounds/film4.png
+film_09.pac=gfx/backgrounds/film9.png
+
 [replacement_stretched]
 sprite_scale=2x2.375
 ges_00.ani=pngsheet@gfx/faces/ges_00.png?0-39?136x152
