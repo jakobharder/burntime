@@ -302,8 +302,11 @@ namespace Burntime.MonoGame
 
         void IEngine.CenterMouse()
         {
-            var center = Resolution.Native / 2;
-            Mouse.SetPosition(center.x, center.y);
+            if (_burntimeApp.RenderMouse && IsActive)
+            {
+                var center = Resolution.Native / 2;
+                Mouse.SetPosition(center.x, center.y);
+            }
         }
 
         void IEngine.ExitApplication()
