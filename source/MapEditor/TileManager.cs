@@ -22,7 +22,8 @@ namespace MapEditor
             foreach (Tile tile in changed)
             {
                 String maskFile = tile.SubSet.ToString("D3") + "_" + tile.ID.ToString("D2") + ".txt";
-                TextWriter writer = new StreamWriter(path + "\\" + tile.Set + "\\" + maskFile);
+                Directory.CreateDirectory(Path.Combine(path, tile.Set));
+                TextWriter writer = new StreamWriter(Path.Combine(path, tile.Set, maskFile));
                 tile.WriteToText(writer);
                 writer.Dispose();
             }

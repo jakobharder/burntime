@@ -1,7 +1,5 @@
 [replacement]
 sprite_scale=2x2
-zei_012.raw=gfx/tiles/012_{0:00}.png
-zei_013.raw=gfx/tiles/013_{0:00}.png
 syssze.raw=pngani@gfx/char/{0}.png
 burngfxani@munt.raw=pngani@gfx/munt_{0}.png
 munt.raw=gfx/munt_{0}.png
@@ -18,6 +16,8 @@ zei_008.raw=pngsheet@maps/shared/set_8.png?{0}?60x72
 zei_009.raw=pngsheet@maps/shared/set_9.png?{0}?60x72
 zei_010.raw=pngsheet@maps/shared/set_10.png?{0}?60x72
 zei_011.raw=pngsheet@maps/shared/set_11.png?{0}?60x72
+zei_012.raw=pngsheet@maps/shared/set_12.png?{0}?60x72
+zei_013.raw=pngsheet@maps/shared/set_13.png?{0}?60x72
 zei_014.raw=pngsheet@maps/shared/set_14.png?{0}?60x72
 zei_015.raw=pngsheet@maps/shared/set_15.png?{0}?60x72
 zei_017.raw=pngsheet@maps/shared/set_17.png?{0}?60x72
@@ -33,6 +33,7 @@ zei_028.raw=pngsheet@maps/shared/set_28.png?{0}?60x72
 zei_029.raw=pngsheet@maps/shared/set_29.png?{0}?60x72
 
 maps/mat_007_tiles.png=pngsheet@maps/mat_007_tiles_2x.png?{0}?60x72
+maps/mat_013_tiles.png=pngsheet@maps/mat_013_tiles_2x.png?{0}?60x72
 maps/mat_024_tiles.png=pngsheet@maps/mat_024_tiles_2x.png?{0}?60x72
 maps/mat_033_tiles.png=pngsheet@maps/mat_033_tiles_2x.png?{0}?60x72
 
