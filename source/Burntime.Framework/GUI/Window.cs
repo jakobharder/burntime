@@ -243,7 +243,7 @@ namespace Burntime.Framework.GUI
                 OnKeyPress(Key);
         }
 
-        internal virtual void VKeyPress(Keys key)
+        internal virtual void VKeyPress(SystemKey key)
         {
             if (hasFocus)
                 OnVKeyPress(key);
@@ -282,7 +282,7 @@ namespace Burntime.Framework.GUI
         public virtual bool OnMouseDown(Vector2 Position, MouseButton Button) { return false; }
         public virtual bool OnMouseUp(Vector2 Position, MouseButton Button) { return false; }
         public virtual bool OnKeyPress(char Key) { return false; }
-        public virtual bool OnVKeyPress(Keys key) { return false; }
+        public virtual bool OnVKeyPress(SystemKey key) { return false; }
         // state
         public virtual void OnActivate() { }
         public virtual void OnShow() { }

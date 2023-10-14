@@ -1,5 +1,16 @@
 ﻿# Burntime Changelog
 
+## [Unreleased]
+
+### Changes
+
+- Toggle fullscreen/windows with Alt+Enter
+- All remaining locations have remastered graphics
+
+### Fixes
+
+- Don't center mouse when the game is not focused
+
 ## 0.4 - Remastered Graphics (2023-10-10)
 
 ### Game

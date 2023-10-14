@@ -186,7 +186,7 @@ namespace Burntime.Framework
                 // process frame
                 SceneManager.Process(Elapsed);
 
-                DeviceManager.Refresh();
+                DeviceManager.Clear();
             }
         }
 

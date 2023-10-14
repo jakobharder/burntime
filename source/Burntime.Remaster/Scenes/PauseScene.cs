@@ -58,7 +58,7 @@ namespace Burntime.Remaster.Scenes
             return true;
         }
 
-        public override bool OnVKeyPress(Keys Key)
+        public override bool OnVKeyPress(SystemKey Key)
         {
             if (!handled)
             {

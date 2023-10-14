@@ -188,9 +188,9 @@ namespace Burntime.Remaster
             view.Player.LocationScrollPosition = e.Offset;
         }
 
-        public override bool OnVKeyPress(Keys key)
+        public override bool OnVKeyPress(SystemKey key)
         {
-            if (key == Keys.Pause)
+            if (key == SystemKey.Pause)
             {
                 app.SceneManager.SetScene("PauseScene");
                 return true;

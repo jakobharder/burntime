@@ -106,34 +106,27 @@ namespace Burntime.MonoGame
             Window.AllowUserResizing = true;
             Window.ClientSizeChanged += OnResize;
             IsMouseVisible = false;
-            if (FullScreen)
-            {
-                Resolution.Native = new Platform.Vector2(GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width, 
-                    GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height);
-
-                _graphics.PreferredBackBufferWidth = Resolution.Native.x;
-                _graphics.PreferredBackBufferHeight = Resolution.Native.y;
-                _graphics.HardwareModeSwitch = false;
-                _graphics.IsFullScreen = true;
-            }
-            else
-            {
-                Resolution.Native = new Platform.Vector2(GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
-                    GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height) / 2;
-
-                _graphics.PreferredBackBufferWidth = Resolution.Native.x;
-                _graphics.PreferredBackBufferHeight = Resolution.Native.y;
-            }
-            _graphics.ApplyChanges();
+            ApplyGraphicsDeviceResolution(initialize: true);
             base.Initialize();
 
             _initialized = true;
         }
 
-        bool _resizing = false;
         private void OnResize(object sender, EventArgs e)
         {
-            if (!_initialized || _resizing) return;
+            ApplyGraphicsDeviceResolution(initialize: false);
+        }
+
+        private void ToggleFullscreen()
+        {
+            FullScreen = !FullScreen;
+            ApplyGraphicsDeviceResolution(initialize: false, resetWindowSize: true);
+        }
+
+        bool _resizing = false;
+        private void ApplyGraphicsDeviceResolution(bool initialize, bool resetWindowSize = false)
+        {
+            if ((!_initialized && !initialize) || _resizing) return;
 
             _resizing = true;
             if (FullScreen)
@@ -148,14 +141,25 @@ namespace Burntime.MonoGame
             }
             else
             {
-                Resolution.Native = new Platform.Vector2(Window.ClientBounds.Width,
+                if (resetWindowSize || initialize)
+                {
+                    Resolution.Native = new Platform.Vector2(GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
+                        GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height) / 2;
+                }
+                else
+                {
+                    Resolution.Native = new Platform.Vector2(Window.ClientBounds.Width,
                     Window.ClientBounds.Height);
+                }
 
                 _graphics.PreferredBackBufferWidth = Resolution.Native.x;
                 _graphics.PreferredBackBufferHeight = Resolution.Native.y;
+                _graphics.HardwareModeSwitch = false;
+                _graphics.IsFullScreen = false;
             }
             _graphics.ApplyChanges();
-            _burntimeApp.SceneManager.ResizeScene();
+            if (!initialize)
+                _burntimeApp.SceneManager.ResizeScene();
             MainTarget = new RenderTarget(this, new Rect(Platform.Vector2.Zero, Resolution.Game));
 
             _resizing = false;
@@ -170,7 +174,6 @@ namespace Burntime.MonoGame
             RenderDevice = new RenderDevice(this);
             RenderDevice.Initialize();
             BlendOverlay.Speed = cfg["engine"].GetFloat("scene_blend");
-            MainTarget = new RenderTarget(this, new Rect(Platform.Vector2.Zero, Resolution.Game));
 
             Log.Info("Start resource manager thread...");
             ResourceManager.Run();
@@ -246,25 +249,42 @@ namespace Burntime.MonoGame
             var keyboard = Microsoft.Xna.Framework.Input.Keyboard.GetState();
             var keys = keyboard.GetPressedKeys();
 
+            ModifierKeys modifier = ModifierKeys.None;
+            if (keyboard.IsKeyDown(Keys.LeftAlt))
+                modifier |= ModifierKeys.LeftAlt;
+
             foreach (var key in keys)
             {
                 if (_previousKeyboardState.IsKeyUp(key))
                 {
+                    if (key == Keys.Enter && (modifier & ModifierKeys.LeftAlt) == ModifierKeys.LeftAlt)
+                    {
+                        ToggleFullscreen();
+                        DeviceManager.Clear();
+                        break;
+                    }
+
                     char charValue = ConvertKeyToChar(key, keyboard);
                     if (charValue != 0)
-                        DeviceManager.KeyPress(charValue);
+                        DeviceManager.KeyPress(charValue, modifier);
+                    else if (key == Keys.LeftAlt || key == Keys.RightAlt || key == Keys.LeftShift || key == Keys.RightShift
+                        || key == Keys.LeftControl || key == Keys.RightControl)
+                    {
+                        // eat modifier keys
+                    }
                     else
                     {
                         DeviceManager.VKeyPress(key switch
                             {
-                                Microsoft.Xna.Framework.Input.Keys.Escape => Platform.Keys.Escape,
-                                Microsoft.Xna.Framework.Input.Keys.Pause => Platform.Keys.Pause,
-                                Microsoft.Xna.Framework.Input.Keys.F1 => Platform.Keys.F1,
-                                Microsoft.Xna.Framework.Input.Keys.F2 => Platform.Keys.F2,
-                                Microsoft.Xna.Framework.Input.Keys.F3 => Platform.Keys.F3,
-                                Microsoft.Xna.Framework.Input.Keys.F4 => Platform.Keys.F4,
-                                _ => Platform.Keys.Other
-                            });
+                                Keys.Escape => SystemKey.Escape,
+                                Keys.Pause => SystemKey.Pause,
+                                Keys.F1 => SystemKey.F1,
+                                Keys.F2 => SystemKey.F2,
+                                Keys.F3 => SystemKey.F3,
+                                Keys.F4 => SystemKey.F4,
+                                Keys.Enter => SystemKey.Enter,
+                                _ => SystemKey.Other
+                            }, modifier);
                     }
                 }
             }

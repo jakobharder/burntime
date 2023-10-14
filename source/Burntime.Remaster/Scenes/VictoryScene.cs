@@ -91,7 +91,7 @@ namespace Burntime.Remaster.Scenes
             return base.OnMouseClick(position, button);
         }
 
-        public override bool OnVKeyPress(Keys key)
+        public override bool OnVKeyPress(SystemKey key)
         {
             app.ActiveClient.Finish();
             app.SceneManager.PreviousScene();

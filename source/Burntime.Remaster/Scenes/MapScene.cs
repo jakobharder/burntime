@@ -175,9 +175,9 @@ namespace Burntime.Remaster
             app.MouseBoundings = null;
         }
 
-        public override bool OnVKeyPress(Keys key)
+        public override bool OnVKeyPress(SystemKey key)
         {
-            if (key == Keys.Pause)
+            if (key == SystemKey.Pause)
             {
                 app.SceneManager.SetScene("PauseScene");
                 return true;
@@ -263,6 +263,7 @@ namespace Burntime.Remaster
                     {
                         player.Location = clickedLocation;
                         player.Character.Position = -Vector2.One;
+                        player.RefreshScrollPosition = true;
                     }
 
                     if (player.Location == clickedLocation)

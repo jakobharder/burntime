@@ -428,7 +428,7 @@ namespace Burntime.Platform
             DeviceManager.KeyPress(Key);
         }
 
-        internal void OnVKeyPress(Keys key)
+        internal void OnVKeyPress(SystemKey key)
         {
             DeviceManager.VKeyPress(key);
         }

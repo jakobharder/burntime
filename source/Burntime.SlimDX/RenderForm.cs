@@ -72,7 +72,7 @@ namespace Burntime.Platform
         {
             if (!base.ProcessDialogKey(keyData))
             {
-                engine.OnVKeyPress((Keys)keyData);
+                engine.OnVKeyPress((SystemKey)keyData);
                 return false;
             }
 
