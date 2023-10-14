@@ -20,6 +20,7 @@ zei_012.raw=pngsheet@maps/shared/set_12.png?{0}?60x72
 zei_013.raw=pngsheet@maps/shared/set_13.png?{0}?60x72
 zei_014.raw=pngsheet@maps/shared/set_14.png?{0}?60x72
 zei_015.raw=pngsheet@maps/shared/set_15.png?{0}?60x72
+zei_016.raw=pngsheet@maps/shared/set_16.png?{0}?60x72
 zei_017.raw=pngsheet@maps/shared/set_17.png?{0}?60x72
 zei_018.raw=pngsheet@maps/shared/set_18.png?{0}?60x72
 zei_019.raw=pngsheet@maps/shared/set_19.png?{0}?60x72
@@ -31,10 +32,13 @@ zei_025.raw=pngsheet@maps/shared/set_25.png?{0}?60x72
 zei_026.raw=pngsheet@maps/shared/set_26.png?{0}?60x72
 zei_028.raw=pngsheet@maps/shared/set_28.png?{0}?60x72
 zei_029.raw=pngsheet@maps/shared/set_29.png?{0}?60x72
+zei_031.raw=pngsheet@maps/shared/set_31.png?{0}?60x72
 
 maps/mat_007_tiles.png=pngsheet@maps/mat_007_tiles_2x.png?{0}?60x72
 maps/mat_013_tiles.png=pngsheet@maps/mat_013_tiles_2x.png?{0}?60x72
 maps/mat_024_tiles.png=pngsheet@maps/mat_024_tiles_2x.png?{0}?60x72
+maps/mat_030_tiles.png=pngsheet@maps/mat_030_tiles_2x.png?{0}?60x72
+maps/mat_032_tiles.png=pngsheet@maps/mat_032_tiles_2x.png?{0}?60x72
 maps/mat_033_tiles.png=pngsheet@maps/mat_033_tiles_2x.png?{0}?60x72
 
 [replacement_stretched]

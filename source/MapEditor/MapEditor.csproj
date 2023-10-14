@@ -93,7 +93,7 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\BurnGfx\Burntime.BurnGfx.csproj" />
-    <ProjectReference Include="..\Platform\Burntime.Platform.csproj" />
+    <ProjectReference Include="..\Burntime.BurnGfx\Burntime.BurnGfx.csproj" />
+    <ProjectReference Include="..\Burntime.Platform\Burntime.Platform.csproj" />
   </ItemGroup>
 </Project>

@@ -14,7 +14,7 @@ jobs:
         fetch-depth: 0
 
     - name: Build
-      run: (cd source && dotnet publish Burntime.MonoGl -c Release /p:DebugSymbols=false /p:PublishReadyToRun=false /p:TieredCompilation=false --self-contained /p:PublishSingleFile=true && cd ..)
+      run: (cd source && dotnet publish Burntime.MonoGame -c Release /p:DebugSymbols=false /p:PublishReadyToRun=false /p:TieredCompilation=false --self-contained /p:PublishSingleFile=true && cd ..)
 
     - name: Package
       run: |
