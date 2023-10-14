@@ -29,21 +29,21 @@ namespace Burntime.Platform.Graphics
             if (rotationState >= 1)
                 rotationState -= (float)System.Math.Floor(rotationState);
 
-            if (!_engine.isLoading)
+            if (!_engine.IsLoading)
             {
                 if (_engine.loadingStack > 0 || _engine.ResourceManager.IsLoading)
                 {
                     //loadingDelayState += loadingDelay * elapsedSeconds;
                     //if (loadingDelayState >= 1)
                     //{
-                        _engine.isLoading = true;
+                        _engine.IsLoading = true;
                     //}
                 }
             }
             else
             {
                 if (_engine.loadingStack == 0 && !_engine.ResourceManager.IsLoading)
-                    _engine.isLoading = false;
+                    _engine.IsLoading = false;
                 loadingDelayState = 0;
                 fadeOutState = 1;
             }

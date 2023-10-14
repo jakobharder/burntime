@@ -75,8 +75,9 @@ namespace Burntime.Framework
             }
 
             activeScene = scenes[Scene];
-            app.Engine.CenterMouse();
             activeScene.ActivateScene(parameter);
+            app.Engine.CenterMouse();
+            app.Engine.IsLoading = true;
             app.Engine.BlendOverlay.FadeIn();
         }
 

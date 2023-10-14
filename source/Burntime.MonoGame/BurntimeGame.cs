@@ -50,12 +50,7 @@ namespace Burntime.MonoGame
                 loadingStack--;
         }
 
-        internal bool isLoading = true;
-        public bool IsLoading
-        {
-            get { return isLoading; }
-            //  set { isLoading = value; if (value) fadeOutState = 1; }
-        }
+        public bool IsLoading { get; set; }
 
 #if (DEBUG)
         public bool FullScreen { get; set; } = false;
@@ -318,7 +313,7 @@ namespace Burntime.MonoGame
         {
             BlendOverlay.FadeOut(wait: true);
             ResourceManager.ReleaseAll();
-            isLoading = true;
+            IsLoading = true;
             BlendOverlay.FadeIn();
         }
 

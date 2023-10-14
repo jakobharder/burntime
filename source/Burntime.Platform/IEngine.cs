@@ -20,6 +20,8 @@ public interface IEngine
     Resolution Resolution { get; }
     RenderTarget MainTarget { get; }
 
+    bool IsLoading { get; set; }
+
     void CenterMouse();
     void ExitApplication();
 
