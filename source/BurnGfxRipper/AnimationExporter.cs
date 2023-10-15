@@ -53,7 +53,7 @@ class AnimationExporter
         ani.SetFrame(0);
         string outputFilePath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(dir), System.IO.Path.GetFileNameWithoutExtension(originalFilePath));
 
-        var progressive = new SpriteSheet(parameter.TextureWidth, ani.Size.x, ani.Size.y, ani.FrameCount);
+        var progressive = new SpriteSheet(parameter.TextureWidth, ani.Size.x, ani.Size.y, ani.FrameCount, parameter.Padding ? 1 : 0);
         progressive.Render(ani, false);
         TextureUtils.Save(progressive.Bitmap, outputFilePath + "_progressive.png", parameter);
 

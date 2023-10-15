@@ -271,7 +271,7 @@ namespace MapEditor
 
         public void Import(string filePath, int tileSize, List<TileSet> sharedTiles, TileSet newTiles)
         {
-            var bmp = new Bitmap(filePath);
+            using var bmp = new Bitmap(filePath);
             int widthTiles = bmp.Width / tileSize;
             int heightTiles = bmp.Height / tileSize;
 

@@ -22,7 +22,8 @@ namespace MapEditor
             foreach (Tile tile in changed)
             {
                 String maskFile = tile.SubSet.ToString("D3") + "_" + tile.ID.ToString("D2") + ".txt";
-                TextWriter writer = new StreamWriter(path + "\\" + tile.Set + "\\" + maskFile);
+                Directory.CreateDirectory(Path.Combine(path, tile.Set));
+                TextWriter writer = new StreamWriter(Path.Combine(path, tile.Set, maskFile));
                 tile.WriteToText(writer);
                 writer.Dispose();
             }
@@ -114,23 +115,23 @@ namespace MapEditor
             dicColorTables.Add(16, 23);
             dicColorTables.Add(10, 14);
             dicColorTables.Add(11, 14);
-            dicColorTables.Add(15, 14);
             dicColorTables.Add(12, 13);
             dicColorTables.Add(13, 13);
+            dicColorTables.Add(17, 33);
+            dicColorTables.Add(15, 14);
             dicColorTables.Add(18, 11);
             dicColorTables.Add(25, 26);
             dicColorTables.Add(26, 26);
+            dicColorTables.Add(29, 35);
             dicColorTables.Add(31, 32);
             dicColorTables.Add(32, 89);
             dicColorTables.Add(44, 84);
             dicColorTables.Add(46, 83);
             dicColorTables.Add(47, 83);
-            dicColorTables.Add(29, 35);
             dicColorTables.Add(45, 82);
             dicColorTables.Add(48, 81);
             dicColorTables.Add(49, 80);
             dicColorTables.Add(50, 80);
-            dicColorTables.Add(17, 33);
 
             for (int j = 1; j < 52; j++)
             {

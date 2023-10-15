@@ -48,6 +48,16 @@ namespace MapEditor
             return IsEqualImage(new Bitmap(Tile.Image));
         }
 
+        private static int GetPixelDiff(Bitmap left, Bitmap right, int x, int y)
+        {
+            Color leftColor = left.GetPixel(x, y);
+            Color rightColor = right.GetPixel(x, y);
+            return Math.Abs(leftColor.R - rightColor.R) + Math.Abs(leftColor.G - rightColor.G) + Math.Abs(leftColor.B - rightColor.B);
+        }
+
+        /// <summary>
+        /// Check if images are almost equal. A total color difference of 9 is allowed.
+        /// </summary>
         public bool IsEqualImage(Bitmap Image)
         {
             if (Image.Width != this.Image.Width ||
@@ -60,7 +70,7 @@ namespace MapEditor
             {
                 for (int x = 0; x < Image.Width; x++)
                 {
-                    if (Image.GetPixel(x, y) != bmp.GetPixel(x, y))
+                    if (GetPixelDiff(Image, bmp, x, y) > 9)
                         return false;
                 }
             }

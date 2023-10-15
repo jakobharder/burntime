@@ -1,11 +1,22 @@
 ﻿# Burntime Changelog
 
+## 0.5 - Remastered Characters (2023-10-15)
+
+- Toggle fullscreen/windows with Alt+Enter
+- Remastered graphics
+  - All remaining location maps
+  - Characters
+  - Ruin scenes
+- Don't center mouse when the game is not focused
+
 ## 0.4 - Remastered Graphics (2023-10-10)
 
 ### Game
 
-- Remastered graphics for items, backgrounds, maps.
-  Toggle between remastered and original with `F2` or in options menu.
+- Remastered graphics
+  - Items, room backgrounds
+  - Location maps
+  - Toggle between remastered and original with `F2` or in options menu.
 - Clothes increase defense value when equipped
 - Replaced "Sie" with "du"
 - Removed dish from random spawn
