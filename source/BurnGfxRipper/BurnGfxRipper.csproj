@@ -20,9 +20,6 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\bin\Debug\BurnGfx.dll</HintPath>
     </Reference>
-    <Reference Include="Burntime.Core">
-      <HintPath>..\..\bin\Debug\Burntime.Core.dll</HintPath>
-    </Reference>
     <Reference Include="Framework">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\bin\Debug\Burntime.Framework.dll</HintPath>

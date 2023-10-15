@@ -312,7 +312,10 @@ public class ResourceManagerBase
         {
             if (idstring.Contains('?') && idstring.Split("?")[1].Contains("{0}"))
             {
-                idstring = idstring.Replace("{0}", id.Index.ToString());
+                if (id.EndIndex != -1)
+                    idstring = idstring.Replace("{0}", $"{id.Index}-{id.EndIndex}");
+                else
+                    idstring = idstring.Replace("{0}", id.Index.ToString());
             }
             else
             {

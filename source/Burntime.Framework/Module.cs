@@ -205,6 +205,8 @@ namespace Burntime.Framework
         }
 
         public virtual void ToggleNewGfx() { }
+
+        public virtual bool IsNewGfx { get; set; } = false;
     }
 
     public class ApplicationInternal : IApplication

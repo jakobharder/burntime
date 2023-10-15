@@ -18,6 +18,8 @@ namespace Burntime.Remaster.Maps
         SpriteAnimation ani;
         bool debugRender;
 
+        ISprite _shadow;
+
         Character selectedCharacter;
         public Character SelectedCharacter
         {
@@ -36,6 +38,8 @@ namespace Burntime.Remaster.Maps
 
             ani = new SpriteAnimation(2);
             ani.Speed = 10.0f;
+
+            _shadow = app.ResourceManager.GetImage("gfx/char_shadow.png");
 
             debugRender = app.Settings["debug"].GetBool("show_path") && app.Settings["debug"].GetBool("enable_cheats");
         }
@@ -87,6 +91,26 @@ namespace Burntime.Remaster.Maps
                 {
                     for (int i = 0; i < player.Group.Count; i++)
                         characters.Add(player.Group[i]);
+                }
+
+                if (app.IsNewGfx)
+                {
+                    foreach (Character chr in characters)
+                    {
+                        Vector2 pos = chr.Position + offset;
+                        if (chr is Dog)
+                        {
+#warning TODO don't hardcode
+                            pos.x -= 7;
+                            pos.y -= 5;
+                        }
+                        else
+                        {
+                            pos.x -= 8;
+                            pos.y -= 4;
+                        }
+                        target.DrawSprite(pos, _shadow);
+                    }
                 }
 
                 foreach (Character chr in characters)

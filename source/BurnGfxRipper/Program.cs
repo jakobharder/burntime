@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 
 using Burntime.Platform.IO;
 using Burntime.Data.BurnGfx;
+using System.Security.Cryptography;
 
 namespace BurnGfxRipper;
 
@@ -13,6 +14,7 @@ class CommandParameter
     public int TextureWidth = 0;
     public bool RatioCorrection = false;
     public bool MegaTexture = false;
+    public bool Padding = true;
 
     public bool HandleArg(string arg)
     {
@@ -26,6 +28,12 @@ class CommandParameter
         if (arg.StartsWith("-r"))
         {
             RatioCorrection = true;
+            return true;
+        }
+
+        if (arg.StartsWith("-p"))
+        {
+            Padding = true;
             return true;
         }
 

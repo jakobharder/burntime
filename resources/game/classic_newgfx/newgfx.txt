@@ -1,6 +1,5 @@
 [replacement]
 sprite_scale=2x2
-syssze.raw=pngani@gfx/char/{0}.png
 burngfxani@munt.raw=pngani@gfx/munt_{0}.png
 munt.raw=gfx/munt_{0}.png
 sta.pac=gfx/sta.png
@@ -45,6 +44,12 @@ film_02.pac=gfx/backgrounds/film2.png
 film_03.pac=gfx/backgrounds/film3.png
 film_04.pac=gfx/backgrounds/film4.png
 film_09.pac=gfx/backgrounds/film9.png
+
+syssze.raw=pngsheet@gfx/syssze.png?{0}?30x36
+
+[newgfx_native]
+sprite_scale=1.875x2.25
+gfx/char_shadow.png=gfx/char_shadow.png
 
 [replacement_stretched]
 sprite_scale=2x2.375

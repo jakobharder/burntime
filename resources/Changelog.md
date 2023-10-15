@@ -1,12 +1,13 @@
 ﻿# Burntime Changelog
 
-## [Unreleased]
+## 0.5 - Remastered Characters (2023-10-15)
 
 ### Changes
 
 - Toggle fullscreen/windows with Alt+Enter
 - Remastered graphics
   - All remaining location maps
+  - Characters
   - Ruin scenes
 
 ### Fixes

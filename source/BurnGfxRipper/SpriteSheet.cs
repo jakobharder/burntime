@@ -13,18 +13,22 @@ namespace BurnGfxRipper;
 internal class SpriteSheet
 {
     public Bitmap Bitmap { get; init; }
+    int _padding;
 
     public SpriteSheet(int width, int height)
     {
         Bitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
+        _padding = 0;
     }
 
-    public SpriteSheet(int width, int frameWidth, int frameHeight, int frameCount)
+    public SpriteSheet(int width, int frameWidth, int frameHeight, int frameCount, int padding = 0)
     {
-        int columns = (int)Math.Floor(width / (float)frameWidth);
+        _padding = padding;
+
+        int columns = (int)Math.Floor(width / (float)(frameWidth + _padding * 2));
         int rows = (int)Math.Ceiling(frameCount / (float)columns);
 
-        int rowHeight = TextureUtils.MakeMultipleOf(frameHeight, TextureUtils.HEIGHT_PADDING);
+        int rowHeight = TextureUtils.MakeMultipleOf(frameHeight, TextureUtils.HEIGHT_PADDING) + _padding * 2;
         int textureHeight = TextureUtils.MakePowerOfTwo(rows * rowHeight);
 
         Bitmap = new Bitmap(width, textureHeight, PixelFormat.Format32bppArgb);
@@ -32,7 +36,7 @@ internal class SpriteSheet
 
     public void RenderSingle(MemoryStream memory, int frameWidth, int frameHeight, int frame)
     {
-        int columns = (int)Math.Floor(Bitmap.Width / (float)frameWidth);
+        int columns = (int)Math.Floor(Bitmap.Width / (float)(frameWidth + _padding * 2));
 
         int x = frame % columns;
         int y = (frame - x) / columns;
@@ -56,10 +60,11 @@ internal class SpriteSheet
     public void Render(ISpriteAnimationProcessor ani, bool baseImage)
     {
         ani.SetFrame(0);
-        int columns = (int)Math.Floor(Bitmap.Width / (float)ani.Size.x);
+        int columns = (int)Math.Floor(Bitmap.Width / (float)(ani.Size.x + _padding * 2));
         int rows = (int)Math.Ceiling(ani.FrameCount / (float)columns);
 
-        int rowHeight = TextureUtils.MakeMultipleOf(ani.Size.y, TextureUtils.HEIGHT_PADDING);
+        int rowHeight = TextureUtils.MakeMultipleOf(ani.Size.y, TextureUtils.HEIGHT_PADDING) + _padding * 2;
+        int columnWidth = ani.FrameSize.x + _padding * 2;
 
         int i = 0;
         for (int y = 0; y < rows; y++)
@@ -68,7 +73,7 @@ internal class SpriteSheet
             {
                 ani.SetFrame(baseImage ? 0 : i);
 
-                BitmapData loc = Bitmap.LockBits(new Rectangle(x * ani.FrameSize.x, y * rowHeight, ani.FrameSize.x, ani.FrameSize.y),
+                BitmapData loc = Bitmap.LockBits(new Rectangle(x * columnWidth, y * rowHeight, ani.FrameSize.x, ani.FrameSize.y),
                     ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
                 System.IO.MemoryStream mem = new();
                 ani.Render(mem, ani.FrameSize.x * 4);

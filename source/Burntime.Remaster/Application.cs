@@ -105,7 +105,7 @@ namespace Burntime.Remaster
             bool useHighResFont = Settings["system"].GetBool("highres_font");
 
             // add newgfx package
-            if (NewGfx)
+            if (IsNewGfx)
             {
                 FileSystem.AddPackage("newgfx", "game/classic_newgfx");
                 if (FileSystem.ExistsFile("newgfx.txt"))
@@ -151,7 +151,7 @@ namespace Burntime.Remaster
         public bool NewGui = false;
 
 #warning TODO make this a setting
-        public bool NewGfx = true;
+        public override bool IsNewGfx { get; set; } = true;
 
         public Character SelectedCharacter
         {
@@ -165,8 +165,8 @@ namespace Burntime.Remaster
 
         public override void ToggleNewGfx()
         {
-            NewGfx = !NewGfx;
-            if (NewGfx)
+            IsNewGfx = !IsNewGfx;
+            if (IsNewGfx)
             {
                 FileSystem.AddPackage("newgfx", "game/classic_newgfx");
                 if (FileSystem.ExistsFile("newgfx.txt"))

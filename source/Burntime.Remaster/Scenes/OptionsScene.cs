@@ -152,7 +152,7 @@ namespace Burntime.Remaster
         {
             RefreshSaveGames();
             input.Name = "";
-            _buttonNewGfx.Text = BurntimeClassic.Instance.NewGfx ? "@newburn?17" : "@newburn?18";
+            _buttonNewGfx.Text = BurntimeClassic.Instance.IsNewGfx ? "@newburn?17" : "@newburn?18";
 
             if (app.SceneManager.LastScene == "MenuScene")
             {
@@ -221,7 +221,7 @@ namespace Burntime.Remaster
 
             // can be triggered via F1 or option menu
             var classic = BurntimeClassic.Instance;
-            _buttonNewGfx.Text = classic.NewGfx ? "@newburn?17" : "@newburn?18";
+            _buttonNewGfx.Text = classic.IsNewGfx ? "@newburn?17" : "@newburn?18";
         }
 
         void OnSelect(int index)
@@ -306,8 +306,8 @@ namespace Burntime.Remaster
         {
             var classic = BurntimeClassic.Instance;
 
-            classic.NewGfx = !classic.NewGfx;
-            if (classic.NewGfx)
+            classic.IsNewGfx = !classic.IsNewGfx;
+            if (classic.IsNewGfx)
             {
                 FileSystem.AddPackage("newgfx", "game/classic_newgfx");
                 if (FileSystem.ExistsFile("newgfx.txt"))
