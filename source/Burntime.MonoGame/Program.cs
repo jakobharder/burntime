@@ -10,7 +10,7 @@ game.Run();
 
 try
 {
-    using var game = new Burntime.MonoGl.BurntimeGame();
+    using var game = new Burntime.MonoGame.BurntimeGame();
     game.Run();
 }
 catch (System.Exception exception)

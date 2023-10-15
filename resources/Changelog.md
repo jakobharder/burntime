@@ -2,16 +2,11 @@
 
 ## 0.5 - Remastered Characters (2023-10-15)
 
-### Changes
-
 - Toggle fullscreen/windows with Alt+Enter
 - Remastered graphics
   - All remaining location maps
   - Characters
   - Ruin scenes
-
-### Fixes
-
 - Don't center mouse when the game is not focused
 
 ## 0.4 - Remastered Graphics (2023-10-10)
