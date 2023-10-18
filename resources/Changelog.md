@@ -2,6 +2,12 @@
 
 ## 0.5 - Remastered Characters (2023-10-15)
 
+### 0.5.1
+
+- Fixed scaling issue in environments using comma as decimal separator (e.g. German)
+
+### Changes
+
 - Toggle fullscreen/windows with Alt+Enter
 - Remastered graphics
   - All remaining location maps
