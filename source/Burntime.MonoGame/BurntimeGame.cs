@@ -52,11 +52,11 @@ namespace Burntime.MonoGame
 
         public bool IsLoading { get; set; }
 
-#if (DEBUG)
+// #if (DEBUG)
         public bool FullScreen { get; set; } = false;
-#else
-        public bool FullScreen { get; set; } = true;
-#endif
+// #else
+//         public bool FullScreen { get; set; } = true;
+// #endif
         bool _initialized = false;
 
         public BurntimeGame()

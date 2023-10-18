@@ -1,4 +1,6 @@
-﻿namespace Burntime.Platform.IO;
+﻿using System.Globalization;
+
+namespace Burntime.Platform.IO;
 
 public class ConfigSection
 {
@@ -227,15 +229,15 @@ public class ConfigSection
         string[] token = str.Split(new char[] { 'x' });
         if (token.Length == 1)
         {
-            if (!float.TryParse(token[0], out v.x))
+            if (!float.TryParse(token[0], NumberStyles.Float, CultureInfo.InvariantCulture, out v.x))
                 return defaultValue;
             return v;
         }
         if (token.Length != 2)
             return v;
-        if (!float.TryParse(token[0], out v.x))
+        if (!float.TryParse(token[0], NumberStyles.Float, CultureInfo.InvariantCulture, out v.x))
             return defaultValue;
-        if (!float.TryParse(token[1], out v.y))
+        if (!float.TryParse(token[1], NumberStyles.Float, CultureInfo.InvariantCulture, out v.y))
             return defaultValue;
         return v;
     }
@@ -246,7 +248,7 @@ public class ConfigSection
             return 0;
 
         float res = 0;
-        if (!float.TryParse(Get(key), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out res))
+        if (!float.TryParse(Get(key), NumberStyles.Float, CultureInfo.InvariantCulture, out res))
             return 0;
         return res;
     }
@@ -263,7 +265,7 @@ public class ConfigSection
             float[] floats = new float[strs.Length];
             for (int i = 0; i < strs.Length; i++)
             {
-                if (!float.TryParse(strs[i], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out floats[i]))
+                if (!float.TryParse(strs[i], NumberStyles.Float, CultureInfo.InvariantCulture, out floats[i]))
                     floats[i] = 0;
             }
             return floats;
