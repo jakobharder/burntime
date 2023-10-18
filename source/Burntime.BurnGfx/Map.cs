@@ -212,6 +212,7 @@ namespace Burntime.Data.BurnGfx
             return false;
         }
 
+        [Obsolete]
         public void Read(File reader)
         {
             int width = reader.ReadUShort() / 2;
@@ -272,107 +273,6 @@ namespace Burntime.Data.BurnGfx
 
         }
 
-        public void Convert()
-        {
-            //bmp.Save("c:\\burntime\\input.bmp", System.Drawing.Imaging.ImageFormat.Bmp);
-
-            //Size sz = bmp.Size;
-
-            //bmp = null;
-
-            //System.Diagnostics.Process proc = new System.Diagnostics.Process();
-            //proc.EnableRaisingEvents = false;
-            //proc.StartInfo.FileName = "c:\\burntime\\hq3x.exe";
-            //proc.StartInfo.Arguments = "c:\\burntime\\input.bmp c:\\burntime\\output.bmp";
-            //proc.Start();
-            //proc.WaitForExit();
-
-            //Image img = Image.FromFile("c:\\burntime\\output.bmp");
-
-            //int zoom = 3;
-            //bmp = new Bitmap(zoom * sz.Width, zoom * sz.Height);
-            //Graphics g = Graphics.FromImage(bmp);
-
-            //g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
-            //g.DrawImage(img, new Rectangle(0, 0, zoom * sz.Width, zoom * sz.Height), new Rectangle(0, 0, sz.Width * 3, sz.Height * 3), GraphicsUnit.Pixel);
-
-            //img.Dispose();
-        }
-
-        public void DrawGrid()
-        {
-            //Graphics g = Graphics.FromImage(bmp);
-
-            //g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
-
-            //Pen p = new Pen(new SolidBrush(Color.Black));
-
-            //for (int i = 0; i < Size.Width; i++)
-            //{
-            //    Point pt1 = new Point(i * TileWidth, 0);
-            //    Point pt2 = new Point(pt1.X, Size.Height * TileHeight - 1);
-            //    g.DrawLine(p, pt1, pt2);
-            //}
-
-            //for (int i = 0; i < Size.Height; i++)
-            //{
-            //    Point pt1 = new Point(0, i * TileHeight);
-            //    Point pt2 = new Point(Size.Width * TileWidth - 1, pt1.Y);
-            //    g.DrawLine(p, pt1, pt2);
-            //}
-
-            //p = new Pen(new SolidBrush(Color.Red));
-            //foreach (Mask m in masks)
-            //{
-            //    bool[] matrix = new bool[16];
-
-            //    int value = m.Value;
-            //    for (int i = 0; i < 16; i++, value >>= 1)
-            //        matrix[15 - i] = (value & 1) != 0;
-
-
-            //    for (int i = 0; i < 16; i++)
-            //    {
-            //        if (matrix[i])
-            //        {
-            //            int x = i % 4;
-            //            int y = (i - x) / 4;
-
-            //            Rectangle rc = new Rectangle(m.x + x * TileWidth / 4, m.y + y * TileHeight / 4, TileWidth / 4, TileHeight / 4);
-
-            //            // left
-            //            if (x == 0 || (x > 0 && !matrix[y * 4 + x - 1]))
-            //            {
-            //                g.DrawLine(p, new Point(rc.Left, rc.Top), new Point(rc.Left, rc.Bottom));
-            //            }
-            //            // right
-            //            if (x == 3 || (x < 3 && !matrix[y * 4 + x + 1]))
-            //            {
-            //                g.DrawLine(p, new Point(rc.Right, rc.Top), new Point(rc.Right, rc.Bottom));
-            //            }
-            //            // top
-            //            if (y == 0 || (y > 0 && !matrix[(y - 1) * 4 + x]))
-            //            {
-            //                g.DrawLine(p, new Point(rc.Left, rc.Top), new Point(rc.Right, rc.Top));
-            //            }
-            //            // bottom
-            //            if (y == 3 || (y < 3 && !matrix[(y + 1) * 4 + x]))
-            //            {
-            //                g.DrawLine(p, new Point(rc.Left, rc.Bottom), new Point(rc.Right, rc.Bottom));
-            //            }
-
-            //            //g.DrawRectangle(p, rc);
-            //        }
-            //    }
-            //}
-            //p = new Pen(new SolidBrush(Color.Blue));
-
-            //foreach (Door d in doors)
-            //{
-            //    g.DrawRectangle(p, d.Area);
-            //}
-        }
-
         public int GetDoor(Vector2 pos)
         {
             Vector2 pt = new Vector2(pos);
@@ -392,47 +292,6 @@ namespace Burntime.Data.BurnGfx
             if (doors[id - 1].ID != id)
                 return null;
             return doors[id - 1];
-        }
-
-        public void save(String file)
-        {
-            //Bitmap bmp = new Bitmap(PixelSize.Width, PixelSize.Height, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
-
-
-            //System.Drawing.Imaging.BitmapData bdata = bmp.LockBits(new Rectangle(0, 0, PixelSize.Width, PixelSize.Height), System.Drawing.Imaging.ImageLockMode.ReadOnly,
-            //    System.Drawing.Imaging.PixelFormat.Format24bppRgb);
-
-
-            //ByteBuffer target = new ByteBuffer(PixelSize.Width, PixelSize.Height, new byte[3 * PixelSize.Width * PixelSize.Height]);
-
-
-            //for (int y = 0; y < height; y++)
-            //{
-            //    for (int x = 0; x < width; x++)
-            //    {
-            //        int tileset = data[x + y * width] & 0xff;
-            //        int tileid = data[x + y * width] >> 8;
-
-            //        Tile tile = TileDB.Singleton.GetTile(tileset, tileid);
-            //        tile.Draw(ref target, x * Tile.WIDTH, y * Tile.HEIGHT, ColorTable.Last);
-
-            //        ByteBuffer tt = new ByteBuffer(Tile.WIDTH, Tile.HEIGHT, new byte[3 * Tile.WIDTH * Tile.HEIGHT]);
-            //        tile.Draw(ref tt, 0, 0, ColorTable.Last);
-            //        Bitmap tbmp = new Bitmap(Tile.WIDTH, Tile.HEIGHT, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
-            //        System.Drawing.Imaging.BitmapData bdata2 = tbmp.LockBits(new Rectangle(0, 0, Tile.WIDTH, Tile.HEIGHT), System.Drawing.Imaging.ImageLockMode.ReadOnly,
-            //            System.Drawing.Imaging.PixelFormat.Format24bppRgb);
-
-            //        System.Runtime.InteropServices.Marshal.Copy(tt.Data, 0, bdata2.Scan0, tt.Height * tt.Stride);
-            //        tbmp.UnlockBits(bdata2);
-
-            //        tbmp.Save(BurnGfxSetting.Singleton.DataPath + "\\..\\output\\tiles\\" + tileset.ToString("D2") + "_" + tileid.ToString("D2") + ".png");
-            //    }
-            //}
-
-            //System.Runtime.InteropServices.Marshal.Copy(target.Data, 0, bdata.Scan0, target.Height * target.Stride);
-            //bmp.UnlockBits(bdata);
-
-            //bmp.Save(BurnGfxSetting.Singleton.DataPath + "\\..\\output\\maps\\" + file + ".png");
         }
     }
 }
