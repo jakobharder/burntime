@@ -10,6 +10,8 @@ namespace Burntime.Remaster
 {
     public class MenuScene : Scene
     {
+        public const int MAX_FACE_ID = 5;
+
         SpriteAnimation PlayerOneSlide;
         SpriteAnimation PlayerTwoSlide;
         NameWindow PlayerOneSwitch;
@@ -36,7 +38,7 @@ namespace Burntime.Remaster
 
             // face
             PlayerOneFace = new FaceWindow(App);
-            PlayerOneFace.MaxFaceID = 5;
+            PlayerOneFace.MaxFaceID = MAX_FACE_ID;
             PlayerOneFace.Position = new Vector2(33, 28);
             PlayerOneFace.Group = 3;
             Windows += PlayerOneFace;

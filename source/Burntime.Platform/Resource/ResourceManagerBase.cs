@@ -295,7 +295,11 @@ public class ResourceManagerBase
     {
         string? idstring = null;
 
-        if (section.ContainsKey(id.Format + "@" + id.File))
+        if (section.ContainsKey(id.ToString()))
+        {
+            return section.Get(id.ToString());
+        }
+        else if (section.ContainsKey(id.Format + "@" + id.File))
         {
             idstring = section.Get(id.Format + "@" + id.File);
         }

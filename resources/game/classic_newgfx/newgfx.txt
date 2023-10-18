@@ -1,10 +1,3 @@
-[replacement]
-sprite_scale=2x2
-burngfxani@munt.raw=pngani@gfx/munt_{0}.png
-munt.raw=gfx/munt_{0}.png
-sta.pac=gfx/sta.png
-syst.raw=gfx/syst_{0}.png
-
 [replacement_60x72]
 sprite_scale=1.875x2.25
 zei_004.raw=pngsheet@maps/shared/set_4.png?{0}?60x72
@@ -47,9 +40,24 @@ film_09.pac=gfx/backgrounds/film9.png
 
 syssze.raw=pngsheet@gfx/syssze.png?{0}?30x36
 
+munt.raw?3=pngsheet@gfx/objects/munt.png?0?15x18
+munt.raw?4=pngsheet@gfx/objects/munt.png?1?15x18
+
+syst.raw?16=pngsheet@gfx/objects/player_icon_colors.png?0?36x38
+syst.raw?17=pngsheet@gfx/objects/player_icon_colors.png?1?36x38
+syst.raw?18=pngsheet@gfx/objects/player_icon_colors.png?2?36x38
+syst.raw?19=pngsheet@gfx/objects/player_icon_colors.png?3?36x38
+
 [newgfx_native]
 sprite_scale=1.875x2.25
 gfx/char_shadow.png=gfx/char_shadow.png
+gfx/objects/player_icons.png=pngsheet@gfx/objects/player_icons.png?{0}?36x38
+
+[replacement]
+sprite_scale=2x2
+burngfxani@munt.raw=pngani@gfx/munt_{0}.png
+munt.raw=gfx/munt_{0}.png
+sta.pac=gfx/sta.png
 
 [replacement_stretched]
 sprite_scale=2x2.375
