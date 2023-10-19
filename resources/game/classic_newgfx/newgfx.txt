@@ -37,11 +37,14 @@ film_02.pac=gfx/backgrounds/film2.png
 film_03.pac=gfx/backgrounds/film3.png
 film_04.pac=gfx/backgrounds/film4.png
 film_09.pac=gfx/backgrounds/film9.png
+info.pac=gfx/backgrounds/info.png
 
 syssze.raw=pngsheet@gfx/syssze.png?{0}?30x36
 
 munt.raw?3=pngsheet@gfx/objects/munt.png?0?15x18
 munt.raw?4=pngsheet@gfx/objects/munt.png?1?15x18
+gfx/up.png=gfx/up.png
+gfx/down.png=gfx/down.png
 
 syst.raw?16=pngsheet@gfx/objects/player_icon_colors.png?0?36x38
 syst.raw?17=pngsheet@gfx/objects/player_icon_colors.png?1?36x38
