@@ -66,6 +66,8 @@ namespace Burntime.Remaster.GUI
         public InventoryWindow(Module App, InventorySide Side)
             : base(App)
         {
+            const int MAX_PEOPLE = 5;
+
             side = (Side == InventorySide.Right);
 
             back = side ? "inv.raw?2" : "gfx/inventory_left.png";
@@ -79,15 +81,6 @@ namespace Burntime.Remaster.GUI
             face.Layer = this.Layer + 6;
             Windows += face;
 
-            grid = new ItemGridWindow(App);
-            grid.LockPositions = true;
-            grid.Position = new Vector2(side ? 9 : 19, side ? 72 : 83) + basePos;
-            grid.Spacing = new Vector2(4, side ? 16 : 5);
-            grid.Grid = new Vector2(3, 2);
-            grid.LeftClickItemEvent += OnLeftClickItem;
-            grid.RightClickItemEvent += OnRightClickItem;
-            Windows += grid;
-
             font = new GuiFont(BurntimeClassic.FontName, new PixelColor(128, 136, 192));
             font.Borders = TextBorders.Screen;
             nameFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
@@ -95,7 +88,7 @@ namespace Burntime.Remaster.GUI
 
             pageName = "";
 
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < MAX_PEOPLE; i++)
             {
                 pageButtons[i] = new Button(App);
                 pageButtons[i].Image = "munt.raw?" + (5 + i);
@@ -106,9 +99,20 @@ namespace Burntime.Remaster.GUI
                 pageButtons[i].Hide();
                 pageButtons[i].Command += new CommandHandler(OnPage, i);
                 pageIndices[i] = i;
-                pageButtons[i].Layer = this.Layer + i + 1;
+                pageButtons[i].Layer = Layer + MAX_PEOPLE + 1;
                 Windows += pageButtons[i];
             }
+
+            Windows += grid = new ItemGridWindow(App)
+            {
+                LockPositions = true,
+                Position = new Vector2(side ? 9 : 19, side ? 72 : 83) + basePos,
+                Spacing = new Vector2(4, side ? 16 : 5),
+                Grid = new Vector2(3, 2),
+                Layer = Layer + MAX_PEOPLE + 1
+            };
+            grid.LeftClickItemEvent += OnLeftClickItem;
+            grid.RightClickItemEvent += OnRightClickItem;
 
             pages = new List<InventoryPage>();
             activePageIndex = 0;
@@ -199,21 +203,12 @@ namespace Burntime.Remaster.GUI
 
         public override void OnRender(RenderTarget Target)
         {
-            if (side)
+            var inventoryOffset = side ? new Vector2(3, -2) : new Vector2(-3, -3);
+
+            for (int i = pages.Count - 1; i >= 0; i--)
             {
-                for (int i = pages.Count - 1; i >= 0; i--)
-                {
-                    Target.DrawSprite(basePos + new Vector2(3, -2) * i, back);
-                    Target.Layer++;
-                }
-            }
-            else
-            {
-                for (int i = pages.Count - 1; i >= 0; i--)
-                {
-                    Target.DrawSprite(basePos + -3 * i, back);
-                    Target.Layer++;
-                }
+                Target.DrawSprite(basePos + inventoryOffset * i, back);
+                Target.Layer++;
             }
 
             TextHelper txt = new TextHelper(app, "burn");
@@ -277,14 +272,11 @@ namespace Burntime.Remaster.GUI
                 }
             }
 
-            Target.Layer ++;
-
             if (pageName != "")
             {
+                Target.Layer += pageButtons.Length + 1;
                 nameFont.DrawText(Target, namePosition, pageName, TextAlignment.Center, VerticalTextAlignment.Top);
             }
-
-            Target.Layer --;
         }
 
         void OnLeftClickItem(Framework.States.StateObject State)
