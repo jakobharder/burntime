@@ -28,14 +28,28 @@ namespace Burntime.Remaster.Scenes
         int doctor;
         int technician;
 
+        readonly GuiImage _rightBottom, _rightTop;
+        readonly GuiImage _leftBottom, _leftTop;
+        readonly ISprite _background, _background2;
+        readonly ISprite _backgroundClassic;
+
         public StatisticsScene(Module App)
             : base(App)
         {
-            Background = "blz.pac";
+            //Background = "blz.pac";
+            Size = new Vector2(320, 200);
             Music = "17_MUS 17_HSC.ogg";
-            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+            Position = (app.Engine.Resolution.Game - Size) / 2;
             font = new GuiFont(BurntimeClassic.FontName, new PixelColor(212, 212, 212), new PixelColor(92, 92, 96));
             CaptureAllMouseClicks = true;
+
+            _rightBottom = (GuiImage)"gfx/backgrounds/stats_rightbottom.png";
+            _rightTop = (GuiImage)"gfx/backgrounds/stats_righttop.png";
+            _leftBottom = (GuiImage)"gfx/backgrounds/stats_leftbottom.png";
+            _leftTop = (GuiImage)"gfx/backgrounds/stats_lefttop.png";
+            _background = app.ResourceManager.GetImage("gfx/backgrounds/statistics.png");
+            _background2 = app.ResourceManager.GetImage("gfx/backgrounds/statistics2.png");
+            _backgroundClassic = app.ResourceManager.GetImage("blz.pac");
         }
 
         public override void OnResizeScreen()
@@ -47,6 +61,24 @@ namespace Burntime.Remaster.Scenes
 
         public override void OnRender(RenderTarget Target)
         {
+            if (app.IsNewGfx)
+            {
+                Target.DrawSprite(-Position, _background);
+                if (app.Engine.Resolution.Game.x > _background.Width)
+                {
+#warning OPTIMIZE avoid duplicating the texture for extra wide background
+                    Target.DrawSprite(-Position + new Vector2(_background.Width, 0), _background2);
+                }
+                Target.Layer++;
+                Target.DrawSprite(app.Engine.Resolution.Game - _rightBottom.Size - Position + Vector2.One, _rightBottom);
+                Target.DrawSprite(new Vector2(app.Engine.Resolution.Game.x - _rightTop.Width + 1, 0) - Position, _rightTop);
+                Target.DrawSprite(-Position, _leftTop);
+                Target.DrawSprite(new Vector2(0, app.Engine.Resolution.Game.y - _leftBottom.Height + 1) - Position, _leftBottom);
+            }
+            else
+            {
+                Target.DrawSprite(_backgroundClassic);
+            }
 
             int y = -1;
 

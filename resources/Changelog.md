@@ -1,5 +1,20 @@
 ﻿# Burntime Changelog
 
+## [Unreleased]
+
+### Changes
+
+- Remastered graphics
+  - Player icons on maps
+  - Dropped items
+  - Statistics screen
+- Toggle fullscreen with F11 as well
+
+### Fixes
+
+- Fixed flickering items in inventory with groups
+- Fixed not localized text input
+
 ## 0.5 - Remastered Characters (2023-10-15)
 
 ### 0.5.1

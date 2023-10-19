@@ -52,6 +52,12 @@ syst.raw?19=pngsheet@gfx/objects/player_icon_colors.png?3?36x38
 sprite_scale=1.875x2.25
 gfx/char_shadow.png=gfx/char_shadow.png
 gfx/objects/player_icons.png=pngsheet@gfx/objects/player_icons.png?{0}?36x38
+gfx/backgrounds/stats_rightbottom.png=gfx/backgrounds/stats_rightbottom.png
+gfx/backgrounds/stats_righttop.png=gfx/backgrounds/stats_righttop.png
+gfx/backgrounds/stats_leftbottom.png=gfx/backgrounds/stats_leftbottom.png
+gfx/backgrounds/stats_lefttop.png=gfx/backgrounds/stats_lefttop.png
+gfx/backgrounds/statistics.png=gfx/backgrounds/statistics.png
+gfx/backgrounds/statistics2.png=gfx/backgrounds/statistics2.png
 
 [replacement]
 sprite_scale=2x2
