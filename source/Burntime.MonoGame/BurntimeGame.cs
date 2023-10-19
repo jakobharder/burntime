@@ -52,11 +52,11 @@ namespace Burntime.MonoGame
 
         public bool IsLoading { get; set; }
 
-// #if (DEBUG)
+        // #if (DEBUG)
         public bool FullScreen { get; set; } = false;
-// #else
-//         public bool FullScreen { get; set; } = true;
-// #endif
+        // #else
+        //         public bool FullScreen { get; set; } = true;
+        // #endif
         bool _initialized = false;
 
         public BurntimeGame()
@@ -108,6 +108,8 @@ namespace Burntime.MonoGame
             IsMouseVisible = false;
             ApplyGraphicsDeviceResolution(initialize: true);
             base.Initialize();
+
+            Window.TextInput += Window_TextInput;
 
             _initialized = true;
         }
@@ -244,6 +246,19 @@ namespace Burntime.MonoGame
             return '\0';
         }
 
+        private void Window_TextInput(object sender, TextInputEventArgs e)
+        {
+            if (e.Key == Keys.Escape || e.Key == Keys.Pause || e.Key == Keys.Enter
+                || e.Key == Keys.F1 || e.Key == Keys.F2 || e.Key == Keys.F3 || e.Key == Keys.F4)
+            {
+                // handled in Update
+            }
+            else
+            {
+                DeviceManager?.KeyPress(e.Character);
+            }
+        }
+
         private void HandleKeyboardInput()
         {
             var keyboard = Microsoft.Xna.Framework.Input.Keyboard.GetState();
@@ -252,39 +267,33 @@ namespace Burntime.MonoGame
             ModifierKeys modifier = ModifierKeys.None;
             if (keyboard.IsKeyDown(Keys.LeftAlt))
                 modifier |= ModifierKeys.LeftAlt;
-
+            
             foreach (var key in keys)
             {
                 if (_previousKeyboardState.IsKeyUp(key))
                 {
-                    if (key == Keys.Enter && (modifier & ModifierKeys.LeftAlt) == ModifierKeys.LeftAlt)
+                    if (key == Keys.F11
+                        || (key == Keys.Enter && (modifier & ModifierKeys.LeftAlt) == ModifierKeys.LeftAlt))
                     {
                         ToggleFullscreen();
                         DeviceManager.Clear();
                         break;
                     }
 
-                    char charValue = ConvertKeyToChar(key, keyboard);
-                    if (charValue != 0)
-                        DeviceManager.KeyPress(charValue, modifier);
-                    else if (key == Keys.LeftAlt || key == Keys.RightAlt || key == Keys.LeftShift || key == Keys.RightShift
-                        || key == Keys.LeftControl || key == Keys.RightControl)
+                    if (key == Keys.Escape || key == Keys.Pause || key == Keys.Enter
+                        || key == Keys.F1 || key == Keys.F2 || key == Keys.F3 || key == Keys.F4)
                     {
-                        // eat modifier keys
-                    }
-                    else
-                    {
-                        DeviceManager.VKeyPress(key switch
-                            {
-                                Keys.Escape => SystemKey.Escape,
-                                Keys.Pause => SystemKey.Pause,
-                                Keys.F1 => SystemKey.F1,
-                                Keys.F2 => SystemKey.F2,
-                                Keys.F3 => SystemKey.F3,
-                                Keys.F4 => SystemKey.F4,
-                                Keys.Enter => SystemKey.Enter,
-                                _ => SystemKey.Other
-                            }, modifier);
+                        DeviceManager?.VKeyPress(key switch
+                        {
+                            Keys.Escape => SystemKey.Escape,
+                            Keys.Pause => SystemKey.Pause,
+                            Keys.Enter => SystemKey.Enter,
+                            Keys.F1 => SystemKey.F1,
+                            Keys.F2 => SystemKey.F2,
+                            Keys.F3 => SystemKey.F3,
+                            Keys.F4 => SystemKey.F4,
+                            _ => SystemKey.Other
+                        });
                     }
                 }
             }
@@ -294,10 +303,6 @@ namespace Burntime.MonoGame
 
         protected override void Update(Microsoft.Xna.Framework.GameTime gameTime)
         {
-            //if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed
-            //    || Microsoft.Xna.Framework.Input.Keyboard.GetState().IsKeyDown(Microsoft.Xna.Framework.Input.Keys.Escape))
-            //    Exit();
-
             HandleMouseInput();
             HandleKeyboardInput();
 
@@ -365,7 +370,7 @@ namespace Burntime.MonoGame
             Graphics.SpriteEntity entity = new()
             {
                 Rectangle = new Rectangle(0, 0, nativeSprite.OriginalSize.x, nativeSprite.OriginalSize.y),
-                Color = new Color(1, 1, 1, alpha),
+                Color = new Color(alpha, alpha, alpha, alpha),
                 Factor = nativeSprite.Frame.Resolution
             };
 
@@ -402,6 +407,9 @@ namespace Burntime.MonoGame
             if (now - nativeSprite.Frame.TimeStamp < (long)(Stopwatch.Frequency / popInSpeed) && popInSpeed != 0)
             {
                 entity.Color.A *= (byte)System.Math.Min(255, (now - nativeSprite.Frame.TimeStamp) / (float)Stopwatch.Frequency * popInSpeed);
+                entity.Color.R *= (byte)System.Math.Min(255, (now - nativeSprite.Frame.TimeStamp) / (float)Stopwatch.Frequency * popInSpeed);
+                entity.Color.G *= (byte)System.Math.Min(255, (now - nativeSprite.Frame.TimeStamp) / (float)Stopwatch.Frequency * popInSpeed);
+                entity.Color.B *= (byte)System.Math.Min(255, (now - nativeSprite.Frame.TimeStamp) / (float)Stopwatch.Frequency * popInSpeed);
             }
 
             if (nativeSprite.Animation != null && nativeSprite.Animation.Progressive && nativeSprite.Frames != null)
