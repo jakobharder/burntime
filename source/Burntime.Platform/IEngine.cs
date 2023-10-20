@@ -1,8 +1,5 @@
 ﻿using Burntime.Platform.Graphics;
 using Burntime.Platform.Utils;
-using System.Diagnostics;
-using System.Drawing;
-
 namespace Burntime.Platform;
 
 public interface ILoadingCounter
@@ -15,11 +12,13 @@ public interface IEngine
 {
     DeviceManager DeviceManager { get; set; }
     int Layer { get; set; }
- 
+
     BlendOverlayBase BlendOverlay { get; }
     Resolution Resolution { get; }
     RenderTarget MainTarget { get; }
+    IMusic Music { get; }
 
+    bool MusicBlend { get; set; }
     bool IsLoading { get; set; }
 
     void CenterMouse();

@@ -116,12 +116,12 @@ namespace Burntime.Remaster.Scenes
         {
             if (oldSpeed == 0)
                 oldSpeed = app.Engine.BlendOverlay.Speed;
-#warning TODO SlimDX/Mono Music
-            //app.Engine.Music.Volume = 0;
+
+            app.Engine.Music.Volume = 0;
             app.Engine.BlendOverlay.Speed = 0.9f;
-#warning TODO SlimDX/Mono Music
-            //app.Engine.MusicBlend = false;
-            //app.Engine.Music.IsMuted = true;
+
+            app.Engine.MusicBlend = false;
+            app.Engine.Music.IsMuted = true;
             delayedMusicStart = 2.0f;
             index = 0;
             scroll = 0;
@@ -149,6 +149,7 @@ namespace Burntime.Remaster.Scenes
         {
             app.Engine.BlendOverlay.Speed = oldSpeed;
             app.RenderMouse = true;
+            app.Engine.Music.IsMuted = false;
         }
 
         public override void OnUpdate(float elapsed)
@@ -159,8 +160,7 @@ namespace Burntime.Remaster.Scenes
                 delayedMusicStart -= elapsed;
                 if (delayedMusicStart <= 0)
                 {
-#warning TODO SlimDX/Mono Music
-                    //app.Engine.Music.IsMuted = false;
+                    app.Engine.Music.IsMuted = false;
                 }
             }
 
@@ -233,8 +233,7 @@ namespace Burntime.Remaster.Scenes
 
         private void NextScene()
         {
-#warning TODO SlimDX/Mono Music
-            //app.Engine.MusicBlend = true;
+            app.Engine.MusicBlend = true;
             app.SceneManager.SetScene("MenuScene");
         }
     }

@@ -34,11 +34,6 @@ public class RenderDevice : IDisposable
     int renderScale = 2;
     SpriteBatch _spriteBatch;
 
-    public float BlendState
-    {
-        get { return 1;/* return blendOverlay.BlendState;*/ }
-    }
-
     public RenderDevice(BurntimeGame Engine)
     {
         resourceManager = Engine.ResourceManager;
@@ -306,14 +301,10 @@ public class RenderDevice : IDisposable
 
         BlendOverlay.BlockFadeOut = _engine.IsLoading || BlendOverlay.Block;
         BlendOverlay.Render(elapsedSeconds, _spriteBatch);
-        //if (engine.MusicBlend)
-        //{
-        //    engine.Music.Volume = 1 - BlendState;
-        //}
-        //else
-        //{
-        //    engine.Music.Volume = 1;
-        //}
+        if (_engine.MusicBlend)
+            _engine.Music.Volume = 1 - BlendOverlay.BlendState;
+        else
+            _engine.Music.Volume = 1;
 
         //spriteRenderer.End();
         //if (render != null)

@@ -31,6 +31,10 @@ namespace Burntime.MonoGame
         readonly GraphicsDeviceManager _graphics;
         readonly GameThread _gameThread = new();
 
+        public MusicPlayback Music { get; } = new MusicPlayback();
+        IMusic IEngine.Music => Music;
+        public bool MusicBlend { get; set; } = false;
+
         internal int loadingStack = 0;
         public int LoadingStack
         {
@@ -107,10 +111,11 @@ namespace Burntime.MonoGame
             Window.ClientSizeChanged += OnResize;
             IsMouseVisible = false;
             ApplyGraphicsDeviceResolution(initialize: true);
-            base.Initialize();
 
             Window.TextInput += Window_TextInput;
+            Music.RunThread();
 
+            base.Initialize();
             _initialized = true;
         }
 
@@ -327,6 +332,12 @@ namespace Burntime.MonoGame
                 var center = Resolution.Native / 2;
                 Mouse.SetPosition(center.x, center.y);
             }
+        }
+
+        protected override void OnExiting(object sender, EventArgs args)
+        {
+            Music.StopThread();
+            base.OnExiting(sender, args);
         }
 
         void IEngine.ExitApplication()

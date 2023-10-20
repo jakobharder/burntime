@@ -284,8 +284,7 @@ namespace Burntime.Remaster
                 BurntimeClassic.Instance.PreviousPlayerId != game.CurrentPlayerIndex)
             {
                 // play player changed sound
-#warning TODO SlimDX/Mono Music
-                //BurntimeClassic.Instance.Engine.Music.PlayOnce("06_MUS 06_HSC.ogg");
+                BurntimeClassic.Instance.Engine.Music.PlayOnce("06_MUS 06_HSC.ogg");
             }
             BurntimeClassic.Instance.PreviousPlayerId = game.CurrentPlayerIndex;
 
@@ -450,8 +449,7 @@ namespace Burntime.Remaster
                 charOverlay.SelectedCharacter.JoinCamp();
 
                 view.Location.Player = view.Player;
-#warning TODO SlimDX/Mono Music
-                //BurntimeClassic.Instance.Engine.Music.PlayOnce("08_MUS 08_HSC.ogg");
+                BurntimeClassic.Instance.Engine.Music.PlayOnce("08_MUS 08_HSC.ogg");
             }
         }
 
