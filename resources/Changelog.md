@@ -1,5 +1,11 @@
 ﻿# Burntime Changelog
 
+## [Unreleased]
+
+### Fixes
+
+- Ensure 4:3 screen portion is always on screen, independent of window size
+
 ## 0.6 - Music Support (2023-10-21)
 
 ### Changes

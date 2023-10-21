@@ -302,6 +302,11 @@
             return new Vector2((int)(left.x + 0.5f), (int)(left.y + 0.5f));
         }
 
+        public Vector2 Floor()
+        {
+            return new Vector2((int)x, (int)y);
+        }
+
         public static implicit operator Vector2f (float right)
         {
             return new Vector2f(right, right);

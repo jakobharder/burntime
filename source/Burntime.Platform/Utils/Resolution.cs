@@ -13,18 +13,29 @@ public class Resolution
             SelectBestGameResolution();
         }
     }
-    Vector2 _native = new(960, 540);
+    Vector2 _native = Vector2.Zero;
 
-    public int MaxVerticalResolution
+    public Vector2 MinResolution
     {
-        get => _maxVerticalResolution;
+        get => _minResolution;
         set
         {
-            _maxVerticalResolution = value;
+            _minResolution = value;
             SelectBestGameResolution();
         }
     }
-    int _maxVerticalResolution = 0;
+    Vector2 _minResolution = Vector2.Zero;
+
+    public Vector2 MaxResolution
+    {
+        get => _maxResolution;
+        set
+        {
+            _maxResolution = value;
+            SelectBestGameResolution();
+        }
+    }
+    Vector2 _maxResolution = Vector2.Zero;
 
     Vector2f _ratioCorrection = Vector2f.One;
     public Vector2f RatioCorrection
@@ -41,28 +52,28 @@ public class Resolution
     public Vector2 Game { get; private set; } = new(960, 640);
     public Vector2 BackBuffer { get; private set; } = new(960, 540);
 
-    static bool IsCleanZoom(float zoom)
-    {
-        return zoom == 4 || zoom == 3 || zoom == 2 || zoom == 1 || zoom == 0.5f;
-    }
-
     void SelectBestGameResolution()
     {
-        if (_maxVerticalResolution == 0) return;
+        if (MinResolution.x == 0 || MaxResolution.x == 0 || Native.x == 0) return;
 
-        const float DOUBLED_RESOLUTION = 2;
-        float MaxHeight = _maxVerticalResolution * DOUBLED_RESOLUTION;
-        int verticalFactor = 1;
+        const int DOUBLED_RESOLUTION = 2;
 
-        while (_native.y > MaxHeight * verticalFactor)
-            verticalFactor++;
+        Vector2f min = (Vector2f)MinResolution * DOUBLED_RESOLUTION * _ratioCorrection;
+        Vector2f max = (Vector2f)MaxResolution * DOUBLED_RESOLUTION * _ratioCorrection;
 
-        BackBuffer = _native / verticalFactor;
+        Vector2 maxFactor = ((Vector2f)_native / max).Floor();
+        Vector2 minFactor = ((Vector2f)_native / min).Floor();
+        int verticalFactor = Math.Max(1, maxFactor.y, minFactor.y);
+        int horizontalFactor = Math.Max(1, maxFactor.x, minFactor.x);
+
+        int factor = Math.Min(verticalFactor, horizontalFactor);
+
+        BackBuffer = _native / factor;
 
         Scale = DOUBLED_RESOLUTION * _ratioCorrection;
-        Game = (Vector2)((Vector2f)BackBuffer / Scale);
+        Game = (Vector2f)BackBuffer / Scale;
 
 #warning use render to texture instead and strech that by verticalfactor?
-        Scale *= verticalFactor;
+        Scale *= factor;
     }
 }

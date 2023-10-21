@@ -91,7 +91,8 @@ namespace Burntime.MonoGame
             _burntimeApp = new();
 
             Resolution.RatioCorrection = _burntimeApp.RatioCorrection;
-            Resolution.MaxVerticalResolution = _burntimeApp.MaxVerticalResolution;
+            Resolution.MinResolution = _burntimeApp.MinResolution;
+            Resolution.MaxResolution = _burntimeApp.MaxResolution;
 
             _burntimeApp.Engine = this;
             _burntimeApp.SceneManager = new SceneManager(_burntimeApp);

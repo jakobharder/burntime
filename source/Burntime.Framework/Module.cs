@@ -104,6 +104,8 @@ namespace Burntime.Framework
         public virtual String Title { get { return ""; } }
         //public virtual Vector2[] Resolutions { get { return new Vector2[] { new Vector2(640, 480) }; } }
         public virtual int MaxVerticalResolution => 480;
+        public virtual Vector2 MinResolution { get; } = new Vector2(320, 200);
+        public virtual Vector2 MaxResolution { get; } = new Vector2(320, 200);
         public virtual Vector2f RatioCorrection => Vector2f.One;
         public virtual System.Drawing.Icon? Icon => null;
 
@@ -145,7 +147,7 @@ namespace Burntime.Framework
         public virtual void Start()
         {
         }
-        
+
         public void StopGame()
         {
             if (Server != null)
@@ -220,6 +222,8 @@ namespace Burntime.Framework
 
         public string Title => wrap.Title;
         public int MaxVerticalResolution => wrap.MaxVerticalResolution;
+        public Vector2 MinResolution => wrap.MinResolution;
+        public Vector2 MaxResolution => wrap.MaxResolution;
         public System.Drawing.Icon? Icon => wrap.Icon;
 
         public void Render(RenderTarget Target)
