@@ -50,6 +50,13 @@ syst.raw?16=pngsheet@gfx/objects/player_icon_colors.png?0?36x38
 syst.raw?17=pngsheet@gfx/objects/player_icon_colors.png?1?36x38
 syst.raw?18=pngsheet@gfx/objects/player_icon_colors.png?2?36x38
 syst.raw?19=pngsheet@gfx/objects/player_icon_colors.png?3?36x38
+burngfxani@syst.raw?24-27=pngsheet@gfx/syssze.png?18-19?30x36
+burngfxani@syst.raw?20-23=pngsheet@gfx/munt_info.png?0-3?23x30
+burngfxani@munt.raw?14-17=pngsheet@gfx/munt_fight.png?0-3?30x54
+burngfxani@syst.raw?0-3=pngsheet@gfx/objects/flags.png?0-11?30x36
+burngfxani@syst.raw?4-7=pngsheet@gfx/objects/flags.png?12-23?30x36
+burngfxani@syst.raw?8-11=pngsheet@gfx/objects/flags.png?24-35?30x36
+burngfxani@syst.raw?12-15=pngsheet@gfx/objects/flags.png?36-47?30x36
 
 [newgfx_native]
 sprite_scale=1.875x2.25
