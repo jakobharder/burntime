@@ -308,8 +308,11 @@ namespace Burntime.MonoGame
 
         protected override void Update(Microsoft.Xna.Framework.GameTime gameTime)
         {
-            HandleMouseInput();
-            HandleKeyboardInput();
+            if (IsActive)
+            {
+                HandleMouseInput();
+                HandleKeyboardInput();
+            }
 
             RenderDevice.Update();
 
