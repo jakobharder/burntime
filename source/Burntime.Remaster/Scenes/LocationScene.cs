@@ -248,7 +248,7 @@ namespace Burntime.Remaster
             {
                 cursorAni.Position = app.DeviceManager.Mouse.Position + new Vector2(8, 11);
 
-                int layer = Target.Layer;
+                var layer = Target.Layer;
                 Target.Layer = gui.Layer - 1;
                 Target.DrawSprite(app.DeviceManager.Mouse.Position, app.MouseImage);
                 Target.Layer = layer;

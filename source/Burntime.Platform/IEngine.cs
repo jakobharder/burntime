@@ -11,7 +11,7 @@ public interface ILoadingCounter
 public interface IEngine
 {
     DeviceManager DeviceManager { get; set; }
-    int Layer { get; set; }
+    float Layer { get; set; }
 
     BlendOverlayBase BlendOverlay { get; }
     Resolution Resolution { get; }

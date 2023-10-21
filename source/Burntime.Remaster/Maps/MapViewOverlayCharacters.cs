@@ -32,6 +32,8 @@ namespace Burntime.Remaster.Maps
             set { }
         }
 
+        private bool RenderShadow => app.IsNewGfx;
+
         public MapViewOverlayCharacters(Module App)
         {
             app = App;
@@ -93,7 +95,7 @@ namespace Burntime.Remaster.Maps
                         characters.Add(player.Group[i]);
                 }
 
-                if (app.IsNewGfx)
+                if (RenderShadow)
                 {
                     foreach (Character chr in characters)
                     {
@@ -113,11 +115,14 @@ namespace Burntime.Remaster.Maps
                     }
                 }
 
+                float layer = target.Layer;
+                float mapHeight = (mapState.Map.MapData.Height * mapState.Map.MapData.TileSize.y);
+
                 foreach (Character chr in characters)
                 {
                     // skip if dead
-                    if (chr.IsDead && chr.DeadAnimationFinished ||
-                        chr.IsPlayerCharacter && chr.Player.IsDead)
+                    if (chr.IsDead && chr.DeadAnimationFinished
+                        || chr.IsPlayerCharacter && chr.Player.IsDead)
                     {
                         continue;
                     }
@@ -131,6 +136,7 @@ namespace Burntime.Remaster.Maps
                         chr.Body.Object.Animation.Frame = ani.Frame;
                     else
                         chr.Body.Object.Animation.Frame = chr.Animation;
+                    target.Layer = layer + (chr.Position.y / mapHeight);
                     target.DrawSprite(pos, chr.Body);
 
                     if (debugRender)
@@ -140,6 +146,8 @@ namespace Burntime.Remaster.Maps
                         chr.Path.DebugRender(lineTarget);
                     }
                 }
+
+                target.Layer = layer;
             }
         }
 

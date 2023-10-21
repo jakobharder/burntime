@@ -20,7 +20,7 @@ namespace Burntime.MonoGame
         public Resolution Resolution { get; } = new();
         public DeviceManager DeviceManager { get; set; }
         public ResourceManager ResourceManager { get; set; }
-        public int Layer { get; set; }
+        public float Layer { get; set; }
 
         public RenderDevice RenderDevice { get; private set; }
         public RenderTarget MainTarget { get; private set; }

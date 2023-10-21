@@ -3,7 +3,7 @@
 public class RenderTarget
 {
     public Vector2 Offset { get; set; }
-    public int Layer
+    public float Layer
     {
         get => _engine.Layer;
         set => _engine.Layer = value;

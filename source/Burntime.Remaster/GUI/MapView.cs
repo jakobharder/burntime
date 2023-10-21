@@ -217,7 +217,7 @@ public class MapView : Window
 
         Target.Layer++;
 
-        int old = Target.Layer;
+        var old = Target.Layer;
         Target.Layer += 30;
 
         foreach (Maps.IMapViewOverlay overlay in overlays)

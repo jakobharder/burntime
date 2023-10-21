@@ -107,7 +107,7 @@ namespace Burntime.Remaster
 
                 if (!BurntimeClassic.Instance.NewGui)
                 {
-                    int layer = Target.Layer;
+                    var layer = Target.Layer;
                     Target.Layer = gui.Layer - 1;
                     Target.DrawSprite(app.DeviceManager.Mouse.Position, app.MouseImage);
                     Target.Layer = layer;
