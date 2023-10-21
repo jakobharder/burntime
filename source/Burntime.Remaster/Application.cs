@@ -58,8 +58,7 @@ namespace Burntime.Remaster
 
         public override void Start()
         {
-#warning TODO SlimDX/Mono Music
-            //Engine.Music.Enabled = (!DisableMusic) & MusicPlayback;
+            Engine.Music.Enabled = (!DisableMusic) & MusicPlayback;
 
             MouseImage = ResourceManager.GetImage("munt.raw");
             SceneManager.SetScene("IntroScene");

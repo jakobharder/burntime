@@ -57,6 +57,24 @@ namespace Burntime.Remaster.Logic
             Time -= (TimePerDay / RoundTime) * elapsed; // TimeSpeed
             if (Time < 0)
                 Time = 0;
+
+            // old save game support
+#warning TODO create OnLoadSave actions?
+            if (Players.Count > 2 && Players[2].Character.FaceID == Players[3].Character.FaceID)
+            {
+                var usedFaces = new HashSet<int>();
+                foreach (Player player in Players)
+                {
+                    if (player.Type == PlayerType.Human)
+                        usedFaces.Add(player.Character.FaceID);
+                    else
+                    {
+                        while (usedFaces.Contains(player.Character.FaceID))
+                            player.Character.FaceID = Platform.Math.Random.Next(0, MenuScene.MAX_FACE_ID);
+                        usedFaces.Add(player.Character.FaceID);
+                    }
+                }
+            }
         }
 
         // logic

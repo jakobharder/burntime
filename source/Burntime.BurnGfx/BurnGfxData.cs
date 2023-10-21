@@ -123,7 +123,7 @@ namespace Burntime.Data.BurnGfx
         }
         #endregion
 
-        public void Initialize()
+        void Initialize()
         {
             Burntime.Platform.Log.Info("Initialize BurnGfx library");
             InitializeMaps();

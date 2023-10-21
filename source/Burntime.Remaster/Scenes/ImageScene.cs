@@ -102,7 +102,7 @@ namespace Burntime.Remaster.Scenes
             {
                 Music = "05_MUS 05_HSC.ogg";
             }
-            else if (game.ImageScene == "film_08.pac")
+            else if (game.ImageScene == "film_09.pac")
             {
                 Music = "02_MUS 02_HSC.ogg";
             }

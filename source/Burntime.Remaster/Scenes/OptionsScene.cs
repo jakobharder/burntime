@@ -278,19 +278,19 @@ namespace Burntime.Remaster
                 BurntimeClassic.Instance.MusicPlayback = !BurntimeClassic.Instance.MusicPlayback;
                 music.Text = BurntimeClassic.Instance.MusicPlayback ? "@burn?389" : "@burn?424";
                 music.SetTextOnly();
-#warning TODO SlimDX/Mono Music
-                //if (BurntimeClassic.Instance.MusicPlayback)
-                //{
-                //    // start music
-                //    app.Engine.Music.Enabled = true;
-                //    app.Engine.Music.Play(Music);
-                //}
-                //else
-                //{
-                //    // stop music
-                //    app.Engine.Music.Enabled = false;
-                //    app.Engine.Music.Stop();
-                //}
+
+                if (BurntimeClassic.Instance.MusicPlayback)
+                {
+                    // start music
+                    app.Engine.Music.Enabled = true;
+                    app.Engine.Music.Play(Music);
+                }
+                else
+                {
+                    // stop music
+                    app.Engine.Music.Enabled = false;
+                    app.Engine.Music.Stop();
+                }
             }
         }
 

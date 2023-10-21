@@ -15,6 +15,7 @@ class CommandParameter
     public bool RatioCorrection = false;
     public bool MegaTexture = false;
     public bool Padding = true;
+    public bool Palette = true;
 
     public bool HandleArg(string arg)
     {
@@ -34,6 +35,12 @@ class CommandParameter
         if (arg.StartsWith("-p"))
         {
             Padding = true;
+            return true;
+        }
+
+        if (arg.StartsWith("--palette"))
+        {
+            Palette = true;
             return true;
         }
 
@@ -66,6 +73,12 @@ class Program
                 String ext = System.IO.Path.GetExtension(arg).ToLower();
                 String file = System.IO.Path.GetFileName(arg);
                 String dir = path + "\\" + file + "_output";
+
+                if (parameter.Palette)
+                {
+                    ExportColorTables(path, file);
+                    return;
+                }
 
                 bool stretch = true;
 
@@ -118,5 +131,21 @@ class Program
         //    Console.WriteLine("press key...");
         //    Console.ReadKey();
         //}
+    }
+
+    static void ExportColorTables(string basePath, string fileName)
+    {
+        using Bitmap bmp = new(256, 1, PixelFormat.Format24bppRgb);
+        for (int i = 0; i < 256; i++)
+            bmp.SetPixel(i, 0, Color.FromArgb(BurnGfxData.Instance.DefaultColorTable.GetColor(i).ToInt()));
+
+        bmp.Save(System.IO.Path.Combine(basePath, System.IO.Path.GetFileNameWithoutExtension(fileName) + "_palette.png"));
+
+        using Bitmap bmp2 = new(256, 38, PixelFormat.Format24bppRgb);
+        for (int map = 0; map < 38; map++)
+            for (int i = 0; i < 256; i++)
+                bmp2.SetPixel(i, map, Color.FromArgb(BurnGfxData.Instance.GetMapColorTable(map).GetColor(i).ToInt()));
+
+        bmp2.Save(System.IO.Path.Combine(basePath, "maps_palette.png"));
     }
 }

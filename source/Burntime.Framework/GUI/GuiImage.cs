@@ -13,6 +13,7 @@ namespace Burntime.Framework.GUI
 
         public int Width => sprite_.Width;
         public int Height => sprite_.Height;
+        public Vector2 Size => sprite_.Size;
         public bool IsLoaded => sprite_.IsLoaded;
         public SpriteAnimation Animation => sprite_.Animation;
 

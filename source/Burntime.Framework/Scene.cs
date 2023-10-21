@@ -33,15 +33,14 @@ namespace Burntime.Framework
         {
             OnResizeScreen();
             OnActivateScene(parameter);
-#warning TODO SlimDX/Mono Music
-            //if (music != null)
-            //    app.Engine.Music.Play(music);
+
+            if (music != null)
+                app.Engine.Music.Play(music);
         }
 
         internal void InactivateScene()
         {
-#warning TODO SlimDX/Mono Music
-            //app.Engine.Music.Stop();
+            app.Engine.Music.Stop();
 
             OnInactivateScene();
         }

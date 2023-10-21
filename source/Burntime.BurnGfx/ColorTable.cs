@@ -10,9 +10,6 @@ namespace Burntime.Data.BurnGfx
     {
         PixelColor[] colorTable;
 
-        public static ColorTable Last;
-        public static ColorTable Default;
-
         public const int DefaultBlue = 148;
         public const int DefaultRed = 241;
         public const int ButtonBlue = 140;
@@ -22,10 +19,12 @@ namespace Burntime.Data.BurnGfx
 
         public ColorTable()
         {
+            colorTable = new PixelColor[256];
         }
 
         public ColorTable(File file)
         {
+            colorTable = new PixelColor[256];
             file.Seek(16, SeekPosition.Begin);
             Read(file);
         }
@@ -309,9 +308,6 @@ namespace Burntime.Data.BurnGfx
 
         public bool Read(File reader)
         {
-            colorTable = new PixelColor[256];
-           // Last = this;
-
             byte[] colorbytes = new byte[3];
             int read = 3;// = File.Read(colorbytes, 0, 3);
             for (int i = 0; i < 256 && read == 3; i++)
