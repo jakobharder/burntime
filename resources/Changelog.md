@@ -1,9 +1,10 @@
 ﻿# Burntime Changelog
 
-## [Unreleased]
+## 0.6 - Music Support (2023-10-21)
 
 ### Changes
 
+- Added music support
 - Remastered graphics
   - Player icons on maps
   - Dropped items

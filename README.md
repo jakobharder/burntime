@@ -24,8 +24,6 @@ The game is a complete port of the original game to Windows with some adjustment
   - some locations are larger to fill wide screens
   - Monastery got another gap in the wall to go through
 
-Note: unfortunately the game music is still missing due to an unclear license situation.
-
 ### Extended Game
 
 The extended game mode adds new items, locations and gameplay features.
