@@ -207,6 +207,11 @@ namespace Burntime.Framework
         }
 
         public virtual bool IsNewGfx { get; set; } = true;
+        public virtual string Language
+        {
+            get => FileSystem.LocalizationCode;
+            set => FileSystem.LocalizationCode = value;
+        }
     }
 
     public class ApplicationInternal : IApplication

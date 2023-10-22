@@ -13,6 +13,7 @@ internal class OptionsSettingsPage : Container
     readonly Button _musicToggle;
     readonly Button _newgfxToggle;
     readonly Button _fullscreenToggle;
+    readonly Button _languageToggle;
 
     readonly Button _hintText;
 
@@ -45,6 +46,15 @@ internal class OptionsSettingsPage : Container
             Position = new Vector2(38, 78),
             IsTextOnly = true
         };
+        Windows += _languageToggle = new Button(app, () => app.Language = app.Language == "de" ? "en" : "de")
+        {
+            Font = _fonts.Green,
+            HoverFont = _fonts.Orange,
+            DisabledFont = _fonts.Disabled,
+            Text = "@newburn?26",
+            Position = new Vector2(38, 98),
+            IsTextOnly = true
+        };
         Windows += _hintText = new Button(app)
         {
             Font = _fonts.Blue,
@@ -57,7 +67,6 @@ internal class OptionsSettingsPage : Container
     public override void OnUpdate(float elapsed)
     {
         // some options can be triggered via key shortcut
-#warning OPTIMIZATION avoid getting a string resource on every update
         _newgfxToggle.Text = app.IsNewGfx ? "@newburn?17" : "@newburn?18";
         _musicToggle.Text = BurntimeClassic.Instance.MusicPlayback ? "@burn?389" : "@burn?424";
         _fullscreenToggle.Text = app.Engine.IsFullscreen ? "@newburn?19" : "@newburn?20";

@@ -26,7 +26,7 @@ public class Button : Window
     public GuiString? Text
     {
         get => _text;
-        set { _text = value; if (_isTextOnly) RefreshTextSize(); }
+        set { if (_text?.ID != value?.ID) { _text = value; if (_isTextOnly) RefreshTextSize(); } }
     }
     GuiString? _text;
 
@@ -80,8 +80,15 @@ public class Button : Window
         }
     }
 
+    private string _lastLanguage = string.Empty;
     public override void OnRender(RenderTarget Target)
     {
+        if (IsTextOnly && _lastLanguage != app.Language)
+        {
+            RefreshTextSize();
+            _lastLanguage = app.Language;
+        }
+
         if (!sizeSet)
         {
             if (Image != null && Image.IsLoaded)

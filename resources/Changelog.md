@@ -2,8 +2,19 @@
 
 ## [Unreleased]
 
+### Changes
+
+- Reworked options scene
+  - Change language in options
+  - Toggle fullscreen in options
+  - Show fullscreen and remaster graphics shortcuts
+- Remastered graphics
+  - Player flags
+  - Cursor animations
+
 ### Fixes
 
+- Fixed draw order of characters on map
 - Ensure 4:3 screen portion is always on screen, independent of window size
 
 ## 0.6 - Music Support (2023-10-21)

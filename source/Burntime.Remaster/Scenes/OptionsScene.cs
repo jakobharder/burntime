@@ -83,6 +83,7 @@ public class OptionsScene : Scene
         {
             Font = red,
             HoverFont = hover,
+            DisabledFont = disabled,
             Text = "@burn?390",
             Position = new Vector2(214, 127),
             IsTextOnly = true
@@ -127,18 +128,10 @@ public class OptionsScene : Scene
 
     protected override void OnActivateScene(object parameter)
     {
+        ActivePage = _savesPage;
         _savesPage.RefreshSaveGames();
 
-        if (app.SceneManager.LastScene == "MenuScene")
-        {
-            _buttonRestart.Font = disabled;
-            _buttonRestart.HoverFont = null;
-        }
-        else
-        {
-            _buttonRestart.Font = red;
-            _buttonRestart.HoverFont = hover;
-        }
+        _buttonRestart.IsEnabled = app.SceneManager.LastScene != "MenuScene";
     }
 
     void OnButtonRestart()

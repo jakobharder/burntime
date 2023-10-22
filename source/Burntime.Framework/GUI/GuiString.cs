@@ -1,33 +1,31 @@
-﻿using System;
+﻿using System.Collections.Generic;
 
-using Burntime.Platform;
-using Burntime.Platform.Graphics;
-using Burntime.Platform.Resource;
+namespace Burntime.Framework.GUI;
 
-namespace Burntime.Framework.GUI
+public class GuiString
 {
-    public class GuiString
+    public string ID { get; private set; }
+    protected Dictionary<string, string> _text;
+
+    public static implicit operator GuiString(string id) => new GuiString(id);
+
+    public GuiString(string? str)
     {
-        protected string str;
+        _text = new Dictionary<string, string>();
+        ID = str ?? "";
+    }
 
-        public static implicit operator GuiString(string id)
+    public static implicit operator string(GuiString right)
+    {
+        if (!right._text.TryGetValue(Module.Instance.Language, out string? text))
         {
-            if (id?.StartsWith("@") == true)
-                return new GuiString(Module.Instance.ResourceManager.GetString(id.Substring(1)));
-            return new GuiString(id);
-        }
-
-        public GuiString(string str)
-        {
-            if (str?.StartsWith("@") == true)
-                this.str = Module.Instance.ResourceManager.GetString(str.Substring(1));
+            if (right.ID.StartsWith("@") == true)
+                text = Module.Instance.ResourceManager.GetString(right.ID[1..]);
             else
-                this.str = str;
+                text = right.ID;
+            right._text[Module.Instance.Language] = text;
         }
 
-        public static implicit operator string(GuiString right)
-        {
-            return right.str;
-        }
+        return text;
     }
 }

@@ -218,6 +218,11 @@ public class ResourceManagerBase
             return res.Substring(0, res.Length - 1);
         return res;
     }
+
+    public void ClearText()
+    {
+        txtDB.Clear();
+    }
     #endregion
 
     #region DataProcessor

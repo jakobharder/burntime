@@ -158,6 +158,12 @@ namespace Burntime.Remaster
             set { base.IsNewGfx = value; RefreshNewGfx(); }
         }
 
+        public override string Language
+        { 
+            get => base.Language;
+            set { if (base.Language != value) { base.Language = value; ResourceManager.ClearText(); Engine.ReloadGraphics(); } }
+        }
+
         public Character SelectedCharacter => ((Player)GameState.CurrentPlayer).SelectedCharacter;
         public ClassicGame Game => GameState as ClassicGame;
 
