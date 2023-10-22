@@ -4,10 +4,13 @@
 
 ### Changes
 
+- Reworked trader scene
+  - Show both trader and player inventory on wide screens
 - Reworked options scene
   - Change language in options
   - Toggle fullscreen in options
   - Show fullscreen and remaster graphics shortcuts
+  - Jukebox to play all songs
 - Remastered graphics
   - Player flags
   - Cursor animations

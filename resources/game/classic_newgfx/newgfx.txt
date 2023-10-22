@@ -38,11 +38,13 @@ film_03.pac=gfx/backgrounds/film3.png
 film_04.pac=gfx/backgrounds/film4.png
 film_09.pac=gfx/backgrounds/film9.png
 info.pac=gfx/backgrounds/info.png
+hint1.pac=gfx/backgrounds/trader.png
 
 syssze.raw=pngsheet@gfx/syssze.png?{0}?30x36
 
 munt.raw?3=pngsheet@gfx/objects/munt.png?0?15x18
 munt.raw?4=pngsheet@gfx/objects/munt.png?1?15x18
+munt.raw?22=gfx/munt_daytime.png
 gfx/up.png=gfx/up.png
 gfx/down.png=gfx/down.png
 

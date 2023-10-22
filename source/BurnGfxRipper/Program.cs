@@ -15,7 +15,7 @@ class CommandParameter
     public bool RatioCorrection = false;
     public bool MegaTexture = false;
     public bool Padding = true;
-    public bool Palette = true;
+    public bool Palette = false;
 
     public bool HandleArg(string arg)
     {

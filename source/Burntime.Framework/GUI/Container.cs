@@ -119,13 +119,18 @@ namespace Burntime.Framework.GUI
             {
                 if (!sizeSet)
                 {
+                    
                     if (background.IsLoaded)
                     {
-                        Size = new Vector2(background.Width, background.Height);
+                        if (Size.x == 0) // only set if not done already
+                            Size = new Vector2(background.Width, background.Height);
                         sizeSet = true;
                     }
                 }
-                thisTarget.DrawSprite(background);
+                if (Size.x != 0)
+                    thisTarget.DrawSprite((Size - background.Size) / 2, background);
+                else
+                    thisTarget.DrawSprite(background);
             }
 
             lock (windows)
