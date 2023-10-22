@@ -141,8 +141,8 @@ namespace Burntime.Framework
                 Key[] keys = app.DeviceManager.Keyboard.Keys;
                 foreach (Key key in keys)
                 {
-                    if (key.IsVirtual && key.VirtualKey == SystemKey.F2)
-                        app.ToggleNewGfx();
+                    if (key.IsVirtual && key.VirtualKey == SystemKey.F8)
+                        app.IsNewGfx = !app.IsNewGfx;
                     else if (key.IsVirtual)
                         handle.VKeyPress(key.VirtualKey);
                     else

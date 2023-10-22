@@ -72,8 +72,8 @@ namespace Burntime.Framework.GUI
     {
         bool sizeSet = false;
 
-        protected GuiImage background;
-        public GuiImage Background
+        protected GuiImage? background;
+        public GuiImage? Background
         {
             get { return background; }
             set 
@@ -132,25 +132,25 @@ namespace Burntime.Framework.GUI
             {
                 foreach (Window window in windows)
                 {
-                    window.Render(thisTarget);
+                    if (window.IsVisible)
+                        window.Render(thisTarget);
                 }
             }
         }
 
-        internal override void Update(float Elapsed)
+        internal override void Update(float elapsed)
         {
             if (!visible)
                 return;
 
-            if (background != null)
-                background.Update(Elapsed);
+            background?.Update(elapsed);
 
             foreach (Window window in windows)
             {
-                window.Update(Elapsed);
+                window.Update(elapsed);
             }
 
-            base.Update(Elapsed);
+            base.Update(elapsed);
         }
 
         internal override bool MouseClick(Vector2 Position, MouseButton Button)
@@ -160,7 +160,7 @@ namespace Burntime.Framework.GUI
 
             foreach (Window window in windows)
             {
-                if (window.MouseClick(Position - this.Position, Button))
+                if (window.IsVisible && window.MouseClick(Position - this.Position, Button))
                     return true;
             }
 
@@ -174,7 +174,8 @@ namespace Burntime.Framework.GUI
 
             foreach (Window window in windows)
             {
-                window.MouseMove(Position - this.Position);
+                if (window.IsVisible)
+                    window.MouseMove(Position - this.Position);
             }
 
             return base.MouseMove(Position);
@@ -193,7 +194,8 @@ namespace Burntime.Framework.GUI
 
             foreach (Window window in windows)
             {
-                window.KeyPress(Key);
+                if (window.IsVisible)
+                    window.KeyPress(Key);
             }
 
             base.KeyPress(Key);

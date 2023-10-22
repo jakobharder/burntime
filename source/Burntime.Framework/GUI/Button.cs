@@ -70,9 +70,14 @@ public class Button : Window
 
     protected bool _isDown = false;
 
-    public Button(Module App)
-        : base(App)
+    public Button(Module app, Action? command = null)
+        : base(app)
     {
+        if (command is not null)
+        {
+            Command = new CommandEvent();
+            Command += new CommandHandler(command);
+        }
     }
 
     public override void OnRender(RenderTarget Target)

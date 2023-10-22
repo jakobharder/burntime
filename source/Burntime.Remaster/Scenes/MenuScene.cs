@@ -101,6 +101,8 @@ namespace Burntime.Remaster
             PlayerOneSwitch.UpCommand += OnPlayerOneUp;
             PlayerOneSwitch.Command += OnPlayerOneClick;
             PlayerOneSwitch.Font = new GuiFont(BurntimeClassic.FontName, new PixelColor(184, 184, 184));
+            PlayerOneSwitch.TextHorizontalAlign = TextAlignment.Center;
+            PlayerOneSwitch.TextVerticalAlign = VerticalTextAlignment.Center;
             Windows += PlayerOneSwitch;
             PlayerTwoSwitch = new NameWindow(App);
             PlayerTwoSwitch.Position = new Vector2(204, 92);
@@ -110,6 +112,8 @@ namespace Burntime.Remaster
             PlayerTwoSwitch.UpCommand += OnPlayerTwoUp;
             PlayerTwoSwitch.Command += OnPlayerTwoClick;
             PlayerTwoSwitch.Font = new GuiFont(BurntimeClassic.FontName, new PixelColor(184, 184, 184));
+            PlayerTwoSwitch.TextHorizontalAlign = TextAlignment.Center;
+            PlayerTwoSwitch.TextVerticalAlign = VerticalTextAlignment.Center;
             Windows += PlayerTwoSwitch;
 
             // color

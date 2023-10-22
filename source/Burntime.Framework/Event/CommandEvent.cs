@@ -67,7 +67,13 @@ namespace Burntime.Framework
     {
         CommandMethodInterface method1;
         CommandIndexMethodInterface method2;
+        Action _action;
         int index;
+
+        public CommandHandler(Action action)
+        {
+            _action = action;
+        }
 
         public CommandHandler(CommandMethodInterface Method)
         {
@@ -97,7 +103,9 @@ namespace Burntime.Framework
 
         public void Execute()
         {
-            if (method1 != null)
+            if (_action is not null)
+                _action.Invoke();
+            else if (method1 != null)
                 method1.Invoke();
             else
                 method2.Invoke(index);
@@ -105,7 +113,9 @@ namespace Burntime.Framework
 
         public void Execute(int Index)
         {
-            if (method1 != null)
+            if (_action is not null)
+                _action.Invoke();
+            else if (method1 != null)
                 method1.Invoke();
             else
                 method2.Invoke(Index);

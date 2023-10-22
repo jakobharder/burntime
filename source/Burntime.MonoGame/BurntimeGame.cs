@@ -56,11 +56,14 @@ namespace Burntime.MonoGame
 
         public bool IsLoading { get; set; }
 
-        // #if (DEBUG)
-        public bool FullScreen { get; set; } = false;
-        // #else
-        //         public bool FullScreen { get; set; } = true;
-        // #endif
+        bool _isFullscreen = false;
+        bool _requestFullscreen = false;
+        public bool IsFullscreen 
+        {
+            get => _isFullscreen;
+            set => _requestFullscreen = value; // value will be handled in render thread
+        }
+
         bool _initialized = false;
 
         public BurntimeGame()
@@ -125,19 +128,13 @@ namespace Burntime.MonoGame
             ApplyGraphicsDeviceResolution(initialize: false);
         }
 
-        private void ToggleFullscreen()
-        {
-            FullScreen = !FullScreen;
-            ApplyGraphicsDeviceResolution(initialize: false, resetWindowSize: true);
-        }
-
         bool _resizing = false;
         private void ApplyGraphicsDeviceResolution(bool initialize, bool resetWindowSize = false)
         {
             if ((!_initialized && !initialize) || _resizing) return;
 
             _resizing = true;
-            if (FullScreen)
+            if (IsFullscreen)
             {
                 Resolution.Native = new Platform.Vector2(GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
                     GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height);
@@ -255,7 +252,7 @@ namespace Burntime.MonoGame
         private void Window_TextInput(object sender, TextInputEventArgs e)
         {
             if (e.Key == Keys.Escape || e.Key == Keys.Pause || e.Key == Keys.Enter
-                || e.Key == Keys.F1 || e.Key == Keys.F2 || e.Key == Keys.F3 || e.Key == Keys.F4)
+                || e.Key == Keys.F1 || e.Key == Keys.F2 || e.Key == Keys.F3 || e.Key == Keys.F4 || e.Key == Keys.F8)
             {
                 // handled in Update
             }
@@ -281,13 +278,13 @@ namespace Burntime.MonoGame
                     if (key == Keys.F11
                         || (key == Keys.Enter && (modifier & ModifierKeys.LeftAlt) == ModifierKeys.LeftAlt))
                     {
-                        ToggleFullscreen();
+                        IsFullscreen = !IsFullscreen;
                         DeviceManager.Clear();
                         break;
                     }
 
                     if (key == Keys.Escape || key == Keys.Pause || key == Keys.Enter
-                        || key == Keys.F1 || key == Keys.F2 || key == Keys.F3 || key == Keys.F4)
+                        || key == Keys.F1 || key == Keys.F2 || key == Keys.F3 || key == Keys.F4 || key == Keys.F8)
                     {
                         DeviceManager?.VKeyPress(key switch
                         {
@@ -298,6 +295,7 @@ namespace Burntime.MonoGame
                             Keys.F2 => SystemKey.F2,
                             Keys.F3 => SystemKey.F3,
                             Keys.F4 => SystemKey.F4,
+                            Keys.F8 => SystemKey.F8,
                             _ => SystemKey.Other
                         });
                     }
@@ -313,6 +311,12 @@ namespace Burntime.MonoGame
             {
                 HandleMouseInput();
                 HandleKeyboardInput();
+            }
+            
+            if (_requestFullscreen != _isFullscreen)
+            {
+                _isFullscreen = _requestFullscreen;
+                ApplyGraphicsDeviceResolution(initialize: false, resetWindowSize: true);
             }
 
             RenderDevice.Update();

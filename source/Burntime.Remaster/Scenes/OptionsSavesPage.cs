@@ -25,14 +25,11 @@ internal class OptionsSavesPage : Container
     readonly Button _save;
     readonly Button _delete;
 
-    readonly BurntimeClassic _app;
-
     readonly Button[] savegames = new Button[8];
 
     public OptionsSavesPage(Module app, OptionFonts fonts) : base(app)
     {
         _fonts = fonts;
-        _app = (BurntimeClassic)app; 
 
         Windows += _load = new Button(app)
         {
@@ -69,8 +66,11 @@ internal class OptionsSavesPage : Container
         {
             Font = _fonts.Blue,
             Position = new Vector2(40, 108),
-            Size = new Vector2(120, 10)
+            Size = new Vector2(120, 10),
+            TextHorizontalAlign = Platform.Graphics.TextAlignment.Center
         };
+
+        CreateSaveGameButtons();
     }
 
     public override void OnUpdate(float elapsed)
@@ -114,7 +114,7 @@ internal class OptionsSavesPage : Container
         }
     }
 
-    public void CreateSaveGameButtons()
+    void CreateSaveGameButtons()
     {
         for (int i = 0; i < 8; i++)
         {

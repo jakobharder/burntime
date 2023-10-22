@@ -152,22 +152,17 @@ namespace Burntime.Remaster
         public int PreviousPlayerId = -1;
         public bool NewGui = false;
 
-#warning TODO make this a setting
-        public override bool IsNewGfx { get; set; } = true;
-
-        public Character SelectedCharacter
+        public override bool IsNewGfx
         {
-            get { return ((Player)GameState.CurrentPlayer).SelectedCharacter; }
+            get => base.IsNewGfx;
+            set { base.IsNewGfx = value; RefreshNewGfx(); }
         }
 
-        public ClassicGame Game
-        {
-            get { return GameState as ClassicGame; }
-        }
+        public Character SelectedCharacter => ((Player)GameState.CurrentPlayer).SelectedCharacter;
+        public ClassicGame Game => GameState as ClassicGame;
 
-        public override void ToggleNewGfx()
+        void RefreshNewGfx()
         {
-            IsNewGfx = !IsNewGfx;
             if (IsNewGfx)
             {
                 FileSystem.AddPackage("newgfx", "game/classic_newgfx");

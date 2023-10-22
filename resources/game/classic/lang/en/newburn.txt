@@ -15,16 +15,16 @@ no AI players
 easy
 normal
 hard
-NewGfx ON
-NewGfx OFF
+Graphics REMASTER
+Graphics ORIGINAL
+Fullscreen ON
+Fullscreen OFF
+Saves
+Settings
+toggle in-game with F11
+toggle in-game with F8
 
-
-
-
-
-
-
-
+Language ENGLISH
 
 
 

@@ -15,16 +15,16 @@ Ohne Computergegner
 Einfach
 Normal
 Schwer
-NewGfx AN
-NewGfx AUS
+Grafik REMASTER
+Grafik ORIGINAL
+Vollbild AN
+Vollbild AUS
+Spielst„nde
+Optionen
+im Spiel mit F11 wechseln
+im Spiel mit F8 wechseln
 
-
-
-
-
-
-
-
+Sprache DEUTSCH
 
 
 
