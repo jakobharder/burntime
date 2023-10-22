@@ -212,6 +212,9 @@ namespace Burntime.MonoGame
                 var mousePosition = new Vector2f(mouseState.X, mouseState.Y) * (Vector2f)Resolution.Game / (Vector2f)Resolution.Native;
                 DeviceManager.MouseMove(mousePosition);
 
+                // ignore clicks when not shown and active
+                if (!IsActive) return;
+
                 if (mouseState.LeftButton == ButtonState.Pressed)
                     _leftClicked = true;
                 if (mouseState.RightButton == ButtonState.Pressed)
@@ -264,6 +267,8 @@ namespace Burntime.MonoGame
 
         private void HandleKeyboardInput()
         {
+            if (!IsActive) return;
+
             var keyboard = Microsoft.Xna.Framework.Input.Keyboard.GetState();
             var keys = keyboard.GetPressedKeys();
 
@@ -307,11 +312,8 @@ namespace Burntime.MonoGame
 
         protected override void Update(Microsoft.Xna.Framework.GameTime gameTime)
         {
-            if (IsActive)
-            {
-                HandleMouseInput();
-                HandleKeyboardInput();
-            }
+            HandleMouseInput();
+            HandleKeyboardInput();
             
             if (_requestFullscreen != _isFullscreen)
             {
