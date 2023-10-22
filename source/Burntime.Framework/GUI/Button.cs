@@ -1,192 +1,185 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-using Burntime.Platform;
+﻿using Burntime.Platform;
 using Burntime.Platform.Graphics;
-using Burntime.Framework.Event;
+using System;
 
-namespace Burntime.Framework.GUI
+namespace Burntime.Framework.GUI;
+
+public class Button : Window
 {
-    public class Button : Window
+    public VerticalTextAlignment TextVerticalAlign = VerticalTextAlignment.Default;
+    public TextAlignment TextHorizontalAlign = TextAlignment.Default;
+
+    public bool IsHover { get; private set; }
+    public bool IsEnabled { get; set; } = true;
+
+    public CommandEvent? Command;
+
+    public GuiImage? Image { get; set; }
+    public GuiImage? HoverImage { get; set; }
+    public GuiImage? DownImage { get; set; }
+
+    public GuiFont? HoverFont { get; set; }
+    public GuiFont? DisabledFont { get; set; }
+    public GuiString? ToolTipText { get; set; }
+    public GuiFont? ToolTipFont { get; set; }
+
+    public GuiString? Text
     {
-        public VerticalTextAlignment TextVerticalAlign = VerticalTextAlignment.Center;
-        public TextAlignment TextHorizontalAlign = TextAlignment.Center;
+        get => _text;
+        set { _text = value; if (_isTextOnly) RefreshTextSize(); }
+    }
+    GuiString? _text;
 
-        protected bool isDown = false;
-        protected bool isHover;
+    public GuiFont? Font
+    {
+        get => _font;
+        set { _font = value; if (_isTextOnly) RefreshTextSize(); }
+    }
+    GuiFont? _font;
 
-        public bool IsHover
+    [Obsolete("use IsTextOnly instead")]
+    public void SetTextOnly() => IsTextOnly = true;
+
+    public bool IsTextOnly
+    {
+        get => _isTextOnly;
+        set
         {
-            get { return isHover; }
-        }
-
-        bool sizeSet = false;
-
-        public CommandEvent Command;
-
-        public GuiImage Image { get; set; }
-        public GuiImage HoverImage { get; set; }
-        public GuiImage DownImage { get; set; }
-
-        public GuiString Text
-        {
-            get { return text_; }
-            set
+            if (value)
             {
-                text_ = value;
-                if (isTextOnly_) RefreshTextSize_();
-            }
-        }
-        GuiString text_;
-
-        public GuiFont Font
-        { 
-            get { return font_; }
-            set
-            {
-                font_ = value;
-                if (isTextOnly_) RefreshTextSize_();
-            }
-        }
-        GuiFont font_;
-
-        public GuiFont HoverFont { get; set; }
-
-        public GuiString ToolTipText { get; set; }
-        public GuiFont ToolTipFont { get; set; }
-
-        public bool IsTextOnly
-        {
-            get { return isTextOnly_; }
-            set
-            {
-                if (value)
-                {
-                    RefreshTextSize_();
+                RefreshTextSize();
+                if (TextVerticalAlign == VerticalTextAlignment.Default)
                     TextVerticalAlign = VerticalTextAlignment.Top;
+                if (TextHorizontalAlign == TextAlignment.Default)
                     TextHorizontalAlign = TextAlignment.Left;
-                }
-                isTextOnly_ = value;
             }
+            _isTextOnly = value;
         }
-        private bool isTextOnly_;
+    }
+    private bool _isTextOnly;
 
-        private void RefreshTextSize_()
+    void RefreshTextSize()
+    {
+        if (Font != null && Text != null)
         {
-            if (Font != null && Text != null)
+            Size = Font.GetRect(0, 0, Text).Size;
+            sizeSet = true;
+        }
+    }
+    bool sizeSet = false;
+
+    protected bool _isDown = false;
+
+    public Button(Module App)
+        : base(App)
+    {
+    }
+
+    public override void OnRender(RenderTarget Target)
+    {
+        if (!sizeSet)
+        {
+            if (Image != null && Image.IsLoaded)
             {
-                Size = Font.GetRect(0, 0, Text).Size;
                 sizeSet = true;
+                Size = new Vector2(Image.Width, Image.Height);
+            }
+            else if (HoverImage != null && HoverImage.IsLoaded)
+            {
+                sizeSet = true;
+                Size = new Vector2(HoverImage.Width, HoverImage.Height);
+            }
+            else if (DownImage != null && DownImage.IsLoaded)
+            {
+                sizeSet = true;
+                Size = new Vector2(DownImage.Width, DownImage.Height);
             }
         }
 
-        public void SetTextOnly()
+        // preload hover and down images
+        HoverImage?.Touch();
+        DownImage?.Touch();
+
+        if (IsHover && HoverImage != null)
         {
-            IsTextOnly = true;
+            Target.DrawSprite(HoverImage);
+        }
+        else if (_isDown)
+        {
+            Target.DrawSprite(DownImage);
+        }
+        else
+        {
+            Target.DrawSprite(Image);
         }
 
-        public Button(Module App)
-            : base(App)
+        if (Text != null && Font != null)
         {
-        }
-
-        public override void OnRender(RenderTarget Target)
-        {
-            if (!sizeSet)
-            {
-                if (Image != null && Image.IsLoaded)
-                {
-                    sizeSet = true;
-                    Size = new Vector2(Image.Width, Image.Height);
-                }
-                else if (HoverImage != null && HoverImage.IsLoaded)
-                {
-                    sizeSet = true;
-                    Size = new Vector2(HoverImage.Width, HoverImage.Height);
-                }
-                else if (DownImage != null && DownImage.IsLoaded)
-                {
-                    sizeSet = true;
-                    Size = new Vector2(DownImage.Width, DownImage.Height);
-                }
-            }
-
-            // preload hover and down images
-            if (HoverImage != null)
-                HoverImage.Touch();
-            if (DownImage != null)
-                DownImage.Touch();
-
-            if (isHover && HoverImage != null)
-            {
-                Target.DrawSprite(HoverImage);
-            }
-            else if (isDown)
-            {
-                Target.DrawSprite(DownImage);
-            }
-            else
-            {
-                Target.DrawSprite(Image);
-            }
-
-            if (Text != null && Font != null)
-            {
-                Vector2 textpos;
-                if (TextHorizontalAlign == TextAlignment.Left)
-                    textpos.x = 0;
-                else if (TextHorizontalAlign == TextAlignment.Center)
-                    textpos.x = Size.x / 2;
-                else
-                    textpos.x = Size.x;
-                if (TextVerticalAlign == VerticalTextAlignment.Top)
-                    textpos.y = 0;
-                else if (TextVerticalAlign == VerticalTextAlignment.Center)
-                    textpos.y = Size.y / 2;
-                else
-                    textpos.y = Size.y;
-
-                if (isHover && HoverFont != null)
-                    HoverFont.DrawText(Target, textpos, Text, TextHorizontalAlign, TextVerticalAlign);
-                else
-                    Font.DrawText(Target, textpos, Text, TextHorizontalAlign, TextVerticalAlign);
-            }
-
-            if (IsHover && ToolTipText is not null && ToolTipFont is not null)
-            {
-                Vector2 textpos;
+            Vector2 textpos;
+            if (TextHorizontalAlign == TextAlignment.Left)
+                textpos.x = 0;
+            else if (TextHorizontalAlign == TextAlignment.Center
+                || TextHorizontalAlign == TextAlignment.Default)
                 textpos.x = Size.x / 2;
-                textpos.y = -2;
+            else
+                textpos.x = Size.x;
+            if (TextVerticalAlign == VerticalTextAlignment.Top)
+                textpos.y = 0;
+            else if (TextVerticalAlign == VerticalTextAlignment.Center
+                || TextVerticalAlign == VerticalTextAlignment.Default)
+                textpos.y = Size.y / 2;
+            else
+                textpos.y = Size.y;
 
-                ToolTipFont.DrawText(Target, textpos, ToolTipText, TextAlignment.Center, VerticalTextAlignment.Bottom);
-            }
+            GuiFont font;
+            if (!IsEnabled && DisabledFont is not null)
+                font = DisabledFont;
+            else if (IsEnabled && IsHover && HoverFont is not null)
+                font = HoverFont;
+            else
+                font = Font;
+            font.DrawText(Target, textpos, Text, TextHorizontalAlign, TextVerticalAlign);
         }
 
-        public override void OnMouseEnter()
+        if (IsHover && ToolTipText is not null && ToolTipFont is not null)
         {
-            isHover = true;
+            Vector2 textpos;
+            textpos.x = Size.x / 2;
+            textpos.y = -2;
+
+            ToolTipFont.DrawText(Target, textpos, ToolTipText, TextAlignment.Center, VerticalTextAlignment.Bottom);
         }
+    }
 
-        public override void OnMouseLeave()
+    public override void OnMouseEnter()
+    {
+        if (!IsEnabled) return;
+
+        IsHover = true;
+    }
+
+    public override void OnMouseLeave()
+    {
+        if (!IsEnabled) return;
+
+        IsHover = false;
+    }
+
+    public override bool OnMouseClick(Vector2 Position, MouseButton Button)
+    {
+        if (!IsEnabled) return true;
+
+        return OnButtonClick();
+    }
+
+    public virtual bool OnButtonClick()
+    {
+        if (Command != null)
         {
-            isHover = false;
-        }
-
-        public override bool OnMouseClick(Vector2 Position, MouseButton Button)
-        {
-            return OnButtonClick();
-        }
-
-        public virtual bool OnButtonClick()
-        {
-            if (Command != null)
-            {
-                Command.Execute();
-                return false;
-            }
-
+            Command.Execute();
             return false;
         }
+
+        return false;
     }
 }

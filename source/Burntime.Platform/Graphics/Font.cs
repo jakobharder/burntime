@@ -15,14 +15,16 @@ public enum TextAlignment
 {
     Left,
     Center,
-    Right
+    Right,
+    Default
 }
 
 public enum VerticalTextAlignment
 {
     Top,
     Center,
-    Bottom
+    Bottom,
+    Default
 }
 
 public enum TextBorders
