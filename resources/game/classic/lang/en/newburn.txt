@@ -25,9 +25,9 @@ toggle in-game with F11
 toggle in-game with F8
 
 Language ENGLISH
-
-
-
+Give up
+Start new game
+Jukebox
 
 
 

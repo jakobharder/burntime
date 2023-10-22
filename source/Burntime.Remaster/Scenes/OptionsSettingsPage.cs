@@ -1,7 +1,6 @@
 ﻿using Burntime.Framework;
 using Burntime.Framework.GUI;
 using Burntime.Platform;
-using Burntime.Platform.IO;
 using Burntime.Remaster;
 
 namespace Burntime.Classic.Scenes;

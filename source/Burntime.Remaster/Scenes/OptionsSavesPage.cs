@@ -25,7 +25,8 @@ internal class OptionsSavesPage : Container
     readonly Button _save;
     readonly Button _delete;
 
-    readonly Button[] savegames = new Button[8];
+    const int COLUMN_HEIGHT = 5;
+    readonly Button[] savegames = new Button[COLUMN_HEIGHT * 2];
 
     public OptionsSavesPage(Module app, OptionFonts fonts) : base(app)
     {
@@ -37,7 +38,7 @@ internal class OptionsSavesPage : Container
             HoverFont = _fonts.Orange,
             DisabledFont = _fonts.Disabled,
             Text = "@burn?382",
-            Position = new Vector2(40, 122),
+            Position = new Vector2(40, 124),
             IsTextOnly = true
         };
         _load.Command += OnLoad;
@@ -47,7 +48,7 @@ internal class OptionsSavesPage : Container
             HoverFont = _fonts.Orange,
             DisabledFont = _fonts.Disabled,
             Text = "@burn?383",
-            Position = new Vector2(74, 122),
+            Position = new Vector2(74, 124),
             IsTextOnly = true
         };
         _save.Command += OnSave;
@@ -57,7 +58,7 @@ internal class OptionsSavesPage : Container
             HoverFont = _fonts.Orange,
             DisabledFont = _fonts.Disabled,
             Text = "@burn?384",
-            Position = new Vector2(126, 122),
+            Position = new Vector2(126, 124),
             IsTextOnly = true
         };
         _delete.Command += OnDelete;
@@ -65,9 +66,10 @@ internal class OptionsSavesPage : Container
         Windows += _input = new SavegameInputWindow(app)
         {
             Font = _fonts.Blue,
-            Position = new Vector2(40, 108),
+            Position = new Vector2(40, 112),
             Size = new Vector2(120, 10),
-            TextHorizontalAlign = Platform.Graphics.TextAlignment.Center
+            TextHorizontalAlign = Platform.Graphics.TextAlignment.Center,
+            TextVerticalAlign = Platform.Graphics.VerticalTextAlignment.Top
         };
 
         CreateSaveGameButtons();
@@ -97,7 +99,7 @@ internal class OptionsSavesPage : Container
 
         string[] files = FileSystem.GetFileNames("savegame/", ".sav");
 
-        for (int i = 0; i < 8; i++)
+        for (int i = 0; i < savegames.Length; i++)
         {
             if (files.Length > i)
             {
@@ -116,10 +118,11 @@ internal class OptionsSavesPage : Container
 
     void CreateSaveGameButtons()
     {
-        for (int i = 0; i < 8; i++)
+        int columnHeight = savegames.Length / 2;
+        for (int i = 0; i < savegames.Length; i++)
         {
-            int y = i % 4;
-            int x = (i - i % 4) / 4;
+            int y = i % columnHeight;
+            int x = (i - i % columnHeight) / columnHeight;
 
             x = 38 + x * 67;
             y = 58 + y * 10;

@@ -16,10 +16,12 @@ public class OptionsScene : Scene
     GuiFont hoverRed;
     GuiFont green;
 
-    readonly Button _buttonRestart;
-
     readonly OptionsSavesPage _savesPage;
     readonly OptionsSettingsPage _settingsPage;
+    readonly OptionsGiveUpPage _giveUpPage;
+    readonly OptionsJukeboxPage _jukeboxPage;
+
+    readonly GuiImage _optionsBulb;
 
     Container _activePage;
     Container ActivePage
@@ -44,6 +46,8 @@ public class OptionsScene : Scene
         hover = new GuiFont(BurntimeClassic.FontName, new PixelColor(109, 117, 170));
         hoverRed = new GuiFont(BurntimeClassic.FontName, new PixelColor(190, 77, 12));
         green = new GuiFont(BurntimeClassic.FontName, new PixelColor(0, 108, 0));
+
+        _optionsBulb = "gfx/ui/options_bulb.png";
 
         Windows += new Image(App)
         {
@@ -70,30 +74,31 @@ public class OptionsScene : Scene
             IsTextOnly = true
         };
 
+        Windows += new Button(app, () => ActivePage = _jukeboxPage)
+        {
+            Font = red,
+            HoverFont = hover,
+            DisabledFont = disabled,
+            IsEnabled = !BurntimeClassic.Instance.DisableMusic,
+            Text = "@newburn?29",
+            Position = new Vector2(214, 105),
+            IsTextOnly = true
+        };
+
         Windows += new Button(app, () => ActivePage = _settingsPage)
         {
             Font = red,
             HoverFont = hover,
             Text = "@newburn?22",
-            Position = new Vector2(214, 105),
-            IsTextOnly = true
-        };
-
-        Windows += _buttonRestart = new Button(app, OnButtonRestart)
-        {
-            Font = red,
-            HoverFont = hover,
-            DisabledFont = disabled,
-            Text = "@burn?390",
             Position = new Vector2(214, 127),
             IsTextOnly = true
         };
 
-        Windows += new Button(app, () => app.Close())
+        Windows += new Button(app, () => ActivePage = _giveUpPage)
         {
             Font = red,
             HoverFont = hover,
-            Text = "@burn?391",
+            Text = "@newburn?27",
             Position = new Vector2(214, 148),
             IsTextOnly = true
         };
@@ -117,6 +122,8 @@ public class OptionsScene : Scene
 
         Windows += _savesPage = new OptionsSavesPage(app, fonts) { IsVisible = false };
         Windows += _settingsPage = new OptionsSettingsPage(app, fonts) { IsVisible = false };
+        Windows += _giveUpPage = new OptionsGiveUpPage(app, fonts) { IsVisible = false };
+        Windows += _jukeboxPage = new OptionsJukeboxPage(app, fonts) { IsVisible = false };
         ActivePage = _savesPage;
     }
 
@@ -130,15 +137,28 @@ public class OptionsScene : Scene
     {
         ActivePage = _savesPage;
         _savesPage.RefreshSaveGames();
-
-        _buttonRestart.IsEnabled = app.SceneManager.LastScene != "MenuScene";
     }
 
-    void OnButtonRestart()
+    public override void OnRender(RenderTarget target)
     {
-        if (app.SceneManager.LastScene == "MenuScene") return;
+        var position = new Vector2(192, 59);
+        if (_activePage == _savesPage)
+        {
+            position.y += 20;
+            position.x -= 1;
+        }
+        else if (_activePage == _jukeboxPage)
+            position.y += 20 * 2 + 1;
+        else if (_activePage == _settingsPage)
+            position.y += 21 * 3;
+        else if (_activePage == _giveUpPage)
+            position.y += 21 * 4;
 
-        app.StopGame();
-        app.SceneManager.SetScene("MenuScene");
+        target.Layer++;
+        target.DrawSprite(position, _optionsBulb);
+        target.Layer--;
+
+
+        base.OnRender(target);
     }
 }
