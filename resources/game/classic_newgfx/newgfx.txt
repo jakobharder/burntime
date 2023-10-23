@@ -36,9 +36,15 @@ maps/mat_033_tiles.png=pngsheet@maps/mat_033_tiles_2x.png?{0}?60x72
 film_02.pac=gfx/backgrounds/film2.png
 film_03.pac=gfx/backgrounds/film3.png
 film_04.pac=gfx/backgrounds/film4.png
+film_05.pac=gfx/backgrounds/film5.png
 film_09.pac=gfx/backgrounds/film9.png
+film_10.pac=gfx/backgrounds/film10.png
 info.pac=gfx/backgrounds/info.png
 hint1.pac=gfx/backgrounds/trader.png
+film_05.ani?0-17?p=pngsheet@gfx/backgrounds/film5_ani.png?0-17?135x126
+film_05.ani?18-19=pngsheet@gfx/backgrounds/film5_ani2.png?0-1?90x72
+film_05.ani?20-21=pngsheet@gfx/backgrounds/film5_ani3.png?0-1?90x72
+film_10.ani=pngsheet@gfx/backgrounds/film10_ani.png?0-12?60x72
 
 syssze.raw=pngsheet@gfx/syssze.png?{0}?30x36
 

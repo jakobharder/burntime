@@ -33,7 +33,9 @@ namespace Burntime.Remaster
         //public override Vector2[] Resolutions { get { return new Vector2[] { new Vector2(400, 188), new Vector2(384, 240) }; } }
         //public override Vector2[] Resolutions { get { return new Vector2[] { new Vector2(640, 300), new Vector2(384, 240) }; } }
 
+        // original size
         public override Vector2 MinResolution { get; } = new Vector2(320, 200);
+        //public override Vector2 MinResolution { get; } = new Vector2(352, 220);
         public override Vector2 MaxResolution { get; } = new Vector2(680, 320);
 
         public override int MaxVerticalResolution => 320;
@@ -184,14 +186,15 @@ namespace Burntime.Remaster
                 {
                     ResourceManager.SetResourceReplacement(null);
                 }
-                Engine.ReloadGraphics();
             }
             else
             {
                 FileSystem.RemovePackage("newgfx");
                 ResourceManager.SetResourceReplacement(null);
-                Engine.ReloadGraphics();
             }
+
+            Engine.ReloadGraphics();
+            SceneManager.ResizeScene();
         }
     }
 }

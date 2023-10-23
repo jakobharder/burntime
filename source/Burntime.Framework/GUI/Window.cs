@@ -256,6 +256,7 @@ namespace Burntime.Framework.GUI
 
             Target.Layer = layer;
             OnRender(Target.GetSubBuffer(Boundings));
+            Target.Layer = layer;
         }
 
         internal virtual void Update(float Elapsed)

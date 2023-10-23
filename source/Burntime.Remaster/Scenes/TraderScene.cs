@@ -81,9 +81,9 @@ class TraderScene : Scene
     Vector2 _lastPosition = Vector2.Zero;
     void PositionElements(Vector2? mousePosition = null)
     {
-        if (app.Engine.Resolution.Game.x >= 480)
+        if (app.Engine.Resolution.Game.x >= 450)
         {
-            Size = new Vector2(480, 200);
+            Size = new Vector2(470, 200);
             Position = (app.Engine.Resolution.Game - Size) / 2;
 
             inventory.Show();
@@ -94,8 +94,8 @@ class TraderScene : Scene
             exchangeBottom.Position = new Vector2(195, 101);
             temporarySpace.Show();
 
-            acceptButton.Position = new Vector2(170, 183) + new Vector2(160, 0);
-            inventoryTrader.Position = new Vector2(154, 5) + new Vector2(160, 0);
+            acceptButton.Position = new Vector2(170, 183) + new Vector2(150, 0);
+            inventoryTrader.Position = new Vector2(154, 5) + new Vector2(150, 0);
 
             side = InventorySide.None;
         }

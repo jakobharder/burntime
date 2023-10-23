@@ -57,7 +57,7 @@ namespace Burntime.Remaster.Scenes
 
                 ani1 = new Image(app);
                 ani1.Background = "film_05.ani?0-17?p";
-                ani1.Position = new Vector2(98, 120);
+                ani1.Position = app.IsNewGfx ? new Vector2(76, 120) : new Vector2(98, 120);
                 ani1.Background.Animation.Speed = 6.5f;
                 ani1.Background.Animation.IntervalMargin = 4;
                 ani1.Background.Animation.Progressive = false;
@@ -65,7 +65,7 @@ namespace Burntime.Remaster.Scenes
 
                 ani2 = new Image(app);
                 ani2.Background = "film_05.ani?18-19";
-                ani2.Position = new Vector2(77, 89);
+                ani2.Position = app.IsNewGfx ? new Vector2(52, 88) : new Vector2(77, 89);
                 ani2.Background.Animation.Speed = 6.5f;
                 ani2.Background.Animation.IntervalMargin = 5;
                 ani2.Background.Animation.ReverseAnimation = true;
@@ -74,7 +74,7 @@ namespace Burntime.Remaster.Scenes
 
                 ani3 = new Image(app);
                 ani3.Background = "film_05.ani?20-21";
-                ani3.Position = new Vector2(106, 59);
+                ani3.Position = app.IsNewGfx ? new Vector2(84, 48) : new Vector2(106, 59);
                 ani3.Background.Animation.Speed = 6.5f;
                 ani3.Background.Animation.Progressive = false;
                 Windows += ani3;
@@ -85,9 +85,9 @@ namespace Burntime.Remaster.Scenes
 
                 ani1 = new Image(app);
                 ani1.Background = "film_10.ani";
-                ani1.Position = new Vector2(125, 92);
+                ani1.Position = app.IsNewGfx ? new Vector2(108, 89) : new Vector2(125, 92);
                 ani1.Background.Animation.IntervalMargin = 3;
-                ani1.Background.Animation.Speed = 5.0f;
+                ani1.Background.Animation.Speed = app.IsNewGfx ? 9.0f : 5.0f;
                 Windows += ani1;
             }
             else if (game.ImageScene == "film_02.pac")
@@ -113,6 +113,18 @@ namespace Burntime.Remaster.Scenes
             base.OnResizeScreen();
 
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+
+            if (BurntimeClassic.Instance.ImageScene == "film_10.pac" && ani1 is not null)
+            {
+                ani1.Position = app.IsNewGfx ? new Vector2(108, 89) : new Vector2(125, 92);
+                ani1.Background.Animation.Speed = app.IsNewGfx ? 9.0f : 5.0f;
+            }
+            else if (BurntimeClassic.Instance.ImageScene == "film_05.pac" && ani1 is not null)
+            {
+                ani1.Position = app.IsNewGfx ? new Vector2(76, 120) : new Vector2(98, 120);
+                ani2.Position = app.IsNewGfx ? new Vector2(52, 88) : new Vector2(77, 89);
+                ani3.Position = app.IsNewGfx ? new Vector2(84, 48) : new Vector2(106, 59);
+            }
         }
 
         public override bool OnMouseClick(Vector2 Position, MouseButton Button)
@@ -169,6 +181,25 @@ namespace Burntime.Remaster.Scenes
         protected override void OnInactivateScene()
         {
             app.RenderMouse = true;
+        }
+
+        public override void OnRender(RenderTarget target)
+        {
+            base.OnRender(target);
+
+            target.Layer = app.Engine.MaxLayers - 1;
+
+            const int MARGIN = 32;
+
+            target.RenderRect(-Position,
+                new Vector2(app.Engine.Resolution.Game.x, MARGIN), new PixelColor(0, 0, 0));
+            target.RenderRect(new Vector2(-Position.x, app.Engine.Resolution.Game.y - MARGIN - Position.y), 
+                new Vector2(app.Engine.Resolution.Game.x, MARGIN + 1), new PixelColor(0, 0, 0));
+
+            target.RenderRect(new Vector2(-Position.x, -Position.y + MARGIN),
+                new Vector2(MARGIN, app.Engine.Resolution.Game.y - MARGIN * 2), new PixelColor(0, 0, 0));
+            target.RenderRect(new Vector2(-Position.x + app.Engine.Resolution.Game.x - MARGIN, -Position.y + MARGIN), 
+                new Vector2(MARGIN + 1, app.Engine.Resolution.Game.y - MARGIN * 2), new PixelColor(0, 0, 0));
         }
     }
 }

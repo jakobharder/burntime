@@ -365,6 +365,7 @@ namespace Burntime.MonoGame
 
         #region render methods
         const float MAX_LAYERS = 256.0f;
+        public float MaxLayers => MAX_LAYERS;
         const float popInSpeed = 16.0f;
         static float CalcZ(float Layer) => 0.05f + (Layer / MAX_LAYERS) * 0.9f;
 

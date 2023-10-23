@@ -12,6 +12,7 @@ public interface IEngine
 {
     DeviceManager DeviceManager { get; set; }
     float Layer { get; set; }
+    float MaxLayers { get; }
 
     BlendOverlayBase BlendOverlay { get; }
     Resolution Resolution { get; }

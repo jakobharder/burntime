@@ -14,7 +14,7 @@ class CommandParameter
     public int TextureWidth = 0;
     public bool RatioCorrection = false;
     public bool MegaTexture = false;
-    public bool Padding = true;
+    public bool Padding = false;
     public bool Palette = false;
 
     public bool HandleArg(string arg)

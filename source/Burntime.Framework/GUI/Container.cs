@@ -111,7 +111,9 @@ namespace Burntime.Framework.GUI
             if (!visible)
                 return;
 
+            Target.Layer = Layer;
             base.Render(Target);
+            Target.Layer = Layer;
 
             RenderTarget thisTarget = Target.GetSubBuffer(Boundings);
 
@@ -119,7 +121,6 @@ namespace Burntime.Framework.GUI
             {
                 if (!sizeSet)
                 {
-                    
                     if (background.IsLoaded)
                     {
                         if (Size.x == 0) // only set if not done already
