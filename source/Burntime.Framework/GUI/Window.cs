@@ -105,7 +105,7 @@ namespace Burntime.Framework.GUI
             }
         }
 
-        public Vector2 Size
+        public virtual Vector2 Size
         {
             get { return size; }
             set

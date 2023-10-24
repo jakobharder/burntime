@@ -70,19 +70,15 @@ namespace Burntime.Framework.GUI
 
     public class Container : Window
     {
-        bool sizeSet = false;
-
         protected GuiImage? background;
         public GuiImage? Background
         {
-            get { return background; }
-            set 
-            { 
+            get => background;
+            set
+            {
                 background = value;
-                if (background != null)
-                {
-                    Size = new Vector2(background.Width, background.Height);
-                }
+                if (background is not null)
+                    base.Size = background.Size;
             }
         }
 
@@ -106,6 +102,13 @@ namespace Burntime.Framework.GUI
             windows.Layer = layer;
         }
 
+        bool _autoSize = true;
+        public override Vector2 Size
+        {
+            get => base.Size;
+            set { base.Size = value; _autoSize = value == Vector2.Zero; }
+        }
+
         internal override void Render(RenderTarget Target)
         {
             if (!visible)
@@ -119,15 +122,9 @@ namespace Burntime.Framework.GUI
 
             if (background != null)
             {
-                if (!sizeSet)
-                {
-                    if (background.IsLoaded)
-                    {
-                        if (Size.x == 0) // only set if not done already
-                            Size = new Vector2(background.Width, background.Height);
-                        sizeSet = true;
-                    }
-                }
+                if (_autoSize && background.IsLoaded)
+                    base.Size = background.Size;
+
                 if (Size.x != 0)
                     thisTarget.DrawSprite((Size - background.Size) / 2, background);
                 else

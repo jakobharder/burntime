@@ -1,4 +1,11 @@
 [replacement_60x72]
+' Remastered graphics are ratio corrected from 8:5 to 4:3 - 1 horizontal to 1.2 vertical.
+' Upscale is not exactly 2x but ratio correct to ensure clean pixel sizes and positions.
+' 32x32 -> 60x72
+' 16x16 -> 30x36
+' 8x8 -> 15x18
+' Ratio correction factor without upscale: 0.9375x1.125
+
 sprite_scale=1.875x2.25
 zei_004.raw=pngsheet@maps/shared/set_4.png?{0}?60x72
 zei_005.raw=pngsheet@maps/shared/set_5.png?{0}?60x72
@@ -53,6 +60,14 @@ munt.raw?4=pngsheet@gfx/objects/munt.png?1?15x18
 munt.raw?22=gfx/munt_daytime.png
 gfx/up.png=gfx/up.png
 gfx/down.png=gfx/down.png
+gfx/inventory_left.png=gfx/inventory_left.png
+inv.raw?1=gfx/inventory_middle.png
+inv.raw?2=gfx/inventory_right.png
+munt.raw?5=pngsheet@gfx/inventory_buttons.png?0?30x36
+munt.raw?6=pngsheet@gfx/inventory_buttons.png?1?30x36
+munt.raw?7=pngsheet@gfx/inventory_buttons.png?2?30x36
+munt.raw?8=pngsheet@gfx/inventory_buttons.png?3?30x36
+munt.raw?9=pngsheet@gfx/inventory_buttons.png?4?30x36
 
 syst.raw?16=pngsheet@gfx/objects/player_icon_colors.png?0?36x38
 syst.raw?17=pngsheet@gfx/objects/player_icon_colors.png?1?36x38
@@ -67,6 +82,8 @@ burngfxani@syst.raw?8-11=pngsheet@gfx/objects/flags.png?24-35?30x36
 burngfxani@syst.raw?12-15=pngsheet@gfx/objects/flags.png?36-47?30x36
 
 [newgfx_native]
+' Graphics only used in remastered mode
+
 sprite_scale=1.875x2.25
 gfx/char_shadow.png=gfx/char_shadow.png
 gfx/objects/player_icons.png=pngsheet@gfx/objects/player_icons.png?{0}?36x38
@@ -78,12 +95,16 @@ gfx/backgrounds/statistics.png=gfx/backgrounds/statistics.png
 gfx/backgrounds/statistics2.png=gfx/backgrounds/statistics2.png
 
 [replacement]
+' Old upscale graphics. They should be replaced by 60x72 verisons eventually.
+
 sprite_scale=2x2
 burngfxani@munt.raw=pngani@gfx/munt_{0}.png
 munt.raw=gfx/munt_{0}.png
 sta.pac=gfx/sta.png
 
 [replacement_stretched]
+' Old upscale graphics. They should be replaced by 60x72 verisons eventually.
+
 sprite_scale=2x2.375
 ges_00.ani=pngsheet@gfx/faces/ges_00.png?0-39?136x152
 ges_01.ani=pngsheet@gfx/faces/ges_01.png?0?136x133
