@@ -150,6 +150,12 @@
             if (y > max) y = max;
         }
 
+        public void Max(int maxX, int maxY)
+        {
+            if (x > maxX) x = maxX;
+            if (y > maxY) y = maxY;
+        }
+
         public void Max(Vector2 max)
         {
             if (x > max.x) x = max.x;
