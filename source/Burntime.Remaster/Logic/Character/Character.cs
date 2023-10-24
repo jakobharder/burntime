@@ -485,7 +485,7 @@ namespace Burntime.Remaster.Logic
                         if (target.Weapon != null)
                             target.Weapon.Use();
 
-                        container.FireNotifycation(new AttackEvent(Player.Group[i].Position, target.Position));
+                        container.Notify(new AttackEvent(Player.Group[i], target));
 
                         if (target.IsDead)
                             break;
@@ -518,7 +518,7 @@ namespace Burntime.Remaster.Logic
                 if (target.Weapon != null)
                     target.Weapon.Use();
 
-                container.FireNotifycation(new AttackEvent(this.Position, target.Position));
+                container.Notify(new AttackEvent(this, target));
             }
         }
 

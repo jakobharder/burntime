@@ -13,6 +13,7 @@ using Burntime.Data.BurnGfx;
 using Burntime.Remaster.Logic;
 using Burntime.Remaster.Logic.Interaction;
 using Burntime.Remaster.Maps;
+using System.Security.Claims;
 
 namespace Burntime.Remaster
 {
@@ -655,8 +656,23 @@ namespace Burntime.Remaster
 
                 var sprite = (GuiImage)"burngfxani@syssze.raw?208-213";
                 sprite.Animation.Speed = 20;
-                view.Particles.Add(new StaticAnimationParticle(sprite, eventArgs.Attacker));
-                view.Particles.Add(new StaticAnimationParticle(sprite.Clone(), eventArgs.Defender));
+                view.Particles.Add(new StaticAnimationParticle(sprite, eventArgs.Attacker.Position));
+                view.Particles.Add(new StaticAnimationParticle(sprite.Clone(), eventArgs.Defender.Position));
+
+                if ((eventArgs.Attacker.IsDead && eventArgs.Attacker.IsHuman)
+                    || (eventArgs.Defender.IsDead && eventArgs.Defender.IsHuman))
+                {
+                    app.Engine.Music.PlayOnce("sounds/hit-die.ogg");
+                }
+                else if ((!eventArgs.Attacker.IsDead && eventArgs.Attacker.Class == CharClass.Dog)
+                    || (!eventArgs.Defender.IsDead && eventArgs.Defender.Class == CharClass.Dog))
+                {
+                    app.Engine.Music.PlayOnce("sounds/hit-barf.ogg");
+                }
+                else
+                {
+                    app.Engine.Music.PlayOnce("sounds/hit.ogg");
+                }
             }
         }
     }

@@ -4,7 +4,7 @@
 
 ### Changes
 
-- Reworked trader scene
+- Improved trader scene
   - Show both trader and player inventory on wide screens
 - Reworked options scene
   - Change language in options
@@ -14,6 +14,10 @@
 - Remastered graphics
   - Player flags
   - Cursor animations
+  - Trader intro scenes
+  - Inventory UIs
+- Start game with language selection
+- Added Amiga version hit, barf and die sounds
 
 ### Fixes
 
