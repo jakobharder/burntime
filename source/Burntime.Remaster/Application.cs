@@ -66,7 +66,7 @@ namespace Burntime.Remaster
             Engine.Music.Enabled = (!DisableMusic) & MusicPlayback;
 
             MouseImage = ResourceManager.GetImage("munt.raw");
-            SceneManager.SetScene("IntroScene");
+            SceneManager.SetScene("LanguageScene");
         }
 
         protected override void OnRun()
