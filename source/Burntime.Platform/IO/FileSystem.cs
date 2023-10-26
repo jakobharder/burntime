@@ -290,29 +290,10 @@ public class FileSystem
         return FileSystem.GetFile(path, FileOpenMode.Write);
     }
 
-    // add virtual file
-    static public bool AddFile(FilePath path)
-    {
-        return vfs.AddFile(path);
-    }
-
-    // remove virtual file
-    static public bool RemoveFile(FilePath path)
-    {
-        return vfs.RemoveFile(path);
-    }
-
-    // check if virtual folder is loaded
-    static public bool IsPackageLoaded(string package)
-    {
-        return vfs.ExistsMount(package);
-    }
-
-    // unload all virtual folders
-    static public void Clear()
-    {
-        vfs.UnmountAll();
-    }
+    static public bool AddFile(FilePath path) => vfs.AddFile(path);
+    static public bool RemoveFile(FilePath path) => vfs.RemoveFile(path);
+    static public bool IsPackageLoaded(string package) => vfs.ExistsMount(package);
+    static public void Clear() => vfs.UnmountAll();
 
     public delegate void ConvertFeedback(float percentage);
 

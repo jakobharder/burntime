@@ -15,6 +15,11 @@ public interface IPackage
     File GetFile(FilePath filePath, FileOpenMode mode);
     bool ExistsFile(FilePath filePath);
     bool AddFile(FilePath filePath);
-    bool RemoveFile(FilePath filePath);
     void Close();
+
+    // not supported by all packages
+    bool RemoveFile(FilePath filePath) => false;
+    bool ExistsFolder(FilePath folderPath) => false;
+    bool RemoveFolder(FilePath folderPath) => false;
+    bool MoveFolder(FilePath sourcePath, FilePath targetPath) => false;
 }

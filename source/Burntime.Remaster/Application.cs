@@ -88,13 +88,16 @@ namespace Burntime.Remaster
             ResourceManager.Encoding = Encoding.GetEncoding(852); // DOS central europe
 
             // set user folder to game specific location
-            FileSystem.SetUserFolder("Burntime/Classic");
+            FileSystem.SetUserFolder("Burntime");
 
             // reload settings
 #warning TODO settings
             Settings.Open("settings.txt");
             // legacy clean up
             _ = FileSystem.RemoveFile("user:settings.txt");
+            _ = FileSystem.VFS.RemoveFolder("user:deluxe");
+            _ = FileSystem.VFS.MoveFolder("user:classic/savegame", "user:saves");
+            _ = FileSystem.VFS.RemoveFolder("user:classic");
 
             //Engine.Resolution.Native = new Vector2(512, 200);//Settings["system"].GetVector2("resolution");
 #warning TODO SlimDX/Mono full screen

@@ -97,13 +97,13 @@ internal class OptionsSavesPage : Container
     {
         _input.Name = "";
 
-        string[] files = FileSystem.GetFileNames("savegame/", ".sav");
+        string[] files = FileSystem.GetFileNames("saves/", ".sav");
 
         for (int i = 0; i < savegames.Length; i++)
         {
             if (files.Length > i)
             {
-                var game = new SaveGame("savegame/" + files[i]);
+                var game = new SaveGame("saves/" + files[i]);
 
                 savegames[i].Text = files[i].ToUpper();
                 savegames[i].Font = game.Version == BurntimeClassic.SavegameVersion ? _fonts.Green : _fonts.Disabled;
@@ -153,12 +153,12 @@ internal class OptionsSavesPage : Container
             return;
 
         var creation = new GameCreation(app as BurntimeClassic);
-        creation.SaveGame("savegame/" + _input.Name + ".sav");
+        creation.SaveGame("saves/" + _input.Name + ".sav");
 
         RefreshSaveGames();
     }
 
-    private bool CanLoad => FileSystem.ExistsFile("savegame/" + _input.Name + ".sav");
+    private bool CanLoad => FileSystem.ExistsFile("saves/" + _input.Name + ".sav");
     void OnLoad()
     {
         if (!CanLoad)
@@ -168,19 +168,19 @@ internal class OptionsSavesPage : Container
         app.SceneManager.BlockBlendIn();
 
         var creation = new GameCreation(app as BurntimeClassic);
-        if (!creation.LoadGame("savegame/" + _input.Name + ".sav"))
+        if (!creation.LoadGame("saves/" + _input.Name + ".sav"))
             app.SceneManager.PreviousScene();
 
         app.SceneManager.UnblockBlendIn();
     }
 
-    private bool CanDelete => FileSystem.ExistsFile("savegame/" + _input.Name + ".sav");
+    private bool CanDelete => FileSystem.ExistsFile("saves/" + _input.Name + ".sav");
     void OnDelete()
     {
         if (!CanDelete)
             return;
 
-        FileSystem.RemoveFile("savegame/" + _input.Name + ".sav");
+        FileSystem.RemoveFile("saves/" + _input.Name + ".sav");
         RefreshSaveGames();
     }
 }
