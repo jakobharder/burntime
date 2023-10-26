@@ -1,6 +1,6 @@
 ﻿# Burntime Changelog
 
-## [Unreleased]
+## 0.7 - Options and Trader (2023-10-26)
 
 ### Changes
 
@@ -18,6 +18,7 @@
   - Inventory UIs
 - Start game with language selection
 - Added Amiga version hit, barf and die sounds
+- Save user settings
 
 ### Fixes
 
