@@ -150,6 +150,7 @@ namespace Burntime.MonoGame
                 {
                     Resolution.Native = new Platform.Vector2(GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
                         GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height) / 2;
+                    //Resolution.Native = new Platform.Vector2(2560, 1440);
                 }
                 else
                 {
@@ -346,8 +347,10 @@ namespace Burntime.MonoGame
 
         protected override void OnExiting(object sender, EventArgs args)
         {
-            Music.StopThread();
             base.OnExiting(sender, args);
+
+            Music.StopThread();
+            _burntimeApp.Close();
         }
 
         void IEngine.ExitApplication()

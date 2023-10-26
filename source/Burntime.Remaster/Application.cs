@@ -66,7 +66,8 @@ namespace Burntime.Remaster
             Engine.Music.Enabled = (!DisableMusic) & MusicPlayback;
 
             MouseImage = ResourceManager.GetImage("munt.raw");
-            SceneManager.SetScene("LanguageScene");
+
+            SceneManager.SetScene(string.IsNullOrEmpty(FileSystem.LocalizationCode) ? "LanguageScene" : "IntroScene");
         }
 
         protected override void OnRun()
@@ -79,33 +80,27 @@ namespace Burntime.Remaster
             Settings = new ConfigFile();
             Settings.Open("settings.txt");
 
-            // legacy clean up
-            _ = FileSystem.RemoveFile("user:settings.txt");
-
-            // set language code
-            FileSystem.LocalizationCode = Settings["system"].GetString("language");
-            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            ResourceManager.Encoding = Encoding.GetEncoding(852); // DOS central europe
-
             // set user folder to game specific location
             FileSystem.SetUserFolder("Burntime");
 
-            // reload settings
-#warning TODO settings
-            Settings.Open("settings.txt");
+            // read user settings
+            UserSettings = new ConfigFile();
+            UserSettings.Open("user.txt");
+            FileSystem.LocalizationCode = UserSettings[""].GetString("language");
+            Engine.IsFullscreen = UserSettings[""].GetBool("fullscreen", false);
+            MusicPlayback = UserSettings[""].GetBool("music", true);
+            base.IsNewGfx = UserSettings[""].GetBool("newgfx", true);
+
+            // set language code
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            ResourceManager.Encoding = Encoding.GetEncoding(852); // DOS central europe
+
             // legacy clean up
             _ = FileSystem.RemoveFile("user:settings.txt");
             _ = FileSystem.VFS.RemoveFolder("user:deluxe");
             _ = FileSystem.VFS.MoveFolder("user:classic/savegame", "user:saves");
             _ = FileSystem.VFS.RemoveFolder("user:classic");
 
-            //Engine.Resolution.Native = new Vector2(512, 200);//Settings["system"].GetVector2("resolution");
-#warning TODO SlimDX/Mono full screen
-            //Engine.FullScreen = !Settings["system"].GetBool("windowmode");
-            //Engine.UseTextureFilter = Settings["system"].GetBool("filter");
-
-            // check music playback settings
-            MusicPlayback = Settings["system"].GetBool("music");
             // check if ogg files are available
             DisableMusic = !FileSystem.ExistsFile("01_MUS 01_HSC.ogg"); //  || System.IntPtr.Size != 4
 
@@ -140,8 +135,14 @@ namespace Burntime.Remaster
 
         protected override void OnClose()
         {
-            //Settings["system"].Set("music", MusicPlayback);
-            //Settings.Save("settings.txt");
+            // ensure section is created
+            UserSettings.GetSection("", true);
+
+            UserSettings[""].Set("music", MusicPlayback);
+            UserSettings[""].Set("fullscreen", Engine.IsFullscreen);
+            UserSettings[""].Set("newgfx", IsNewGfx);
+            UserSettings[""].Set("language", FileSystem.LocalizationCode);
+            UserSettings.Save("user.txt");
         }
 
         // internal use
@@ -152,7 +153,7 @@ namespace Burntime.Remaster
         public String ImageScene = null;
         public PickItemList PickItems = null;
         public ActionAfterImageScene ActionAfterImageScene = ActionAfterImageScene.None;
-        public bool MusicPlayback;
+        public bool MusicPlayback { get; set; }
         public bool DisableMusic;
         public int PreviousPlayerId = -1;
         public bool NewGui = false;

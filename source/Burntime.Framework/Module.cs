@@ -129,6 +129,8 @@ namespace Burntime.Framework
         public DeviceManager DeviceManager;
         public ConfigFile Settings;
 
+        public ConfigFile? UserSettings { get; protected set; }
+
         public WorldState GameState
         {
             get
