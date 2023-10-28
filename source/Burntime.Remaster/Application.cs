@@ -72,9 +72,6 @@ namespace Burntime.Remaster
 
         protected override void OnRun()
         {
-            FileSystem.AddPackage("music", "game/classic_music");
-            FileSystem.AddPackage("music_fix", "game/music_fix");
-
             // set user folder to "burntime/" to get systems settings.txt for language code
             FileSystem.SetUserFolder("Burntime");
 
@@ -101,6 +98,10 @@ namespace Burntime.Remaster
             _ = FileSystem.VFS.RemoveFolder("user:deluxe");
             _ = FileSystem.VFS.MoveFolder("user:classic/savegame", "user:saves");
             _ = FileSystem.VFS.RemoveFolder("user:classic");
+
+            FileSystem.AddPackage("music", "game/classic_music");
+            FileSystem.AddPackage("music_fix", "game/music_fix");
+            Engine.Music.LoadSonglist("songs_dos.txt");
 
             // check if ogg files are available
             DisableMusic = !FileSystem.ExistsFile("01_MUS 01_HSC.ogg"); //  || System.IntPtr.Size != 4

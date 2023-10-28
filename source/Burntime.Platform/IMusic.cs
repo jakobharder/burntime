@@ -9,4 +9,7 @@ public interface IMusic
     void Play(string song, bool loop = true);
     void PlayOnce(string sound);
     void Stop();
+
+    void LoadSonglist(string filePath);
+    ICollection<string> Songlist { get; }
 }

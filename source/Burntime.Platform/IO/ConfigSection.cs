@@ -171,6 +171,8 @@ public class ConfigSection
         return new string[0];
     }
 
+    public IEnumerable<KeyValuePair<string, string>> Values => values;
+
     public int GetInt(String key)
     {
         if (this == NullSection)

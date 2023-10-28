@@ -36,7 +36,7 @@ namespace Burntime.Remaster.Scenes
             : base(App)
         {
             Background = "info.pac";
-            Music = "13_MUS 13_HSC.ogg";
+            Music = "info";
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
 

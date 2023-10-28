@@ -1,4 +1,5 @@
 ﻿using Burntime.Platform;
+using Burntime.Platform.IO;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -6,36 +7,29 @@ namespace Burntime.MonoGame;
 
 public sealed class MusicPlayback : IMusic
 {
+    readonly List<string> _playlist = new();
+    readonly Dictionary<string, string> _songMapping = new();
+    public ICollection<string> Songlist => _songMapping.Keys;
+
     Music.LoopableSong? _music;
-    List<string> _playlist = new();
     bool _repeat = false;
     Thread? _musicThread;
-
-    bool stop;
+    bool _requestStop;
 
     public bool Enabled { get; set; }
 
     bool isMuted = true;
     public bool IsMuted
     {
-        get { return isMuted; }
-        set
-        {
-            isMuted = value;
-            Volume = _volume;
-        }
+        get => isMuted;
+        set { isMuted = value; Volume = _volume; }
     }
 
     float _volume = 0;
     public float Volume
     {
         get { if (_music == null) return 0; return _music.Volume; }
-        set
-        {
-            _volume = value;
-            if (_music != null)
-                _music.Volume = isMuted ? 0 : value;
-        }
+        set { _volume = value; if (_music != null) _music.Volume = isMuted ? 0 : value; }
     }
 
     public void ClearPlayList()
@@ -50,6 +44,22 @@ public sealed class MusicPlayback : IMusic
             return;
 
         _playlist.Add(fileName);
+    }
+
+    public void LoadSonglist(string fileName)
+    {
+        _songMapping.Clear();
+
+        var songlist = new ConfigFile();
+        if (!songlist.Open(fileName))
+            return;
+
+        var section = songlist.GetSection("");
+        if (section is null)
+            return;
+
+        foreach (var value in section.Values)
+            _songMapping[value.Key] = value.Value;
     }
 
     public void Play(string fileName, bool loop = true)
@@ -82,7 +92,7 @@ public sealed class MusicPlayback : IMusic
 
     public void RunThread()
     {
-        stop = false;
+        _requestStop = false;
         _musicThread = new Thread(new ThreadStart(MusicThread));
         _musicThread.Start();
     }
@@ -93,7 +103,7 @@ public sealed class MusicPlayback : IMusic
 
         if (_musicThread != null)
         {
-            stop = true;
+            _requestStop = true;
             _musicThread.Join();
             _musicThread = null;
         }
@@ -109,14 +119,20 @@ public sealed class MusicPlayback : IMusic
         if (_repeat)
             _playlist.Add(next);
 
-        return next;
+        if (FileSystem.ExistsFile(next))
+            return next;
+
+        if (_songMapping.TryGetValue(next, out string? songFilePath))
+            return songFilePath;
+
+        return null;
     }
 
     private void MusicThread()
     {
         int sleep = 0;
 
-        while (!stop)
+        while (!_requestStop)
         {
             if (sleep > 0)
                 Thread.Sleep(sleep);

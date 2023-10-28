@@ -38,7 +38,7 @@ public class OptionsScene : Scene
         : base(App)
     {
         Background = "opti.pac";
-        Music = "16_MUS 16_HSC.ogg";
+        Music = "radio";
         Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
         disabled = new GuiFont(BurntimeClassic.FontName, new PixelColor(100, 100, 100));

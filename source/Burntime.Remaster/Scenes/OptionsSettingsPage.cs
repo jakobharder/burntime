@@ -99,7 +99,7 @@ internal class OptionsSettingsPage : Container
         {
             // start music
             app.Engine.Music.Enabled = true;
-            app.Engine.Music.Play("16_MUS 16_HSC.ogg");
+            app.Engine.Music.Play("radio");
         }
         else
         {

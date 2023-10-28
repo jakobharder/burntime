@@ -25,7 +25,7 @@ class TraderScene : Scene
         : base(App)
     {
         Background = "hint1.pac";
-        Music = "10_MUS 10_HSC.ogg";
+        Music = "trader";
 
         inventory = new InventoryWindow(App, InventorySide.Left);
         inventory.Position = new Vector2(2, 5);

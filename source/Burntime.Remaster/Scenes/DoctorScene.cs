@@ -22,9 +22,9 @@ namespace Burntime.Remaster.Scenes
             : base(app)
         {
             Background = "arzt.pac";
-            Music = "03_MUS 03_HSC.ogg";
+            Music = "doctor";
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
-            
+
             Image ani = new Image(app);
             ani.Position = new Vector2(211, 65);
             ani.Background = "arzt.ani??p";

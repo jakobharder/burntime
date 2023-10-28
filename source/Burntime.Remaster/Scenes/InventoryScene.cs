@@ -134,7 +134,7 @@ namespace Burntime.Remaster.Scenes
 
             if (classic.InventoryRoom != null)
             {
-                Music = classic.InventoryRoom.IsWaterSource ? "22_MUS 22_HSC.ogg" : "04_MUS 04_HSC.ogg";
+                Music = classic.InventoryRoom.IsWaterSource ? "water" : "room";
 
                 grid = new ItemGridWindow(app);
                 grid.LockPositions = true;
@@ -158,7 +158,7 @@ namespace Burntime.Remaster.Scenes
             }
             else if (classic.PickItems != null)
             {
-                Music = "04_MUS 04_HSC.ogg";
+                Music = "room";
                 
                 grid = new ItemGridWindow(app);
                 grid.Position = new Vector2(170, 10);
@@ -172,7 +172,7 @@ namespace Burntime.Remaster.Scenes
                 grid.Add(classic.PickItems);
             }
             else
-                Music = "04_MUS 04_HSC.ogg";
+                Music = "room";
         }
 
         void OnButtonExit()

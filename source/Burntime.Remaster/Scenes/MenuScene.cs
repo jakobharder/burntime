@@ -31,7 +31,7 @@ namespace Burntime.Remaster
             : base(App)
         {
             Background = "sta.pac";
-            Music = "15_MUS 15_HSC.ogg";
+            Music = "start";
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
             copyright = new GuiFont(BurntimeClassic.FontName, new PixelColor(164, 164, 164)) { Borders = TextBorders.Screen };

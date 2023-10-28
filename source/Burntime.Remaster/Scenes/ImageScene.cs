@@ -36,7 +36,7 @@ namespace Burntime.Remaster.Scenes
 
             if (game.ImageScene == "film_06.pac")
             {
-                Music = "19_MUS 19_HSC.ogg";
+                Music = "pub";
 
                 ani1 = new Image(app);
                 ani1.Background = "film_06.ani?0-5";
@@ -92,19 +92,19 @@ namespace Burntime.Remaster.Scenes
             }
             else if (game.ImageScene == "film_02.pac")
             {
-                Music = "07_MUS 07_HSC.ogg";
+                Music = "ruin";
             }
             else if (game.ImageScene == "film_03.pac")
             {
-                Music = "09_MUS 09_HSC.ogg";
+                Music = "death";
             }
             else if (game.ImageScene == "film_04.pac")
             {
-                Music = "05_MUS 05_HSC.ogg";
+                Music = "building";
             }
             else if (game.ImageScene == "film_09.pac")
             {
-                Music = "02_MUS 02_HSC.ogg";
+                Music = "death";
             }
         }
 

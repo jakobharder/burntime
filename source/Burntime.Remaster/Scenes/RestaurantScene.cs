@@ -23,7 +23,7 @@ namespace Burntime.Remaster.Scenes
         public RestaurantScene(Module app)
             : base(app)
         {
-            Music = "01_MUS 01_HSC.ogg";
+            Music = "diner";
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
             BurntimeClassic classic = app as BurntimeClassic;

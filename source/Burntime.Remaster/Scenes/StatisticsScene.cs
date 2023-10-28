@@ -38,7 +38,7 @@ namespace Burntime.Remaster.Scenes
         {
             //Background = "blz.pac";
             Size = new Vector2(320, 200);
-            Music = "17_MUS 17_HSC.ogg";
+            Music = "score";
             Position = (app.Engine.Resolution.Game - Size) / 2;
             font = new GuiFont(BurntimeClassic.FontName, new PixelColor(212, 212, 212), new PixelColor(92, 92, 96));
             CaptureAllMouseClicks = true;

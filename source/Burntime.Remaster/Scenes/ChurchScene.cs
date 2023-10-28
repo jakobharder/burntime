@@ -16,7 +16,7 @@ namespace Burntime.Remaster.Scenes
         public ChurchScene(Module app)
             : base(app)
         {
-            Music = "song-church-intro.ogg;song-church-loop.ogg";
+            Music = "church";
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
             Image ani = new Image(app);

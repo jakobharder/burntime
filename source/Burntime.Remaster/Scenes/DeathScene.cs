@@ -19,7 +19,7 @@ namespace Burntime.Remaster.Scenes
             : base(app)
         {
             Background = "film_00.pac";
-            Music = "09_MUS 09_HSC.ogg";
+            Music = "death";
             CaptureAllMouseClicks = true;
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
