@@ -73,6 +73,7 @@ namespace Burntime.Remaster
         protected override void OnRun()
         {
             FileSystem.AddPackage("music", "game/classic_music");
+            FileSystem.AddPackage("music_fix", "game/music_fix");
 
             // set user folder to "burntime/" to get systems settings.txt for language code
             FileSystem.SetUserFolder("Burntime");

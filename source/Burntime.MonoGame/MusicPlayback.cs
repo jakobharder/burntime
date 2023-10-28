@@ -1,181 +1,160 @@
 ﻿using Burntime.Platform;
-using Microsoft.Xna.Framework.Audio;
-using Microsoft.Xna.Framework.Media;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading;
 
-namespace Burntime.MonoGame
+namespace Burntime.MonoGame;
+
+public sealed class MusicPlayback : IMusic
 {
-    public sealed class MusicPlayback : IMusic
+    Music.LoopableSong? _music;
+    List<string> _playlist = new();
+    bool _repeat = false;
+    Thread? _musicThread;
+
+    bool stop;
+
+    public bool Enabled { get; set; }
+
+    bool isMuted = true;
+    public bool IsMuted
     {
-        SoundEffect _effect;
-        SoundEffectInstance _music;
-        List<string> playList = new List<string>();
-        Thread musicThread;
-
-        bool stop;
-        bool enabled;
-        bool playOnce;
-
-        public bool Enabled
+        get { return isMuted; }
+        set
         {
-            get { return enabled; }
-            set { enabled = value; }
+            isMuted = value;
+            Volume = _volume;
         }
+    }
 
-        bool isMuted = true;
-        public bool IsMuted
+    float _volume = 0;
+    public float Volume
+    {
+        get { if (_music == null) return 0; return _music.Volume; }
+        set
         {
-            get { return isMuted; }
-            set
+            _volume = value;
+            if (_music != null)
+                _music.Volume = isMuted ? 0 : value;
+        }
+    }
+
+    public void ClearPlayList()
+    {
+        _playlist.Clear();
+        Stop();
+    }
+
+    public void AddPlayList(string fileName)
+    {
+        if (!Enabled)
+            return;
+
+        _playlist.Add(fileName);
+    }
+
+    public void Play(string fileName, bool loop = true)
+    {
+        if (!Enabled)
+            return;
+
+        _playlist.Clear();
+        Stop();
+        _repeat = loop;
+        _playlist.Add(fileName);
+    }
+
+    public void PlayOnce(string fileName) => Play(fileName, false);
+
+    public void Stop()
+    {
+        _playlist.Clear();
+
+        lock (this)
+        {
+            if (_music != null)
             {
-                isMuted = value;
-                Volume = _volume;
+                _music.Stop();
+                _music.Dispose();
+                _music = null;
             }
         }
+    }
 
-        float _volume = 0;
-        public float Volume
+    public void RunThread()
+    {
+        stop = false;
+        _musicThread = new Thread(new ThreadStart(MusicThread));
+        _musicThread.Start();
+    }
+
+    public void StopThread()
+    {
+        Stop();
+
+        if (_musicThread != null)
         {
-            get { if (_music == null) return 0; return _music.Volume; }
-            set
-            {
-                _volume = value;
-                if (_music != null)
-                    _music.Volume = isMuted ? 0 : value;
-            }
+            stop = true;
+            _musicThread.Join();
+            _musicThread = null;
         }
+    }
 
-        public void ClearPlayList()
+    private string? GetNextTitle()
+    {
+        if (_playlist.Count == 0)
+            return null;
+
+        var next = _playlist[0];
+        _playlist.RemoveAt(0);
+        if (_repeat)
+            _playlist.Add(next);
+
+        return next;
+    }
+
+    private void MusicThread()
+    {
+        int sleep = 0;
+
+        while (!stop)
         {
-            playList.Clear();
-            Stop();
-        }
-
-        public void AddPlayList(string fileName)
-        {
-            if (!enabled)
-                return;
-
-            playList.Add(fileName);
-        }
-
-        public void Play(string fileName)
-        {
-            if (!enabled)
-                return;
-
-            playOnce = false;
-            playList.Clear();
-            Stop();
-            playList.Add(fileName);
-        }
-
-        public void PlayOnce(string fileName)
-        {
-            if (!enabled)
-                return;
-
-            playList.Clear();
-            Stop();
-            playList.Add(fileName);
-            playOnce = true;
-        }
-
-        public void Stop()
-        {
-            playList.Clear();
+            if (sleep > 0)
+                Thread.Sleep(sleep);
 
             lock (this)
             {
-                if (_music != null)
+                if (_music == null)
                 {
-                    _music.Stop();
-                    _music.Dispose();
-                    _music = null;
+                    sleep = 200;
+
+                    string? next = GetNextTitle();
+                    if (next == null)
+                        continue;
+
+                    _music = Music.LoopableSong.FromFileName(next);
+                    if (_music is null)
+                        continue;
+
+                    _music.Volume = _volume;
+                    _music.Play();
                 }
-            }
-        }
-
-        public void RunThread()
-        {
-            stop = false;
-            musicThread = new Thread(new ThreadStart(MusicThread));
-            musicThread.Start();
-        }
-
-        public void StopThread()
-        {
-            Stop();
-
-            if (musicThread != null)
-            {
-                stop = true;
-                musicThread.Join();
-                musicThread = null;
-            }
-        }
-
-        private string GetNextTitle()
-        {
-            if (playList.Count == 0)
-                return null;
-
-            string next = playList[0];
-            playList.RemoveAt(0);
-            if (!playOnce)
-                playList.Add(next);
-
-            return next;
-        }
-
-        private void MusicThread()
-        {
-            int sleep = 0;
-
-            while (!stop)
-            {
-                if (sleep > 0)
-                    Thread.Sleep(sleep);
-
-                lock (this)
+                else
                 {
-                    if (_music == null)
+                    if (!_music.IsPlaying)
                     {
-                        sleep = 200;
-
-                        string next = GetNextTitle();
-                        if (next == null)
-                            continue;
-
-                        _effect = OggSoundEffect.FromStream(Burntime.Platform.IO.FileSystem.GetFile(next).Stream);
-                        _music = _effect.CreateInstance();
-                        _music.Volume = _volume;
-                        _music.Play();
+                        _music.Dispose();
+                        _music = null;
+                        sleep = 0;
                     }
                     else
-                    {
-                        if (_music.State == SoundState.Stopped)
-                        {
-                            _music.Dispose();
-                            _effect.Dispose();
-                            _music = null;
-                            sleep = 0;
-                        }
-                        else
-                            sleep = 50;
-                    }
+                        sleep = 50;
                 }
             }
+        }
 
-            lock (this)
-            {
-                _music?.Dispose();
-                _effect?.Dispose();
-            }
-
-            //SlimDXOggStreamingSample.DirectSoundWrapper.Device.Dispose();
+        lock (this)
+        {
+            _music?.Dispose();
         }
     }
 }

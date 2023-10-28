@@ -18,6 +18,7 @@
     <Authors>Jakob Harder</Authors>
     <Copyright>Jakob Harder</Copyright>
     <Title>Burntime</Title>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <!-- use git describe to set assembly version -->

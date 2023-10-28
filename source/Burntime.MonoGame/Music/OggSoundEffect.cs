@@ -22,6 +22,18 @@ public static class OggSoundEffect
         }
     }
 
+    public static byte[] GetBuffer(this VorbisReader reader)
+    {
+        var sampleCount = (int)reader.TotalSamples;
+        var soundData = new float[sampleCount * reader.Channels];
+        int readCount = reader.ReadSamples(soundData, 0, sampleCount * reader.Channels);
+
+        var byteData = new byte[sampleCount * 2 * reader.Channels];
+        CastBuffer(soundData, byteData, sampleCount * reader.Channels);
+
+        return byteData;
+    }
+
     static void CastBuffer(float[] inBuffer, byte[] outBuffer, int length)
     {
         for (int i = 0; i < length; i++)

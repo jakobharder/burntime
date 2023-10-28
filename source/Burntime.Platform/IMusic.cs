@@ -6,7 +6,7 @@ public interface IMusic
     bool IsMuted { get; set; }
     float Volume { get; set; }
 
-    void Play(string song);
+    void Play(string song, bool loop = true);
     void PlayOnce(string sound);
     void Stop();
 }
