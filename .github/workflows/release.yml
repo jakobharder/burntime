@@ -16,14 +16,22 @@ jobs:
     - name: Build
       run: (cd source && dotnet publish Burntime.MonoGame -c Release /p:DebugSymbols=false /p:PublishReadyToRun=false /p:TieredCompilation=false --self-contained /p:PublishSingleFile=true && cd ..)
 
+#    - name: Build Tools
+#      run: |
+#        cd source
+#        dotnet publish PakConverter -c Release /p:DebugSymbols=false /p:PublishReadyToRun=false /p:TieredCompilation=false --self-contained /p:PublishSingleFile=true
+#        cd ..
+
     - name: Package
       run: |
         rm ./bin/Release/win-x64/publish/*.pdb
-        tar -caf burntime.zip -C ./bin/Release/win-x64/publish *
+        rm ./bin/tools/Release/win-x64/publish/*.pdb
+        tar -caf burntime-${{ github.ref_name }}.zip -C ./bin/Release/win-x64/publish *
+#        tar -caf burntime-tools.zip -C ./bin/tools/Release/win-x64/publish *
 
     - name: Release
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       with:
         draft: true
-        files: ./burntime.zip
+        files: ./burntime*.zip

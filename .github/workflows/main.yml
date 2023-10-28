@@ -17,10 +17,10 @@ jobs:
       run: (cd source && dotnet build Burntime.MonoGame -c Release && cd ..)
 
     - name: Package
-      run: tar -caf burntime-${{ github.ref_name }}.zip -C ./bin/Release *
+      run: tar -caf burntime.zip -C ./bin/Release *
 
     - name: Upload Build Artifact
       uses: actions/upload-artifact@v2.2.4
       with:
         name: burntime
-        path: burntime-${{ github.ref_name }}.zip
+        path: burntime.zip
