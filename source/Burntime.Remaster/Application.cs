@@ -105,7 +105,7 @@ namespace Burntime.Remaster
             Engine.Music.LoadSonglist("songs_dos.txt");
 
             // check if ogg files are available
-            DisableMusic = !FileSystem.ExistsFile("01_MUS 01_HSC.ogg"); //  || System.IntPtr.Size != 4
+            DisableMusic = !FileSystem.ExistsFile("songs_dos.txt"); //  || System.IntPtr.Size != 4
 
             bool useHighResFont = Settings["system"].GetBool("highres_font");
 

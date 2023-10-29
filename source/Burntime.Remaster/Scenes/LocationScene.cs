@@ -285,7 +285,7 @@ namespace Burntime.Remaster
                 BurntimeClassic.Instance.PreviousPlayerId != game.CurrentPlayerIndex)
             {
                 // play player changed sound
-                BurntimeClassic.Instance.Engine.Music.PlayOnce("06_MUS 06_HSC.ogg");
+                BurntimeClassic.Instance.Engine.Music.PlayOnce("sounds/change.ogg");
             }
             BurntimeClassic.Instance.PreviousPlayerId = game.CurrentPlayerIndex;
 
@@ -450,7 +450,7 @@ namespace Burntime.Remaster
                 charOverlay.SelectedCharacter.JoinCamp();
 
                 view.Location.Player = view.Player;
-                BurntimeClassic.Instance.Engine.Music.PlayOnce("08_MUS 08_HSC.ogg");
+                BurntimeClassic.Instance.Engine.Music.PlayOnce("sounds/camp.ogg");
             }
         }
 
@@ -658,6 +658,11 @@ namespace Burntime.Remaster
                 sprite.Animation.Speed = 20;
                 view.Particles.Add(new StaticAnimationParticle(sprite, eventArgs.Attacker.Position));
                 view.Particles.Add(new StaticAnimationParticle(sprite.Clone(), eventArgs.Defender.Position));
+
+                // play sounds only for human player interactions
+                if (eventArgs.Attacker.Player.Type != PlayerType.Human &&
+                    eventArgs.Defender.Player.Type != PlayerType.Human)
+                    return;
 
                 if ((eventArgs.Attacker.IsDead && eventArgs.Attacker.IsHuman)
                     || (eventArgs.Defender.IsDead && eventArgs.Defender.IsHuman))

@@ -53,7 +53,7 @@ namespace Burntime.Remaster.Scenes
             }
             else if (game.ImageScene == "film_05.pac")
             {
-                Music = "21_MUS 21_HSC.ogg";
+                Music = "sounds/trader.ogg";
 
                 ani1 = new Image(app);
                 ani1.Background = "film_05.ani?0-17?p";
@@ -81,7 +81,7 @@ namespace Burntime.Remaster.Scenes
             }
             else if (game.ImageScene == "film_10.pac")
             {
-                Music = "21_MUS 21_HSC.ogg";
+                Music = "sounds/trader.ogg";
 
                 ani1 = new Image(app);
                 ani1.Background = "film_10.ani";
