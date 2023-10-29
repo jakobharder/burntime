@@ -26,7 +26,7 @@ namespace Burntime.Remaster.Logic
         int counter = 0;
         StateLinkList<TraderItemRefreshItem> itemRefreshs;
         int itemRefreshRange = 0;
-        int itemCount = 10;
+        int _maxStockItemCount = 7;
         protected int traderId;
 
         public Location HomeArea
@@ -117,8 +117,9 @@ namespace Burntime.Remaster.Logic
 
         protected virtual void RefreshItems()
         {
-            int remove = rnd.Next(3);
-            int add = rnd.Next(3);
+            int remove = System.Math.Min(Items.Count, rnd.Next(2, 3));
+            int maxAdd = System.Math.Max(0, _maxStockItemCount - Items.Count + remove);
+            int add = rnd.Next(System.Math.Min(3, maxAdd), maxAdd);
 
             for (int i = 0; i < remove && Items.Count > 0; i++)
             {
@@ -128,7 +129,7 @@ namespace Burntime.Remaster.Logic
                 Items.Remove(Items[item]);
             }
 
-            for (int i = 0; i < add && Items.Count < itemCount; i++)
+            for (int i = 0; i < add && Items.Count < _maxStockItemCount; i++)
             {
                 ItemType type = GetNextItem();
                 if (type == null)

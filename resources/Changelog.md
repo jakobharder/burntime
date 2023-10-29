@@ -4,9 +4,10 @@
 
 ### Changes
 
-- Improved trader scene
+- Improved trader
   - Show both trader and player inventory on wide screens
-- Reworked options scene
+- Reworked options
+  - Switch to Amiga music in options
   - Change language in options
   - Toggle fullscreen in options
   - Show fullscreen and remaster graphics shortcuts
@@ -19,10 +20,12 @@
 - Start game with language selection
 - Added Amiga version hit, barf and die sounds
 - Save user settings
+- Scroll maps with right mouse button
 
 ### Fixes
 
 - Fixed draw order of characters on map
+- Fixed music in monastery
 - Ensure 4:3 screen portion is always on screen, independent of window size
 
 ## 0.6 - Music Support (2023-10-21)
