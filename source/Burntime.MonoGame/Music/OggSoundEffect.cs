@@ -9,24 +9,23 @@ public static class OggSoundEffect
 {
     public static SoundEffect FromStream(Stream fileStream)
     {
-        using (var reader = new VorbisReader(fileStream, false))
-        {
-            var sampleCount = (int)reader.TotalSamples;
-            var soundData = new float[sampleCount * reader.Channels];
-            int readCount = reader.ReadSamples(soundData, 0, sampleCount * reader.Channels);
+        using var reader = new VorbisReader(fileStream, false);
 
-            var byteData = new byte[sampleCount * 2 * reader.Channels];
-            CastBuffer(soundData, byteData, sampleCount * reader.Channels);
+        var sampleCount = (int)reader.TotalSamples;
+        var soundData = new float[sampleCount * reader.Channels];
+        _ = reader.ReadSamples(soundData, 0, sampleCount * reader.Channels);
 
-            return new SoundEffect(byteData, reader.SampleRate, reader.Channels == 2 ? AudioChannels.Stereo : AudioChannels.Mono);
-        }
+        var byteData = new byte[sampleCount * 2 * reader.Channels];
+        CastBuffer(soundData, byteData, sampleCount * reader.Channels);
+
+        return new SoundEffect(byteData, reader.SampleRate, reader.Channels == 2 ? AudioChannels.Stereo : AudioChannels.Mono);
     }
 
     public static byte[] GetBuffer(this VorbisReader reader)
     {
         var sampleCount = (int)reader.TotalSamples;
         var soundData = new float[sampleCount * reader.Channels];
-        int readCount = reader.ReadSamples(soundData, 0, sampleCount * reader.Channels);
+        _ = reader.ReadSamples(soundData, 0, sampleCount * reader.Channels);
 
         var byteData = new byte[sampleCount * 2 * reader.Channels];
         CastBuffer(soundData, byteData, sampleCount * reader.Channels);

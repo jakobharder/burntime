@@ -22,6 +22,13 @@ internal class OptionsJukeboxPage : Container
         CreateSongButtons();
     }
 
+    static string Capitalize(string str)
+    {
+        var letters = str.ToCharArray();
+        letters[0] = char.ToUpper(str[0]);
+        return new string(letters);
+    }
+
     void CreateSongButtons()
     {
         int counter = 0;
@@ -31,13 +38,13 @@ internal class OptionsJukeboxPage : Container
             int y = counter % 8;
             int x = (counter - counter % 8) / 8;
 
-            x = 38 + x * 42;
+            x = 38 + x * 44;
             y = 58 + y * 10;
 
-            Windows += new Button(app, () => PlaySong(song.ToLower()))
+            Windows += new Button(app, () => PlaySong(song))
             {
                 Position = new Vector2(x, y),
-                Text = song,
+                Text = Capitalize(song),
                 Font = _fonts.Green,
                 HoverFont = _fonts.Orange,
                 IsTextOnly = true

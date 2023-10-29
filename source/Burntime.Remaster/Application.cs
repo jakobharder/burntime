@@ -101,6 +101,7 @@ namespace Burntime.Remaster
 
             FileSystem.AddPackage("music", "game/classic_music");
             FileSystem.AddPackage("music_fix", "game/music_fix");
+            FileSystem.AddPackage("amiga", "game/amiga");
             Engine.Music.LoadSonglist("songs_dos.txt");
 
             // check if ogg files are available
@@ -135,6 +136,22 @@ namespace Burntime.Remaster
             }
         }
 
+        protected override void OnProcess(float elapsed)
+        {
+            if (MusicMode != MusicModes.Off)
+            {
+                Key[] keys = DeviceManager.Keyboard.Keys;
+                foreach (Key key in keys)
+                {
+                    if (key.IsVirtual && key.VirtualKey == SystemKey.F9)
+                    {
+                        MusicMode = MusicMode == MusicModes.Amiga ? MusicModes.Remaster : MusicModes.Amiga;
+                        break;
+                    }
+                }
+            }
+        }
+
         protected override void OnClose()
         {
             // ensure section is created
@@ -164,6 +181,34 @@ namespace Burntime.Remaster
         {
             get => base.IsNewGfx;
             set { base.IsNewGfx = value; RefreshNewGfx(); }
+        }
+
+        public enum MusicModes
+        {
+            Off = 0,
+            Amiga = 1,
+            Dos = 2,
+            Remaster = 3
+        }
+
+        private MusicModes _musicMode = MusicModes.Remaster;
+        public MusicModes MusicMode
+        {
+            get => _musicMode;
+            set
+            {
+                _musicMode = value;
+                if (value == MusicModes.Off)
+                {
+                    MusicPlayback = false;
+                    Engine.Music.Stop();
+                }
+                else
+                {
+                    MusicPlayback = true;
+                    Engine.Music.LoadSonglist(value == MusicModes.Amiga ? "songs_amiga.txt" : "songs_dos.txt");
+                }
+            }
         }
 
         public override string Language

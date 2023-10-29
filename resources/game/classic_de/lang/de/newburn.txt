@@ -23,14 +23,14 @@ Spielst„nde
 Optionen
 im Spiel mit F11 wechseln
 im Spiel mit F8 wechseln
-
+im Spiel mit F9 wechseln
 Sprache DEUTSCH
 Aufgeben
 Neues Spiel starten
 Jukebox
-
-
-
+Musik AMIGA
+Musik DOS
+Musik REMASTER
 
 
 

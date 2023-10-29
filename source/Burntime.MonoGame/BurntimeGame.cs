@@ -256,7 +256,7 @@ namespace Burntime.MonoGame
         private void Window_TextInput(object sender, TextInputEventArgs e)
         {
             if (e.Key == Keys.Escape || e.Key == Keys.Pause || e.Key == Keys.Enter
-                || e.Key == Keys.F1 || e.Key == Keys.F2 || e.Key == Keys.F3 || e.Key == Keys.F4 || e.Key == Keys.F8)
+                || e.Key == Keys.F1 || e.Key == Keys.F2 || e.Key == Keys.F3 || e.Key == Keys.F4 || e.Key == Keys.F8 || e.Key == Keys.F9)
             {
                 // handled in Update
             }
@@ -290,7 +290,7 @@ namespace Burntime.MonoGame
                     }
 
                     if (key == Keys.Escape || key == Keys.Pause || key == Keys.Enter
-                        || key == Keys.F1 || key == Keys.F2 || key == Keys.F3 || key == Keys.F4 || key == Keys.F8)
+                        || key == Keys.F1 || key == Keys.F2 || key == Keys.F3 || key == Keys.F4 || key == Keys.F8 || key == Keys.F9)
                     {
                         DeviceManager?.VKeyPress(key switch
                         {
@@ -302,6 +302,7 @@ namespace Burntime.MonoGame
                             Keys.F3 => SystemKey.F3,
                             Keys.F4 => SystemKey.F4,
                             Keys.F8 => SystemKey.F8,
+                            Keys.F9 => SystemKey.F9,
                             _ => SystemKey.Other
                         });
                     }

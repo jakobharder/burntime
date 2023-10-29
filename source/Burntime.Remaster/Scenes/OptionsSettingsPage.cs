@@ -25,7 +25,7 @@ internal class OptionsSettingsPage : Container
             Font = _fonts.Green,
             HoverFont = _fonts.Orange,
             DisabledFont = _fonts.Disabled,
-            Position = new Vector2(38, 58),
+            Position = new Vector2(38, 68),
             IsTextOnly = true,
             IsEnabled = !BurntimeClassic.Instance.DisableMusic
         };
@@ -34,7 +34,7 @@ internal class OptionsSettingsPage : Container
             Font = _fonts.Green,
             HoverFont = _fonts.Orange,
             DisabledFont = _fonts.Disabled,
-            Position = new Vector2(38, 68),
+            Position = new Vector2(38, 58),
             IsTextOnly = true
         };
         Windows += _fullscreenToggle = new Button(app, () => app.Engine.IsFullscreen = !app.Engine.IsFullscreen)
@@ -67,7 +67,13 @@ internal class OptionsSettingsPage : Container
     {
         // some options can be triggered via key shortcut
         _newgfxToggle.Text = app.IsNewGfx ? "@newburn?17" : "@newburn?18";
-        _musicToggle.Text = BurntimeClassic.Instance.MusicPlayback ? "@burn?389" : "@burn?424";
+        _musicToggle.Text = BurntimeClassic.Instance.MusicMode switch
+        {
+            BurntimeClassic.MusicModes.Amiga => "@newburn?30",
+            BurntimeClassic.MusicModes.Dos => "@newburn?31",
+            BurntimeClassic.MusicModes.Remaster => "@newburn?32",
+            _ => "@burn?424",
+        };
         _fullscreenToggle.Text = app.Engine.IsFullscreen ? "@newburn?19" : "@newburn?20";
 
         if (_fullscreenToggle.IsHover)
@@ -90,22 +96,26 @@ internal class OptionsSettingsPage : Container
         base.OnUpdate(elapsed);
     }
 
+    string? _lastPlaying;
     void OnMusicToggle()
     {
         if (BurntimeClassic.Instance.DisableMusic) return;
 
-        BurntimeClassic.Instance.MusicPlayback = !BurntimeClassic.Instance.MusicPlayback;
-        if (BurntimeClassic.Instance.MusicPlayback)
+        var mode = BurntimeClassic.Instance.MusicMode;
+        if (mode == BurntimeClassic.MusicModes.Off)
         {
-            // start music
-            app.Engine.Music.Enabled = true;
-            app.Engine.Music.Play("radio");
+            mode = BurntimeClassic.MusicModes.Remaster;
+            if (_lastPlaying is not null)
+                app.Engine.Music.Play(_lastPlaying);
         }
-        else
+        else if (mode == BurntimeClassic.MusicModes.Remaster)
+            mode = BurntimeClassic.MusicModes.Amiga;
+        else if (mode == BurntimeClassic.MusicModes.Amiga)
         {
-            // stop music
-            app.Engine.Music.Enabled = false;
-            app.Engine.Music.Stop();
+            _lastPlaying = app.Engine.Music.Playing;
+            mode = BurntimeClassic.MusicModes.Off;
         }
+
+        BurntimeClassic.Instance.MusicMode = mode;
     }
 }

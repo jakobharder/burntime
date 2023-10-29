@@ -2,6 +2,7 @@
 using Burntime.Platform.IO;
 using System.Collections.Generic;
 using System.Threading;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Burntime.MonoGame;
 
@@ -17,6 +18,7 @@ public sealed class MusicPlayback : IMusic
     bool _requestStop;
 
     public bool Enabled { get; set; }
+    public string? Playing { get; private set; }
 
     bool isMuted = true;
     public bool IsMuted
@@ -60,6 +62,12 @@ public sealed class MusicPlayback : IMusic
 
         foreach (var value in section.Values)
             _songMapping[value.Key] = value.Value;
+
+        if (_music is not null && Playing is not null)
+        {
+            _playlist.Insert(0, Playing);
+            _music.Stop();
+        }
     }
 
     public void Play(string fileName, bool loop = true)
@@ -119,6 +127,8 @@ public sealed class MusicPlayback : IMusic
         if (_repeat)
             _playlist.Add(next);
 
+        Playing = next;
+
         if (FileSystem.ExistsFile(next))
             return next;
 
@@ -137,6 +147,7 @@ public sealed class MusicPlayback : IMusic
             if (sleep > 0)
                 Thread.Sleep(sleep);
 
+#warning THREADING lock playlist
             lock (this)
             {
                 if (_music == null)
@@ -147,7 +158,7 @@ public sealed class MusicPlayback : IMusic
                     if (next == null)
                         continue;
 
-                    _music = Music.LoopableSong.FromFileName(next);
+                    _music = Music.LoopableSong.FromFileName(next, _repeat);
                     if (_music is null)
                         continue;
 
@@ -158,6 +169,7 @@ public sealed class MusicPlayback : IMusic
                 {
                     if (!_music.IsPlaying)
                     {
+                        Playing = null;
                         _music.Dispose();
                         _music = null;
                         sleep = 0;

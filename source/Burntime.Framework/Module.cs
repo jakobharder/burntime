@@ -83,6 +83,7 @@ namespace Burntime.Framework
         protected virtual void OnInitialize() { }
         protected virtual void OnRun() { }
         protected virtual void OnClose() { }
+        protected virtual void OnProcess(float elapsed) { }
 
         public virtual void AddProcessor(String Extension, ISpriteProcessor Processor)
         {
@@ -175,7 +176,7 @@ namespace Burntime.Framework
             }
         }
 
-        public void Process(float Elapsed)
+        public void Process(float elapsed)
         {
             if (!running)
             {
@@ -186,9 +187,10 @@ namespace Burntime.Framework
             else
             {
                 // process input
+                OnProcess(elapsed);
 
                 // process frame
-                SceneManager.Process(Elapsed);
+                SceneManager.Process(elapsed);
 
                 DeviceManager.Clear();
             }
