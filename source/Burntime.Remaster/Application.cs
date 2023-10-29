@@ -4,6 +4,8 @@ using Burntime.Platform;
 using Burntime.Platform.IO;
 using System;
 using System.Text;
+using Burntime.Remaster;
+using static Burntime.Remaster.BurntimeClassic;
 
 namespace Burntime.Remaster
 {
@@ -46,7 +48,7 @@ namespace Burntime.Remaster
         // Burntime's ratio is 8:5. We need to scale height by 1.2 (320x200 where screens today would be multiple of 320x240).
         // But to get a clean tile resolution of 32x38 use 1.1875
         //public override Vector2f RatioCorrection => new(1, 1.0f / 32.0f * 38.0f);
-        public override Vector2f RatioCorrection => new(1.0f/ 64.0f * 60.0f, 1.0f / 64.0f * 72.0f);
+        public override Vector2f RatioCorrection => new(1.0f / 64.0f * 60.0f, 1.0f / 64.0f * 72.0f);
 
         public override System.Drawing.Icon Icon
         {
@@ -63,7 +65,7 @@ namespace Burntime.Remaster
 
         public override void Start()
         {
-            Engine.Music.Enabled = (!DisableMusic) & MusicPlayback;
+            Engine.Music.Enabled = (!DisableMusic) && (MusicMode != MusicModes.Off);
 
             MouseImage = ResourceManager.GetImage("munt.raw");
 
@@ -86,7 +88,6 @@ namespace Burntime.Remaster
             UserSettings.Open("user.txt");
             FileSystem.LocalizationCode = UserSettings[""].GetString("language");
             Engine.IsFullscreen = UserSettings[""].GetBool("fullscreen", false);
-            MusicPlayback = UserSettings[""].GetBool("music", true);
             base.IsNewGfx = UserSettings[""].GetBool("newgfx", true);
 
             // set language code
@@ -102,10 +103,10 @@ namespace Burntime.Remaster
             FileSystem.AddPackage("music", "game/classic_music");
             FileSystem.AddPackage("music_fix", "game/music_fix");
             FileSystem.AddPackage("amiga", "game/amiga");
-            Engine.Music.LoadSonglist("songs_dos.txt");
+            HasDosMusic = FileSystem.ExistsFile("songs_dos.txt") && FileSystem.ExistsFile("01_MUS 01_HSC.ogg");
+            HasAmigaMusic = FileSystem.ExistsFile("songs_amiga.txt");
 
-            // check if ogg files are available
-            DisableMusic = !FileSystem.ExistsFile("songs_dos.txt"); //  || System.IntPtr.Size != 4
+            SetMusicMode(UserSettings[""].GetString("music"));
 
             bool useHighResFont = Settings["system"].GetBool("highres_font");
 
@@ -145,7 +146,7 @@ namespace Burntime.Remaster
                 {
                     if (key.IsVirtual && key.VirtualKey == SystemKey.F9)
                     {
-                        MusicMode = MusicMode == MusicModes.Amiga ? MusicModes.Remaster : MusicModes.Amiga;
+                        ToggleMusicMode();
                         break;
                     }
                 }
@@ -157,7 +158,7 @@ namespace Burntime.Remaster
             // ensure section is created
             UserSettings.GetSection("", true);
 
-            UserSettings[""].Set("music", MusicPlayback);
+            UserSettings[""].Set("music", GetMusicMode());
             UserSettings[""].Set("fullscreen", Engine.IsFullscreen);
             UserSettings[""].Set("newgfx", IsNewGfx);
             UserSettings[""].Set("language", FileSystem.LocalizationCode);
@@ -172,8 +173,7 @@ namespace Burntime.Remaster
         public String ImageScene = null;
         public PickItemList PickItems = null;
         public ActionAfterImageScene ActionAfterImageScene = ActionAfterImageScene.None;
-        public bool MusicPlayback { get; set; }
-        public bool DisableMusic;
+
         public int PreviousPlayerId = -1;
         public bool NewGui = false;
 
@@ -183,6 +183,12 @@ namespace Burntime.Remaster
             set { base.IsNewGfx = value; RefreshNewGfx(); }
         }
 
+        #region Music
+        public bool DisableMusic => !HasAmigaMusic && !HasDosMusic;
+        public bool HasAmigaMusic { get; private set; }
+        public bool HasDosMusic { get; private set; }
+        private string _lastPlayingSong;
+
         public enum MusicModes
         {
             Off = 0,
@@ -191,25 +197,90 @@ namespace Burntime.Remaster
             Remaster = 3
         }
 
-        private MusicModes _musicMode = MusicModes.Remaster;
-        public MusicModes MusicMode
+        public MusicModes MusicMode { get; private set; } = MusicModes.Remaster;
+
+        public void SetMusicMode(string mode)
         {
-            get => _musicMode;
-            set
+            mode = mode?.ToLower();
+
+            if (DisableMusic)
+                MusicMode = MusicModes.Off;
+            else if ((mode == "amiga" && HasAmigaMusic)
+                || (!HasDosMusic && HasAmigaMusic))
+                MusicMode = MusicModes.Amiga;
+            else if (mode == "off")
+                MusicMode = MusicModes.Off;
+            else if (HasDosMusic)
+                MusicMode = MusicModes.Remaster;
+            else
+                MusicMode = MusicModes.Off;
+
+            if (MusicMode != MusicModes.Off)
+                Engine.Music.LoadSonglist(MusicMode == MusicModes.Amiga ? "songs_amiga.txt" : "songs_dos.txt");
+        }
+
+        public string GetMusicMode() => MusicMode switch
+        {
+            MusicModes.Off => "off",
+            MusicModes.Amiga => "amiga",
+            _ => "remaster"
+        };
+
+        /// <summary>
+        /// Toggle between Amiga and remaster.
+        /// </summary>
+        public void ToggleMusicMode()
+        {
+            if (DisableMusic) return;
+
+            if (MusicMode == MusicModes.Amiga && HasDosMusic)
             {
-                _musicMode = value;
-                if (value == MusicModes.Off)
-                {
-                    MusicPlayback = false;
-                    Engine.Music.Stop();
-                }
-                else
-                {
-                    MusicPlayback = true;
-                    Engine.Music.LoadSonglist(value == MusicModes.Amiga ? "songs_amiga.txt" : "songs_dos.txt");
-                }
+                MusicMode = MusicModes.Remaster;
+                Engine.Music.Enabled = true;
+                Engine.Music.LoadSonglist("songs_dos.txt");
+            }
+            else if ((MusicMode == MusicModes.Dos || MusicMode == MusicModes.Remaster)
+                && HasAmigaMusic)
+            {
+                MusicMode = MusicModes.Amiga;
+                Engine.Music.Enabled = true;
+                Engine.Music.LoadSonglist("songs_amiga.txt");
             }
         }
+
+        /// <summary>
+        /// Cycle through Amiga, DOS, remaster and off.
+        /// </summary>
+        public void CycleMusicMode()
+        {
+            if (DisableMusic) return;
+
+            if (MusicMode == MusicModes.Off && HasDosMusic)
+            {
+                MusicMode = MusicModes.Remaster;
+                Engine.Music.Enabled = true;
+                Engine.Music.LoadSonglist("songs_dos.txt");
+                if (_lastPlayingSong is not null)
+                    Engine.Music.Play(_lastPlayingSong);
+            }
+            else if ((MusicMode == MusicModes.Off && HasAmigaMusic)
+                || (MusicMode == MusicModes.Remaster && HasAmigaMusic))
+            {
+                MusicMode = MusicModes.Amiga;
+                Engine.Music.Enabled = true;
+                Engine.Music.LoadSonglist("songs_amiga.txt");
+            }
+            else if (MusicMode == MusicModes.Amiga
+                || (MusicMode == MusicModes.Remaster && !HasAmigaMusic))
+            {
+                // we cycle over off mode, so we need to save the song to replay
+                _lastPlayingSong = Engine.Music.Playing;
+                MusicMode = MusicModes.Off;
+                Engine.Music.Enabled = false;
+                Engine.Music.Stop();
+            }
+        }
+        #endregion
 
         public override string Language
         { 

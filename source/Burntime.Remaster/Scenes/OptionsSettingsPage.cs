@@ -20,7 +20,7 @@ internal class OptionsSettingsPage : Container
     {
         _fonts = fonts;
 
-        Windows += _musicToggle = new Button(app, OnMusicToggle)
+        Windows += _musicToggle = new Button(app, () => BurntimeClassic.Instance.CycleMusicMode())
         {
             Font = _fonts.Green,
             HoverFont = _fonts.Orange,
@@ -94,28 +94,5 @@ internal class OptionsSettingsPage : Container
         }
 
         base.OnUpdate(elapsed);
-    }
-
-    string? _lastPlaying;
-    void OnMusicToggle()
-    {
-        if (BurntimeClassic.Instance.DisableMusic) return;
-
-        var mode = BurntimeClassic.Instance.MusicMode;
-        if (mode == BurntimeClassic.MusicModes.Off)
-        {
-            mode = BurntimeClassic.MusicModes.Remaster;
-            if (_lastPlaying is not null)
-                app.Engine.Music.Play(_lastPlaying);
-        }
-        else if (mode == BurntimeClassic.MusicModes.Remaster)
-            mode = BurntimeClassic.MusicModes.Amiga;
-        else if (mode == BurntimeClassic.MusicModes.Amiga)
-        {
-            _lastPlaying = app.Engine.Music.Playing;
-            mode = BurntimeClassic.MusicModes.Off;
-        }
-
-        BurntimeClassic.Instance.MusicMode = mode;
     }
 }

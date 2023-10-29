@@ -141,6 +141,9 @@ namespace Burntime.Remaster.Scenes
 
         public override bool OnVKeyPress(SystemKey key)
         {
+            if (key == SystemKey.F8 || key == SystemKey.F9)
+                return false;
+
             NextScene();
             return true;
         }

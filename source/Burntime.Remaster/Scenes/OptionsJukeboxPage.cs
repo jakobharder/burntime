@@ -56,8 +56,9 @@ internal class OptionsJukeboxPage : Container
 
     void PlaySong(string song)
     {
-        BurntimeClassic.Instance.MusicPlayback = true;
-        app.Engine.Music.Enabled = true;
+        if (BurntimeClassic.Instance.MusicMode == BurntimeClassic.MusicModes.Off)
+            BurntimeClassic.Instance.CycleMusicMode();
+
         app.Engine.Music.Play(song);
     }
 }
