@@ -290,10 +290,10 @@ namespace Burntime.Remaster
             view.Location = game.World.ActiveLocationObj;
             view.Player = game.World.ActivePlayerObj;
 
-            if (view.Player.RefreshScrollPosition)
+            //if (view.Player.RefreshScrollPosition)
                 view.CenterTo(view.Player.Character.Position);
-            else
-                view.ScrollPosition = view.Player.LocationScrollPosition;
+            //else
+            //    view.ScrollPosition = view.Player.LocationScrollPosition;
             gui.UpdatePlayer();
 
             view.Player.OnMainMap = false;
@@ -661,8 +661,8 @@ namespace Burntime.Remaster
                     eventArgs.Defender.Player?.Type != PlayerType.Human)
                     return;
 
-                if ((eventArgs.Attacker.IsDead && eventArgs.Attacker.IsHuman)
-                    || (eventArgs.Defender.IsDead && eventArgs.Defender.IsHuman))
+                if ((eventArgs.Attacker.IsDead && eventArgs.Attacker.Class != CharClass.Dog)
+                    || (eventArgs.Defender.IsDead && eventArgs.Defender.Class != CharClass.Dog))
                 {
                     app.Engine.Music.PlayOnce("sounds/hit-die.ogg");
                 }

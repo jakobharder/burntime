@@ -1,13 +1,12 @@
 ﻿# Burntime Changelog
 
-## 0.7 - Options and Trader (2023-10-26)
+## 0.7 - Options, Trader and Amiga (2023-10-26)
 
 ### Changes
 
 - Improved trader
   - Show both trader and player inventory on wide screens
 - Reworked options
-  - Switch to Amiga music in options
   - Change language in options
   - Toggle fullscreen in options
   - Show fullscreen and remaster graphics shortcuts
@@ -17,8 +16,10 @@
   - Cursor animations
   - Trader intro scenes
   - Inventory UIs
+- Added Amiga sounds, music
+  - Amiga version hit, barf and die sounds
+  - Switch to Amiga music in options
 - Start game with language selection
-- Added Amiga version hit, barf and die sounds
 - Save user settings
 - Scroll maps with right mouse button
 

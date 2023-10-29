@@ -145,10 +145,10 @@ namespace Burntime.Remaster
             view.Ways = (WayData)game.World.Ways.WayData;
             view.Map = (MapData)game.World.Map.MapData;
             view.Player = game.World.ActivePlayerObj;
-            if (game.World.ActivePlayerObj.RefreshMapScrollPosition)
+            //if (game.World.ActivePlayerObj.RefreshMapScrollPosition)
                 view.CenterTo(view.Map.Entrances[game.World.ActivePlayerObj.Location].Area.Center);
-            else
-                view.ScrollPosition = game.World.ActivePlayerObj.MapScrollPosition;
+            //else
+            //    view.ScrollPosition = game.World.ActivePlayerObj.MapScrollPosition;
             gui.UpdatePlayer();
 
             game.World.ActivePlayerObj.OnMainMap = true;
@@ -258,7 +258,7 @@ namespace Burntime.Remaster
                     if (debugNoTravel)
                     {
                         player.Location = clickedLocation;
-                        player.Character.Position = -Vector2.One;
+                        player.Character.Position = clickedLocation.EntryPoint;
                         player.RefreshScrollPosition = true;
                     }
 
