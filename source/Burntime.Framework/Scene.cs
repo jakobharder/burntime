@@ -34,6 +34,9 @@ namespace Burntime.Framework
             OnResizeScreen();
             OnActivateScene(parameter);
 
+            foreach (var window in Windows)
+                window.OnActivate();
+
             if (music != null)
                 app.Engine.Music.Play(music);
         }
