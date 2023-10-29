@@ -24,14 +24,14 @@ class PackageFolder : IPackage
         this.subPath = subPath;
 
         dicFiles = new Dictionary<string, File>();
-        process("", path + "/" + subPath);
+        ParseFolder("", path + "/" + subPath);
     }
 
     public void Close()
     {
     }
 
-    void process(String relpath, String path)
+    void ParseFolder(string relpath, string path)
     {
         try
         {
@@ -57,7 +57,7 @@ class PackageFolder : IPackage
                 if (name.StartsWith("."))
                     continue;
 
-                process(relpath + name.ToLower() + "/", dir);
+                ParseFolder(relpath + name.ToLower() + "/", dir);
             }
 
         }
@@ -81,6 +81,11 @@ class PackageFolder : IPackage
     public bool ExistsFile(FilePath filePath)
     {
         return dicFiles.ContainsKey(filePath.PathWithoutPackage);
+    }
+
+    public bool ExistsFolder(FilePath filePath)
+    {
+        return System.IO.Directory.Exists(path + "/" + subPath + filePath.PathWithoutPackage);
     }
 
     public bool AddFile(FilePath filePath)
@@ -124,4 +129,39 @@ class PackageFolder : IPackage
 
         return true;
     }
+
+    public bool RemoveFolder(FilePath filePath)
+    {
+        try
+        {
+            System.IO.Directory.Delete(path + "/" + subPath + filePath.PathWithoutPackage, true);
+        }
+        catch
+        {
+            return false;
+        }
+
+        dicFiles.Clear();
+        ParseFolder("", path + "/" + subPath);
+
+        return true;
+    }
+
+    public bool MoveFolder(FilePath sourcePath, FilePath targetPath)
+    {
+        try
+        {
+            Directory.Move(path + "/" + subPath + sourcePath.PathWithoutPackage, path + "/" + subPath + targetPath.PathWithoutPackage);
+        }
+        catch
+        {
+            return false;
+        }
+
+        dicFiles.Clear();
+        ParseFolder("", path + "/" + subPath);
+
+        return true;
+    }
+
 }

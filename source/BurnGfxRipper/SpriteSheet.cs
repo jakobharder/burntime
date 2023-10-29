@@ -57,38 +57,49 @@ internal class SpriteSheet
         Bitmap.UnlockBits(loc);
     }
 
-    public void Render(ISpriteAnimationProcessor ani, bool baseImage)
+    public void Render(ISpriteAnimationProcessor ani, bool nonProgressive, int heightPadding = TextureUtils.HEIGHT_PADDING, int startFrame = 0, int frameCount = 0)
     {
-        ani.SetFrame(0);
-        int columns = (int)Math.Floor(Bitmap.Width / (float)(ani.Size.x + _padding * 2));
-        int rows = (int)Math.Ceiling(ani.FrameCount / (float)columns);
+        ani.SetFrame(startFrame);
+        frameCount = frameCount == 0 ? (ani.FrameCount - startFrame - 1) : System.Math.Min(frameCount, (ani.FrameCount - startFrame - 1));
 
-        int rowHeight = TextureUtils.MakeMultipleOf(ani.Size.y, TextureUtils.HEIGHT_PADDING) + _padding * 2;
+        int columns = (int)Math.Floor(Bitmap.Width / (float)(ani.Size.x + _padding * 2));
+        int rows = (int)Math.Ceiling(frameCount / (float)columns);
+
+        int rowHeight = TextureUtils.MakeMultipleOf(ani.Size.y, heightPadding) + _padding * 2;
         int columnWidth = ani.FrameSize.x + _padding * 2;
 
-        int i = 0;
+        int frame = startFrame;
         for (int y = 0; y < rows; y++)
         {
-            for (int x = 0; x < columns && i < ani.FrameCount; x++)
+            for (int x = 0; x < columns && frame < frameCount; x++)
             {
-                ani.SetFrame(baseImage ? 0 : i);
+                ani.SetFrame(frame);
 
                 BitmapData loc = Bitmap.LockBits(new Rectangle(x * columnWidth, y * rowHeight, ani.FrameSize.x, ani.FrameSize.y),
                     ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
                 System.IO.MemoryStream mem = new();
+
+                if (nonProgressive)
+                {
+                    for (int baseFrame = startFrame; baseFrame < frame; baseFrame++)
+                    {
+                        ani.SetFrame(baseFrame);
+                        ani.Render(mem, ani.FrameSize.x * 4);
+                    }
+                }
+
+                ani.SetFrame(frame);
                 ani.Render(mem, ani.FrameSize.x * 4);
 
                 byte[] buffer = mem.ToArray();
-
                 for (int py = 0; py < ani.FrameSize.y; py++)
                     Marshal.Copy(buffer,
                         py * ani.FrameSize.x * 4,
                         loc.Scan0 + py * loc.Stride,
                         ani.FrameSize.x * 4);
-
                 Bitmap.UnlockBits(loc);
 
-                i++;
+                frame++;
             }
         }
         

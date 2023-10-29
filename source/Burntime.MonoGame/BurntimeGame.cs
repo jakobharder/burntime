@@ -20,7 +20,7 @@ namespace Burntime.MonoGame
         public Resolution Resolution { get; } = new();
         public DeviceManager DeviceManager { get; set; }
         public ResourceManager ResourceManager { get; set; }
-        public int Layer { get; set; }
+        public float Layer { get; set; }
 
         public RenderDevice RenderDevice { get; private set; }
         public RenderTarget MainTarget { get; private set; }
@@ -56,11 +56,14 @@ namespace Burntime.MonoGame
 
         public bool IsLoading { get; set; }
 
-        // #if (DEBUG)
-        public bool FullScreen { get; set; } = false;
-        // #else
-        //         public bool FullScreen { get; set; } = true;
-        // #endif
+        bool _isFullscreen = false;
+        bool _requestFullscreen = false;
+        public bool IsFullscreen 
+        {
+            get => _isFullscreen;
+            set => _requestFullscreen = value; // value will be handled in render thread
+        }
+
         bool _initialized = false;
 
         public BurntimeGame()
@@ -91,7 +94,8 @@ namespace Burntime.MonoGame
             _burntimeApp = new();
 
             Resolution.RatioCorrection = _burntimeApp.RatioCorrection;
-            Resolution.MaxVerticalResolution = _burntimeApp.MaxVerticalResolution;
+            Resolution.MinResolution = _burntimeApp.MinResolution;
+            Resolution.MaxResolution = _burntimeApp.MaxResolution;
 
             _burntimeApp.Engine = this;
             _burntimeApp.SceneManager = new SceneManager(_burntimeApp);
@@ -124,19 +128,13 @@ namespace Burntime.MonoGame
             ApplyGraphicsDeviceResolution(initialize: false);
         }
 
-        private void ToggleFullscreen()
-        {
-            FullScreen = !FullScreen;
-            ApplyGraphicsDeviceResolution(initialize: false, resetWindowSize: true);
-        }
-
         bool _resizing = false;
         private void ApplyGraphicsDeviceResolution(bool initialize, bool resetWindowSize = false)
         {
             if ((!_initialized && !initialize) || _resizing) return;
 
             _resizing = true;
-            if (FullScreen)
+            if (IsFullscreen)
             {
                 Resolution.Native = new Platform.Vector2(GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
                     GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height);
@@ -152,6 +150,7 @@ namespace Burntime.MonoGame
                 {
                     Resolution.Native = new Platform.Vector2(GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
                         GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height) / 2;
+                    //Resolution.Native = new Platform.Vector2(2560, 1440);
                 }
                 else
                 {
@@ -209,15 +208,28 @@ namespace Burntime.MonoGame
                 _rightClicked = false;
                 DeviceManager.MouseLeave();
             }
-            else
+            //else
             {
+                DeviceManager.IsRightDown = mouseState.RightButton == ButtonState.Pressed;
+
                 var mousePosition = new Vector2f(mouseState.X, mouseState.Y) * (Vector2f)Resolution.Game / (Vector2f)Resolution.Native;
                 DeviceManager.MouseMove(mousePosition);
 
+                // ignore clicks when not shown and active
+                if (!IsActive) return;
+
                 if (mouseState.LeftButton == ButtonState.Pressed)
+                {
+                    if (!_leftClicked)
+                        DeviceManager.MouseDown(mousePosition, MouseButton.Left);
                     _leftClicked = true;
+                }
                 if (mouseState.RightButton == ButtonState.Pressed)
+                {
+                    if (!_rightClicked)
+                        DeviceManager.MouseDown(mousePosition, MouseButton.Right);
                     _rightClicked = true;
+                }
 
                 if (_leftClicked && mouseState.LeftButton == ButtonState.Released)
                 {
@@ -254,7 +266,7 @@ namespace Burntime.MonoGame
         private void Window_TextInput(object sender, TextInputEventArgs e)
         {
             if (e.Key == Keys.Escape || e.Key == Keys.Pause || e.Key == Keys.Enter
-                || e.Key == Keys.F1 || e.Key == Keys.F2 || e.Key == Keys.F3 || e.Key == Keys.F4)
+                || e.Key == Keys.F1 || e.Key == Keys.F2 || e.Key == Keys.F3 || e.Key == Keys.F4 || e.Key == Keys.F8 || e.Key == Keys.F9)
             {
                 // handled in Update
             }
@@ -266,6 +278,8 @@ namespace Burntime.MonoGame
 
         private void HandleKeyboardInput()
         {
+            if (!IsActive) return;
+
             var keyboard = Microsoft.Xna.Framework.Input.Keyboard.GetState();
             var keys = keyboard.GetPressedKeys();
 
@@ -280,13 +294,13 @@ namespace Burntime.MonoGame
                     if (key == Keys.F11
                         || (key == Keys.Enter && (modifier & ModifierKeys.LeftAlt) == ModifierKeys.LeftAlt))
                     {
-                        ToggleFullscreen();
+                        IsFullscreen = !IsFullscreen;
                         DeviceManager.Clear();
                         break;
                     }
 
                     if (key == Keys.Escape || key == Keys.Pause || key == Keys.Enter
-                        || key == Keys.F1 || key == Keys.F2 || key == Keys.F3 || key == Keys.F4)
+                        || key == Keys.F1 || key == Keys.F2 || key == Keys.F3 || key == Keys.F4 || key == Keys.F8 || key == Keys.F9)
                     {
                         DeviceManager?.VKeyPress(key switch
                         {
@@ -297,6 +311,8 @@ namespace Burntime.MonoGame
                             Keys.F2 => SystemKey.F2,
                             Keys.F3 => SystemKey.F3,
                             Keys.F4 => SystemKey.F4,
+                            Keys.F8 => SystemKey.F8,
+                            Keys.F9 => SystemKey.F9,
                             _ => SystemKey.Other
                         });
                     }
@@ -308,10 +324,13 @@ namespace Burntime.MonoGame
 
         protected override void Update(Microsoft.Xna.Framework.GameTime gameTime)
         {
-            if (IsActive)
+            HandleMouseInput();
+            HandleKeyboardInput();
+            
+            if (_requestFullscreen != _isFullscreen)
             {
-                HandleMouseInput();
-                HandleKeyboardInput();
+                _isFullscreen = _requestFullscreen;
+                ApplyGraphicsDeviceResolution(initialize: false, resetWindowSize: true);
             }
 
             RenderDevice.Update();
@@ -339,8 +358,10 @@ namespace Burntime.MonoGame
 
         protected override void OnExiting(object sender, EventArgs args)
         {
-            Music.StopThread();
             base.OnExiting(sender, args);
+
+            Music.StopThread();
+            _burntimeApp.Close();
         }
 
         void IEngine.ExitApplication()
@@ -358,6 +379,7 @@ namespace Burntime.MonoGame
 
         #region render methods
         const float MAX_LAYERS = 256.0f;
+        public float MaxLayers => MAX_LAYERS;
         const float popInSpeed = 16.0f;
         static float CalcZ(float Layer) => 0.05f + (Layer / MAX_LAYERS) * 0.9f;
 

@@ -6,6 +6,8 @@ using Burntime.Platform;
 
 namespace Burntime.Framework.Event
 {
+    public delegate void ClickHandler(Vector2 position, MouseButton button);
+
     public class MouseClickEvent : List<MouseClickHandler>
     {
         public static MouseClickEvent operator +(MouseClickEvent Left, MouseClickHandler Right)

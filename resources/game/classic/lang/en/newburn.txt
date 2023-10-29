@@ -15,22 +15,22 @@ no AI players
 easy
 normal
 hard
-NewGfx ON
-NewGfx OFF
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Graphics REMASTER
+Graphics ORIGINAL
+Fullscreen ON
+Fullscreen OFF
+Saves
+Settings
+toggle in-game with F11
+toggle in-game with F8
+toggle in-game with F9
+Language ENGLISH
+Give up
+Start new game
+Jukebox
+Music AMIGA
+Music DOS
+Music REMASTER
 
 
 

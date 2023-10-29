@@ -76,7 +76,7 @@ namespace Burntime.Data.BurnGfx
             //ByteBuffer b = new ByteBuffer(1, 1, data);
             //g.Draw(ref b);
 
-            // TODO: optimize loading sequence
+#warning // TODO: optimize loading sequence
 
             g.bytes = new PixelColor[g.width * g.height];
             ByteBuffer buffer = new ByteBuffer(g.width, g.height, g.bytes);

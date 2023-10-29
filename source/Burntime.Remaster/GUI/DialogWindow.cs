@@ -61,7 +61,7 @@ namespace Burntime.Remaster
             hover = -1;
             base.OnShow();
 
-            BurntimeClassic.Instance.Engine.Music.Play("18_MUS 18_HSC.ogg");
+            BurntimeClassic.Instance.Engine.Music.Play("talking");
         }
 
         public override void OnHide()

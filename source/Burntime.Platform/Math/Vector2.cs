@@ -150,6 +150,12 @@
             if (y > max) y = max;
         }
 
+        public void Max(int maxX, int maxY)
+        {
+            if (x > maxX) x = maxX;
+            if (y > maxY) y = maxY;
+        }
+
         public void Max(Vector2 max)
         {
             if (x > max.x) x = max.x;
@@ -300,6 +306,11 @@
         public static implicit operator Vector2 (Vector2f left)
         {
             return new Vector2((int)(left.x + 0.5f), (int)(left.y + 0.5f));
+        }
+
+        public Vector2 Floor()
+        {
+            return new Vector2((int)x, (int)y);
         }
 
         public static implicit operator Vector2f (float right)

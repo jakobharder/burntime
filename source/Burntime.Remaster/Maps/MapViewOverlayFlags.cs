@@ -9,8 +9,7 @@ namespace Burntime.Remaster.Maps
     class MapViewOverlayFlags : IMapViewOverlay
     {
         ClassicGame state;
-        Module app;
-        SpriteAnimation ani;
+        readonly SpriteAnimation _ani;
 
         public bool IsVisible
         {
@@ -18,10 +17,10 @@ namespace Burntime.Remaster.Maps
             set { }
         }
 
-        public MapViewOverlayFlags(Module app)
+        public MapViewOverlayFlags(Module _)
         {
-            this.app = app;
-            ani = new SpriteAnimation(4);
+            _ani = new SpriteAnimation(12);
+            _ani.Speed = 15;
         }
 
         public void MouseMoveOverlay(Vector2 position)
@@ -31,7 +30,7 @@ namespace Burntime.Remaster.Maps
         public void UpdateOverlay(WorldState world, float elapsed)
         {
             state = world as ClassicGame;
-            ani.Update(elapsed);
+            _ani.Update(elapsed);
         }
 
         public void RenderOverlay(RenderTarget target, Vector2 offset, Vector2 size)
@@ -45,7 +44,7 @@ namespace Burntime.Remaster.Maps
                     if (l.Player != null)
                     {
                         Rect area = state.World.Map.Entrances[i].Area;
-                        l.Player.Flag.Object.Animation.Frame = ani.Frame;
+                        l.Player.Flag.Object.Animation.Frame = _ani.Frame * l.Player.Flag.Object.Animation.FrameCount / _ani.FrameCount;
                         target.DrawSprite(new Vector2(area.Right, area.Top) + offset, l.Player.Flag);
                     }
                 }

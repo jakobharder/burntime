@@ -2,12 +2,12 @@
 
 public class ConfigFile
 {
-    Dictionary<string, ConfigSection> sections;
-    List<ConfigSection> order;
+    readonly Dictionary<string, ConfigSection> sections = new();
+    readonly List<ConfigSection> order = new();
 
-    public bool Open(String name)
+    public bool Open(string name)
     {
-        Burntime.Platform.IO.File file = FileSystem.GetFile(name);
+        File file = FileSystem.GetFile(name);
         if (file == null)
             return false;
         bool result = Open(file.Stream);
@@ -20,14 +20,12 @@ public class ConfigFile
         if (stream == null)
             return false;
 
-        sections = new Dictionary<string,ConfigSection>();
-        order = new List<ConfigSection>();
+        sections.Clear();
+        order.Clear();
         ConfigSectionTemplate currentTemplate = new ConfigSectionTemplate();
 
-        List<ConfigLineTemplate> lines = new List<ConfigLineTemplate>();
-
-        StreamReader reader = new StreamReader(stream);
-        String line;
+        var reader = new StreamReader(stream);
+        string? line;
         while (null != (line = reader.ReadLine()))
         {
             ConfigLineTemplate templateLine = new ConfigLineTemplate(line);
@@ -61,9 +59,9 @@ public class ConfigFile
         return true;
     }
 
-    public bool Save(String name)
+    public bool Save(string name)
     {
-        Burntime.Platform.IO.File file = FileSystem.CreateFile(name);
+        File file = FileSystem.CreateFile(name);
         if (file == null)
             return false; 
 
@@ -90,15 +88,25 @@ public class ConfigFile
         return true;
     }
 
-    public ConfigSection GetSection(String name)
+    public ConfigSection GetSection(string name, bool add = false)
     {
         if (!sections.ContainsKey(name.ToLower()))
-            return ConfigSection.NullSection;
+        {
+            if (add)
+            {
+                var section = new ConfigSection();
+                sections.Add(name.ToLower(), section);
+                order.Add(section);
+                return section;
+            }
+            else
+                return ConfigSection.NullSection;
+        }
 
         return sections[name.ToLower()];
     }
 
-    public ConfigSection this[String name]
+    public ConfigSection this[string name]
     {
         get
         {

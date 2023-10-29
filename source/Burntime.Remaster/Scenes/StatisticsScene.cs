@@ -38,7 +38,7 @@ namespace Burntime.Remaster.Scenes
         {
             //Background = "blz.pac";
             Size = new Vector2(320, 200);
-            Music = "17_MUS 17_HSC.ogg";
+            Music = "score";
             Position = (app.Engine.Resolution.Game - Size) / 2;
             font = new GuiFont(BurntimeClassic.FontName, new PixelColor(212, 212, 212), new PixelColor(92, 92, 96));
             CaptureAllMouseClicks = true;
@@ -63,17 +63,19 @@ namespace Burntime.Remaster.Scenes
         {
             if (app.IsNewGfx)
             {
-                Target.DrawSprite(-Position, _background);
-                if (app.Engine.Resolution.Game.x > _background.Width)
-                {
-#warning OPTIMIZE avoid duplicating the texture for extra wide background
-                    Target.DrawSprite(-Position + new Vector2(_background.Width, 0), _background2);
-                }
+                Vector2 gameSize = app.Engine.Resolution.Game;
+                gameSize.Max(_background.Size);
+
+                Vector2 offset = (app.Engine.Resolution.Game - _background.Size) / 2;
+                offset.Min(0);
+                offset -= Position;
+                Target.DrawSprite(offset, _background);
+
                 Target.Layer++;
-                Target.DrawSprite(app.Engine.Resolution.Game - _rightBottom.Size - Position + Vector2.One, _rightBottom);
-                Target.DrawSprite(new Vector2(app.Engine.Resolution.Game.x - _rightTop.Width + 1, 0) - Position, _rightTop);
-                Target.DrawSprite(-Position, _leftTop);
-                Target.DrawSprite(new Vector2(0, app.Engine.Resolution.Game.y - _leftBottom.Height + 1) - Position, _leftBottom);
+                Target.DrawSprite(gameSize - _rightBottom.Size + offset + Vector2.One, _rightBottom);
+                Target.DrawSprite(new Vector2(gameSize.x - _rightTop.Width + 1, 0) + offset, _rightTop);
+                Target.DrawSprite(offset, _leftTop);
+                Target.DrawSprite(new Vector2(0, gameSize.y - _leftBottom.Height + 1) + offset, _leftBottom);
             }
             else
             {

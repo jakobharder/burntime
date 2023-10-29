@@ -18,11 +18,11 @@ namespace Burntime.Framework.GUI
 
         public bool IsDown
         {
-            get { return isDown; }
+            get { return _isDown; }
             set 
             { 
-                isDown = value;
-                if (isDown)
+                _isDown = value;
+                if (_isDown)
                     OnSwitchDown();
                 else
                     OnSwitchUp();
@@ -31,8 +31,8 @@ namespace Burntime.Framework.GUI
 
         public override bool OnMouseClick(Burntime.Platform.Vector2 Position, Burntime.Platform.MouseButton Button)
         {
-            isDown = !isDown;
-            if (isDown)
+            _isDown = !_isDown;
+            if (_isDown)
                 OnSwitchDown();
             else
                 OnSwitchUp();

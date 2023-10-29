@@ -13,7 +13,7 @@ public class ConfigSection
     }
 
     ConfigSectionTemplate template;
-    Dictionary<String, String> values;
+    Dictionary<String, String> values = new();
 
     public String Name
     {
@@ -22,12 +22,13 @@ public class ConfigSection
 
     internal ConfigSection()
     {
+        template = new ConfigSectionTemplate();
     }
 
     internal bool Open(ConfigSectionTemplate template)
     {
         this.template = template;
-        values = new Dictionary<string, string>();
+        values.Clear();
 
         foreach (ConfigLineTemplate line in template.Lines)
         {
@@ -170,6 +171,8 @@ public class ConfigSection
         return new string[0];
     }
 
+    public IEnumerable<KeyValuePair<string, string>> Values => values;
+
     public int GetInt(String key)
     {
         if (this == NullSection)
@@ -181,13 +184,15 @@ public class ConfigSection
         return res;
     }
 
-    public bool GetBool(String key)
+    public bool GetBool(string key, bool defaultResult = false)
     {
-        String str = Get(key);
-        if (str == null || str == "")
-            return false;
+        string? str = Get(key)?.ToLower();
+        if (string.IsNullOrWhiteSpace(str))
+            return defaultResult;
 
-        if (str.ToLower() == "1" || str.ToLower() == "yes" || str.ToLower() == "true" || str.ToLower() == "on")
+        if (str == "1" || str == "yes" || str == "true" || str == "on")
+            return true;
+        if (defaultResult && (str != "0" && str != "no" && str != "false" && str != "off"))
             return true;
 
         return false;

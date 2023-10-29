@@ -41,7 +41,7 @@ public class File
 
     public static implicit operator Stream(File Right)
     {
-        return Right.Stream;
+        return Right?.Stream;
     }
 
     // access

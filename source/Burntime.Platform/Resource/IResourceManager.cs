@@ -36,4 +36,6 @@ public interface IResourceManager
     void SetResourceReplacement(string file);
 
     //LoadingCounter LoadingCounter { get; }
+
+    void ClearText();
 }

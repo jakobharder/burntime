@@ -654,7 +654,7 @@ namespace Burntime.Framework.States
                 handlerList.Remove(handler);
         }
 
-        public void FireNotifycation(ILogicNotifycation notify)
+        public void Notify(ILogicNotifycation notify)
         {
             lock (handlerList)
             {

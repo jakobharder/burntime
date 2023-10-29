@@ -1,27 +1,15 @@
-﻿using Burntime.Platform;
-using Burntime.Framework.States;
+﻿using Burntime.Framework.States;
 
-namespace Burntime.Remaster.Logic
+namespace Burntime.Remaster.Logic;
+
+class AttackEvent : ILogicNotifycation
 {
-    class AttackEvent : ILogicNotifycation
+    public Character Attacker { get; init; }
+    public Character Defender { get; init; }
+
+    public AttackEvent(Character attacker, Character defender)
     {
-        Vector2 attacker;
-        Vector2 defender;
-
-        public Vector2 Attacker
-        {
-            get { return attacker; }
-        }
-
-        public Vector2 Defender
-        {
-            get { return defender; }
-        }
-
-        public AttackEvent(Vector2 attacker, Vector2 defender)
-        {
-            this.attacker = attacker;
-            this.defender = defender;
-        }
+        Attacker = attacker;
+        Defender = defender;
     }
 }

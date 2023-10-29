@@ -83,6 +83,9 @@ namespace Burntime.Data.BurnGfx
 
         void InitializeColorTables()
         {
+//#warning OPTIMIZE remove, as it is only needed in development
+//            _ = PacImageFileReader.Read("film_05.pac");
+//            _ = PacImageFileReader.Read("film_10.pac");
         }
         #endregion
 

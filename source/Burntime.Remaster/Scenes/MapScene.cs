@@ -38,6 +38,7 @@ namespace Burntime.Remaster
             view.Overlays.Add(new Maps.MapViewOverlayPlayer(app));
             view.Overlays.Add(new Maps.MapViewOverlayHoverText(app));
             view.Scroll += new EventHandler<MapScrollArgs>(view_Scroll);
+            view.ContextMenu += View_OnContextMenu;
             Windows += view;
 
             menu = new MenuWindow(App);
@@ -62,6 +63,11 @@ namespace Burntime.Remaster
             debugNoTravel = classic.Settings["debug"].GetBool("no_travel") && classic.Settings["debug"].GetBool("enable_cheats");
         }
 
+        private void View_OnContextMenu(Vector2 position, MouseButton button)
+        {
+            menu.Show(position, view.Boundings);
+        }
+
         public override void OnResizeScreen()
         {
             base.OnResizeScreen();
@@ -75,15 +81,6 @@ namespace Burntime.Remaster
         {
             ClassicGame game = app.GameState as ClassicGame;
             game.World.ActivePlayerObj.MapScrollPosition = e.Offset;
-        }
-
-        public override bool OnMouseClick(Vector2 Position, MouseButton Button)
-        {
-            if (Button == MouseButton.Right)
-            {
-                menu.Show(Position, view.Boundings);
-            }
-            return true;
         }
 
         public override bool OnKeyPress(char key)
@@ -107,7 +104,7 @@ namespace Burntime.Remaster
 
                 if (!BurntimeClassic.Instance.NewGui)
                 {
-                    int layer = Target.Layer;
+                    var layer = Target.Layer;
                     Target.Layer = gui.Layer - 1;
                     Target.DrawSprite(app.DeviceManager.Mouse.Position, app.MouseImage);
                     Target.Layer = layer;
@@ -141,17 +138,17 @@ namespace Burntime.Remaster
                 BurntimeClassic.Instance.PreviousPlayerId != game.CurrentPlayerIndex)
             {
                 // play player changed sound
-                BurntimeClassic.Instance.Engine.Music.PlayOnce("06_MUS 06_HSC.ogg");
+                BurntimeClassic.Instance.Engine.Music.PlayOnce("sounds/change.ogg");
             }
             BurntimeClassic.Instance.PreviousPlayerId = game.CurrentPlayerIndex;
 
             view.Ways = (WayData)game.World.Ways.WayData;
             view.Map = (MapData)game.World.Map.MapData;
             view.Player = game.World.ActivePlayerObj;
-            if (game.World.ActivePlayerObj.RefreshMapScrollPosition)
+            //if (game.World.ActivePlayerObj.RefreshMapScrollPosition)
                 view.CenterTo(view.Map.Entrances[game.World.ActivePlayerObj.Location].Area.Center);
-            else
-                view.ScrollPosition = game.World.ActivePlayerObj.MapScrollPosition;
+            //else
+            //    view.ScrollPosition = game.World.ActivePlayerObj.MapScrollPosition;
             gui.UpdatePlayer();
 
             game.World.ActivePlayerObj.OnMainMap = true;
@@ -261,7 +258,7 @@ namespace Burntime.Remaster
                     if (debugNoTravel)
                     {
                         player.Location = clickedLocation;
-                        player.Character.Position = -Vector2.One;
+                        player.Character.Position = clickedLocation.EntryPoint;
                         player.RefreshScrollPosition = true;
                     }
 

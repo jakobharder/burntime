@@ -65,11 +65,11 @@ namespace Burntime.Framework.GUI
         {
             if (Mode == RadioMode.Normal)
             {
-                isDown = true;
+                _isDown = true;
             }
             else if (Mode == RadioMode.Round)
             {
-                if (isDown || parent == null)
+                if (_isDown || parent == null)
                     return true;
 
                 bool found = false;

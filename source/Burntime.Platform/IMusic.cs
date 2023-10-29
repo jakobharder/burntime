@@ -5,8 +5,12 @@ public interface IMusic
     bool Enabled { get; set; }
     bool IsMuted { get; set; }
     float Volume { get; set; }
+    string Playing { get; }
 
-    void Play(string song);
+    void Play(string song, bool loop = true);
     void PlayOnce(string sound);
     void Stop();
+
+    void LoadSonglist(string filePath);
+    ICollection<string> Songlist { get; }
 }

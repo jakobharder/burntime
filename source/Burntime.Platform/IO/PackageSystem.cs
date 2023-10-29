@@ -332,24 +332,55 @@ public class PackageSystem
     /// <returns>True if file doesn't exist or has been removed.</returns>
     public bool RemoveFile(FilePath path)
     {
-        // always remove files in user path package
+        // only remove files in user path package
         if (path.PackageSpecified && path.Package != "user")
             return false;
-
         if (!ExistsMount("user"))
             return false;
 
         MountInfo mount = nameMountMap["user"];
-
-        // remove from package
         if (!mount.Package.ExistsFile(path.PathWithoutPackage))
             return false;
-
         if (!mount.Package.RemoveFile(path.PathWithoutPackage))
             return false;
 
         RefreshFileMountMap();
+        return true;
+    }
 
+    public bool RemoveFolder(FilePath path)
+    {
+        if (path.PackageSpecified && path.Package != "user")
+            return false;
+        if (!ExistsMount("user"))
+            return false;
+
+        MountInfo mount = nameMountMap["user"];
+        if (!mount.Package.ExistsFolder(path.PathWithoutPackage))
+            return false;
+        if (!mount.Package.RemoveFolder(path.PathWithoutPackage))
+            return false;
+
+        RefreshFileMountMap();
+        return true;
+    }
+
+    public bool MoveFolder(FilePath sourcePath, FilePath targetPath)
+    {
+        if (sourcePath.PackageSpecified && sourcePath.Package != "user")
+            return false;
+        if (targetPath.PackageSpecified && targetPath.Package != "user")
+            return false;
+        if (!ExistsMount("user"))
+            return false;
+
+        MountInfo mount = nameMountMap["user"];
+        if (!mount.Package.ExistsFolder(sourcePath.PathWithoutPackage))
+            return false;
+        if (!mount.Package.MoveFolder(sourcePath.PathWithoutPackage, targetPath.PathWithoutPackage))
+            return false;
+
+        RefreshFileMountMap();
         return true;
     }
 

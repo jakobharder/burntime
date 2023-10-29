@@ -83,6 +83,7 @@ namespace Burntime.Framework
         protected virtual void OnInitialize() { }
         protected virtual void OnRun() { }
         protected virtual void OnClose() { }
+        protected virtual void OnProcess(float elapsed) { }
 
         public virtual void AddProcessor(String Extension, ISpriteProcessor Processor)
         {
@@ -104,6 +105,8 @@ namespace Burntime.Framework
         public virtual String Title { get { return ""; } }
         //public virtual Vector2[] Resolutions { get { return new Vector2[] { new Vector2(640, 480) }; } }
         public virtual int MaxVerticalResolution => 480;
+        public virtual Vector2 MinResolution { get; } = new Vector2(320, 200);
+        public virtual Vector2 MaxResolution { get; } = new Vector2(320, 200);
         public virtual Vector2f RatioCorrection => Vector2f.One;
         public virtual System.Drawing.Icon? Icon => null;
 
@@ -127,6 +130,8 @@ namespace Burntime.Framework
         public DeviceManager DeviceManager;
         public ConfigFile Settings;
 
+        public ConfigFile? UserSettings { get; protected set; }
+
         public WorldState GameState
         {
             get
@@ -145,7 +150,7 @@ namespace Burntime.Framework
         public virtual void Start()
         {
         }
-        
+
         public void StopGame()
         {
             if (Server != null)
@@ -171,7 +176,7 @@ namespace Burntime.Framework
             }
         }
 
-        public void Process(float Elapsed)
+        public void Process(float elapsed)
         {
             if (!running)
             {
@@ -182,9 +187,10 @@ namespace Burntime.Framework
             else
             {
                 // process input
+                OnProcess(elapsed);
 
                 // process frame
-                SceneManager.Process(Elapsed);
+                SceneManager.Process(elapsed);
 
                 DeviceManager.Clear();
             }
@@ -204,9 +210,12 @@ namespace Burntime.Framework
             Engine.ExitApplication();
         }
 
-        public virtual void ToggleNewGfx() { }
-
-        public virtual bool IsNewGfx { get; set; } = false;
+        public virtual bool IsNewGfx { get; set; } = true;
+        public virtual string Language
+        {
+            get => FileSystem.LocalizationCode;
+            set => FileSystem.LocalizationCode = value;
+        }
     }
 
     public class ApplicationInternal : IApplication
@@ -220,6 +229,8 @@ namespace Burntime.Framework
 
         public string Title => wrap.Title;
         public int MaxVerticalResolution => wrap.MaxVerticalResolution;
+        public Vector2 MinResolution => wrap.MinResolution;
+        public Vector2 MaxResolution => wrap.MaxResolution;
         public System.Drawing.Icon? Icon => wrap.Icon;
 
         public void Render(RenderTarget Target)

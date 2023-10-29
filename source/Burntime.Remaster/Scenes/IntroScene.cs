@@ -50,7 +50,7 @@ namespace Burntime.Remaster.Scenes
             : base(App)
         {
             timeout = new FadingHelper();
-            Music = "20_MUS 20_HSC.ogg";
+            Music = "intro";
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
             Size = new Vector2(320, 200);
@@ -141,6 +141,9 @@ namespace Burntime.Remaster.Scenes
 
         public override bool OnVKeyPress(SystemKey key)
         {
+            if (key == SystemKey.F8 || key == SystemKey.F9)
+                return false;
+
             NextScene();
             return true;
         }

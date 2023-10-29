@@ -11,7 +11,8 @@ public interface ILoadingCounter
 public interface IEngine
 {
     DeviceManager DeviceManager { get; set; }
-    int Layer { get; set; }
+    float Layer { get; set; }
+    float MaxLayers { get; }
 
     BlendOverlayBase BlendOverlay { get; }
     Resolution Resolution { get; }
@@ -20,6 +21,7 @@ public interface IEngine
 
     bool MusicBlend { get; set; }
     bool IsLoading { get; set; }
+    bool IsFullscreen { get; set; }
 
     void CenterMouse();
     void ExitApplication();

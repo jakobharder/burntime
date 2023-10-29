@@ -134,15 +134,18 @@ namespace Burntime.Framework
                 // handle clicks
                 foreach (MouseClickInfo click in app.DeviceManager.Mouse.Clicks)
                 {
-                    handle.MouseClick(click.Position - parentPos, click.Button);
+                    if (click.Down)
+                        handle.MouseDown(click.Position - parentPos, click.Button);
+                    else if (!click.Down)
+                        handle.MouseClick(click.Position - parentPos, click.Button);
                 }
 
                 // handle keys
                 Key[] keys = app.DeviceManager.Keyboard.Keys;
                 foreach (Key key in keys)
                 {
-                    if (key.IsVirtual && key.VirtualKey == SystemKey.F2)
-                        app.ToggleNewGfx();
+                    if (key.IsVirtual && key.VirtualKey == SystemKey.F8)
+                        app.IsNewGfx = !app.IsNewGfx;
                     else if (key.IsVirtual)
                         handle.VKeyPress(key.VirtualKey);
                     else

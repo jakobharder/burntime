@@ -1,4 +1,11 @@
 [replacement_60x72]
+' Remastered graphics are ratio corrected from 8:5 to 4:3 - 1 horizontal to 1.2 vertical.
+' Upscale is not exactly 2x but ratio correct to ensure clean pixel sizes and positions.
+' 32x32 -> 60x72
+' 16x16 -> 30x36
+' 8x8 -> 15x18
+' Ratio correction factor without upscale: 0.9375x1.125
+
 sprite_scale=1.875x2.25
 zei_004.raw=pngsheet@maps/shared/set_4.png?{0}?60x72
 zei_005.raw=pngsheet@maps/shared/set_5.png?{0}?60x72
@@ -36,22 +43,47 @@ maps/mat_033_tiles.png=pngsheet@maps/mat_033_tiles_2x.png?{0}?60x72
 film_02.pac=gfx/backgrounds/film2.png
 film_03.pac=gfx/backgrounds/film3.png
 film_04.pac=gfx/backgrounds/film4.png
+film_05.pac=gfx/backgrounds/film5.png
 film_09.pac=gfx/backgrounds/film9.png
+film_10.pac=gfx/backgrounds/film10.png
 info.pac=gfx/backgrounds/info.png
+hint1.pac=gfx/backgrounds/trader.png
+film_05.ani?0-17?p=pngsheet@gfx/backgrounds/film5_ani.png?0-17?135x126
+film_05.ani?18-19=pngsheet@gfx/backgrounds/film5_ani2.png?0-1?90x72
+film_05.ani?20-21=pngsheet@gfx/backgrounds/film5_ani3.png?0-1?90x72
+film_10.ani=pngsheet@gfx/backgrounds/film10_ani.png?0-12?60x72
 
 syssze.raw=pngsheet@gfx/syssze.png?{0}?30x36
 
 munt.raw?3=pngsheet@gfx/objects/munt.png?0?15x18
 munt.raw?4=pngsheet@gfx/objects/munt.png?1?15x18
+munt.raw?22=gfx/munt_daytime.png
 gfx/up.png=gfx/up.png
 gfx/down.png=gfx/down.png
+gfx/inventory_left.png=gfx/inventory_left.png
+inv.raw?1=gfx/inventory_middle.png
+inv.raw?2=gfx/inventory_right.png
+munt.raw?5=pngsheet@gfx/inventory_buttons.png?0?30x36
+munt.raw?6=pngsheet@gfx/inventory_buttons.png?1?30x36
+munt.raw?7=pngsheet@gfx/inventory_buttons.png?2?30x36
+munt.raw?8=pngsheet@gfx/inventory_buttons.png?3?30x36
+munt.raw?9=pngsheet@gfx/inventory_buttons.png?4?30x36
 
 syst.raw?16=pngsheet@gfx/objects/player_icon_colors.png?0?36x38
 syst.raw?17=pngsheet@gfx/objects/player_icon_colors.png?1?36x38
 syst.raw?18=pngsheet@gfx/objects/player_icon_colors.png?2?36x38
 syst.raw?19=pngsheet@gfx/objects/player_icon_colors.png?3?36x38
+burngfxani@syst.raw?24-27=pngsheet@gfx/syssze.png?18-19?30x36
+burngfxani@syst.raw?20-23=pngsheet@gfx/munt_info.png?0-3?23x30
+burngfxani@munt.raw?14-17=pngsheet@gfx/munt_fight.png?0-3?30x54
+burngfxani@syst.raw?0-3=pngsheet@gfx/objects/flags.png?0-11?30x36
+burngfxani@syst.raw?4-7=pngsheet@gfx/objects/flags.png?12-23?30x36
+burngfxani@syst.raw?8-11=pngsheet@gfx/objects/flags.png?24-35?30x36
+burngfxani@syst.raw?12-15=pngsheet@gfx/objects/flags.png?36-47?30x36
 
 [newgfx_native]
+' Graphics only used in remastered mode
+
 sprite_scale=1.875x2.25
 gfx/char_shadow.png=gfx/char_shadow.png
 gfx/objects/player_icons.png=pngsheet@gfx/objects/player_icons.png?{0}?36x38
@@ -63,12 +95,16 @@ gfx/backgrounds/statistics.png=gfx/backgrounds/statistics.png
 gfx/backgrounds/statistics2.png=gfx/backgrounds/statistics2.png
 
 [replacement]
+' Old upscale graphics. They should be replaced by 60x72 verisons eventually.
+
 sprite_scale=2x2
 burngfxani@munt.raw=pngani@gfx/munt_{0}.png
 munt.raw=gfx/munt_{0}.png
 sta.pac=gfx/sta.png
 
 [replacement_stretched]
+' Old upscale graphics. They should be replaced by 60x72 verisons eventually.
+
 sprite_scale=2x2.375
 ges_00.ani=pngsheet@gfx/faces/ges_00.png?0-39?136x152
 ges_01.ani=pngsheet@gfx/faces/ges_01.png?0?136x133
