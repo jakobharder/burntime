@@ -25,8 +25,8 @@ jobs:
     - name: Package
       run: |
         rm ./bin/Release/win-x64/publish/*.pdb
-        rm ./bin/tools/Release/win-x64/publish/*.pdb
         tar -caf burntime-${{ github.ref_name }}.zip -C ./bin/Release/win-x64/publish *
+#        rm ./bin/tools/Release/win-x64/publish/*.pdb
 #        tar -caf burntime-tools.zip -C ./bin/tools/Release/win-x64/publish *
 
     - name: Release
