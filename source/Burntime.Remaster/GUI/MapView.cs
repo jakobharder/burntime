@@ -8,7 +8,6 @@ using Burntime.Platform;
 using Burntime.Platform.Graphics;
 using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 
 namespace Burntime.Remaster.GUI;
 
@@ -66,8 +65,6 @@ public class MapView : Window
     public event EventHandler<MapScrollArgs> Scroll;
 
     Vector2 mousePosition = new Vector2();
-    ParticleEngine particles = new ParticleEngine();
-    protected bool enabled;
 
     List<Maps.IMapViewOverlay> overlays = new List<Maps.IMapViewOverlay>();
     public List<Maps.IMapViewOverlay> Overlays
@@ -77,7 +74,6 @@ public class MapView : Window
     }
 
     IMapEntranceHandler handler;
-    GuiFont font;
     MouseClickEvent mouseClickEvent;
     public MouseClickEvent MouseClickEvent
     {
@@ -85,25 +81,16 @@ public class MapView : Window
         set { mouseClickEvent = value; }
     }
 
-    public ParticleEngine Particles
-    {
-        get { return particles; }
-    }
-
-    public bool Enabled
-    {
-        get { return enabled; }
-        set { enabled = value; }
-    }
+    public ParticleEngine Particles { get; } = new ParticleEngine();
+    public bool Enabled { get; set; }
+    public event ClickHandler ContextMenu;
 
     public MapView(IMapEntranceHandler Handler, Module App)
         : base(App)
     {
-        enabled = true;
+        Enabled = true;
         handler = Handler;
         CaptureAllMouseMove = true;
-
-        font = new GuiFont(BurntimeClassic.FontName, new PixelColor(212, 212, 212));
 
         BurntimeClassic classic = app as BurntimeClassic;
         DebugView = classic.Settings["debug"].GetBool("show_routes") && classic.Settings["debug"].GetBool("enable_cheats");
@@ -139,11 +126,11 @@ public class MapView : Window
 
     public bool DebugView = false;
 
-    Vector2f position = new Vector2f();
+    Vector2f _position = new Vector2f();
     public Vector2 ScrollPosition
     {
-        get { return new Vector2(position); }
-        set { position = value; }
+        get { return new Vector2(_position); }
+        set { _position = value; }
     }
 
     float scrollSpeed = 70;
@@ -228,15 +215,15 @@ public class MapView : Window
 
         Target.Layer++;
         Target.Offset += ScrollPosition;
-        particles.Render(Target);
+        Particles.Render(Target);
         Target.Offset -= ScrollPosition;
 
         Target.Layer = old;
     }
 
-    public override bool OnMouseMove(Vector2 Position)
+    public override bool OnMouseMove(Vector2 position)
     {
-        if (!enabled)
+        if (!Enabled)
             return false;
 
         const int Margin = 4;
@@ -245,19 +232,19 @@ public class MapView : Window
         border.x = 0;
         border.y = 0;
 
-        border.x += (Position.x < Margin) ? 1 : 0;
-        border.x -= (Position.x > Size.x - Margin) ? 1 : 0;
-        border.x += (Position.x < BigMargin) ? 1 : 0;
-        border.x -= (Position.x > Size.x - BigMargin) ? 1 : 0;
-        border.y += (Position.y < Margin) ? 1 : 0;
-        border.y -= (Position.y > Size.y - Margin) ? 1 : 0;
-        border.y += (Position.y < BigMargin) ? 1 : 0;
-        border.y -= (Position.y > Size.y - BigMargin) ? 1 : 0;
+        border.x += (position.x < Margin) ? 1 : 0;
+        border.x -= (position.x > Size.x - Margin) ? 1 : 0;
+        border.x += (position.x < BigMargin) ? 1 : 0;
+        border.x -= (position.x > Size.x - BigMargin) ? 1 : 0;
+        border.y += (position.y < Margin) ? 1 : 0;
+        border.y -= (position.y > Size.y - Margin) ? 1 : 0;
+        border.y += (position.y < BigMargin) ? 1 : 0;
+        border.y -= (position.y > Size.y - BigMargin) ? 1 : 0;
 
         bool found = false;
         for (int i = 0; i < map.Entrances.Length; i++)
         {
-            if (map.Entrances[i].Area.PointInside(Position - (Vector2)position))
+            if (map.Entrances[i].Area.PointInside(position - (Vector2)this._position))
             {
                 entrance = i;
                 found = true;
@@ -266,15 +253,41 @@ public class MapView : Window
         if (!found)
             entrance = -1;
 
-        mousePosition = Position - ScrollPosition;
+        mousePosition = position - ScrollPosition;
+
+        if (_rightClickMove.HasValue)
+        {
+            _position += (Vector2f)(position - _rightClickMove.Value);
+            _position.Max(0);
+            _position.Min(Boundings.Size - map.TileSize * map.Size);
+
+            _moveTotal += (position - _rightClickMove.Value).Length;
+            _rightClickMove = position;
+        }
 
         return true;
     }
 
+    public override void OnMouseEnter()
+    {
+        if (_rightClickMove.HasValue && !app.Engine.DeviceManager.Mouse.IsRightDown)
+            _rightClickMove = null;
+
+        base.OnMouseEnter();
+    }
+
     public override bool OnMouseClick(Vector2 position, MouseButton button)
     {
-        if (!enabled)
+        if (!Enabled)
             return false;
+
+        if (button == MouseButton.Right)
+        {
+            if (_moveTotal < 10)
+                ContextMenu?.Invoke(position, button);
+            _rightClickMove = null;
+            _moveTotal = 0;
+        }
 
         if (entrance != -1 && handler != null)
             if (handler.OnClickEntrance(entrance, button))
@@ -304,20 +317,34 @@ public class MapView : Window
         return false;
     }
 
+    float _moveTotal;
+    Vector2? _rightClickMove = null;
+    public override bool OnMouseDown(Vector2 position, MouseButton button)
+    {
+        if (button == MouseButton.Right)
+        {
+            _moveTotal = 0;
+            _rightClickMove = position;
+        }
+
+        return true;
+    }
+
     public override void OnUpdate(float Elapsed)
     {
-        position += border * Elapsed * scrollSpeed;
-        if (border != Vector2f.Zero && Scroll != null)
-            Scroll.Invoke(this, new MapScrollArgs(position));
-
-        position.Max(0);
-        position.Min(Boundings.Size - map.TileSize * map.Size);
+        if (!_rightClickMove.HasValue && border != Vector2f.Zero)
+        {
+            _position += border * Elapsed * scrollSpeed;
+            _position.Max(0);
+            _position.Min(Boundings.Size - map.TileSize * map.Size);
+            Scroll?.Invoke(this, new MapScrollArgs(_position));
+        }
 
         // map is smaller than screen, center it
         if (map.TileSize.x * map.Size.x < Boundings.Size.x)
-            position.x = (Boundings.Size.x - map.TileSize.x * map.Size.x) / 2;
+            _position.x = (Boundings.Size.x - map.TileSize.x * map.Size.x) / 2;
         if (map.TileSize.y * map.Size.y < Boundings.Size.y)
-            position.y = (Boundings.Size.y - map.TileSize.y * map.Size.y) / 2;
+            _position.y = (Boundings.Size.y - map.TileSize.y * map.Size.y) / 2;
 
         if (handler != null)
         {
@@ -344,13 +371,14 @@ public class MapView : Window
             }
         }
 
-        particles.Update(Elapsed);
+        Particles.Update(Elapsed);
     }
 
     public void CenterTo(Vector2 centerTo)
     {
-        position = -centerTo + (Boundings.Size / 2);
-
-        OnUpdate(0);
+        _position = -centerTo + (Boundings.Size / 2);
+        _position.Max(0);
+        _position.Min(Boundings.Size - map.TileSize * map.Size);
+        Scroll?.Invoke(this, new MapScrollArgs(_position));
     }
 }

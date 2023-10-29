@@ -134,7 +134,10 @@ namespace Burntime.Framework
                 // handle clicks
                 foreach (MouseClickInfo click in app.DeviceManager.Mouse.Clicks)
                 {
-                    handle.MouseClick(click.Position - parentPos, click.Button);
+                    if (click.Down)
+                        handle.MouseDown(click.Position - parentPos, click.Button);
+                    else if (!click.Down)
+                        handle.MouseClick(click.Position - parentPos, click.Button);
                 }
 
                 // handle keys

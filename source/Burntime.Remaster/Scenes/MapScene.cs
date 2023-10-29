@@ -38,6 +38,7 @@ namespace Burntime.Remaster
             view.Overlays.Add(new Maps.MapViewOverlayPlayer(app));
             view.Overlays.Add(new Maps.MapViewOverlayHoverText(app));
             view.Scroll += new EventHandler<MapScrollArgs>(view_Scroll);
+            view.ContextMenu += View_OnContextMenu;
             Windows += view;
 
             menu = new MenuWindow(App);
@@ -62,6 +63,11 @@ namespace Burntime.Remaster
             debugNoTravel = classic.Settings["debug"].GetBool("no_travel") && classic.Settings["debug"].GetBool("enable_cheats");
         }
 
+        private void View_OnContextMenu(Vector2 position, MouseButton button)
+        {
+            menu.Show(position, view.Boundings);
+        }
+
         public override void OnResizeScreen()
         {
             base.OnResizeScreen();
@@ -75,15 +81,6 @@ namespace Burntime.Remaster
         {
             ClassicGame game = app.GameState as ClassicGame;
             game.World.ActivePlayerObj.MapScrollPosition = e.Offset;
-        }
-
-        public override bool OnMouseClick(Vector2 Position, MouseButton Button)
-        {
-            if (Button == MouseButton.Right)
-            {
-                menu.Show(Position, view.Boundings);
-            }
-            return true;
         }
 
         public override bool OnKeyPress(char key)

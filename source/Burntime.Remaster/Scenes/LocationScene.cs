@@ -49,6 +49,7 @@ namespace Burntime.Remaster
             view.Overlays.Add(hoverInfo = new Maps.MapViewOverlayHoverText(App));
             view.ClickObject += new EventHandler<ObjectArgs>(view_ClickObject);
             view.Scroll += new EventHandler<MapScrollArgs>(view_Scroll);
+            view.ContextMenu += View_ContextMenu;
             Windows += view;
 
             menu = new MenuWindow(App);
@@ -74,6 +75,11 @@ namespace Burntime.Remaster
             dialog.WindowHide += new EventHandler(dialog_WindowHide);
             dialog.WindowShow += new EventHandler(dialog_WindowShow);
             Windows += dialog;
+        }
+
+        private void View_ContextMenu(Vector2 position, MouseButton button)
+        {
+            ShowMenu(position);
         }
 
         public override void OnResizeScreen()
@@ -232,15 +238,6 @@ namespace Burntime.Remaster
             }
 
             return false;
-        }
-
-        public override bool OnMouseClick(Vector2 position, MouseButton button)
-        {
-            if (button == MouseButton.Right)
-            {
-                ShowMenu(position);
-            }
-            return true;
         }
 
         public override void OnRender(RenderTarget Target)
@@ -660,8 +657,8 @@ namespace Burntime.Remaster
                 view.Particles.Add(new StaticAnimationParticle(sprite.Clone(), eventArgs.Defender.Position));
 
                 // play sounds only for human player interactions
-                if (eventArgs.Attacker.Player.Type != PlayerType.Human &&
-                    eventArgs.Defender.Player.Type != PlayerType.Human)
+                if (eventArgs.Attacker.Player?.Type != PlayerType.Human &&
+                    eventArgs.Defender.Player?.Type != PlayerType.Human)
                     return;
 
                 if ((eventArgs.Attacker.IsDead && eventArgs.Attacker.IsHuman)

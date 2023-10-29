@@ -1,4 +1,5 @@
 ﻿using Burntime.Platform.Utils;
+using System.Net;
 
 namespace Burntime.Platform;
 
@@ -11,6 +12,7 @@ public enum MouseButton
 
 public struct MouseClickInfo
 {
+    public bool Down;
     public Vector2 Position;
     public MouseButton Button;
 }
@@ -19,6 +21,7 @@ public interface IMouseDevice
 {
     Vector2 Position { get; }
     Nullable<Rect> Boundings { get; set; }
+    bool IsRightDown { get; }
 
     /// <summary>
     /// thread-safe
@@ -33,7 +36,8 @@ sealed class MouseDevice : IMouseDevice
     private Vector2 current = Vector2.Zero;
     private Nullable<Vector2> previous;
     private List<MouseClickInfo> clicks = new List<MouseClickInfo>();
-    
+
+    public bool IsRightDown { get; set; }
     public Rect? Boundings { get; set; }
 
     public MouseDevice(Resolution resolution)
@@ -193,6 +197,13 @@ public class DeviceManager
     private readonly MouseDevice _mouse;
     public IMouseDevice Mouse => _mouse;
 
+#warning TODO implement proper mouse state
+    public bool IsRightDown
+    {
+        get => _mouse.IsRightDown;
+        set => _mouse.IsRightDown = value;
+    }
+
     public Keyboard Keyboard { get; } = new();
 
     private readonly Resolution _resolution;
@@ -209,12 +220,23 @@ public class DeviceManager
         _mouse.Position = new Vector2(Position);
     }
 
-    public void MouseClick(Vector2 Position, MouseButton Button)
+    public void MouseDown(Vector2 position, MouseButton button)
     {
         _mouse.AddClick(new()
         {
-            Position = new Vector2(Position),
-            Button = Button
+            Position = new Vector2(position),
+            Button = button,
+            Down = true
+        });
+    }
+
+    public void MouseClick(Vector2 position, MouseButton button)
+    {
+        _mouse.AddClick(new()
+        {
+            Position = new Vector2(position),
+            Button = button,
+            Down = false
         });
     }
 

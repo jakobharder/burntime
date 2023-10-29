@@ -176,10 +176,7 @@ namespace Burntime.Framework.GUI
                 return false;
 
             foreach (Window window in windows)
-            {
-                if (window.IsVisible)
-                    window.MouseMove(Position - this.Position);
-            }
+                window.MouseMove(Position - this.Position);
 
             return base.MouseMove(Position);
         }
@@ -188,6 +185,34 @@ namespace Burntime.Framework.GUI
         {
             foreach (Window window in windows)
                 window.ModalLeave();
+        }
+
+        internal override bool MouseDown(Vector2 position, MouseButton button)
+        {
+            if (!visible)
+                return false;
+
+            foreach (Window window in windows)
+            {
+                if (window.IsVisible && window.MouseDown(position - Position, button))
+                    return true;
+            }
+
+            return base.MouseDown(position, button);
+        }
+
+        internal override bool MouseUp(Vector2 position, MouseButton button)
+        {
+            if (!visible)
+                return false;
+
+            foreach (Window window in windows)
+            {
+                if (window.IsVisible && window.MouseUp(position - Position, button))
+                    return true;
+            }
+
+            return base.MouseUp(position, button);
         }
 
         internal override void KeyPress(char Key)

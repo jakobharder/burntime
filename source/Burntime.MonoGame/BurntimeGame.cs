@@ -208,8 +208,10 @@ namespace Burntime.MonoGame
                 _rightClicked = false;
                 DeviceManager.MouseLeave();
             }
-            else
+            //else
             {
+                DeviceManager.IsRightDown = mouseState.RightButton == ButtonState.Pressed;
+
                 var mousePosition = new Vector2f(mouseState.X, mouseState.Y) * (Vector2f)Resolution.Game / (Vector2f)Resolution.Native;
                 DeviceManager.MouseMove(mousePosition);
 
@@ -217,9 +219,17 @@ namespace Burntime.MonoGame
                 if (!IsActive) return;
 
                 if (mouseState.LeftButton == ButtonState.Pressed)
+                {
+                    if (!_leftClicked)
+                        DeviceManager.MouseDown(mousePosition, MouseButton.Left);
                     _leftClicked = true;
+                }
                 if (mouseState.RightButton == ButtonState.Pressed)
+                {
+                    if (!_rightClicked)
+                        DeviceManager.MouseDown(mousePosition, MouseButton.Right);
                     _rightClicked = true;
+                }
 
                 if (_leftClicked && mouseState.LeftButton == ButtonState.Released)
                 {
