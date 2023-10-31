@@ -3,6 +3,7 @@ using Burntime.Framework.States;
 using Burntime.Platform;
 using Burntime.Platform.Resource;
 using Burntime.Remaster.Logic;
+using Burntime.Remaster.Logic.Interaction;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -148,5 +149,15 @@ namespace Burntime.Remaster
             return current;
         }
 
+        public Item? FindBestProtection(Item? current, string dangerType)
+        {
+            foreach (Item item in this)
+            {
+                var protection = item.Type.GetProtection(dangerType);
+                if (protection is not null && protection.Rate > (current?.Type.GetProtection(dangerType)?.Rate ?? 0))
+                    current = item;
+            }
+            return current;
+        }
     }
 }

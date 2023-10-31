@@ -683,6 +683,8 @@ namespace Burntime.Remaster.Logic
                 {
                     float rate = 1;
 
+                    UseBestProtection();
+
                     if (Protection != null)
                     {
                         Interaction.DangerProtection p = Protection.Type.GetProtection(Location.Danger.Type);
@@ -773,6 +775,11 @@ namespace Burntime.Remaster.Logic
 
             Weapon = Items.FindBestWeapon(Weapon);
             return attackValue;
+        }
+
+        private void UseBestProtection()
+        {
+            Protection = Items.FindBestProtection(Protection, Location.Danger.Type);
         }
 
         #region ICharacterCollection, IEnumerable implementations
