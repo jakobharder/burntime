@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Changes
+
+- Automatically equip weapons and protection
+- Don't use guns when dogs or mutants attack you
+
 ### Fixes
 
 - Fixed inventory not opening after killing a dog

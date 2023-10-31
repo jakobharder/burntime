@@ -4,6 +4,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Burntime.Classic</RootNamespace>
     <AssemblyName>Burntime.Game</AssemblyName>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Burntime.BurnGfx\Burntime.BurnGfx.csproj" />

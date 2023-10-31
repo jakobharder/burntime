@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
+﻿using Burntime.Data.BurnGfx;
+using Burntime.Framework.States;
 using Burntime.Platform;
 using Burntime.Platform.Resource;
-using Burntime.Framework.States;
-using Burntime.Data.BurnGfx;
 using Burntime.Remaster.Logic;
 using Burntime.Remaster.Logic.Interaction;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
 namespace Burntime.Remaster
 {
@@ -102,10 +101,12 @@ namespace Burntime.Remaster
 
         // remaining bullets
         protected int ammo;
-        public int AmmoValue
-        {
-            get { return ammo; }
-        }
+        public int AmmoValue => ammo;
+
+        /// <summary>
+        /// Weapon that requires ammo.
+        /// </summary>
+        public bool ConsumesAmmo => ammo != 0;
 
         public bool IsSelectable
         {

@@ -33,7 +33,7 @@ namespace Burntime.Remaster.AI
             {
                 if (!attack.IsDead && (attack.Position - Owner.Position).Length < 20)
                 {
-                    Owner.Attack(attack);
+                    Owner.Attack(attack, defendWithAmmo: false);
                     attack = null;
                     runAway = true;
                 }
