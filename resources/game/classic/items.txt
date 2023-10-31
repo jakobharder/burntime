@@ -204,6 +204,7 @@ burngfx=43
 [item_rope]
 class=key
 burngfx=44
+fluff=@newburn?33
 
 [item_iron_bars]
 class=useless

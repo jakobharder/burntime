@@ -6,6 +6,7 @@
 
 - Automatically equip weapons and protection
 - Don't use guns when dogs or mutants attack you
+- Right click on an rope item to get a hint
 
 ### Fixes
 

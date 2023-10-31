@@ -159,7 +159,14 @@ namespace Burntime.Remaster.Logic.Interaction
 
             if (construction == null)
             {
-                conv.Text = ResourceManager.GetStrings("men_" + defaultDialog.ToString("D3") + "?s" + index);
+                if (mainItem.Type.FluffText is not null)
+                {
+                    conv.Text = new string[] { mainItem.Type.FluffText };
+                }
+                else
+                {
+                    conv.Text = ResourceManager.GetStrings("men_" + defaultDialog.ToString("D3") + "?s" + index);
+                }
             }
             else
             {
