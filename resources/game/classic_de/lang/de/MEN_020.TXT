@@ -11,7 +11,7 @@ Hi, alles Klar?}
 }#
 Was denn nun?}
 }
-Weisst du bald,}
+Weißt du bald,}
 was du willst?}
 }#
 Gib mir |C!}

@@ -6,7 +6,7 @@ man oft brauchbare Sachen!}
 Ich grüße dich!}
 }
 }#
-Ich grüsse dich}
+Ich grüße dich}
 Fremder!}
 }#
 Was ist los?}

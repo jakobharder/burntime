@@ -10,7 +10,7 @@ Hallo mein Patient!}
 }#
 Aus Ärztlicher Sicht ist}
 das Leben in dieser...} 
-...Umgebung äusserst}
+...Umgebung äußerst}
 bedenklich!}
 }#
 Was hast du am Herzen?}

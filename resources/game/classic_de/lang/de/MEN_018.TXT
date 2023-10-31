@@ -5,7 +5,7 @@ Kreaturen...}
 Ich hasse sie!!}
 }
 }#
-Ich grüsse dich, Freund!}
+Ich grüße dich, Freund!}
 }
 }#
 Endlich ein normales}

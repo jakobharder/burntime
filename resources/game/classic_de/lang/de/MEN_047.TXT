@@ -1,5 +1,5 @@
 Ich sammle Flaschen und}
-Gefässe für meinen Brunnen.}
+Gefäße für meinen Brunnen.}
 Es versickert nämlich sonst}
 viel zuviel Wasser!}
 }#
@@ -10,7 +10,7 @@ Hast du irgendwo Flaschen}
 gesehen?}
 }#
 Ich suche nach Flaschen}
-und Gefässen!}
+und Gefäßen!}
 }#
 Wenn du mir |C}
 gibst, gehe ich mit dir!}

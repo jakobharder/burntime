@@ -11,7 +11,7 @@ Men Zahna in Corpore Zahnum!}
 }#
 Lass dich genauer ansehen.}
 }
-Aha, du hast sicher grosse}
+Aha, du hast sicher große}
 Schwierigkeiten mit...} 
 ...der Verdauung.} 
 }
