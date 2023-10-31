@@ -78,7 +78,7 @@ public class RenderTarget
 
     public void RenderLine(Vector2 start, Vector2 end, PixelColor color)
     {
-        _engine.RenderLine(start + _rc.Position + Offset, end + _rc.Position + Offset, color.ToInt());
+        _engine.RenderLine(start + _rc.Position + Offset, end + _rc.Position + Offset, color);
     }
 
     public RenderTarget GetSubBuffer(Rect rc)

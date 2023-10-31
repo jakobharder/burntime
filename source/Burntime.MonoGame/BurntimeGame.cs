@@ -395,6 +395,17 @@ namespace Burntime.MonoGame
             RenderDevice.AddEntity(entity);
         }
 
+        public void RenderLine(Platform.Vector2 start, Platform.Vector2 end, PixelColor color)
+        {
+            var entity = new LineEntity
+            {
+                Color = new Color(color.r, color.g, color.b, color.a),
+                Start = new Vector3(start.x, start.y, CalcZ(Layer)),
+                End = new Vector3(end.x, end.y, CalcZ(Layer))
+            };
+            RenderDevice.AddEntity(entity);
+        }
+
         public void RenderSprite(ISprite sprite, Platform.Vector2 pos, float alpha = 1)
         {
             if (sprite is not MonoGame.Graphics.Sprite nativeSprite || !nativeSprite.Touch()) return;
@@ -464,15 +475,6 @@ namespace Burntime.MonoGame
                 Factor = nativeSprite.Frame.Resolution
             };
             RenderDevice.AddEntity(entity2);
-        }
-
-        public void RenderLine(Platform.Vector2 start, Platform.Vector2 end, int color)
-        {
-            //Graphics.LineEntity entity = new Burntime.Platform.Graphics.LineEntity();
-            //entity.Color = new SlimDX.Color4(color);
-            //entity.Start = new SlimDX.Vector3(start.x, start.y, CalcZ(layer));
-            //entity.End = new SlimDX.Vector3(end.x, end.y, CalcZ(layer));
-            //device.AddEntity(entity);
         }
         #endregion
     }

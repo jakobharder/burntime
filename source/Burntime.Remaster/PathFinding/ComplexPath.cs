@@ -194,11 +194,9 @@ namespace Burntime.Remaster.PathFinding
                 cycles.CyclesPerSecond = BurntimeClassic.Instance.Settings["game"].GetInt("pathfinding_cycles");
             }
 
-            public bool FinishedCalculation
-            {
-                get { return finishedCalculation; }
-            }
-            
+            public bool IsPathSet => openList is not null;
+            public bool HasFinishedCalculation => finishedCalculation;
+
             public void Clear()
             {
                 reversePath = null;
@@ -266,13 +264,13 @@ namespace Burntime.Remaster.PathFinding
             public void Process(float elapsed, Vector2f currentPosition)
             {
                 // BeginProcess not called
-                if (openList == null)
+                if (!IsPathSet)
                     return;
 
                 if (reversePath != null)
                 {
                     reversePath.Process(elapsed, currentPosition);
-                    if (reversePath.FinishedCalculation)
+                    if (reversePath.HasFinishedCalculation)
                     {
                         // reset goal and starting point
                         goal = reversePath.Nearest;
@@ -299,10 +297,7 @@ namespace Burntime.Remaster.PathFinding
                         reversePath = null;
 
                         if (gridGoal == ToGridPoint(currentPosition))
-                        {
-                            openList.Clear();
-                            finishedCalculation = true;
-                        }
+                            FinishCalculation();
                     }
                 }
 
@@ -359,25 +354,19 @@ namespace Burntime.Remaster.PathFinding
                         // reached goal
                         if (nearestNode.Position == gridGoal)
                         {
-                            openList.Clear();
-                            closedList.Clear();
-                            finishedCalculation = true;
+                            FinishCalculation();
                             break;
                         }
                         // propably the most near walkable positions, break early to save cpu time
-                        else if (reversePath != null && reversePath.FinishedCalculation && (reversePath.Nearest - Nearest).Length < 5)
+                        else if (reversePath != null && reversePath.HasFinishedCalculation && (reversePath.Nearest - Nearest).Length < 5)
                         {
-                            openList.Clear();
-                            closedList.Clear();
-                            finishedCalculation = true;
+                            FinishCalculation();
                             break;
                         }
                         ////
                         //else if (reverse && nearestNode.Remaining == 0)
                         //{
-                        //    openList.Clear();
-                        //    closedList.Clear();
-                        //    finishedCalculation = true;
+                        //    FinishCalculation();
                         //    break;
                         //}
                     }
@@ -429,10 +418,7 @@ namespace Burntime.Remaster.PathFinding
                 }
 
                 if (openList.Count == 0)
-                {
-                    finishedCalculation = true;
-                    closedList.Clear();
-                }
+                    FinishCalculation();
             }
 
             Vector2 ToGridPoint(Vector2f position)
@@ -506,6 +492,14 @@ namespace Burntime.Remaster.PathFinding
                     }
                 }
             }
+
+            private void FinishCalculation()
+            {
+                openList.Clear();
+                closedList.Clear();
+                finishedCalculation = true;
+                goal = nearest;
+            }
         }
 
         Vector2f move;
@@ -552,10 +546,10 @@ namespace Burntime.Remaster.PathFinding
             }
 
             // moveto position differs from active path goal, recalculate path
-            if (adjustedMove != path.Goal)
+            if (adjustedMove != path.Goal || !path.IsPathSet)
                 path.BeginProcess(mask, this.position, adjustedMove, elapsed, false);
             // in case path finding is not finished yet do further processing
-            else if (!path.FinishedCalculation)
+            else if (!path.HasFinishedCalculation)
                 path.Process(elapsed, this.position);
 
             // in case the goal was adjusted copy to move

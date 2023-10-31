@@ -1,6 +1,12 @@
 ﻿# Burntime Changelog
 
-## 0.7 - Options, Trader and Amiga (2023-10-26)
+## [Unreleased]
+
+### Fixes
+
+- Fixed inventory not opening after killing a dog
+
+## 0.7 - Options, Trader and Amiga (2023-10-29)
 
 ### Changes
 
@@ -17,7 +23,7 @@
   - Trader intro scenes
   - Inventory UIs
 - Added Amiga sounds, music
-  - Amiga version hit, barf and die sounds
+  - Amiga version hit, bark and die sounds
   - Switch to Amiga music in options
 - Start game with language selection
 - Save user settings

@@ -4,7 +4,6 @@ using System.Text;
 
 using Burntime.Platform;
 using Burntime.Platform.Graphics;
-using Burntime.Platform.IO;
 using Burntime.Framework;
 using Burntime.Framework.GUI;
 using Burntime.Framework.States;
@@ -13,12 +12,13 @@ using Burntime.Data.BurnGfx;
 using Burntime.Remaster.Logic;
 using Burntime.Remaster.Logic.Interaction;
 using Burntime.Remaster.Maps;
-using System.Security.Claims;
 
 namespace Burntime.Remaster
 {
     public class LocationScene : Scene, IMapEntranceHandler, IInteractionHandler, ILogicNotifycationHandler
     {
+        const int PICKUP_DISTANCE = 20;
+
         MapView view;
         MainUiOriginalWindow gui;
         MenuWindow menu;
@@ -134,9 +134,9 @@ namespace Burntime.Remaster
                 else
                     ClickCharacter(e.Object as Character);
             }
-            else if (!fightMode && e.Object is DroppedItem)
+            else if (e.Object is DroppedItem)
             {
-                if (20 > (charOverlay.SelectedCharacter.Position - e.Object.MapPosition).Length)
+                if (PICKUP_DISTANCE > (charOverlay.SelectedCharacter.Position - e.Object.MapPosition).Length)
                     OnMenuInventory();
                 else
                     MoveCharacter(e.Object);
@@ -380,12 +380,12 @@ namespace Burntime.Remaster
                 return;
 
             charOverlay.SelectedCharacter.CancelAction();
-            
+
             BurntimeClassic classic = app as BurntimeClassic;
             classic.InventoryBackground = -1;
             classic.InventoryRoom = null;
             classic.Game.World.ActiveLocationObj.Items.DropPosition = charOverlay.SelectedCharacter.Position;
-            classic.PickItems = new PickItemList(classic.Game.World.ActiveLocationObj.Items, charOverlay.SelectedCharacter.Position, 20);
+            classic.PickItems = new PickItemList(classic.Game.World.ActiveLocationObj.Items, charOverlay.SelectedCharacter.Position, PICKUP_DISTANCE);
             app.SceneManager.SetScene("InventoryScene", charOverlay.SelectedCharacter);
         }
 
