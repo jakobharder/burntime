@@ -1,4 +1,4 @@
-Nicht das ich w걌ste.}
+Nicht das ich w체sste.}
 }
 }#
 Was willst du?}
@@ -16,12 +16,12 @@ Gut, aber ich will}
 Bring mir} 
 |C, dann...}
 }
-...k꼖pfe ich f걊 dich!}
+...k채mpfe ich f체r dich!}
 }#
-Ich k꼖pfe f걊 den,}
+Ich k채mpfe f체r den,}
 der mich bezahlt!}
 }#
-F걊 dich arbeite ich nicht!}
+F체r dich arbeite ich nicht!}
 }
 }#
 }#

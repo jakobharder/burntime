@@ -1,19 +1,19 @@
-Ich k걅mere mich nicht }
+Ich k체mmere mich nicht }
 um die anderen Leute!}
 }#
 Was oder wen kann ich}
-f걊 dich erledigen?}
+f체r dich erledigen?}
 }#
 Hallo, was kann ich}
-f걊 dich tun?}
+f체r dich tun?}
 }#
 Was ist los? Nun sag}
 schon was du willst!}
 }#
-Du hast echt grosses Gl갷k}
+Du hast echt grosses Gl체ck}
 das du mich getroffen hast!}
 Gib mir |C und }
-ich arbeite nur f걊 dich!}
+ich arbeite nur f체r dich!}
 }#
 Schade das du nicht} 
 |C...}
@@ -25,8 +25,8 @@ geht leider nichts!}
 |A}
 }
 }#
-Ich arbeite nur f걊 Profis,}
-und nicht f걊 Flaschen!}
+Ich arbeite nur f체r Profis,}
+und nicht f체r Flaschen!}
 }#
 }#
 }}

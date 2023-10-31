@@ -10,7 +10,7 @@ Leuten das Leben gerettet!}
 Womit kann ich dienen?}
 }
 }#
-Was m”chtest du}
+Was mÃ¶chtest du}
 von mir?}
 }#
 Na, is noch was?}
@@ -30,7 +30,7 @@ gehe ich mit dir.}
 }
 }#
 Mit so einem}
-Schw„chling...}
+SchwÃ¤chling...}
 Nein, danke!}
 }
 }#

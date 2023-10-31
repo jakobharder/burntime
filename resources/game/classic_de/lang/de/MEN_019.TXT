@@ -1,20 +1,20 @@
 Nimm dich in acht...}
 }
-es ist eine gef꼑rliche }
-Zeit, manche t봳en schon}
-f걊 ein St갷k} 
+es ist eine gef채hrliche }
+Zeit, manche t철ten schon}
+f체r ein St체ck} 
 Rattenfleisch!}
 }#
-Hallo und sei gegr걌st!}
+Hallo und sei gegr체sst!}
 }
 }#
-Ich gr걌se dich, Fremder!}
+Ich gr체sse dich, Fremder!}
 }
 }#
 Stiehl mir nicht die Zeit!}
 }
 }#
-Ja, ich werde f걊 dich}
+Ja, ich werde f체r dich}
 arbeiten...}
 ...aber nur wenn du mir}
 |C gibst.}
@@ -23,9 +23,9 @@ Nein, es sei denn du}
 bringst mir |C.}
 }#
 Ich versuche zu }
-갶erleben...}
+체berleben...}
 ...und wenn du}
-willst k꼖pfe ich}
+willst k채mpfe ich}
 an deiner Seite!}
 }
 }#

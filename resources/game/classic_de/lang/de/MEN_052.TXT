@@ -1,6 +1,6 @@
 Es sind schlechte Zeiten.}
 }
-šberall treibt sich Gesindel}
+Ãœberall treibt sich Gesindel}
 herum!}
 }#
 Man muss wirklich vorsichtig}
@@ -23,12 +23,12 @@ Besorg mir zuerst einmal}
 |C.}
 }#
 Ich ziehe von Ort zu Ort}
-und repariere alte Ger„te.}
+und repariere alte GerÃ¤te.}
 Manchmal baue ich auch}
 Fallen und andere Sachen.}
 }#
 Nein! Ich traue dir}
-n„mlich nicht!}
+nÃ¤mlich nicht!}
 }#
 }#
 }}

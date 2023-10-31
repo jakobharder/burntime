@@ -1,7 +1,7 @@
 Ich brauche Schrauben, ein}
-Holzstck und noch einen...}
-...Teil, dann k”nnte ich}
-eine sch”ne Falle fr}
+HolzstÃ¼ck und noch einen...}
+...Teil, dann kÃ¶nnte ich}
+eine schÃ¶ne Falle fÃ¼r}
 Ratten bauen!}
 }
 }#
@@ -11,19 +11,19 @@ Erfinder, und immer auf...}
 die ich verwenden kann!}
 }#
 Hast du ein paar Sachen}
-die ich fr meine...}
+die ich fÃ¼r meine...}
 ...Erfindungen gebrauchen}
-k”nnte?}
+kÃ¶nnte?}
 }#
 Willst du noch etwas}
 von mir?}
 }#
 Bring mir |C}
 dann stelle ich dir mein...}
-Wissen zur Verfgung!}
+Wissen zur VerfÃ¼gung!}
 }
 }#
-Treib |C fr }
+Treib |C fÃ¼r }
 mich auf.}
 }#
 Habe ich nicht schon}

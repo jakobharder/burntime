@@ -92,7 +92,7 @@ namespace Burntime.Remaster
 
             // set language code
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
-            ResourceManager.Encoding = Encoding.GetEncoding(852); // DOS central europe
+            ResourceManager.Encoding = Encoding.UTF8;//Encoding.GetEncoding(852); // DOS central europe
 
             // legacy clean up
             _ = FileSystem.RemoveFile("user:settings.txt");

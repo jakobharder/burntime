@@ -1,4 +1,4 @@
-Ich sammle Spenden fÅr}
+Ich sammle Spenden f√ºr}
 den Bau eines...} 
 grossen Hospitals!} 
 }
@@ -16,10 +16,10 @@ wohin des Wegs?}
 Was ist los?}
 }
 }#
-Gerne! Aber zuerst mîchte}
+Gerne! Aber zuerst m√∂chte}
 ich |C!}
 }#
-Ich mîchte schon. Aber ohne}
+Ich m√∂chte schon. Aber ohne}
 |C...}
 ...ist da wenig zu machen.}
 }

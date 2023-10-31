@@ -4,7 +4,7 @@ Nicht viel...}
 ein paar Schmarotzer gesehen.}
 }#
 Hey Kumpel..}
-was kann ich fÅr dich tun.}
+was kann ich f√ºr dich tun.}
 }#
 Hey Kumpel}
 was willst du von mir?}
@@ -21,7 +21,7 @@ bin ich dabei}
 |A}
 }
 }#
-Ich arbeite doch nicht fÅr}
+Ich arbeite doch nicht f√ºr}
 so eine taube Nuss !!}
 }#
 }#

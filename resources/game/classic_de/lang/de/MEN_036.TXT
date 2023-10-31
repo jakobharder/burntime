@@ -1,5 +1,5 @@
-Gestern hat mich ein HÑndler}
-Åbers Ohr gehauen, hat mir..}
+Gestern hat mich ein H√§ndler}
+√ºbers Ohr gehauen, hat mir..}
 alles abgenommen, mich total}
 abgezockt. Ich sag dir... }
 ...nimm dich in acht vor }
@@ -12,9 +12,9 @@ Was willst du von mir,}
 Fremder?}
 }#
 Ich sag dir, es gibt keine}
-NÑchstenliebe mehr!}
+N√§chstenliebe mehr!}
 }#
-FÅr |C mache} 
+F√ºr |C mache} 
 ich mit!}
 }#
 Bring mir |C}
@@ -24,7 +24,7 @@ Bring mir |C}
 }
 }#
 Sehe ich aus als sei}
-ich ein Selbstmîrder?}
+ich ein Selbstm√∂rder?}
 }#
 }#
 }}
