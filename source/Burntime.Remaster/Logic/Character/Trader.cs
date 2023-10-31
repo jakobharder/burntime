@@ -19,14 +19,14 @@ namespace Burntime.Remaster.Logic
     [Serializable]
     public class Trader : Character, ITestIF
     {
-        static Random rnd = new Random();
-
         StateLink<Location> homeArea;
 
         int counter = 0;
         StateLinkList<TraderItemRefreshItem> itemRefreshs;
         int itemRefreshRange = 0;
-        int _maxStockItemCount = 7;
+
+        readonly int _maxStockItemCount = 7;
+
         protected int traderId;
 
         public Location HomeArea
@@ -78,10 +78,9 @@ namespace Burntime.Remaster.Logic
 
         public void RandomizeInventory()
         {
-            
             Items.Clear();
 
-            for (int count = rnd.Next() % 1 + 6; count >= 0; count--)
+            for (int count = Platform.Math.Random.Next(3, 6); count >= 0; count--)
             {
                 ItemType type = GetNextItem();
                 if (type == null)
@@ -104,7 +103,7 @@ namespace Burntime.Remaster.Logic
                 counter = 0;
                 if (Location == HomeArea)
                 {
-                    Location = HomeArea.Neighbors[rnd.Next(HomeArea.Neighbors.Count - 1)];
+                    Location = HomeArea.Neighbors[Platform.Math.Random.Next(HomeArea.Neighbors.Count - 1)];
                     position = Location.EntryPoint;
                 }
                 else
@@ -117,13 +116,30 @@ namespace Burntime.Remaster.Logic
 
         protected virtual void RefreshItems()
         {
-            int remove = System.Math.Min(Items.Count, rnd.Next(2, 3));
-            int maxAdd = System.Math.Max(0, _maxStockItemCount - Items.Count + remove);
-            int add = rnd.Next(System.Math.Min(3, maxAdd), maxAdd);
+            // randomly swap 1 to 3 items
+            int swapItems = System.Math.Min(Items.Count, Platform.Math.Random.Next(1, 3));
+            int remove = swapItems;
+            int add = swapItems;
+
+            // keep total to 3 to max stock items
+            const int MIN_STOCK_ITEMS = 2;
+            const int MAX_STOCK_ITEMS = 6;
+            int targetCount = Platform.Math.Random.Next(MIN_STOCK_ITEMS, MAX_STOCK_ITEMS);
+            int projectedCount = Items.Count + add - remove;
+            if (targetCount > projectedCount)
+                add += targetCount - projectedCount;
+            else
+                remove += projectedCount - targetCount;
+
+            // keep add/remove within 2 difference
+            if (add > remove)
+                add = System.Math.Min(remove + 1, add);
+            else
+                remove = System.Math.Min(add + 1, remove);
 
             for (int i = 0; i < remove && Items.Count > 0; i++)
             {
-                int item = rnd.Next(Items.Count);
+                int item = Platform.Math.Random.Next(Items.Count);
 
                 Burntime.Platform.Log.Debug("trader remove: " + Items[item]);
                 Items.Remove(Items[item]);
@@ -142,7 +158,7 @@ namespace Burntime.Remaster.Logic
 
         protected virtual ItemType GetNextItem()
         {
-            List<string> itemTypes = new List<string>();
+            var itemTypes = new List<string>();
 
             // list up all item types not yet in inventory
             foreach (TraderItemRefreshItem item in itemRefreshs)
@@ -165,7 +181,7 @@ namespace Burntime.Remaster.Logic
             }
 
             // get random item type
-            return game.ItemTypes[itemTypes[rnd.Next() % itemTypes.Count]];
+            return game.ItemTypes[itemTypes[Platform.Math.Random.Next() % itemTypes.Count]];
         }
     }
 }
