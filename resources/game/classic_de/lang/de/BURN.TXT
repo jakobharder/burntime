@@ -570,18 +570,18 @@ bei mir kannst du lange suchen !}
 }
 In}
 |J Tagen}
-hast du |A Orte besetzt}
+hast du |A Orte besetzt|#hast du 1 Ort besetzt|#hast du noch keinen Ort besetzt}
 und kontrollierst damit |I von |K Städten.}
 }
-Für dich arbeiten :}
+Für dich arbeiten:}
 |B Kämpfer}
 |G Techniker}
-|H Ärzte}
+|H Ärzte|#|H Arzt}
 }
-in deinen Lagern liegen :}
-|C Maden}
-|D Ratten}
-|E Schlangen}
+in deinen Lagern liegen:}
+|C Maden|#|C Made}
+|D Ratten|#|D Ratte}
+|E Schlangen|#|E Schlange}
 |F Fleisch}
 }
 }

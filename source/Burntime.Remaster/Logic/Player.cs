@@ -8,6 +8,7 @@ using Burntime.Platform.Resource;
 using Burntime.Platform.Graphics;
 using Burntime.Framework.States;
 using Burntime.Data.BurnGfx;
+using System.Linq;
 
 namespace Burntime.Remaster.Logic
 {
@@ -354,6 +355,11 @@ namespace Burntime.Remaster.Logic
             return true;
         }
         #endregion
+
+        public int GetOwnedLocationCount(ClassicWorld world)
+        {
+            return world.Locations.OfType<Location>().Where(l => l.Player == this).Count();
+        }
 
         private void RecalculateExperience()
         {

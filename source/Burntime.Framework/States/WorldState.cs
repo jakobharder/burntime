@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Burntime.Framework.States
 {
@@ -20,5 +21,9 @@ namespace Burntime.Framework.States
         public abstract int CurrentPlayerIndex { get; }
 
         public abstract PlayerState CheckWinner();
+
+        public abstract Dictionary<string, string> GetSaveHint();
+        public abstract bool HasValidSaveHint { get; }
+        public abstract void UpdateSaveHint();
     }
 }

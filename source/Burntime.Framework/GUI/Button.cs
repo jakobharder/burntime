@@ -1,6 +1,7 @@
 ﻿using Burntime.Platform;
 using Burntime.Platform.Graphics;
 using System;
+using System.Runtime.InteropServices.ObjectiveC;
 
 namespace Burntime.Framework.GUI;
 
@@ -10,7 +11,13 @@ public class Button : Window
     public TextAlignment TextHorizontalAlign = TextAlignment.Default;
 
     public bool IsHover { get; private set; }
-    public bool IsEnabled { get; set; } = true;
+
+    private bool _isEnabled = true;
+    public bool IsEnabled
+    {
+        get => _isEnabled;
+        set { _isEnabled = value; if (_isEnabled == false) IsHover = false; }
+    }
 
     public CommandEvent? Command;
 
@@ -69,6 +76,8 @@ public class Button : Window
     bool sizeSet = false;
 
     protected bool _isDown = false;
+
+    public object Context { get; set; }
 
     public Button(Module app, Action? command = null)
         : base(app)

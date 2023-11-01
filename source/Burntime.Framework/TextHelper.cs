@@ -1,80 +1,96 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
-
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using Burntime.Platform.Resource;
 
-namespace Burntime.Framework
+namespace Burntime.Framework;
+
+public sealed class TextHelper
 {
-    public sealed class TextHelper
+    struct Replacement
     {
-        struct Replacement
-        {
-            public String Argument;
-            public String Value;
-        }
+        public string Argument;
+        public string Value;
+    }
 
-        IResourceManager resMan;
-        List<Replacement> listArguments = new List<Replacement>();
-        String file;
+    readonly IResourceManager _resourceManager;
+    readonly List<Replacement> _arguments = new();
+    readonly string _textFile;
 
-        public TextHelper(Module App, String File)
-        {
-            resMan = App.ResourceManager;
-            file = File;
-        }
+    public TextHelper(Module app, string file)
+    {
+        _resourceManager = app.ResourceManager;
+        _textFile = file;
+    }
 
-        public void AddArgument(String Argument, int Value)
-        {
-            AddArgument(Argument, Value.ToString());
-        }
+    public void AddArgument(string argument, int intValue)
+    {
+        AddArgument(argument, intValue.ToString());
+    }
 
-        public void AddArgument(String Argument, String Value)
+    public void AddArgument(string argument, string textValue)
+    {
+        Replacement repl = new()
         {
-            Replacement repl = new Replacement();
-            repl.Argument = Argument;
-            repl.Value = Value;
-            listArguments.Add(repl);
-        }
+            Argument = argument,
+            Value = textValue
+        };
+        _arguments.Add(repl);
+    }
 
-        public void ClearArguments()
-        {
-            listArguments.Clear();
-        }
+    public void ClearArguments() => _arguments.Clear();
 
-        public String Get(int index)
-        {
-            return Get(file + "?" + index);
-        }
+    public string this[int Index] => Get(Index);
 
-        public String Get(string id)
+    public string Get(int index) => Get(_textFile + "?" + index);
+
+    /// <summary>
+    /// Return text with replaced arguments.
+    /// Separate plural with |# (plural, single, none).
+    /// Plural only supports one replacement.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    public string Get(string id)
+    {
+        string str = _resourceManager.GetString(id);
+        string[] plural = str.Split("|#");
+        string? result = null;
+
+        foreach (Replacement r in _arguments)
         {
-            String str = resMan.GetString(id);
-            foreach (Replacement r in listArguments)
+            if (!(result ?? plural[0]).Contains(r.Argument))
+                continue;
+
+            if (plural.Length >= 3 && r.Value == "0")
             {
-                str = str.Replace(r.Argument, r.Value);
+                result = (result ?? plural[2]).Replace(r.Argument, r.Value);
             }
-
-            return str;
-        }
-
-        public String[] GetStrings(int start)
-        {
-            String[] strs = resMan.GetStrings(file + "?" + start);
-            for (int i = 0; i < strs.Length; i++)
+            else if (plural.Length >= 2 && r.Value == "1")
             {
-                foreach (Replacement r in listArguments)
-                {
-                    strs[i] = strs[i].Replace(r.Argument, r.Value);
-                }
+                result = (result ?? plural[1]).Replace(r.Argument, r.Value);
             }
-
-            return strs;
+            else
+            {
+                result = (result ?? plural[0]).Replace(r.Argument, r.Value);
+            }
         }
 
-        public String this[int Index]
+        return result ?? plural[0];
+    }
+
+    public string[] GetStrings(int start)
+    {
+        string[] strs = _resourceManager.GetStrings(_textFile + "?" + start);
+        for (int i = 0; i < strs.Length; i++)
         {
-            get { return Get(Index); }
+            foreach (Replacement r in _arguments)
+            {
+                strs[i] = strs[i].Replace(r.Argument, r.Value);
+            }
         }
+
+        return strs;
     }
 }
