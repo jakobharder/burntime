@@ -1,86 +1,91 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using Burntime.Platform.IO;
+using Burntime.Platform.Resource;
 
-namespace Burntime.Framework
+namespace Burntime.Framework;
+
+public class SaveGame
 {
-    public class SaveGame
+    readonly Platform.IO.File? _file;
+    public Stream? Stream => _file?.Stream;
+
+    public string? Version { get; init; }
+    public string? Game { get; init; }
+    public bool IsValid { get; init; }
+
+    public SaveGame(string filename)
     {
-        string version;
-        string game;
-        Burntime.Platform.IO.File file;
-        bool isValid;
-
-        public Stream Stream
+        _file = FileSystem.GetFile(filename);
+        if (_file is null)
         {
-            get { return file.Stream; }
+            IsValid = false;
+            return;
         }
 
-        public string Version
+        BinaryReader reader = new BinaryReader(_file);
+
+        try
         {
-            get { return version; }
+            Game = reader.ReadString();
+            Version = reader.ReadString();
+        }
+        catch
+        {
+            IsValid = false;
+            return;
         }
 
-        public string Game
+        IsValid = true;
+    }
+
+    public SaveGame(string filename, string game, string version)
+    {
+        if (FileSystem.ExistsFile(filename))
+            FileSystem.RemoveFile(filename);
+
+        _file = FileSystem.CreateFile(filename);
+        if (_file is null)
         {
-            get { return game; }
+            IsValid = false;
+            return;
         }
 
-        public bool IsValid
+        BinaryWriter writer = new BinaryWriter(_file);
+
+        writer.Write(game);
+        writer.Write(version);
+
+        IsValid = true;
+    }
+
+    public Dictionary<string, string>? PeakInfo(IResourceManager resourceManager)
+    {
+        if (!IsValid || Stream is null) return null;
+
+        try
         {
-            get { return isValid; }
-        }
+            var container = new States.StateManager(resourceManager);
 
-        public SaveGame(string filename)
+            int player = Stream.ReadByte();
+            var ids = new List<int>();
+            for (int i = 0; i < player; i++)
+                ids.Add(Stream.ReadByte());
+
+            container.Load(Stream, saveHint: true);
+            return container.Root.GetSaveHint();
+        }
+        catch
         {
-            file = FileSystem.GetFile(filename);
-            if (file == null)
-            {
-                isValid = false;
-                return;
-            }
-
-            BinaryReader reader = new BinaryReader(file);
-
-            try
-            {
-                game = reader.ReadString();
-                version = reader.ReadString();
-            }
-            catch
-            {
-                isValid = false;
-                return;
-            }
-
-            isValid = true;
+            return null;
         }
+    }
 
-        public SaveGame(string filename, string game, string version)
-        {
-            if (FileSystem.ExistsFile(filename))
-                FileSystem.RemoveFile(filename);
+    public void Close()
+    {
+        if (_file == null)
+            return;
 
-            file = FileSystem.CreateFile(filename);
-            if (file == null)
-            {
-                isValid = false;
-                return;
-            }
-
-            BinaryWriter writer = new BinaryWriter(file);
-
-            writer.Write(game);
-            writer.Write(version);
-
-            isValid = true;
-        }
-
-        public void Close()
-        {
-            if (file == null)
-                return;
-
-            file.Close();
-        }
+        _file.Close();
     }
 }

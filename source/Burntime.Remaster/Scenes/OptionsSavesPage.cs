@@ -4,6 +4,9 @@ using Burntime.Platform;
 using Burntime.Platform.IO;
 using Burntime.Remaster;
 using Burntime.Remaster.Logic.Generation;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Burntime.Classic.Scenes;
 
@@ -18,15 +21,26 @@ internal struct OptionFonts
 
 internal class OptionsSavesPage : Container
 {
+    class SaveInfo
+    {
+        public string? Name;
+        public string? Version;
+        public Dictionary<string, string>? Hints;
+
+        public bool IsValid => Version == BurntimeClassic.SavegameVersion && Hints is not null;
+    };
+
     readonly OptionFonts _fonts;
 
     readonly SavegameInputWindow _input;
     readonly Button _load;
     readonly Button _save;
     readonly Button _delete;
+    readonly Button _hintText;
 
     const int COLUMN_HEIGHT = 5;
     readonly Button[] savegames = new Button[COLUMN_HEIGHT * 2];
+    readonly Dictionary<string, SaveInfo> _saveInfos = new ();
 
     public OptionsSavesPage(Module app, OptionFonts fonts) : base(app)
     {
@@ -72,6 +86,15 @@ internal class OptionsSavesPage : Container
             TextVerticalAlign = Platform.Graphics.VerticalTextAlignment.Top
         };
 
+        Windows += _hintText = new Button(app)
+        {
+            Font = _fonts.Blue,
+            Position = new Vector2(40, 123),
+            Size = new Vector2(120, 10),
+            TextHorizontalAlign = Platform.Graphics.TextAlignment.Center,
+            TextVerticalAlign = Platform.Graphics.VerticalTextAlignment.Center
+        };
+
         CreateSaveGameButtons();
     }
 
@@ -90,10 +113,56 @@ internal class OptionsSavesPage : Container
         _load.IsEnabled = CanLoad;
         _delete.IsEnabled = CanDelete;
 
+        Button? hovered = savegames.FirstOrDefault(x => x.IsHover);
+        if (hovered is not null && hovered.Context is SaveInfo saveInfo)
+        {
+            if (!saveInfo.IsValid)
+            {
+                _hintText.Text = "@newburn?37";
+            }
+            else
+            {
+                TextHelper txt = new(app, "newburn");
+                txt.AddArgument("|J", saveInfo.Hints?.GetValueOrDefault("days") ?? "");
+                txt.AddArgument("|A", saveInfo.Hints?.GetValueOrDefault("camps") ?? "");
+                _hintText.Text = txt[35] + txt[36];
+            }
+            _save.IsVisible = false;
+            _load.IsVisible = false;
+            _delete.IsVisible = false;
+        }
+        else
+        {
+            _hintText.Text = "";
+            _save.IsVisible = true;
+            _load.IsVisible = true;
+            _delete.IsVisible = true;
+        }
+
+        Button? highlight = savegames.FirstOrDefault(x => (x.Context as SaveInfo)?.Name == _input.Name.ToLower());
+        foreach (Button button in savegames)
+        {
+            if (button == highlight && (button.Context as SaveInfo)?.IsValid == true)
+            {
+                button.Font = _fonts.Blue;
+                button.HoverFont = _fonts.Orange;
+            }
+            else if ((button.Context as SaveInfo)?.IsValid == true)
+            {
+                button.Font = _fonts.Green;
+                button.HoverFont = _fonts.Orange;
+            }
+            else
+            {
+                button.Font = _fonts.Disabled;
+                button.HoverFont = _fonts.Disabled;
+            }
+        }
+
         base.OnUpdate(elapsed);
     }
 
-    public void RefreshSaveGames()
+    public void RefreshSaveGames(string? changed = null)
     {
         _input.Name = "";
 
@@ -103,13 +172,23 @@ internal class OptionsSavesPage : Container
         {
             if (files.Length > i)
             {
-                var game = new SaveGame("saves/" + files[i]);
+                SaveInfo? saveInfo = _saveInfos.GetValueOrDefault(files[i].ToLower());
+                if (saveInfo is null || changed?.ToLower() == files[i])
+                {
+                    saveInfo = new SaveInfo();
+                    saveInfo.Name = System.IO.Path.GetFileNameWithoutExtension(files[i]).ToLower();
+                    var game = new SaveGame("saves/" + files[i]);
+                    saveInfo.Version = game.Version;
+                    saveInfo.Hints = game.PeakInfo(app.ResourceManager);
+                    game.Close();
+                }
+                _saveInfos[files[i]] = saveInfo;
 
                 savegames[i].Text = files[i].ToUpper();
-                savegames[i].Font = game.Version == BurntimeClassic.SavegameVersion ? _fonts.Green : _fonts.Disabled;
+                savegames[i].Font = saveInfo.IsValid ? _fonts.Green : _fonts.Disabled;
                 savegames[i].IsTextOnly = true;
-
-                game.Close();
+                savegames[i].HoverFont = saveInfo.IsValid ? _fonts.Orange : _fonts.Disabled;
+                savegames[i].Context = saveInfo;
             }
             else
                 savegames[i].Text = "";
@@ -155,7 +234,7 @@ internal class OptionsSavesPage : Container
         var creation = new GameCreation(app as BurntimeClassic);
         creation.SaveGame("saves/" + _input.Name + ".sav");
 
-        RefreshSaveGames();
+        RefreshSaveGames(_input.Name + ".sav");
     }
 
     private bool CanLoad => FileSystem.ExistsFile("saves/" + _input.Name + ".sav");

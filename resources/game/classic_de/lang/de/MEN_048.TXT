@@ -1,9 +1,9 @@
 Kennst du jemanden der} 
-Verwendung f걊 mich hat?}
-Ich repariere alte Ger꼝e}
-und baue n걎zliche Sachen.}
+Verwendung f체r mich hat?}
+Ich repariere alte Ger채te}
+und baue n체tzliche Sachen.}
 }#
-Ich gr걌se dich, Freund!}
+Ich gr체횩e dich, Freund!}
 }
 }#
 Wohin des Weges, Fremder?}
@@ -13,13 +13,13 @@ Ist noch was?}
 }
 }#
 Gib mir |C}
-dann arbeite ich f걊 dich!}
+dann arbeite ich f체r dich!}
 }#
 Nur wenn du mir |C}
 besorgst!}
 }#
-Ich bin bekannt daf걊, dass}
-ich Ger꼝e zusammenbaue!}
+Ich bin bekannt daf체r, dass}
+ich Ger채te zusammenbaue!}
 }#
 Nein, mit Versagern gehe}
 ich nicht mit!}

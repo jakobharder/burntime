@@ -1,11 +1,12 @@
-﻿using System;
+﻿using Burntime.Framework.States;
+using Burntime.Platform;
+using Burntime.Platform.Resource;
+using Burntime.Remaster.Maps;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Burntime.Remaster.Maps;
-using Burntime.Framework.States;
-using Burntime.Platform;
-using Burntime.Platform.Resource;
+using System.Linq;
 
 namespace Burntime.Remaster.Logic
 {
@@ -13,11 +14,13 @@ namespace Burntime.Remaster.Logic
     [DebuggerDisplay("{Name} at {Location.Title}")]
     public class Character : StateObject, IMapObject, ITurnable, ICharacterCollection
     {
+        const int DEFAULT_ATTACK_VALUE = 10;
+
         protected StateLink<ItemList> items;
         protected StateLink<PathFinding.PathState> path;
         protected StateLink<AI.CharacterMind> mind;
-        protected StateLink<Item> weapon;
-        protected StateLink<Item> protection;
+        protected StateLink<Item>? weapon;
+        protected StateLink<Item>? protection;
 
         protected int faceID;
         protected int setBodyId = -1;
@@ -92,19 +95,19 @@ namespace Burntime.Remaster.Logic
             set { mind = value; }
         }
 
-        public Item Weapon
+        public Item? Weapon
         {
             get { return (weapon != null && Items.Contains(weapon)) ? weapon : null; }
             set { weapon = value; }
         }
 
-        public Item Protection
+        public Item? Protection
         {
             get { return (protection != null && Items.Contains(protection)) ? protection : null; }
             set { protection = value; }
         }
 
-        public virtual float AttackValue => Weapon?.DamageValue ?? 10;
+        public virtual float AttackValue => Weapon?.DamageValue ?? DEFAULT_ATTACK_VALUE;
         public virtual float DefenseValue => (int)(Experience / 10 + 0.5f + (Protection?.DefenseValue ?? 0));
 
         protected DataID<Platform.Graphics.ISprite> body;
@@ -161,13 +164,8 @@ namespace Burntime.Remaster.Logic
             get { return 5; }
         }
 
-        public int GetWaterInInventory()
-        {
-            int water = 0;
-            foreach (Item item in Items)
-                water += item.WaterValue;
-            return water;
-        }
+        public int GetFoodInInventory() => Items.OfType<Item>().Sum(x => x.FoodValue);
+        public int GetWaterInInventory() => Items.OfType<Item>().Sum(x => x.WaterValue);
         #endregion
 
         protected override void InitInstance(object[] parameter)
@@ -452,7 +450,7 @@ namespace Burntime.Remaster.Logic
             return (Position - target.Position).Length < 30;
         }
 
-        public void Attack(Character target)
+        public void Attack(Character target, bool defendWithAmmo = true)
         {
             ClassicGame classic = (ClassicGame)container.Root;
             int difficulty = classic.World.Difficulty;
@@ -472,18 +470,16 @@ namespace Burntime.Remaster.Logic
                     float distance = (Player.Group[i].Position - Position).Length;
                     if (distance < 25)
                     {
-                        int DamageSelf = (int)System.Math.Max(1, (target.AttackValue - Player.Group[i].DefenseValue) * (target.Experience / 100.0f) + difficulty);
-                        int DamageTarget = (int)System.Math.Max(1, (Player.Group[i].AttackValue - target.DefenseValue) * (Player.Group[i].Experience / 100.0f) + difficulty);
+                        int attackValue = Player.Group[i].UseBestWeapon();
+                        int targetAttackValue = target.UseBestWeapon(defendWithAmmo);
+
+                        int DamageSelf = (int)System.Math.Max(1, (targetAttackValue - Player.Group[i].DefenseValue) * (target.Experience / 100.0f) + difficulty);
+                        int DamageTarget = (int)System.Math.Max(1, (attackValue - target.DefenseValue) * (Player.Group[i].Experience / 100.0f) + difficulty);
 
                         Log.Debug("damagevalue attacker/defender: " + DamageTarget + " / " + DamageSelf);
 
                         Player.Group[i].Health -= DamageSelf;
                         target.Health -= DamageTarget;
-
-                        if (Player.Group[i].Weapon != null)
-                            Player.Group[i].Weapon.Use();
-                        if (target.Weapon != null)
-                            target.Weapon.Use();
 
                         container.Notify(new AttackEvent(Player.Group[i], target));
 
@@ -500,23 +496,21 @@ namespace Burntime.Remaster.Logic
             {
                 // 1 enemy against 1 player character
 
-                int DamageSelf = (int)System.Math.Max(1, (target.AttackValue - this.DefenseValue) * (target.Experience / 100.0f) + difficulty);
-                int DamageTarget = (int)System.Math.Max(1, (this.AttackValue - target.DefenseValue) * (this.Experience / 100.0f) + difficulty);
+                int attackValue = UseBestWeapon();
+                int targetAttackValue = target.UseBestWeapon(defendWithAmmo);
+
+                int DamageSelf = (int)System.Math.Max(1, (targetAttackValue - this.DefenseValue) * (target.Experience / 100.0f) + difficulty);
+                int DamageTarget = (int)System.Math.Max(1, (attackValue - target.DefenseValue) * (this.Experience / 100.0f) + difficulty);
 
                 Log.Debug("--------------------------------------------------");
                 Log.Debug("attack: " + this.Name + " -> " + target.Name);
                 Log.Debug("experience: " + this.Experience + " -> " + target.Experience);
-                Log.Debug("attack/defense attacker: " + this.AttackValue + " / " + this.DefenseValue);
-                Log.Debug("attack/defense defender: " + target.AttackValue + " / " + target.DefenseValue);
+                Log.Debug("attack/defense attacker: " + attackValue + " / " + this.DefenseValue);
+                Log.Debug("attack/defense defender: " + targetAttackValue + " / " + target.DefenseValue);
                 Log.Debug("damagevalue attacker/defender: " + DamageTarget + " / " + DamageSelf);
 
                 this.Health -= DamageSelf;
                 target.Health -= DamageTarget;
-
-                if (Weapon != null)
-                    Weapon.Use();
-                if (target.Weapon != null)
-                    target.Weapon.Use();
 
                 container.Notify(new AttackEvent(this, target));
             }
@@ -685,6 +679,8 @@ namespace Burntime.Remaster.Logic
                 {
                     float rate = 1;
 
+                    UseBestProtection();
+
                     if (Protection != null)
                     {
                         Interaction.DangerProtection p = Protection.Type.GetProtection(Location.Danger.Type);
@@ -756,6 +752,30 @@ namespace Burntime.Remaster.Logic
             }
 
             return this;
+        }
+
+        private int UseBestWeapon(bool allowAmmo = true)
+        {
+            Protection = Items.FindBestDefense(Protection);
+            Item? weapon = Items.FindBestWeapon(allowAmmo ? Weapon : null);
+            if (weapon is null)
+                return DEFAULT_ATTACK_VALUE;
+
+            int attackValue = weapon.DamageValue;
+            if (allowAmmo)
+            {
+                weapon.Use();
+                if (weapon.DamageValue == 0)
+                    Weapon = null;
+            }
+
+            Weapon = Items.FindBestWeapon(Weapon);
+            return attackValue;
+        }
+
+        private void UseBestProtection()
+        {
+            Protection = Items.FindBestProtection(Protection, Location.Danger.Type);
         }
 
         #region ICharacterCollection, IEnumerable implementations

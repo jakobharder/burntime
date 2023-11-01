@@ -615,7 +615,7 @@ namespace Burntime.Framework.States
             stream.Seek(0, SeekOrigin.Begin);
         }
 
-        public void Load(Stream stream)
+        public void Load(Stream stream, bool saveHint = false)
         {
             objects.Clear();
             Dictionary<int, int> localToGlobal = new Dictionary<int, int>();
@@ -633,11 +633,18 @@ namespace Burntime.Framework.States
                     localToGlobal.Add(obj.localID, objects.Add(obj));
                 else
                     objects.Add(obj);
+
+                if (obj.ID == rootId && saveHint && (obj as WorldState)?.HasValidSaveHint == true)
+                {
+                    root = (WorldState)objects[rootId];
+                    return;
+                }
             }
 
             root = objects[rootId] as WorldState;
             objects.Resolve(localToGlobal);
 
+            root.UpdateSaveHint();
             UpdateDebugInfo();
         }
 

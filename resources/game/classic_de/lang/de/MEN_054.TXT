@@ -1,5 +1,5 @@
 Ich sag dir was, bei}
-Radioaktivit„t hilft...}
+RadioaktivitÃ¤t hilft...}
 ...nur ein Schutzanzug!}
 }
 Bei Luftverunreinigungen}
@@ -7,7 +7,7 @@ tut's auch eine Gasmaske.}
 }#
 Hast du Hunde gesehen?}
 }
-Ich hab n„mlich Hunger!}
+Ich hab nÃ¤mlich Hunger!}
 }
 }#
 Was denn?}
@@ -16,7 +16,7 @@ Was denn?}
 Hast du schon einen Hund?}
 }
 }#
-Du hast Glck, ich habe zur}
+Du hast GlÃ¼ck, ich habe zur}
 Zeit nicht viel zu tun...}
 aber ich will}
 |C!}
@@ -24,13 +24,13 @@ aber ich will}
 Da musst du mir aber erst}
 |C bringen!}
 }#
-Du weisst gar nicht wer}
+Du weiÃŸt gar nicht wer}
 ich bin???}
-Ich bin der grossartigste}
+Ich bin der groÃŸartigste}
 Techniker den es je gab!}
 }#
-Ich arbeite nicht fr}
-grne Jungs!}
+Ich arbeite nicht fÃ¼r}
+grÃ¼ne Jungs!}
 }#
 }#
 }}

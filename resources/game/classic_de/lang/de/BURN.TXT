@@ -1,10 +1,10 @@
 Neu Sandez}
 Sana}
 Death Town}
-B„rwalde}
+BÃ¤rwalde}
 Nob Hill}
 Muarab}
-H”hlen}
+HÃ¶hlen}
 Nakkara}
 Lost Hope}
 Desert Point}
@@ -23,7 +23,7 @@ Haevens Gate}
 Fabrik}
 MAX Canyon}
 Sherwood}
-Rastst„tte}
+RaststÃ¤tte}
 One Man's Heaven}
 Raffinerie}
 Outback}
@@ -38,12 +38,12 @@ Anif}
 38}
 39}
 40}
-K„mpfer}
+KÃ¤mpfer}
 Techniker}
 Arzt}
 Chef}
 kein Beruf}
-H„ndler}
+HÃ¤ndler}
 }
 }
 }
@@ -68,18 +68,18 @@ Rattenfalle}
 Fangeisen}
 Schlangenkorb}
 Handpumpe}
-F”rderpumpe}
+FÃ¶rderpumpe}
 Minendedektor}
-Funkger„t}
+FunkgerÃ¤t}
 kaputte Pumpe}
 Maschinenteile}
 kaputter Minendedector}
-kaputtes Funkger„t}
+kaputtes FunkgerÃ¤t}
 Elektronikschrott}
 Batterien}
 LCD-Display}
 Draht}
-Holzstck}
+HolzstÃ¼ck}
 Schrauben}
 Blechteile}
 Stahlfeder}
@@ -95,7 +95,7 @@ Stiefel}
 Seil}
 Eisenstangen}
 Knochen}
-Sch„del}
+SchÃ¤del}
 Benzinkanister}
 Gold}
 Werkzeug}
@@ -128,18 +128,18 @@ eine Rattenfalle}
 ein Fangeisen}
 ein Schlangenkorb}
 eine Handpumpe}
-eine F”rderpumpe}
+eine FÃ¶rderpumpe}
 einen Minendedektor}
-ein Funkger„t}
+ein FunkgerÃ¤t}
 eine kaputte Pumpe}
 Maschinenteile}
 ein kaputter Minendedektor}
-ein kaputtes Funkger„t}
+ein kaputtes FunkgerÃ¤t}
 Elektronicschrott}
 Baterien}
 ein LCD-Display}
 Draht}
-ein Holzstck}
+ein HolzstÃ¼ck}
 Schrauben}
 Blechteile}
 eine Stahlfeder}
@@ -155,7 +155,7 @@ Stiefel}
 ein Seil}
 Eisenstangen}
 einen Knochen}
-einen Sch„del}
+einen SchÃ¤del}
 einen Benzinkanister}
 etwas Gold}
 Werkzeug}
@@ -350,12 +350,12 @@ Sick}
 }
 REDEN}
 INFO}
-KMPFEN}
+KÃ„MPFEN}
 HANDEL OK !}
 HINAUSGEHEN}
 ????}
 ALLE}
-NCHSTER}
+NÃ„CHSTER}
 EINZELN}
 STATISTIK}
 REISEN}
@@ -382,11 +382,11 @@ Erf. |A%}
 Vit. |B%}
 LADEN}
 SPEICHERN}
-L™SCHEN}
+LÃ–SCHEN}
 ...|A laden}
 ...|A speichern}
-...|A l”schen}
-Zurck}
+...|A lÃ¶schen}
+ZurÃ¼ck}
 Musik AN}
 Neustart}
 Beenden}
@@ -400,10 +400,10 @@ Arzt}
 Lager}
 |A}
 |B}
-WA. |C Tage}
-NG. |D Tage}
+WA. |C Tage|#WA. |C Tag}
+NG. |D Tage|#NG. |D Tag}
 |A Tag}
-|A ist von uns gegangen !}
+|A ist von uns gegangen!}
 Vorkommen}
 Wasser}
 |E rem}
@@ -428,10 +428,10 @@ Musik AUS}
 }
 }
 }
-Ich bin |B !}
-Ich bin ein guter |B !}
-Ich bin ein sehr guter |B !}
-Ich bin einer der besten |B !}
+Ich bin |B!}
+Ich bin ein guter |B!}
+Ich bin ein sehr guter |B!}
+Ich bin einer der besten |B!}
 }
 }
 }
@@ -490,19 +490,19 @@ ZBuff_20}
 }
 Unterhaltung beenden.}
 Willst du einen Job.}
-Gibts es Neuigkeiten ?}
-OK, ich geb dir den Job !}
-Nein, du bleibst im Sttzpunkt !}
-Ok, du bleibst im Sttzpunkt !}
-Na und, ...Verschwinde !}
-Welchen Beruf hast du !}
+Gibts es Neuigkeiten?}
+OK, ich geb dir den Job!}
+Nein, du bleibst im StÃ¼tzpunkt!}
+Ok, du bleibst im StÃ¼tzpunkt!}
+Na und, ...Verschwinde!}
+Welchen Beruf hast du!}
 OK, hier hast du |C.}
 ( weiter... )}
 OK, zeig was du hast.}
 OK, bau mir |I.}
-Gibt es noch weitere M”glichkeiten.}
-Danke fr die Information.}
-Lass uns ein Gesch„ft machen.}
+Gibt es noch weitere MÃ¶glichkeiten.}
+Danke fÃ¼r die Information.}
+Lass uns ein GeschÃ¤ft machen.}
 Na und, ich nehm Dich mit}
 }
 }
@@ -511,15 +511,15 @@ Na und, ich nehm Dich mit}
 Etwas mehr sollte dir deine}
 Gesundheit schon Wert sein.}
 }
-Fr diesen Hungerlohn wrde}
+FÃ¼r diesen Hungerlohn wÃ¼rde}
 ein anderer nicht einmal}
-zum Messer greifen !}
-Deinen erb„rmlichen Zustand}
+zum Messer greifen!}
+Deinen erbÃ¤rmlichen Zustand}
 wieder zu verbessern wird}
 dich etwas mehr kosten!}
 Ich liebe Leute, die in der Lage}
 sind, den Wert Ihrer Gesundheit}
-richtig einzusch„tzen!}
+richtig einzuschÃ¤tzen!}
 Also gratis gibt es bei mir nicht}
 einmal den Tod!}
 }
@@ -528,14 +528,14 @@ einmal den Tod!}
 }
 }
 }
-Dafr kannst du ganze |E}
-Tagesrationen verschlingen.}
+DafÃ¼r kannst du ganze |E|#DafÃ¼r kannst du eine}
+Tagesrationen verschlingen.|#Tagesration verschlingen.|#Tagesrationen verschlingen.|#|E}
 }
 Wohl bekommt's...}
-Ha, Ha, Ha !}
+Ha, Ha, Ha!}
 }
 Sieht es hier vieleicht aus}
-wie in einer Hilfsmission ?}
+wie in einer Hilfsmission?}
 }
 So ein fantastisches Essen wie bei}
 mir, bekommst du sicher nie wieder.}
@@ -548,17 +548,17 @@ mir, bekommst du sicher nie wieder.}
 }
 }
 }
-Fr das Zeug kannst du |E}
-Tagesrationen versaufen !}
+FÃ¼r das Zeug kannst du |E}
+Tagesrationen versaufen!|#Tagesration versaufen!|#Tagesrationen versaufen!|#|E}
 }
 Prost!!}
-und beehrt mich bald wieder !}
+und beehrt mich bald wieder!}
 }
 Ich bin doch nicht bei der}
-Heilsarmee !}
+Heilsarmee!}
 }
 So erstklassige Drinks wie}
-bei mir kannst du lange suchen !}
+bei mir kannst du lange suchen!}
 }
 }
 }
@@ -569,19 +569,19 @@ bei mir kannst du lange suchen !}
 }
 }
 In}
-|J Tagen}
-hast du |A Orte besetzt}
-und kontrollierst damit |I von |K St„dten.}
+|J Tagen|#1 Tag}
+hast du |A Orte besetzt|#hast du 1 Ort besetzt|#hast du noch keinen Ort besetzt}
+und kontrollierst damit |I von |K StÃ¤dten.}
 }
-Fr dich arbeiten :}
-|B K„mpfer}
+FÃ¼r dich arbeiten:}
+|B KÃ¤mpfer}
 |G Techniker}
-|H rzte}
+|H Ã„rzte|#|H Arzt}
 }
-in deinen Lagern liegen :}
-|C Maden}
-|D Ratten}
-|E Schlangen}
+in deinen Lagern liegen:}
+|C Maden|#|C Made}
+|D Ratten|#|D Ratte}
+|E Schlangen|#|E Schlange}
 |F Fleisch}
 }
 }
@@ -593,12 +593,12 @@ Schale in die Sonne, und ward ihr...}
 gegeben die Menschen zu versengen mit Feuer...}
 }
 Und der sechste Engel goss aus seine Schale...}
-auf dem grossen Wasserstrom Euphrat...}
+auf dem groÃŸen Wasserstrom Euphrat...}
 und sein Wasser vertrocknete...}
-damit bereitet wrde der Weg...}
-den K”nigen vom Aufgang der Sonne...}
+damit bereitet wÃ¼rde der Weg...}
+den KÃ¶nigen vom Aufgang der Sonne...}
 }
-|A ist von uns gegangen !}
+|A ist von uns gegangen!}
 }
 }
 }
@@ -610,10 +610,10 @@ den K”nigen vom Aufgang der Sonne...}
 }
 Nach einem harten Kampf...}
 ...ist es |A gelungen...}
-...die Kontrolle ber alle St„dte...}
+...die Kontrolle Ã¼ber alle StÃ¤dte...}
 ...zu erringen. Die Menschen hoffen darauf...}
 ...das er sie nun in eine bessere Zukunft...}
-...fhren wrde.}
+...fÃ¼hren wÃ¼rde.}
 }
 }
 }
@@ -624,23 +624,23 @@ Welch ein ergreifendes Ende!}
 }
 Finden Sie nicht auch??}
 }
-Sie k”nnen jetzt eigentlich...}
+Sie kÃ¶nnen jetzt eigentlich...}
 ...ein neues Spiel beginnen!}
 Oder "1869" zur Hand nehmen..}
-..und sich im ”kologisch noch..}
+..und sich im Ã¶kologisch noch..}
 ..mehr intakten 19. Jahrhundert..}
 ..als Reeder versuchen!}
 Was, Sie besitzen dieses..}
 ..fantastische Spiel noch gar nicht?}
-Also dann, ab zum n„chsten H„ndler..}
+Also dann, ab zum nÃ¤chsten HÃ¤ndler..}
 ..um es sofort zu kaufen.}
-brigens - In ein paar Monaten gibt..}
-..es natrlich wieder ein faszinierendes..}
+Ã¼brigens - In ein paar Monaten gibt..}
+..es natÃ¼rlich wieder ein faszinierendes..}
 MAX DESIGN-Spiel.}
 Halten Sie also jetzt schon die Augen..}
 ..danach offen. - Sie werden es sicher..}
 ..nicht bereuen.}
-Sie k”nnen jetzt abbrechen, denn es..}
+Sie kÃ¶nnen jetzt abbrechen, denn es..}
 werden keine weiteren Meldungen mehr..}
 ..erscheinen!}
 }
@@ -653,7 +653,7 @@ Sie glauben uns anscheinend nicht..}
 }
 }
 }
-Ganz sch”n hartn„ckig!!}
+Ganz schÃ¶n hartnÃ¤ckig!!}
 }
 }
 OK, also dann zeigen wir Ihnen nun die Bestenliste!}
@@ -661,21 +661,21 @@ OK, also dann zeigen wir Ihnen nun die Bestenliste!}
 Eingang}
 Eingang}
 Zelt}
-H”hle}
+HÃ¶hle}
 Haus mit Wasser}
-Htte mit Wasser}
+HÃ¼tte mit Wasser}
 Brunnen}
-H”hle mit Wasser}
+HÃ¶hle mit Wasser}
 Wasserstelle}
-H”hle}
+HÃ¶hle}
 Eingang}
 Ruine}
 Eingang}
-H„ndler}
+HÃ¤ndler}
 Kneipe}
-R„uber}
+RÃ¤uber}
 Eingang}
-H„ndler}
+HÃ¤ndler}
 Ansicht}
 Leer8}
 Arzt}

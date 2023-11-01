@@ -258,6 +258,7 @@ namespace Burntime.Remaster.Scenes
                     }
                 }
             }
+            // refill water
             else if (item.Type.Full != null)
             {
                 // fill up empty bottles
@@ -277,6 +278,7 @@ namespace Burntime.Remaster.Scenes
                     }
                 }
             }
+            // select weapon or protection
             else if (item.IsSelectable)
             {
                 inventory.ActiveCharacter.SelectItem(item);

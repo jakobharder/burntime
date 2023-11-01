@@ -1,20 +1,20 @@
 Nimm dich in acht...}
 }
-es ist eine gef„hrliche }
-Zeit, manche t”ten schon}
-fr ein Stck} 
+es ist eine gefÃ¤hrliche }
+Zeit, manche tÃ¶ten schon}
+fÃ¼r ein StÃ¼ck} 
 Rattenfleisch!}
 }#
-Hallo und sei gegrsst!}
+Hallo und sei gegrÃ¼ÃŸt!}
 }
 }#
-Ich grsse dich, Fremder!}
+Ich grÃ¼ÃŸe dich, Fremder!}
 }
 }#
 Stiehl mir nicht die Zeit!}
 }
 }#
-Ja, ich werde fr dich}
+Ja, ich werde fÃ¼r dich}
 arbeiten...}
 ...aber nur wenn du mir}
 |C gibst.}
@@ -23,9 +23,9 @@ Nein, es sei denn du}
 bringst mir |C.}
 }#
 Ich versuche zu }
-berleben...}
+Ã¼berleben...}
 ...und wenn du}
-willst k„mpfe ich}
+willst kÃ¤mpfe ich}
 an deiner Seite!}
 }
 }#

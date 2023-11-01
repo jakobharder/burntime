@@ -1,23 +1,23 @@
 Ich hab nichts gesehen...}
 }
-...und nichts geh봱t!}
+...und nichts geh철rt!}
 }
 }#
 Hast du einen Schutzanzug?}
 }
 In manchen Orten ist es}
-sehr gef꼑rlich ohne Schutz!}
+sehr gef채hrlich ohne Schutz!}
 }#
-Verdammte Radioaktivit꼝!}
+Verdammte Radioaktivit채t!}
 Man sieht sie nicht und...}
 ...man riecht sie nicht.}
 }
 }#
 Nimm dich in acht vor Gift-}
-gas und Radioaktivit꼝!}
+gas und Radioaktivit채t!}
 }#
 Gib mir |C}
-und dann werke ich f걊 dich!}
+und dann werke ich f체r dich!}
 }#
 Ich riskier's wenn}
 du mir |C besorgst.}

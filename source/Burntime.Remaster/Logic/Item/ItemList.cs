@@ -1,14 +1,13 @@
-﻿using System;
+﻿using Burntime.Data.BurnGfx;
+using Burntime.Framework.States;
+using Burntime.Platform;
+using Burntime.Platform.Resource;
+using Burntime.Remaster.Logic;
+using Burntime.Remaster.Logic.Interaction;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
-
-using Burntime.Platform;
-using Burntime.Platform.Resource;
-using Burntime.Framework.States;
-using Burntime.Data.BurnGfx;
-
-using Burntime.Remaster.Logic;
 
 namespace Burntime.Remaster
 {
@@ -124,6 +123,41 @@ namespace Burntime.Remaster
             foreach (var item in this)
                 text += " \"" + item.ToString() + "\"";
             return text;
+        }
+
+        public Item? FindBestWeapon(Item? current = null)
+        {
+            foreach (Item item in this)
+            {
+                if (item.DamageValue > 0)
+                {
+                    if (current is null
+                        || (current.DamageValue < item.DamageValue && !item.ConsumesAmmo))
+                        current = item;
+                }
+            }
+            return current;
+        }
+
+        public Item? FindBestDefense(Item? current = null)
+        {
+            foreach (Item item in this)
+            {
+                if (item.DefenseValue > 0)
+                    current ??= item;
+            }
+            return current;
+        }
+
+        public Item? FindBestProtection(Item? current, string dangerType)
+        {
+            foreach (Item item in this)
+            {
+                var protection = item.Type.GetProtection(dangerType);
+                if (protection is not null && protection.Rate > (current?.Type.GetProtection(dangerType)?.Rate ?? 0))
+                    current = item;
+            }
+            return current;
         }
     }
 }

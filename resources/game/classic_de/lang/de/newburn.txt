@@ -19,7 +19,7 @@ Grafik REMASTER
 Grafik ORIGINAL
 Vollbild AN
 Vollbild AUS
-Spielst„nde
+SpielstÃ¤nde
 Optionen
 im Spiel mit F11 wechseln
 im Spiel mit F8 wechseln
@@ -31,11 +31,11 @@ Jukebox
 Musik AMIGA
 Musik DOS
 Musik REMASTER
-
-
-
-
-
+Hilft um hohe Stellen zu erreichen.
+WA. {w}+{tw} NG. {f}+{tf}}
+|A Orte|#1 Ort|#keine Orte
+ in |J Tagen|# in 1 Tag
+inkompatibel
 
 
 

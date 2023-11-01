@@ -104,6 +104,7 @@ namespace Burntime.Remaster.Logic.Data
                 type.Empty = section.GetString("empty");
                 type.AmmoValue = section.GetInt("ammo");
                 type.DefenseValue = section.GetInt("defense");
+                type.Fluff = section.Get("fluff");
 
                 if (type.Protection.Length > 0 || type.DamageValue > 0 || type.DefenseValue > 0)
                 {

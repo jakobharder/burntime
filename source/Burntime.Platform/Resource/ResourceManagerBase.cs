@@ -141,55 +141,61 @@ public class ResourceManagerBase
         return fileName + "?" + pos;
     }
 
-    public String[] GetStrings(String id)
+    private int GetSectionStart(string fileName, int sectionNumber)
     {
-        int atmark = id.LastIndexOf('?');
-
-        string file = id.Substring(0, atmark);
+        // lazy load
+        if (!txtDB.ContainsKey(fileName))
+            AddDB(fileName);
 
         int index = 0;
-        if (id.Substring(atmark + 1).ToLower().StartsWith("s"))
+        int sections = 0;
+        for (int i = 0; i < txtDB[fileName].Data.Count && sections < sectionNumber; i++)
         {
-            if (!txtDB.ContainsKey(file))
-                AddDB(file);
-
-            int section = int.Parse(id.Substring(atmark + 2));
-
-            int sections = 0;
-            for (int i = 0; i < txtDB[file].Data.Count && sections < section; i++)
+            if ("}#" == txtDB[fileName].Data[i])
             {
-                int f = txtDB[file].Data[i].IndexOf("}#");
-                if (f != -1)
-                {
-                    sections++;
-                    index = i + 1;
-                }
+                sections++;
+                index = i + 1;
             }
         }
-        else
-            index = int.Parse(id.Substring(atmark + 1));
 
-        return GetStrings(file, index);
+        return index;
     }
 
-    public String[] GetStrings(String file, int startIndex)
+    private int GetSectionEnd(string fileName, int startIndex)
+    {
+        int endIndex = txtDB[fileName].Data.IndexOf("}#", startIndex);
+        return endIndex == -1 ? startIndex : endIndex;
+    }
+
+    /// <summary>
+    /// Get all strings until next }# marker.
+    /// Use ?s<number> to use section instead of line number.
+    /// </summary>
+    public string[] GetStrings(string id)
+    {
+        int lineMarker = id.LastIndexOf('?');
+        string filePart = id[..lineMarker];
+        string indexPart = id[(lineMarker + 1)..];
+
+        bool indexIsSection = indexPart.StartsWith("s");
+        if (!indexIsSection)
+            return GetStrings(filePart, int.Parse(indexPart));
+
+        int section = int.Parse(id[(lineMarker + 2)..]);
+        return GetStrings(filePart, GetSectionStart(filePart, section));
+    }
+
+    /// <summary>
+    /// Get all strings until next }# marker starting from startIndex.
+    /// </summary>
+    public string[] GetStrings(string file, int startIndex)
     {
         if (!txtDB.ContainsKey(file))
             AddDB(file);
 
-        int last = startIndex + 1;
+        int sectionEnd = GetSectionEnd(file, startIndex);
 
-        for (int i = startIndex; i < txtDB[file].Data.Count; i++)
-        {
-            int f = txtDB[file].Data[i].IndexOf("}#");
-            if (f != -1)
-            {
-                last = i;
-                break;
-            }
-        }
-
-        int count = last - startIndex;
+        int count = sectionEnd - startIndex;
         String[] strs = new String[count];
         for (int i = 0; i < count; i++)
         {

@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 
 namespace Burntime.MonoGame.Graphics;
@@ -273,29 +274,24 @@ public class RenderDevice : IDisposable
 
         if (_renderEntities != null)
         {
-            foreach (RenderEntity entity in _renderEntities)
+            foreach (var sprite in _renderEntities.OfType<SpriteEntity>())
             {
-                if (entity is SpriteEntity sprite)
-                {
-                    // diposed texture links may remain in queue after direct3d reset, just skip them
-                    if ((sprite.Texture ?? sprite.SpriteFrame.Texture).IsDisposed)
-                        continue;
+                // diposed texture links may remain in queue after direct3d reset, just skip them
+                if ((sprite.Texture ?? sprite.SpriteFrame.Texture).IsDisposed)
+                    continue;
 
-                    // recompute position for not 1:1 sprite resolutions
-                    var position = new Microsoft.Xna.Framework.Vector2(sprite.Position.X, sprite.Position.Y);
-                    //position.X *= _engine.Resolution.Scale.x;
-                    //position.Y *= _engine.Resolution.Scale.y;
+                // recompute position for not 1:1 sprite resolutions
+                var position = new Microsoft.Xna.Framework.Vector2(sprite.Position.X, sprite.Position.Y);
 
-                    _spriteBatch.Draw(sprite.Texture ?? sprite.SpriteFrame.Texture, 
-                        position, 
-                        sourceRectangle: sprite.Rectangle, 
-                        sprite.Color, 
-                        rotation: 0, 
-                        Microsoft.Xna.Framework.Vector2.Zero,
-                        (sprite.Factor).ToXna(), 
-                        SpriteEffects.None, 
-                        sprite.Position.Z);
-                }
+                _spriteBatch.Draw(sprite.Texture ?? sprite.SpriteFrame.Texture,
+                    position,
+                    sourceRectangle: sprite.Rectangle,
+                    sprite.Color,
+                    rotation: 0,
+                    Microsoft.Xna.Framework.Vector2.Zero,
+                    (sprite.Factor).ToXna(),
+                    SpriteEffects.None,
+                    sprite.Position.Z);
             }
         }
 
@@ -306,26 +302,38 @@ public class RenderDevice : IDisposable
         else
             _engine.Music.Volume = 1;
 
-        //spriteRenderer.End();
-        //if (render != null)
-        //{
-        //    lineRenderer.Begin();
-        //    foreach (var line in render.OfType<LineEntity>())
-        //    {
-        //        SlimDX.Vector3[] vec = new SlimDX.Vector3[] { line.Start, line.End };
-        //        SlimDX.Vector4[] v = SlimDX.Vector3.Transform(vec, ref lineMatrix);
-
-        //        SlimDX.Vector2[] vec2 = new SlimDX.Vector2[] { new SlimDX.Vector2(v[0].X, v[0].Y), new SlimDX.Vector2(v[1].X, v[1].Y) };
-        //        lineRenderer.Draw(vec2, line.Color);
-        //    }
-        //    lineRenderer.End();
-        //}
+        if (_renderEntities != null)
+        {
+            foreach (var line in _renderEntities.OfType<LineEntity>())
+                DrawLineBetween(line.Start, line.End, 2, line.Color);
+        }
 
         //errorOverlay.Render(RenderTime, spriteRenderer);
 
         loadingOverlay.Render(elapsedSeconds, _spriteBatch);
 
         _spriteBatch.End();
+    }
+
+    public void DrawLineBetween(Microsoft.Xna.Framework.Vector3 startPos, Microsoft.Xna.Framework.Vector3 endPos, int thickness, Color color)
+    {
+        var distance = (int)Microsoft.Xna.Framework.Vector3.Distance(startPos, endPos);
+        if (distance <= 0)
+            return;
+
+        var rotation = (float)System.Math.Atan2(endPos.Y - startPos.Y, endPos.X - startPos.X);
+        var origin = new Microsoft.Xna.Framework.Vector2(0, thickness / 2);
+
+        _spriteBatch.Draw(
+            WhiteTexture,
+            new Microsoft.Xna.Framework.Vector2(startPos.X, startPos.Y),
+            null,
+            color,
+            rotation,
+            origin,
+            new Microsoft.Xna.Framework.Vector2(distance, thickness),
+            SpriteEffects.None,
+            startPos.Z);
     }
 
     void RenderTexture()

@@ -24,7 +24,7 @@ class TraderScene : Scene
     public TraderScene(Module App)
         : base(App)
     {
-        Background = "hint1.pac";
+        Background = "gfx/trader_background.png";
         Music = "trader";
 
         inventory = new InventoryWindow(App, InventorySide.Left);

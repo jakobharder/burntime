@@ -419,9 +419,9 @@ XXXXXXXXXXXXXXXXXXXX}
 calculate data...}
 Please take the word |E}
 from line |D on page |C}
-|J days}
-|D days}
-|C days}
+|J days|#1 day}
+|D days|#1 day}
+|C days|#1 day}
 Music OFF}
 }
 }
@@ -529,7 +529,7 @@ nothing.}
 }
 }
 For that you can have grub}
-for |E days.}
+for |E days.|#for 1 day.}
 }
 Enjoy it ...}
 Ha, ha, ha !}
@@ -549,7 +549,7 @@ like this anywhere else.}
 }
 }
 For that you can get enough}
-water for |E days.}
+water for |E days.|#water for 1 day.}
 }
 Cheers, and drop by again}
 sometime.}
@@ -569,20 +569,20 @@ drinks like I do.}
 }
 }
 In}
-|J days you have}
-captured |A camps}
+|J days you have|#|J day you have}
+captured |A camps|#captured 1 camp|#captured no camps}
 and now control |I of |K cities.}
 }
 Your employees:}
-|B Fighters}
-|G Technicians}
-|H Doctors}
+|B Fighters|#|B Fighter}
+|G Technicians|#|G Technician}
+|H Doctors|#|H Doctor}
 }
 You have in storage:}
-|C Maggots}
-|D Rats}
-|E Snakes}
-|F Pieces of meat}
+|C Maggots|#|C Maggot}
+|D Rats|#|D Rat}
+|E Snakes|#|E Snake}
+|F Pieces of meat|#|F Piece of meat}
 }
 }
 }

@@ -1,6 +1,6 @@
 Ich sammle Flaschen und}
-Gef„sse fr meinen Brunnen.}
-Es versickert n„mlich sonst}
+GefÃ¤ÃŸe fÃ¼r meinen Brunnen.}
+Es versickert nÃ¤mlich sonst}
 viel zuviel Wasser!}
 }#
 Hallo, wie geht es?}
@@ -10,7 +10,7 @@ Hast du irgendwo Flaschen}
 gesehen?}
 }#
 Ich suche nach Flaschen}
-und Gef„ssen!}
+und GefÃ¤ÃŸen!}
 }#
 Wenn du mir |C}
 gibst, gehe ich mit dir!}
@@ -23,7 +23,7 @@ und besuch mich dann wieder.}
 }#
 Nein! Ich glaube nicht, dass}
 ich an deiner Seite lange...}
-...berleben wrde!}
+...Ã¼berleben wÃ¼rde!}
 }
 }#
 }#

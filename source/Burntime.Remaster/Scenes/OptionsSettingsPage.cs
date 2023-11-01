@@ -12,7 +12,6 @@ internal class OptionsSettingsPage : Container
     readonly Button _musicToggle;
     readonly Button _newgfxToggle;
     readonly Button _fullscreenToggle;
-    readonly Button _languageToggle;
 
     readonly Button _hintText;
 
@@ -45,7 +44,7 @@ internal class OptionsSettingsPage : Container
             Position = new Vector2(38, 78),
             IsTextOnly = true
         };
-        Windows += _languageToggle = new Button(app, () => app.Language = app.Language == "de" ? "en" : "de")
+        Windows += new Button(app, () => app.Language = app.Language == "de" ? "en" : "de")
         {
             Font = _fonts.Green,
             HoverFont = _fonts.Orange,

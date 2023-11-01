@@ -6,7 +6,7 @@ namespace Burntime.Platform
 {
     static public class Math
     {
-        static Random random = new Random();
+        static readonly Random random = new((int)DateTime.Now.Ticks);
         static public Random Random
         {
             get { return random; }

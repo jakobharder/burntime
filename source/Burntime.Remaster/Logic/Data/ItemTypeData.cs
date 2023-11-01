@@ -25,6 +25,8 @@ namespace Burntime.Remaster.Logic.Data
         public string Title;
         public string Text;
 
+        public string? Fluff;
+
         public int FoodValue;
         public int WaterValue;
         public int HealthValue;

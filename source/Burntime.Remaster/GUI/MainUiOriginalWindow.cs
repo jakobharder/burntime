@@ -21,6 +21,7 @@ namespace Burntime.Remaster
 
         public abstract void UpdatePlayer();
         public abstract void SetMapRenderArea(MapView mapView, Vector2 size);
+        public abstract int ExpectedTravelDays { get; set; }
     }
 
     public class MainUiOriginalWindow : IMapGuiWindow
@@ -29,9 +30,12 @@ namespace Burntime.Remaster
         GuiFont playerColor;
         FaceWindow _face;
         String name;
+        readonly GuiFont _warningFont;
 
         readonly Image _uiElement1;
         readonly Image _uiElement2;
+
+        public override int ExpectedTravelDays { get; set; } = 0;
 
         public MainUiOriginalWindow(Module App)
             : base(App)
@@ -40,6 +44,7 @@ namespace Burntime.Remaster
 
             font = new GuiFont(BurntimeClassic.FontName, new PixelColor(92, 92, 148));
             playerColor = new GuiFont(BurntimeClassic.FontName, PixelColor.White);
+            _warningFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
 
             Windows += _uiElement1 = new Image(App)
             {
@@ -103,8 +108,28 @@ namespace Burntime.Remaster
             Vector2 name = new Vector2(Size.x / 2 - 97, Size.y - 30);
             playerColor.DrawText(Target, name, this.name, TextAlignment.Center, VerticalTextAlignment.Top);
 
+            TextHelper txt = new TextHelper(app, "newburn");
+
+            Vector2 nutrition = new(Size.x / 2 - 97, Size.y - 17);
+            int waterReserve = game.World.ActivePlayerObj.Group.GetLowestWaterReserve();
+            int foodReserve = game.World.ActivePlayerObj.Group.GetLowestFoodReserve();
+            int totalWaterReserve = game.World.ActivePlayerObj.Group.GetLowestWaterWithInventory();
+            int totalFoodReserve = game.World.ActivePlayerObj.Group.GetLowestFoodWithInventory();
+            txt.AddArgument("{w}", waterReserve);
+            txt.AddArgument("{f}", foodReserve);
+            txt.AddArgument("{tw}", totalWaterReserve - waterReserve);
+            txt.AddArgument("{tf}", totalFoodReserve - foodReserve);
+
+            GuiFont nutritionFont = (totalWaterReserve > 0
+                && totalFoodReserve > 0
+                && totalWaterReserve >= ExpectedTravelDays
+                && totalFoodReserve >= ExpectedTravelDays) ? 
+                font : 
+                _warningFont;
+            nutritionFont.DrawText(Target, nutrition, txt[34], TextAlignment.Center, VerticalTextAlignment.Top);
+
             Vector2 day = new Vector2(Size.x / 2 + 100, Size.y - 15);
-            TextHelper txt = new TextHelper(app, "burn");
+            txt = new TextHelper(app, "burn");
             txt.AddArgument("|A", game.World.Day);
             font.DrawText(Target, day, txt[404], TextAlignment.Center, VerticalTextAlignment.Top);
         }

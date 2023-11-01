@@ -12,7 +12,7 @@ Gibts noch was?}
 }#
 Gib mir |C }
 dann arbeite ich..}
-... fÅr dich!}
+... f√ºr dich!}
 }
 }#
 Besorg mir zuerst |C!}

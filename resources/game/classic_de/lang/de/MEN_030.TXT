@@ -1,9 +1,9 @@
 Es wird immer knapper} 
 mit der Nahrung...}
-...ich weiss nicht}
+...ich wei√ü nicht}
 wo ich noch was...}
-...herbekomme! FÅr ein}
-wenig zu essen wÅrde...}
+...herbekomme! F√ºr ein}
+wenig zu essen w√ºrde...}
 ...ich alles machen!}
 }
 }#
@@ -24,7 +24,7 @@ was ordentliches...}
 Du hast nichts gutes}
 zu Essen mit, bring...}
 ...mir |C, dann }
-gehîre ich dir!}
+geh√∂re ich dir!}
 }#
 |A}
 }

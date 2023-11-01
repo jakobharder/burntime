@@ -8,6 +8,7 @@ using Burntime.Platform.Resource;
 using Burntime.Platform.Graphics;
 using Burntime.Framework.States;
 using Burntime.Data.BurnGfx;
+using System.Linq;
 
 namespace Burntime.Remaster.Logic
 {
@@ -311,6 +312,29 @@ namespace Burntime.Remaster.Logic
             this.destination = destination;
         }
 
+        public int GetTravelDays(Location from, Location destination)
+        {
+            if (from.Player != null && from.Player != this)
+            {
+                // only if destination = previous location
+                if (previousLocation == null)
+                    return 0;
+
+                if (destination != previousLocation.Object)
+                    return 0;
+            }
+
+            for (int i = 0; i < Location.Neighbors.Count; i++)
+            {
+                if (Location.Neighbors[i] == destination)
+                {
+                    return Location.WayLengths[i];
+                }
+            }
+
+            return 0;
+        }
+
         /// <summary>
         /// Check wether route to destination is not blocked.
         /// </summary>
@@ -331,6 +355,11 @@ namespace Burntime.Remaster.Logic
             return true;
         }
         #endregion
+
+        public int GetOwnedLocationCount(ClassicWorld world)
+        {
+            return world.Locations.OfType<Location>().Where(l => l.Player == this).Count();
+        }
 
         private void RecalculateExperience()
         {

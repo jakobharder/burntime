@@ -7,6 +7,7 @@ using Burntime.Framework.States;
 using Burntime.Remaster.Logic;
 using Burntime.Platform.Resource;
 using Burntime.Remaster.Logic.Interaction;
+using System.Linq;
 
 namespace Burntime.Remaster
 {
@@ -72,6 +73,8 @@ namespace Burntime.Remaster
         protected override void InitInstance(object[] parameter)
         {
             productions = container.CreateLinkList<Production>();
+
+            UpdateSaveHint();
         }
 
         public override void Turn()
@@ -79,6 +82,7 @@ namespace Burntime.Remaster
             World.Turn();
 
             base.Turn();
+            UpdateSaveHint();
         }
 
         [NonSerialized]
@@ -93,6 +97,34 @@ namespace Burntime.Remaster
             }
 
             return null;
+        }
+
+        int saveHintDays;
+        int saveHintLocations;
+
+        public override bool HasValidSaveHint => saveHintDays != 0;
+
+        public override void UpdateSaveHint()
+        {
+            if (World is null)
+            {
+                saveHintDays = 1;
+                saveHintLocations = 0;
+            }
+            else
+            {
+                saveHintDays = World.Day;
+                saveHintLocations = World.Players.OfType<Player>().FirstOrDefault(x => x.Type == PlayerType.Human)?.GetOwnedLocationCount(World) ?? 0;
+            }
+        }
+
+        public override Dictionary<string, string> GetSaveHint()
+        {
+            return new Dictionary<string, string>()
+            {
+                { "days", saveHintDays.ToString() },
+                { "camps", saveHintLocations.ToString() }
+            };
         }
     }
 

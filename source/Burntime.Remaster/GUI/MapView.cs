@@ -110,19 +110,8 @@ public class MapView : Window
         set { ways = value; }
     }
 
-    Location location;
-    public Location Location
-    {
-        get { return location; }
-        set { location = value; }
-    }
-
-    Remaster.Logic.Player player;
-    public Remaster.Logic.Player Player
-    {
-        get { return player; }
-        set { player = value; }
-    }
+    public Location Location { get; set; }
+    public Player Player { get; set; }
 
     public bool DebugView = false;
 
@@ -274,6 +263,13 @@ public class MapView : Window
             _rightClickMove = null;
 
         base.OnMouseEnter();
+    }
+
+    public override void OnActivate()
+    {
+        _rightClickMove = null;
+
+        base.OnActivate();
     }
 
     public override bool OnMouseClick(Vector2 position, MouseButton button)

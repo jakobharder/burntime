@@ -5,7 +5,7 @@ davor ohne Gasmaske...}
 ...in diesen Ort zu gehen.}
 }
 }#
-M”chtest du etwas von mir?}
+MÃ¶chtest du etwas von mir?}
 }
 }#
 Willst du etwas wissen?}

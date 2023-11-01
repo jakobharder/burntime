@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-using Burntime.Framework;
+﻿using Burntime.Framework;
 using Burntime.Framework.States;
 using Burntime.Platform.Resource;
 using Burntime.Remaster.Logic.Data;
 using Burntime.Remaster.Logic.Interaction;
+using System;
+using System.Collections.Generic;
 
 namespace Burntime.Remaster.Logic
 {
@@ -73,104 +71,31 @@ namespace Burntime.Remaster.Logic
             return false;
         }
 
-        public bool IsSelectable
-        {
-            get { return data.Object.IsSelectable; }
-        }
+        public bool IsSelectable => data.Object.IsSelectable;
+        public string Sprite => data.Object.Sprite;
 
-        public string Sprite
-        {
-            get { return data.Object.Sprite; }
-        }
+        public string Title => dummy ??
+            (string.IsNullOrEmpty(data.Object.Title) ? data.Object.ID : ResourceManager.GetString(data.Object.Title));
 
-        public string Title
-        {
-            get
-            {
-                if (dummy != null)
-                    return dummy;
-                if (data.Object.Title == "")
-                    return data.Object.ID;
-                return ResourceManager.GetString(data.Object.Title);
-            }
-        }
+        public string Text => dummy ??
+            (string.IsNullOrEmpty(data.Object.Text) ? data.Object.ID : ResourceManager.GetString(data.Object.Text));
 
-        public string Text
-        {
-            get
-            {
-                if (dummy != null)
-                    return dummy;
-                if (data.Object.Text == "")
-                    return data.Object.ID;
-                return ResourceManager.GetString(data.Object.Text);
-            }
-        }
+        public string? FluffText => string.IsNullOrEmpty(data.Object.Fluff) ? null : ResourceManager.GetString(data.Object.Fluff);
 
-        public int FoodValue
-        {
-            get { return data.Object.FoodValue; }
-        }
+        public int FoodValue => data.Object.FoodValue;
+        public int WaterValue => data.Object.WaterValue;
+        public int HealthValue => data.Object.HealthValue;
+        public float EatValue => data.Object.EatValue;
+        public float DrinkValue => data.Object.DrinkValue;
+        public float TradeValue => data.Object.TradeValue;
+        public float HealValue => data.Object.HealValue;
+        public int ExperienceValue => data.Object.ExperienceValue;
+        public int DamageValue => data.Object.DamageValue;
+        public int DefenseValue => data.Object.DefenseValue;
+        public int AmmoValue => data.Object.AmmoValue;
 
-        public int WaterValue
-        {
-            get { return data.Object.WaterValue; }
-        }
-
-        public int HealthValue
-        {
-            get { return data.Object.HealthValue; }
-        }
-
-        public float EatValue
-        {
-            get { return data.Object.EatValue; }
-        }
-
-        public float DrinkValue
-        {
-            get { return data.Object.DrinkValue; }
-        }
-
-        public float TradeValue
-        {
-            get { return data.Object.TradeValue; }
-        }
-
-        public float HealValue
-        {
-            get { return data.Object.HealValue; }
-        }
-
-        public int ExperienceValue
-        {
-            get { return data.Object.ExperienceValue; }
-        }
-
-        public int DamageValue
-        {
-            get { return data.Object.DamageValue; }
-        }
-
-        public int DefenseValue
-        {
-            get { return data.Object.DefenseValue; }
-        }
-
-        public int AmmoValue
-        {
-            get { return data.Object.AmmoValue; }
-        }
-
-        public ItemType Empty
-        {
-            get { return empty; }
-        }
-
-        public ItemType Full
-        {
-            get { return full; }
-        }
+        public ItemType Empty => empty;
+        public ItemType Full => full;
 
         public Production Production
         {

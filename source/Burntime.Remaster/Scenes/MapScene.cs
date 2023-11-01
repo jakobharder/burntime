@@ -122,6 +122,10 @@ namespace Burntime.Remaster
                 app.ActiveClient.Finish();
                 app.SceneManager.SetScene("WaitScene");
             }
+
+            var hoverLocation = view.ActiveEntrance >= 0 ? BurntimeClassic.Instance.Game.World.Locations[view.ActiveEntrance] : null;
+            var player = BurntimeClassic.Instance.Game.World.ActivePlayerObj;
+            gui.ExpectedTravelDays = hoverLocation is null ? 0 : player.GetTravelDays(player.Location, hoverLocation);
         }
 
         protected override void OnActivateScene(object parameter)

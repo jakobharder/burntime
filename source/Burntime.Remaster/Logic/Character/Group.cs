@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-
+using System.Linq;
 using Burntime.Framework.States;
 using Burntime.Platform;
 
@@ -220,28 +220,51 @@ namespace Burntime.Remaster.Logic
         #endregion
 
         #region group stats
-        public int GetWaterReserve()
+        public int GetWaterReserve() => this.OfType<Character>().Sum(x => x.Water);
+        public int GetLowestWaterReserve() => this.OfType<Character>().Min(x => x.Water);
+        public int GetWaterInInventory() => this.OfType<Character>().Sum(x => x.GetWaterInInventory());
+        public int GetLowestWaterWithInventory()
         {
-            int water = 0;
-            foreach (Character ch in this)
-                water += ch.Water;
-            return water;
+            int water = GetWaterInInventory();
+            int[] reserves = characterList.OfType<Character>().Select(x => x.Water).ToArray();
+            return GetLowestAfterDistribution(reserves, water);
         }
 
-        public int GetWaterInInventory()
+        public int GetFoodReserve() => this.OfType<Character>().Sum(x => x.Food);
+        public int GetLowestFoodReserve() => this.OfType<Character>().Min(x => x.Food);
+        public int GetFoodInInventory() => this.OfType<Character>().Sum(x => x.GetFoodInInventory());
+        public int GetLowestFoodWithInventory()
         {
-            int water = 0;
-            foreach (Character ch in this)
-                water += ch.GetWaterInInventory();
-            return water;
+            int food = GetFoodInInventory();
+            int[] reserves = characterList.OfType<Character>().Select(x => x.Food).ToArray();
+            return GetLowestAfterDistribution(reserves, food);
         }
 
-        public int GetFoodReserve()
+        private int GetLowestAfterDistribution(int[] reserves, int distribute)
         {
-            int food = 0;
-            foreach (Character ch in this)
-                food += ch.Food;
-            return food;
+            if (characterList.Count == 0)
+                return 0;
+
+            if (distribute == 0)
+                return reserves.Min();
+
+            int lowest = 0;
+            for (; distribute > 0; lowest++)
+            {
+                for (int i = 0; i < reserves.Length; i++)
+                {
+                    if (reserves[i] == lowest)
+                    {
+                        distribute--;
+                        reserves[i]++;
+
+                        if (distribute == 0)
+                            break;
+                    }
+                }
+            }
+
+            return reserves.Min();
         }
         #endregion
 

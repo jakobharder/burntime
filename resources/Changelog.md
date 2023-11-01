@@ -1,6 +1,23 @@
 ﻿# Burntime Changelog
 
-## 0.7 - Options, Trader and Amiga (2023-10-26)
+## 0.8 - Gameplay Improvements (2023-11-01)
+
+### Changes
+
+- Automatically equip weapons and protection
+- Don't use guns when dogs or mutants attack you
+- Right click on an rope item to get a hint
+- Support German letter `ß` in texts
+- Improved randomness of trader items
+- Show food and water reserves in main UI
+- Show day and camp numbers in save game menu
+
+### Fixes
+
+- Fixed a potential crash when entering a trader with intro
+- Fixed inventory not opening after killing a dog
+
+## 0.7 - Options, Trader and Amiga (2023-10-29)
 
 ### Changes
 
@@ -17,7 +34,7 @@
   - Trader intro scenes
   - Inventory UIs
 - Added Amiga sounds, music
-  - Amiga version hit, barf and die sounds
+  - Amiga version hit, bark and die sounds
   - Switch to Amiga music in options
 - Start game with language selection
 - Save user settings
