@@ -1,6 +1,6 @@
 ﻿# Burntime Changelog
 
-## [Unreleased]
+## 0.8 - Gameplay Improvements (2023-11-01)
 
 ### Changes
 

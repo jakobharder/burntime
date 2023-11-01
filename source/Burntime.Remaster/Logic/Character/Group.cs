@@ -259,12 +259,12 @@ namespace Burntime.Remaster.Logic
                         reserves[i]++;
 
                         if (distribute == 0)
-                            return lowest;
+                            break;
                     }
                 }
             }
 
-            return lowest;
+            return reserves.Min();
         }
         #endregion
 
