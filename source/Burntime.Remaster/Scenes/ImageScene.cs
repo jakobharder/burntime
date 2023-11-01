@@ -119,7 +119,7 @@ namespace Burntime.Remaster.Scenes
                 ani1.Position = app.IsNewGfx ? new Vector2(108, 89) : new Vector2(125, 92);
                 ani1.Background.Animation.Speed = app.IsNewGfx ? 9.0f : 5.0f;
             }
-            else if (BurntimeClassic.Instance.ImageScene == "film_05.pac" && ani1 is not null)
+            else if (BurntimeClassic.Instance.ImageScene == "film_05.pac" && ani1 is not null && ani2 is not null && ani3 is not null)
             {
                 ani1.Position = app.IsNewGfx ? new Vector2(76, 120) : new Vector2(98, 120);
                 ani2.Position = app.IsNewGfx ? new Vector2(52, 88) : new Vector2(77, 89);

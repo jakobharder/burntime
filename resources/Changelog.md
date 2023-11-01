@@ -10,9 +10,11 @@
 - Support German letter `ß` in texts
 - Improved randomness of trader items
 - Show food and water reserves in main UI
+- Show day and camp numbers in save game menu
 
 ### Fixes
 
+- Fixed a potential crash when entering a trader with intro
 - Fixed inventory not opening after killing a dog
 
 ## 0.7 - Options, Trader and Amiga (2023-10-29)

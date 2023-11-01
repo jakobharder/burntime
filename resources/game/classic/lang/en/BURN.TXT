@@ -419,9 +419,9 @@ XXXXXXXXXXXXXXXXXXXX}
 calculate data...}
 Please take the word |E}
 from line |D on page |C}
-|J days}
-|D days}
-|C days}
+|J days|#1 day}
+|D days|#1 day}
+|C days|#1 day}
 Music OFF}
 }
 }
@@ -529,7 +529,7 @@ nothing.}
 }
 }
 For that you can have grub}
-for |E days.}
+for |E days.|#for 1 day.}
 }
 Enjoy it ...}
 Ha, ha, ha !}
@@ -549,7 +549,7 @@ like this anywhere else.}
 }
 }
 For that you can get enough}
-water for |E days.}
+water for |E days.|#water for 1 day.}
 }
 Cheers, and drop by again}
 sometime.}

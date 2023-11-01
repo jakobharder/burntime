@@ -400,10 +400,10 @@ Arzt}
 Lager}
 |A}
 |B}
-WA. |C Tage}
-NG. |D Tage}
+WA. |C Tage|#WA. |C Tag}
+NG. |D Tage|#NG. |D Tag}
 |A Tag}
-|A ist von uns gegangen !}
+|A ist von uns gegangen!}
 Vorkommen}
 Wasser}
 |E rem}
@@ -428,10 +428,10 @@ Musik AUS}
 }
 }
 }
-Ich bin |B !}
-Ich bin ein guter |B !}
-Ich bin ein sehr guter |B !}
-Ich bin einer der besten |B !}
+Ich bin |B!}
+Ich bin ein guter |B!}
+Ich bin ein sehr guter |B!}
+Ich bin einer der besten |B!}
 }
 }
 }
@@ -490,12 +490,12 @@ ZBuff_20}
 }
 Unterhaltung beenden.}
 Willst du einen Job.}
-Gibts es Neuigkeiten ?}
-OK, ich geb dir den Job !}
-Nein, du bleibst im Stützpunkt !}
-Ok, du bleibst im Stützpunkt !}
-Na und, ...Verschwinde !}
-Welchen Beruf hast du !}
+Gibts es Neuigkeiten?}
+OK, ich geb dir den Job!}
+Nein, du bleibst im Stützpunkt!}
+Ok, du bleibst im Stützpunkt!}
+Na und, ...Verschwinde!}
+Welchen Beruf hast du!}
 OK, hier hast du |C.}
 ( weiter... )}
 OK, zeig was du hast.}
@@ -513,7 +513,7 @@ Gesundheit schon Wert sein.}
 }
 Für diesen Hungerlohn würde}
 ein anderer nicht einmal}
-zum Messer greifen !}
+zum Messer greifen!}
 Deinen erbärmlichen Zustand}
 wieder zu verbessern wird}
 dich etwas mehr kosten!}
@@ -528,14 +528,14 @@ einmal den Tod!}
 }
 }
 }
-Dafür kannst du ganze |E}
-Tagesrationen verschlingen.}
+Dafür kannst du ganze |E|#Dafür kannst du eine}
+Tagesrationen verschlingen.|#Tagesration verschlingen.|#Tagesrationen verschlingen.|#|E}
 }
 Wohl bekommt's...}
-Ha, Ha, Ha !}
+Ha, Ha, Ha!}
 }
 Sieht es hier vieleicht aus}
-wie in einer Hilfsmission ?}
+wie in einer Hilfsmission?}
 }
 So ein fantastisches Essen wie bei}
 mir, bekommst du sicher nie wieder.}
@@ -549,16 +549,16 @@ mir, bekommst du sicher nie wieder.}
 }
 }
 Für das Zeug kannst du |E}
-Tagesrationen versaufen !}
+Tagesrationen versaufen!|#Tagesration versaufen!|#Tagesrationen versaufen!|#|E}
 }
 Prost!!}
-und beehrt mich bald wieder !}
+und beehrt mich bald wieder!}
 }
 Ich bin doch nicht bei der}
-Heilsarmee !}
+Heilsarmee!}
 }
 So erstklassige Drinks wie}
-bei mir kannst du lange suchen !}
+bei mir kannst du lange suchen!}
 }
 }
 }
@@ -569,7 +569,7 @@ bei mir kannst du lange suchen !}
 }
 }
 In}
-|J Tagen}
+|J Tagen|#1 Tag}
 hast du |A Orte besetzt|#hast du 1 Ort besetzt|#hast du noch keinen Ort besetzt}
 und kontrollierst damit |I von |K Städten.}
 }
@@ -598,7 +598,7 @@ und sein Wasser vertrocknete...}
 damit bereitet würde der Weg...}
 den Königen vom Aufgang der Sonne...}
 }
-|A ist von uns gegangen !}
+|A ist von uns gegangen!}
 }
 }
 }
