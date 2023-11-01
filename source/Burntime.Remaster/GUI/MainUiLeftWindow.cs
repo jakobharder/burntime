@@ -23,6 +23,8 @@ namespace Burntime.Remaster
         public CommandHandler NextTurn;
         public CommandHandler ShowStatistics;
 
+        public override int ExpectedTravelDays { get; set; } = 0;
+
         public MainUiLeftWindow(Module App)
             : base(App)
         {

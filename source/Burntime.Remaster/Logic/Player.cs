@@ -311,6 +311,29 @@ namespace Burntime.Remaster.Logic
             this.destination = destination;
         }
 
+        public int GetTravelDays(Location from, Location destination)
+        {
+            if (from.Player != null && from.Player != this)
+            {
+                // only if destination = previous location
+                if (previousLocation == null)
+                    return 0;
+
+                if (destination != previousLocation.Object)
+                    return 0;
+            }
+
+            for (int i = 0; i < Location.Neighbors.Count; i++)
+            {
+                if (Location.Neighbors[i] == destination)
+                {
+                    return Location.WayLengths[i];
+                }
+            }
+
+            return 0;
+        }
+
         /// <summary>
         /// Check wether route to destination is not blocked.
         /// </summary>

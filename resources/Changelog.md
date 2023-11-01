@@ -9,6 +9,7 @@
 - Right click on an rope item to get a hint
 - Support German letter `ß` in texts
 - Improved randomness of trader items
+- Show food and water reserves in main UI
 
 ### Fixes
 

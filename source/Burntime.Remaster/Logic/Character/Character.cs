@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace Burntime.Remaster.Logic
 {
@@ -163,13 +164,8 @@ namespace Burntime.Remaster.Logic
             get { return 5; }
         }
 
-        public int GetWaterInInventory()
-        {
-            int water = 0;
-            foreach (Item item in Items)
-                water += item.WaterValue;
-            return water;
-        }
+        public int GetFoodInInventory() => Items.OfType<Item>().Sum(x => x.FoodValue);
+        public int GetWaterInInventory() => Items.OfType<Item>().Sum(x => x.WaterValue);
         #endregion
 
         protected override void InitInstance(object[] parameter)
