@@ -47,7 +47,7 @@ film_05.pac=gfx/backgrounds/film5.png
 film_09.pac=gfx/backgrounds/film9.png
 film_10.pac=gfx/backgrounds/film10.png
 info.pac=gfx/backgrounds/info.png
-hint1.pac=gfx/backgrounds/trader.png
+gfx/trader_background.png=gfx/backgrounds/trader.png
 film_05.ani?0-17?p=pngsheet@gfx/backgrounds/film5_ani.png?0-17?135x126
 film_05.ani?18-19=pngsheet@gfx/backgrounds/film5_ani2.png?0-1?90x72
 film_05.ani?20-21=pngsheet@gfx/backgrounds/film5_ani3.png?0-1?90x72
@@ -80,6 +80,8 @@ burngfxani@syst.raw?0-3=pngsheet@gfx/objects/flags.png?0-11?30x36
 burngfxani@syst.raw?4-7=pngsheet@gfx/objects/flags.png?12-23?30x36
 burngfxani@syst.raw?8-11=pngsheet@gfx/objects/flags.png?24-35?30x36
 burngfxani@syst.raw?12-15=pngsheet@gfx/objects/flags.png?36-47?30x36
+
+raum_8.pac=gfx/backgrounds/room8.png
 
 [newgfx_native]
 ' Graphics only used in remastered mode
@@ -121,7 +123,6 @@ raum_4.pac=gfx/backgrounds/room4.png
 raum_5.pac=gfx/backgrounds/room5.png
 raum_6.pac=gfx/backgrounds/room6.png
 raum_7.pac=gfx/backgrounds/room7.png
-# raum_8.pac=gfx/backgrounds/room8.png
 hint2.pac=gfx/backgrounds/hint2.png
 gfx/advice.png=pngsheet@gfx/items/gst.png?58?64x76
 gfx/dogshit.png=pngsheet@gfx/items/gst.png?59?64x76
