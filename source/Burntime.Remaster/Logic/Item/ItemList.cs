@@ -110,11 +110,8 @@ namespace Burntime.Remaster
             return list.Contains(item);
         }
 
-        // IEnumerable interface implementation
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return new ItemCollectionEnumerator(this);
-        }
+        IEnumerator IEnumerable.GetEnumerator() => new ItemCollectionEnumerator(this);
+        IEnumerator<Item> IEnumerable<Item>.GetEnumerator() => new ItemCollectionEnumerator(this);
 
         // for debug
         public override string ToString()

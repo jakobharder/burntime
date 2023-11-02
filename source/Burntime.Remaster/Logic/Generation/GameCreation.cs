@@ -318,15 +318,13 @@ namespace Burntime.Remaster.Logic.Generation
                     continue;
                 }
 
-                Production p = container.Create<Production>();
-                p.MaxCombination = section.GetInt("maxcombination");
-                p.ProductionPerDay = section.GetInts("amount");
-                p.ProductionPerDay2Person = section.GetInts("amount2");
-                if (p.ProductionPerDay2Person.Length == 0)
-                    p.ProductionPerDay2Person = p.ProductionPerDay;
-
-                p.Produce = game.ItemTypes[produce];
-                p.ID = game.Productions.Count;
+                Production p = container.Create(() => new Production(
+                    section.GetInt("maxcombination"),
+                    section.GetInts("amount"),
+                    section.GetInts("amount2"),
+                    game.ItemTypes[produce],
+                    game.Productions.Count
+                ));
 
                 game.ItemTypes[section.Name].Production = p;
 

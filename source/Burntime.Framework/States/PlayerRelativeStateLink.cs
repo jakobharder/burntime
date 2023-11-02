@@ -7,7 +7,7 @@ namespace Burntime.Framework.States
     [Serializable]
     public sealed class PlayerRelativeStateLink<TStateObject> : StateLinkList<TStateObject>, IStateLink where TStateObject : StateObject
     {
-        internal PlayerRelativeStateLink()
+        internal PlayerRelativeStateLink(StateManager container) : base(container)
         {
         }
 

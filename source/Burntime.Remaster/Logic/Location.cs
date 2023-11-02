@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Burntime.Framework.States;
 using Burntime.Platform;
 using Burntime.Platform.Resource;
@@ -15,17 +16,6 @@ namespace Burntime.Remaster.Logic
         public static implicit operator int(Location right)
         {
             return right.Id;
-        }
-
-        StateLink<Production> production;
-        public int[] AvailableProducts;
-        float productionState = 0;
-        public int NPCFoodProduction;
-
-        public Production Production
-        {
-            get { return production; }
-            set { production = value; }
         }
 
         DataID<Interaction.Danger> danger;
@@ -168,73 +158,56 @@ namespace Burntime.Remaster.Logic
         [NonSerialized]
         public Maps.MapViewHoverInfo Hover;
 
-        float GetFoodProductionInterval()
+        #region food
+        const int MAX_STOCK_FOOD = 6;
+        StateLink<Production> production;
+        public int[] AvailableProducts;
+        float productionState = 0;
+        public int NPCFoodProduction;
+
+        public Production Production
         {
-            if (Player == null || Production == null)
-                return 0;
-
-            int count = 0;
-
-            // check for tools/traps in all rooms
-            foreach (Room room in Rooms)
-            {
-                foreach (Item item in room.Items)
-                {
-                    if (item.Type.Production == Production)
-                    {
-                        count++;
-                    }
-                }
-            }
-
-            // now check for tools/traps in camp npcs
-            foreach (Character npc in CampNPC)
-            {
-                foreach (Item item in npc.Items)
-                {
-                    if (item.Type.Production == Production)
-                    {
-                        count++;
-                    }
-                }
-            }
-
-            return Production.GetInterval(count, CampNPC.Count);
+            get => production;
+            set => production = value;
         }
 
-        public int GetFoodProductionValue()
+        public IEnumerable<Production> GetValidProductions(ClassicGame game)
         {
-            if (Player == null || Production == null)
-                return 0;
-
-            int count = 0;
-
-            // check for tools/traps in all rooms
-            foreach (Room room in Rooms)
-            {
-                foreach (Item item in room.Items)
-                {
-                    if (item.Type.Production == Production)
-                    {
-                        count++;
-                    }
-                }
-            }
-
-            // now check for tools/traps in camp npcs
-            foreach (Character npc in CampNPC)
-            {
-                foreach (Item item in npc.Items)
-                {
-                    if (item.Type.Production == Production)
-                    {
-                        count++;
-                    }
-                }
-            }
-
-            return Production.GetProductionPerDay(count, CampNPC.Count);
+            return AvailableProducts.Select(p => game.Productions[p]);
         }
+
+        public Production.Rate GetFoodProductionRate(Production? production = null)
+        {
+            production ??= Production;
+
+            if (Player is null || production is null)
+                return new Production.Rate();
+
+            int trapsInRooms = Rooms.Sum(room => room.Items.Where(item => item.Type.Production == production).Count());
+            int trapsOnNPCs = CampNPC.Sum(npc => npc.Items.Where(item => item.Type.Production == production).Count());
+
+            return production.GetRate(trapsInRooms + trapsOnNPCs, CampNPC.Count);
+        }
+
+        public Production.Rate AutoSelectFoodProduction(bool onlyIfStarving, ClassicGame game)
+        {
+            var info = GetFoodProductionRate();
+            if (!info.IsCampStarving && onlyIfStarving)
+                return info;
+
+            foreach (var production in GetValidProductions(game))
+            {
+                var candidate = GetFoodProductionRate(production);
+                if (candidate.FoodPerDay > info.FoodPerDay)
+                {
+                    Production = production;
+                    info = candidate;
+                }
+            }
+
+            return info;
+        }
+        #endregion
 
         // logic
         public virtual void Update(float elapsed)
@@ -255,21 +228,17 @@ namespace Burntime.Remaster.Logic
             Source.BeginTurn();
 
             // produce food
-            if (Player != null && Production != null)
+            var production = AutoSelectFoodProduction(onlyIfStarving: true, BurntimeClassic.Instance.Game);
+            NPCFoodProduction = production.FoodPerDay;
+            if (production.ItemDropInterval > 0)
             {
-                NPCFoodProduction = GetFoodProductionValue();
-
-                float interval = GetFoodProductionInterval();
-                int count = 0;
-                foreach (Room room in Rooms)
-                    count += room.Items.GetCount(Production.Produce);
-
-                if (count < 6 && interval > 0)
+                int alreadyInStock = Rooms.Sum(room => room.Items.GetCount(Production.Produce));
+                if (alreadyInStock < MAX_STOCK_FOOD)
                 {
                     productionState += 1;
-                    if (productionState >= interval)
+                    if (productionState >= production.ItemDropInterval)
                     {
-                        productionState -= interval;
+                        productionState -= production.ItemDropInterval;
 
                         int i = 0;
                         while (!Rooms[i].Items.Add(Production.Produce.Generate()))

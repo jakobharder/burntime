@@ -1,5 +1,15 @@
 ﻿# Burntime Changelog
 
+## [Unreleased]
+
+### Changes
+
+- Camps automatically select better traps if production is too low
+
+### Fixes
+
+- Fixed crash when starting with music set to off
+
 ## 0.8 - Gameplay Improvements (2023-11-01)
 
 ### Changes

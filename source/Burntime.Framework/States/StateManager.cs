@@ -126,6 +126,23 @@ namespace Burntime.Framework.States
             UpdateDebugInfo();
         }
 
+        /// <summary>
+        /// Create with lambda and normal constructor instead of custom InitInstance.
+        /// </summary>
+        public T Create<T>(Func<T> createFunc) where T : StateObject
+        {
+            if (temporaryMode)
+            {
+                throw new BurntimeLogicException();
+            }
+
+            T obj = createFunc();
+            obj.container = this;
+            added.Add(obj);
+            UpdateDebugInfo();
+            return obj;
+        }
+
         public T Create<T>() where T : StateObject
         {
             return Create<T>(StateObjectOptions.None, null);
@@ -151,7 +168,7 @@ namespace Burntime.Framework.States
 
             if ((options & StateObjectOptions.PlayerRelative) == StateObjectOptions.PlayerRelative)
             {
-                PlayerRelativeStateLink<T> state = new PlayerRelativeStateLink<T>();
+                var state = new PlayerRelativeStateLink<T>(this);
                 added.Add(state);
 
                 for (int i = 0; i < Root.Player.Length; i++)
@@ -186,8 +203,7 @@ namespace Burntime.Framework.States
 
         public StateLinkList<T> CreateLinkList<T>() where T : StateObject
         {
-            StateLinkList<T> linkList = new StateLinkList<T>();
-            linkList.Container = this;
+            StateLinkList<T> linkList = new StateLinkList<T>(this);
             return linkList;
         }
 
