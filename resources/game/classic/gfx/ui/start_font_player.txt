@@ -1,0 +1,8 @@
+﻿image=gfx/ui/start_font_player.png
+offset=0
+lines=1
+height=12
+char0=" ?PLAYER1SI"
+//       ? P L A Y E R 1 S I"
+width0=8 8 8 6 8 6 7 7 6 7 4
+y0=0

@@ -38,11 +38,11 @@ Water: {w}+{tw} Food: {f}+{tf}}
 incompatible
 too little water
 too little food
-
-
-
-
-
+LOAD
+START
+EXIT
+PLAYER 1
+PLAYER 11
 
 
 

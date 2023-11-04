@@ -1,6 +1,4 @@
-﻿
-using System;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
 namespace Burntime.Platform
 {
@@ -8,8 +6,9 @@ namespace Burntime.Platform
     [Serializable]
     public struct PixelColor
     {
-        public static PixelColor White = new PixelColor(255, 255, 255);
-        public static PixelColor Black = new PixelColor(0, 0, 0);
+        public static PixelColor White { get; } = new(255, 255, 255);
+        public static PixelColor Black { get; } = new(0, 0, 0);
+        public static PixelColor Transparent { get; } = new(0, 255, 255, 255);
 
         public byte b, g, r, a;
 

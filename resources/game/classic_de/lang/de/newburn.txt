@@ -38,11 +38,11 @@ WA. {w}+{tw} NG. {f}+{tf}}
 inkompatibel
 zu wenig Wasser
 zu wenig Nahrung
-
-
-
-
-
+LADEN
+STARTEN
+ENDE
+SPIELER 1
+SPIELER 11
 
 
 

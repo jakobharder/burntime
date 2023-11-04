@@ -1,6 +1,4 @@
 ﻿using Burntime.Platform.Resource;
-using System;
-using System.Collections.Generic;
 
 namespace Burntime.Platform.Graphics;
 
@@ -9,6 +7,7 @@ public struct FontInfo
     public String Font;
     public PixelColor ForeColor;
     public PixelColor BackColor;
+    public bool Colorize;
     public bool UseBackColor;
 }
 
@@ -72,7 +71,11 @@ public class Font
             _resourceManager.LoadFont(this);
 
         target.Layer++;
-        if (Info.UseBackColor)
+        if (!Info.Colorize)
+        {
+            DrawText(target, position, text, align, verticalAlign, new PixelColor((int)(255 * alpha), 255, 255, 255));
+        }
+        else if (Info.UseBackColor)
         {
             DrawText(target, position, text, align, verticalAlign, new PixelColor((int)(255 * alpha), 255, 255, 255));
         }

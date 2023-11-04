@@ -1,7 +1,6 @@
 ﻿using Burntime.Platform;
 using Burntime.Platform.Graphics;
 using System;
-using System.Runtime.InteropServices.ObjectiveC;
 
 namespace Burntime.Framework.GUI;
 
@@ -77,7 +76,14 @@ public class Button : Window
 
     protected bool _isDown = false;
 
-    public object Context { get; set; }
+    public object? Context { get; set; }
+
+    private bool _forceSize = false;
+    public override Vector2 Size
+    {
+        get => base.Size;
+        set { base.Size = value; _forceSize = true; }
+    }
 
     public Button(Module app, Action? command = null)
         : base(app)
@@ -98,7 +104,7 @@ public class Button : Window
             _lastLanguage = app.Language;
         }
 
-        if (!sizeSet)
+        if (!sizeSet && !_forceSize)
         {
             if (Image != null && Image.IsLoaded)
             {

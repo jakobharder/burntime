@@ -44,7 +44,8 @@ namespace Burntime.Platform.Resource
                     Font = filePath,
                     ForeColor = color,
                     BackColor = backColor,
-                    UseBackColor = !(backColor.a == 255 && backColor.r == 0 && backColor.g == 0 && backColor.b == 0)
+                    Colorize = color != PixelColor.Transparent,
+                    UseBackColor = backColor != PixelColor.Black
                 }
             };
 
