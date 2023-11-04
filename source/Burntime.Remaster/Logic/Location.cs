@@ -173,7 +173,7 @@ namespace Burntime.Remaster.Logic
 
         public IEnumerable<Production> ValidProductions
         {
-            get => AvailableProducts.Select(p => ((ClassicGame)Container.Root).Productions[p]);
+            get => AvailableProducts.Where(p => p >= 0).Select(p => ((ClassicGame)Container.Root).Productions[p]);
         }
 
         public Production.Rate GetFoodProductionRate(Production? production = null)

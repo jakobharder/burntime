@@ -108,8 +108,8 @@ namespace Burntime.Remaster.Logic
         }
 
         public virtual int BaseAttackValue => DEFAULT_ATTACK_VALUE;
-        public virtual float AttackValue => Weapon?.DamageValue ?? BaseAttackValue;
-        public virtual float DefenseValue => (int)(Experience / 10 + 0.5f + (Protection?.DefenseValue ?? 0));
+        public virtual float AttackValue => (Weapon?.DamageValue ?? BaseAttackValue) * Experience / 100;
+        public virtual float DefenseValue => (DEFAULT_ATTACK_VALUE + (Protection?.DefenseValue ?? 0)) * Experience / 100;
 
         protected DataID<Platform.Graphics.ISprite> body;
         public DataID<Platform.Graphics.ISprite> Body
@@ -466,10 +466,8 @@ namespace Burntime.Remaster.Logic
 
             static void attack(Character attacker, Character defender, bool useAmmo, float factor)
             {
-                int attackValue = attacker.UseBestWeapon(useAmmo);
-                float experience = (attacker.Experience / 100.0f);
-                // note: DefenseValue is also based on experience already
-                int damage = (int)System.Math.Max(1, (attackValue - defender.DefenseValue) * experience * factor);
+                int attackValue = attacker.UseBestEquipment(useAmmo);
+                int damage = (int)System.Math.Max(1, (attackValue - defender.DefenseValue) * factor);
                 defender.Health -= damage;
             };
 
@@ -727,12 +725,15 @@ namespace Burntime.Remaster.Logic
             return this;
         }
 
-        private int UseBestWeapon(bool allowAmmo = true)
+        /// <summary>
+        /// Use best weapon and protection. Returns attack value.
+        /// </summary>
+        private int UseBestEquipment(bool allowAmmo = true)
         {
             Protection = Items.FindBestDefense(Protection);
             Item? weapon = Items.FindBestWeapon(allowAmmo ? Weapon : null);
             if (weapon is null)
-                return BaseAttackValue;
+                return BaseAttackValue * Experience / 100;
 
             int attackValue = weapon.DamageValue;
             if (allowAmmo)
@@ -743,9 +744,12 @@ namespace Burntime.Remaster.Logic
             }
 
             Weapon = Items.FindBestWeapon(Weapon);
-            return attackValue;
+            return attackValue * Experience / 100;
         }
 
+        /// <summary>
+        /// Use best danger protection.
+        /// </summary>
         private void UseBestProtection()
         {
             Protection = Items.FindBestProtection(Protection, Location.Danger.Type);

@@ -47,9 +47,9 @@ public sealed class CharacterRespawn : StateObject
         MutantHealth = 31;
         DogHealth = 31;
 
-        TraderHealth = 55;
-        MutantHealth = 10;
-        DogHealth = 10;
+        TraderAttack = 60;
+        MutantAttack = 40;
+        DogAttack = 40;
     }
 
     protected override void InitInstance(object[] parameter)
@@ -64,6 +64,24 @@ public sealed class CharacterRespawn : StateObject
         dogRespawn = (int)parameter[3];
 
         base.InitInstance(parameter);
+    }
+
+    protected override void AfterDeserialization()
+    {
+        base.AfterDeserialization();
+
+        if (TraderHealth == 0)
+            TraderHealth = 100;
+        if (MutantHealth == 0)
+            MutantHealth = 31;
+        if (DogHealth == 0)
+            DogHealth = 31;
+        if (TraderAttack == 0)
+            TraderAttack = 60;
+        if (MutantAttack == 0)
+            MutantAttack = 40;
+        if (DogAttack == 0)
+            DogAttack = 40;
     }
 
     public void Respawn(Character character)
