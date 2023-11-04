@@ -12,6 +12,7 @@
 ### Fixes
 
 - Fixed crash when starting with music set to off
+- Fixed font reloading after language change
 
 ## 0.8 - Gameplay Improvements (2023-11-01)
 
