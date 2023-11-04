@@ -5,6 +5,7 @@
 ### Changes
 
 - Camps automatically select better traps if production is too low
+- Increase trader, dog and mutant health and damage on higher difficulties
 
 ### Fixes
 

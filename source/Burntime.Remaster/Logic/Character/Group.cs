@@ -269,11 +269,8 @@ namespace Burntime.Remaster.Logic
         #endregion
 
         #region ICharacter, IEnumerable implementations
-        // IEnumerable interface implementation
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return new CharacterCollectionEnumerator(this);
-        }
+        IEnumerator IEnumerable.GetEnumerator() => new CharacterCollectionEnumerator(this);
+        IEnumerator<Character> IEnumerable<Character>.GetEnumerator() => new CharacterCollectionEnumerator(this);
 
         // ICharacterCollection interface implementation
         void ICharacterCollection.Add(Character character)

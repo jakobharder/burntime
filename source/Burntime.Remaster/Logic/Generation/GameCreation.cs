@@ -100,6 +100,12 @@ namespace Burntime.Remaster.Logic.Generation
             // create respawn class
             game.World.Respawn = container.Create<CharacterRespawn>(new object[] { settings.Respawn.NPC, settings.Respawn.Trader,
                 settings.Respawn.Mutant, settings.Respawn.Dog });
+            game.World.Respawn.Object.TraderHealth = settings.ClassStats.TraderHealth;
+            game.World.Respawn.Object.MutantHealth = settings.ClassStats.MutantHealth;
+            game.World.Respawn.Object.DogHealth = settings.ClassStats.DogHealth;
+            game.World.Respawn.Object.TraderAttack = settings.ClassStats.TraderAttack;
+            game.World.Respawn.Object.MutantAttack = settings.ClassStats.MutantAttack;
+            game.World.Respawn.Object.DogAttack = settings.ClassStats.DogAttack;
 
             // create locations
             creator = new OriginalLocationCreator();
@@ -360,6 +366,7 @@ namespace Burntime.Remaster.Logic.Generation
                         character.Class = CharClass.Trader;
                         character.Mind = container.Create<Burntime.Remaster.AI.SimpleMind>(new object[] { character });
                         trader.TraderId = chr.NameId;
+                        character.Health = game.World.Respawn.Object.TraderHealth;
                     }
                     else if ((CharClass)chr.CharType == CharClass.Mutant)
                     {
@@ -367,11 +374,13 @@ namespace Burntime.Remaster.Logic.Generation
                         {
                             character = container.Create<Dog>();
                             character.Class = CharClass.Dog;
+                            character.Health = game.World.Respawn.Object.DogHealth;
                         }
                         else
                         {
                             character = container.Create<Mutant>();
                             character.Class = CharClass.Mutant;
+                            character.Health = game.World.Respawn.Object.MutantHealth;
                         }
                         character.Mind = container.Create<Burntime.Remaster.AI.CreatureMind>(new object[] { character });
                     }
@@ -380,6 +389,7 @@ namespace Burntime.Remaster.Logic.Generation
                         character = container.Create<Character>();
                         character.Class = (CharClass)ch.Type;
                         character.Mind = container.Create<Burntime.Remaster.AI.SimpleMind>(new object[] { character });
+                        character.Health = chr.Health;
                     }
 
                     character.FaceID = chr.FaceId;
@@ -389,7 +399,6 @@ namespace Burntime.Remaster.Logic.Generation
                     character.SetBodyId = Helper.GetSetBodyId(ch.Type);
                     character.Path = container.Create<Burntime.Remaster.PathFinding.SimplePath>();
                     character.Items.MaxCount = 6;
-                    character.Health = chr.Health;
                     character.Experience = chr.Experience;
                     character.Food = chr.Food;
                     character.Water = chr.Water;
@@ -398,7 +407,7 @@ namespace Burntime.Remaster.Logic.Generation
                     character.NameId = "burn?" + (chr.NameId - 1);
                     character.Location = game.World.Locations[chr.LocationId - 1];
                     character.Position = new Vector2(chr.MoveX, chr.MoveY);
-                    
+
                     // if no special item is given, set snake, meat, water bottle as hire requirements
                     if (chr.HireItemId == 0)
                     {

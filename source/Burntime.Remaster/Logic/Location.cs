@@ -171,9 +171,9 @@ namespace Burntime.Remaster.Logic
             set => production = value;
         }
 
-        public IEnumerable<Production> GetValidProductions(ClassicGame game)
+        public IEnumerable<Production> ValidProductions
         {
-            return AvailableProducts.Select(p => game.Productions[p]);
+            get => AvailableProducts.Select(p => ((ClassicGame)Container.Root).Productions[p]);
         }
 
         public Production.Rate GetFoodProductionRate(Production? production = null)
@@ -189,13 +189,13 @@ namespace Burntime.Remaster.Logic
             return production.GetRate(trapsInRooms + trapsOnNPCs, CampNPC.Count);
         }
 
-        public Production.Rate AutoSelectFoodProduction(bool onlyIfStarving, ClassicGame game)
+        public Production.Rate AutoSelectFoodProduction(bool onlyIfStarving)
         {
             var info = GetFoodProductionRate();
             if (!info.IsCampStarving && onlyIfStarving)
                 return info;
 
-            foreach (var production in GetValidProductions(game))
+            foreach (var production in ValidProductions)
             {
                 var candidate = GetFoodProductionRate(production);
                 if (candidate.FoodPerDay > info.FoodPerDay)
@@ -228,7 +228,7 @@ namespace Burntime.Remaster.Logic
             Source.BeginTurn();
 
             // produce food
-            var production = AutoSelectFoodProduction(onlyIfStarving: true, BurntimeClassic.Instance.Game);
+            var production = AutoSelectFoodProduction(onlyIfStarving: true);
             NPCFoodProduction = production.FoodPerDay;
             if (production.ItemDropInterval > 0)
             {

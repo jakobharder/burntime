@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-
+using System.Text.Json.Serialization;
 using Burntime.Framework;
 using Burntime.Framework.States;
 using Burntime.Platform.Resource;
@@ -52,6 +52,13 @@ namespace Burntime.Remaster.Logic
                 GenerateMap();
 
             return typeMap.ContainsKey(id);
+        }
+
+        public Item GenerateClass(string[] include, string[] exclude)
+        {
+            var types = GetTypesWithClass(include, exclude);
+            var index = Platform.Math.Random.Next(types.Length - 1);
+            return Generate(types[index]);
         }
 
         public Item Generate(string id)

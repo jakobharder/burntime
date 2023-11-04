@@ -107,7 +107,8 @@ namespace Burntime.Remaster.Logic
             set { protection = value; }
         }
 
-        public virtual float AttackValue => Weapon?.DamageValue ?? DEFAULT_ATTACK_VALUE;
+        public virtual int BaseAttackValue => DEFAULT_ATTACK_VALUE;
+        public virtual float AttackValue => Weapon?.DamageValue ?? BaseAttackValue;
         public virtual float DefenseValue => (int)(Experience / 10 + 0.5f + (Protection?.DefenseValue ?? 0));
 
         protected DataID<Platform.Graphics.ISprite> body;
@@ -450,69 +451,36 @@ namespace Burntime.Remaster.Logic
             return (Position - target.Position).Length < 30;
         }
 
-        public void Attack(Character target, bool defendWithAmmo = true)
+        public void Attack(Character defender, bool defendWithAmmo = true)
         {
-            ClassicGame classic = (ClassicGame)container.Root;
-            int difficulty = classic.World.Difficulty;
+#warning TODO attacks against camps should involve every camp member
 
-            // if the player is not attacking then reverse difficulty
-            if (this.Player != container.Root.CurrentPlayer)
+            // Add 25% per difficulty. Reverse if current player is not the attacker
+            float difficultyFactor = (1 + Root.World.Difficulty * 0.25f);
+            if (Player != container.Root.CurrentPlayer)
+                difficultyFactor = 1 / difficultyFactor;
+
+            var attackingGroup = (Player != null && Player.Character == this)
+                ? Player.Group.Where(ch => (ch.Position - Position).Length < 25).ToArray()
+                : new Character[] { this };
+
+            static void attack(Character attacker, Character defender, bool useAmmo, float factor)
             {
-                difficulty *= -1;
-            }
+                int attackValue = attacker.UseBestWeapon(useAmmo);
+                float experience = (attacker.Experience / 100.0f);
+                // note: DefenseValue is also based on experience already
+                int damage = (int)System.Math.Max(1, (attackValue - defender.DefenseValue) * experience * factor);
+                defender.Health -= damage;
+            };
 
-            if (Player != null && Player.Character == this)
+            foreach (var attacker in attackingGroup)
             {
-                // 1 enemy against player group
+                attack(attacker, defender, useAmmo: true, difficultyFactor);
+                attack(defender, attacker, defendWithAmmo, 1 / difficultyFactor);
 
-                for (int i = 0; i < Player.Group.Count; i++)
-                {
-                    float distance = (Player.Group[i].Position - Position).Length;
-                    if (distance < 25)
-                    {
-                        int attackValue = Player.Group[i].UseBestWeapon();
-                        int targetAttackValue = target.UseBestWeapon(defendWithAmmo);
-
-                        int DamageSelf = (int)System.Math.Max(1, (targetAttackValue - Player.Group[i].DefenseValue) * (target.Experience / 100.0f) + difficulty);
-                        int DamageTarget = (int)System.Math.Max(1, (attackValue - target.DefenseValue) * (Player.Group[i].Experience / 100.0f) + difficulty);
-
-                        Log.Debug("damagevalue attacker/defender: " + DamageTarget + " / " + DamageSelf);
-
-                        Player.Group[i].Health -= DamageSelf;
-                        target.Health -= DamageTarget;
-
-                        container.Notify(new AttackEvent(Player.Group[i], target));
-
-                        if (target.IsDead)
-                            break;
-                        if (Player.Group[i].IsDead)
-                            i--;
-                        if (Player.Character.IsDead)
-                            break;
-                    }
-                }
-            }
-            else
-            {
-                // 1 enemy against 1 player character
-
-                int attackValue = UseBestWeapon();
-                int targetAttackValue = target.UseBestWeapon(defendWithAmmo);
-
-                int DamageSelf = (int)System.Math.Max(1, (targetAttackValue - this.DefenseValue) * (target.Experience / 100.0f) + difficulty);
-                int DamageTarget = (int)System.Math.Max(1, (attackValue - target.DefenseValue) * (this.Experience / 100.0f) + difficulty);
-
-                Log.Debug("--------------------------------------------------");
-                Log.Debug("attack: " + this.Name + " -> " + target.Name);
-                Log.Debug("experience: " + this.Experience + " -> " + target.Experience);
-                Log.Debug("attack/defense attacker: " + attackValue + " / " + this.DefenseValue);
-                Log.Debug("attack/defense defender: " + targetAttackValue + " / " + target.DefenseValue);
-                Log.Debug("damagevalue attacker/defender: " + DamageTarget + " / " + DamageSelf);
-
-                this.Health -= DamageSelf;
-                target.Health -= DamageTarget;
-
-                container.Notify(new AttackEvent(this, target));
+                container.Notify(new AttackEvent(attacker, defender));
+                if (defender.IsDead || attacker.IsDead)
+                    break;
             }
         }
 
@@ -759,7 +727,7 @@ namespace Burntime.Remaster.Logic
             Protection = Items.FindBestDefense(Protection);
             Item? weapon = Items.FindBestWeapon(allowAmmo ? Weapon : null);
             if (weapon is null)
-                return DEFAULT_ATTACK_VALUE;
+                return BaseAttackValue;
 
             int attackValue = weapon.DamageValue;
             if (allowAmmo)
@@ -779,11 +747,8 @@ namespace Burntime.Remaster.Logic
         }
 
         #region ICharacterCollection, IEnumerable implementations
-        // IEnumerable interface implementation
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return new CharacterCollectionEnumerator(this);
-        }
+        IEnumerator IEnumerable.GetEnumerator() => new CharacterCollectionEnumerator(this);
+        IEnumerator<Character> IEnumerable<Character>.GetEnumerator() => new CharacterCollectionEnumerator(this);
 
         // ICharacterCollection interface implementation
         void ICharacterCollection.Add(Character character)
@@ -877,5 +842,7 @@ namespace Burntime.Remaster.Logic
             return this == character && leader == character;
         }
         #endregion
+
+        private ClassicGame Root => (ClassicGame)Container.Root;
     }
 }

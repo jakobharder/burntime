@@ -56,7 +56,7 @@ Enemies are more aggressive.
 - enemies
   - Make camps in the same pace of the player
 
-### II Medium
+### II Normal
 
 - start items
   - snake, empty canteen and bottle, and a knife
@@ -69,6 +69,7 @@ Enemies are more aggressive.
 - dropped items and in rooms
   - no weapons
   - less food
+- trader, dogs and mutants are stronger
 - enemies:
   - make camps a bit faster than the player
 
@@ -84,6 +85,7 @@ Enemies are more aggressive.
 - dropped items and in rooms:
   - no weapons or food
   - less materials
+- trader, dogs and mutants are dangerously strong
 - enemies:
   - make camps independent of player progress
 
