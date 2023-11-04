@@ -621,6 +621,21 @@ namespace Burntime.Remaster.Logic
                 Water = 0;
         }
 
+        public float GetDangerRate()
+        {
+            if (Location.Danger is null)
+                return 0;
+
+            float rate = 1;
+            UseBestProtection();
+
+            Interaction.DangerProtection? p = Protection?.Type.GetProtection(Location.Danger.Type);
+            if (p is not null)
+                rate -= p.Rate;
+
+            return rate;
+        }
+
         public virtual void Update(float elapsed)
         {
             ani.Update(elapsed);
@@ -645,17 +660,7 @@ namespace Burntime.Remaster.Logic
             {
                 if (Location.Danger != null)
                 {
-                    float rate = 1;
-
-                    UseBestProtection();
-
-                    if (Protection != null)
-                    {
-                        Interaction.DangerProtection p = Protection.Type.GetProtection(Location.Danger.Type);
-                        if (p != null)
-                            rate -= p.Rate;
-                    }
-
+                    float rate = GetDangerRate();
                     if (rate > 0)
                     {
                         health -= Location.Danger.HealthDecrease * elapsed * rate;
