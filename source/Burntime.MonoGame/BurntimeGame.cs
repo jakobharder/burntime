@@ -148,9 +148,9 @@ namespace Burntime.MonoGame
             {
                 if (resetWindowSize || initialize)
                 {
-                    //Resolution.Native = new Platform.Vector2(GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
-                    //    GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height) / 2;
-                    Resolution.Native = new Platform.Vector2(2560, 1440);
+                    Resolution.Native = new Platform.Vector2(GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
+                        GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height) / 2;
+                    //Resolution.Native = new Platform.Vector2(2560, 1440);
                 }
                 else
                 {
