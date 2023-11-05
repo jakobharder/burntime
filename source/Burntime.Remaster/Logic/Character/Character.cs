@@ -731,6 +731,11 @@ namespace Burntime.Remaster.Logic
         private int UseBestEquipment(bool allowAmmo = true)
         {
             Protection = Items.FindBestDefense(Protection);
+
+            // make sure empty guns are not used
+            if (Weapon?.DamageValue == 0)
+                Weapon = null;
+
             Item? weapon = Items.FindBestWeapon(allowAmmo ? Weapon : null);
             if (weapon is null)
                 return BaseAttackValue * Experience / 100;
