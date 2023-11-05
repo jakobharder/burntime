@@ -2,7 +2,7 @@
 
 Burntime is a remaster and expansion of Max Design's PC strategy game 'Burntime' from 1993.
 
-![](./doc/screens.png)
+![](./doc/screens.jpg)
 
 ## Get the Game
 
