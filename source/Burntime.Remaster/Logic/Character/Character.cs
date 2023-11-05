@@ -382,7 +382,14 @@ namespace Burntime.Remaster.Logic
             else
             {
                 if (IsLastInCamp)
+                {
+                    if (Player != Root.World.ActivePlayerObj)
+                    {
+                        // clear some items if we just freed an enemy camp
+                        Location.ClearItemsAfterTakeover();
+                    }
                     Location.Player = null;
+                }
             }
 
             Player = null;
@@ -456,9 +463,8 @@ namespace Burntime.Remaster.Logic
 #warning TODO attacks against camps should involve every camp member
 
             // Add 25% per difficulty. Reverse if current player is not the attacker
-            float difficultyFactor = (1 + Root.World.Difficulty * 0.25f);
-            if (Player != container.Root.CurrentPlayer)
-                difficultyFactor = 1 / difficultyFactor;
+            float difficultyFactor = (1 + Root.World.Difficulty * 0.1f);
+            bool isPlayer = (Player == container.Root.CurrentPlayer);
 
             var attackingGroup = (Player != null && Player.Character == this)
                 ? Player.Group.Where(ch => (ch.Position - Position).Length < 25).ToArray()
@@ -473,8 +479,8 @@ namespace Burntime.Remaster.Logic
 
             foreach (var attacker in attackingGroup)
             {
-                attack(attacker, defender, useAmmo: true, difficultyFactor);
-                attack(defender, attacker, defendWithAmmo, 1 / difficultyFactor);
+                attack(attacker, defender, useAmmo: true, isPlayer ? 1 : difficultyFactor);
+                attack(defender, attacker, defendWithAmmo, isPlayer ? difficultyFactor : 1);
 
                 container.Notify(new AttackEvent(attacker, defender));
                 if (defender.IsDead || attacker.IsDead)

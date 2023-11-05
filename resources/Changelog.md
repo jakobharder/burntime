@@ -1,6 +1,6 @@
 ﻿# Burntime Changelog
 
-## [Unreleased]
+## 0.9 - Balancing and some graphics remaster (2023-11-05)
 
 ### Changes
 
@@ -9,6 +9,7 @@
 - Camps automatically select better traps if production is too low
 - Show gas and radiation warning in main UI
 - Remastered graphics in start menu and options
+- Rebalance items in rooms after takeover
 
 ### Fixes
 

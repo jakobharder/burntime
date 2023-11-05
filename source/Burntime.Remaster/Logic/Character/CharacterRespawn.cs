@@ -49,7 +49,7 @@ public sealed class CharacterRespawn : StateObject
 
         TraderAttack = 60;
         MutantAttack = 40;
-        DogAttack = 40;
+        DogAttack = 30;
     }
 
     protected override void InitInstance(object[] parameter)

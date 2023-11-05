@@ -10,11 +10,9 @@ public class Mutant : Character
     public override void Die()
     {
         // drop special item
-        if ((Burntime.Platform.Math.Random.Next() % 10) == 0)
-        {
-            // drop dogshit at a change of 1% per minute
-            Location.Items.DropAt(Root.ItemTypes.GenerateClass(new string[] { "material", "rare", "useless" }, new string[] { "nodrop" }), Position);
-        }
+        var item = Root.ItemTypes.GenerateClass(new string[] { "material", "rare", "useless" }, new string[] { "nodrop" }, 0.1f);
+        if (item is not null)
+            Location.Items.DropAt(item, Position);
 
         base.Die();
     }
