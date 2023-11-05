@@ -1,11 +1,7 @@
-﻿using System;
+﻿using Burntime.Framework.States;
+using System;
 using System.Collections.Generic;
-using System.Text;
-
-using Burntime.Platform;
-using Burntime.Platform.Resource;
-using Burntime.Framework.States;
-using Burntime.Remaster.Maps;
+using System.ComponentModel.Design.Serialization;
 
 namespace Burntime.Remaster.Logic
 {
@@ -41,10 +37,7 @@ namespace Burntime.Remaster.Logic
             set { traderId = value; }
         }
 
-        public override float AttackValue
-        {
-            get { return 55; }
-        }
+        public override int BaseAttackValue => Root.World.Respawn.Object.TraderAttack;
 
         public void AddRefreshItem(ItemType Type, int Rate)
         {
@@ -62,6 +55,13 @@ namespace Burntime.Remaster.Logic
             itemRefreshs = Container.CreateLinkList<TraderItemRefreshItem>();
         }
 
+        public override void Revive()
+        {
+            base.Revive();
+
+            Health = Root.World.Respawn.Object.TraderHealth;
+        }
+
         // logic
         public override void Turn()
         {
@@ -72,6 +72,9 @@ namespace Burntime.Remaster.Logic
 
             NextSellLocation();
             RefreshItems();
+
+            // refresh health
+            Health = Root.World.Respawn.Object.TraderHealth;
 
             //Dialog.Turn();
         }
@@ -183,5 +186,7 @@ namespace Burntime.Remaster.Logic
             // get random item type
             return game.ItemTypes[itemTypes[Platform.Math.Random.Next() % itemTypes.Count]];
         }
+
+        private ClassicGame Root => (ClassicGame)Container.Root;
     }
 }

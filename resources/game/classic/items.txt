@@ -58,7 +58,7 @@ burngfx=9
 full=item_full_wineskin
 
 [item_knife]
-class=weapon production
+class=weapon trap
 burngfx=10
 damage=25
 
@@ -88,15 +88,15 @@ class=special rare
 burngfx=15
 
 [item_rat_trap]
-class=nodrop
+class=nodrop trap
 burngfx=16
 
 [item_trap]
-class=nodrop
+class=nodrop trap
 burngfx=17
 
 [item_snake_trap]
-class=nodrop
+class=nodrop trap
 burngfx=18
 
 [item_hand_pump]

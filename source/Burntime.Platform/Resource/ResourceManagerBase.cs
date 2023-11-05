@@ -78,18 +78,25 @@ public class ResourceManagerBase
                 MemoryUsage -= sprite.Unload();
                 Log.Debug("unload \"" + sprite.ID + "\"");
             }
+        }
 
+        lock (fonts)
+        {
             foreach (Font font in fonts.Values)
             {
                 MemoryUsage -= font.sprite.Unload();
+                font.IsLoaded = false;
                 Log.Debug("unload \"" + font.sprite.ID + "\"");
             }
+            fonts.Clear();
         }
     }
 
     public void ReloadAll()
     {
     }
+
+    public virtual Font? LoadFont(Font font) { return font; }
 
     #region Text
     public Encoding? Encoding { get; set; }

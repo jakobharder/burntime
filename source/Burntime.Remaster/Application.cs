@@ -215,7 +215,9 @@ namespace Burntime.Remaster
             else
                 MusicMode = MusicModes.Off;
 
-            if (MusicMode != MusicModes.Off)
+            //if (MusicMode != MusicModes.Off)
+            // MusicModes.Off loads songs_dos to ensure jukebox working even when started with off
+            if (!DisableMusic)
                 Engine.Music.LoadSonglist(MusicMode == MusicModes.Amiga ? "songs_amiga.txt" : "songs_dos.txt");
         }
 
@@ -260,8 +262,7 @@ namespace Burntime.Remaster
                 MusicMode = MusicModes.Remaster;
                 Engine.Music.Enabled = true;
                 Engine.Music.LoadSonglist("songs_dos.txt");
-                if (_lastPlayingSong is not null)
-                    Engine.Music.Play(_lastPlayingSong);
+                Engine.Music.Play(_lastPlayingSong ?? "radio");
             }
             else if ((MusicMode == MusicModes.Off && HasAmigaMusic)
                 || (MusicMode == MusicModes.Remaster && HasAmigaMusic))
@@ -269,6 +270,8 @@ namespace Burntime.Remaster
                 MusicMode = MusicModes.Amiga;
                 Engine.Music.Enabled = true;
                 Engine.Music.LoadSonglist("songs_amiga.txt");
+                if (Engine.Music.Playing is null)
+                    Engine.Music.Play(_lastPlayingSong ?? "radio");
             }
             else if (MusicMode == MusicModes.Amiga
                 || (MusicMode == MusicModes.Remaster && !HasAmigaMusic))

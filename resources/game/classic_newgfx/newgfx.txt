@@ -82,6 +82,15 @@ burngfxani@syst.raw?8-11=pngsheet@gfx/objects/flags.png?24-35?30x36
 burngfxani@syst.raw?12-15=pngsheet@gfx/objects/flags.png?36-47?30x36
 
 raum_8.pac=gfx/backgrounds/room8.png
+opti.pac=gfx/radio_background.png
+sta.pac=gfx/start.png
+gfx/start_maxdesign.png=gfx/start_maxdesign.png
+pngsheet@gfx/ui/start_buttons.png?0?112x24=pngsheet@gfx/start_buttons.png?0?192x54
+pngsheet@gfx/ui/start_buttons.png?1?112x24=pngsheet@gfx/start_buttons.png?1?192x54
+pngsheet@gfx/ui/start_buttons.png?2?64x24=pngsheet@gfx/start_buttons.png?2?121x54
+pngsheet@gfx/ui/start_buttons.png?3?64x24=pngsheet@gfx/start_buttons.png?3?121x54
+sta.ani?8=pngsheet@gfx/start_flags.png?0?90x54
+sta.ani?9=pngsheet@gfx/start_flags.png?1?90x54
 
 [newgfx_native]
 ' Graphics only used in remastered mode
@@ -95,6 +104,14 @@ gfx/backgrounds/stats_leftbottom.png=gfx/backgrounds/stats_leftbottom.png
 gfx/backgrounds/stats_lefttop.png=gfx/backgrounds/stats_lefttop.png
 gfx/backgrounds/statistics.png=gfx/backgrounds/statistics.png
 gfx/backgrounds/statistics2.png=gfx/backgrounds/statistics2.png
+gfx/start_crack1.png=gfx/start_crack1.png
+gfx/start_crack2.png=gfx/start_crack2.png
+gfx/start_crack3.png=gfx/start_crack3.png
+gfx/start_crack4.png=gfx/start_crack4.png
+gfx/start_crack5.png=gfx/start_crack5.png
+gfx/start_border_tl.png=gfx/start_border_tl.png
+gfx/start_border_tr.png=gfx/start_border_tr.png
+gfx/start_borders.png=pngsheet@gfx/start_borders.png?{0}?512x64
 
 [replacement]
 ' Old upscale graphics. They should be replaced by 60x72 verisons eventually.
@@ -144,3 +161,6 @@ zei_049.raw=pngsheet@maps/shared/set_49.png?{0}?64x76
 zei_050.raw=pngsheet@maps/shared/set_50.png?{0}?64x76
 mat_082.raw=maps/mat_082.burnmap
 maps/mat_000_tiles.png=pngsheet@maps/mat_000_tiles_2x.png?{0}?64x76
+
+[noscale]
+

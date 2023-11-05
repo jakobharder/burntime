@@ -91,6 +91,7 @@ public class MapView : Window
         Enabled = true;
         handler = Handler;
         CaptureAllMouseMove = true;
+        CaptureAllMouseClicks = true;
 
         BurntimeClassic classic = app as BurntimeClassic;
         DebugView = classic.Settings["debug"].GetBool("show_routes") && classic.Settings["debug"].GetBool("enable_cheats");
@@ -284,6 +285,10 @@ public class MapView : Window
             _rightClickMove = null;
             _moveTotal = 0;
         }
+
+        // end all capture here
+        if (!Boundings.PointInside(position + Position))
+            return false;
 
         if (entrance != -1 && handler != null)
             if (handler.OnClickEntrance(entrance, button))

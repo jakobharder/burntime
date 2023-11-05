@@ -132,14 +132,12 @@ namespace Burntime.Platform.Graphics
                     if (image[pos + 3] != 0)
                     {
                         PixelColor c;
-                        if (back != PixelColor.Black)
+                        if (fore == PixelColor.Transparent)
+                            c = new PixelColor(image[pos + 3], image[pos + 2], image[pos + 1], image[pos]);
+                        else if (back != PixelColor.Black)
                             c = MixColor(fore, back, image[pos + 3], image[pos]);
                         else
                             c = MixColor(PixelColor.White, PixelColor.Black, image[pos + 3], image[pos]);
-                        //if (back != PixelColor.Black)
-                        //    c = (image[pos] == 0) ? back : fore;
-                        //else
-                        //    c = (image[pos] == 0) ? PixelColor.Black : PixelColor.White;
 
                         input.DrawPixel(x + offsetx, y + offsety, c.a, c.r, c.g, c.b);
                     }

@@ -36,13 +36,13 @@ Water: {w}+{tw} Food: {f}+{tf}}
 |A camps|#1 camp|#no camps
  in |J days|# in 1 day
 incompatible
-
-
-
-
-
-
-
+too little water
+too little food
+LOAD
+START
+EXIT
+PLAYER 1
+PLAYER 11
 
 
 

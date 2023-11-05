@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Burntime.Platform.Resource;
 
 namespace Burntime.Platform.Graphics;
 
@@ -8,6 +7,7 @@ public struct FontInfo
     public String Font;
     public PixelColor ForeColor;
     public PixelColor BackColor;
+    public bool Colorize;
     public bool UseBackColor;
 }
 
@@ -56,11 +56,26 @@ public class Font
 
     public TextBorders Borders { get; set; } = TextBorders.Window;
 
+    public bool IsLoaded { get; set; }
+    private ResourceManagerBase _resourceManager;
+
+    public Font(ResourceManagerBase resourceManager)
+    {
+        _resourceManager = resourceManager;
+    }
+
     public void DrawText(RenderTarget target, Vector2 position, string text, TextAlignment align = TextAlignment.Left, 
         VerticalTextAlignment verticalAlign = VerticalTextAlignment.Center, float alpha = 1)
     {
+        if (!IsLoaded)
+            _resourceManager.LoadFont(this);
+
         target.Layer++;
-        if (Info.UseBackColor)
+        if (!Info.Colorize)
+        {
+            DrawText(target, position, text, align, verticalAlign, new PixelColor((int)(255 * alpha), 255, 255, 255));
+        }
+        else if (Info.UseBackColor)
         {
             DrawText(target, position, text, align, verticalAlign, new PixelColor((int)(255 * alpha), 255, 255, 255));
         }
@@ -134,6 +149,9 @@ public class Font
 
     public Rect GetRect(int x, int y, String str)
     {
+        if (!IsLoaded)
+            _resourceManager.LoadFont(this);
+
         Rect rc = new Rect(x, y, 0, 0);
         char last = '\n';
         int width = 0;
@@ -164,6 +182,9 @@ public class Font
 
     public int GetWidth(String Text)
     {
+        if (!IsLoaded)
+            _resourceManager.LoadFont(this);
+
         int width = 0;
         char[] charray = Text.ToCharArray();
         foreach (char ch in charray)
@@ -189,6 +210,9 @@ public class Font
 
     public virtual bool IsSupportetCharacter(char ch)
     {
+        if (!IsLoaded)
+            _resourceManager.LoadFont(this);
+
         return charInfo.ContainsKey(ch);
     }
 }

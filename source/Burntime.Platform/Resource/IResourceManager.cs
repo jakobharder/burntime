@@ -19,8 +19,8 @@ public interface IResourceManager
     void RegisterDataObject(ResourceID id, DataObject obj);
 
     ISprite GetImage(ResourceID id, ResourceLoadType loadType = ResourceLoadType.Delayed);
-    Font GetFont(string file, PixelColor foreColor);
-    Font GetFont(string file, PixelColor foreColor, PixelColor backColor);
+    Font? GetFont(string file, PixelColor color);
+    Font? GetFont(string file, PixelColor color, PixelColor backColor);
     string GetString(string id);
     string GetString(string file, int index);
     public string[] GetStrings(string id);

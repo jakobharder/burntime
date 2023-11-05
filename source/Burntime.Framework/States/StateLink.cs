@@ -5,7 +5,7 @@ namespace Burntime.Framework.States
     internal interface IStateLink
     {
         StateObject Object { get; }
-        StateManager Container { get; set; }
+        StateManager Container { get; internal set; }
 
         int ID { get; set; }
         int localID { get; set; }
@@ -16,13 +16,22 @@ namespace Burntime.Framework.States
     {
         public static implicit operator StateLinkBase(StateObject right)
         {
-            StateLinkBase state = new StateLinkBase();
-            state.ID = right.ID;
-            state.localID = right.localID;
-            state.container = right.Container;
+            StateLinkBase state = new()
+            {
+                ID = right.ID,
+                localID = right.localID,
+                container = right.Container
+            };
             if (right.container == null)
                 throw new CustomException("null container");
             return state;
+        }
+
+        public static StateLinkBase MakeLink(StateObject right)
+        {
+            StateLinkBase link;
+            link = right;
+            return link;
         }
 
         protected StateLinkBase()
@@ -55,8 +64,8 @@ namespace Burntime.Framework.States
         // IStateLink interface implementation
         StateManager IStateLink.Container
         {
-            get { return container; }
-            set { container = value; }
+            get => container;
+            set => container = value;
         }
 
         StateObject IStateLink.Object
@@ -131,11 +140,10 @@ namespace Burntime.Framework.States
         [NonSerialized]
         protected StateManager container;
 
-        // IStateLink interface implementation
         StateManager IStateLink.Container
         {
-            get { return container; }
-            set { container = value; }
+            get => container;
+            set => container = value;
         }
 
         StateObject IStateLink.Object

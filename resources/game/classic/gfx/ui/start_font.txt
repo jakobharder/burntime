@@ -1,0 +1,8 @@
+﻿image=gfx/ui/start_font.png
+offset=0
+lines=1
+height=8
+char0=" ?ADEILMNORSTX"
+//       ? A D E I L M N O R S T X"
+width0=4 6 6 6 6 5 6 8 6 6 6 6 5 6
+y0=0

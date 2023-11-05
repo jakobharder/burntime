@@ -44,7 +44,7 @@ namespace Burntime.Remaster
 
             font = new GuiFont(BurntimeClassic.FontName, new PixelColor(92, 92, 148));
             playerColor = new GuiFont(BurntimeClassic.FontName, PixelColor.White);
-            _warningFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
+            _warningFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(252, 180, 56));
 
             Windows += _uiElement1 = new Image(App)
             {
@@ -105,30 +105,49 @@ namespace Burntime.Remaster
             Target.RenderRect(timebar, new Vector2(dayTime, 3), new PixelColor(240, 64, 56));
             Target.Layer--;
 
-            Vector2 name = new Vector2(Size.x / 2 - 97, Size.y - 30);
+            var name = new Vector2(Size.x / 2 - 97, Size.y - 30);
             playerColor.DrawText(Target, name, this.name, TextAlignment.Center, VerticalTextAlignment.Top);
 
-            TextHelper txt = new TextHelper(app, "newburn");
-
+            var txt = new TextHelper(app, "newburn");
             Vector2 nutrition = new(Size.x / 2 - 97, Size.y - 17);
-            int waterReserve = game.World.ActivePlayerObj.Group.GetLowestWaterReserve();
-            int foodReserve = game.World.ActivePlayerObj.Group.GetLowestFoodReserve();
-            int totalWaterReserve = game.World.ActivePlayerObj.Group.GetLowestWaterWithInventory();
-            int totalFoodReserve = game.World.ActivePlayerObj.Group.GetLowestFoodWithInventory();
-            txt.AddArgument("{w}", waterReserve);
-            txt.AddArgument("{f}", foodReserve);
-            txt.AddArgument("{tw}", totalWaterReserve - waterReserve);
-            txt.AddArgument("{tf}", totalFoodReserve - foodReserve);
 
-            GuiFont nutritionFont = (totalWaterReserve > 0
-                && totalFoodReserve > 0
-                && totalWaterReserve >= ExpectedTravelDays
-                && totalFoodReserve >= ExpectedTravelDays) ? 
-                font : 
-                _warningFont;
-            nutritionFont.DrawText(Target, nutrition, txt[34], TextAlignment.Center, VerticalTextAlignment.Top);
+            var playerGroup = game.World.ActivePlayerObj.Group;
+            var currentLocation = game.World.ActiveLocationObj;
+            int totalWaterReserve = playerGroup.GetLowestWaterWithInventory();
+            int totalFoodReserve = playerGroup.GetLowestFoodWithInventory();
 
-            Vector2 day = new Vector2(Size.x / 2 + 100, Size.y - 15);
+            if (totalWaterReserve < ExpectedTravelDays)
+            {
+                _warningFont.DrawText(Target, nutrition, txt[38],
+                    TextAlignment.Center, VerticalTextAlignment.Top);
+            }
+            else if (totalFoodReserve < ExpectedTravelDays)
+            {
+                _warningFont.DrawText(Target, nutrition, txt[39],
+                    TextAlignment.Center, VerticalTextAlignment.Top);
+            }
+            else if (playerGroup.IsInDanger())
+            {
+                _warningFont.DrawText(Target, nutrition, currentLocation.Danger.InfoString,
+                    TextAlignment.Center, VerticalTextAlignment.Top);
+            }
+            else if (totalWaterReserve == 0)
+            {
+                _warningFont.DrawText(Target, nutrition, txt[38],
+                    TextAlignment.Center, VerticalTextAlignment.Top);
+            }
+            else if (totalFoodReserve == 0)
+            {
+                _warningFont.DrawText(Target, nutrition, txt[39],
+                    TextAlignment.Center, VerticalTextAlignment.Top);
+            }
+            else if (currentLocation.Danger is not null)
+            {
+                font.DrawText(Target, nutrition, currentLocation.Danger.InfoString,
+                    TextAlignment.Center, VerticalTextAlignment.Top);
+            }
+
+            var day = new Vector2(Size.x / 2 + 100, Size.y - 16);
             txt = new TextHelper(app, "burn");
             txt.AddArgument("|A", game.World.Day);
             font.DrawText(Target, day, txt[404], TextAlignment.Center, VerticalTextAlignment.Top);

@@ -22,6 +22,7 @@ public class OptionsScene : Scene
     readonly OptionsJukeboxPage _jukeboxPage;
 
     readonly GuiImage _optionsBulb;
+    readonly Image _backgroundAni;
 
     Container _activePage;
     Container ActivePage
@@ -38,6 +39,7 @@ public class OptionsScene : Scene
         : base(App)
     {
         Background = "opti.pac";
+        Size = new Vector2(320, 200);
         Music = "radio";
         Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
@@ -49,11 +51,12 @@ public class OptionsScene : Scene
 
         _optionsBulb = "gfx/ui/options_bulb.png";
 
-        Windows += new Image(App)
+        Windows += _backgroundAni = new Image(App)
         {
             Background = "opt.ani",
             Position = new Vector2(0, 4)
         };
+        _backgroundAni.IsVisible = !app.IsNewGfx;
 
         // menu buttons
         Windows += new Button(app, app.SceneManager.PreviousScene)
@@ -131,6 +134,7 @@ public class OptionsScene : Scene
     {
         base.OnResizeScreen();
         Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+        _backgroundAni.IsVisible = !app.IsNewGfx;
     }
 
     protected override void OnActivateScene(object parameter)

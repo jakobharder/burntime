@@ -1,5 +1,21 @@
 ﻿# Burntime Changelog
 
+## 0.9 - Balancing and some graphics remaster (2023-11-05)
+
+### Changes
+
+- Increase trader, dog and mutant health and damage on higher difficulties
+- Adjust attack/defense value display to already include experience
+- Camps automatically select better traps if production is too low
+- Show gas and radiation warning in main UI
+- Remastered graphics in start menu and options
+- Rebalance items in rooms after takeover
+
+### Fixes
+
+- Fixed crash when starting with music set to off
+- Fixed font reloading after language change
+
 ## 0.8 - Gameplay Improvements (2023-11-01)
 
 ### Changes

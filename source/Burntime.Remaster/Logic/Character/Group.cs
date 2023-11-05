@@ -220,23 +220,23 @@ namespace Burntime.Remaster.Logic
         #endregion
 
         #region group stats
-        public int GetWaterReserve() => this.OfType<Character>().Sum(x => x.Water);
-        public int GetLowestWaterReserve() => this.OfType<Character>().Min(x => x.Water);
-        public int GetWaterInInventory() => this.OfType<Character>().Sum(x => x.GetWaterInInventory());
+        public int GetWaterReserve() => this.Sum(x => x.Water);
+        public int GetLowestWaterReserve() => this.Min(x => x.Water);
+        public int GetWaterInInventory() => this.Sum(x => x.GetWaterInInventory());
         public int GetLowestWaterWithInventory()
         {
             int water = GetWaterInInventory();
-            int[] reserves = characterList.OfType<Character>().Select(x => x.Water).ToArray();
+            int[] reserves = characterList.Select(x => x.Water).ToArray();
             return GetLowestAfterDistribution(reserves, water);
         }
 
-        public int GetFoodReserve() => this.OfType<Character>().Sum(x => x.Food);
-        public int GetLowestFoodReserve() => this.OfType<Character>().Min(x => x.Food);
-        public int GetFoodInInventory() => this.OfType<Character>().Sum(x => x.GetFoodInInventory());
+        public int GetFoodReserve() => this.Sum(x => x.Food);
+        public int GetLowestFoodReserve() => this.Min(x => x.Food);
+        public int GetFoodInInventory() => this.Sum(x => x.GetFoodInInventory());
         public int GetLowestFoodWithInventory()
         {
             int food = GetFoodInInventory();
-            int[] reserves = characterList.OfType<Character>().Select(x => x.Food).ToArray();
+            int[] reserves = characterList.Select(x => x.Food).ToArray();
             return GetLowestAfterDistribution(reserves, food);
         }
 
@@ -266,14 +266,13 @@ namespace Burntime.Remaster.Logic
 
             return reserves.Min();
         }
+        
+        public bool IsInDanger() => this.Sum(x => x.GetDangerRate()) > 0;
         #endregion
 
         #region ICharacter, IEnumerable implementations
-        // IEnumerable interface implementation
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return new CharacterCollectionEnumerator(this);
-        }
+        IEnumerator IEnumerable.GetEnumerator() => new CharacterCollectionEnumerator(this);
+        IEnumerator<Character> IEnumerable<Character>.GetEnumerator() => new CharacterCollectionEnumerator(this);
 
         // ICharacterCollection interface implementation
         void ICharacterCollection.Add(Character character)

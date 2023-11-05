@@ -10,7 +10,7 @@ internal class OptionsJukeboxPage : Container
 {
     readonly OptionFonts _fonts;
     readonly Dictionary<string, Button> _songButtons = new();
-    Button _lastPlayingButton;
+    Button? _lastPlayingButton;
 
     public OptionsJukeboxPage(Module app, OptionFonts fonts) : base(app)
     {
@@ -28,7 +28,9 @@ internal class OptionsJukeboxPage : Container
     {
         base.OnUpdate(elapsed);
 
-        _songButtons.TryGetValue(app.Engine.Music.Playing, out Button playingButton);
+        Button? playingButton = null;
+        if (app.Engine.Music.Playing is not null && BurntimeClassic.Instance.MusicMode != BurntimeClassic.MusicModes.Off)
+            _songButtons.TryGetValue(app.Engine.Music.Playing, out playingButton);
         if (playingButton is not null)
         {
             playingButton.Font = _fonts.Blue;

@@ -1,43 +1,51 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using Burntime.Framework.States;
+using System;
 
-using Burntime.Framework.States;
+namespace Burntime.Remaster.Logic;
 
-namespace Burntime.Remaster.Logic
+[Serializable]
+public sealed class Production : StateObject
 {
-    [Serializable]
-    public class Production : StateObject
+    public struct Rate
     {
-        public int ID;
+        public float ItemDropInterval;
+        public int FoodPerDay;
+        public bool IsCampStarving;
+    }
 
-        public int[] ProductionPerDay;
-        public int[] ProductionPerDay2Person;
-        public int MaxCombination;
-        protected StateLink<ItemType> produce;
+    readonly public int ID;
 
-        public ItemType Produce
+    readonly int[] ProductionPerDay;
+    readonly int[] ProductionPerDay2Person;
+    readonly int MaxCombination;
+    readonly StateLink<ItemType> produce;
+
+    public ItemType Produce => produce;
+
+    public Production(int maxCombi, int[] perDay, int[] perDayDouble, ItemType produce, int id)
+    {
+        MaxCombination = maxCombi;
+        ProductionPerDay = perDay;
+        ProductionPerDay2Person = perDayDouble;
+        if (ProductionPerDay2Person.Length == 0)
+            ProductionPerDay2Person = ProductionPerDay;
+        this.produce = produce;
+        ID = id;
+    }
+
+    public Rate GetRate(int toolCount, int npcCount)
+    {
+        int trapCount = Math.Min(toolCount, MaxCombination);
+
+        var info = new Rate()
         {
-            get { return produce; }
-            set { produce = value; }
-        }
-
-        public float GetInterval(int toolCount, int npcCount)
-        {
-            int ppd = GetProductionPerDay(toolCount, npcCount);
-            ppd -= npcCount;
-            if (ppd <= 0)
-                return 0;
-
-            return (float)Produce.FoodValue / (float)ppd;
-        }
-
-        public int GetProductionPerDay(int toolCount, int npcCount)
-        {
-            if (npcCount >= 2)
-                return ProductionPerDay2Person[Math.Min(toolCount, MaxCombination)];
-            else
-                return ProductionPerDay[Math.Min(toolCount, MaxCombination)];
-        }
+            FoodPerDay = (npcCount >= 2) ? ProductionPerDay2Person[trapCount] : ProductionPerDay[trapCount]
+        };
+        int remainingPerDay = info.FoodPerDay - npcCount;
+        if (remainingPerDay > 0)
+            info.ItemDropInterval = info.FoodPerDay > npcCount ? Produce.FoodValue / (float)remainingPerDay : 0;
+        else if (remainingPerDay < 0)
+            info.IsCampStarving = true;
+        return info;
     }
 }

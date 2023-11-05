@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Burntime.Framework.States;
 using Burntime.Platform;
 using Burntime.Platform.Resource;
@@ -15,17 +16,6 @@ namespace Burntime.Remaster.Logic
         public static implicit operator int(Location right)
         {
             return right.Id;
-        }
-
-        StateLink<Production> production;
-        public int[] AvailableProducts;
-        float productionState = 0;
-        public int NPCFoodProduction;
-
-        public Production Production
-        {
-            get { return production; }
-            set { production = value; }
         }
 
         DataID<Interaction.Danger> danger;
@@ -104,7 +94,7 @@ namespace Burntime.Remaster.Logic
         }
 
         protected StateLink<Player> player;
-        public Player Player
+        public Player? Player
         {
             get { return (player != null) ? player : null; }
             set { player = value; }
@@ -159,82 +149,60 @@ namespace Burntime.Remaster.Logic
             return item;
         }
 
-        public void RemoveItem(Item item)
-        {
-
-        }
-
         // temporary
         [NonSerialized]
         public Maps.MapViewHoverInfo Hover;
 
-        float GetFoodProductionInterval()
+        #region food
+        const int MAX_STOCK_FOOD = 6;
+        StateLink<Production> production;
+        public int[] AvailableProducts;
+        float productionState = 0;
+        public int NPCFoodProduction;
+
+        public Production Production
         {
-            if (Player == null || Production == null)
-                return 0;
-
-            int count = 0;
-
-            // check for tools/traps in all rooms
-            foreach (Room room in Rooms)
-            {
-                foreach (Item item in room.Items)
-                {
-                    if (item.Type.Production == Production)
-                    {
-                        count++;
-                    }
-                }
-            }
-
-            // now check for tools/traps in camp npcs
-            foreach (Character npc in CampNPC)
-            {
-                foreach (Item item in npc.Items)
-                {
-                    if (item.Type.Production == Production)
-                    {
-                        count++;
-                    }
-                }
-            }
-
-            return Production.GetInterval(count, CampNPC.Count);
+            get => production;
+            set => production = value;
         }
 
-        public int GetFoodProductionValue()
+        public IEnumerable<Production> ValidProductions
         {
-            if (Player == null || Production == null)
-                return 0;
-
-            int count = 0;
-
-            // check for tools/traps in all rooms
-            foreach (Room room in Rooms)
-            {
-                foreach (Item item in room.Items)
-                {
-                    if (item.Type.Production == Production)
-                    {
-                        count++;
-                    }
-                }
-            }
-
-            // now check for tools/traps in camp npcs
-            foreach (Character npc in CampNPC)
-            {
-                foreach (Item item in npc.Items)
-                {
-                    if (item.Type.Production == Production)
-                    {
-                        count++;
-                    }
-                }
-            }
-
-            return Production.GetProductionPerDay(count, CampNPC.Count);
+            get => AvailableProducts.Where(p => p >= 0).Select(p => ((ClassicGame)Container.Root).Productions[p]);
         }
+
+        public Production.Rate GetFoodProductionRate(Production? production = null)
+        {
+            production ??= Production;
+
+            if (Player is null || production is null)
+                return new Production.Rate();
+
+            int trapsInRooms = Rooms.Sum(room => room.Items.Where(item => item.Type.Production == production).Count());
+            int trapsOnNPCs = CampNPC.Sum(npc => npc.Items.Where(item => item.Type.Production == production).Count());
+
+            return production.GetRate(trapsInRooms + trapsOnNPCs, CampNPC.Count);
+        }
+
+        public Production.Rate AutoSelectFoodProduction(bool onlyIfStarving)
+        {
+            var info = GetFoodProductionRate();
+            if (!info.IsCampStarving && onlyIfStarving)
+                return info;
+
+            foreach (var production in ValidProductions)
+            {
+                var candidate = GetFoodProductionRate(production);
+                if (candidate.FoodPerDay > info.FoodPerDay)
+                {
+                    Production = production;
+                    info = candidate;
+                }
+            }
+
+            return info;
+        }
+        #endregion
 
         // logic
         public virtual void Update(float elapsed)
@@ -255,28 +223,18 @@ namespace Burntime.Remaster.Logic
             Source.BeginTurn();
 
             // produce food
-            if (Player != null && Production != null)
+            var production = AutoSelectFoodProduction(onlyIfStarving: true);
+            NPCFoodProduction = production.FoodPerDay;
+            if (production.ItemDropInterval > 0)
             {
-                NPCFoodProduction = GetFoodProductionValue();
-
-                float interval = GetFoodProductionInterval();
-                int count = 0;
-                foreach (Room room in Rooms)
-                    count += room.Items.GetCount(Production.Produce);
-
-                if (count < 6 && interval > 0)
+                int alreadyInStock = Rooms.Sum(room => room.Items.GetCount(Production.Produce));
+                if (alreadyInStock < MAX_STOCK_FOOD)
                 {
                     productionState += 1;
-                    if (productionState >= interval)
+                    if (productionState >= production.ItemDropInterval)
                     {
-                        productionState -= interval;
-
-                        int i = 0;
-                        while (!Rooms[i].Items.Add(Production.Produce.Generate()))
-                        {
-                            // try next room if full
-                            i++;
-                        }
+                        productionState -= production.ItemDropInterval;
+                        StoreItem(Production.Produce.Generate());
                     }
                 }
             }
@@ -330,20 +288,22 @@ namespace Burntime.Remaster.Logic
             Items.DropAt(item, pos * Map.Mask.Resolution);
         }
 
-        // insert item in random room
-        public void StoreItemRandom(Item item)
+        public void StoreItemRandom(Item item) => StoreItem(item, randomRoom: true);
+
+        /// <summary>
+        /// Insert item into room. If none is available drop it randomly.
+        /// </summary>
+        public void StoreItem(Item item, bool randomRoom = false)
         {
-            if (Rooms.Count == 0)
+            var rooms = Rooms.Where(x => !x.Items.IsFull).ToList();
+            if (rooms.Count == 0)
             {
                 DropItemRandom(item);
                 return;
             }
 
-            Room room;
-            do
-            {
-                room = this.Rooms[Burntime.Platform.Math.Random.Next() % Rooms.Count];
-            } while (room.Items.MaxCount != ItemList.Infinite && room.Items.MaxCount < room.Items.Count);
+            int index = randomRoom ? Platform.Math.Random.Next(0, rooms.Count - 1) : 0;
+            var room = rooms[index];
 
             // fill up empty bottles
             if (room.IsWaterSource && item.Type.Full != null && Source.Reserve >= item.Type.Full.WaterValue)
@@ -372,5 +332,67 @@ namespace Burntime.Remaster.Logic
             return null;
         }
         #endregion
+
+        public void ClearItemsAfterTakeover()
+        {
+            if (container.Root is not ClassicGame root)
+                return;
+
+            foreach (var room in Rooms)
+                room.Items.Clear();
+
+            var list = new List<Item?>();
+
+            // all levels
+            if (root.World.Difficulty <= 2)
+            {
+                // random food
+                list.Add(root.ItemTypes.GenerateClass(new string[] { "food" }, Array.Empty<string>(), 1));
+
+                // 20% chance of a rare/special
+                list.Add(root.ItemTypes.GenerateClass(new string[] { "rare", "special" }, new string[] { "nodrop" }, 0.2f));
+
+                // 50% chance of a bottle or canteen
+                list.Add(root.ItemTypes.GenerateClass(new string[] { "bottle" }, Array.Empty<string>(), 0.5f));
+
+                // 0-2 random items
+                list.AddRange(root.ItemTypes.GenerateClass(new string[] { "material", "useless" }, Array.Empty<string>(), 0, 2));
+            }
+
+            // level 2 and 1
+            if (root.World.Difficulty <= 1)
+            {
+                // 50% chance of a food trap
+                list.Add(root.ItemTypes.GenerateClass(new string[] { "trap" }, Array.Empty<string>(), 0.5f));
+
+                // another 20% chance of a rare/special
+                list.Add(root.ItemTypes.GenerateClass(new string[] { "rare", "special" }, Array.Empty<string>(), 0.2f));
+
+                // 0-2 random items
+                list.AddRange(root.ItemTypes.GenerateClass(new string[] { "material", "useless" }, Array.Empty<string>(), 0, 2));
+            }
+
+            // level 1 only
+            if (root.World.Difficulty == 0)
+            {
+                // random food
+                list.AddRange(root.ItemTypes.GenerateClass(new string[] { "food" }, Array.Empty<string>(), 1, 2));
+
+                // another 50% chance of a food trap
+                list.Add(root.ItemTypes.GenerateClass(new string[] { "trap" }, Array.Empty<string>(), 0.5f));
+
+                // another 20% chance of a rare/special
+                list.Add(root.ItemTypes.GenerateClass(new string[] { "rare", "special", "protection_parts" }, Array.Empty<string>(), 0.2f));
+
+                // 1-2 random items
+                list.AddRange(root.ItemTypes.GenerateClass(new string[] { "material", "useless" }, Array.Empty<string>(), 1, 2));
+            }
+
+            foreach (var item in list)
+            {
+                if (item is not null)
+                    StoreItemRandom(item);
+            }
+        }
     }
 }

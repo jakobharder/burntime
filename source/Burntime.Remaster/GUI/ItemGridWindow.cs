@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-using Burntime.Platform;
-using Burntime.Platform.Graphics;
+﻿
 using Burntime.Framework;
 using Burntime.Framework.GUI;
 using Burntime.Framework.States;
-
-using Burntime.Remaster.Logic;
+using Burntime.Platform;
+using Burntime.Platform.Graphics;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace Burntime.Remaster.GUI
 {
@@ -281,10 +278,7 @@ namespace Burntime.Remaster.GUI
             }
         }
 
-        // IEnumerable interface implementation
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return new ItemCollectionEnumerator(this);
-        }
+        IEnumerator IEnumerable.GetEnumerator() => new ItemCollectionEnumerator(this);
+        IEnumerator<Item> IEnumerable<Item>.GetEnumerator() => new ItemCollectionEnumerator(this);
     }
 }

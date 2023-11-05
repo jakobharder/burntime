@@ -107,8 +107,9 @@ namespace Burntime.Remaster.Logic
             set { protection = value; }
         }
 
-        public virtual float AttackValue => Weapon?.DamageValue ?? DEFAULT_ATTACK_VALUE;
-        public virtual float DefenseValue => (int)(Experience / 10 + 0.5f + (Protection?.DefenseValue ?? 0));
+        public virtual int BaseAttackValue => DEFAULT_ATTACK_VALUE;
+        public virtual float AttackValue => (Weapon?.DamageValue ?? BaseAttackValue) * Experience / 100;
+        public virtual float DefenseValue => (DEFAULT_ATTACK_VALUE + (Protection?.DefenseValue ?? 0)) * Experience / 100;
 
         protected DataID<Platform.Graphics.ISprite> body;
         public DataID<Platform.Graphics.ISprite> Body
@@ -381,7 +382,14 @@ namespace Burntime.Remaster.Logic
             else
             {
                 if (IsLastInCamp)
+                {
+                    if (Player != Root.World.ActivePlayerObj)
+                    {
+                        // clear some items if we just freed an enemy camp
+                        Location.ClearItemsAfterTakeover();
+                    }
                     Location.Player = null;
+                }
             }
 
             Player = null;
@@ -450,69 +458,33 @@ namespace Burntime.Remaster.Logic
             return (Position - target.Position).Length < 30;
         }
 
-        public void Attack(Character target, bool defendWithAmmo = true)
+        public void Attack(Character defender, bool defendWithAmmo = true)
         {
-            ClassicGame classic = (ClassicGame)container.Root;
-            int difficulty = classic.World.Difficulty;
+#warning TODO attacks against camps should involve every camp member
 
-            // if the player is not attacking then reverse difficulty
-            if (this.Player != container.Root.CurrentPlayer)
+            // Add 25% per difficulty. Reverse if current player is not the attacker
+            float difficultyFactor = (1 + Root.World.Difficulty * 0.1f);
+            bool isPlayer = (Player == container.Root.CurrentPlayer);
+
+            var attackingGroup = (Player != null && Player.Character == this)
+                ? Player.Group.Where(ch => (ch.Position - Position).Length < 25).ToArray()
+                : new Character[] { this };
+
+            static void attack(Character attacker, Character defender, bool useAmmo, float factor)
             {
-                difficulty *= -1;
-            }
+                int attackValue = attacker.UseBestEquipment(useAmmo);
+                int damage = (int)System.Math.Max(1, (attackValue - defender.DefenseValue) * factor);
+                defender.Health -= damage;
+            };
 
-            if (Player != null && Player.Character == this)
+            foreach (var attacker in attackingGroup)
             {
-                // 1 enemy against player group
+                attack(attacker, defender, useAmmo: true, isPlayer ? 1 : difficultyFactor);
+                attack(defender, attacker, defendWithAmmo, isPlayer ? difficultyFactor : 1);
 
-                for (int i = 0; i < Player.Group.Count; i++)
-                {
-                    float distance = (Player.Group[i].Position - Position).Length;
-                    if (distance < 25)
-                    {
-                        int attackValue = Player.Group[i].UseBestWeapon();
-                        int targetAttackValue = target.UseBestWeapon(defendWithAmmo);
-
-                        int DamageSelf = (int)System.Math.Max(1, (targetAttackValue - Player.Group[i].DefenseValue) * (target.Experience / 100.0f) + difficulty);
-                        int DamageTarget = (int)System.Math.Max(1, (attackValue - target.DefenseValue) * (Player.Group[i].Experience / 100.0f) + difficulty);
-
-                        Log.Debug("damagevalue attacker/defender: " + DamageTarget + " / " + DamageSelf);
-
-                        Player.Group[i].Health -= DamageSelf;
-                        target.Health -= DamageTarget;
-
-                        container.Notify(new AttackEvent(Player.Group[i], target));
-
-                        if (target.IsDead)
-                            break;
-                        if (Player.Group[i].IsDead)
-                            i--;
-                        if (Player.Character.IsDead)
-                            break;
-                    }
-                }
-            }
-            else
-            {
-                // 1 enemy against 1 player character
-
-                int attackValue = UseBestWeapon();
-                int targetAttackValue = target.UseBestWeapon(defendWithAmmo);
-
-                int DamageSelf = (int)System.Math.Max(1, (targetAttackValue - this.DefenseValue) * (target.Experience / 100.0f) + difficulty);
-                int DamageTarget = (int)System.Math.Max(1, (attackValue - target.DefenseValue) * (this.Experience / 100.0f) + difficulty);
-
-                Log.Debug("--------------------------------------------------");
-                Log.Debug("attack: " + this.Name + " -> " + target.Name);
-                Log.Debug("experience: " + this.Experience + " -> " + target.Experience);
-                Log.Debug("attack/defense attacker: " + attackValue + " / " + this.DefenseValue);
-                Log.Debug("attack/defense defender: " + targetAttackValue + " / " + target.DefenseValue);
-                Log.Debug("damagevalue attacker/defender: " + DamageTarget + " / " + DamageSelf);
-
-                this.Health -= DamageSelf;
-                target.Health -= DamageTarget;
-
-                container.Notify(new AttackEvent(this, target));
+                container.Notify(new AttackEvent(attacker, defender));
+                if (defender.IsDead || attacker.IsDead)
+                    break;
             }
         }
 
@@ -653,6 +625,21 @@ namespace Burntime.Remaster.Logic
                 Water = 0;
         }
 
+        public float GetDangerRate()
+        {
+            if (Location.Danger is null)
+                return 0;
+
+            float rate = 1;
+            UseBestProtection();
+
+            Interaction.DangerProtection? p = Protection?.Type.GetProtection(Location.Danger.Type);
+            if (p is not null)
+                rate -= p.Rate;
+
+            return rate;
+        }
+
         public virtual void Update(float elapsed)
         {
             ani.Update(elapsed);
@@ -677,17 +664,7 @@ namespace Burntime.Remaster.Logic
             {
                 if (Location.Danger != null)
                 {
-                    float rate = 1;
-
-                    UseBestProtection();
-
-                    if (Protection != null)
-                    {
-                        Interaction.DangerProtection p = Protection.Type.GetProtection(Location.Danger.Type);
-                        if (p != null)
-                            rate -= p.Rate;
-                    }
-
+                    float rate = GetDangerRate();
                     if (rate > 0)
                     {
                         health -= Location.Danger.HealthDecrease * elapsed * rate;
@@ -754,12 +731,20 @@ namespace Burntime.Remaster.Logic
             return this;
         }
 
-        private int UseBestWeapon(bool allowAmmo = true)
+        /// <summary>
+        /// Use best weapon and protection. Returns attack value.
+        /// </summary>
+        private int UseBestEquipment(bool allowAmmo = true)
         {
             Protection = Items.FindBestDefense(Protection);
+
+            // make sure empty guns are not used
+            if (Weapon?.DamageValue == 0)
+                Weapon = null;
+
             Item? weapon = Items.FindBestWeapon(allowAmmo ? Weapon : null);
             if (weapon is null)
-                return DEFAULT_ATTACK_VALUE;
+                return BaseAttackValue * Experience / 100;
 
             int attackValue = weapon.DamageValue;
             if (allowAmmo)
@@ -770,20 +755,20 @@ namespace Burntime.Remaster.Logic
             }
 
             Weapon = Items.FindBestWeapon(Weapon);
-            return attackValue;
+            return attackValue * Experience / 100;
         }
 
+        /// <summary>
+        /// Use best danger protection.
+        /// </summary>
         private void UseBestProtection()
         {
             Protection = Items.FindBestProtection(Protection, Location.Danger.Type);
         }
 
         #region ICharacterCollection, IEnumerable implementations
-        // IEnumerable interface implementation
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return new CharacterCollectionEnumerator(this);
-        }
+        IEnumerator IEnumerable.GetEnumerator() => new CharacterCollectionEnumerator(this);
+        IEnumerator<Character> IEnumerable<Character>.GetEnumerator() => new CharacterCollectionEnumerator(this);
 
         // ICharacterCollection interface implementation
         void ICharacterCollection.Add(Character character)
@@ -877,5 +862,7 @@ namespace Burntime.Remaster.Logic
             return this == character && leader == character;
         }
         #endregion
+
+        private ClassicGame Root => (ClassicGame)Container.Root;
     }
 }

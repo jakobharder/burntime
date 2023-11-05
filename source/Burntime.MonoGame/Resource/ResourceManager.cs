@@ -17,19 +17,19 @@ namespace Burntime.Platform.Resource
         }
 
         #region Font
-        public Font GetFont(String File, PixelColor ForeColor)
+        public Font? GetFont(string filePath, PixelColor color)
         {
-            return GetFont(File, ForeColor, PixelColor.Black);
+            return GetFont(filePath, color, PixelColor.Black);
         }
 
-        public Font GetFont(String File, PixelColor ForeColor, PixelColor BackColor)
+        public Font? GetFont(string filePath, PixelColor color, PixelColor backColor)
         {
             ResourceInfoFont info;
-            info.Name = File;
-            if (BackColor != PixelColor.Black)
+            info.Name = filePath;
+            if (backColor != PixelColor.Black)
             {
-                info.Fore = ForeColor;
-                info.Back = BackColor;
+                info.Fore = color;
+                info.Back = backColor;
             }
             else
             {
@@ -37,50 +37,73 @@ namespace Burntime.Platform.Resource
                 info.Back = PixelColor.Black;
             }
 
-            Font font = new Font();
-            font.Info = new FontInfo();
-            font.Info.Font = File.ToLower();
-            font.Info.ForeColor = ForeColor;
-            font.Info.BackColor = BackColor;
-            font.Info.UseBackColor = !(BackColor.a == 255 && BackColor.r == 0 && BackColor.g == 0 && BackColor.b == 0);
-
-            if (fonts.ContainsKey(info))
+            var font = new Font(this)
             {
-                font.charInfo = fonts[info].charInfo;
-                font.sprite = fonts[info].sprite;
-                font.offset = fonts[info].offset;
-                font.height = fonts[info].height;
-                return font;
-            }
+                Info = new FontInfo
+                {
+                    Font = filePath,
+                    ForeColor = color,
+                    BackColor = backColor,
+                    Colorize = color != PixelColor.Transparent,
+                    UseBackColor = backColor != PixelColor.Black
+                }
+            };
 
-            FilePath path = File;
-            if (!fontProcessors.ContainsKey(path.Extension))
-                return null;
+            return LoadFont(font);
+        }
 
-            _engine.IncreaseLoadingCount();
-
-            IFontProcessor processor = (IFontProcessor)Activator.CreateInstance(fontProcessors[path.Extension].GetType());
-            processor.Process((string)path);
-            Log.Debug("load \"" + path.FullPath + "\"");
-
-            processor.Color = ForeColor;
-            processor.Shadow = BackColor;
-
-            SpriteFrame frame = new();
-            lock (sprites)
-                MemoryUsage += frame.LoadFromProcessor(processor, keepSystemCopy: true);
-
-            font.sprite = new Sprite(this, "", frame);
-            font.sprite.Resolution = processor.Factor;
-
-            font.charInfo = processor.CharInfo;
-            font.offset = processor.Offset;
-            font.height = processor.Size.y;
-
-            _engine.DecreaseLoadingCount();
+        public override Font? LoadFont(Font font)
+        {
+            ResourceInfoFont info;
+            info.Name = font.Info.Font;
+            info.Fore = font.Info.ForeColor;
+            info.Back = font.Info.BackColor;
 
             lock (fonts)
+            {
+                if (fonts.ContainsKey(info))
+                {
+                    font.charInfo = fonts[info].charInfo;
+                    font.sprite = fonts[info].sprite;
+                    font.offset = fonts[info].offset;
+                    font.height = fonts[info].height;
+                    font.IsLoaded = true;
+                    return font;
+                }
+
+                FilePath path = font.Info.Font;
+                if (!fontProcessors.ContainsKey(path.Extension))
+                    return null;
+
+                _engine.IncreaseLoadingCount();
+
+                if (Activator.CreateInstance(fontProcessors[path.Extension].GetType()) is not IFontProcessor processor)
+                    return null;
+                processor.Process((string)path);
+                Log.Debug("load \"" + path.FullPath + "\"");
+
+                processor.Color = font.Info.ForeColor;
+                processor.Shadow = font.Info.BackColor;
+
+                SpriteFrame frame = new();
+                lock (sprites)
+                    MemoryUsage += frame.LoadFromProcessor(processor, keepSystemCopy: true);
+
+                font.sprite = new Sprite(this, "", frame)
+                {
+                    Resolution = processor.Factor
+                };
+
+                font.charInfo = processor.CharInfo;
+                font.offset = processor.Offset;
+                font.height = processor.Size.y;
+
+                _engine.DecreaseLoadingCount();
+
                 fonts.Add(info, font);
+            }
+
+            font.IsLoaded = true;
             return font;
         }
         #endregion
