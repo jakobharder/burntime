@@ -8,6 +8,7 @@
 - Adjust attack/defense value display to already include experience
 - Camps automatically select better traps if production is too low
 - Show gas and radiation warning in main UI
+- Remastered graphics in start menu and options
 
 ### Fixes
 

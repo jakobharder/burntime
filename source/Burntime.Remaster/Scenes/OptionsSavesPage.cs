@@ -33,6 +33,8 @@ internal class OptionsSavesPage : Container
     readonly OptionFonts _fonts;
 
     readonly SavegameInputWindow _input;
+    SaveInfo? _highlightedInfo;
+
     readonly Button _load;
     readonly Button _save;
     readonly Button _delete;
@@ -46,36 +48,36 @@ internal class OptionsSavesPage : Container
     {
         _fonts = fonts;
 
-        Windows += _load = new Button(app)
+        var saveButtons = new AutoAlignContainer(app)
+        {
+            Position = new Vector2(40, 124),
+            Size = new Vector2(120, 10)
+        };
+        saveButtons.Windows += _load = new Button(app, OnLoad)
         {
             Font = _fonts.Blue,
             HoverFont = _fonts.Orange,
             DisabledFont = _fonts.Disabled,
             Text = "@burn?382",
-            Position = new Vector2(40, 124),
             IsTextOnly = true
         };
-        _load.Command += OnLoad;
-        Windows += _save = new Button(app)
+        saveButtons.Windows += _save = new Button(app, OnSave)
         {
             Font = _fonts.Blue,
             HoverFont = _fonts.Orange,
             DisabledFont = _fonts.Disabled,
             Text = "@burn?383",
-            Position = new Vector2(74, 124),
             IsTextOnly = true
         };
-        _save.Command += OnSave;
-        Windows += _delete = new Button(app)
+        saveButtons.Windows += _delete = new Button(app, OnDelete)
         {
             Font = _fonts.Blue,
             HoverFont = _fonts.Orange,
             DisabledFont = _fonts.Disabled,
             Text = "@burn?384",
-            Position = new Vector2(126, 124),
             IsTextOnly = true
         };
-        _delete.Command += OnDelete;
+        Windows += saveButtons;
 
         Windows += _input = new SavegameInputWindow(app)
         {
@@ -142,10 +144,11 @@ internal class OptionsSavesPage : Container
         Button? highlight = savegames.FirstOrDefault(x => (x.Context as SaveInfo)?.Name == _input.Name.ToLower());
         foreach (Button button in savegames)
         {
-            if (button == highlight && (button.Context as SaveInfo)?.IsValid == true)
+            if (button == highlight)
             {
                 button.Font = _fonts.Blue;
                 button.HoverFont = _fonts.Orange;
+                _highlightedInfo = button.Context as SaveInfo;
             }
             else if ((button.Context as SaveInfo)?.IsValid == true)
             {
@@ -155,7 +158,7 @@ internal class OptionsSavesPage : Container
             else
             {
                 button.Font = _fonts.Disabled;
-                button.HoverFont = _fonts.Disabled;
+                button.HoverFont = _fonts.Orange;
             }
         }
 
@@ -237,7 +240,7 @@ internal class OptionsSavesPage : Container
         RefreshSaveGames(_input.Name + ".sav");
     }
 
-    private bool CanLoad => FileSystem.ExistsFile("saves/" + _input.Name + ".sav");
+    private bool CanLoad => FileSystem.ExistsFile("saves/" + _input.Name + ".sav") && _highlightedInfo?.IsValid == true;
     void OnLoad()
     {
         if (!CanLoad)
