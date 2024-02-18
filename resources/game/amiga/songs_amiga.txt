@@ -1,0 +1,32 @@
+diner=amiga_pub.ogg        ' diner and pub are same on Amiga
+texaco=
+doctor=amiga_doctor.ogg    ' ok
+room=amiga_room.ogg        ' only caves incl. water sources on Amiga
+building=
+ruin=
+death=amiga_death.ogg      ' ok
+trader=amiga_trader.ogg    ' ok
+victory=amiga_radio.ogg    ' victory and radio are same on Amiga
+hidden=
+info=amiga_victory.ogg     ' ok
+church=amiga_church.ogg    ' ok
+start=amiga_start.ogg      ' ok
+radio=amiga_radio.ogg      ' ok
+score=amiga_score.ogg      ' ok
+talking=amiga_talking.ogg  ' ok
+pub=amiga_pub.ogg          ' ok
+intro=amiga_intro.ogg      ' ok
+water=amiga_water.ogg      ' only open water sources, no caves, houses or wells on Amiga
+
+' Unused songs:
+' namen (??? use for ruin?)
+' fabrik -> info in toxic places
+' bunker1 -> building room (room is only for caves)
+' bunker2 -> well (water is only for open water sources)
+' bunker3 -> info in radioactive places (??? use for building?)
+' copy -> copy protection scene (??? use for scene?)
+
+' Other notes:
+' Inventory is silent on Amiga
+' Texaco and other image scenes don't exist, except the church
+' Amiga radio sounds similar to PC diner
