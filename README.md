@@ -10,7 +10,7 @@ Download it from [Releases](https://github.com/jakobharder/burntime/releases).
 
 ## Changes
 
-See [Changelog.md](./resources/Changelog.md)
+See [Changelog.md](./resources/Changelog.md).
 
 ## Features
 
@@ -107,6 +107,6 @@ You can also mark the `Launcher` as start-up project to change settings and debu
 This project is not affiliated in any way with Max Design and/or the original creators.
 The original game, graphics and other assets are the property of Max Design and their original creators.
 
-Thank you Martin Lasser for allowing non-commercial community remake efforts to use the original graphics!
+A big thanks to Martin Lasser and Hannes Seifert for allowing this community remake effort to use the original graphics and music!
 
 See full [list of contributors](./resources/README.md#notes)
