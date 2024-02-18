@@ -1,0 +1,5 @@
+version=0.1
+type=extra
+game=classic
+language=EN
+default_language=EN
