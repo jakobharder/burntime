@@ -16,11 +16,25 @@ jobs:
     - name: Build
       run: (cd source && dotnet publish Burntime.MonoGame -c Release /p:DebugSymbols=false /p:PublishReadyToRun=false /p:TieredCompilation=false --self-contained /p:PublishSingleFile=true && cd ..)
 
-#    - name: Build Tools
-#      run: |
-#        cd source
-#        dotnet publish PakConverter -c Release /p:DebugSymbols=false /p:PublishReadyToRun=false /p:TieredCompilation=false --self-contained /p:PublishSingleFile=true
-#        cd ..
+    - name: Build Tools
+      run: |
+        cd source
+        dotnet build PakConverter -c Release /p:DebugSymbols=false
+        cd ..
+
+    - name: Create Paks
+      run: |
+        cd ./bin/Release/win-x64/publish/game
+        ../../../../tools/Release/PakConverter.exe classic
+        ../../../../tools/Release/PakConverter.exe classic_newgfx
+        cd ../../../../..
+
+    - name: Remove Folders
+      run: |
+        rm -r ./bin/Release/win-x64/publish/game/classic
+        rm -r ./bin/Release/win-x64/publish/game/classic_newgfx
+        rm -r ./bin/Release/win-x64/publish/game/classic_es
+        rm -r ./bin/Release/win-x64/publish/game/classic_jp
 
     - name: Package
       run: |
