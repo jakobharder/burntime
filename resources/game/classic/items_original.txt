@@ -76,8 +76,8 @@ damage=38
 class=weapon nodrop
 burngfx=13
 damage=55
-empty=item_loaded_rifle_1
-ammo=1
+empty=item_unloaded_rifle
+ammo=2
 
 [item_unloaded_rifle]
 class=weapon nodrop

@@ -8,6 +8,10 @@ Burntime is a remaster and expansion of Max Design's PC strategy game 'Burntime'
 
 Download it from [Releases](https://github.com/jakobharder/burntime/releases).
 
+## Changes
+
+See [Changelog.md](./resources/Changelog.md)
+
 ## Features
 
 The game is a complete port of the original game to Windows with some adjustments and an extended game mode.
@@ -97,10 +101,6 @@ Enemies are more aggressive.
 - start
 
 You can also mark the `Launcher` as start-up project to change settings and debug that part.
-
-## Changes
-
-See [Changelog.md](./resources/Changelog.md)
 
 ## Credits
 
