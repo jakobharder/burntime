@@ -5,7 +5,7 @@ namespace PakConverter
 {
     class Program
     {
-        static int cursorpos = 0;
+        static readonly CursorPosition _cursor = new CursorPosition();
 
         static void Main(string[] args)
         {
@@ -17,29 +17,55 @@ namespace PakConverter
             }
 
             Console.Write("convert " + args[0] + " to " + args[0] + ".pak... ");
-            cursorpos = Console.CursorLeft;
+            _cursor.Save();
             try
             {
                 FileSystem.ConvertFolderToPak(args[0], Feedback);
             }
             catch (Exception e)
             {
-                Console.CursorLeft = cursorpos;
+                _cursor.Restore();
                 Console.WriteLine("failed");
                 Console.WriteLine(e.Message);
                 Console.ReadKey();
                 return;
             }
-            
-            Console.CursorLeft = cursorpos;
+            _cursor.Restore();
             Console.WriteLine("finished");
         }
 
         static void Feedback(float percentage)
         {
-            Console.CursorLeft = cursorpos;
+            _cursor.Restore();
             int p = (int)(percentage * 100);
             Console.Write(p.ToString("D3") + "%");
+        }
+    }
+
+    class CursorPosition
+    {
+        int _position = 0;
+        bool _supportCursorPosition = true;
+
+        public void Save()
+        {
+            if (!_supportCursorPosition) return;
+
+            try
+            {
+                _position = Console.CursorLeft;
+            }
+            catch
+            {
+                _supportCursorPosition = false;
+            }
+        }
+
+        public void Restore()
+        {
+            if (!_supportCursorPosition) return;
+
+            Console.CursorLeft = _position;
         }
     }
 }
