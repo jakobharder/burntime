@@ -100,10 +100,9 @@ namespace Burntime.Remaster
             _ = FileSystem.VFS.MoveFolder("user:classic/savegame", "user:saves");
             _ = FileSystem.VFS.RemoveFolder("user:classic");
 
-            FileSystem.AddPackage("music", "game/classic_music");
-            FileSystem.AddPackage("music_fix", "game/music_fix");
+            FileSystem.AddPackage("music", "game/music");
             FileSystem.AddPackage("amiga", "game/amiga");
-            HasDosMusic = FileSystem.ExistsFile("songs_dos.txt") && FileSystem.ExistsFile("01_MUS 01_HSC.ogg");
+            HasDosMusic = FileSystem.ExistsFile("songs_dos.txt") && FileSystem.ExistsFile("song_intro.ogg");
             HasAmigaMusic = FileSystem.ExistsFile("songs_amiga.txt");
 
             SetMusicMode(UserSettings[""].GetString("music"));

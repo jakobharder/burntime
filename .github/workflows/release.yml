@@ -28,6 +28,7 @@ jobs:
         ../../../../tools/Release/PakConverter.exe classic
         ../../../../tools/Release/PakConverter.exe classic_newgfx
         ../../../../tools/Release/PakConverter.exe amiga
+        ../../../../tools/Release/PakConverter.exe music
         cd ../../../../..
 
     - name: Remove Folders
@@ -37,6 +38,7 @@ jobs:
         rm -r ./bin/Release/win-x64/publish/game/classic_es
         rm -r ./bin/Release/win-x64/publish/game/classic_jp
         rm -r ./bin/Release/win-x64/publish/game/amiga
+        rm -r ./bin/Release/win-x64/publish/game/music
 
     - name: Package
       run: |
