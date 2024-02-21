@@ -2,6 +2,10 @@
 
 ## 0.9 - Balancing and some graphics remaster (2023-11-05)
 
+### 0.9.2
+
+- Added ropes to a few traders to sell
+
 ### 0.9.1
 
 - Fixed non-existing rifle_1 showing in 1993 mode

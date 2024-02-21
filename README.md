@@ -6,11 +6,9 @@ Burntime is a remaster and expansion of Max Design's PC strategy game 'Burntime'
 
 ## Get the Game
 
-Download it from [Releases](https://github.com/jakobharder/burntime/releases).
-
-## Changes
-
-See [Changelog.md](./resources/Changelog.md).
+- Download: [Releases](https://github.com/jakobharder/burntime/releases)
+- Recent changes: [Changelog.md](./resources/Changelog.md)
+- Issues &amp; requests: [GitHub issues](https://github.com/jakobharder/burntime/issues) or [Burntime.org (German forum)](https://www.burntime.org/forum/viewtopic.php?t=323)
 
 ## Features
 
@@ -96,11 +94,8 @@ Enemies are more aggressive.
 ## Build and Debug
 
 - open `source/Burntime.sln` in Visual Studio
-- build solution (it will generate a `bin/burntime` folder)
-- mark `Burntime` as the start-up project
-- start
-
-You can also mark the `Launcher` as start-up project to change settings and debug that part.
+- mark `Burntime.MonoGame` as the start-up project
+- build & start
 
 ## Credits
 
