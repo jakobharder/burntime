@@ -8,6 +8,7 @@
 - Fixed AI player's shadow remaining after death
 - Fixed doctors not healing stationed NPCs
 - Fixed New Village name, rooms etc.
+- Fixed radio construction
 
 ### 0.9.1
 
