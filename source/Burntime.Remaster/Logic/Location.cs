@@ -49,19 +49,9 @@ namespace Burntime.Remaster.Logic
             set { characters = value; }
         }
 
-        public List<Character> CampNPC
+        public IEnumerable<Character> CampNPC
         {
-            get
-            {
-                List<Character> l = new List<Character>();
-                foreach (Character ch in characters)
-                {
-                    if (ch.Player != null)
-                        l.Add(ch);
-                }
-
-                return l;
-            }
+            get => characters.Where(chr => chr.Player != null);
         }
 
         StateLink<DroppedItemList> items;
@@ -181,7 +171,7 @@ namespace Burntime.Remaster.Logic
             int trapsInRooms = Rooms.Sum(room => room.Items.Where(item => item.Type.Production == production).Count());
             int trapsOnNPCs = CampNPC.Sum(npc => npc.Items.Where(item => item.Type.Production == production).Count());
 
-            return production.GetRate(trapsInRooms + trapsOnNPCs, CampNPC.Count);
+            return production.GetRate(trapsInRooms + trapsOnNPCs, CampNPC.Count());
         }
 
         public Production.Rate AutoSelectFoodProduction(bool onlyIfStarving)

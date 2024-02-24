@@ -6,6 +6,7 @@
 
 - Added ropes to a few traders to sell
 - Fixed AI player's shadow remaining after death
+- Fixed doctors not healing stationed NPCs
 
 ### 0.9.1
 
