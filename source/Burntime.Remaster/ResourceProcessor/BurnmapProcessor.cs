@@ -195,11 +195,28 @@ class BurnmapProcessor : IDataProcessor
             e.Area.Width = reader.ReadInt32();
             e.Area.Height = reader.ReadInt32();
 
-//#warning TODO insert proper images and titles
-//                e.Background = 0;// settings["room" + i].GetString("image");
             if (settings != null)
+            {
                 e.TitleId = settings["room" + i].GetString("title");
-//                //e.Key = settings["room" + i].GetString("key");
+                e.Background = settings["room" + i].GetString("image") switch {
+                    "raum_0.pac" => 0,
+                    "raum_1.pac" => 1,
+                    "raum_2.pac" => 2,
+                    "raum_3.pac" => 3,
+                    "raum_4.pac" => 4,
+                    "raum_5.pac" => 5,
+                    "raum_6.pac" => 6,
+                    "raum_7.pac" => 7,
+                    "raum_8.pac" => 8,
+                    _ => 1
+                };
+                e.RoomType = settings["room" + i].GetString("type") switch
+                {
+                    "normal" => RoomType.Normal,
+                    "water" => RoomType.WaterSource,
+                    _ => RoomType.Normal
+                };
+            }
 
             data.Entrances[i] = e;
         }

@@ -115,7 +115,7 @@ namespace Burntime.Remaster.Scenes
 
             Location loc = classic.Game.World.Locations[city];
 
-            titleFont.DrawText(target, new Vector2(193, 7), txt[city], TextAlignment.Center, VerticalTextAlignment.Top);
+            titleFont.DrawText(target, new Vector2(193, 7), loc.Title, TextAlignment.Center, VerticalTextAlignment.Top);
 
             if (itemCount[0] != -1)
                 font.DrawText(target, new Vector2(188, 120), itemCount[0].ToString());
