@@ -250,7 +250,10 @@ namespace Burntime.Remaster.Logic.Generation
                 foreach (Player p in game.World.Players)
                 {
                     if (p.Type == PlayerType.Ai)
+                    {
                         p.IsDead = true;
+                        p.Character.Die();
+                    }
                 }
 
                 foreach (Burntime.Framework.Network.GameClient client in app.Server.Clients)

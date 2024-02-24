@@ -13,7 +13,7 @@ namespace Burntime.Remaster.Maps
     class MapViewOverlayCharacters : IMapViewOverlay
     {
         Location mapState;
-        Player player;
+        Player? _currentPlayer;
         Module app;
         SpriteAnimation ani;
         bool debugRender;
@@ -74,8 +74,8 @@ namespace Burntime.Remaster.Maps
         public void UpdateOverlay(WorldState world, float elapsed)
         {
             mapState = world.CurrentLocation as Location;
-            player = world.CurrentPlayer as Player;
-            selectedCharacter = player == null ? null : player.SelectedCharacter;
+            _currentPlayer = world.CurrentPlayer as Player;
+            selectedCharacter = _currentPlayer == null ? null : _currentPlayer.SelectedCharacter;
 
             ani.Update(elapsed);
         }
@@ -87,12 +87,21 @@ namespace Burntime.Remaster.Maps
                 List<Character> characters = new List<Character>();
 
                 foreach (Character chr in mapState.Characters)
-                    characters.Add(chr);
-
-                if (player != null)
                 {
-                    for (int i = 0; i < player.Group.Count; i++)
-                        characters.Add(player.Group[i]);
+                    // skip if dead
+                    if (chr.IsDead && chr.DeadAnimationFinished
+                        || chr.IsPlayerCharacter && chr.Player.IsDead)
+                    {
+                        continue;
+                    }
+
+                    characters.Add(chr);
+                }
+
+                if (_currentPlayer != null)
+                {
+                    for (int i = 0; i < _currentPlayer.Group.Count; i++)
+                        characters.Add(_currentPlayer.Group[i]);
                 }
 
                 if (RenderShadow)
@@ -120,13 +129,6 @@ namespace Burntime.Remaster.Maps
 
                 foreach (Character chr in characters)
                 {
-                    // skip if dead
-                    if (chr.IsDead && chr.DeadAnimationFinished
-                        || chr.IsPlayerCharacter && chr.Player.IsDead)
-                    {
-                        continue;
-                    }
-
                     Vector2 pos = chr.Position + offset;
                     // align character sprite to bottom center
                     pos.x -= chr.Body.Object.Width / 2;
@@ -160,7 +162,7 @@ namespace Burntime.Remaster.Maps
 
             foreach (Character chr in mapState.Characters)
             {
-                if (chr.IsDead)
+                if (chr.IsDead || chr.IsPlayerCharacter && chr.Player.IsDead)
                     continue;
 
                 Vector2 distance = chr.Position - position;
@@ -171,16 +173,16 @@ namespace Burntime.Remaster.Maps
                     obj = chr;
             }
 
-            if (player != null)
+            if (_currentPlayer != null)
             {
-                for (int i = 0; i < player.Group.Count; i++)
+                for (int i = 0; i < _currentPlayer.Group.Count; i++)
                 {
-                    Vector2 distance = player.Group[i].Position - position;
+                    Vector2 distance = _currentPlayer.Group[i].Position - position;
                     // align to bottom center
-                    distance.y -= player.Group[i].Body.Object.Height / 2;
+                    distance.y -= _currentPlayer.Group[i].Body.Object.Height / 2;
 
                     if (distance.Length < 10)
-                        obj = player.Group[i];
+                        obj = _currentPlayer.Group[i];
                 }
             }
 
