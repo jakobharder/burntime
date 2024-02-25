@@ -40,7 +40,7 @@ namespace Burntime.Remaster.Scenes
             Size = new Vector2(320, 200);
             Music = "score";
             Position = (app.Engine.Resolution.Game - Size) / 2;
-            font = new GuiFont(BurntimeClassic.FontName, new PixelColor(212, 212, 212), new PixelColor(92, 92, 96));
+            font = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray, new PixelColor(92, 92, 96));
             CaptureAllMouseClicks = true;
 
             _rightBottom = (GuiImage)"gfx/backgrounds/stats_rightbottom.png";

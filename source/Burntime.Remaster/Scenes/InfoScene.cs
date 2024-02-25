@@ -90,7 +90,7 @@ namespace Burntime.Remaster.Scenes
             Windows += grid;
 
             titleFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(156, 156, 156), new PixelColor(76, 32, 4));
-            font = new GuiFont(BurntimeClassic.FontName, new PixelColor(184, 184, 184), new PixelColor(92, 92, 96));
+            font = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.Gray, new PixelColor(92, 92, 96));
 
             items = new SortedList<string, int>();
 

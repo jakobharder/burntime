@@ -5,6 +5,7 @@ using Burntime.Remaster.Logic.Generation;
 using Burntime.Platform.IO;
 using Burntime.Classic.Scenes;
 using Burntime.Platform.Graphics;
+using System;
 
 namespace Burntime.Remaster;
 
@@ -44,7 +45,7 @@ public class OptionsScene : Scene
         Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
         disabled = new GuiFont(BurntimeClassic.FontName, new PixelColor(100, 100, 100));
-        red = new GuiFont(BurntimeClassic.FontName, new PixelColor(134, 44, 4));
+        red = new GuiFont(BurntimeClassic.FontName, new PixelColor(134, 44, 4)) { Borders = TextBorders.None };
         hover = new GuiFont(BurntimeClassic.FontName, new PixelColor(109, 117, 170));
         hoverRed = new GuiFont(BurntimeClassic.FontName, new PixelColor(190, 77, 12));
         green = new GuiFont(BurntimeClassic.FontName, new PixelColor(0, 108, 0));
@@ -162,6 +163,9 @@ public class OptionsScene : Scene
         target.DrawSprite(position, _optionsBulb);
         target.Layer--;
 
+        target.Layer += 10;
+        red.DrawText(target, target.ScreenSize - target.ScreenOffset - 6, BurntimeClassic.Version, TextAlignment.Right, VerticalTextAlignment.Bottom);
+        target.Layer -= 10;
 
         base.OnRender(target);
     }

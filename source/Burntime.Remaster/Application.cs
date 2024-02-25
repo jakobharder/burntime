@@ -6,6 +6,7 @@ using System;
 using System.Text;
 using Burntime.Remaster;
 using static Burntime.Remaster.BurntimeClassic;
+using System.Diagnostics;
 
 namespace Burntime.Remaster
 {
@@ -27,6 +28,20 @@ namespace Burntime.Remaster
 
         public static string SavegameVersion = "0.1.2";
         public static string FontName = "font.txt";
+
+        public static readonly PixelColor LightGray = new(212, 212, 212);
+        public static readonly PixelColor Gray = new(184, 184, 184);
+
+        private static string? _version;
+        public static string Version
+        {
+            get
+            {
+                if (_version is null)
+                    _version = FileVersionInfo.GetVersionInfo(System.IO.Path.Combine(System.AppContext.BaseDirectory, "burntime.exe")).ProductVersion ?? "?";
+                return _version;
+            }
+        }
 
         // external use
         public override string Title { get { return "Burntime"; } }

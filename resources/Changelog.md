@@ -8,6 +8,7 @@
 - Danger warnings in UI are less prominent
 - Remastered info scene background, context menu
 - Reduced hit sound volume
+- Added version to radio and start screens
 
 ### Fixes
 
