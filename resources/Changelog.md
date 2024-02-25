@@ -9,6 +9,7 @@
 - Fixed doctors not healing stationed NPCs
 - Fixed New Village name, rooms etc.
 - Fixed radio construction
+- Fixed Nob Hill room background
 
 ### 0.9.1
 

@@ -1,0 +1,27 @@
+rooms = 4
+
+water_refresh = 5
+water_capacity = 6
+city = false
+danger = danger@radiation??45
+
+[room0]
+type = normal
+title = burn?661
+image = raum_0.pac
+
+[room1]
+type = normal
+title = burn?661
+image = raum_0.pac
+
+[room2]
+type = normal
+title = burn?661
+image = raum_0.pac
+
+[room3]
+type = water
+title = burn?665
+image = raum_4.pac
+
