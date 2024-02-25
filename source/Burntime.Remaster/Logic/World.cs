@@ -96,7 +96,7 @@ namespace Burntime.Remaster.Logic
                         {
                             if (Locations[j].Player == Players[i])
                             {
-                                List<Character> list = Locations[j].CampNPC;
+                                var list = Locations[j].CampNPC;
                                 foreach (Character ch in list)
                                     ch.Dismiss();
                             }

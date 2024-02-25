@@ -37,8 +37,8 @@ namespace Burntime.Remaster.Scenes
         {
             Background = "info.pac";
             Music = "info";
+            Size = new Vector2(320, 200);
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
-
 
             Button button = new Button(App);
             button.Position = new Vector2(5, 174);
@@ -69,15 +69,15 @@ namespace Burntime.Remaster.Scenes
             image.Background = "inf.ani?4-6";
             image.Background.Animation.Speed = 6;
             image.Background.Animation.Progressive = false;
-            image.Position = new Vector2(234, 150);
+            image.Position = new Vector2(229, 150);
             Windows += image;
 
             danger = new Image(App);
-            danger.Position = new Vector2(229, 27);
+            danger.Position = new Vector2(224, 27);
             Windows += danger;
 
             production = new ItemWindow(App);
-            production.Position = new Vector2(230, 105);
+            production.Position = new Vector2(225, 105);
             production.ItemID = "";
             production.LeftClickEvent += OnProductionLeft;
             production.RightClickEvent += OnProductionRight;
@@ -115,7 +115,7 @@ namespace Burntime.Remaster.Scenes
 
             Location loc = classic.Game.World.Locations[city];
 
-            titleFont.DrawText(target, new Vector2(193, 7), txt[city], TextAlignment.Center, VerticalTextAlignment.Top);
+            titleFont.DrawText(target, new Vector2(193, 7), loc.Title, TextAlignment.Center, VerticalTextAlignment.Top);
 
             if (itemCount[0] != -1)
                 font.DrawText(target, new Vector2(188, 120), itemCount[0].ToString());
@@ -137,13 +137,13 @@ namespace Burntime.Remaster.Scenes
             // render resources
             font.DrawText(target, new Vector2(137, 86), txt[399], TextAlignment.Left, VerticalTextAlignment.Top);
 
-            font.DrawText(target, new Vector2(229, 86), txt[406], TextAlignment.Left, VerticalTextAlignment.Top);
+            font.DrawText(target, new Vector2(224, 86), txt[406], TextAlignment.Left, VerticalTextAlignment.Top);
 
             txt.AddArgument("|J", loc.GetFoodProductionRate().FoodPerDay);
             txt.AddArgument("|D", loc.Source.Water);
 
-            font.DrawText(target, new Vector2(270, 117), txt[421], TextAlignment.Left, VerticalTextAlignment.Top);
-            font.DrawText(target, new Vector2(270, 152), txt[422], TextAlignment.Left, VerticalTextAlignment.Top);
+            font.DrawText(target, new Vector2(265, 117), txt[421], TextAlignment.Left, VerticalTextAlignment.Top);
+            font.DrawText(target, new Vector2(265, 152), txt[422], TextAlignment.Left, VerticalTextAlignment.Top);
 
             if (loc.Danger != null)
                 font.DrawText(target, new Vector2(251, 68), loc.Danger.InfoString, TextAlignment.Center, VerticalTextAlignment.Top);

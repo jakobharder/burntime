@@ -1,53 +1,56 @@
 [trader]
-'Mad Marty
+'Mad Marty, Neu Sandez area
 179=item_meat item_knife item_loaded_rifle item_snake_trap item_broken_pump item_hose item_protective_overall
 
-'Chuck
-180=item_meat item_batteries item_wire item_screws item_rags item_boots item_tools
+'Chuck, Sana area
+180=item_meat item_batteries item_wire item_screws item_rags item_boots item_tools item_rope
+'180=item_meat item_batteries item_wire item_screws item_rags item_boots item_tools
 
-'Jack the Nepper
+'Jack the Nepper, Stove Vent area
 181=item_snake item_meat item_empty_canteen item_knife item_axe item_snake_trap item_wire item_woodpile item_ammunition
 
-'Sharky
+'Sharky, Dead Wood area
 182=item_meat item_empty_canteen item_pitchfork item_woodpile item_screws item_gas_mask item_tools
 
-'Lester
+'Lester, Hard Mens Dead area
 183=item_meat item_empty_wineskin item_axe item_snake_trap item_screws item_tin item_spring
 
-'Wolf
+'Wolf, Right End area
 184=item_meat item_pitchfork item_wire item_gloves item_leather_jacket item_sweater item_pants
 
-'Ralf Gier
-185=item_snake item_meat item_empty_canteen item_pitchfork item_woodpile item_screws item_tin item_gas_mask
+'Ralf Gier, Snake Hills area
+185=item_snake item_meat item_empty_canteen item_pitchfork item_woodpile item_screws item_tin item_gas_mask item_rope
+'185=item_snake item_meat item_empty_canteen item_pitchfork item_woodpile item_screws item_tin item_gas_mask
 
-'Holger
+'Holger, Sherwood area
 186=item_meat item_empty_canteen item_knife item_broken_pump item_screws item_tin item_boots
 
-'Zocker Joe
-187=item_snake item_meat item_empty_wineskin item_axe item_snake_trap item_batteries item_wire item_protective_overall
+'Zocker Joe, Kloster area
+187=item_snake item_meat item_empty_wineskin item_axe item_snake_trap item_batteries item_wire item_protective_overall item_rope
+'187=item_snake item_meat item_empty_wineskin item_axe item_snake_trap item_batteries item_wire item_protective_overall
 
-'Django
+'Django, Raststätte area
 188=item_meat item_axe item_batteries item_wire item_screws item_rags item_protective_suit
 
-'Don Camillo
+'Don Camillo, Paradise Camp area
 189=item_meat item_knife item_electrical_odds_and_ends item_wire item_screws item_tin item_iron_pipe
 
-'John
+'John, Nirvana area
 190=item_snake item_meat item_empty_wineskin item_pitchfork item_snake_trap item_spare_parts item_hose item_iron_pipe
 
-'Monkey
+'Monkey, Dead Wood area
 191=item_snake item_meat item_knife item_woodpile item_screws item_hose item_rags item_gas_mask
 
-'Kaiser
+'Kaiser, One Man's Heaven area
 192=item_meat item_knife item_broken_pump item_wire item_woodpile item_tin item_hose
 
-'Trademan
+'Trademan, Acit Town area
 193=item_meat item_water_bottle item_empty_wineskin item_pitchfork item_spare_parts item_wire item_woodpile item_rags item_iron_pipe
 
-'Black Eye
+'Black Eye, Gold Town area
 194=item_snake item_meat item_empty_wineskin item_axe item_wire item_woodpile item_rags item_gold item_tools
 
-'Iceman
+'Iceman, Lost Hope area
 195=item_meat item_knife item_industrial_pump item_broken_pump item_wire item_woodpile item_tin item_spring
 
 'Donald

@@ -302,7 +302,7 @@ namespace Burntime.Remaster.Logic
             {
                 if (location == null)
                     return false;
-                List<Character> camp = Location.CampNPC;
+                List<Character> camp = Location.CampNPC.Take(2).ToList();
                 return (camp.Count == 1 && camp[0] == this);
             }
         }
@@ -565,21 +565,9 @@ namespace Burntime.Remaster.Logic
                 }
             }
 
-            if (Food == 0)
-                health -= 25;
-            if (Water == 0)
-                health -= 25;
-
-            bool doctorAvailable = false;
-
-            if (Player != null && location == null)
-            {
-                for (int i = 0; i < Player.Group.Count; i++)
-                {
-                    doctorAvailable |= (Player.Group[i].Class == CharClass.Doctor);
-                }
-            }
-
+            // TODO move location healing to location
+            bool doctorAvailable = Player?.Group.Any(chr => chr.Class == CharClass.Doctor) == true ||
+                Location?.CampNPC.Any(chr => chr.Class == CharClass.Doctor && chr.Player == Player) == true;
             if (doctorAvailable)
             {
                 if (health >= 50)
@@ -593,6 +581,10 @@ namespace Burntime.Remaster.Logic
 
             if (health > 100)
                 health = 100;
+            if (Food == 0)
+                health -= 25;
+            if (Water == 0)
+                health -= 25;
 
             if (health <= 0)
             {

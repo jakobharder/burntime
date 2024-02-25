@@ -15,30 +15,30 @@ way_lengths = 3
 [room0]
 type = normal
 title = burn?661
-image = raum_01.pac
+image = raum_1.pac
 
 [room1]
 type = normal
 title = burn?661
-image = raum_01.pac
+image = raum_1.pac
 
 [room2]
 type = normal
 title = burn?661
-image = raum_01.pac
+image = raum_1.pac
 
 [room3]
-type = normal
+type = water
 title = burn?665
-image = raum_05.pac
+image = raum_5.pac
 
 [room4]
 type = normal
 title = burn?661
-image = raum_01.pac
+image = raum_1.pac
 
 [room5]
 type = normal
 title = burn?661
-image = raum_01.pac
+image = raum_1.pac
 

@@ -27,7 +27,7 @@ class=technician
 [item_two_way_radio]
 items=item_defective_two_way_radio item_electrical_odds_and_ends item_batteries
 dialog=508
-dialog_items=item_defective_two_way_radio
+main_items=item_defective_two_way_radio
 class=technician
 
 [item_protective_suit]
