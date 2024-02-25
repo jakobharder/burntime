@@ -87,17 +87,11 @@ namespace Burntime.Remaster.Logic
 
             if (pump)
             {
-                if (water == 1)
-                    boost = 5;
-                else
-                    boost = water / 2;
+                boost = System.Math.Max(5, water / 2);
             }
             else if (handPump)
             {
-                if (water == 1)
-                    boost = 2;
-                else
-                    boost = water / 4;
+                boost = System.Math.Max(2, water / 4);
             }
 
             return boost;
