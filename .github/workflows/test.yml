@@ -15,4 +15,6 @@ jobs:
         fetch-depth: 0
 
     - name: Test
-      run: git describe --tags
+      run: |
+        git describe --tags |
+        ./source/Burntime.MonoGame/get-product-version.bat
