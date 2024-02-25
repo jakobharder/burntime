@@ -219,22 +219,26 @@ namespace Burntime.Remaster.GUI
                 gridPositions = new int[itemWindows.Length];
                 foreach (Vector2 p in (Rect)grid)
                 {
-                    itemWindows[p.GetIndex(grid)] = new ItemWindow(app);
-                    itemWindows[p.GetIndex(grid)].Position = p * (size + spacing);
-                    itemWindows[p.GetIndex(grid)].LeftClickEvent += OnLeftClickItem;
-                    itemWindows[p.GetIndex(grid)].RightClickEvent += OnRightClickItem;
-                    Windows += itemWindows[p.GetIndex(grid)];
+                    var index = p.GetIndex(grid);
+                    itemWindows[index] = new ItemWindow(app);
+                    itemWindows[index].LeftClickEvent += OnLeftClickItem;
+                    itemWindows[index].RightClickEvent += OnRightClickItem;
+                    itemWindows[index].Position = p * (size + spacing);
+                    Windows += itemWindows[index];
+                    itemWindows[index].Layer = this.Layer + 1;
                 }
 
                 if (doubleLayered)
                 {
                     foreach (Vector2 p in (Rect)(grid - 1))
                     {
-                        itemWindows[p.GetIndex(grid - 1) + grid.Count] = new ItemWindow(app);
-                        itemWindows[p.GetIndex(grid - 1) + grid.Count].Position = p * (size + spacing) + size / 2;
-                        itemWindows[p.GetIndex(grid - 1) + grid.Count].LeftClickEvent += OnLeftClickItem;
-                        itemWindows[p.GetIndex(grid - 1) + grid.Count].RightClickEvent += OnRightClickItem;
-                        Windows += itemWindows[p.GetIndex(grid - 1) + grid.Count];
+                        var index = p.GetIndex(grid - 1) + grid.Count;
+                        itemWindows[index] = new ItemWindow(app);
+                        itemWindows[index].LeftClickEvent += OnLeftClickItem;
+                        itemWindows[index].RightClickEvent += OnRightClickItem;
+                        itemWindows[index].Position = p * (size + spacing) + size / 2;
+                        Windows += itemWindows[index];
+                        itemWindows[index].Layer = this.Layer + 2;
                     }
                 }
             }

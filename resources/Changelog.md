@@ -16,6 +16,7 @@
 - Fixed radio construction
 - Fixed Nob Hill room background
 - Fixed "X Tag", now says "Tag X"
+- Fixed item flickering when rooms are very full
 
 ## 0.9 - Balancing and some graphics remaster (2023-11-05)
 
