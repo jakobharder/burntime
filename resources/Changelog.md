@@ -1,12 +1,13 @@
 ﻿# Burntime Changelog
 
-## 0.10 - Fixing (2024-02-25)
+## 0.10 - Quality changes (2024-02-25)
 
 ### Changes
 
 - Added ropes to a few traders to sell
 - Added info scene wide background
 - Danger warnings in UI are less prominent
+- Reduced hit sound volume
 
 ### Fixes
 
