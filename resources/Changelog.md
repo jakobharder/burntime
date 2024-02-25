@@ -6,6 +6,7 @@
 
 - Added ropes to a few traders to sell
 - Added info scene wide background
+- Danger warnings in UI are less prominent
 
 ### Fixes
 
@@ -14,6 +15,7 @@
 - Fixed New Village name, rooms etc.
 - Fixed radio construction
 - Fixed Nob Hill room background
+- Fixed "X Tag", now says "Tag X"
 
 ## 0.9 - Balancing and some graphics remaster (2023-11-05)
 
