@@ -414,8 +414,11 @@ namespace Burntime.Remaster.Logic
             ani.Endless = false;
 
             // schedule for respawn
-            ClassicGame classic = (ClassicGame)container.Root;
-            classic.World.Respawn.Object.Respawn(this);
+            if (this is not PlayerCharacter)
+            {
+                ClassicGame classic = (ClassicGame)container.Root;
+                classic.World.Respawn.Object.Respawn(this);
+            }
         }
 
         public virtual void Revive()
