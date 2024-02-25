@@ -6,7 +6,7 @@
 :: v1.2-1-asdf -> 1.2.0.1
 :: v1.2.3-rc1+abc -> 1.2.3-rc1
 
-FOR /F "tokens=1 delims==v+" %%n IN ('git describe --tags --abbrev=0') DO (
+FOR /F "tokens=1 delims==v+" %%n IN ('git describe --tags') DO (
   FOR /F "tokens=1-3 delims==-" %%i IN ("%%n") DO (
     IF "%%j%%k" == "" (
       echo %%i
