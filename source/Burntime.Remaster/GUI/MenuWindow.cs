@@ -17,26 +17,29 @@ namespace Burntime.Remaster.GUI
 
     public class MenuWindow : Window
     {
-        List<MenuItem> list;
-        GuiImage top;
-        GuiImage middle;
-        GuiImage bottom;
-        GuiFont font;
-        GuiFont hoverFont;
+        readonly List<MenuItem> _menuEntries;
+        readonly GuiImage _topElement;
+        readonly GuiImage _middleElement;
+        readonly GuiImage _bottomElement;
+        readonly GuiFont _defaultFont;
+        readonly GuiFont _hoverFont;
+
+        const int TOP_HEIGHT = 4;
+        const int MIDDLE_HEIGHT = 11;
 
         public MenuWindow(Module App)
             : base(App)
         {
-            top = "munt.raw?24";
-            middle = "munt.raw?25";
-            bottom = "munt.raw?26";
+            _topElement = "munt.raw?24";
+            _middleElement = "munt.raw?25";
+            _bottomElement = "munt.raw?26";
 
-            list = new List<MenuItem>();
+            _menuEntries = new List<MenuItem>();
 
-            font = new GuiFont(BurntimeClassic.FontName, new PixelColor(108, 116, 168));
-            font.Borders = TextBorders.Screen;
-            hoverFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
-            hoverFont.Borders = TextBorders.Screen;
+            _defaultFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(108, 116, 168));
+            _defaultFont.Borders = TextBorders.Screen;
+            _hoverFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
+            _hoverFont.Borders = TextBorders.Screen;
 
             hover = -1;
             IsModal = true;
@@ -49,7 +52,7 @@ namespace Burntime.Remaster.GUI
             MenuItem item;
             item.Text = text;
             item.Command = command;
-            list.Add(item);
+            _menuEntries.Add(item);
         }
 
         public void AddLine(int position, GuiString text, CommandEvent command)
@@ -57,23 +60,23 @@ namespace Burntime.Remaster.GUI
             MenuItem item;
             item.Text = text;
             item.Command = command;
-            list.Insert(position, item);
+            _menuEntries.Insert(position, item);
         }
 
         public void RemoveLine(int Position)
         {
-            list.RemoveAt(Position);
+            _menuEntries.RemoveAt(Position);
         }
 
         public void Clear()
         {
-            list.Clear();
+            _menuEntries.Clear();
         }
 
         public void Show(Vector2 Position, Nullable<Rect> Boundings)
         {
             this.Position = Position;
-            Size = new Vector2(68, 10 + 11 * list.Count);
+            Size = new Vector2(68, 10 + 11 * _menuEntries.Count);
             this.Position -= this.Boundings.Size / 2;
 
             if (Boundings.HasValue)
@@ -86,24 +89,24 @@ namespace Burntime.Remaster.GUI
 
         public override void OnRender(RenderTarget target)
         {
-            target.DrawSprite(Vector2.Zero, top);
+            target.DrawSprite(Vector2.Zero, _topElement);
 
-            for (int i = 0; i < list.Count; i++)
+            for (int i = 0; i < _menuEntries.Count; i++)
             {
                 int itemx = 0;
                 int itemy = 4 + 11 * i;
-                int textx = 34 - font.GetWidth(list[i].Text) / 2;
+                int textx = 34 - _defaultFont.GetWidth(_menuEntries[i].Text) / 2;
                 int texty = itemy + 2;
 
-                target.DrawSprite(new Vector2(itemx, itemy), middle);
+                target.DrawSprite(new Vector2(itemx, itemy), _middleElement);
                 target.Layer++;
 
-                GuiFont f = (hover == i) ? hoverFont : font;
-                f.DrawText(target, new Vector2(textx, texty), list[i].Text, TextAlignment.Left, VerticalTextAlignment.Top);
+                GuiFont f = (hover == i) ? _hoverFont : _defaultFont;
+                f.DrawText(target, new Vector2(textx, texty), _menuEntries[i].Text, TextAlignment.Left, VerticalTextAlignment.Top);
                 target.Layer--;
             }
 
-            target.DrawSprite(new Vector2(0, top.Height + middle.Height * list.Count), bottom);
+            target.DrawSprite(new Vector2(0, TOP_HEIGHT + MIDDLE_HEIGHT * _menuEntries.Count), _bottomElement);
         }
 
         public override void OnMouseLeave()
@@ -115,17 +118,17 @@ namespace Burntime.Remaster.GUI
         {
             hover = -1;
 
-            int itemtop = Position.y - top.Height;
+            int itemtop = Position.y - TOP_HEIGHT;
             int itemleft = Position.x;
 
             if (itemtop >= 0)
             {
-                int item = (itemtop - itemtop % middle.Height) / middle.Height;
-                if (item < list.Count && item >= 0)
+                int item = (itemtop - itemtop % MIDDLE_HEIGHT) / MIDDLE_HEIGHT;
+                if (item < _menuEntries.Count && item >= 0)
                 {
-                    int w = font.GetWidth(list[item].Text);
+                    int w = _defaultFont.GetWidth(_menuEntries[item].Text);
 
-                    if ((itemleft >= middle.Width / 2 - w / 2) && (itemleft < middle.Width / 2 + w / 2))
+                    if ((itemleft >= _middleElement.Width / 2 - w / 2) && (itemleft < _middleElement.Width / 2 + w / 2))
                     {
                         hover = item;
                     }
@@ -139,13 +142,13 @@ namespace Burntime.Remaster.GUI
         {
             if (Boundings.PointInside(this.Position + Position))
             {
-                if (hover >= 0 && hover < list.Count && Button == MouseButton.Left)
+                if (hover >= 0 && hover < _menuEntries.Count && Button == MouseButton.Left)
                 {
                     Hide();
 
-                    if (list[hover].Command != null)
+                    if (_menuEntries[hover].Command != null)
                     {
-                        list[hover].Command.Execute();
+                        _menuEntries[hover].Command.Execute();
                     }
                 }
                 return true;
