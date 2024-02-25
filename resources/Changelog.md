@@ -1,6 +1,6 @@
 ﻿# Burntime Changelog
 
-## 0.10 - Quality changes (2024-02-25)
+## 1.0 - Feature complete (2024-02-25)
 
 ### Changes
 
