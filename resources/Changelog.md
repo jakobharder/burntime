@@ -14,6 +14,7 @@
 
 - Fixed AI player's shadow remaining after death
 - Fixed doctors not healing stationed NPCs
+- Fixed production miscalculation in locations where AI players died
 - Fixed New Village name, rooms etc.
 - Fixed radio construction
 - Fixed Nob Hill room background

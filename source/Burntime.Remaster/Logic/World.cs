@@ -109,10 +109,15 @@ namespace Burntime.Remaster.Logic
 
                         Players[i].IsDead = true;
                         Players[i].DiedThisRound = true;
+                        Players[i].Character.Location = null;
                     }
                 }
                 else
+                {
                     Players[i].DiedThisRound = false;
+                    // fix for saves that don't do this yet
+                    Players[i].Character.Location = null;
+                }
 
                 if (!Players[i].IsDead)
                 {
