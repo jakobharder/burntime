@@ -1,0 +1,18 @@
+name: test
+
+on:
+  push:
+    branch:
+      - "devel/fix-git-version"
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Test
+      run: git describe --tags
