@@ -402,7 +402,7 @@ Lager}
 |B}
 WA. |C Tage|#WA. |C Tag}
 NG. |D Tage|#NG. |D Tag}
-|A Tag}
+Tag |A}
 |A ist von uns gegangen!}
 Vorkommen}
 Wasser}

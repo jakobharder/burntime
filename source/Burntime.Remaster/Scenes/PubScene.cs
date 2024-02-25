@@ -90,7 +90,7 @@ namespace Burntime.Remaster.Scenes
             grid.LeftClickItemEvent += OnLeftClickItemGrid;
             Windows += grid;
 
-            font = new GuiFont(BurntimeClassic.FontName, new PixelColor(212, 212, 212));
+            font = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray);
         }
 
         public override void OnResizeScreen()

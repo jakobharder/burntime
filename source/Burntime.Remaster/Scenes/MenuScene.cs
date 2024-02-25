@@ -4,6 +4,7 @@ using Burntime.Framework;
 using Burntime.Framework.GUI;
 using Burntime.Remaster.Logic.Generation;
 using System;
+using System.Diagnostics;
 
 namespace Burntime.Remaster;
 
@@ -39,6 +40,9 @@ public class MenuScene : Scene
     readonly ISprite _borderBl;
     readonly ISprite _borderBr;
 
+    readonly GuiFont _infoFont;
+    readonly GuiFont _copyrightFont;
+
     public MenuScene(Module app)
         : base(app)
     {
@@ -49,6 +53,8 @@ public class MenuScene : Scene
 
         GuiFont buttonFont = new GuiFont("gfx/ui/start_font.txt", PixelColor.Transparent);
         _playerFont = new GuiFont("gfx/ui/start_font_player.txt", PixelColor.Transparent);
+        _copyrightFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.Gray) { Borders = TextBorders.None };
+        _infoFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.Gray/*new PixelColor(135, 140, 145)*/) { Borders = TextBorders.None };
 
         _playerOne = "@newburn?43";
         _playerTwo = "@newburn?44";
@@ -136,7 +142,7 @@ public class MenuScene : Scene
             Image = "pngsheet@gfx/ui/start_buttons.png?0?112x24",
             DownImage = "pngsheet@gfx/ui/start_buttons.png?1?112x24",
             Size = new Vector2(104, 24),
-            Font = new GuiFont(BurntimeClassic.FontName, new PixelColor(184, 184, 184)),
+            Font = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.Gray),
             TextHorizontalAlign = TextAlignment.Center,
             TextVerticalAlign = VerticalTextAlignment.Center
         };
@@ -150,7 +156,7 @@ public class MenuScene : Scene
             Image = "pngsheet@gfx/ui/start_buttons.png?0?112x24",
             DownImage = "pngsheet@gfx/ui/start_buttons.png?1?112x24",
             Size = new Vector2(104, 24),
-            Font = new GuiFont(BurntimeClassic.FontName, new PixelColor(184, 184, 184)),
+            Font = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.Gray),
             TextHorizontalAlign = TextAlignment.Center,
             TextVerticalAlign = VerticalTextAlignment.Center
         };
@@ -180,7 +186,7 @@ public class MenuScene : Scene
         // difficulty
         Difficulty = new(app);
         Difficulty.Position = new(100, 149);
-        Difficulty.ToolTipFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(212, 212, 212)) { Borders = TextBorders.Screen };
+        Difficulty.ToolTipFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray) { Borders = TextBorders.Screen };
         Difficulty.AddState(null, "gfx/ui/start_button_level1.png", "gfx/ui/start_button_level1_down.png", "gfx/ui/start_button_level1_down.png", "@newburn?14");
         Difficulty.AddState(null, "gfx/ui/start_button_level2.png", "gfx/ui/start_button_level2_down.png", "gfx/ui/start_button_level2_down.png", "@newburn?15");
         Difficulty.AddState(null, "gfx/ui/start_button_level3.png", "gfx/ui/start_button_level3_down.png", "gfx/ui/start_button_level3_down.png", "@newburn?16");
@@ -189,7 +195,7 @@ public class MenuScene : Scene
         // mode
         GameMode = new(app);
         GameMode.Position = new(145, 149);
-        GameMode.ToolTipFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(212, 212, 212)) { Borders = TextBorders.Screen };
+        GameMode.ToolTipFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray) { Borders = TextBorders.Screen };
         GameMode.AddState(null, "gfx/ui/start_button_remake.png", "gfx/ui/start_button_remake_down.png", "gfx/ui/start_button_remake_down.png", "@newburn?1");
         GameMode.AddState(null, "gfx/ui/start_button_original.png", "gfx/ui/start_button_original_down.png", "gfx/ui/start_button_original_down.png", "@newburn?0");
         Windows += GameMode;
@@ -197,7 +203,7 @@ public class MenuScene : Scene
         // ai
         AiPlayers = new(app);
         AiPlayers.Position = new(190, 149);
-        AiPlayers.ToolTipFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(212, 212, 212)) { Borders = TextBorders.Screen };
+        AiPlayers.ToolTipFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray) { Borders = TextBorders.Screen };
         AiPlayers.AddState(null, "gfx/ui/start_button_ai.png", "gfx/ui/start_button_ai_down.png", "gfx/ui/start_button_ai_down.png", "@newburn?12");
         AiPlayers.AddState(null, "gfx/ui/start_button_noai.png", "gfx/ui/start_button_noai_down.png", "gfx/ui/start_button_noai_down.png", "@newburn?13");
         Windows += AiPlayers;
@@ -222,11 +228,17 @@ public class MenuScene : Scene
         if (Background?.IsLoaded != true)
             return;
 
+        target.Layer += 10;
+        _infoFont.DrawText(target, target.ScreenSize - target.ScreenOffset - 6, BurntimeClassic.Version, TextAlignment.Right, VerticalTextAlignment.Bottom);
+        _copyrightFont.DrawText(target, new Vector2(6, target.ScreenSize.y - 6) - target.ScreenOffset,
+            app.IsNewGfx ? "(c) 1993 Max Design. Remastered by Jakob Harder" : "Remastered by Jakob Harder", TextAlignment.Left, VerticalTextAlignment.Bottom);
+        target.Layer -= 10;
+
         if (!app.IsNewGfx)
         {
-            target.Layer += 2;
-            target.DrawSprite(new Vector2(75, 185), _copyright);
-            target.Layer -= 2;
+            //target.Layer += 2;
+            //target.DrawSprite(new Vector2(75, 185), _copyright);
+            //target.Layer -= 2;
             return;
         }
 
@@ -236,9 +248,9 @@ public class MenuScene : Scene
         offset.Min(0);
         offset -= Position;
 
-        target.Layer += 2;
-        target.DrawSprite(new Vector2(75, gameSize.y - 15 + offset.y), _copyright);
-        target.Layer -= 2;
+        //target.Layer += 2;
+        //target.DrawSprite(new Vector2(75, gameSize.y - 15 + offset.y), _copyright);
+        //target.Layer -= 2;
 
         target.Layer++;
 

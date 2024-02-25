@@ -1,11 +1,14 @@
 ﻿# Burntime Changelog
 
-## 0.10 - Fixing (2024-02-25)
+## 0.10 - Quality changes (2024-02-25)
 
 ### Changes
 
 - Added ropes to a few traders to sell
-- Added info scene wide background
+- Danger warnings in UI are less prominent
+- Remastered info scene background, context menu
+- Reduced hit sound volume
+- Added version to radio and start screens
 
 ### Fixes
 
@@ -14,6 +17,9 @@
 - Fixed New Village name, rooms etc.
 - Fixed radio construction
 - Fixed Nob Hill room background
+- Fixed "X Tag", now says "Tag X"
+- Fixed item flickering when rooms are very full
+- Fixed context menu language not changing
 
 ## 0.9 - Balancing and some graphics remaster (2023-11-05)
 

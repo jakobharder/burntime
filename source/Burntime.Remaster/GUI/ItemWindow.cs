@@ -67,7 +67,6 @@ namespace Burntime.Remaster.GUI
         public override void OnMouseEnter()
         {
             base.OnMouseEnter();
-            Layer++;
 
             // set hovered item globally
             hover.Add(this);
@@ -76,7 +75,6 @@ namespace Burntime.Remaster.GUI
         public override void OnMouseLeave()
         {
             base.OnMouseLeave();
-            Layer--;
 
             hover.Remove(this);
         }

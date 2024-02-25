@@ -26,11 +26,11 @@ namespace Burntime.Remaster
 
     public class MainUiOriginalWindow : IMapGuiWindow
     {
-        GuiFont font;
-        GuiFont playerColor;
-        FaceWindow _face;
-        String name;
+        readonly GuiFont _standardFont;
         readonly GuiFont _warningFont;
+        GuiFont _playerFont;
+        readonly FaceWindow _playerFace;
+        string _playerName;
 
         readonly Image _uiElement1;
         readonly Image _uiElement2;
@@ -42,9 +42,9 @@ namespace Burntime.Remaster
         {
             Size = app.Engine.Resolution.Game;
 
-            font = new GuiFont(BurntimeClassic.FontName, new PixelColor(92, 92, 148));
-            playerColor = new GuiFont(BurntimeClassic.FontName, PixelColor.White);
-            _warningFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(252, 180, 56));
+            _standardFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(92, 92, 148));
+            _playerFont = new GuiFont(BurntimeClassic.FontName, PixelColor.White);
+            _warningFont = _standardFont;//new GuiFont(BurntimeClassic.FontName, new PixelColor(252, 180, 56));
 
             Windows += _uiElement1 = new Image(App)
             {
@@ -58,13 +58,13 @@ namespace Burntime.Remaster
                 Position = new Vector2(Size.x / 2 - 42, 0)
             };
 
-            Windows += _face = new FaceWindow(App)
+            Windows += _playerFace = new FaceWindow(App)
             {
                 Position = new Vector2(Size.x / 2 - 31, Size.y - 56),
                 FaceID = 0,
                 DisplayOnly = true
             };
-            _face.Layer++;
+            _playerFace.Layer++;
         }
 
         public override void OnResizeScreen()
@@ -74,7 +74,7 @@ namespace Burntime.Remaster
             Size = app.Engine.Resolution.Game;
             _uiElement1.Position = new Vector2(Size.x / 2 - 60, Size.y - 40);
             _uiElement2.Position = new Vector2(Size.x / 2 - 42, 0);
-            _face.Position = new Vector2(Size.x / 2 - 31, Size.y - 56);
+            _playerFace.Position = new Vector2(Size.x / 2 - 31, Size.y - 56);
         }
 
         public override void SetMapRenderArea(MapView mapView, Vector2 size)
@@ -106,7 +106,7 @@ namespace Burntime.Remaster
             Target.Layer--;
 
             var name = new Vector2(Size.x / 2 - 97, Size.y - 30);
-            playerColor.DrawText(Target, name, this.name, TextAlignment.Center, VerticalTextAlignment.Top);
+            _playerFont.DrawText(Target, name, this._playerName, TextAlignment.Center, VerticalTextAlignment.Top);
 
             var txt = new TextHelper(app, "newburn");
             Vector2 nutrition = new(Size.x / 2 - 97, Size.y - 17);
@@ -143,14 +143,14 @@ namespace Burntime.Remaster
             }
             else if (currentLocation.Danger is not null)
             {
-                font.DrawText(Target, nutrition, currentLocation.Danger.InfoString,
+                _standardFont.DrawText(Target, nutrition, currentLocation.Danger.InfoString,
                     TextAlignment.Center, VerticalTextAlignment.Top);
             }
 
             var day = new Vector2(Size.x / 2 + 100, Size.y - 16);
             txt = new TextHelper(app, "burn");
             txt.AddArgument("|A", game.World.Day);
-            font.DrawText(Target, day, txt[404], TextAlignment.Center, VerticalTextAlignment.Top);
+            _standardFont.DrawText(Target, day, txt[404], TextAlignment.Center, VerticalTextAlignment.Top);
         }
 
         public override void UpdatePlayer()
@@ -158,16 +158,16 @@ namespace Burntime.Remaster
             ClassicGame game = app.GameState as ClassicGame;
             if (game.World.ActivePlayer == -1)
             {
-                _face.FaceID = -1;
-                name = "";
+                _playerFace.FaceID = -1;
+                _playerName = "";
                 return;
             }
 
             Player player = game.World.Players[game.World.ActivePlayer];
 
-            _face.FaceID = player.FaceID;
-            name = player.Name;
-            playerColor = new GuiFont(BurntimeClassic.FontName, player.Color);
+            _playerFace.FaceID = player.FaceID;
+            _playerName = player.Name;
+            _playerFont = new GuiFont(BurntimeClassic.FontName, player.Color);
         }
     }
 }

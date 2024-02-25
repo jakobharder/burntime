@@ -77,10 +77,9 @@ namespace Burntime.MonoGame
         {
             Log.Initialize("log.txt");
             Log.Info(System.DateTime.Now.ToLocalTime().ToString());
-            string version = FileVersionInfo.GetVersionInfo(System.IO.Path.Combine(System.AppContext.BaseDirectory, "burntime.exe")).ProductVersion ?? "?";
-            Log.Info("Burntime version " + version);
+            Log.Info("Burntime version " + BurntimeClassic.Version);
 
-            Window.Title = "Burntime " + version;
+            Window.Title = "Burntime " + BurntimeClassic.Version;
 
             FileSystem.BasePath = "";
             PackageManager paketManager = new("game/");
