@@ -11,7 +11,7 @@ namespace Burntime.Remaster.GUI
 {
     public struct MenuItem
     {
-        public String Text;
+        public GuiString Text;
         public CommandEvent Command;
     }
 

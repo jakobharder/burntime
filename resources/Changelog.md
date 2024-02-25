@@ -18,6 +18,7 @@
 - Fixed Nob Hill room background
 - Fixed "X Tag", now says "Tag X"
 - Fixed item flickering when rooms are very full
+- Fixed context menu language not changing
 
 ## 0.9 - Balancing and some graphics remaster (2023-11-05)
 
