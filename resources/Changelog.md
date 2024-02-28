@@ -2,6 +2,12 @@
 
 ## 1.0 - Feature complete (2024-02-25)
 
+### 1.0.1
+
+- Fixed New Village water source for older saves
+- Corrected a few German spelling errors
+- You can now safely copy over Burntime versions again
+
 ### Changes
 
 - Added ropes to a few traders to sell
