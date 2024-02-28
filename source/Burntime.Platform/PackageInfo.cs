@@ -1,8 +1,8 @@
 ﻿using Burntime.Platform.IO;
 
-namespace Burntime.Framework;
+namespace Burntime.Platform;
 
-public enum PackageType
+public enum GamePackageType
 {
     Game,
     Patch,
@@ -16,7 +16,7 @@ public class PackageInfo
     string[] modules;
     string[] languages;
     string mainModule;
-    PackageType type;
+    GamePackageType type;
     Version version = new Version();
     Version baseVersion = new Version();
     string game;
@@ -63,7 +63,7 @@ public class PackageInfo
         get { return hidden; }
     }
 
-    public PackageType Type
+    public GamePackageType Type
     {
         get { return type; }
     }
@@ -73,52 +73,57 @@ public class PackageInfo
         get { return game; }
     }
 
-    static public PackageInfo TryCreate(string inFileName, PackageSystem inVFS)
+    static public PackageInfo? TryCreate(string packageName, IO.File? file)
     {
-        string package = System.IO.Path.GetFileName(inFileName);
+        if (file is null)
+            return null;
+
+        ConfigFile config = new();
+        config.Open(file);
+
+        PackageInfo info = new()
+        {
+            package = packageName,
+            dependencies = config[""].GetStrings("dependencies"),
+            mainModule = config[""].GetString("start"),
+            modules = config[""].GetStrings("modules"),
+            languages = config[""].GetStrings("language"),
+            version = config[""].GetVersion("version"),
+            baseVersion = config[""].GetVersion("base")
+        };
+        switch (config[""].Get("type"))
+        {
+            case "patch":
+                info.type = GamePackageType.Patch;
+                break;
+            case "game":
+                info.type = GamePackageType.Game;
+                break;
+            case "language":
+                info.type = GamePackageType.Language;
+                break;
+            default:
+                info.type = GamePackageType.Data;
+                break;
+        }
+        info.game = config[""].GetString("game");
+        info.hidden = config[""].GetBool("hidden");
+        return info;
+    }
+
+    static public PackageInfo? TryCreate(string inFileName, PackageSystem inVFS)
+    {
+        string packageName = System.IO.Path.GetFileName(inFileName);
 
         Burntime.Platform.IO.File file;
         // open file from package if available
-        if (inVFS.ExistsMount(package))
-            file = inVFS.GetFile(package + ":info.txt", FileOpenMode.Read);
+        if (inVFS.ExistsMount(packageName))
+            file = inVFS.GetFile(packageName + ":info.txt", FileOpenMode.Read);
         // open file without loading the package
         else
             file = inVFS.GetFile(inFileName + ":info.txt", FileOpenMode.NoPackage);
 
-        if (file != null)
-        {
-            ConfigFile config = new ConfigFile();
-            config.Open(file);
-
-            PackageInfo info = new PackageInfo();
-            info.package = package;
-            info.dependencies = config[""].GetStrings("dependencies");
-            info.mainModule = config[""].GetString("start");
-            info.modules = config[""].GetStrings("modules");
-            info.languages = config[""].GetStrings("language");
-            info.version = config[""].GetVersion("version");
-            info.baseVersion = config[""].GetVersion("base");
-            switch (config[""].Get("type"))
-            {
-                case "patch":
-                    info.type = PackageType.Patch;
-                    break;
-                case "game":
-                    info.type = PackageType.Game;
-                    break;
-                case "language":
-                    info.type = PackageType.Language;
-                    break;
-                default:
-                    info.type = PackageType.Data;
-                    break;
-            }
-            info.game = config[""].GetString("game");
-            info.hidden = config[""].GetBool("hidden");
-            return info;
-        }
-
-        return null;
+        return TryCreate(packageName, file);
     }
 
     private PackageInfo()
