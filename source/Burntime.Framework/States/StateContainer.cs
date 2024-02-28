@@ -204,6 +204,9 @@ namespace Burntime.Framework.States
                 ResolveStateLinks(ref obj, localToGlobal);
                 objects[key] = obj;
             }
+
+            foreach (StateObject obj in objects.Values)
+                obj.AfterResolving();
         }
 
         public SyncObject[] CollectGarbage(StateObject root, List<IStateReference> externalReferences)
