@@ -34,9 +34,9 @@ namespace Burntime.Framework.States
         {
         }
 
-        internal protected virtual void AfterDeserialization()
-        { 
-        }
+        internal protected virtual void AfterDeserialization() { }
+
+        internal protected virtual void AfterResolving() { }
 
         public StateObject Clone()
         {

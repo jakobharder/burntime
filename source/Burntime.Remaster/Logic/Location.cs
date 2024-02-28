@@ -384,5 +384,18 @@ namespace Burntime.Remaster.Logic
                     StoreItemRandom(item);
             }
         }
+
+        protected override void AfterResolving()
+        {
+            base.AfterResolving();
+
+            // fix saves before 1.0
+            if (Source is not null && Source.Water > 0 &&
+                Title == "New Village" &&
+                Rooms is not null && Rooms.Count > 3 && !Rooms.Any(x => x.IsWaterSource))
+            {
+                Rooms[3].IsWaterSource = true;
+            }
+        }
     }
 }

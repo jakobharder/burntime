@@ -135,8 +135,8 @@ eine kaputte Pumpe}
 Maschinenteile}
 ein kaputter Minendedektor}
 ein kaputtes Funkgerät}
-Elektronicschrott}
-Baterien}
+Elektronikschrott}
+Batterien}
 ein LCD-Display}
 Draht}
 ein Holzstück}

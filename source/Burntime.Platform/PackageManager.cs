@@ -1,4 +1,5 @@
 ﻿using Burntime.Core;
+using Burntime.Platform;
 using Burntime.Platform.IO;
 
 namespace Burntime.Framework;
@@ -101,7 +102,7 @@ public class PackageManager
         if (info == null)
             return false;
 
-        if (info.Type == PackageType.Game)
+        if (info.Type == GamePackageType.Game)
         {
             Add(info.Dependencies, vfs, assembly, loadExtras);
 
@@ -204,7 +205,7 @@ public class PackageManager
             {
                 if (info.GameName == package.Package)
                 {
-                    if (info.Type == PackageType.Patch)
+                    if (info.Type == GamePackageType.Patch)
                     {
                         if (info.BaseVersion == currentVersion && info.Version > nextVersion)
                         {
@@ -246,7 +247,7 @@ public class PackageManager
         {
             if (info.GameName == game.GameName)
             {
-                if (info.Type == PackageType.Language)
+                if (info.Type == GamePackageType.Language)
                 {
                     if (!vfs.ExistsMount(info.Package))
                     {
