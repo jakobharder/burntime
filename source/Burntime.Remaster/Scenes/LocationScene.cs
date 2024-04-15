@@ -351,7 +351,7 @@ namespace Burntime.Remaster
                 {
                     menu.AddLine("@burn?364", (CommandHandler)OnMenuMakeCamp);
                 }
-                else
+                else if (view.Player.Group.Count < Logic.Group.MAX_PEOPLE)
                 {
                     menu.AddLine("@burn?365", (CommandHandler)OnMenuLeaveCamp);
                 }

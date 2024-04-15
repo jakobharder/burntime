@@ -2,6 +2,13 @@
 
 ## 1.0 - Feature complete (2024-02-25)
 
+### 1.0.2
+
+- Fixed crash with 6 people in your group - or rather prevent that
+- Fixed crash when starting without AI players
+- Fixed crash log
+- Corrected "Inventar" in German translation
+
 ### 1.0.1
 
 - Fixed New Village water source for older saves

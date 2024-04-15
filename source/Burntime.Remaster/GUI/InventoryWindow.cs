@@ -66,8 +66,6 @@ namespace Burntime.Remaster.GUI
         public InventoryWindow(Module App, InventorySide Side)
             : base(App)
         {
-            const int MAX_PEOPLE = 5;
-
             side = (Side == InventorySide.Right);
 
             back = side ? "inv.raw?2" : "gfx/inventory_left.png";
@@ -88,7 +86,7 @@ namespace Burntime.Remaster.GUI
 
             pageName = "";
 
-            for (int i = 0; i < MAX_PEOPLE; i++)
+            for (int i = 0; i < Logic.Group.MAX_PEOPLE; i++)
             {
                 pageButtons[i] = new Button(App);
                 pageButtons[i].Image = "munt.raw?" + (5 + i);
@@ -99,7 +97,7 @@ namespace Burntime.Remaster.GUI
                 pageButtons[i].Hide();
                 pageButtons[i].Command += new CommandHandler(OnPage, i);
                 pageIndices[i] = i;
-                pageButtons[i].Layer = Layer + MAX_PEOPLE + 1;
+                pageButtons[i].Layer = Layer + Logic.Group.MAX_PEOPLE + 1;
                 Windows += pageButtons[i];
             }
 
@@ -109,7 +107,7 @@ namespace Burntime.Remaster.GUI
                 Position = new Vector2(side ? 9 : 19, side ? 72 : 83) + basePos,
                 Spacing = new Vector2(4, side ? 16 : 5),
                 Grid = new Vector2(3, 2),
-                Layer = Layer + MAX_PEOPLE + 1
+                Layer = Layer + Logic.Group.MAX_PEOPLE + 1
             };
             grid.LeftClickItemEvent += OnLeftClickItem;
             grid.RightClickItemEvent += OnRightClickItem;
@@ -163,6 +161,10 @@ namespace Burntime.Remaster.GUI
 
                     for (int i = 0; i < group.Count; i++)
                     {
+                        // should not happen but well
+                        if (count >= pageButtons.Length)
+                            continue;
+
                         // show only if in range
                         if (group.IsInRange(leader, group[i]))
                         {

@@ -1,21 +1,10 @@
 ﻿
 using Burntime;
+using System;
 
-#if (DEBUG)
+#if !(DEBUG)
+    AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CustomExceptionHandler.OnThreadException);
+#endif
 
 using var game = new Burntime.MonoGame.BurntimeGame();
 game.Run();
-
-#else
-
-try
-{
-    using var game = new Burntime.MonoGame.BurntimeGame();
-    game.Run();
-}
-catch (System.Exception exception)
-{
-    ErrorMsg.LogException(exception);
-}
-
-#endif

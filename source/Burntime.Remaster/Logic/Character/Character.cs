@@ -401,9 +401,12 @@ namespace Burntime.Remaster.Logic
         public virtual void Die()
         {
             // drop items
-            Location.Items.DropPosition = Position;
-            Items.MoveTo(Location.Items);
-            
+            if (Location is not null)
+            {
+                Location.Items.DropPosition = Position;
+                Items.MoveTo(Location.Items);
+            }
+
             // remove from player empire
             if (Player != null && Player.Character != this)
                 Dismiss();
