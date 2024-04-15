@@ -1,30 +1,22 @@
 ﻿using System;
-//using System.Windows.Forms;
 using System.IO;
-using System.Threading;
 
 namespace Burntime
 {
-    //public class CustomExceptionHandler
-    //{
-    //    public void OnThreadException(object sender, UnhandledExceptionEventArgs args)
-    //    {
-    //        Exception e = args.ExceptionObject as Exception;
-    //        if (e == null)
-    //        {
-    //            MessageBox.Show("Error: Unknown", "Error", MessageBoxButtons.OK, MessageBoxIcon.Stop);
-    //        }
-    //        else
-    //        {
-    //            ErrorMsg.LogException(e);
+    public class CustomExceptionHandler
+    {
+        public static void OnThreadException(object sender, UnhandledExceptionEventArgs args)
+        {
+            var e = args.ExceptionObject as Exception;
+            if (e is not null)
+                ErrorMsg.LogException(e);
 
-    //            MessageBox.Show("Error: " + e.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Stop);
-    //        }
+            //MessageBox.Show("Error: " + e?.Message ?? "Unknown", "Error", MessageBoxButtons.OK, MessageBoxIcon.Stop);
 
-    //        // close
-    //        Environment.Exit(1);
-    //    }
-    //};
+            // close
+            Environment.Exit(1);
+        }
+    };
 
     static class ErrorMsg
     {
