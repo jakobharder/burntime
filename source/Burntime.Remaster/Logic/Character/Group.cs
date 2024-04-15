@@ -10,6 +10,8 @@ namespace Burntime.Remaster.Logic
     [Serializable]
     public class Group : StateObject, ICharacterCollection
     {
+        public const int MAX_PEOPLE = 5;
+
         StateLinkList<Character> characterList;
         float rangeFilterValue;
 
