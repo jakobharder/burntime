@@ -97,46 +97,57 @@ namespace Burntime.Remaster.Logic
             get { return ResourceManager.GetString("burn?" + this.Id); }
         }
 
-        public Item FindFood(out IItemCollection owner)
+        /// <summary>
+        /// Find food. Prefer currently produced food, then highest value.
+        /// </summary>
+        public Item? FindFood(out IItemCollection? owner)
         {
-            Item item = null;
+            Item? foundItem = null;
             owner = null;
 
-            for (int i = 0; i < Rooms.Count; i++)
+            foreach (var room in Rooms)
             {
-                for (int j = 0; j < Rooms[i].Items.Count; j++)
+                foreach (var item in room.Items)
                 {
-                    if (Rooms[i].Items[j].FoodValue != 0)
+                    if (item.FoodValue == 0)
+                        continue;
+                    
+                    if (foundItem == null
+                        || (Production is not null && foundItem.Type == Production.Produce)
+                        || foundItem.FoodValue < item.FoodValue)
                     {
-                        if (item == null || item.FoodValue < Rooms[i].Items[j].FoodValue || item.Type == Production.Produce)
-                        {
-                            item = Rooms[i].Items[j];
-                            owner = Rooms[i].Items;
-                        }
+                        foundItem = item;
+                        owner = room.Items;
                     }
                 }
             }
 
-            return item;
+            return foundItem;
         }
 
-        public Item FindWater()
+        /// <summary>
+        /// Find water item with highest value.
+        /// </summary>
+        public Item? FindWater()
         {
-            Item item = null;
+            Item? foundItem = null;
 
-            for (int i = 0; i < Rooms.Count; i++)
+            foreach (var room in Rooms)
             {
-                for (int j = 0; j < Rooms[i].Items.Count; j++)
+                foreach (var item in room.Items)
                 {
-                    if (Rooms[i].Items[j].WaterValue != 0 &&
-                        (item == null || Rooms[i].Items[j].WaterValue > item.WaterValue))
+                    if (item.WaterValue == 0)
+                        continue;
+
+                    if (foundItem == null
+                        || item.WaterValue > foundItem.WaterValue)
                     {
-                        item = Rooms[i].Items[j];
+                        foundItem = item;
                     }
                 }
             }
 
-            return item;
+            return foundItem;
         }
 
         // temporary
@@ -150,7 +161,7 @@ namespace Burntime.Remaster.Logic
         float productionState = 0;
         public int NPCFoodProduction;
 
-        public Production Production
+        public Production? Production
         {
             get => production;
             set => production = value;
