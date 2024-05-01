@@ -205,6 +205,8 @@ namespace Burntime.Remaster.Logic
             if (SetBodyId >= 0 && body.Object is not null)
             {
                 body = Helper.GetCharacterBody(SetBodyId, Helper.GetColorFromSpriteId(body.Object.ID.Index));
+                if (body.Object.Animation is not null)
+                    body.Object.Animation.Progressive = false;
             }
         }
 
