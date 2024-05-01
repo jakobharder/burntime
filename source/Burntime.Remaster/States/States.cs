@@ -126,6 +126,8 @@ namespace Burntime.Remaster
                 { "camps", saveHintLocations.ToString() }
             };
         }
+
+        public bool CheatsEnabled { get; set; }
     }
 
     [Serializable]

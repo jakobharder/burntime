@@ -4,8 +4,6 @@ using Burntime.Platform;
 using Burntime.Platform.IO;
 using System;
 using System.Text;
-using Burntime.Remaster;
-using static Burntime.Remaster.BurntimeClassic;
 using System.Diagnostics;
 using System.Linq;
 
@@ -139,6 +137,11 @@ namespace Burntime.Remaster
                     // use highres font anyway
                     useHighResFont = true;
                 }
+            }
+            else
+            {
+                if (FileSystem.ExistsFile("newgfx.txt"))
+                    ResourceManager.SetResourceReplacement("newgfx.txt");
             }
 #warning TODO Santa for NewGfx (only)
             //else if (DateTime.Now.Month == 12 && 
@@ -333,7 +336,10 @@ namespace Burntime.Remaster
             else
             {
                 FileSystem.RemovePackage("newgfx");
-                ResourceManager.SetResourceReplacement(null);
+                if (FileSystem.ExistsFile("newgfx.txt"))
+                    ResourceManager.SetResourceReplacement("newgfx.txt");
+                else
+                    ResourceManager.SetResourceReplacement(null);
             }
 
             Engine.ReloadGraphics();

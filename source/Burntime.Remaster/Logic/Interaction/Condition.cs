@@ -1,4 +1,5 @@
 ﻿using System;
+using Burntime.Framework;
 using Burntime.Framework.States;
 using Burntime.Platform;
 
@@ -43,8 +44,10 @@ namespace Burntime.Remaster.Logic
             set { removeItem = value; }
         }
 
-        public bool Process(Character character)
+        public bool Process(Character character, out Conversation? hint)
         {
+            hint = null;
+
             if (maxDistanceOnMap > 0 && hasRegionOnMap)
             {
                 if (maxDistanceOnMap < regionOnMap.Distance(character.Position))
@@ -62,10 +65,25 @@ namespace Burntime.Remaster.Logic
                     return true;
                 }
                 else
+                {
+                    hint = GetHint();
                     return false;
+                }
             }
 
             return true;
+        }
+
+        private Conversation? GetHint()
+        {
+            if (requiredItem is not null)
+            {
+                TextHelper txt = new(ResourceManager, "newburn");
+                txt.AddArgument("|F", requiredItem.Object.Text);
+                return Conversation.Simple(txt, 49);
+            }
+
+            return null;
         }
     }
 }

@@ -489,13 +489,13 @@ ZBuff_20}
 }
 }
 Unterhaltung beenden.}
-Willst du einen Job.}
-Gibts es Neuigkeiten?}
+Willst du einen Job?}
+Gibt's Neuigkeiten?}
 OK, ich geb dir den Job!}
 Nein, du bleibst im Stützpunkt!}
 Ok, du bleibst im Stützpunkt!}
-Na und, ...Verschwinde!}
-Welchen Beruf hast du!}
+Na und, ...verschwinde!}
+Welchen Beruf hast du?}
 OK, hier hast du |C.}
 ( weiter... )}
 OK, zeig was du hast.}
@@ -503,7 +503,7 @@ OK, bau mir |I.}
 Gibt es noch weitere Möglichkeiten.}
 Danke für die Information.}
 Lass uns ein Geschäft machen.}
-Na und, ich nehm Dich mit}
+Na und, ich nehm dich mit}
 }
 }
 }

@@ -165,7 +165,8 @@ namespace Burntime.Remaster.Logic.Generation
                 game.World.Players[i].Character = container.Create<PlayerCharacter>();
                 game.World.Players[i].Name = app.ResourceManager.GetString("burn?" + (170 + i).ToString());
                 game.World.Players[i].Character.Position = new Vector2();
-                game.World.Players[i].Character.Body = app.ResourceManager.GetData("syssze.raw?" + gamdat.Characters[i].SpriteId + "-" + (gamdat.Characters[i].SpriteId + 15));
+                int color = Helper.GetColorFromSpriteId(gamdat.Characters[i].SpriteId);
+                game.World.Players[i].Character.Body = Helper.GetCharacterBody(3, color);
                 game.World.Players[i].Character.Path = container.Create<PathFinding.ComplexPath>();
                 game.World.Players[i].Character.Mind = container.Create<AI.PlayerControlledMind>(new object[] { game.World.Players[i].Character });
                 game.World.Players[i].Character.Items.MaxCount = 6;
@@ -206,7 +207,7 @@ namespace Burntime.Remaster.Logic.Generation
             game.World.Players[0].ColorDark = colorsdark[(int)Info.ColorOne];
             game.World.Players[0].IconID = Info.ColorOne == BurntimePlayerColor.Green ? 0 : 1;
             game.World.Players[0].BodyColorSet = Info.ColorOne == BurntimePlayerColor.Green ? 2 : 0;
-            game.World.Players[0].Character.Body = Helper.GetCharacterBody(2, game.World.Players[0].BodyColorSet);
+            game.World.Players[0].Character.Body = Helper.GetCharacterBody(3, game.World.Players[0].BodyColorSet);
             game.World.Players[0].Flag = app.ResourceManager.GetData(Info.ColorOne == BurntimePlayerColor.Green ? "burngfxani@syst.raw?0-3" : "burngfxani@syst.raw?8-11");
 
             if (Info.NameTwo != "" && Info.NameTwo != null)
@@ -226,7 +227,7 @@ namespace Burntime.Remaster.Logic.Generation
             game.World.Players[1].ColorDark = colorsdark[(int)Info.ColorTwo];
             game.World.Players[1].IconID = Info.ColorTwo == BurntimePlayerColor.Green ? 0 : 1;
             game.World.Players[1].BodyColorSet = Info.ColorTwo == BurntimePlayerColor.Green ? 2 : 0;
-            game.World.Players[1].Character.Body = Helper.GetCharacterBody(2, game.World.Players[1].BodyColorSet);
+            game.World.Players[1].Character.Body = Helper.GetCharacterBody(3, game.World.Players[1].BodyColorSet);
             game.World.Players[1].Flag = app.ResourceManager.GetData(Info.ColorTwo == BurntimePlayerColor.Green ? "burngfxani@syst.raw?0-3" : "burngfxani@syst.raw?8-11");
 
             game.World.Players[2].BodyColorSet = -1;
@@ -352,11 +353,27 @@ namespace Burntime.Remaster.Logic.Generation
             }
         }
 
+        static byte FixClass(CharacterType type, byte spriteId)
+        {
+            int bodyId = Helper.GetSetBodyId(type);
+            int color = Helper.GetColorFromSpriteId(spriteId);
+            if (color < 0 || bodyId < 0)
+                return spriteId;
+
+            int body = Helper.GetBodyId(bodyId, color);
+            if (body < 0)
+                return spriteId;
+
+            return (byte)body;
+        }
+
         void LoadNPCs(ClassicGame game, Burntime.Data.BurnGfx.Save.SaveGame gamdat)
         {
             foreach (Burntime.Data.BurnGfx.Save.Character ch in gamdat.Characters)
             {
                 CharacterInfo chr = ch.Info;
+
+                chr.SpriteId = FixClass(ch.Type, chr.SpriteId);
 
                 if (chr.LocationId > 0 && chr.LocationId <= game.World.Locations.Count)
                 {

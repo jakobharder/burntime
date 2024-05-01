@@ -197,7 +197,17 @@ namespace Burntime.Remaster.Logic
             aniDelay = new FadingHelper(20);
             base.AfterDeserialization();
 
-            if (body.Object != null && body.Object.Animation != null) body.Object.Animation.Progressive = false;
+            if (body.Object != null && body.Object.Animation != null)
+                body.Object.Animation.Progressive = false;
+
+            // fix character skins, v1.0.2>
+            SetBodyId = Helper.GetSetBodyId(Class);
+            if (SetBodyId >= 0 && body.Object is not null)
+            {
+                body = Helper.GetCharacterBody(SetBodyId, Helper.GetColorFromSpriteId(body.Object.ID.Index));
+                if (body.Object.Animation is not null)
+                    body.Object.Animation.Progressive = false;
+            }
         }
 
         StateLinkList<ItemType> hireItems;

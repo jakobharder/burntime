@@ -2,6 +2,14 @@
 
 ## 1.0 - Feature complete (2024-02-25)
 
+### 1.0.3
+
+- Fixed crash when NPC tried to eat in New Village
+- Show message when a rope is required
+- Enable cheats at runtime
+- Added separate skin for technicians
+- Various text corrections
+
 ### 1.0.2
 
 - Fixed crash with 6 people in your group - or rather prevent that

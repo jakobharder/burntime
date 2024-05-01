@@ -4,6 +4,8 @@ using System.Text;
 
 using Burntime.Platform;
 using Burntime.Framework.States;
+using Burntime.Platform.Resource;
+using Burntime.Framework;
 
 namespace Burntime.Remaster.Logic
 {
@@ -304,6 +306,40 @@ namespace Burntime.Remaster.Logic
     {
         public String[] Text;
         public ConversationChoice[] Choices;
+
+        public static Conversation Simple(IResourceManager resourceManager, string firstLineId, string buttonId = "newburn?45")
+        {
+            return new()
+            {
+                Text = resourceManager.GetStrings(firstLineId),
+                Choices = new ConversationChoice[3]
+                    {
+                        new ConversationChoice(),
+                        new ConversationChoice(),
+                        new ConversationChoice {
+                            Action = new ConversationAction(ConversationActionType.Exit),
+                            Text = resourceManager.GetString(buttonId)
+                        }
+                    }
+            };
+        }
+
+        public static Conversation Simple(TextHelper text, int firstLineId, int buttonId = 45)
+        {
+            return new()
+            {
+                Text = text.GetStrings(firstLineId),
+                Choices = new ConversationChoice[3]
+                    {
+                        new ConversationChoice(),
+                        new ConversationChoice(),
+                        new ConversationChoice {
+                            Action = new ConversationAction(ConversationActionType.Exit),
+                            Text = text.Get(buttonId)
+                        }
+                    }
+            };
+        }
     }
 
     public enum ConversationActionType

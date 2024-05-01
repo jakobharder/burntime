@@ -1,10 +1,11 @@
-﻿using Burntime.Platform;
-using Burntime.Platform.Graphics;
+﻿using System;
+using Burntime.Data.BurnGfx;
 using Burntime.Framework;
 using Burntime.Framework.GUI;
+using Burntime.Platform;
+using Burntime.Platform.Graphics;
 using Burntime.Remaster.GUI;
-using Burntime.Data.BurnGfx;
-using System;
+using Burntime.Remaster.Logic;
 
 namespace Burntime.Remaster
 {
@@ -13,15 +14,16 @@ namespace Burntime.Remaster
         ClassicMapView view;
         IMapGuiWindow gui;
         MenuWindow menu;
-        Image cursorAni;
+        Image _cursorAni;
+        readonly DialogWindow _dialog;
 
-        private bool infoMode
+        private bool _infoMode
         {
             get { if (view.Player == null) return false; return view.Player.InfoMode; }
             set { if (view.Player != null) view.Player.InfoMode = value; }
         }
 
-        public bool debugNoTravel = false;
+        bool _debugNoTravel = false;
 
         public MapScene(Module App)
             : base(App)
@@ -51,21 +53,37 @@ namespace Burntime.Remaster
             menu.Hide();
             Windows += menu;
 
-            cursorAni = new Image(App);
-            cursorAni.Background = "burngfxani@syst.raw?24-27";
-            cursorAni.Background.Animation.Progressive = false;
-            cursorAni.Layer += 59;
-            Windows += cursorAni;
+            _cursorAni = new Image(App);
+            _cursorAni.Background = "burngfxani@syst.raw?24-27";
+            _cursorAni.Background.Animation.Progressive = false;
+            _cursorAni.Layer += 59;
+            Windows += _cursorAni;
 
             gui.Layer += classic.NewGui ? 40 : 60;
             Windows += gui;
 
-            debugNoTravel = classic.Settings["debug"].GetBool("no_travel") && classic.Settings["debug"].GetBool("enable_cheats");
+            _dialog = new DialogWindow(app);
+            _dialog.Position = view.Position + (view.Size - _dialog.Size) / 2 - new Vector2(0, 10);
+            _dialog.Hide();
+            _dialog.Layer += 55;
+            _dialog.WindowHide += new EventHandler(OnDialogHidden);
+            _dialog.WindowShow += new EventHandler(OnDialogShown);
+            Windows += _dialog;
         }
 
         private void View_OnContextMenu(Vector2 position, MouseButton button)
         {
             menu.Show(position, view.Boundings);
+        }
+
+        void OnDialogShown(object? sender, EventArgs e)
+        {
+            _cursorAni.Hide();
+        }
+
+        void OnDialogHidden(object? sender, EventArgs e)
+        {
+            _cursorAni.Show();
         }
 
         public override void OnResizeScreen()
@@ -83,24 +101,58 @@ namespace Burntime.Remaster
             game.World.ActivePlayerObj.MapScrollPosition = e.Offset;
         }
 
+        private string enteredText = string.Empty;
         public override bool OnKeyPress(char key)
         {
-            if (app.Settings["debug"].GetBool("enable_cheats") && key == '9')
+            if (app.GameState is not ClassicGame game)
+                return false;
+
+            if (!game.CheatsEnabled)
             {
-                view.Player.Character.Food = 9;
-                view.Player.Character.Water = 5;
-                view.Player.Character.Health = 100;
-                return true;
+                enteredText += key;
+                if (enteredText.ToLower().EndsWith("petko", StringComparison.OrdinalIgnoreCase))
+                {
+                    game.CheatsEnabled = true;
+
+                    var cheatMessage = Conversation.Simple(game.ResourceManager, "newburn?46");
+                    _dialog.SetCharacter(view.Player.Character, cheatMessage);
+                    _dialog.Show();
+                }
+                if (enteredText.Length > 30)
+                    enteredText = enteredText[5..];
+            }
+            else
+            {
+                if (key == '9')
+                {
+                    view.Player.Character.Food = 9;
+                    view.Player.Character.Water = 5;
+                    view.Player.Character.Health = 100;
+                    return true;
+                }
+                else if (key == 'q')
+                {
+                    ToggleFastTravel();
+                    return true;
+                }
             }
 
             return base.OnKeyPress(key);
+        }
+
+        private void ToggleFastTravel()
+        {
+            if (!_debugNoTravel)
+                OnFastTravel();
+            else
+                OnMenuTravel();
         }
 
         public override void OnRender(RenderTarget Target)
         {
             if (app.MouseImage != null)
             {
-                cursorAni.Position = app.DeviceManager.Mouse.Position + new Vector2(8, 11);
+                _cursorAni.Position = app.DeviceManager.Mouse.Position + new Vector2(8, 11);
 
                 if (!BurntimeClassic.Instance.NewGui)
                 {
@@ -160,7 +212,7 @@ namespace Burntime.Remaster
             game.MainMapView = true;
 
             // refresh travel/info cursor
-            if (infoMode)
+            if (_infoMode)
                 OnMenuInfo();
             else
                 OnMenuTravel();
@@ -188,9 +240,10 @@ namespace Burntime.Remaster
 
         public void OnMenuInfo()
         {
-            infoMode = true;
-            cursorAni.Background = "burngfxani@syst.raw?20-23";
-            cursorAni.Background.Animation.Progressive = false;
+            _infoMode = true;
+            _debugNoTravel = false;
+            _cursorAni.Background = "burngfxani@syst.raw?20-23";
+            _cursorAni.Background.Animation.Progressive = false;
 
             menu.RemoveLine(0);
             menu.AddLine(0, "@burn?360", (CommandHandler)OnMenuTravel);
@@ -198,12 +251,24 @@ namespace Burntime.Remaster
 
         public void OnMenuTravel()
         {
-            infoMode = false;
-            cursorAni.Background = "burngfxani@syst.raw?24-27";
-            cursorAni.Background.Animation.Progressive = false;
+            _infoMode = false;
+            _debugNoTravel = false;
+            _cursorAni.Background = "burngfxani@syst.raw?24-27";
+            _cursorAni.Background.Animation.Progressive = false;
 
             menu.RemoveLine(0);
             menu.AddLine(0, "@burn?351", (CommandHandler)OnMenuInfo);
+        }
+
+        public void OnFastTravel()
+        {
+            _infoMode = false;
+            _debugNoTravel = true;
+            _cursorAni.Background = "burngfxani@syst.raw?4-7";
+            _cursorAni.Background.Animation.Progressive = false;
+
+            menu.RemoveLine(0);
+            menu.AddLine(0, "@burn?360", (CommandHandler)OnMenuTravel);
         }
 
         public void OnMenuInventory()
@@ -245,7 +310,7 @@ namespace Burntime.Remaster
 
             if (Button == MouseButton.Left)
             {
-                if (infoMode)
+                if (_infoMode)
                 {
                     // only show if current location or owned by player
                     if (clickedLocation.Player == player ||
@@ -259,11 +324,13 @@ namespace Burntime.Remaster
                 }
                 else
                 {
-                    if (debugNoTravel)
+                    if (_debugNoTravel)
                     {
                         player.Location = clickedLocation;
                         player.Character.Position = clickedLocation.EntryPoint;
                         player.RefreshScrollPosition = true;
+
+                        ToggleFastTravel();
                     }
 
                     if (player.Location == clickedLocation)

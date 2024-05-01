@@ -71,11 +71,15 @@ namespace Burntime.Remaster
             BurntimeClassic.Instance.Engine.Music.Stop();
         }
 
-        public void SetCharacter(Character character, Conversation conversation)
+        public void SetCharacter(Character character, Conversation conversation, bool showFace = false)
         {
             self = null;
             this.character = character;
             this.conversation = conversation;
+            if (showFace)
+            {
+                face.FaceID = character.FaceID;
+            }
 
             dialogmode = (conversation.Text.Length < 3) ? 1 : 0;
             dlgoffset = 0;
