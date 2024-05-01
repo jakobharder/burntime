@@ -43,10 +43,10 @@ START
 EXIT
 PLAYER 1
 PLAYER 11
-
-
-
-
+OK
+You enabled cheats}
+in this save game.}
+}#
 
 
 

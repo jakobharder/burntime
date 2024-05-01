@@ -43,10 +43,10 @@ STARTEN
 ENDE
 SPIELER 1
 SPIELER 11
-
-
-
-
+OK
+Du hast Cheats für diesen}
+Spielstand aktiviert.}
+}#
 
 
 

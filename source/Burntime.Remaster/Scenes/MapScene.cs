@@ -1,10 +1,11 @@
-﻿using Burntime.Platform;
-using Burntime.Platform.Graphics;
+﻿using System;
+using Burntime.Data.BurnGfx;
 using Burntime.Framework;
 using Burntime.Framework.GUI;
+using Burntime.Platform;
+using Burntime.Platform.Graphics;
 using Burntime.Remaster.GUI;
-using Burntime.Data.BurnGfx;
-using System;
+using Burntime.Remaster.Logic;
 
 namespace Burntime.Remaster
 {
@@ -14,6 +15,7 @@ namespace Burntime.Remaster
         IMapGuiWindow gui;
         MenuWindow menu;
         Image cursorAni;
+        readonly DialogWindow _dialog;
 
         private bool infoMode
         {
@@ -61,11 +63,45 @@ namespace Burntime.Remaster
             Windows += gui;
 
             debugNoTravel = classic.Settings["debug"].GetBool("no_travel") && classic.Settings["debug"].GetBool("enable_cheats");
+
+            _dialog = new DialogWindow(app);
+            _dialog.Position = view.Position + (view.Size - _dialog.Size) / 2 - new Vector2(0, 10);
+            _dialog.Hide();
+            _dialog.Layer += 55;
+            _dialog.WindowHide += new EventHandler(OnDialogHidden);
+            _dialog.WindowShow += new EventHandler(OnDialogShown);
+            Windows += _dialog;
         }
 
         private void View_OnContextMenu(Vector2 position, MouseButton button)
         {
             menu.Show(position, view.Boundings);
+        }
+
+        void OnDialogShown(object? sender, EventArgs e)
+        {
+            //hoverInfo.IsVisible = false;
+            cursorAni.Hide();
+        }
+
+        void OnDialogHidden(object? sender, EventArgs e)
+        {
+            //hoverInfo.IsVisible = true;
+            cursorAni.Show();
+
+            //if (dialog.Type == ConversationType.Dismiss)
+            //{
+            //    if (dialog.Result == ConversationActionType.Yes)
+            //    {
+            //        charOverlay.SelectedCharacter.Dismiss();
+            //        view.Player.SelectGroup(view.Player.Group);
+            //    }
+            //}
+            //else if (dialog.Type == ConversationType.Abandon)
+            //{
+            //    if (dialog.Result == ConversationActionType.Yes)
+            //        charOverlay.SelectedCharacter.LeaveCamp();
+            //}
         }
 
         public override void OnResizeScreen()
@@ -83,9 +119,28 @@ namespace Burntime.Remaster
             game.World.ActivePlayerObj.MapScrollPosition = e.Offset;
         }
 
+        private string enteredText = string.Empty;
         public override bool OnKeyPress(char key)
         {
-            if (app.Settings["debug"].GetBool("enable_cheats") && key == '9')
+            if (app.GameState is not ClassicGame game)
+                return false;
+
+            if (!game.CheatsEnabled)
+            {
+                enteredText += key;
+                if (enteredText.ToLower().EndsWith("petko", StringComparison.OrdinalIgnoreCase))
+                {
+                    game.CheatsEnabled = true;
+
+                    var cheatMessage = Conversation.Simple(game.ResourceManager, "newburn?46");
+                    _dialog.SetCharacter(view.Player.Character, cheatMessage);
+                    _dialog.Show();
+                }
+                if (enteredText.Length > 30)
+                    enteredText = enteredText[5..];
+            }
+
+            if (game.CheatsEnabled && key == '9')
             {
                 view.Player.Character.Food = 9;
                 view.Player.Character.Water = 5;
