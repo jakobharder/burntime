@@ -4,8 +4,6 @@ using Burntime.Platform;
 using Burntime.Platform.IO;
 using System;
 using System.Text;
-using Burntime.Remaster;
-using static Burntime.Remaster.BurntimeClassic;
 using System.Diagnostics;
 using System.Linq;
 
