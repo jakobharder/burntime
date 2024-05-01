@@ -12,22 +12,45 @@ namespace Burntime.Remaster
     {
         static public DataID<ISprite> GetCharacterBody(int body, int colorSet)
         {
-            int sprite = (body + 1) * 16 + 48 * colorSet;
+            int sprite = GetBodyId(body, colorSet);
+            if (sprite < 0)
+                sprite = 0;
             return BurntimeClassic.Instance.ResourceManager.GetData("burngfxani@syssze.raw?" + sprite + "-" + (sprite + 15));
         }
 
-        static public int GetSetBodyId(Burntime.Data.BurnGfx.Save.CharacterType characterType)
+        static public int GetBodyId(int body, int color)
         {
-            switch (characterType)
+            if (body == 3)
+                return (14 + color) * 16;
+            else if (body >= 0 && body < 3)
+                return (body + 1) * 16 + 48 * color;
+
+            return -1;
+        }
+
+        static public int GetSetBodyId(Data.BurnGfx.Save.CharacterType characterType)
+        {
+            return characterType switch
             {
-                case Burntime.Data.BurnGfx.Save.CharacterType.Mercenary:
-                    return 1;
-                case Burntime.Data.BurnGfx.Save.CharacterType.Technician:
-                case Burntime.Data.BurnGfx.Save.CharacterType.Doctor:
-                    return 0;
-                default:
-                    return 2;
-            }
+                Data.BurnGfx.Save.CharacterType.Mercenary => 1,
+                Data.BurnGfx.Save.CharacterType.Doctor => 0,
+                Data.BurnGfx.Save.CharacterType.Technician => 2,
+                Data.BurnGfx.Save.CharacterType.Boss => 3,
+                _ => -1,
+            };
+        }
+
+        static public int GetColorFromSpriteId(int spriteId)
+        {
+            spriteId /= 16;
+
+            if (spriteId >= 14)
+                return spriteId - 14;
+
+            if (spriteId >= 1 || spriteId <= 9)
+                return spriteId / 3;
+
+            return -1;
         }
     }
 }

@@ -1,0 +1,5 @@
+[noscale]
+sprite_scale=1x1
+burngfxani@syssze.raw?224-239=burngfxani@syssze.raw?48-63
+burngfxani@syssze.raw?240-255=burngfxani@syssze.raw?96-111
+burngfxani@syssze.raw?256-271=burngfxani@syssze.raw?144-159

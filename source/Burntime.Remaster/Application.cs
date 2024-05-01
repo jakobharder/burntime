@@ -140,6 +140,11 @@ namespace Burntime.Remaster
                     useHighResFont = true;
                 }
             }
+            else
+            {
+                if (FileSystem.ExistsFile("newgfx.txt"))
+                    ResourceManager.SetResourceReplacement("newgfx.txt");
+            }
 #warning TODO Santa for NewGfx (only)
             //else if (DateTime.Now.Month == 12 && 
             //    (DateTime.Now.Day >= 24 && DateTime.Now.Day <= 31 || DateTime.Now.Day == 6))
@@ -333,7 +338,10 @@ namespace Burntime.Remaster
             else
             {
                 FileSystem.RemovePackage("newgfx");
-                ResourceManager.SetResourceReplacement(null);
+                if (FileSystem.ExistsFile("newgfx.txt"))
+                    ResourceManager.SetResourceReplacement("newgfx.txt");
+                else
+                    ResourceManager.SetResourceReplacement(null);
             }
 
             Engine.ReloadGraphics();
