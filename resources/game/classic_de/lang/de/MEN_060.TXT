@@ -13,7 +13,7 @@ Ist ja ekelig!}
 }#
 Sag was du willst}
 ich hab nicht viel Zeit!}
-}# 
+}#
 Gib mir |C}
 und ich gehe mit...}
 ...und verarzte deine}
