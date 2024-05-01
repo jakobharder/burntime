@@ -18,6 +18,12 @@ public sealed class TextHelper
     readonly List<Replacement> _arguments = new();
     readonly string _textFile;
 
+    public TextHelper(IResourceManager resourceManager, string file)
+    {
+        _resourceManager = resourceManager;
+        _textFile = file;
+    }
+
     public TextHelper(Module app, string file)
     {
         _resourceManager = app.ResourceManager;

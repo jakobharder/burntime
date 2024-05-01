@@ -24,7 +24,7 @@ show_routes 	= no
 no_travel	= no
 show_path	= no
 insert_items_1	= item_meat item_full_canteen
-insert_items_2	= item_rope item_gas_mask item_cookie_phoenix item_cookie_juern
+insert_items_2	= item_rope item_gas_mask
 insert_items_3	=
 godmode         = no ' recover human player main character health to 100 when below 1 
 

@@ -43,13 +43,13 @@ STARTEN
 ENDE
 SPIELER 1
 SPIELER 11
-OK
+Okay
 Du hast Cheats für diesen}
 Spielstand aktiviert.}
 }#
-
-
-
+Ich benötige |F,}
+um dort reinzukommen.}
+}#
 
 
 

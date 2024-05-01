@@ -208,7 +208,10 @@ namespace Burntime.Remaster
 
         public override bool OnKeyPress(char key)
         {
-            if (app.Settings["debug"].GetBool("enable_cheats"))
+            if (app.GameState is not ClassicGame game)
+                return false;
+
+            if (game.CheatsEnabled)
             {
                 string[] items = null;
 
@@ -227,12 +230,10 @@ namespace Burntime.Remaster
 
                 if (items != null)
                 {
-                    BurntimeClassic classic = app as BurntimeClassic;
-
                     foreach (string id in items)
                     {
-                        Item item = classic.Game.ItemTypes.Generate(id);
-                        classic.Game.World.ActiveLocationObj.Items.DropAt(item, classic.Game.World.ActivePlayerObj.Character.Position);
+                        Item item = game.ItemTypes.Generate(id);
+                        game.World.ActiveLocationObj.Items.DropAt(item, game.World.ActivePlayerObj.Character.Position);
                     }
                 }
             }
@@ -572,8 +573,15 @@ namespace Burntime.Remaster
             BurntimeClassic classic = BurntimeClassic.Instance;
 
             Condition condition = classic.Game.World.ActiveLocationObj.Rooms[number].EntryCondition;
-            if (!condition.Process(charOverlay.SelectedCharacter))
+            if (!condition.Process(charOverlay.SelectedCharacter, out Conversation? hint))
+            {
+                if (hint is not null)
+                {
+                    dialog.SetCharacter(chr, hint, true);
+                    dialog.Show();
+                }
                 return false;
+            }
 
             if (view.Location.Player != null && view.Location.Player != view.Player)
                 return true;
