@@ -1,11 +1,16 @@
 # Features
 
-The game is a complete port of the original game to Windows with some adjustments and an extended game mode.
+The game is a complete port of the original DOS version to Windows with some adjustments and an extended game mode.
 
-- improved graphics
-  - wide-screen support with enlarged images, map view etc.
-  - remastered graphics with doubled resolution
-- play with DOS music or Amiga music
+## Non-Gameplay Changes
+
+- Support for wide-screen resolutions. Some images are enlarged accordingly.
+- Remastered graphics with double resolution and corrected aspect ratio.
+- Technicians have their own skin. All skins are true to the character class without exceptions.
+- Music can be toggled between DOS and Amiga.
+
+## Gameplay Changes
+
 - game adjustments
   - attacks are always followed by counter attacks to avoid attack spamming
   - toggle to switch between original and extended game

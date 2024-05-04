@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
+﻿using Burntime.Data.BurnGfx.Save;
 using Burntime.Platform;
 using Burntime.Platform.IO;
-using Burntime.Framework;
-using Burntime.Data.BurnGfx;
-using Burntime.Data.BurnGfx.Save;
-
 using Burntime.Remaster.Logic.Interaction;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Burntime.Remaster.Logic.Generation
 {
@@ -267,24 +263,22 @@ namespace Burntime.Remaster.Logic.Generation
 
         void SetStartLocations(ClassicGame game)
         {
-            // copy start locations since we mark used ones with -1
-            int[] loc = (int[])settings.StartLocations.Clone();
-
+            var availableRegions = Enumerable.Range(1, settings.StartRegionCount).ToList();
             foreach (Player player in game.World.Players)
             {
-                // find free location
-                int start;
-                do
-                {
-                    int index = Burntime.Platform.Math.Random.Next(0, loc.Length);
-                    start = loc[index];
-                    loc[index] = -1;
-                } while (start == -1);
+                // find free random region
+                int regionIndex = availableRegions[Platform.Math.Random.Next(0, availableRegions.Count)];
+                availableRegions.Remove(regionIndex);
+                int[] regionLocations = settings.GetStartLocation(regionIndex);
+
+                // choose random location
+                int locationIndex = regionLocations[Platform.Math.Random.Next(0, regionLocations.Length)] - 1;
+                var startLocation = game.World.Locations[locationIndex];
 
                 // set location
-                player.Location = game.World.Locations[start];
-                player.Character.Position = new Vector2(game.World.Locations[start].EntryPoint);
-                player.Character.Path.MoveTo = new Vector2(game.World.Locations[start].EntryPoint);
+                player.Location = startLocation;
+                player.Character.Position = new Vector2(startLocation.EntryPoint);
+                player.Character.Path.MoveTo = new Vector2(startLocation.EntryPoint);
             }
         }
 

@@ -50,7 +50,10 @@ class GameSettings
     ClassStatInfos stats;
 
     public string[] StartItems => config[difficulty].GetStrings("start_items");
-    public int[] StartLocations => config[difficulty].GetInts("start_locations");
+
+    public int StartRegionCount = 5;
+    public int[] GetStartLocation(int region) => config[difficulty].GetInts($"start_locations_{region}");
+
     public int StartExperience => config[difficulty].GetInt("start_experience");
     public string[] RandomItems => config[difficulty].GetStrings("random_items");
     public int RandomItemsMin => config[difficulty].GetInt("random_items_rate_min");

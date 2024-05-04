@@ -64,6 +64,7 @@ namespace Burntime.Remaster.Logic
         //StateList CampCharacters;
         public StateLink<Trader> LocalTrader;
 
+        #region Neighbors
         public int[] NeighborIds;
 
         StateLinkList<Location> neighbors;
@@ -75,6 +76,7 @@ namespace Burntime.Remaster.Logic
 
         public int[] Ways;
         public int[] WayLengths;
+        #endregion
 
         StateLink<WaterSource> source;
         public WaterSource Source
