@@ -7,7 +7,7 @@ die Luft kaum zu atmen.}
 Eigentlich ein Wunder das}
 wir noch leben!}
 }#
-Was, du lebst auch noch immer?} 
+Was, du lebst auch noch immer?}
 }
 }#
 Na, wie gehts dir?}
@@ -30,7 +30,7 @@ mach ich alles!}
 Ich möchte aber |C von}
 dir, erst dann gehe ich mit!}
 }#
-Ich kämpfe!!}
+Ich kämpfe!}
 }
 }#
 Ha, Ha, der Witz war gut!}
