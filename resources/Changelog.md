@@ -6,6 +6,7 @@
 
 - Ensure players don't start too close
 - Location specific item placement at game start
+- Show cheated games in statistics
 
 ### Fixes
 

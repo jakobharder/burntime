@@ -568,8 +568,8 @@ drinks like I do.}
 }
 }
 }
-In}
-|J days you have|#|J day you have}
+{cheats}}
+In |J days you have|#In 1 day you have}
 captured |A camps|#captured 1 camp|#captured no camps}
 and now control |I of |K cities.}
 }
