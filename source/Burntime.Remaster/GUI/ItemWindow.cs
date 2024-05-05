@@ -107,7 +107,7 @@ namespace Burntime.Remaster.GUI
             // show hover text only for one item
             if (GetTopMostItem() == this && text != null)
             {
-                Target.Layer++;
+                Target.Layer += 5;
                 RenderTarget bigger = Target.GetSubBuffer(new Rect(-50, -50, 132, 132));
                 font.DrawText(bigger, new Vector2(66, 41), text, TextAlignment.Center, VerticalTextAlignment.Top);
             }
