@@ -265,7 +265,7 @@ public class ConfigSection
         {
             string[] strs = str.Split(SplitChars, StringSplitOptions.RemoveEmptyEntries);
             if (strs.Length == 1 && strs[0] == "")
-                return new float[0];
+                return Array.Empty<float>();
 
             float[] floats = new float[strs.Length];
             for (int i = 0; i < strs.Length; i++)
@@ -275,7 +275,7 @@ public class ConfigSection
             }
             return floats;
         }
-        return new float[0];
+        return Array.Empty<float>();
     }
 
     public int[] GetInts(string key)
@@ -285,7 +285,7 @@ public class ConfigSection
         {
             string[] strs = str.Split(SplitChars, StringSplitOptions.RemoveEmptyEntries);
             if (strs.Length == 1 && strs[0] == "")
-                return new int[0];
+                return Array.Empty<int>();
 
             int[] ints = new int[strs.Length];
             for (int i = 0; i < strs.Length; i++)
@@ -295,7 +295,7 @@ public class ConfigSection
             }
             return ints;
         }
-        return new int[0];
+        return Array.Empty<int>();
     }
 
     public bool[] GetBools(string key)
@@ -305,7 +305,7 @@ public class ConfigSection
         {
             string[] strs = str.Split(SplitChars, StringSplitOptions.RemoveEmptyEntries);
             if (strs.Length == 1 && strs[0] == "")
-                return new bool[0];
+                return Array.Empty<bool>();
 
             bool[] bools = new bool[strs.Length];
             for (int i = 0; i < strs.Length; i++)
@@ -315,7 +315,7 @@ public class ConfigSection
             }
             return bools;
         }
-        return new bool[0];
+        return Array.Empty<bool>();
     }
 
     public Vector2[] GetVector2s(string key)

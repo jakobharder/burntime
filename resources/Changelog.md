@@ -1,5 +1,12 @@
 ﻿# Burntime Changelog
 
+## [Unreleased]
+
+### Changes
+
+- Ensure players don't start too close
+- Location specific item placement at game start
+
 ## 1.0 - Feature complete (2024-02-25)
 
 ### 1.0.3

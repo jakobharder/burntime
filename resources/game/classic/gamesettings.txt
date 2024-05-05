@@ -3,8 +3,8 @@ start_locations_1   = 2 4
 start_locations_2   = 18 25
 start_locations_3   = 30 32
 start_locations_4   = 6 11
-' start_locations_5   = 29 37
-start_regions       = 4
+start_locations_5   = 29 37
+start_regions       = 5
 ' start_locations    = 3 10 11 17 24 29 31 32 35 ' original start locations
 start_items        = item_meat item_bottle item_knife item_full_canteen
 start_experience   = 37
@@ -102,3 +102,28 @@ mutant_attack         = 40
 dog_attack            = 30
 ai_camp_interval      = 0 3 ' creates every 0 - 3 turns
 ai_camp_max_advance   = 99999 ' creates camps as fast as possible
+
+[region_item_0]
+items     = item_rat_trap
+locations = 35
+rate      = 1
+
+[region_item_1]
+items     = item_gold
+locations = 20 20 17 17 21
+rate      = 4 9
+
+[region_item_2]
+items     = item_bible
+locations = 31 36 10
+rate      = 1 3
+
+[region_item_3]
+items     = item_defective_two_way_radio
+locations = 31 2 3
+rate      = 1 2
+
+[region_item_4]
+items     = item_knife
+locations = 37
+rate      = 1

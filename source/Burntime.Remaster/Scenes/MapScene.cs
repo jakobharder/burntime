@@ -313,7 +313,8 @@ namespace Burntime.Remaster
                 if (_infoMode)
                 {
                     // only show if current location or owned by player
-                    if (clickedLocation.Player == player ||
+                    if (BurntimeClassic.Instance.Game.CheatsEnabled ||
+                        clickedLocation.Player == player ||
                         (!clickedLocation.IsCity && Number == player.Location.Id && clickedLocation.Player == null))
                     {
                         BurntimeClassic.Instance.InfoCity = Number;
