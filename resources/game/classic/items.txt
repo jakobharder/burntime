@@ -202,7 +202,7 @@ class=protection_parts
 burngfx=43
 
 [item_rope]
-class=key
+class=key rare
 burngfx=44
 fluff=@newburn?33
 
@@ -223,7 +223,7 @@ class=useless rare
 burngfx=48
 
 [item_gold]
-class=useless
+class=useless rare
 burngfx=49
 
 [item_tools]
@@ -311,7 +311,7 @@ empty=item_unloaded_pistol
 damage=55
 
 [item_unloaded_pistol]
-class=weapon special
+class=weapon special rare
 title=@newburn?8
 text=@newburn?9
 image=gfx/pistol_unloaded.png

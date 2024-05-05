@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
+﻿using Burntime.Classic.Logic.Generation;
+using Burntime.Data.BurnGfx.Save;
 using Burntime.Platform;
 using Burntime.Platform.IO;
-using Burntime.Framework;
-using Burntime.Data.BurnGfx;
-using Burntime.Data.BurnGfx.Save;
-
 using Burntime.Remaster.Logic.Interaction;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Burntime.Remaster.Logic.Generation
 {
@@ -267,24 +264,22 @@ namespace Burntime.Remaster.Logic.Generation
 
         void SetStartLocations(ClassicGame game)
         {
-            // copy start locations since we mark used ones with -1
-            int[] loc = (int[])settings.StartLocations.Clone();
-
+            var availableRegions = Enumerable.Range(1, settings.StartRegionCount).ToList();
             foreach (Player player in game.World.Players)
             {
-                // find free location
-                int start;
-                do
-                {
-                    int index = Burntime.Platform.Math.Random.Next(0, loc.Length);
-                    start = loc[index];
-                    loc[index] = -1;
-                } while (start == -1);
+                // find free random region
+                int regionIndex = availableRegions[Platform.Math.Random.Next(0, availableRegions.Count)];
+                availableRegions.Remove(regionIndex);
+                int[] regionLocations = settings.GetStartLocation(regionIndex);
+
+                // choose random location
+                int locationIndex = regionLocations[Platform.Math.Random.Next(0, regionLocations.Length)] - 1;
+                var startLocation = game.World.Locations[locationIndex];
 
                 // set location
-                player.Location = game.World.Locations[start];
-                player.Character.Position = new Vector2(game.World.Locations[start].EntryPoint);
-                player.Character.Path.MoveTo = new Vector2(game.World.Locations[start].EntryPoint);
+                player.Location = startLocation;
+                player.Character.Position = new Vector2(startLocation.EntryPoint);
+                player.Character.Path.MoveTo = new Vector2(startLocation.EntryPoint);
             }
         }
 
@@ -508,88 +503,11 @@ namespace Burntime.Remaster.Logic.Generation
 
         void LoadItems(ClassicGame game, Burntime.Data.BurnGfx.Save.SaveGame gamdat)
         {
-            GameSettings.ItemGeneration ground = settings.GetItemGeneration("random_items_ground");
-            GameSettings.ItemGeneration room = settings.GetItemGeneration("random_items_room");
-            GameSettings.ItemGeneration danger = settings.GetItemGeneration("random_items_danger_location");
-            GameSettings.ItemGeneration closed = settings.GetItemGeneration("random_items_closed_room");
-            GameSettings.ItemGeneration start = settings.GetItemGeneration("random_items_start");
+            var spawner = new ItemSpawner(game, gamdat, settings);
 
-            string[] groundItems = game.ItemTypes.GetTypesWithClass(ground.Include, ground.Exclude);
-            string[] roomItems = game.ItemTypes.GetTypesWithClass(room.Include, room.Exclude);
-            string[] dangerItems = game.ItemTypes.GetTypesWithClass(danger.Include, danger.Exclude);
-            string[] closedItems = game.ItemTypes.GetTypesWithClass(closed.Include, closed.Exclude);
-            string[] startItems = game.ItemTypes.GetTypesWithClass(start.Include, start.Exclude);
-
-            foreach (Player p in game.Player)
-            {
-                // add start location items
-                Location location = p.Location;
-
-                int count = start.RandomCount;
-                for (int i = 0; i < count; i++)
-                {
-                    string insert = startItems[Burntime.Platform.Math.Random.Next() % startItems.Length];
-                    location.StoreItemRandom(game.ItemTypes[insert].Generate());
-                }
-            }
-
-            foreach (Location location in game.World.Locations)
-            {
-                int count;
-
-                // add ground items
-                count = ground.RandomCount;
-                for (int i = 0; i < count; i++)
-                {
-                    string insert = groundItems[Burntime.Platform.Math.Random.Next() % groundItems.Length];
-                    location.DropItemRandom(game.ItemTypes[insert].Generate());
-                }
-
-                // add room items (only non cities)
-                if (!location.IsCity)
-                {
-                    count = room.RandomCount;
-                    for (int i = 0; i < count; i++)
-                    {
-                        string insert = roomItems[Burntime.Platform.Math.Random.Next() % roomItems.Length];
-                        location.StoreItemRandom(game.ItemTypes[insert].Generate());
-                    }
-                }
-
-                // add special danger location items
-                if (location.Danger != null)
-                {
-                    count = danger.RandomCount;
-                    for (int i = 0; i < count; i++)
-                    {
-                        string insert = dangerItems[Burntime.Platform.Math.Random.Next() % dangerItems.Length];
-
-                        // insert items in room or drop it outside
-                        if (Burntime.Platform.Math.Random.Next() % 2 == 0)
-                            location.StoreItemRandom(game.ItemTypes[insert].Generate());
-                        else
-                            location.DropItemRandom(game.ItemTypes[insert].Generate());
-                    }
-                }
-
-                // add items to closed rooms (e.g. rooms only accessible with rope)
-                if (!location.IsCity)
-                {
-                    foreach (Room r in location.Rooms)
-                    {
-                        if (r.EntryCondition != null && r.EntryCondition.RequiredItem != null)
-                        {
-                            count = closed.RandomCount;
-                            for (int i = 0; i < count; i++)
-                            {
-                                string insert = closedItems[Burntime.Platform.Math.Random.Next() % closedItems.Length];
-                                r.Items.Add(game.ItemTypes[insert].Generate());
-                            }
-                        }
-                    }
-                }
-            }
-
+            spawner.SpawnAtPlayerLocation();
+            spawner.SpawnInAllLocations();
+            spawner.SpawnRegionItems();
 
             //foreach (Burntime.Data.BurnGfx.Save.Item info in gamdat.Items)
             //{

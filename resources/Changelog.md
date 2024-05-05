@@ -1,5 +1,20 @@
 ﻿# Burntime Changelog
 
+## [Unreleased]
+
+### Changes
+
+- Ensure players don't start too close
+- Location specific item placement at game start
+- Show cheated games in statistics
+
+### Fixes
+
+- Fixed severial music related issues
+- Fixed issue with item names not rendered correctly in inventory
+- Fixed dialog with Socks in Nameless Town
+- Fixed various smaller text issues
+
 ## 1.0 - Feature complete (2024-02-25)
 
 ### 1.0.3

@@ -28,6 +28,8 @@ namespace Burntime.Remaster.Scenes
         int doctor;
         int technician;
 
+        string _cheats = "";
+
         readonly GuiImage _rightBottom, _rightTop;
         readonly GuiImage _leftBottom, _leftTop;
         readonly ISprite _background, _background2;
@@ -86,6 +88,7 @@ namespace Burntime.Remaster.Scenes
 
             TextHelper txt = new TextHelper(app, "burn");
             txt.AddArgument("|J", (app as BurntimeClassic).Game.World.Day);
+            txt.AddArgument("{cheats}", _cheats);
             txt.AddArgument("|B", fighter);
             txt.AddArgument("|G", technician);
             txt.AddArgument("|H", doctor);
@@ -197,6 +200,8 @@ namespace Burntime.Remaster.Scenes
                     case CharClass.Technician: technician++; break;
                 }
             }
+
+            _cheats = (app as BurntimeClassic).Game.CheatsEnabled ? app.ResourceManager.GetString("newburn?52") : "";
         }
 
         protected override void OnInactivateScene()

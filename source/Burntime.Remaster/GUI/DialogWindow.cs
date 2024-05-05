@@ -1,9 +1,9 @@
-﻿using System;
-using Burntime.Platform;
+﻿using Burntime.Platform;
 using Burntime.Platform.Graphics;
 using Burntime.Framework;
 using Burntime.Framework.GUI;
 using Burntime.Remaster.Logic;
+using System;
 
 namespace Burntime.Remaster
 {
@@ -25,11 +25,8 @@ namespace Burntime.Remaster
         int dialogmode;
         int hover = -1;
 
-        ConversationType type;
-        public ConversationType Type
-        {
-            get { return type; }
-        }
+        public ConversationType Type { get; private set; }
+        public bool PlayMusic { get; set; } = true;
 
         Conversation conversation;
 
@@ -61,14 +58,16 @@ namespace Burntime.Remaster
             hover = -1;
             base.OnShow();
 
-            BurntimeClassic.Instance.Engine.Music.Play("talking");
+            if (PlayMusic)
+                BurntimeClassic.Instance.Engine.Music.Play("talking");
         }
 
         public override void OnHide()
         {
             base.OnHide();
 
-            BurntimeClassic.Instance.Engine.Music.Stop();
+            if (PlayMusic)
+                BurntimeClassic.Instance.Engine.Music.Stop();
         }
 
         public void SetCharacter(Character character, Conversation conversation, bool showFace = false)
@@ -96,10 +95,8 @@ namespace Burntime.Remaster
         {
             this.self = self;
             this.character = character;
-            this.type = type;
+            Type = type;
             face.FaceID = character.FaceID;
-
-            BurntimeClassic classic = app as BurntimeClassic;
 
             conversation = character.Dialog.GetConversation(self, type);
 

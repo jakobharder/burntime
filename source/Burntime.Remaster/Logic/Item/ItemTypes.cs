@@ -16,14 +16,13 @@ namespace Burntime.Remaster.Logic
         protected StateLinkList<ItemType> types;
 
         [NonSerialized]
-        protected Dictionary<string, ItemType> typeMap;
+        protected Dictionary<string, ItemType>? typeMap;
 
         public ItemType this[string id]
         {
             get
             {
-                if (typeMap == null)
-                    GenerateMap();
+                typeMap ??= GenerateMap();
 
                 if (!typeMap.ContainsKey(id))
                 {
@@ -48,9 +47,7 @@ namespace Burntime.Remaster.Logic
 
         public bool Contains(string id)
         {
-            if (typeMap == null)
-                GenerateMap();
-
+            typeMap ??= GenerateMap();
             return typeMap.ContainsKey(id);
         }
 
@@ -67,7 +64,7 @@ namespace Burntime.Remaster.Logic
             if (!win)
                 return null;
 
-            var index = Platform.Math.Random.Next(types.Length - 1);
+            var index = Platform.Math.Random.Next(types.Length);
             return Generate(types[index]);
         }
 
@@ -96,6 +93,9 @@ namespace Burntime.Remaster.Logic
             return list;
         }
 
+        /// <summary>
+        /// Generate item. Produces dummy if id is not found.
+        /// </summary>
         public Item Generate(string id)
         {
             return this[id].Generate();
@@ -103,7 +103,7 @@ namespace Burntime.Remaster.Logic
 
         public string[] GetTypesWithClass(string[] include, string[] exclude)
         {
-            List<string> list = new List<string>();
+            var list = new List<string>();
 
             foreach (ItemType type in types)
             {
@@ -111,7 +111,7 @@ namespace Burntime.Remaster.Logic
                 bool excluded = false;
                 foreach (string e in exclude)
                 {
-                    if (type.IsClass(e))
+                    if (type.IsClass(e) || type.ID == e)
                     {
                         excluded = true;
                         break;
@@ -125,7 +125,7 @@ namespace Burntime.Remaster.Logic
                 // now look for included flags
                 foreach (string i in include)
                 {
-                    if (type.IsClass(i))
+                    if (type.IsClass(i) || type.ID == i)
                     {
                         // if included then add to list
                         list.Add(type.ID);
@@ -164,13 +164,14 @@ namespace Burntime.Remaster.Logic
             base.AfterDeserialization();
         }
 
-        private void GenerateMap()
+        private Dictionary<string, ItemType> GenerateMap()
         {
-            // recreate id - object map
-            typeMap = new Dictionary<string, ItemType>();
+            var typeMap = new Dictionary<string, ItemType>();
 
             foreach (ItemType type in types)
                 typeMap.Add(type.ID, type);
+
+            return typeMap;
         }
     }
 }

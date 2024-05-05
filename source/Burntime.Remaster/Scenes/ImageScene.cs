@@ -104,7 +104,7 @@ namespace Burntime.Remaster.Scenes
             }
             else if (game.ImageScene == "film_09.pac")
             {
-                Music = "death";
+                Music = "texaco";
             }
         }
 

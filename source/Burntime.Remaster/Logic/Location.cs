@@ -64,6 +64,7 @@ namespace Burntime.Remaster.Logic
         //StateList CampCharacters;
         public StateLink<Trader> LocalTrader;
 
+        #region Neighbors
         public int[] NeighborIds;
 
         StateLinkList<Location> neighbors;
@@ -75,6 +76,7 @@ namespace Burntime.Remaster.Logic
 
         public int[] Ways;
         public int[] WayLengths;
+        #endregion
 
         StateLink<WaterSource> source;
         public WaterSource Source
@@ -276,7 +278,9 @@ namespace Burntime.Remaster.Logic
             base.InitInstance(parameter);
         }
 
-        // drop item at random position
+        /// <summary>
+        /// Drop item at random position
+        /// </summary>
         public void DropItemRandom(Item item)
         {
             Vector2 pos;
@@ -290,6 +294,12 @@ namespace Burntime.Remaster.Logic
         }
 
         public void StoreItemRandom(Item item) => StoreItem(item, randomRoom: true);
+
+        public void StoreItemsRandom(IEnumerable<Item> items)
+        {
+            foreach (var item in items)
+                StoreItemRandom(item);
+        }
 
         /// <summary>
         /// Insert item into room. If none is available drop it randomly.

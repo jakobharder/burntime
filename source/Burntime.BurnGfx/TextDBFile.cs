@@ -23,10 +23,10 @@ namespace Burntime.Data.BurnGfx
         {
             data = new List<string>();
 
-            String line = file.ReadLine();
-            while (line != null)
+            string line = file.ReadLine();
+            while (line is not null)
             {
-                data.Add(line);//line.Replace("}", ""));
+                data.Add(line.TrimEnd());
 
                 line = file.ReadLine();
             }

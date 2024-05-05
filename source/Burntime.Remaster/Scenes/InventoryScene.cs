@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-using Burntime.Platform;
+﻿using Burntime.Platform;
 using Burntime.Platform.Graphics;
 using Burntime.Framework;
 using Burntime.Framework.GUI;
-using Burntime.Framework.States;
 using Burntime.Remaster.GUI;
 using Burntime.Remaster.Logic;
 using Burntime.Remaster.Logic.Interaction;
+using System;
 
 namespace Burntime.Remaster.Scenes
 {
@@ -48,12 +44,14 @@ namespace Burntime.Remaster.Scenes
 
             waterSourceFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(72, 72, 76));
 
-            dialog = new DialogWindow(app);
-            dialog.Position = new Vector2(33, 20);
+            Windows += dialog = new DialogWindow(app)
+            {
+                Position = new Vector2(33, 20),
+                PlayMusic = false
+            };
             dialog.Hide();
             dialog.Layer += 55;
             dialog.WindowHide += new EventHandler(dialog_WindowHide);
-            Windows += dialog;
         }
 
         public override void OnResizeScreen()
@@ -63,7 +61,7 @@ namespace Burntime.Remaster.Scenes
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
         }
 
-        void dialog_WindowHide(object sender, EventArgs e)
+        void dialog_WindowHide(object? sender, EventArgs e)
         {
             if (dialog.Result == ConversationActionType.Yes)
             {

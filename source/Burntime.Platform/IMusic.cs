@@ -7,6 +7,7 @@ public interface IMusic
     float Volume { get; set; }
     string Playing { get; }
 
+    bool CanPlay(string songName);
     void Play(string song, bool loop = true);
     void PlayOnce(string sound);
     void Stop();

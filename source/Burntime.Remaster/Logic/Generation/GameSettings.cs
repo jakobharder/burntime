@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
-
-using Burntime.Platform.IO;
+﻿using Burntime.Platform.IO;
+using System;
+using System.Collections.Generic;
 
 namespace Burntime.Remaster.Logic.Generation;
 
@@ -41,6 +41,63 @@ class GameSettings
                 return Burntime.Platform.Math.Random.Next() % (Maximum - Minimum) + Minimum;
             }
         }
+
+        public static ItemGeneration FromString(string itemsConfig, string rateConfig = "1")
+        {
+            int min = 1;
+            int max = 1;
+            var rates = rateConfig.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+            if (rates.Length > 1)
+            {
+                if (!int.TryParse(rates[0], out min))
+                    min = 1;
+                if (rates.Length > 2 && !int.TryParse(rates[1], out max))
+                    max = 1;
+            }
+
+            return FromStrings(
+                itemsConfig.Split(' ', StringSplitOptions.RemoveEmptyEntries),
+                min, max);
+        }
+
+        public static ItemGeneration FromStrings(IEnumerable<string> itemsConfig, int atLeast = 1, int upTo = 1)
+        {
+            var include = new List<string>();
+            var exclude = new List<string>();
+            var generation = new ItemGeneration();
+
+            foreach (string item in itemsConfig)
+            {
+                if (item.StartsWith("-"))
+                    exclude.Add(item[1..]);
+                else
+                    include.Add(item);
+            }
+
+            generation.Include = include.ToArray();
+            generation.Exclude = exclude.ToArray();
+
+            generation.Minimum = Math.Max(0, atLeast);
+            generation.Maximum = Math.Min(generation.Minimum, upTo);
+
+            return generation;
+        }
+
+        public List<Item> GenerateAll(ItemTypes types)
+        {
+            string[] itemTypes = types.GetTypesWithClass(Include, Exclude);
+            int count = RandomCount;
+            var items = new List<Item>();
+
+            for (int i = 0; i < count; i++)
+            {
+                string insert = itemTypes[Platform.Math.Random.Next(0, itemTypes.Length)];
+                items.Add(types[insert].Generate());
+            }
+
+            return items;
+        }
     }
 
     ConfigFile config;
@@ -50,7 +107,12 @@ class GameSettings
     ClassStatInfos stats;
 
     public string[] StartItems => config[difficulty].GetStrings("start_items");
-    public int[] StartLocations => config[difficulty].GetInts("start_locations");
+
+    public int StartRegionCount => config[difficulty].GetInt("start_regions");
+    public int[] GetStartLocation(int region) => config[difficulty].GetInts($"start_locations_{region}");
+
+    public ConfigSection GetRegionItem(int entry) => config.GetSection($"region_item_{entry}");
+
     public int StartExperience => config[difficulty].GetInt("start_experience");
     public string[] RandomItems => config[difficulty].GetStrings("random_items");
     public int RandomItemsMin => config[difficulty].GetInt("random_items_rate_min");
