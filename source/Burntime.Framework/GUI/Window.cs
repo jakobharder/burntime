@@ -163,8 +163,7 @@ public class Window
         visible = true;
 
         OnShow();
-        if (WindowShow != null)
-            WindowShow.Invoke(this, new EventArgs());
+        WindowShow?.Invoke(this, new EventArgs());
     }
 
     public void Hide()
@@ -174,8 +173,7 @@ public class Window
         visible = false;
 
         OnHide();
-        if (WindowHide != null)
-            WindowHide.Invoke(this, new EventArgs());
+        WindowHide?.Invoke(this, new EventArgs());
     }
 
     public void MoveInside(Rect rectangle)

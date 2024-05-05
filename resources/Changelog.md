@@ -7,6 +7,10 @@
 - Ensure players don't start too close
 - Location specific item placement at game start
 
+### Fixes
+
+- Fixed music changing when constructing items
+
 ## 1.0 - Feature complete (2024-02-25)
 
 ### 1.0.3
