@@ -9,7 +9,7 @@
 
 ### Fixes
 
-- Fixed music changing when constructing items
+- Fixed severial music related issues
 - Fixed issue with item names not rendered correctly in inventory
 
 ## 1.0 - Feature complete (2024-02-25)

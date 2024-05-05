@@ -62,7 +62,10 @@ namespace Burntime.Remaster
             gui.Layer += classic.NewGui ? 40 : 60;
             Windows += gui;
 
-            _dialog = new DialogWindow(app);
+            _dialog = new DialogWindow(app)
+            {
+                PlayMusic = false
+            };
             _dialog.Position = view.Position + (view.Size - _dialog.Size) / 2 - new Vector2(0, 10);
             _dialog.Hide();
             _dialog.Layer += 55;

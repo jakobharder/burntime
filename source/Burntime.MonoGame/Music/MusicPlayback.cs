@@ -2,7 +2,6 @@
 using Burntime.Platform.IO;
 using System.Collections.Generic;
 using System.Threading;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Burntime.MonoGame;
 
@@ -68,6 +67,17 @@ public sealed class MusicPlayback : IMusic
             _playlist.Insert(0, Playing);
             _music.Stop();
         }
+    }
+
+    public bool CanPlay(string songName)
+    {
+        if (FileSystem.ExistsFile(songName))
+            return true;
+
+        if (_songMapping.TryGetValue(songName, out string? songFilePath))
+            return FileSystem.ExistsFile(songFilePath);
+
+        return false;
     }
 
     public void Play(string fileName, bool loop = true)
