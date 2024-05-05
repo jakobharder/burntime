@@ -16,14 +16,13 @@ namespace Burntime.Remaster.Logic
         protected StateLinkList<ItemType> types;
 
         [NonSerialized]
-        protected Dictionary<string, ItemType> typeMap;
+        protected Dictionary<string, ItemType>? typeMap;
 
         public ItemType this[string id]
         {
             get
             {
-                if (typeMap == null)
-                    GenerateMap();
+                typeMap ??= GenerateMap();
 
                 if (!typeMap.ContainsKey(id))
                 {
@@ -48,9 +47,7 @@ namespace Burntime.Remaster.Logic
 
         public bool Contains(string id)
         {
-            if (typeMap == null)
-                GenerateMap();
-
+            typeMap ??= GenerateMap();
             return typeMap.ContainsKey(id);
         }
 
@@ -67,7 +64,7 @@ namespace Burntime.Remaster.Logic
             if (!win)
                 return null;
 
-            var index = Platform.Math.Random.Next(types.Length - 1);
+            var index = Platform.Math.Random.Next(types.Length);
             return Generate(types[index]);
         }
 
@@ -96,6 +93,9 @@ namespace Burntime.Remaster.Logic
             return list;
         }
 
+        /// <summary>
+        /// Generate item. Produces dummy if id is not found.
+        /// </summary>
         public Item Generate(string id)
         {
             return this[id].Generate();
@@ -164,13 +164,14 @@ namespace Burntime.Remaster.Logic
             base.AfterDeserialization();
         }
 
-        private void GenerateMap()
+        private Dictionary<string, ItemType> GenerateMap()
         {
-            // recreate id - object map
-            typeMap = new Dictionary<string, ItemType>();
+            var typeMap = new Dictionary<string, ItemType>();
 
             foreach (ItemType type in types)
                 typeMap.Add(type.ID, type);
+
+            return typeMap;
         }
     }
 }

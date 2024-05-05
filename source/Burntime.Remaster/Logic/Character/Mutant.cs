@@ -10,9 +10,9 @@ public class Mutant : Character
     public override void Die()
     {
         // drop special item
-        var item = Root.ItemTypes.GenerateClass(new string[] { "material", "rare", "useless" }, new string[] { "nodrop" }, 0.1f);
+        var item = Root.ItemTypes.GenerateClass(new string[] { "material", "rare", "useless" }, new string[] { "nodrop" }, 0.33f);
         if (item is not null)
-            Location.Items.DropAt(item, Position);
+            Location?.Items.DropAt(item, Position);
 
         base.Die();
     }
