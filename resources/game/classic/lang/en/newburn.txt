@@ -47,7 +47,7 @@ Okay
 You enabled cheats}
 in this save game.}
 }#
-I need {i}}
+I need |F}
 to get in there.}
 }#
 - Cheats active -

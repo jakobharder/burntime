@@ -53,7 +53,7 @@ namespace Burntime.Remaster.Scenes
 
             txtlines = 50;
             txtline = 0;
-            txtoffset = 610;
+            txtoffset = 608;
         }
 
         public override void OnUpdate(float elapsed)
