@@ -1,6 +1,6 @@
 ﻿# Burntime Changelog
 
-## [Unreleased]
+## 1.0.4 (2024-12-03)
 
 ### Changes
 
