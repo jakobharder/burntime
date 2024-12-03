@@ -59,10 +59,14 @@ class MapViewOverlayHoverText : IMapViewOverlay
         if (!isVisible)
             return;
 
+        const int topMargin = 8;
+
+        var textTarget = Target.GetSubBuffer(new Rect(0, topMargin, Target.Width, Target.Height - topMargin));
+
         if (mapState != null && mapState.Hover != null)
         {
             Font font = resMan.GetFont(BurntimeClassic.FontName, mapState.Hover.Color);
-            font.DrawText(Target, mapState.Hover.Position + Offset, mapState.Hover.Title, TextAlignment.Center);
+            font.DrawText(textTarget, mapState.Hover.Position + Offset - new Vector2(0, topMargin), mapState.Hover.Title, TextAlignment.Center);
         }
     }
 
