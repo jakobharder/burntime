@@ -1,0 +1,37 @@
+name: Linux
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build linux-x64
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Publish
+      run: >-
+        dotnet publish source/Burntime.MonoGame/Burntime.MonoGame.csproj
+        -c Release
+        -r linux-x64
+        --self-contained true
+        -p:PublishSingleFile=true
+
+    - name: Package
+      run: tar -czf burntime-linux-x64.tar.gz -C bin/Release/linux-x64/publish .
+
+    - name: Upload Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: burntime-linux-x64
+        path: burntime-linux-x64.tar.gz

@@ -69,29 +69,11 @@ public class PackageManager
     {
         if (package.ToLower() == "burntime")
         {
-            //Burntime.Common.BurntimePath path = new Burntime.Common.BurntimePath(FileSystem.BasePath + "system/");
-            //while (!path.IsValid)
-            //{
-            //    if (!path.ShowSelector())
-            //        Environment.Exit(0);
-            //    if (path.IsValid)
-            //        path.Save();
-            //}
-
-            //string burntimePackage = path.Path;
-            string burntimePackage = "..\\game\\burntime.pak";
-            if (burntimePackage.EndsWith(".pak"))
-                burntimePackage = burntimePackage.Substring(0, burntimePackage.Length - 4);
-
-            // make absolute path to avoid using basePath from FileSystem
-            string absolutePath = burntimePackage;
-            if (!System.IO.Path.IsPathRooted(absolutePath))
-                absolutePath = System.IO.Path.GetFullPath(FileSystem.BasePath + "system/" + absolutePath);
-            IPackage burntime = FileSystem.OpenPackage(absolutePath, "BURN_GFX/");
+            string burntimePackage = System.IO.Path.Combine(FileSystem.BasePath, "game", "burntime");
+            IPackage burntime = FileSystem.OpenPackage(burntimePackage, "BURN_GFX/");
             if (burntime == null)
             {
-                // something went wrong
-                throw new Exception("BURN_GFX folder was not found. Please make sure to set the correct path in system/path.txt to where the BURN_GFX and BURN.EXE are!");
+                throw new Exception($"BURN_GFX data was not found in '{burntimePackage}.pak'.");
             }
 
             vfs.Mount(package, burntime);

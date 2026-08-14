@@ -3,7 +3,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Burntime.Data.BurnGfx</RootNamespace>
     <AssemblyName>BurnGfx</AssemblyName>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
   </PropertyGroup>

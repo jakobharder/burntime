@@ -4,7 +4,6 @@ using Burntime.Platform;
 using Burntime.Platform.IO;
 using System;
 using System.Text;
-using System.Diagnostics;
 using System.Linq;
 
 namespace Burntime.Remaster
@@ -38,7 +37,12 @@ namespace Burntime.Remaster
             {
                 if (_version is null)
                 {
-                    _version = FileVersionInfo.GetVersionInfo(System.IO.Path.Combine(System.AppContext.BaseDirectory, "burntime.exe")).ProductVersion ?? "?";
+                    var entryAssembly = System.Reflection.Assembly.GetEntryAssembly();
+                    _version = entryAssembly is null
+                        ? "?"
+                        : System.Reflection.CustomAttributeExtensions
+                            .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>(entryAssembly)?
+                            .InformationalVersion ?? "?";
                     _version = _version.Split('+').First();
                 }
                 return _version;
@@ -66,14 +70,6 @@ namespace Burntime.Remaster
         // But to get a clean tile resolution of 32x38 use 1.1875
         //public override Vector2f RatioCorrection => new(1, 1.0f / 32.0f * 38.0f);
         public override Vector2f RatioCorrection => new(1.0f / 64.0f * 60.0f, 1.0f / 64.0f * 72.0f);
-
-        public override System.Drawing.Icon Icon
-        {
-            get
-            {
-                return new System.Drawing.Icon(GetType(), "icon256.ico");
-            }
-        }
 
         public BurntimeClassic()
         {

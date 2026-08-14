@@ -4,3 +4,4 @@ obj/
 *.user
 source/packages/
 launchSettings.json
+.DS_Store

@@ -1,13 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <OutputType Condition="$([MSBuild]::IsOSPlatform('Windows'))">WinExe</OutputType>
+    <OutputType Condition="!$([MSBuild]::IsOSPlatform('Windows'))">Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
     <RollForward>Major</RollForward>
     <PublishReadyToRun>false</PublishReadyToRun>
     <TieredCompilation>false</TieredCompilation>
+    <!-- Temporary compatibility for existing save games; replace BinaryFormatter separately. -->
+    <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
     <AssemblyName>Burntime</AssemblyName>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <GetProductVersionCommand>&quot;$(MSBuildProjectDirectory)\get-product-version.bat&quot;</GetProductVersionCommand>
+    <GetFileVersionCommand>&quot;$(MSBuildProjectDirectory)\get-file-version.bat&quot;</GetFileVersionCommand>
+    <GetSemverVersionCommand>&quot;$(MSBuildProjectDirectory)\get-semver-version.bat&quot;</GetSemverVersionCommand>
+  </PropertyGroup>
+  <PropertyGroup Condition="!$([MSBuild]::IsOSPlatform('Windows'))">
+    <GetProductVersionCommand>sh &quot;$(MSBuildProjectDirectory)/get-product-version.sh&quot;</GetProductVersionCommand>
+    <GetFileVersionCommand>sh &quot;$(MSBuildProjectDirectory)/get-file-version.sh&quot;</GetFileVersionCommand>
+    <GetSemverVersionCommand>sh &quot;$(MSBuildProjectDirectory)/get-semver-version.sh&quot;</GetSemverVersionCommand>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -23,13 +35,13 @@
 
   <!-- use git describe to set assembly version -->
   <Target Name="SetGitVersion" BeforeTargets="InitializeSourceControlInformation">
-    <Exec Command="get-product-version" ConsoleToMSBuild="True" IgnoreExitCode="False">
+    <Exec Command="$(GetProductVersionCommand)" ConsoleToMSBuild="True" IgnoreExitCode="False">
       <Output PropertyName="ProductVersion" TaskParameter="ConsoleOutput" />
     </Exec>
-    <Exec Command="get-file-version" ConsoleToMSBuild="True" IgnoreExitCode="False">
+    <Exec Command="$(GetFileVersionCommand)" ConsoleToMSBuild="True" IgnoreExitCode="False">
       <Output PropertyName="FileVersion" TaskParameter="ConsoleOutput" />
     </Exec>
-    <Exec Command="get-semver-version" ConsoleToMSBuild="True" IgnoreExitCode="False">
+    <Exec Command="$(GetSemverVersionCommand)" ConsoleToMSBuild="True" IgnoreExitCode="False">
       <Output PropertyName="SemverVersion" TaskParameter="ConsoleOutput" />
     </Exec>
     <PropertyGroup>
@@ -49,8 +61,9 @@
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.1.303" />
-    <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.1.303" />
+    <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.5" />
+    <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.5" />
+    <PackageReference Include="System.Runtime.Serialization.Formatters" Version="10.0.10" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Burntime.BurnGfx\Burntime.BurnGfx.csproj" />

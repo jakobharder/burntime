@@ -81,7 +81,8 @@ namespace Burntime.MonoGame
 
             Window.Title = "Burntime " + BurntimeClassic.Version;
 
-            FileSystem.BasePath = "";
+            // Installed content lives next to the executable on every desktop platform.
+            FileSystem.BasePath = AppContext.BaseDirectory;
             PackageManager paketManager = new("game/");
 
             paketManager.LoadPackages("classic", FileSystem.VFS, null);
@@ -355,7 +356,7 @@ namespace Burntime.MonoGame
             }
         }
 
-        protected override void OnExiting(object sender, EventArgs args)
+        protected override void OnExiting(object sender, ExitingEventArgs args)
         {
             base.OnExiting(sender, args);
 

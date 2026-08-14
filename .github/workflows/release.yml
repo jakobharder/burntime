@@ -9,9 +9,13 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
+
+    - uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
 
     - name: Build
       run: (cd source && dotnet publish Burntime.MonoGame -c Release /p:DebugSymbols=false /p:PublishReadyToRun=false /p:TieredCompilation=false --self-contained /p:PublishSingleFile=true && cd ..)
@@ -26,6 +30,7 @@ jobs:
       run: |
         cd ./bin/Release/win-x64/publish/game
         ../../../../tools/Release/PakConverter.exe classic
+        ../../../../tools/Release/PakConverter.exe classic_de
         ../../../../tools/Release/PakConverter.exe classic_newgfx
         ../../../../tools/Release/PakConverter.exe amiga
         ../../../../tools/Release/PakConverter.exe music
@@ -35,6 +40,7 @@ jobs:
       run: |
         rm -r ./bin/Release/win-x64/publish/game/classic
         rm -r ./bin/Release/win-x64/publish/game/classic_newgfx
+        rm -r ./bin/Release/win-x64/publish/game/classic_de
         rm -r ./bin/Release/win-x64/publish/game/classic_es
         rm -r ./bin/Release/win-x64/publish/game/classic_jp
         rm -r ./bin/Release/win-x64/publish/game/amiga
@@ -48,7 +54,7 @@ jobs:
 #        tar -caf burntime-tools.zip -C ./bin/tools/Release/win-x64/publish *
 
     - name: Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       if: startsWith(github.ref, 'refs/tags/')
       with:
         draft: true

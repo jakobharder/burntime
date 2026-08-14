@@ -113,20 +113,27 @@ public class FileSystem
 
         string userPath;
 
-        // for windows vista and above
-        if (Environment.OSVersion.Version.Major >= 6)
-            userPath = Environment.GetEnvironmentVariable("USERPROFILE") + "/Saved games";
-        // for windows xp
+        if (OperatingSystem.IsWindows())
+        {
+            // Preserve the existing Windows save location.
+            userPath = System.IO.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                "Saved games");
+        }
         else
-            userPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/My games";
+        {
+            // macOS resolves this to ~/Library/Application Support.
+            userPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        }
 
         // create user folder
         if (!System.IO.Directory.Exists(userPath))
             System.IO.Directory.CreateDirectory(userPath);
-        if (!System.IO.Directory.Exists(userPath + "/" + gameName))
-            System.IO.Directory.CreateDirectory(userPath + "/" + gameName);
+        string gamePath = System.IO.Path.Combine(userPath, gameName);
+        if (!System.IO.Directory.Exists(gamePath))
+            System.IO.Directory.CreateDirectory(gamePath);
 
-        return OpenPackage(userPath + "/" + gameName);
+        return OpenPackage(gamePath);
     }
 
     // add user folder

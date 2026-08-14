@@ -7,6 +7,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Burntime.Framework.States
 {
+#pragma warning disable SYSLIB0011 // Retained temporarily for existing save-game compatibility.
     class StateFormatter
     {
         BinaryFormatter formatter;
@@ -89,4 +90,5 @@ namespace Burntime.Framework.States
             }
         }
     }
+#pragma warning restore SYSLIB0011
 }
