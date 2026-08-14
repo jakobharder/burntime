@@ -1,0 +1,42 @@
+name: macOS
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build ${{ matrix.runtime }}
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        runtime: [osx-arm64, osx-x64]
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Publish
+      run: >-
+        dotnet publish source/Burntime.MonoGame/Burntime.MonoGame.csproj
+        -c Release
+        -r ${{ matrix.runtime }}
+        --self-contained true
+        -p:PublishSingleFile=true
+
+    - name: Package
+      run: >-
+        tar -czf burntime-macos-${{ matrix.runtime }}.tar.gz
+        -C bin/Release/${{ matrix.runtime }}/publish .
+
+    - name: Upload Build Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: burntime-macos-${{ matrix.runtime }}
+        path: burntime-macos-${{ matrix.runtime }}.tar.gz
