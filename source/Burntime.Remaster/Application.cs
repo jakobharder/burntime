@@ -4,7 +4,6 @@ using Burntime.Platform;
 using Burntime.Platform.IO;
 using System;
 using System.Text;
-using System.Diagnostics;
 using System.Linq;
 
 namespace Burntime.Remaster
@@ -38,7 +37,12 @@ namespace Burntime.Remaster
             {
                 if (_version is null)
                 {
-                    _version = FileVersionInfo.GetVersionInfo(System.IO.Path.Combine(System.AppContext.BaseDirectory, "burntime.exe")).ProductVersion ?? "?";
+                    var entryAssembly = System.Reflection.Assembly.GetEntryAssembly();
+                    _version = entryAssembly is null
+                        ? "?"
+                        : System.Reflection.CustomAttributeExtensions
+                            .GetCustomAttribute<System.Reflection.AssemblyInformationalVersionAttribute>(entryAssembly)?
+                            .InformationalVersion ?? "?";
                     _version = _version.Split('+').First();
                 }
                 return _version;
