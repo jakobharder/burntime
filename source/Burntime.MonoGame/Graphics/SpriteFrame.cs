@@ -4,7 +4,6 @@ using Burntime.Platform.Resource;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 

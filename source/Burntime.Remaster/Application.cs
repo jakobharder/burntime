@@ -71,14 +71,6 @@ namespace Burntime.Remaster
         //public override Vector2f RatioCorrection => new(1, 1.0f / 32.0f * 38.0f);
         public override Vector2f RatioCorrection => new(1.0f / 64.0f * 60.0f, 1.0f / 64.0f * 72.0f);
 
-        public override System.Drawing.Icon Icon
-        {
-            get
-            {
-                return new System.Drawing.Icon(GetType(), "icon256.ico");
-            }
-        }
-
         public BurntimeClassic()
         {
             FindClassesFromAssembly(typeof(BurntimeClassic).Assembly);

@@ -108,8 +108,6 @@ namespace Burntime.Framework
         public virtual Vector2 MinResolution { get; } = new Vector2(320, 200);
         public virtual Vector2 MaxResolution { get; } = new Vector2(320, 200);
         public virtual Vector2f RatioCorrection => Vector2f.One;
-        public virtual System.Drawing.Icon? Icon => null;
-
         protected static Module instance;
         public static Module Instance
         {
@@ -231,8 +229,6 @@ namespace Burntime.Framework
         public int MaxVerticalResolution => wrap.MaxVerticalResolution;
         public Vector2 MinResolution => wrap.MinResolution;
         public Vector2 MaxResolution => wrap.MaxResolution;
-        public System.Drawing.Icon? Icon => wrap.Icon;
-
         public void Render(RenderTarget Target)
         {
             wrap.Render(Target);

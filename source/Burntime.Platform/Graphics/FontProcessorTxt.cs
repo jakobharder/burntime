@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Runtime.InteropServices;
 
 using Burntime.Platform.Resource;
 using Burntime.Platform.IO;
@@ -77,18 +74,10 @@ namespace Burntime.Platform.Graphics
 
             // read png image
             IO.File file = FileSystem.GetFile(config[""].Get("image"));
-            Bitmap bmp = new Bitmap(file.Stream);
-            size = new Vector2(bmp.Width, bmp.Height);
-
-            BitmapData data = bmp.LockBits(new Rectangle(new Point(0, 0), bmp.Size), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-
-            image = new byte[data.Stride * bmp.Height];
-            stride = data.Stride;
-            Marshal.Copy(data.Scan0, image, 0, image.Length);
-
-            bmp.UnlockBits(data);
-
-            bmp.Dispose();
+            DecodedImage decoded = ImageLoader.LoadBgra(file.Stream);
+            size = new Vector2(decoded.Width, decoded.Height);
+            image = decoded.BgraData;
+            stride = decoded.Width * 4;
             file.Close();
         }
 
