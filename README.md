@@ -45,6 +45,9 @@ dotnet publish source/Burntime.MonoGame/Burntime.MonoGame.csproj -c Release -r o
 # macOS, Intel
 dotnet publish source/Burntime.MonoGame/Burntime.MonoGame.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=true
 
+# Linux, 64-bit
+dotnet publish source/Burntime.MonoGame/Burntime.MonoGame.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true
+
 # Windows, 64-bit
 dotnet publish source/Burntime.MonoGame/Burntime.MonoGame.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
 ```
