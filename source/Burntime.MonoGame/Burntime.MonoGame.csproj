@@ -10,14 +10,16 @@
     <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
     <AssemblyName>Burntime</AssemblyName>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
+    <GetProductVersionCommand>&quot;$(MSBuildProjectDirectory)\get-product-version.bat&quot;</GetProductVersionCommand>
+    <GetFileVersionCommand>&quot;$(MSBuildProjectDirectory)\get-file-version.bat&quot;</GetFileVersionCommand>
+    <GetSemverVersionCommand>&quot;$(MSBuildProjectDirectory)\get-semver-version.bat&quot;</GetSemverVersionCommand>
   </PropertyGroup>
   <PropertyGroup Condition="!$([MSBuild]::IsOSPlatform('Windows'))">
-    <!-- Temporary fallback until version generation is platform-independent. -->
-    <AssemblyVersion>0.0.0.0</AssemblyVersion>
-    <FileVersion>0.0.0.0</FileVersion>
-    <InformationalVersion>0.0.0-local</InformationalVersion>
-    <Version>0.0.0-local</Version>
+    <GetProductVersionCommand>sh &quot;$(MSBuildProjectDirectory)/get-product-version.sh&quot;</GetProductVersionCommand>
+    <GetFileVersionCommand>sh &quot;$(MSBuildProjectDirectory)/get-file-version.sh&quot;</GetFileVersionCommand>
+    <GetSemverVersionCommand>sh &quot;$(MSBuildProjectDirectory)/get-semver-version.sh&quot;</GetSemverVersionCommand>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
@@ -32,14 +34,14 @@
   </PropertyGroup>
 
   <!-- use git describe to set assembly version -->
-  <Target Name="SetGitVersion" BeforeTargets="InitializeSourceControlInformation" Condition="$([MSBuild]::IsOSPlatform('Windows'))">
-    <Exec Command="get-product-version" ConsoleToMSBuild="True" IgnoreExitCode="False">
+  <Target Name="SetGitVersion" BeforeTargets="InitializeSourceControlInformation">
+    <Exec Command="$(GetProductVersionCommand)" ConsoleToMSBuild="True" IgnoreExitCode="False">
       <Output PropertyName="ProductVersion" TaskParameter="ConsoleOutput" />
     </Exec>
-    <Exec Command="get-file-version" ConsoleToMSBuild="True" IgnoreExitCode="False">
+    <Exec Command="$(GetFileVersionCommand)" ConsoleToMSBuild="True" IgnoreExitCode="False">
       <Output PropertyName="FileVersion" TaskParameter="ConsoleOutput" />
     </Exec>
-    <Exec Command="get-semver-version" ConsoleToMSBuild="True" IgnoreExitCode="False">
+    <Exec Command="$(GetSemverVersionCommand)" ConsoleToMSBuild="True" IgnoreExitCode="False">
       <Output PropertyName="SemverVersion" TaskParameter="ConsoleOutput" />
     </Exec>
     <PropertyGroup>
