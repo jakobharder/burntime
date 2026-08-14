@@ -1,5 +1,12 @@
 ﻿# Burntime Changelog
 
+## [Unreleased]
+
+### Changes
+
+- First MacOS support
+- Updated dependencies (.NET 10, MonoGame 3.8.5)
+
 ## 1.0.4 (2024-12-03)
 
 ### Changes
