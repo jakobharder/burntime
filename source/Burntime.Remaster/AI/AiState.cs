@@ -830,12 +830,10 @@ namespace Burntime.Remaster.AI
         protected Character GetHireableNpc()
         {
             bool hasDoctor = Player.Group.Any(character => character.Class == CharClass.Doctor);
-            bool needsTechnician = StrategicAiEconomy.NeedsTechnician(this);
             return CurrentLocation.Characters
                 .Where(character => !character.IsDead && !character.IsHired && character.IsHuman && !character.IsTrader)
                 .OrderByDescending(character => character.Class switch
                 {
-                    CharClass.Technician when needsTechnician => 50,
                     CharClass.Mercenary => 40,
                     CharClass.Doctor when !hasDoctor => 35,
                     CharClass.Technician => 25,

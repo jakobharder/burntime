@@ -13,6 +13,12 @@ namespace Burntime.Remaster.Logic.Interaction
 
     public class Constructions : DataObject
     {
+        public interface IConstructionMaterialReserve
+        {
+            int GetConstructionMaterialCount(string itemId);
+            bool TryConsumeConstructionMaterial(string itemId);
+        }
+
         public class ConstructionInfo
         {
             public string Result;
@@ -205,12 +211,13 @@ namespace Burntime.Remaster.Logic.Interaction
         }
 
         /// <summary>
-        /// Construct the first requested result whose normal recipe and class requirements are met.
-        /// AI-controlled groups use this to share materials across their current inventories.
+        /// Construct the first requested result whose recipe requirements are met.
+        /// AI-controlled groups use this to share materials across their current inventories
+        /// and capped empire-wide construction reserve without class restrictions.
         /// </summary>
         public Item TryConstructAny(
-            Character technician,
             IEnumerable<IItemCollection> sources,
+            IConstructionMaterialReserve reserve,
             ClassicGame world,
             params string[] requestedResults)
         {
@@ -219,15 +226,18 @@ namespace Burntime.Remaster.Logic.Interaction
             {
                 ConstructionInfo recipe = constructions.Values
                     .SelectMany(entries => entries)
-                    .FirstOrDefault(entry => entry.Result == result && entry.Classes[(int)technician.Class]);
-                if (recipe == null || !ContainsAll(availableSources, recipe.Items) ||
-                    !ContainsAll(availableSources, recipe.Tools))
+                    .FirstOrDefault(entry => entry.Result == result);
+                if (recipe == null || !ContainsAll(availableSources, reserve, recipe.Items) ||
+                    !ContainsAll(availableSources, reserve, recipe.Tools))
                     continue;
 
                 foreach (string itemId in recipe.Items)
                 {
-                    IItemCollection owner = availableSources.First(source => source.Contains(itemId));
-                    owner.Remove(owner.Find(itemId));
+                    IItemCollection owner = availableSources.FirstOrDefault(source => source.Contains(itemId));
+                    if (owner != null)
+                        owner.Remove(owner.Find(itemId));
+                    else
+                        reserve.TryConsumeConstructionMaterial(itemId);
                 }
 
                 return world.ItemTypes[result].Generate();
@@ -236,9 +246,14 @@ namespace Burntime.Remaster.Logic.Interaction
             return null;
         }
 
-        static bool ContainsAll(IEnumerable<IItemCollection> sources, IEnumerable<string> itemIds)
+        static bool ContainsAll(
+            IEnumerable<IItemCollection> sources,
+            IConstructionMaterialReserve reserve,
+            IEnumerable<string> itemIds)
         {
-            return itemIds.All(itemId => sources.Any(source => source.Contains(itemId)));
+            return itemIds.GroupBy(itemId => itemId).All(group =>
+                sources.Sum(source => source.GetCount(group.Key)) +
+                    (reserve?.GetConstructionMaterialCount(group.Key) ?? 0) >= group.Count());
         }
     }
 }

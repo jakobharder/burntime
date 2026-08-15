@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Burntime.Remaster.Logic;
+using Burntime.Remaster.Logic.Interaction;
 using Burntime.Framework.States;
 
 namespace Burntime.Remaster.AI
@@ -9,12 +10,23 @@ namespace Burntime.Remaster.AI
     /// item pool for AI
     /// </summary>
     [Serializable]
-    class AiItemPool : StateObject
+    class AiItemPool : StateObject, Constructions.IConstructionMaterialReserve
     {
         static readonly string[] ItemTypeFilter = new string[] { 
             "item_knife", "item_axe", "item_pitchfork", "item_loaded_rifle", 
             "item_loaded_pistol", "item_gas_mask", "item_protection_suit", 
             "item_paper_helmet", "item_rat_trap", "item_snake_trap", "item_trap" };
+
+        // Inputs for recipes the strategic AI currently knows how to use. Construction
+        // reserves are capped at one per type; additional copies remain physical goods.
+        static readonly string[] ConstructionMaterialFilter = new string[] {
+            "item_wire", "item_woodpile", "item_screws", "item_spring", "item_tin",
+            "item_broken_pump", "item_spare_parts", "item_rags", "item_hose", "item_iron_pipe",
+            "item_unloaded_rifle", "item_unloaded_pistol", "item_ammunition",
+            "item_gas_mask", "item_gloves", "item_protective_overall", "item_boots" };
+
+        internal static System.Collections.Generic.IEnumerable<string> ConstructionMaterialIds =>
+            ConstructionMaterialFilter;
 
         internal static bool Accepts(ItemType type)
         {
@@ -82,17 +94,7 @@ namespace Burntime.Remaster.AI
             if (!Accepts(item.Type))
                 return;
 
-            PoolItem poolItem = FindPoolItem(item.Type);
-
-            // if this type is not yet in pool, create it
-            if (poolItem == null)
-            {
-                poolItem = container.Create<PoolItem>(item.Type);
-                items.Add(poolItem);
-            }
-
-            // increase count
-            poolItem.Count++;
+            InsertUnchecked(item.Type);
         }
 
         /// <summary>
@@ -117,6 +119,24 @@ namespace Burntime.Remaster.AI
             if (!Accepts(type))
                 return;
 
+            InsertUnchecked(type);
+        }
+
+        /// <summary>
+        /// Move the first copy of a supported construction component into the
+        /// empire-wide reserve. Further copies must remain in real inventories.
+        /// </summary>
+        public bool TryReserveConstructionMaterial(Item item)
+        {
+            if (!IsConstructionMaterial(item.Type.ID) || GetConstructionMaterialCount(item.Type.ID) >= 1)
+                return false;
+
+            InsertUnchecked(item.Type);
+            return true;
+        }
+
+        private void InsertUnchecked(ItemType type)
+        {
             PoolItem poolItem = FindPoolItem(type);
 
             // if this type is not yet in pool, create it
@@ -255,6 +275,21 @@ namespace Burntime.Remaster.AI
         internal System.Collections.Generic.IEnumerable<(ItemType Type, int Count)> GetContents() => items
             .Where(item => item.Count > 0)
             .Select(item => (item.Type, item.Count));
+
+        internal static bool IsConstructionMaterial(string itemId) =>
+            Array.Exists(ConstructionMaterialFilter, id => id == itemId);
+
+        public int GetConstructionMaterialCount(string itemId) =>
+            FindPoolItem(itemId)?.Count ?? 0;
+
+        public bool TryConsumeConstructionMaterial(string itemId)
+        {
+            PoolItem item = FindPoolItem(itemId);
+            if (item == null || !IsConstructionMaterial(itemId))
+                return false;
+            item.Count--;
+            return true;
+        }
 
         public bool HasHigherValueTrap(float productionValue, params string[] availableProducts) => items
             .Any(item => item.Count > 0 && item.Type.Production != null &&

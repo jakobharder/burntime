@@ -14,17 +14,14 @@ internal static class StrategicAiEconomy
 {
     static readonly ConditionalWeakTable<Player, TradeFailureState> LastReportedTradeFailure = new();
 
-    static readonly HashSet<string> ConstructionMaterials = new()
-    {
-        "item_wire", "item_woodpile", "item_screws", "item_spring", "item_tin",
-        "item_broken_pump", "item_spare_parts", "item_rags", "item_hose", "item_iron_pipe",
-        "item_unloaded_rifle", "item_unloaded_pistol", "item_ammunition"
-    };
+    static readonly HashSet<string> ConstructionMaterials =
+        AiItemPool.ConstructionMaterialIds.ToHashSet();
 
     public static void Run(ClassicAiState state)
     {
         RemoveAdviceItems(state);
         EquipEmpire(state);
+        RefillConstructionReserve(state);
 
         if (state.Current.Player == state.Player)
             MaintainCurrentCamp(state);
@@ -32,10 +29,53 @@ internal static class StrategicAiEconomy
         ConstructPortableWeapon(state);
 
         if (state.Current.IsCity)
+        {
             TradeAtCity(state);
+            RefillConstructionReserve(state);
+            ConstructPortableWeapon(state);
+        }
 
         // A purchase or construction may satisfy an equipment need immediately.
         EquipEmpire(state);
+    }
+
+    static void RefillConstructionReserve(ClassicAiState state)
+    {
+        List<(IItemCollection Owner, Item Item)> available = new();
+        if (state.Current.Player == state.Player)
+        {
+            available.AddRange(state.Current.Rooms
+                .SelectMany(room => room.Items.Select(item => ((IItemCollection)room.Items, item))));
+            available.AddRange(state.Current.CampNPC
+                .Where(character => character.Player == state.Player)
+                .SelectMany(character => character.Items
+                    .Where(item => character.Weapon != item && character.Protection != item)
+                    .Select(item => ((IItemCollection)character.Items, item))));
+        }
+        available.AddRange(state.Player.Group
+            .SelectMany(character => character.Items
+                .Where(item => character.Weapon != item && character.Protection != item)
+                .Select(item => ((IItemCollection)character.Items, item))));
+
+        List<string> reserved = new();
+        foreach (string itemId in AiItemPool.ConstructionMaterialIds)
+        {
+            if (state.Pool.GetConstructionMaterialCount(itemId) > 0)
+                continue;
+
+            (IItemCollection Owner, Item Item) candidate = available
+                .FirstOrDefault(entry => entry.Item.ID == itemId);
+            if (candidate.Item == null || !state.Pool.TryReserveConstructionMaterial(candidate.Item))
+                continue;
+
+            candidate.Owner.Remove(candidate.Item);
+            available.Remove(candidate);
+            reserved.Add(itemId);
+        }
+
+        if (reserved.Count > 0)
+            StrategicAiTelemetry.Report(state.Player,
+                $"reserved construction materials: {string.Join(", ", reserved)}");
     }
 
     static void RemoveAdviceItems(ClassicAiState state)
@@ -205,13 +245,6 @@ internal static class StrategicAiEconomy
             .ThenBy(candidate => candidate.Route.Days)
             .Select(candidate => candidate.Location)
             .FirstOrDefault();
-    }
-
-    public static bool NeedsTechnician(ClassicAiState state)
-    {
-        return !state.Player.Group.Any(character => character.Class == CharClass.Technician) &&
-            state.RootGame.World.Locations.Any(location => location.Player == state.Player &&
-                (HasConstructibleProductionNeed(location) || NeedsPump(location)));
     }
 
     public static bool ShouldReserveProductionTool(ClassicAiState state)
@@ -421,7 +454,7 @@ internal static class StrategicAiEconomy
         foreach (Character builder in builders)
         {
             Item result = state.RootGame.Constructions.TryConstructAny(
-                builder, sources, state.RootGame, wanted.ToArray());
+                sources, state.Pool, state.RootGame, wanted.ToArray());
             if (result == null)
                 continue;
 
@@ -441,7 +474,7 @@ internal static class StrategicAiEconomy
         foreach (Character builder in state.Player.Group.Where(character => !character.IsDead))
         {
             Item weapon = state.RootGame.Constructions.TryConstructAny(
-                builder, sources, state.RootGame, "item_loaded_rifle", "item_loaded_pistol");
+                sources, state.Pool, state.RootGame, "item_loaded_rifle", "item_loaded_pistol");
             if (weapon == null)
                 continue;
             state.Pool.Insert(weapon);
@@ -756,6 +789,7 @@ internal static class StrategicAiEconomy
         if (ConstructionMaterials.Contains(item.ID) && NeedsConstructionMaterials(state, item.ID))
         {
             int missing = FocusedRecipe(state).Count(id =>
+                state.Pool.GetConstructionMaterialCount(id) == 0 &&
                 !state.Player.Group.SelectMany(character => character.Items).Any(item => item.ID == id));
             bool valuableTrapRecipe = FocusedRecipe(state).Contains("item_spring") &&
                 FocusedRecipe(state).Contains("item_tin") && FocusedRecipe(state).Contains("item_wire");
@@ -797,6 +831,7 @@ internal static class StrategicAiEconomy
         if (item.Type.IsClass("weapon") && NeedsWeapons(state))
             return false;
         if (ConstructionMaterials.Contains(item.ID) && FocusedRecipe(state).Contains(item.ID) &&
+            state.Pool.GetConstructionMaterialCount(item.ID) == 0 &&
             state.Player.Group.SelectMany(character => character.Items).Count(candidate => candidate.ID == item.ID) <= 1)
             return false;
         if (item.ID == "item_advice")
@@ -908,6 +943,7 @@ internal static class StrategicAiEconomy
     {
         string[] recipe = FocusedRecipe(state);
         return recipe.Contains(itemId) &&
+            state.Pool.GetConstructionMaterialCount(itemId) == 0 &&
             !state.Player.Group.SelectMany(character => character.Items).Any(item => item.ID == itemId);
     }
 
@@ -915,6 +951,8 @@ internal static class StrategicAiEconomy
     {
         List<string[]> recipes = new();
         IEnumerable<Item> carried = state.Player.Group.SelectMany(character => character.Items);
+        bool HasComponent(string itemId) => carried.Any(item => item.ID == itemId) ||
+            state.Pool.GetConstructionMaterialCount(itemId) > 0;
         if (NeedsWeapons(state))
         {
             if (carried.Any(item => item.ID == "item_unloaded_rifle"))
@@ -935,10 +973,13 @@ internal static class StrategicAiEconomy
             recipes.Add(new[] { "item_broken_pump", "item_rags", "item_hose" });
             recipes.Add(new[] { "item_spare_parts", "item_iron_pipe", "item_rags", "item_hose" });
         }
+        ItemType protectiveSuit = state.RootGame.ItemTypes["item_protection_suit"];
+        if (NeedsDangerProtection(state, protectiveSuit))
+            recipes.Add(new[] { "item_gas_mask", "item_gloves", "item_protective_overall", "item_boots" });
 
         return recipes
             .OrderByDescending(RecipePriority)
-            .ThenByDescending(recipe => recipe.Count(id => carried.Any(item => item.ID == id)))
+            .ThenByDescending(recipe => recipe.Count(HasComponent))
             .ThenBy(recipe => recipe.Length)
             .FirstOrDefault() ?? Array.Empty<string>();
     }
@@ -950,6 +991,8 @@ internal static class StrategicAiEconomy
         if (recipe.Contains("item_unloaded_rifle") || recipe.Contains("item_unloaded_pistol"))
             return 3;
         if (recipe.Contains("item_screws") && recipe.Contains("item_woodpile") && recipe.Contains("item_wire"))
+            return 2;
+        if (recipe.Contains("item_protective_overall"))
             return 2;
         return 1;
     }
@@ -1043,7 +1086,9 @@ internal static class StrategicAiEconomy
     {
         string[] recipe = FocusedRecipe(state);
         IEnumerable<Item> carried = state.Player.Group.SelectMany(character => character.Items);
-        return recipe.Length > 0 && recipe.All(itemId => carried.Any(item => item.ID == itemId));
+        return recipe.Length > 0 && recipe.All(itemId =>
+            carried.Any(item => item.ID == itemId) ||
+            state.Pool.GetConstructionMaterialCount(itemId) > 0);
     }
 
     sealed record TradeAsset(IItemCollection Owner, Item Item, bool FromPool);
