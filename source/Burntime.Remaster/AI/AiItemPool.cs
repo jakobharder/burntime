@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Burntime.Remaster.Logic;
 using Burntime.Framework.States;
 
@@ -135,9 +136,9 @@ namespace Burntime.Remaster.AI
         /// Get best available weapon.
         /// </summary>
         /// <returns>weapon item or null</returns>
-        public Item GetBestWeapon()
+        public Item GetBestWeapon(int minimumDamage = 0, bool allowProductionTool = true)
         {
-            PoolItem item = FindPoolItem("item_loaded_rifle", "item_loaded_pistol", "item_pitchfork", "item_axe", "item_knife");
+            PoolItem item = FindBestWeaponPoolItem(minimumDamage, allowProductionTool);
             if (item != null)
                 return Take(item);
             return null;
@@ -226,6 +227,47 @@ namespace Burntime.Remaster.AI
             if (item != null)
                 return true;
             return false;
+        }
+
+        public bool HasBetterWeapon(int damage, bool allowProductionTool = true)
+        {
+            return FindBestWeaponPoolItem(damage, allowProductionTool) != null;
+        }
+
+        public int ProductionToolCount => items
+            .Where(item => item.Count > 0 && item.Type.Production != null)
+            .Sum(item => item.Count);
+
+        public int WaterContainerCount => items
+            .Where(item => item.Count > 0 && IsWaterContainer(item.Type))
+            .Sum(item => item.Count);
+
+        public int BestWaterContainerCapacity => items
+            .Where(item => item.Count > 0 && IsWaterContainer(item.Type))
+            .Select(item => WaterContainerCapacity(item.Type))
+            .DefaultIfEmpty(0)
+            .Max();
+
+        public Item TakeLeastWaterContainer()
+        {
+            PoolItem item = items
+                .Where(candidate => candidate.Count > 0 && IsWaterContainer(candidate.Type))
+                .OrderBy(candidate => WaterContainerCapacity(candidate.Type))
+                .ThenBy(candidate => candidate.Type.WaterValue)
+                .FirstOrDefault();
+            return item != null ? Take(item) : null;
+        }
+
+        internal static int WaterContainerCapacity(ItemType type) =>
+            type.WaterValue > 0 ? type.WaterValue : type.Full?.WaterValue ?? 0;
+
+        PoolItem FindBestWeaponPoolItem(int minimumDamage, bool allowProductionTool)
+        {
+            string[] weaponOrder = { "item_loaded_rifle", "item_loaded_pistol", "item_pitchfork", "item_axe", "item_knife" };
+            return weaponOrder
+                .Select(id => items.FirstOrDefault(item => item.Type.ID == id && item.Count > 0))
+                .FirstOrDefault(item => item != null && item.Type.DamageValue > minimumDamage &&
+                    (allowProductionTool || item.Type.Production == null));
         }
 
         /// <summary>

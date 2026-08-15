@@ -102,26 +102,10 @@ namespace Burntime.Remaster.AI
         #endregion
 
         /// <summary>
-        /// Make some logic preparations.
-        /// </summary>
-        protected void FirstTurn()
-        {
-            // add some traps, weapons to pool
-            ItemPool.Insert(Game.ItemTypes["item_knife"]);
-            ItemPool.Insert(Game.ItemTypes["item_knife"]);
-            ItemPool.Insert(Game.ItemTypes["item_knife"]);
-            ItemPool.Insert(Game.ItemTypes["item_rat_trap"]);
-            ItemPool.Insert(Game.ItemTypes["item_snake_trap"]);
-        }
-
-        /// <summary>
         /// Process AI player turn.
         /// </summary>
         public void Turn()
         {
-            if (Game.World.Day == 1)
-                FirstTurn();
-
             UpdateItems();
 
             List<IAiGoal> goals = new List<IAiGoal>();
@@ -129,6 +113,8 @@ namespace Burntime.Remaster.AI
 
             foreach (var goal in goals)
                 goal.AlwaysDo();
+
+            StrategicAiEconomy.Run(this);
 
             StrategicAiDecision decision = StrategicAiPlanner.Choose(this);
             StrategicAiExecutor.Execute(this, decision);
@@ -611,38 +597,6 @@ namespace Burntime.Remaster.AI
                     CurrentLocation.CampNPC.Where(character => character.Player == Player),
                     useCampStorage: true);
 
-            int turn = Game.World.Day;
-            ClassicAiPolicy policy = ClassicAiPolicy.ForDifficulty(Game.World.Difficulty);
-            if (!policy.AllowScheduledEquipment)
-                return;
-
-            // add weapons to pool (TODO make dependent on difficulty)
-            if (turn % 3 == 0)
-                ItemPool.Insert(Game.ItemTypes["item_knife"]);
-            if (turn % 10 == 0)
-                ItemPool.Insert(Game.ItemTypes["item_axe"]);
-            if (turn % 15 == 0)
-                ItemPool.Insert(Game.ItemTypes["item_pitchfork"]);
-            if (turn % 20 == 0)
-                ItemPool.Insert(Game.ItemTypes["item_loaded_rifle"]);
-            if (turn % 17 == 0)
-                ItemPool.Insert(Game.ItemTypes["item_loaded_pistol"]);
-
-            // add traps to pool
-            if (turn % 3 == 0)
-                ItemPool.Insert(Game.ItemTypes["item_knife"]);
-            if (turn % 7 == 0)
-                ItemPool.Insert(Game.ItemTypes["item_rat_trap"]);
-            if (turn % 11 == 0)
-                ItemPool.Insert(Game.ItemTypes["item_snake_trap"]);
-            if (turn % 14 == 0)
-                ItemPool.Insert(Game.ItemTypes["item_trap"]);
-
-            // add protection items to pool
-            if (turn % 25 == 0)
-                ItemPool.Insert(Game.ItemTypes["item_gas_mask"]);
-            if (turn % 50 == 0)
-                ItemPool.Insert(Game.ItemTypes["item_protection_suit"]);
         }
 
         private bool TryStoreInGroup(Item item)
@@ -696,20 +650,38 @@ namespace Burntime.Remaster.AI
         {
             EquipWaterContainers(new[] { npc }, useCampStorage: true);
 
+            if (CurrentLocation.Danger != null && !npc.Items.IsFull)
+            {
+                Item protection = CurrentLocation.Danger.Type == "radiation"
+                    ? ItemPool.GetProtectionSuit()
+                    : ItemPool.GetGasMask();
+                if (protection != null)
+                {
+                    npc.Items.Add(protection);
+                    npc.Protection = protection;
+                }
+            }
+
             // join camp
             npc.JoinCamp();
 
-            // add production
-            if (ItemPool.HasTrap(GetAvailableProducts(CurrentLocation)))
+            // Add a real compatible production tool. A carried weapon such as a knife can
+            // remain on the guard and serve both defense and maggot production.
+            Item trap = ItemPool.HasTrap(GetAvailableProducts(CurrentLocation))
+                ? ItemPool.GetBestTrap(GetAvailableProducts(CurrentLocation))
+                : TakeCompatibleGroupProduction(CurrentLocation);
+            if (trap != null)
             {
-                Item trap = ItemPool.GetBestTrap(GetAvailableProducts(CurrentLocation));
-
-                // put item into a room if available
-                if (CurrentLocation.Rooms.Count > 0)
+                if (trap.Type.IsClass("weapon") && !npc.Items.IsFull)
+                {
+                    if (!npc.Items.Contains(trap))
+                        npc.Items.Add(trap);
+                    npc.Weapon = trap;
+                }
+                else if (CurrentLocation.Rooms.Count > 0)
                 {
                     CurrentLocation.StoreItemRandom(trap);
                 }
-                // otherwise add to NPC inventory
                 else
                 {
                     npc.Items.Add(trap);
@@ -732,8 +704,8 @@ namespace Burntime.Remaster.AI
             if (location.Player != null)
                 return false;
 
-            // no appropriate trap available
-            if (!ItemPool.HasTrap(GetAvailableProducts(location)))
+            // no appropriate real production tool available
+            if (!ItemPool.HasTrap(GetAvailableProducts(location)) && FindCompatibleGroupProduction(location) == null)
                 return false;
 
             // in case of hazards
@@ -754,6 +726,25 @@ namespace Burntime.Remaster.AI
             }
 
             return true;
+        }
+
+        private Item FindCompatibleGroupProduction(Location location)
+        {
+            string[] products = GetAvailableProducts(location);
+            return Player.Group.SelectMany(character => character.Items)
+                .Where(item => item.Type.Production != null && products.Contains(item.Type.Production.Produce.ID))
+                .OrderByDescending(item => item.Type.Production.Produce.FoodValue)
+                .FirstOrDefault();
+        }
+
+        private Item TakeCompatibleGroupProduction(Location location)
+        {
+            Item item = FindCompatibleGroupProduction(location);
+            if (item == null)
+                return null;
+            Character owner = Player.Group.First(character => character.Items.Contains(item));
+            owner.Items.Remove(item);
+            return item;
         }
 
         /// <summary>
@@ -803,10 +794,12 @@ namespace Burntime.Remaster.AI
         protected Character GetHireableNpc()
         {
             bool hasDoctor = Player.Group.Any(character => character.Class == CharClass.Doctor);
+            bool needsTechnician = StrategicAiEconomy.NeedsTechnician(this);
             return CurrentLocation.Characters
                 .Where(character => !character.IsDead && !character.IsHired && character.IsHuman && !character.IsTrader)
                 .OrderByDescending(character => character.Class switch
                 {
+                    CharClass.Technician when needsTechnician => 50,
                     CharClass.Mercenary => 40,
                     CharClass.Doctor when !hasDoctor => 35,
                     CharClass.Technician => 25,
@@ -859,9 +852,13 @@ namespace Burntime.Remaster.AI
             // add weapon to npc
             if (ItemPool.HasWeapon() && !ch.Items.IsFull)
             {
-                Item weapon = ItemPool.GetBestWeapon();
-                ch.Items.Add(weapon);
-                ch.SelectItem(weapon);
+                bool reserveProductionTool = StrategicAiEconomy.ShouldReserveProductionTool(this);
+                Item weapon = ItemPool.GetBestWeapon(allowProductionTool: !reserveProductionTool);
+                if (weapon != null)
+                {
+                    ch.Items.Add(weapon);
+                    ch.SelectItem(weapon);
+                }
             }
 
             return ch;

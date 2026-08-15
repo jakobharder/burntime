@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Burntime.Platform.IO;
 using Burntime.Platform.Resource;
 
@@ -201,6 +202,43 @@ namespace Burntime.Remaster.Logic.Interaction
             constr.Dialog = conv;
             constr.construction = construction;
             return constr;
+        }
+
+        /// <summary>
+        /// Construct the first requested result whose normal recipe and class requirements are met.
+        /// AI-controlled groups use this to share materials across their current inventories.
+        /// </summary>
+        public Item TryConstructAny(
+            Character technician,
+            IEnumerable<IItemCollection> sources,
+            ClassicGame world,
+            params string[] requestedResults)
+        {
+            List<IItemCollection> availableSources = sources.Distinct().ToList();
+            foreach (string result in requestedResults)
+            {
+                ConstructionInfo recipe = constructions.Values
+                    .SelectMany(entries => entries)
+                    .FirstOrDefault(entry => entry.Result == result && entry.Classes[(int)technician.Class]);
+                if (recipe == null || !ContainsAll(availableSources, recipe.Items) ||
+                    !ContainsAll(availableSources, recipe.Tools))
+                    continue;
+
+                foreach (string itemId in recipe.Items)
+                {
+                    IItemCollection owner = availableSources.First(source => source.Contains(itemId));
+                    owner.Remove(owner.Find(itemId));
+                }
+
+                return world.ItemTypes[result].Generate();
+            }
+
+            return null;
+        }
+
+        static bool ContainsAll(IEnumerable<IItemCollection> sources, IEnumerable<string> itemIds)
+        {
+            return itemIds.All(itemId => sources.Any(source => source.Contains(itemId)));
         }
     }
 }

@@ -40,7 +40,6 @@ internal sealed class ClassicAiPolicy
     public float MinimumAttackRatio { get; init; }
     public float HostileTargetScore { get; init; }
     public bool AllowGeneratedRecruitPaymentInCities { get; init; } = true;
-    public bool AllowScheduledEquipment { get; init; } = true;
     public int SafeFoodFloor { get; init; } = 6;
     public int SafeWaterFloor { get; init; } = 4;
     public int SafeHealing { get; init; } = 25;
@@ -126,6 +125,20 @@ internal static class StrategicAiPlanner
                 500,
                 observation.Current,
                 Reason: "owned camp lacks compatible production equipment"));
+        }
+
+        if (StrategicAiEconomy.ShouldContinueTrading(state))
+        {
+            candidates.Add(new StrategicAiDecision(
+                StrategicAiAction.Wait,
+                820,
+                observation.Current,
+                Reason: "continue trading surplus goods for needed equipment"));
+        }
+        else if (StrategicAiEconomy.ShouldVisitTrader(state))
+        {
+            Location? tradeCity = StrategicAiEconomy.FindBestTradeCity(state) ?? FindNearestCity(state);
+            AddTravelCandidate(state, candidates, tradeCity, 740, "trade surplus goods for needed equipment");
         }
 
         if (state.WaitTurns > 0 && !observation.CriticalSupplies)
