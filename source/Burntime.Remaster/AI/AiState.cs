@@ -225,9 +225,13 @@ namespace Burntime.Remaster.AI
 
             if (lowFood && !Player.Character.Items.Contains("item_meat") && !Player.Character.Items.IsFull)
                 Player.Character.Items.Add(Game.ItemTypes["item_meat"].Generate());
-            if (lowWater && !Player.Character.Items.Contains("item_empty_wineskin") &&
-                !Player.Character.Items.Contains("item_full_wineskin") && !Player.Character.Items.IsFull)
-                Player.Character.Items.Add(Game.ItemTypes["item_full_wineskin"].Generate());
+            if (lowWater && !HasWaterContainer(Player.Character) && !Player.Character.Items.IsFull)
+            {
+                Item container = ItemPool.HasWaterContainer()
+                    ? ItemPool.GetBestWaterContainer()
+                    : Game.ItemTypes["item_full_wineskin"].Generate();
+                Player.Character.Items.Add(container);
+            }
 
             // Safe locations provide bounded recovery, not the former full refill/heal.
             foreach (Character character in Player.Group)
@@ -581,14 +585,31 @@ namespace Burntime.Remaster.AI
             if (itemPool == null)
                 itemPool = container.Create<AiItemPool>();
 
-            // collect only items useful to the AI; leave unrelated items in the world
+            // Strategic equipment is shared through the AI pool. Keep other goods as real items so
+            // they can be used for future trading instead of disappearing into the abstract pool.
             foreach (Item item in CurrentLocation.Items.ToArray())
             {
-                if (!AiItemPool.Accepts(item.Type))
-                    continue;
-                ItemPool.Insert(item);
-                CurrentLocation.Items.Remove(item);
+                if (AiItemPool.Accepts(item.Type))
+                {
+                    ItemPool.Insert(item);
+                    CurrentLocation.Items.Remove(item);
+                }
+                else if (TryStoreInGroup(item))
+                {
+                    CurrentLocation.Items.Remove(item);
+                }
+                else if (IsHome && CurrentLocation.Rooms.Any(room => !room.Items.IsFull))
+                {
+                    CurrentLocation.StoreItemRandom(item);
+                    CurrentLocation.Items.Remove(item);
+                }
             }
+
+            EquipWaterContainers(Player.Group.Where(character => character != Player.Character));
+            if (IsHome)
+                EquipWaterContainers(
+                    CurrentLocation.CampNPC.Where(character => character.Player == Player),
+                    useCampStorage: true);
 
             int turn = Game.World.Day;
             ClassicAiPolicy policy = ClassicAiPolicy.ForDifficulty(Game.World.Difficulty);
@@ -623,6 +644,47 @@ namespace Burntime.Remaster.AI
             if (turn % 50 == 0)
                 ItemPool.Insert(Game.ItemTypes["item_protection_suit"]);
         }
+
+        private bool TryStoreInGroup(Item item)
+        {
+            Character carrier = Player.Group.FirstOrDefault(character => !character.Items.IsFull);
+            return carrier != null && carrier.Items.Add(item);
+        }
+
+        private static bool HasWaterContainer(Character character) =>
+            character.Items.Any(item => AiItemPool.IsWaterContainer(item.Type));
+
+        private void EquipWaterContainers(IEnumerable<Character> characters, bool useCampStorage = false)
+        {
+            foreach (Character character in characters)
+            {
+                if (HasWaterContainer(character) || character.Items.IsFull)
+                    continue;
+
+                Item container = ItemPool.HasWaterContainer()
+                    ? ItemPool.GetBestWaterContainer()
+                    : useCampStorage ? TakeBestStoredWaterContainer() : null;
+                if (container != null)
+                    character.Items.Add(container);
+            }
+        }
+
+        private Item TakeBestStoredWaterContainer()
+        {
+            var stored = CurrentLocation.Rooms
+                .SelectMany(room => room.Items.Select(item => new { Room = room, Item = item }))
+                .Where(entry => AiItemPool.IsWaterContainer(entry.Item.Type))
+                .OrderByDescending(entry => entry.Item.WaterValue > 0
+                    ? entry.Item.WaterValue
+                    : entry.Item.Type.Full.WaterValue)
+                .ThenByDescending(entry => entry.Item.WaterValue)
+                .FirstOrDefault();
+            if (stored == null)
+                return null;
+
+            stored.Room.Items.Remove(stored.Item);
+            return stored.Item;
+        }
         #endregion
 
         #region protected camp management methods
@@ -632,6 +694,8 @@ namespace Burntime.Remaster.AI
         /// <param name="npc">NPC to join camp</param>
         protected void JoinCamp(Character npc)
         {
+            EquipWaterContainers(new[] { npc }, useCampStorage: true);
+
             // join camp
             npc.JoinCamp();
 
@@ -789,6 +853,8 @@ namespace Burntime.Remaster.AI
 
             // hire
             ch.Hire(Player);
+
+            EquipWaterContainers(new[] { ch });
 
             // add weapon to npc
             if (ItemPool.HasWeapon() && !ch.Items.IsFull)

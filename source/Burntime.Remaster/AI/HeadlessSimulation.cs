@@ -136,15 +136,20 @@ public static class HeadlessSimulation
             Dictionary<string, int> collected = removed
                 .Where(pair => before.GroundItemTypes[pair.Key])
                 .ToDictionary(pair => pair.Key, pair => pair.Value);
-            Dictionary<string, int> leftBehind = before.GroundItems
+            Dictionary<string, int> retained = removed
                 .Where(pair => !before.GroundItemTypes[pair.Key])
+                .ToDictionary(pair => pair.Key, pair => pair.Value);
+            Dictionary<string, int> leftBehind = currentGround
+                .Where(pair => before.GroundItems.ContainsKey(pair.Key) && !before.GroundItemTypes[pair.Key])
                 .ToDictionary(pair => pair.Key, pair => pair.Value);
 
             events.Add($"{prefix} found at {LocationLabel(before.Location)}: {FormatItems(before.GroundItems)}.");
             if (collected.Count > 0)
                 events.Add($"{prefix} moved to AI item pool: {FormatItems(collected)}.");
+            if (retained.Count > 0)
+                events.Add($"{prefix} retained for inventory or camp storage: {FormatItems(retained)}.");
             if (leftBehind.Count > 0)
-                events.Add($"{prefix} left unsupported ground items: {FormatItems(leftBehind)}.");
+                events.Add($"{prefix} left ground items due to unavailable storage: {FormatItems(leftBehind)}.");
         }
 
         Character[] currentGroup = player.Group.ToArray();

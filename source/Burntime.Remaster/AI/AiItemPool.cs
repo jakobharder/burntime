@@ -17,8 +17,12 @@ namespace Burntime.Remaster.AI
 
         internal static bool Accepts(ItemType type)
         {
-            return Array.Exists(ItemTypeFilter, id => id == type.ID);
+            return Array.Exists(ItemTypeFilter, id => id == type.ID) || IsWaterContainer(type);
         }
+
+        internal static bool IsWaterContainer(ItemType type) =>
+            (type.Empty != null && type.WaterValue > 0) ||
+            (type.Full != null && type.Full.WaterValue > 0);
 
         #region protected class PoolItem
         /// <summary>
@@ -137,6 +141,26 @@ namespace Burntime.Remaster.AI
             if (item != null)
                 return Take(item);
             return null;
+        }
+
+        /// <summary>
+        /// Get the largest available water container, preferring a full variant.
+        /// </summary>
+        public Item GetBestWaterContainer()
+        {
+            PoolItem item = FindPoolItem(
+                "item_full_wineskin", "item_empty_wineskin",
+                "item_full_canteen", "item_empty_canteen",
+                "item_water_bottle", "item_bottle");
+            return item != null ? Take(item) : null;
+        }
+
+        public bool HasWaterContainer()
+        {
+            return FindPoolItem(
+                "item_full_wineskin", "item_empty_wineskin",
+                "item_full_canteen", "item_empty_canteen",
+                "item_water_bottle", "item_bottle") != null;
         }
 
         /// <summary>
