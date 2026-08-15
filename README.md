@@ -6,8 +6,8 @@ Burntime is a remaster and expansion of Max Design's PC strategy game 'Burntime'
 
 ## How to get
 
-- [Steam](https://store.steampowered.com/app/3269080/Burntime_Remastered/)
-- [Zip Download](https://github.com/jakobharder/burntime/releases)
+- [Steam](https://store.steampowered.com/app/3269080/Burntime_Remastered/) (Windows)
+- [Direct Download](https://github.com/jakobharder/burntime/releases) (Windows & MacOS)
 
 ## Notes
 
@@ -19,7 +19,7 @@ Burntime is a remaster and expansion of Max Design's PC strategy game 'Burntime'
 
 ### Prerequisites
 
-- [Git](https://git-scm.com/downloads)
+- [Git](https://git-scm.com/downloads) (used in build process to get the version tag)
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 - MonoGame 3.8.5 tools:
 

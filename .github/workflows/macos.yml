@@ -1,42 +1,48 @@
 name: macOS
 
 on:
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "source/**"
+      - "resources/**"
+      - "packaging/macos/**"
+      - ".github/workflows/macos.yml"
 
 jobs:
   build:
-    name: Build ${{ matrix.runtime }}
+    if: github.event_name == 'pull_request'
     runs-on: macos-latest
-    strategy:
-      matrix:
-        runtime: [osx-arm64, osx-x64]
-
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '10.0.x'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
 
-    - name: Publish
-      run: >-
-        dotnet publish source/Burntime.MonoGame/Burntime.MonoGame.csproj
-        -c Release
-        -r ${{ matrix.runtime }}
-        --self-contained true
-        -p:PublishSingleFile=true
+      - name: Build
+        run: dotnet build source/Burntime.MonoGame/Burntime.MonoGame.csproj --configuration Release
 
-    - name: Package
-      run: >-
-        tar -czf burntime-macos-${{ matrix.runtime }}.tar.gz
-        -C bin/Release/${{ matrix.runtime }}/publish .
+  package:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Upload Build Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: burntime-macos-${{ matrix.runtime }}
-        path: burntime-macos-${{ matrix.runtime }}.tar.gz
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Build ad-hoc signed DMG
+        run: ./packaging/macos/package.sh arm64
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Burntime-macOS-arm64-unsigned
+          path: artifacts/macos-arm64/Burntime-macOS-arm64.dmg
+          if-no-files-found: error
