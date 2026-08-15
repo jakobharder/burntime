@@ -19,12 +19,3 @@ jobs:
 
     - name: Build
       run: (cd source && dotnet build Burntime.MonoGame -c Release && cd ..)
-
-    - name: Package
-      run: tar -caf burntime.zip -C ./bin/Release *
-
-    - name: Upload Build Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: burntime
-        path: burntime.zip
