@@ -75,7 +75,17 @@ namespace Burntime.MonoGame
 
         protected override void Initialize()
         {
-            Log.Initialize("log.txt");
+            string logPath = "log.txt";
+            if (OperatingSystem.IsMacOS())
+            {
+                string logDirectory = System.IO.Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                    "Burntime");
+                System.IO.Directory.CreateDirectory(logDirectory);
+                logPath = System.IO.Path.Combine(logDirectory, "log.txt");
+            }
+
+            Log.Initialize(logPath);
             Log.Info(System.DateTime.Now.ToLocalTime().ToString());
             Log.Info("Burntime version " + BurntimeClassic.Version);
 

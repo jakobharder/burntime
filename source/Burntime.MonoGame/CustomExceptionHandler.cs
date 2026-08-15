@@ -55,8 +55,22 @@ namespace Burntime
             }
             catch { }
 
-            using StreamWriter writer = new("crash.txt", true);
-            log(writer, exception);
+            try
+            {
+                string crashPath = "crash.txt";
+                if (OperatingSystem.IsMacOS())
+                {
+                    string crashDirectory = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                        "Burntime");
+                    Directory.CreateDirectory(crashDirectory);
+                    crashPath = Path.Combine(crashDirectory, "crash.txt");
+                }
+
+                using StreamWriter writer = new(crashPath, true);
+                log(writer, exception);
+            }
+            catch { }
 
 #warning TODO message box?
         }

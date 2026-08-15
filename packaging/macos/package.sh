@@ -66,8 +66,14 @@ mv "$app_path/Contents/MacOS/game" "$app_path/Contents/Resources/game"
 ln -s ../Resources/game "$app_path/Contents/MacOS/game"
 sed -e "s/@VERSION@/$version/g" -e "s/@BUILD_VERSION@/$build_version/g" \
   "$repo_root/packaging/macos/Info.plist.in" > "$app_path/Contents/Info.plist"
+mkdir -p "$artifacts_dir/swift-cache"
+SWIFT_MODULECACHE_PATH="$artifacts_dir/swift-cache" \
+CLANG_MODULE_CACHE_PATH="$artifacts_dir/swift-cache" \
+  swift "$repo_root/packaging/macos/create-macos-icon.swift" \
+    "$repo_root/source/Burntime.MonoGame/Icon.ico" \
+    "$artifacts_dir/Icon-macOS.png"
 "$repo_root/packaging/macos/create-icon.sh" \
-  "$repo_root/source/Burntime.MonoGame/Icon.ico" \
+  "$artifacts_dir/Icon-macOS.png" \
   "$app_path/Contents/Resources/Burntime.icns"
 
 chmod +x "$app_path/Contents/MacOS/Burntime"
