@@ -194,10 +194,16 @@ internal static class StrategicAiPlanner
         }
 
         Location? collectionCamp = StrategicAiEconomy.FindBestCampForCollection(state);
+        bool preventsFoodWaste = collectionCamp != null &&
+            StrategicAiEconomy.ShouldPreventFoodWaste(state, collectionCamp);
         AddTravelCandidate(state, candidates, collectionCamp,
             System.Math.Min(preparedEconomyScore,
-                expansionNeedsEquipment ? policy.ExpansionEconomyScore - 10 : earlyEconomy ? 850 : 700),
-            "collect camp surplus to finance expansion");
+                preventsFoodWaste
+                    ? policy.ExpansionEconomyScore + 10
+                    : expansionNeedsEquipment ? policy.ExpansionEconomyScore - 10 : earlyEconomy ? 850 : 700),
+            preventsFoodWaste
+                ? "collect capped food stock before production is wasted"
+                : "collect camp surplus to finance expansion");
 
         Location? deliveryCamp = StrategicAiEconomy.FindBestCampForDelivery(state);
         AddTravelCandidate(state, candidates, deliveryCamp,

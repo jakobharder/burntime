@@ -157,7 +157,7 @@ namespace Burntime.Remaster.Logic
         public Maps.MapViewHoverInfo Hover;
 
         #region food
-        const int MAX_STOCK_FOOD = 6;
+        public const int MaxStockFood = 6;
         StateLink<Production> production;
         public int[] AvailableProducts;
         float productionState = 0;
@@ -231,7 +231,7 @@ namespace Burntime.Remaster.Logic
             if (production.ItemDropInterval > 0)
             {
                 int alreadyInStock = Rooms.Sum(room => room.Items.GetCount(Production.Produce));
-                if (alreadyInStock < MAX_STOCK_FOOD)
+                if (alreadyInStock < MaxStockFood)
                 {
                     productionState += 1;
                     if (productionState >= production.ItemDropInterval)

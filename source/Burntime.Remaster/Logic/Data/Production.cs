@@ -21,6 +21,7 @@ public sealed class Production : StateObject
     readonly StateLink<ItemType> produce;
 
     public ItemType Produce => produce;
+    public int MaxToolCount => MaxCombination;
 
     public Production(int maxCombi, int[] perDay, int[] perDayDouble, ItemType produce, int id)
     {
