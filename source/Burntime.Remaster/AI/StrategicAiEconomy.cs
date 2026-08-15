@@ -280,11 +280,17 @@ internal static class StrategicAiEconomy
             .Select(location => new
             {
                 Location = location,
-                Route = StrategicAiPlanner.FindRoute(state.Player, state.Current, location),
-                Value = CampCollectibleValue(state, location),
-                FoodBlocked = IsFoodStockCapped(location)
+                Route = StrategicAiPlanner.FindRoute(state.Player, state.Current, location)
             })
-            .Where(candidate => candidate.Route != null && candidate.Value > 0)
+            .Where(candidate => candidate.Route != null)
+            .Select(candidate => new
+            {
+                candidate.Location,
+                candidate.Route,
+                Value = ProjectedCampCollectibleValue(state, candidate.Location, candidate.Route.Days),
+                FoodBlocked = WillFoodStockBeCappedOnArrival(candidate.Location, candidate.Route.Days)
+            })
+            .Where(candidate => candidate.Value > 0)
             .OrderByDescending(candidate => candidate.FoodBlocked)
             .ThenByDescending(candidate => candidate.Value - candidate.Route.Days * 2 +
                 CollectionCircuitBonus(state, candidate.Location))
@@ -293,20 +299,23 @@ internal static class StrategicAiEconomy
     }
 
     static bool HasCollectibleCamp(ClassicAiState state) =>
-        state.RootGame.World.Locations.Any(location => location.Player == state.Player &&
-            location != state.Current && CampCollectibleValue(state, location) > 0 &&
-            StrategicAiPlanner.FindRoute(state.Player, state.Current, location) != null);
+        state.RootGame.World.Locations
+            .Where(location => location.Player == state.Player && location != state.Current)
+            .Select(location => new
+            {
+                Location = location,
+                Route = StrategicAiPlanner.FindRoute(state.Player, state.Current, location)
+            })
+            .Any(candidate => candidate.Route != null &&
+                ProjectedCampCollectibleValue(state, candidate.Location, candidate.Route.Days) > 0);
 
-    static int CargoSpaceReserve(ClassicAiState state)
-    {
-        Location target = state.StrategicTarget;
-        bool exploringOrAttacking = target != null && target != state.Current &&
-            target.Player != state.Player && !target.IsCity;
-        return exploringOrAttacking ? System.Math.Max(2, state.Player.Group.Count) : 1;
-    }
+    static int CargoSpaceReserve(ClassicAiState state) => 1;
 
     static bool IsTradeCaravanReady(ClassicAiState state) =>
-        state.Player.Group.GetFreeSlotCount() <= CargoSpaceReserve(state) + 1;
+        state.Player.Group.GetFreeSlotCount() <= 1;
+
+    public static Location FindBestCampForCityPreparation(ClassicAiState state) =>
+        IsTradeCaravanReady(state) ? null : FindBestCampForCollection(state);
 
     static float CollectionCircuitBonus(ClassicAiState state, Location camp) =>
         state.RootGame.World.Locations
@@ -321,6 +330,14 @@ internal static class StrategicAiEconomy
 
     public static bool IsFoodStockCapped(Location camp) => camp.Production != null &&
         camp.Rooms.Sum(room => room.Items.GetCount(camp.Production.Produce)) >= Location.MaxStockFood;
+
+    static bool WillFoodStockBeCappedOnArrival(Location camp, int travelDays)
+    {
+        if (camp.Production == null)
+            return false;
+        int stock = camp.Rooms.Sum(room => room.Items.GetCount(camp.Production.Produce));
+        return stock + ProjectedProductionItems(camp, travelDays) >= Location.MaxStockFood;
+    }
 
     public static bool ShouldPreventFoodWaste(ClassicAiState state, Location camp) =>
         IsFoodStockCapped(camp) &&
@@ -662,7 +679,17 @@ internal static class StrategicAiEconomy
                 if (stock <= reserve)
                     break;
                 if (state.Player.Group.GetFreeSlotCount() <= CargoSpaceReserve(state))
-                    break;
+                {
+                    if (!TryReplaceCargo(
+                        state, item, out Item replaced, out Character replacementCarrier))
+                        break;
+                    room.Items.Remove(item);
+                    replacementCarrier.Items.Add(item);
+                    room.Items.Add(replaced);
+                    stock--;
+                    collected++;
+                    continue;
+                }
                 Character carrier = state.Player.Group.FirstOrDefault(character => !character.Items.IsFull);
                 if (carrier == null)
                     break;
@@ -693,7 +720,16 @@ internal static class StrategicAiEconomy
         foreach (var candidate in candidates)
         {
             if (state.Player.Group.GetFreeSlotCount() <= CargoSpaceReserve(state))
-                break;
+            {
+                if (!TryReplaceCargo(
+                    state, candidate.Item, out Item replaced, out Character replacementCarrier))
+                    continue;
+                candidate.Room.Items.Remove(candidate.Item);
+                replacementCarrier.Items.Add(candidate.Item);
+                candidate.Room.Items.Add(replaced);
+                collected.Add(candidate.Item);
+                continue;
+            }
             Character carrier = state.Player.Group.FirstOrDefault(character => !character.Items.IsFull);
             if (carrier == null)
                 break;
@@ -711,11 +747,16 @@ internal static class StrategicAiEconomy
     }
 
     static float CampCollectibleValue(ClassicAiState state, Location camp)
+        => ProjectedCampCollectibleValue(state, camp, 0);
+
+    static float ProjectedCampCollectibleValue(ClassicAiState state, Location camp, int travelDays)
     {
         float value = 0;
         if (camp.Production != null)
         {
             int stock = camp.Rooms.Sum(room => room.Items.GetCount(camp.Production.Produce));
+            stock = System.Math.Min(Location.MaxStockFood,
+                stock + ProjectedProductionItems(camp, travelDays));
             int reserve = System.Math.Max(2, camp.CampNPC.Count(npc => npc.Player == state.Player));
             value += System.Math.Max(0, stock - reserve) * camp.Production.Produce.TradeValue;
         }
@@ -728,6 +769,16 @@ internal static class StrategicAiEconomy
         return value;
     }
 
+    static int ProjectedProductionItems(Location camp, int travelDays)
+    {
+        if (camp.Production == null || travelDays <= 0)
+            return 0;
+        Production.Rate rate = camp.GetFoodProductionRate();
+        if (rate.ItemDropInterval <= 0)
+            return 0;
+        return (int)(travelDays / rate.ItemDropInterval);
+    }
+
     static bool CanCollectForTrade(ClassicAiState state, Item item)
     {
         if (!AiItemPool.IsWaterContainer(item.Type))
@@ -737,6 +788,50 @@ internal static class StrategicAiEconomy
             .Count(candidate => AiItemPool.IsWaterContainer(candidate.Type)) +
             state.Pool.WaterContainerCount;
         return availableContainers >= state.Player.Group.Count;
+    }
+
+    public static bool TryReplaceCargo(
+        ClassicAiState state,
+        Item found,
+        out Item replaced,
+        out Character carrier)
+    {
+        replaced = null;
+        carrier = null;
+        int food = state.Player.Group.GetFoodReserve() + state.Player.Group.GetFoodInInventory();
+        int water = state.Player.Group.GetWaterReserve() + state.Player.Group.GetWaterInInventory();
+        int containers = state.Player.Group.SelectMany(character => character.Items)
+            .Count(item => AiItemPool.IsWaterContainer(item.Type));
+
+        var candidate = state.Player.Group
+            .SelectMany(character => character.Items.Select(item => new { Character = character, Item = item }))
+            .Where(entry => CanSell(state, entry.Item))
+            .Where(entry => food - entry.Item.FoodValue + found.FoodValue >= state.Player.Group.Count * 6)
+            .Where(entry => water - entry.Item.WaterValue + found.WaterValue >= state.Player.Group.Count * 4)
+            .Where(entry => !AiItemPool.IsWaterContainer(entry.Item.Type) ||
+                containers - 1 + (AiItemPool.IsWaterContainer(found.Type) ? 1 : 0) >= state.Player.Group.Count)
+            .OrderBy(entry => CargoRetentionValue(state, entry.Item))
+            .ThenBy(entry => entry.Item.TradeValue)
+            .FirstOrDefault();
+        if (candidate == null || CargoRetentionValue(state, found) <= CargoRetentionValue(state, candidate.Item))
+            return false;
+
+        candidate.Character.Items.Remove(candidate.Item);
+        replaced = candidate.Item;
+        carrier = candidate.Character;
+        return true;
+    }
+
+    static float CargoRetentionValue(ClassicAiState state, Item item)
+    {
+        float material = ConstructionMaterialPriority(state, item.ID);
+        if (material > 0)
+            return 10000 + material;
+        if (item.Type.Production != null && NeedsProduction(state, item.Type))
+            return 9000 + ProductionTradePriority(item.Type.Production);
+        if (AiItemPool.IsHazardProtection(item.Type) && NeedsDangerProtection(state, item.Type))
+            return 8000 + item.TradeValue;
+        return item.TradeValue;
     }
 
     static void TradeWithTrader(ClassicAiState state, Trader trader)
@@ -754,7 +849,9 @@ internal static class StrategicAiEconomy
             float sellableValue = state.Player.Group.SelectMany(character => character.Items)
                 .Where(item => CanSell(state, item))
                 .Sum(item => item.TradeValue);
-            string visit = state.Current.IsCity ? "city" : "roaming";
+            string visit = state.Current.IsCity
+                ? IsTradeCaravanReady(state) ? "prepared city" : "incidental city"
+                : "roaming";
             StrategicAiTelemetry.Report(state.Player,
                 $"{visit} barter with {trader.Name}: cargo {cargo}/{capacity} slots, " +
                 $"sellable value {sellableValue:0}");
@@ -878,6 +975,8 @@ internal static class StrategicAiEconomy
             int remainingContainers = state.Player.Group.SelectMany(character => character.Items)
                 .Count(item => AiItemPool.IsWaterContainer(item.Type)) +
                 temporaryPoolAssets.Count(asset => AiItemPool.IsWaterContainer(asset.Item.Type));
+            Dictionary<string, int> remainingMaterials = ConstructionMaterials
+                .ToDictionary(itemId => itemId, itemId => EmpireMaterialCount(state, itemId));
             bool strategicPurchase = IsStrategicPurchase(state, target);
             foreach (TradeAsset candidate in allCandidates.Where(asset => asset.Item.ID != target.ID))
             {
@@ -890,6 +989,9 @@ internal static class StrategicAiEconomy
                     (remainingContainers <= state.Player.Group.Count ||
                         remainingWater - candidate.Item.WaterValue < state.Player.Group.Count * 4))
                     continue;
+                if (ConstructionMaterials.Contains(candidate.Item.ID) &&
+                    remainingMaterials[candidate.Item.ID] <= DesiredMaterialStock(state, candidate.Item.ID))
+                    continue;
 
                 offers.Add(candidate);
                 offeredValue += candidate.Item.TradeValue * TradeBenefit(state);
@@ -897,6 +999,8 @@ internal static class StrategicAiEconomy
                 remainingWater -= candidate.Item.WaterValue;
                 if (AiItemPool.IsWaterContainer(candidate.Item.Type))
                     remainingContainers--;
+                if (ConstructionMaterials.Contains(candidate.Item.ID))
+                    remainingMaterials[candidate.Item.ID]--;
                 if ((int)offeredValue >= (int)target.TradeValue)
                     break;
             }
@@ -1031,9 +1135,8 @@ internal static class StrategicAiEconomy
             return false;
         if (item.Type.IsClass("weapon") && !AiItemPool.IsFirearm(item.Type) && NeedsWeapons(state))
             return false;
-        if (ConstructionMaterials.Contains(item.ID) && ConstructionMaterialPriority(state, item.ID) > 0 &&
-            state.Pool.GetConstructionMaterialCount(item.ID) == 0 &&
-            state.Player.Group.SelectMany(character => character.Items).Count(candidate => candidate.ID == item.ID) <= 1)
+        if (ConstructionMaterials.Contains(item.ID) &&
+            EmpireMaterialCount(state, item.ID) <= DesiredMaterialStock(state, item.ID))
             return false;
         if (item.ID == "item_advice")
             return false;
@@ -1152,8 +1255,7 @@ internal static class StrategicAiEconomy
 
     static float ConstructionMaterialPriority(ClassicAiState state, string itemId)
     {
-        if (!ConstructionMaterials.Contains(itemId) ||
-            state.Pool.GetConstructionMaterialCount(itemId) > 0)
+        if (!ConstructionMaterials.Contains(itemId))
             return 0;
 
         ConstructionOpportunity[] opportunities = UsefulConstructionOpportunities(state)
@@ -1161,6 +1263,20 @@ internal static class StrategicAiEconomy
             .ToArray();
         if (opportunities.Length == 0)
             return 0;
+
+        int stock = EmpireMaterialCount(state, itemId);
+        int desired = DesiredMaterialStock(state, itemId);
+        if (stock >= desired)
+            return 0;
+
+        if (state.Pool.GetConstructionMaterialCount(itemId) > 0)
+        {
+            // Once the immediate recipe reserve is covered, build a small physical
+            // pipeline of common rat-trap parts without treating one exact recipe as
+            // a shopping mission.
+            return 650 + opportunities.Max(opportunity => opportunity.EconomicValue) +
+                (desired - stock) * 20;
+        }
 
         float best = opportunities.Max(opportunity =>
         {
@@ -1175,6 +1291,27 @@ internal static class StrategicAiEconomy
         });
         return best + System.Math.Max(0, opportunities.Length - 1) * 25;
     }
+
+    static int DesiredMaterialStock(ClassicAiState state, string itemId)
+    {
+        if (!ShouldPrioritizeEconomicGrowth(state))
+            return 1;
+        return itemId switch
+        {
+            "item_wire" => 3,
+            "item_woodpile" or "item_screws" => 2,
+            _ => 1
+        };
+    }
+
+    static int EmpireMaterialCount(ClassicAiState state, string itemId) =>
+        state.Pool.GetConstructionMaterialCount(itemId) +
+        state.Player.Group.SelectMany(character => character.Items).Count(item => item.ID == itemId) +
+        state.RootGame.World.Locations
+            .Where(location => location.Player == state.Player)
+            .Sum(location => location.Rooms.Sum(room => room.Items.Count(item => item.ID == itemId)) +
+                location.CampNPC.Where(npc => npc.Player == state.Player)
+                    .Sum(npc => npc.Items.Count(item => item.ID == itemId)));
 
     static IEnumerable<ConstructionOpportunity> UsefulConstructionOpportunities(ClassicAiState state)
     {

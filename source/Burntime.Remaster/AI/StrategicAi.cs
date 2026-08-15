@@ -133,7 +133,11 @@ internal static class StrategicAiPlanner
         }
         else if (player.Group.Count == 1)
         {
-            AddTravelCandidate(state, candidates, FindNearestCity(state), 970, "leader needs a recruit before claiming camps");
+            Location? preparationCamp = StrategicAiEconomy.FindBestCampForCityPreparation(state);
+            AddTravelCandidate(state, candidates, preparationCamp ?? FindNearestCity(state), 970,
+                preparationCamp == null
+                    ? "leader needs a recruit before claiming camps"
+                    : "fill the caravan before recruiting in a city");
         }
 
         if (player.Group.Count > observation.DesiredGroupSize)
@@ -232,7 +236,11 @@ internal static class StrategicAiPlanner
         }
 
         if (player.Group.Count > 1 && player.Group.Count < observation.DesiredGroupSize && !state.HasHireableNpc())
-            AddTravelCandidate(state, candidates, FindNearestCity(state), 560, "look for recruits");
+        {
+            Location? preparationCamp = StrategicAiEconomy.FindBestCampForCityPreparation(state);
+            AddTravelCandidate(state, candidates, preparationCamp ?? FindNearestCity(state), 560,
+                preparationCamp == null ? "look for recruits" : "collect trade cargo before looking for recruits");
+        }
 
         string idleReason = StrategicAiEconomy.NeedsExpansionTool(state)
             ? "expansion blocked: no portable production tool and no affordable or collectible route"

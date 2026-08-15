@@ -610,6 +610,15 @@ namespace Burntime.Remaster.AI
                 {
                     CurrentLocation.Items.Remove(item);
                 }
+                else if (StrategicAiEconomy.TryReplaceCargo(
+                    this, item, out Item replaced, out Character carrier))
+                {
+                    CurrentLocation.Items.Remove(item);
+                    carrier.Items.Add(item);
+                    CurrentLocation.Items.Add(replaced);
+                    StrategicAiTelemetry.Report(Player,
+                        $"replaced cargo {replaced.ID} with higher-value ground find {item.ID}");
+                }
                 else if (IsHome && CurrentLocation.Rooms.Any(room => !room.Items.IsFull))
                 {
                     CurrentLocation.StoreItemRandom(item);

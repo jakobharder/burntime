@@ -305,10 +305,12 @@ public static class HeadlessSimulation
         {
             PlayerEconomyMetrics result = economy[player];
             string firstTrap = result.FirstAdvancedTrapTurn?.ToString() ?? "none";
-            string cityCargo = FormatCargoFill(result.CityCargo, result.CityCapacity);
+            string preparedCityCargo = FormatCargoFill(result.PreparedCityCargo, result.PreparedCityCapacity);
+            string incidentalCityCargo = FormatCargoFill(result.IncidentalCityCargo, result.IncidentalCityCapacity);
             string roamingCargo = FormatCargoFill(result.RoamingCargo, result.RoamingCapacity);
             report.AppendLine($"- {PlayerLabel(player)}: first advanced trap turn {firstTrap}; " +
-                $"city barter arrivals {result.CityVisits} at {cityCargo} cargo; " +
+                $"prepared city barter arrivals {result.PreparedCityVisits} at {preparedCityCargo} cargo; " +
+                $"incidental city barter visits {result.IncidentalCityVisits} at {incidentalCityCargo} cargo; " +
                 $"roaming barter encounters {result.RoamingVisits} at {roamingCargo} cargo; " +
                 $"camp goods collected value {result.CollectedTradeValue:0}; " +
                 $"barter value offered/acquired {result.OfferedTradeValue:0}/{result.AcquiredTradeValue:0}; " +
@@ -428,7 +430,7 @@ public static class HeadlessSimulation
     sealed class EconomyMetrics
     {
         static readonly Regex CargoPattern = new(
-            @"^(city|roaming) barter .*: cargo (\d+)/(\d+) slots", RegexOptions.Compiled);
+            @"^(prepared city|incidental city|roaming) barter .*: cargo (\d+)/(\d+) slots", RegexOptions.Compiled);
         static readonly Regex TradePattern = new(
             @"^(traded|consolidated).*\(value (\d+) -> (\d+),", RegexOptions.Compiled);
         static readonly Regex CollectionPattern = new(
@@ -460,11 +462,17 @@ public static class HeadlessSimulation
             {
                 int carried = int.Parse(cargo.Groups[2].Value);
                 int capacity = int.Parse(cargo.Groups[3].Value);
-                if (cargo.Groups[1].Value == "city")
+                if (cargo.Groups[1].Value == "prepared city")
                 {
-                    result.CityVisits++;
-                    result.CityCargo += carried;
-                    result.CityCapacity += capacity;
+                    result.PreparedCityVisits++;
+                    result.PreparedCityCargo += carried;
+                    result.PreparedCityCapacity += capacity;
+                }
+                else if (cargo.Groups[1].Value == "incidental city")
+                {
+                    result.IncidentalCityVisits++;
+                    result.IncidentalCityCargo += carried;
+                    result.IncidentalCityCapacity += capacity;
                 }
                 else
                 {
@@ -499,9 +507,12 @@ public static class HeadlessSimulation
     sealed class PlayerEconomyMetrics
     {
         public int? FirstAdvancedTrapTurn;
-        public int CityVisits;
-        public int CityCargo;
-        public int CityCapacity;
+        public int PreparedCityVisits;
+        public int PreparedCityCargo;
+        public int PreparedCityCapacity;
+        public int IncidentalCityVisits;
+        public int IncidentalCityCargo;
+        public int IncidentalCityCapacity;
         public int RoamingVisits;
         public int RoamingCargo;
         public int RoamingCapacity;
