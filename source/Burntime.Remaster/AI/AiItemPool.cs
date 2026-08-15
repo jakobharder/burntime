@@ -15,6 +15,11 @@ namespace Burntime.Remaster.AI
             "item_loaded_pistol", "item_gas_mask", "item_protection_suit", 
             "item_paper_helmet", "item_rat_trap", "item_snake_trap", "item_trap" };
 
+        internal static bool Accepts(ItemType type)
+        {
+            return Array.Exists(ItemTypeFilter, id => id == type.ID);
+        }
+
         #region protected class PoolItem
         /// <summary>
         /// item type + count structure
@@ -69,16 +74,7 @@ namespace Burntime.Remaster.AI
         public void Insert(Item item)
         {
             // filter item type
-            bool found = false;
-            foreach (string str in ItemTypeFilter)
-            {
-                if (str == item.Type.ID)
-                {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found)
+            if (!Accepts(item.Type))
                 return;
 
             PoolItem poolItem = FindPoolItem(item.Type);
@@ -113,16 +109,7 @@ namespace Burntime.Remaster.AI
         public void Insert(ItemType type)
         {
             // filter item type
-            bool found = false;
-            foreach (string str in ItemTypeFilter)
-            {
-                if (str == type.ID)
-                {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found)
+            if (!Accepts(type))
                 return;
 
             PoolItem poolItem = FindPoolItem(type);

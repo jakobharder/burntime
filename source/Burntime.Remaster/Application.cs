@@ -154,6 +154,17 @@ namespace Burntime.Remaster
             }
         }
 
+        public void InitializeHeadless()
+        {
+            instance = this;
+
+            Settings = new ConfigFile();
+            Settings.Open("settings.txt");
+
+            Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+            ResourceManager.Encoding = Encoding.UTF8;
+        }
+
         protected override void OnProcess(float elapsed)
         {
             if (MusicMode != MusicModes.Off)
