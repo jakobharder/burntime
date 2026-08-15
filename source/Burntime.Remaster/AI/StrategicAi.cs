@@ -9,6 +9,7 @@ internal enum StrategicAiAction
 {
     Recover,
     Recruit,
+    StationFollower,
     ImproveCamp,
     ClaimNeutral,
     AttackHostile,
@@ -38,17 +39,22 @@ internal sealed class ClassicAiPolicy
 {
     public int DesiredGroupSize { get; init; }
     public float MinimumAttackRatio { get; init; }
+    public float NeutralTargetScore { get; init; }
     public float HostileTargetScore { get; init; }
+    public float ExpansionEconomyScore { get; init; }
     public bool AllowGeneratedRecruitPaymentInCities { get; init; } = true;
-    public int SafeFoodFloor { get; init; } = 6;
-    public int SafeWaterFloor { get; init; } = 4;
+    public int SafeFoodFloor { get; init; } = 10;
+    public int SafeWaterFloor { get; init; } = 10;
     public int SafeHealing { get; init; } = 25;
 
     public static ClassicAiPolicy ForDifficulty(int difficulty) => difficulty switch
     {
-        0 => new ClassicAiPolicy { DesiredGroupSize = 2, MinimumAttackRatio = 1.35f, HostileTargetScore = 430 },
-        1 => new ClassicAiPolicy { DesiredGroupSize = 3, MinimumAttackRatio = 1.05f, HostileTargetScore = 520 },
-        _ => new ClassicAiPolicy { DesiredGroupSize = 4, MinimumAttackRatio = 0.75f, HostileTargetScore = 610 }
+        0 => new ClassicAiPolicy { DesiredGroupSize = 2, MinimumAttackRatio = 1.35f,
+            NeutralTargetScore = 690, HostileTargetScore = 430, ExpansionEconomyScore = 850 },
+        1 => new ClassicAiPolicy { DesiredGroupSize = 3, MinimumAttackRatio = 1.05f,
+            NeutralTargetScore = 770, HostileTargetScore = 560, ExpansionEconomyScore = 900 },
+        _ => new ClassicAiPolicy { DesiredGroupSize = 4, MinimumAttackRatio = 0.75f,
+            NeutralTargetScore = 860, HostileTargetScore = 680, ExpansionEconomyScore = 950 }
     };
 }
 
@@ -71,11 +77,23 @@ internal static class StrategicAiPlanner
 
         if (IsHostile(observation.Current, player))
         {
-            candidates.Add(new StrategicAiDecision(
-                StrategicAiAction.AttackHostile,
-                1200,
-                observation.Current,
-                Reason: "hostile camp blocks the current route"));
+            if (!IsAttackSuitable(player, observation.Current, policy) && player.PreviousLocation != null)
+            {
+                candidates.Add(new StrategicAiDecision(
+                    StrategicAiAction.Travel,
+                    1250,
+                    player.PreviousLocation,
+                    player.PreviousLocation,
+                    "retreat from an attack that is no longer safe"));
+            }
+            else
+            {
+                candidates.Add(new StrategicAiDecision(
+                    StrategicAiAction.AttackHostile,
+                    1200,
+                    observation.Current,
+                    Reason: "hostile camp blocks the current route"));
+            }
             return SelectAndReport(player, candidates);
         }
 
@@ -118,6 +136,23 @@ internal static class StrategicAiPlanner
             AddTravelCandidate(state, candidates, FindNearestCity(state), 970, "leader needs a recruit before claiming camps");
         }
 
+        if (player.Group.Count > observation.DesiredGroupSize)
+        {
+            if (observation.Current.Player == player)
+            {
+                candidates.Add(new StrategicAiDecision(
+                    StrategicAiAction.StationFollower,
+                    1080,
+                    observation.Current,
+                    Reason: "station follower not supported by the traveling economy"));
+            }
+            else
+            {
+                AddTravelCandidate(state, candidates, FindNearestOwnedCamp(state), 1080,
+                    "return surplus follower to a camp");
+            }
+        }
+
         if (state.NeedsCampImprovement())
         {
             candidates.Add(new StrategicAiDecision(
@@ -127,19 +162,33 @@ internal static class StrategicAiPlanner
                 Reason: "owned camp lacks compatible production equipment"));
         }
 
+        bool earlyEconomy = state.OwnedCampCount < 3;
+        bool expansionNeedsEquipment = StrategicAiEconomy.NeedsExpansionTool(state);
         if (StrategicAiEconomy.ShouldContinueTrading(state))
         {
             candidates.Add(new StrategicAiDecision(
                 StrategicAiAction.Wait,
-                820,
+                expansionNeedsEquipment ? policy.ExpansionEconomyScore : earlyEconomy ? 900 : 740,
                 observation.Current,
                 Reason: "continue trading surplus goods for needed equipment"));
         }
         else if (StrategicAiEconomy.ShouldVisitTrader(state))
         {
             Location? tradeCity = StrategicAiEconomy.FindBestTradeCity(state) ?? FindNearestCity(state);
-            AddTravelCandidate(state, candidates, tradeCity, 740, "trade surplus goods for needed equipment");
+            AddTravelCandidate(state, candidates, tradeCity,
+                expansionNeedsEquipment ? policy.ExpansionEconomyScore : earlyEconomy ? 880 : 720,
+                "deliver surplus goods and trade for needed equipment");
         }
+
+        Location? collectionCamp = StrategicAiEconomy.FindBestCampForCollection(state);
+        AddTravelCandidate(state, candidates, collectionCamp,
+            expansionNeedsEquipment ? policy.ExpansionEconomyScore - 10 : earlyEconomy ? 850 : 700,
+            "collect camp surplus to finance expansion");
+
+        Location? deliveryCamp = StrategicAiEconomy.FindBestCampForDelivery(state);
+        AddTravelCandidate(state, candidates, deliveryCamp,
+            expansionNeedsEquipment ? policy.ExpansionEconomyScore - 20 : earlyEconomy ? 840 : 690,
+            "deliver functional equipment or a complete recipe to camp");
 
         if (state.WaitTurns > 0 && !observation.CriticalSupplies)
         {
@@ -159,7 +208,7 @@ internal static class StrategicAiPlanner
 
         if (target != null)
         {
-            float score = IsHostile(target, player) ? policy.HostileTargetScore : 700;
+            float score = IsHostile(target, player) ? policy.HostileTargetScore : policy.NeutralTargetScore;
             AddTravelCandidate(state, candidates, target, score, IsHostile(target, player)
                 ? "advance toward hostile frontier"
                 : "advance toward neutral territory");
@@ -168,7 +217,13 @@ internal static class StrategicAiPlanner
         if (player.Group.Count > 1 && player.Group.Count < observation.DesiredGroupSize && !state.HasHireableNpc())
             AddTravelCandidate(state, candidates, FindNearestCity(state), 560, "look for recruits");
 
-        candidates.Add(new StrategicAiDecision(StrategicAiAction.Wait, 0, Reason: "no useful action"));
+        string idleReason = StrategicAiEconomy.NeedsExpansionTool(state)
+            ? "expansion blocked: no portable production tool and no affordable or collectible route"
+            : player.Group.Where(character => character != player.Character)
+                .Any(character => (character.Items.FindBestWeapon()?.DamageValue ?? 0) == 0)
+                ? "expansion blocked: followers are not armed and no equipment route is available"
+                : "no reachable expansion target with current supplies";
+        candidates.Add(new StrategicAiDecision(StrategicAiAction.Wait, 0, Reason: idleReason));
         return SelectAndReport(player, candidates);
     }
 
@@ -186,7 +241,7 @@ internal static class StrategicAiPlanner
             Group = player.Group.ToArray(),
             CriticalSupplies = critical,
             SafeLocation = safe,
-            DesiredGroupSize = policy.DesiredGroupSize,
+            DesiredGroupSize = StrategicAiEconomy.RecommendedGroupSize(state, policy.DesiredGroupSize),
             NeutralExpansionAllowed = neutralAllowed
         };
     }
@@ -211,11 +266,24 @@ internal static class StrategicAiPlanner
         Location? target = state.StrategicTarget;
         if (target == null || target == observation.Current || target.IsCity)
             return null;
+        Route? route = FindRoute(observation.Player, observation.Current, target);
+        if (route == null || !HasRouteSupplies(observation.Player, route, IsHostile(target, observation.Player)))
+        {
+            StrategicAiTelemetry.Report(observation.Player,
+                $"abandoned target {target.Title}: route exceeds safe food or water reserves");
+            return null;
+        }
         if (target.Player == null)
             return observation.NeutralExpansionAllowed && state.CanClaim(target) ? target : null;
         if (target.Player == observation.Player)
             return null;
-        return IsAttackSuitable(observation.Player, target, policy) ? target : null;
+        if (!IsAttackSuitable(observation.Player, target, policy))
+        {
+            StrategicAiTelemetry.Report(observation.Player,
+                $"abandoned target {target.Title}: group is not safely prepared to attack");
+            return null;
+        }
+        return target;
     }
 
     static Location? SelectTerritorialTarget(
@@ -230,12 +298,12 @@ internal static class StrategicAiPlanner
                 continue;
 
             Route? route = FindRoute(observation.Player, observation.Current, location);
-            if (route == null)
+            if (route == null || !HasRouteSupplies(observation.Player, route, IsHostile(location, observation.Player)))
                 continue;
 
             if (location.Player == null && observation.NeutralExpansionAllowed && state.CanClaim(location))
             {
-                targets.Add((location, 700 - route.Days * 8 + Jitter()));
+                targets.Add((location, policy.NeutralTargetScore - route.Days * 8 + Jitter()));
             }
             else if (IsHostile(location, observation.Player) && IsAttackSuitable(observation.Player, location, policy))
             {
@@ -249,10 +317,25 @@ internal static class StrategicAiPlanner
 
     static bool IsAttackSuitable(Player player, Location target, ClassicAiPolicy policy)
     {
+        Character[] followers = player.Group
+            .Where(character => character != player.Character && !character.IsDead)
+            .ToArray();
+        if (followers.Length == 0 || followers.Any(character =>
+            (character.Items.FindBestWeapon()?.DamageValue ?? 0) <= 0))
+            return false;
+
         float defenders = DefenderStrength(target);
         if (defenders <= 0)
             return true;
         return AttackerStrength(player) / defenders >= policy.MinimumAttackRatio;
+    }
+
+    static bool HasRouteSupplies(Player player, Route route, bool hostileTarget)
+    {
+        int margin = hostileTarget ? 3 : 0;
+        int required = route.Days + margin;
+        return player.Group.GetLowestFoodWithInventory() >= required &&
+            player.Group.GetLowestWaterWithInventory() >= required;
     }
 
     static float AttackerStrength(Player player) => player.Group
@@ -303,6 +386,17 @@ internal static class StrategicAiPlanner
     {
         return state.RootGame.World.Locations
             .Where(location => location.IsCity && location != state.Current)
+            .Select(location => (Location: location, Route: FindRoute(state.Player, state.Current, location)))
+            .Where(candidate => candidate.Route != null)
+            .OrderBy(candidate => candidate.Route!.Days)
+            .Select(candidate => candidate.Location)
+            .FirstOrDefault();
+    }
+
+    static Location? FindNearestOwnedCamp(ClassicAiState state)
+    {
+        return state.RootGame.World.Locations
+            .Where(location => location.Player == state.Player && location != state.Current)
             .Select(location => (Location: location, Route: FindRoute(state.Player, state.Current, location)))
             .Where(candidate => candidate.Route != null)
             .OrderBy(candidate => candidate.Route!.Days)
@@ -378,6 +472,13 @@ internal static class StrategicAiExecutor
                     : $"hired {recruit.Name} ({recruit.Class})");
                 break;
 
+            case StrategicAiAction.StationFollower:
+                Character? stationed = state.StationSurplusFollower();
+                if (stationed != null)
+                    StrategicAiTelemetry.Report(player,
+                        $"stationed surplus follower {stationed.Name} at {state.Current.Title}");
+                break;
+
             case StrategicAiAction.ImproveCamp:
                 if (state.ImproveCamp())
                     StrategicAiTelemetry.Report(player, $"improved production at {state.Current.Title}");
@@ -436,10 +537,13 @@ internal static class StrategicCombatResolver
             $"attacks {defenderOwner.Name}'s camp at {location.Title}: " +
             $"{attacker.Group.Count} attackers against {originalDefenders.Count} defenders");
 
-        for (int round = 1; round <= MaxRounds && !attacker.Character.IsDead; round++)
+        for (int round = 1; round <= MaxRounds; round++)
         {
             List<Character> defenders = originalDefenders.Where(character => !character.IsDead).ToList();
             if (defenders.Count == 0)
+                break;
+
+            if (!attacker.Group.Any(character => character != attacker.Character && !character.IsDead))
                 break;
 
             foreach (Character fighter in attacker.Group.Where(character => !character.IsDead).ToArray())
@@ -456,7 +560,7 @@ internal static class StrategicCombatResolver
                 Character? target = attacker.Group
                     .Where(character => !character.IsDead && character != attacker.Character)
                     .OrderBy(character => character.Health)
-                    .FirstOrDefault() ?? (attacker.Character.IsDead ? null : attacker.Character);
+                    .FirstOrDefault();
                 if (target == null)
                     break;
                 DealDamage(fighter, target);
@@ -469,7 +573,7 @@ internal static class StrategicCombatResolver
             StrategicAiTelemetry.Report(attacker, $"lost follower {casualty.Name} in the attack on {location.Title}");
 
         bool defendersDefeated = originalDefenders.All(character => character.IsDead);
-        if (defendersDefeated && !attacker.Character.IsDead)
+        if (defendersDefeated)
         {
             Character? guard = attacker.Group
                 .Where(character => character != attacker.Character && !character.IsDead)
@@ -491,9 +595,19 @@ internal static class StrategicCombatResolver
         }
         else
         {
-            StrategicAiTelemetry.Report(attacker, attacker.Character.IsDead
-                ? $"lost the attack on {location.Title}; the leader was killed"
-                : $"failed to defeat {location.Title}'s defenders");
+            state.StrategicTarget = null;
+            Location? retreat = attacker.PreviousLocation;
+            if (retreat != null && attacker.CanTravel(location, retreat))
+            {
+                attacker.Travel(retreat);
+                StrategicAiTelemetry.Report(attacker,
+                    $"retreated from {location.Title} to {retreat.Title} before risking the leader");
+            }
+            else
+            {
+                StrategicAiTelemetry.Report(attacker,
+                    $"failed to defeat {location.Title}'s defenders; leader survived");
+            }
         }
     }
 

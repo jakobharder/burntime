@@ -232,6 +232,15 @@ namespace Burntime.Remaster.Logic
             get { return destination; }
         }
 
+        /// <summary>
+        /// Location departed most recently. Exposes existing travel state without
+        /// adding anything to save-game serialization.
+        /// </summary>
+        public Location? PreviousLocation
+        {
+            get { return previousLocation != null ? previousLocation.Object : null; }
+        }
+
         public int RemainingDays
         {
             get { return remainingTravelDays; }

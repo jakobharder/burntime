@@ -172,6 +172,26 @@ namespace Burntime.Remaster.AI
             return HireNpc(allowGeneratedPayment);
         }
 
+        internal Character StationSurplusFollower()
+        {
+            if (!IsHome || Player.Group.Count <= 1)
+                return null;
+            Character npc = Player.Group
+                .Where(character => character != Player.Character)
+                .OrderBy(character => character.Class switch
+                {
+                    CharClass.Doctor => 3,
+                    CharClass.Technician => 3,
+                    CharClass.Mercenary => 2,
+                    _ => 1
+                })
+                .ThenBy(character => character.AttackValue + character.DefenseValue)
+                .FirstOrDefault();
+            if (npc != null)
+                JoinCamp(npc);
+            return npc;
+        }
+
         internal Character SelectCampNpc()
         {
             Character recruit = CanHireNpc() ? HireNpc(allowGeneratedPayment: CurrentLocation.IsCity) : null;
@@ -667,9 +687,15 @@ namespace Burntime.Remaster.AI
 
             // Add a real compatible production tool. A carried weapon such as a knife can
             // remain on the guard and serve both defense and maggot production.
-            Item trap = ItemPool.HasTrap(GetAvailableProducts(CurrentLocation))
-                ? ItemPool.GetBestTrap(GetAvailableProducts(CurrentLocation))
-                : TakeCompatibleGroupProduction(CurrentLocation);
+            Item existingTool = CurrentLocation.Rooms.SelectMany(room => room.Items)
+                .Concat(npc.Items)
+                .FirstOrDefault(item => item.Type.Production != null &&
+                    GetAvailableProducts(CurrentLocation).Contains(item.Type.Production.Produce.ID));
+            Item trap = existingTool != null
+                ? null
+                : ItemPool.HasTrap(GetAvailableProducts(CurrentLocation))
+                    ? ItemPool.GetBestTrap(GetAvailableProducts(CurrentLocation))
+                    : TakeCompatibleGroupProduction(CurrentLocation);
             if (trap != null)
             {
                 if (trap.Type.IsClass("weapon") && !npc.Items.IsFull)
@@ -686,6 +712,10 @@ namespace Burntime.Remaster.AI
                 {
                     npc.Items.Add(trap);
                 }
+            }
+            else if (existingTool?.DamageValue > 0)
+            {
+                npc.Weapon = existingTool;
             }
         }
 
@@ -704,8 +734,11 @@ namespace Burntime.Remaster.AI
             if (location.Player != null)
                 return false;
 
-            // no appropriate real production tool available
-            if (!ItemPool.HasTrap(GetAvailableProducts(location)) && FindCompatibleGroupProduction(location) == null)
+            // A safe one-NPC camp may bootstrap from the location's base food yield.
+            // Threatened camps still require real equipment before expansion.
+            bool hasProductionTool = ItemPool.HasTrap(GetAvailableProducts(location)) ||
+                FindCompatibleGroupProduction(location) != null;
+            if (!hasProductionTool && !StrategicAiEconomy.CanBootstrapCamp(this, location))
                 return false;
 
             // in case of hazards
@@ -852,8 +885,9 @@ namespace Burntime.Remaster.AI
             // add weapon to npc
             if (ItemPool.HasWeapon() && !ch.Items.IsFull)
             {
-                bool reserveProductionTool = StrategicAiEconomy.ShouldReserveProductionTool(this);
-                Item weapon = ItemPool.GetBestWeapon(allowProductionTool: !reserveProductionTool);
+                // An unarmed new follower needs the tool now. Knives still serve food
+                // production later when that follower is stationed at a camp.
+                Item weapon = ItemPool.GetBestWeapon(allowProductionTool: true);
                 if (weapon != null)
                 {
                     ch.Items.Add(weapon);
