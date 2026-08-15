@@ -50,42 +50,53 @@ public static class HeadlessSimulation
         Dictionary<int, int?> ownership = CaptureOwnership(game);
         int completedTurns = 0;
         Player? winner = null;
+        int activeTurn = 0;
+        StrategicAiTelemetry.Sink = (eventPlayer, message) =>
+            events.Add($"Turn {activeTurn}: {PlayerLabel(eventPlayer)} {message}.");
 
-        for (int turn = 1; turn <= options.Turns; turn++)
+        try
         {
-            foreach (Player player in game.World.Players)
+            for (int turn = 1; turn <= options.Turns; turn++)
             {
-                if (player.IsDead || player.IsTraveling)
-                    continue;
-
-                DecisionSnapshot before = DecisionSnapshot.Capture(player);
-                Location beforeLocation = player.Location;
-                Location? beforeDestination = player.Destination;
-
-                if (player.AiState is ClassicAiState ai)
-                    ai.Turn();
-
-                RecordDecisionChanges(player, before, turn, events);
-
-                if (beforeDestination != player.Destination && player.Destination is not null)
+                activeTurn = turn;
+                foreach (Player player in game.World.Players)
                 {
-                    events.Add($"Turn {turn}: {PlayerLabel(player)} travels from {LocationLabel(beforeLocation)} " +
-                        $"toward {LocationLabel(player.Destination)} ({player.RemainingDays} days).");
+                    if (player.IsDead || player.IsTraveling)
+                        continue;
+
+                    DecisionSnapshot before = DecisionSnapshot.Capture(player);
+                    Location beforeLocation = player.Location;
+                    Location? beforeDestination = player.Destination;
+
+                    if (player.AiState is ClassicAiState ai)
+                        ai.Turn();
+
+                    RecordDecisionChanges(player, before, turn, events);
+
+                    if (beforeDestination != player.Destination && player.Destination is not null)
+                    {
+                        events.Add($"Turn {turn}: {PlayerLabel(player)} travels from {LocationLabel(beforeLocation)} " +
+                            $"toward {LocationLabel(player.Destination)} ({player.RemainingDays} days).");
+                    }
                 }
+
+                game.Turn();
+
+                foreach (Player player in game.World.Players)
+                    player.Turn();
+
+                RecordOwnershipChanges(game, ownership, turn, events);
+                foreach (Player player in game.World.Players.Where(player => !player.IsDead))
+                    events.Add($"Turn {turn}: {FormatGroupState(player)}");
+                completedTurns = turn;
+                winner = game.CheckWinner() as Player;
+                if (winner is not null)
+                    break;
             }
-
-            game.Turn();
-
-            foreach (Player player in game.World.Players)
-                player.Turn();
-
-            RecordOwnershipChanges(game, ownership, turn, events);
-            foreach (Player player in game.World.Players.Where(player => !player.IsDead))
-                events.Add($"Turn {turn}: {FormatGroupState(player)}");
-            completedTurns = turn;
-            winner = game.CheckWinner() as Player;
-            if (winner is not null)
-                break;
+        }
+        finally
+        {
+            StrategicAiTelemetry.Sink = null;
         }
 
         return BuildReport(game, options, completedTurns, winner, events);
@@ -120,18 +131,20 @@ public static class HeadlessSimulation
 
         if (before.GroundItems.Count > 0)
         {
-            Dictionary<string, int> collected = before.GroundItems
+            Dictionary<string, int> currentGround = CountItems(before.Location.Items);
+            Dictionary<string, int> removed = ItemDifference(before.GroundItems, currentGround);
+            Dictionary<string, int> collected = removed
                 .Where(pair => before.GroundItemTypes[pair.Key])
                 .ToDictionary(pair => pair.Key, pair => pair.Value);
-            Dictionary<string, int> discarded = before.GroundItems
+            Dictionary<string, int> leftBehind = before.GroundItems
                 .Where(pair => !before.GroundItemTypes[pair.Key])
                 .ToDictionary(pair => pair.Key, pair => pair.Value);
 
             events.Add($"{prefix} found at {LocationLabel(before.Location)}: {FormatItems(before.GroundItems)}.");
             if (collected.Count > 0)
                 events.Add($"{prefix} moved to AI item pool: {FormatItems(collected)}.");
-            if (discarded.Count > 0)
-                events.Add($"{prefix} discarded found items: {FormatItems(discarded)}.");
+            if (leftBehind.Count > 0)
+                events.Add($"{prefix} left unsupported ground items: {FormatItems(leftBehind)}.");
         }
 
         Character[] currentGroup = player.Group.ToArray();

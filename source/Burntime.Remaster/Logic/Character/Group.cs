@@ -214,7 +214,7 @@ namespace Burntime.Remaster.Logic
             foreach (Character ch in this)
                 foreach (Item item in ch.Items)
                 {
-                    if (item.Type.DrinkValue != 0)
+                    if (item.Type.Full != null && item.WaterValue == 0)
                         items.Add(new OwnedItem(item, ch.Items));
                 }
             return items;

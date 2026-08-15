@@ -135,7 +135,7 @@ namespace Burntime.Remaster.AI
         {
             PoolItem item = FindPoolItem("item_loaded_rifle", "item_loaded_pistol", "item_pitchfork", "item_axe", "item_knife");
             if (item != null)
-                return item.Type.Generate();
+                return Take(item);
             return null;
         }
 
@@ -159,7 +159,7 @@ namespace Burntime.Remaster.AI
                     {
                         // if available, then return current trap
                         if (item.Type.Production.Produce.ID == product)
-                            return item.Type.Generate();
+                            return Take(item);
                     }
                 }
             }
@@ -175,7 +175,7 @@ namespace Burntime.Remaster.AI
         {
             PoolItem item = FindPoolItem("item_gas_mask", "item_paper_helmet", "item_protection_suit");
             if (item != null)
-                return item.Type.Generate();
+                return Take(item);
             return null;
         }
 
@@ -188,7 +188,7 @@ namespace Burntime.Remaster.AI
         {
             PoolItem item = FindPoolItem("item_protection_suit", "item_paper_helmet");
             if (item != null)
-                return item.Type.Generate();
+                return Take(item);
             return null;
         }
 
@@ -270,7 +270,7 @@ namespace Burntime.Remaster.AI
                 // look for pool items with the same ItemType
                 foreach (PoolItem item in items)
                 {
-                    if (item.Type == type)
+                    if (item.Type == type && item.Count > 0)
                     {
                         return item;
                     }
@@ -292,7 +292,7 @@ namespace Burntime.Remaster.AI
                 // look for pool items with the same ItemType.ID
                 foreach (PoolItem item in items)
                 {
-                    if (item.Type.ID == type)
+                    if (item.Type.ID == type && item.Count > 0)
                     {
                         return item;
                     }
@@ -300,6 +300,12 @@ namespace Burntime.Remaster.AI
             }
 
             return null;
+        }
+
+        private static Item Take(PoolItem item)
+        {
+            item.Count--;
+            return item.Type.Generate();
         }
         #endregion
     }

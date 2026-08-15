@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Burntime.Remaster.Logic;
 using Burntime.Framework;
 using Burntime.Framework.States;
+using System.Linq;
 
 namespace Burntime.Remaster.AI
 {
@@ -121,44 +122,7 @@ namespace Burntime.Remaster.AI
             if (Game.World.Day == 1)
                 FirstTurn();
 
-            bool busy = true;
-
-            // update items
             UpdateItems();
-
-            // hire npc if noone in group
-            if (Player.Group.Count == 1)
-            {
-                mode = Mode.HireNpc;
-            }
-
-            while (busy)
-            {
-                switch (mode)
-                {
-                    case Mode.None:
-                        busy = TurnModeNone();
-                        break;
-                    case Mode.LookForNextCamp:
-                        busy = TurnModeLookForNextCamp();
-                        break;
-                    case Mode.HireNpc:
-                        busy = TurnModeHireNpc();
-                        break;
-                    case Mode.WaitInterval:
-                        busy = TurnModeWaitInterval();
-                        break;
-                }
-            }
-
-            if (IsHome || CurrentLocation.IsCity)
-            {
-                // refresh meat, wineskin
-                RefreshGroupReserves();
-
-                // refresh health, food and water
-                RefreshGroupAttributes();
-            }
 
             List<IAiGoal> goals = new List<IAiGoal>();
             goals.Add(new WaterGoal(player));
@@ -166,8 +130,121 @@ namespace Burntime.Remaster.AI
             foreach (var goal in goals)
                 goal.AlwaysDo();
 
+            StrategicAiDecision decision = StrategicAiPlanner.Choose(this);
+            StrategicAiExecutor.Execute(this, decision);
             DebugOutput(goals);
         }
+
+        #region strategic AI access
+        internal ClassicGame RootGame => Game;
+        internal Location Current => CurrentLocation;
+        internal Location StrategicTarget
+        {
+            get => headedLocation;
+            set => headedLocation = value;
+        }
+        internal AiItemPool Pool => ItemPool;
+        internal AiSettings Configuration => settings;
+        internal int OwnedCampCount => CampCount;
+        internal int HumanCampBenchmark => MaxHumanCampCount;
+        internal int WaitTurns
+        {
+            get => wait;
+            set => wait = value;
+        }
+
+        internal bool CanClaim(Location location) => CanCreateCamp(location);
+        internal bool CanStationCamp() => Player.Group.Count > 1 || CanRecruit(allowGeneratedPayment: CurrentLocation.IsCity);
+        internal bool HasHireableNpc() => CanHireNpc();
+        internal bool CanRecruit(bool allowGeneratedPayment)
+        {
+            Character candidate = GetHireableNpc();
+            if (candidate == null || Player.Group.Count >= Group.MAX_PEOPLE)
+                return false;
+            if (candidate.HireItems.Count == 0 || allowGeneratedPayment)
+                return true;
+            return candidate.HireItems.Any(type => Player.Character.Items.Find(type) != null);
+        }
+        internal string[] AvailableProducts(Location location) => GetAvailableProducts(location);
+
+        internal bool NeedsCampImprovement()
+        {
+            if (!IsHome)
+                return false;
+            string[] products = GetAvailableProducts(CurrentLocation);
+            if (!ItemPool.HasTrap(products))
+                return false;
+
+            bool HasCompatibleProduction(Item item) => item.Type.Production != null &&
+                products.Contains(item.Type.Production.Produce.ID);
+            return !CurrentLocation.Rooms.SelectMany(room => room.Items).Any(HasCompatibleProduction) &&
+                !CurrentLocation.CampNPC.SelectMany(character => character.Items).Any(HasCompatibleProduction);
+        }
+
+        internal Character Recruit(bool allowGeneratedPayment)
+        {
+            return HireNpc(allowGeneratedPayment);
+        }
+
+        internal Character SelectCampNpc()
+        {
+            Character recruit = CanHireNpc() ? HireNpc(allowGeneratedPayment: CurrentLocation.IsCity) : null;
+            if (recruit != null)
+                return recruit;
+            return Player.Group.Count > 1 ? Player.Group[1] : null;
+        }
+
+        internal void CreateCamp(Character npc)
+        {
+            JoinCamp(npc);
+            StrategicTarget = null;
+            ResetWait();
+        }
+
+        internal bool ImproveCamp()
+        {
+            if (!IsHome || !ItemPool.HasTrap(GetAvailableProducts(CurrentLocation)))
+                return false;
+
+            Item trap = ItemPool.GetBestTrap(GetAvailableProducts(CurrentLocation));
+            if (trap == null)
+                return false;
+            CurrentLocation.StoreItemRandom(trap);
+            return true;
+        }
+
+        internal void AddEmergencySupplies(ClassicAiPolicy policy)
+        {
+            if (!IsHome && !CurrentLocation.IsCity)
+                return;
+
+            bool lowFood = Player.Group.Any(character => character.Food <= 2) &&
+                Player.Group.GetFoodReserve() + Player.Group.GetFoodInInventory() < Player.Group.Count * 2;
+            bool lowWater = Player.Group.Any(character => character.Water <= 1) &&
+                Player.Group.GetWaterReserve() + Player.Group.GetWaterInInventory() < Player.Group.Count;
+
+            if (lowFood && !Player.Character.Items.Contains("item_meat") && !Player.Character.Items.IsFull)
+                Player.Character.Items.Add(Game.ItemTypes["item_meat"].Generate());
+            if (lowWater && !Player.Character.Items.Contains("item_empty_wineskin") &&
+                !Player.Character.Items.Contains("item_full_wineskin") && !Player.Character.Items.IsFull)
+                Player.Character.Items.Add(Game.ItemTypes["item_full_wineskin"].Generate());
+
+            // Safe locations provide bounded recovery, not the former full refill/heal.
+            foreach (Character character in Player.Group)
+            {
+                character.Food = System.Math.Max(character.Food, policy.SafeFoodFloor);
+                character.Water = System.Math.Max(character.Water, policy.SafeWaterFloor);
+                character.Health = System.Math.Min(100, character.Health + policy.SafeHealing);
+            }
+        }
+
+        internal void ResetWait()
+        {
+            wait = settings.MaxInterval > settings.MinInterval
+                ? Burntime.Platform.Math.Random.Next(settings.MinInterval, settings.MaxInterval)
+                : settings.MinInterval;
+        }
+        #endregion
 
         #region debug
         private void DebugOutput(IEnumerable<IAiGoal> goals)
@@ -504,13 +581,19 @@ namespace Burntime.Remaster.AI
             if (itemPool == null)
                 itemPool = container.Create<AiItemPool>();
 
-            // add items from ground to item pool
-            ItemPool.Insert(CurrentLocation.Items);
-
-            // remove all items from ground
-            CurrentLocation.Items.Clear();
+            // collect only items useful to the AI; leave unrelated items in the world
+            foreach (Item item in CurrentLocation.Items.ToArray())
+            {
+                if (!AiItemPool.Accepts(item.Type))
+                    continue;
+                ItemPool.Insert(item);
+                CurrentLocation.Items.Remove(item);
+            }
 
             int turn = Game.World.Day;
+            ClassicAiPolicy policy = ClassicAiPolicy.ForDifficulty(Game.World.Difficulty);
+            if (!policy.AllowScheduledEquipment)
+                return;
 
             // add weapons to pool (TODO make dependent on difficulty)
             if (turn % 3 == 0)
@@ -655,42 +738,60 @@ namespace Burntime.Remaster.AI
         /// <returns>NPC</returns>
         protected Character GetHireableNpc()
         {
-            foreach (Character ch in CurrentLocation.Characters)
-            {
-                if (!ch.IsDead && !ch.IsHired && ch.IsHuman && !ch.IsTrader)
+            bool hasDoctor = Player.Group.Any(character => character.Class == CharClass.Doctor);
+            return CurrentLocation.Characters
+                .Where(character => !character.IsDead && !character.IsHired && character.IsHuman && !character.IsTrader)
+                .OrderByDescending(character => character.Class switch
                 {
-                    // this one is available
-                    return ch;
-                }
-            }
-
-            return null;
+                    CharClass.Mercenary => 40,
+                    CharClass.Doctor when !hasDoctor => 35,
+                    CharClass.Technician => 25,
+                    CharClass.Doctor => 15,
+                    _ => 10
+                })
+                .ThenByDescending(character => character.Experience)
+                .FirstOrDefault();
         }
 
         /// <summary>
         /// Hire NPC and add to group.
         /// </summary>
         /// <returns>hired NPC</returns>
-        protected Character HireNpc()
+        protected Character HireNpc(bool allowGeneratedPayment = true)
         {
             Character ch = GetHireableNpc();
+            if (ch == null || Player.Group.Count >= Group.MAX_PEOPLE)
+                return null;
+
             if (ch.HireItems.Count > 0)
             {
-                // clear items to prevent required item not getting in
-                Player.Character.Items.Clear();
+                Item payment = ch.HireItems
+                    .Select(type => Player.Character.Items.Find(type))
+                    .FirstOrDefault(item => item != null);
 
-                // add required item
-                Player.Character.Items.Add(ch.HireItems.Last.Generate());
+                if (payment == null && allowGeneratedPayment)
+                {
+                    if (Player.Character.Items.IsFull)
+                    {
+                        Item leastUseful = Player.Character.Items.OrderBy(item => item.TradeValue).First();
+                        CurrentLocation.StoreItemRandom(leastUseful);
+                        Player.Character.Items.Remove(leastUseful);
+                    }
+
+                    ItemType paymentType = ch.HireItems.OrderBy(type => type.TradeValue).First();
+                    Player.Character.Items.Add(paymentType.Generate());
+                }
+                else if (payment == null)
+                {
+                    return null;
+                }
             }
 
             // hire
             ch.Hire(Player);
 
-            // clear items
-            ch.Items.Clear();
-
             // add weapon to npc
-            if (ItemPool.HasWeapon())
+            if (ItemPool.HasWeapon() && !ch.Items.IsFull)
             {
                 Item weapon = ItemPool.GetBestWeapon();
                 ch.Items.Add(weapon);

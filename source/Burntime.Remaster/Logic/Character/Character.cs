@@ -766,6 +766,17 @@ namespace Burntime.Remaster.Logic
             return attackValue * Experience / 100;
         }
 
+        internal int PrepareStrategicAttack()
+        {
+            return UseBestEquipment(allowAmmo: true);
+        }
+
+        internal float PrepareStrategicDefense()
+        {
+            Protection = Items.FindBestDefense(Protection);
+            return DefenseValue;
+        }
+
         /// <summary>
         /// Use best danger protection.
         /// </summary>
