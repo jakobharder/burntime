@@ -243,7 +243,7 @@ namespace Burntime.Remaster.AI
         /// <returns>true if weapon is available</returns>
         public bool HasWeapon()
         {
-            PoolItem item = FindPoolItem("item_knife", "item_axe", "item_pitchfork", "item_loaded_pistol", "item_loaded_rifle");
+            PoolItem item = FindPoolItem("item_knife", "item_axe", "item_pitchfork");
             if (item != null)
                 return true;
             return false;
@@ -264,6 +264,10 @@ namespace Burntime.Remaster.AI
 
         public int WaterContainerCount => items
             .Where(item => item.Count > 0 && IsWaterContainer(item.Type))
+            .Sum(item => item.Count);
+
+        public int FirearmCount => items
+            .Where(item => item.Count > 0 && IsFirearm(item.Type))
             .Sum(item => item.Count);
 
         public int BestWaterContainerCapacity => items
@@ -331,12 +335,26 @@ namespace Burntime.Remaster.AI
             return item != null ? Take(item) : null;
         }
 
+        public Item TakeBestTradeFirearm()
+        {
+            PoolItem item = items
+                .Where(candidate => candidate.Count > 0 && IsFirearm(candidate.Type))
+                .OrderByDescending(candidate => candidate.Type.TradeValue)
+                .FirstOrDefault();
+            return item != null ? Take(item) : null;
+        }
+
+        internal static bool IsFirearm(ItemType type) =>
+            type.ID is "item_loaded_rifle" or "item_loaded_pistol";
+
         internal static int WaterContainerCapacity(ItemType type) =>
             type.WaterValue > 0 ? type.WaterValue : type.Full?.WaterValue ?? 0;
 
         PoolItem FindBestWeaponPoolItem(int minimumDamage, bool allowProductionTool)
         {
-            string[] weaponOrder = { "item_loaded_rifle", "item_loaded_pistol", "item_pitchfork", "item_axe", "item_knife" };
+            // Ammunition is finite. Firearms remain valuable barter assets, but the
+            // strategic AI defends camps with reusable melee weapons.
+            string[] weaponOrder = { "item_pitchfork", "item_axe", "item_knife" };
             return weaponOrder
                 .Select(id => items.FirstOrDefault(item => item.Type.ID == id && item.Count > 0))
                 .FirstOrDefault(item => item != null && item.Type.DamageValue > minimumDamage &&

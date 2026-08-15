@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Burntime.Remaster.Logic;
 using Burntime.Remaster.Logic.Generation;
 
@@ -51,8 +52,12 @@ public static class HeadlessSimulation
         int completedTurns = 0;
         Player? winner = null;
         int activeTurn = 0;
+        EconomyMetrics economy = new(game);
         StrategicAiTelemetry.Sink = (eventPlayer, message) =>
+        {
             events.Add($"Turn {activeTurn}: {PlayerLabel(eventPlayer)} {message}.");
+            economy.Observe(eventPlayer, activeTurn, message);
+        };
 
         try
         {
@@ -80,6 +85,7 @@ public static class HeadlessSimulation
                     }
                 }
 
+                economy.RecordCappedCampTurn();
                 game.Turn();
 
                 foreach (Player player in game.World.Players)
@@ -99,7 +105,7 @@ public static class HeadlessSimulation
             StrategicAiTelemetry.Sink = null;
         }
 
-        return BuildReport(game, options, completedTurns, winner, events);
+        return BuildReport(game, options, completedTurns, winner, events, economy);
     }
 
     static Dictionary<int, int?> CaptureOwnership(ClassicGame game)
@@ -200,7 +206,8 @@ public static class HeadlessSimulation
         HeadlessSimulationOptions options,
         int completedTurns,
         Player? winner,
-        IReadOnlyCollection<string> events)
+        IReadOnlyCollection<string> events,
+        EconomyMetrics economy)
     {
         StringBuilder report = new();
         report.AppendLine("Burntime headless all-AI simulation");
@@ -293,6 +300,22 @@ public static class HeadlessSimulation
         }
 
         report.AppendLine();
+        report.AppendLine("AI economy results");
+        foreach (Player player in game.World.Players)
+        {
+            PlayerEconomyMetrics result = economy[player];
+            string firstTrap = result.FirstAdvancedTrapTurn?.ToString() ?? "none";
+            string cityCargo = FormatCargoFill(result.CityCargo, result.CityCapacity);
+            string roamingCargo = FormatCargoFill(result.RoamingCargo, result.RoamingCapacity);
+            report.AppendLine($"- {PlayerLabel(player)}: first advanced trap turn {firstTrap}; " +
+                $"city barter arrivals {result.CityVisits} at {cityCargo} cargo; " +
+                $"roaming barter encounters {result.RoamingVisits} at {roamingCargo} cargo; " +
+                $"camp goods collected value {result.CollectedTradeValue:0}; " +
+                $"barter value offered/acquired {result.OfferedTradeValue:0}/{result.AcquiredTradeValue:0}; " +
+                $"value consolidations {result.Consolidations}; capped-production camp-turns {result.CappedCampTurns}");
+        }
+
+        report.AppendLine();
         report.AppendLine("Timeline");
         if (events.Count == 0)
             report.AppendLine("- No strategic actions recorded.");
@@ -322,6 +345,10 @@ public static class HeadlessSimulation
         1 => "normal",
         _ => "hard"
     };
+
+    static string FormatCargoFill(int cargo, int capacity) => capacity == 0
+        ? "n/a"
+        : $"{cargo * 100f / capacity:0}%";
 
     static string TrapTypeLabel(ClassicGame game, Production production)
     {
@@ -390,9 +417,98 @@ public static class HeadlessSimulation
                 GroundItems = CountItems(groundItems),
                 GroundItemTypes = groundItems
                     .GroupBy(item => item.Type.ID)
-                    .ToDictionary(itemGroup => itemGroup.Key, itemGroup => AiItemPool.Accepts(itemGroup.First().Type)),
+                    .ToDictionary(itemGroup => itemGroup.Key, itemGroup =>
+                        AiItemPool.Accepts(itemGroup.First().Type) ||
+                        AiItemPool.IsConstructionMaterial(itemGroup.Key)),
                 RoomItems = CountItems(player.Location.Rooms.SelectMany(room => room.Items))
             };
         }
+    }
+
+    sealed class EconomyMetrics
+    {
+        static readonly Regex CargoPattern = new(
+            @"^(city|roaming) barter .*: cargo (\d+)/(\d+) slots", RegexOptions.Compiled);
+        static readonly Regex TradePattern = new(
+            @"^(traded|consolidated).*\(value (\d+) -> (\d+),", RegexOptions.Compiled);
+        static readonly Regex CollectionPattern = new(
+            @"^collected .*\(trade value (\d+)\)$", RegexOptions.Compiled);
+
+        readonly ClassicGame game;
+        readonly Dictionary<Player, PlayerEconomyMetrics> players;
+
+        public EconomyMetrics(ClassicGame game)
+        {
+            this.game = game;
+            players = game.World.Players.ToDictionary(player => player, _ => new PlayerEconomyMetrics());
+        }
+
+        public PlayerEconomyMetrics this[Player player] => players[player];
+
+        public void Observe(Player player, int turn, string message)
+        {
+            PlayerEconomyMetrics result = players[player];
+            if (result.FirstAdvancedTrapTurn == null &&
+                (message.Contains("item_trap") || message.Contains("item_rat_trap") ||
+                    message.Contains("item_snake_trap")) &&
+                (message.StartsWith("assembled") || message.StartsWith("installed") ||
+                    message.StartsWith("traded")))
+                result.FirstAdvancedTrapTurn = turn;
+
+            Match cargo = CargoPattern.Match(message);
+            if (cargo.Success)
+            {
+                int carried = int.Parse(cargo.Groups[2].Value);
+                int capacity = int.Parse(cargo.Groups[3].Value);
+                if (cargo.Groups[1].Value == "city")
+                {
+                    result.CityVisits++;
+                    result.CityCargo += carried;
+                    result.CityCapacity += capacity;
+                }
+                else
+                {
+                    result.RoamingVisits++;
+                    result.RoamingCargo += carried;
+                    result.RoamingCapacity += capacity;
+                }
+            }
+
+            Match trade = TradePattern.Match(message);
+            if (trade.Success)
+            {
+                result.OfferedTradeValue += int.Parse(trade.Groups[2].Value);
+                result.AcquiredTradeValue += int.Parse(trade.Groups[3].Value);
+                if (trade.Groups[1].Value == "consolidated")
+                    result.Consolidations++;
+            }
+
+            Match collection = CollectionPattern.Match(message);
+            if (collection.Success)
+                result.CollectedTradeValue += int.Parse(collection.Groups[1].Value);
+        }
+
+        public void RecordCappedCampTurn()
+        {
+            foreach (Location camp in game.World.Locations.Where(location =>
+                location.Player != null && StrategicAiEconomy.IsFoodStockCapped(location)))
+                players[camp.Player].CappedCampTurns++;
+        }
+    }
+
+    sealed class PlayerEconomyMetrics
+    {
+        public int? FirstAdvancedTrapTurn;
+        public int CityVisits;
+        public int CityCargo;
+        public int CityCapacity;
+        public int RoamingVisits;
+        public int RoamingCargo;
+        public int RoamingCapacity;
+        public int CollectedTradeValue;
+        public int OfferedTradeValue;
+        public int AcquiredTradeValue;
+        public int Consolidations;
+        public int CappedCampTurns;
     }
 }

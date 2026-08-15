@@ -174,7 +174,10 @@ internal static class StrategicAiPlanner
         bool expansionNeedsEquipment = StrategicAiEconomy.NeedsExpansionTool(state);
         // Economy work prepares the next expansion push. Once a claim or attack is
         // already safe and reachable, gathering and trading must not postpone it.
-        float preparedEconomyScore = target == null ? float.PositiveInfinity : 300;
+        bool economyGrowthNeeded = StrategicAiEconomy.ShouldPrioritizeEconomicGrowth(state);
+        float preparedEconomyScore = target == null || economyGrowthNeeded
+            ? float.PositiveInfinity
+            : 300;
         if (StrategicAiEconomy.ShouldContinueTrading(state))
         {
             candidates.Add(new StrategicAiDecision(

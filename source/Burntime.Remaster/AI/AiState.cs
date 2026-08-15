@@ -600,6 +600,12 @@ namespace Burntime.Remaster.AI
                     ItemPool.Insert(item);
                     CurrentLocation.Items.Remove(item);
                 }
+                else if (ItemPool.TryReserveConstructionMaterial(item))
+                {
+                    // Preserve the first copy even when the travel group deliberately
+                    // kept only limited room for unexpected ground loot.
+                    CurrentLocation.Items.Remove(item);
+                }
                 else if (TryStoreInGroup(item))
                 {
                     CurrentLocation.Items.Remove(item);
