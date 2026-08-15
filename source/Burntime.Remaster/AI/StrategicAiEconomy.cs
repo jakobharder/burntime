@@ -23,6 +23,7 @@ internal static class StrategicAiEconomy
 
     public static void Run(ClassicAiState state)
     {
+        RemoveAdviceItems(state);
         EquipEmpire(state);
 
         if (state.Current.Player == state.Player)
@@ -35,6 +36,23 @@ internal static class StrategicAiEconomy
 
         // A purchase or construction may satisfy an equipment need immediately.
         EquipEmpire(state);
+    }
+
+    static void RemoveAdviceItems(ClassicAiState state)
+    {
+        IEnumerable<IItemCollection> inventories = state.Player.Group
+            .Select(character => (IItemCollection)character.Items)
+            .Concat(state.RootGame.World.Locations
+                .Where(location => location.Player == state.Player)
+                .SelectMany(location => location.Rooms.Select(room => (IItemCollection)room.Items)
+                    .Concat(location.CampNPC
+                        .Where(character => character.Player == state.Player)
+                        .Select(character => (IItemCollection)character.Items))));
+        foreach (IItemCollection inventory in inventories)
+        {
+            foreach (Item advice in inventory.Where(item => item.ID == "item_advice").ToArray())
+                inventory.Remove(advice);
+        }
     }
 
     public static bool ShouldVisitTrader(ClassicAiState state)
@@ -119,6 +137,9 @@ internal static class StrategicAiEconomy
             !production.GetRate(toolCount: 0, npcCount: 1).IsCampStarving);
     }
 
+    public static bool ShouldPreferProductionAtCamp(ClassicAiState state, Location location) =>
+        location.Danger == null && !IsThreatened(state, location);
+
     public static Location FindBestCampForCollection(ClassicAiState state)
     {
         // The group already carries enough safe offers for a useful purchase.
@@ -143,23 +164,18 @@ internal static class StrategicAiEconomy
     public static Location FindBestCampForDelivery(ClassicAiState state)
     {
         bool carriesPump = state.Player.Group.SelectMany(character => character.Items).Any(IsPump);
-        int carriedToolCount = state.Player.Group.SelectMany(character => character.Items)
-            .Count(item => item.Type.Production != null);
-        bool carriesTool = carriedToolCount > 1 ||
-            (carriedToolCount > 0 && !HasNeutralExpansionOpportunity(state));
         bool completeRecipe = HasCompleteFocusedRecipe(state);
-        bool hasReservedProduction = state.RootGame.World.Locations
+        bool hasProductionUpgrade = state.RootGame.World.Locations
             .Where(location => location.Player == state.Player)
-            .Any(location => state.Pool.HasTrap(state.AvailableProducts(location)));
-        if (!carriesPump && !carriesTool && !completeRecipe && !hasReservedProduction)
+            .Any(location => HasPortableBestProduction(state, location));
+        if (!carriesPump && !completeRecipe && !hasProductionUpgrade)
             return null;
 
         return state.RootGame.World.Locations
             .Where(location => location.Player == state.Player && location != state.Current)
             .Where(location =>
                 (carriesPump && NeedsPump(location)) ||
-                (carriesTool && HasConstructibleProductionNeed(location)) ||
-                (state.Pool.HasTrap(state.AvailableProducts(location)) && HasConstructibleProductionNeed(location)) ||
+                HasPortableBestProduction(state, location) ||
                 (completeRecipe && (HasConstructibleProductionNeed(location) || NeedsPump(location))))
             .Select(location => new
             {
@@ -168,6 +184,25 @@ internal static class StrategicAiEconomy
             })
             .Where(candidate => candidate.Route != null)
             .OrderBy(candidate => candidate.Route.Days)
+            .Select(candidate => candidate.Location)
+            .FirstOrDefault();
+    }
+
+    public static Location FindBestCampForStationing(ClassicAiState state)
+    {
+        return state.RootGame.World.Locations
+            .Where(location => location.Player == state.Player)
+            .Select(location => new
+            {
+                Location = location,
+                Route = StrategicAiPlanner.FindRoute(state.Player, state.Current, location),
+                Threatened = IsThreatened(state, location),
+                Guards = location.CampNPC.Count(npc => npc.Player == state.Player && !npc.IsDead)
+            })
+            .Where(candidate => candidate.Route != null)
+            .OrderByDescending(candidate => candidate.Threatened)
+            .ThenBy(candidate => candidate.Guards)
+            .ThenBy(candidate => candidate.Route.Days)
             .Select(candidate => candidate.Location)
             .FirstOrDefault();
     }
@@ -183,7 +218,13 @@ internal static class StrategicAiEconomy
     {
         int needed = state.RootGame.World.Locations
             .Where(location => location.Player == state.Player)
-            .Sum(location => System.Math.Max(0, 2 - CompatibleToolCount(location)));
+            .Sum(location =>
+            {
+                Production best = location.ValidProductions
+                    .OrderByDescending(ProductionTradePriority)
+                    .FirstOrDefault();
+                return best == null ? 0 : System.Math.Max(0, 2 - ProductionToolCount(location, best));
+            });
         if (state.OwnedCampCount == 0)
             needed = System.Math.Max(1, needed);
         return state.Pool.ProductionToolCount <= needed;
@@ -208,6 +249,13 @@ internal static class StrategicAiEconomy
                 EquipDangerProtection(state, guard, camp);
         }
 
+        // The AI pool is shared empire-wide. Put its best compatible production
+        // tools to work immediately instead of leaving them in hidden stock.
+        foreach (Location camp in camps
+            .OrderByDescending(location => ShouldPreferProductionAtCamp(state, location))
+            .ThenBy(location => location.GetFoodProductionRate().FoodPerDay))
+            InstallProductionFromPool(state, camp);
+
         IEnumerable<Character> npcs = frontierGuards
             .Concat(player.Group.Where(character => character != player.Character && !character.IsDead))
             .Concat(rearGuards)
@@ -220,6 +268,8 @@ internal static class StrategicAiEconomy
             npc.Items.Add(container);
             StrategicAiTelemetry.Report(player, $"equipped {npc.Name} with {container.ID}");
         }
+
+        CarryStrategicProtection(state);
     }
 
     static void EquipWeapon(
@@ -261,6 +311,25 @@ internal static class StrategicAiEconomy
         StrategicAiTelemetry.Report(state.Player, $"equipped {role} {character.Name}{location} with {weapon.ID}");
     }
 
+    static void CarryStrategicProtection(ClassicAiState state)
+    {
+        if (DesiredProtectionReserve(state) < 2 || state.Pool.ProtectionCount == 0 ||
+            state.Player.Group.SelectMany(character => character.Items)
+                .Any(item => AiItemPool.IsHazardProtection(item.Type)))
+            return;
+
+        Character carrier = state.Player.Group.FirstOrDefault(character => !character.Items.IsFull);
+        if (carrier == null)
+            return;
+        Item protection = state.Pool.GetBestGeneralProtection();
+        if (protection == null)
+            return;
+        carrier.Items.Add(protection);
+        carrier.Protection = protection;
+        StrategicAiTelemetry.Report(state.Player,
+            $"carried {protection.ID} as strategic hazard protection");
+    }
+
     static void EquipDangerProtection(ClassicAiState state, Character guard, Location camp)
     {
         if (guard.Items.FindBestProtection(null, camp.Danger.Type) != null || guard.Items.IsFull)
@@ -290,8 +359,12 @@ internal static class StrategicAiEconomy
 
     static void InstallProductionFromPool(ClassicAiState state, Location camp)
     {
-        string[] products = state.AvailableProducts(camp);
-        if (!state.Pool.HasTrap(products) || CompatibleToolCount(camp) >= 2)
+        string[] products = camp.ValidProductions
+            .Where(production => ProductionToolCount(camp, production) < 2)
+            .OrderByDescending(ProductionTradePriority)
+            .Select(production => production.Produce.ID)
+            .ToArray();
+        if (products.Length == 0 || !state.Pool.HasTrap(products))
             return;
         if (NeedsExpansionTool(state) && state.Pool.ProductionToolCount <= 1)
             return;
@@ -304,17 +377,31 @@ internal static class StrategicAiEconomy
         StrategicAiTelemetry.Report(state.Player, $"installed {tool.ID} for food production at {camp.Title}");
     }
 
+    static bool HasPortableBestProduction(ClassicAiState state, Location camp)
+    {
+        Production best = camp.ValidProductions
+            .OrderByDescending(ProductionTradePriority)
+            .ThenByDescending(production => production.Produce.FoodValue)
+            .FirstOrDefault();
+        if (best == null || ProductionToolCount(camp, best) >= 2)
+            return false;
+
+        bool carried = state.Player.Group.SelectMany(character => character.Items)
+            .Any(item => item.Type.Production == best);
+        bool pooled = state.Pool.GetContents()
+            .Any(entry => entry.Count > 0 && entry.Type.Production == best);
+        return carried || pooled;
+    }
+
     static void ConstructForCamp(ClassicAiState state, Location camp)
     {
         List<string> wanted = new();
-        string[] products = state.AvailableProducts(camp);
-        if (CompatibleToolCount(camp) < 2)
-        {
-            if (products.Contains("item_meat"))
-                wanted.Add("item_trap");
-            if (products.Contains("item_rats"))
-                wanted.Add("item_rat_trap");
-        }
+        Production meat = camp.ValidProductions.FirstOrDefault(production => production.Produce.ID == "item_meat");
+        Production rats = camp.ValidProductions.FirstOrDefault(production => production.Produce.ID == "item_rats");
+        if (meat != null && ProductionToolCount(camp, meat) < 2)
+            wanted.Add("item_trap");
+        if (rats != null && ProductionToolCount(camp, rats) < 2)
+            wanted.Add("item_rat_trap");
 
         if (NeedsPump(camp))
         {
@@ -511,8 +598,9 @@ internal static class StrategicAiEconomy
         {
             if (!offer.FromPool)
                 offer.Owner.Remove(offer.Item);
-            trader.Items.Add(offer.Item);
         }
+
+        PruneAndStoreTraderOffers(trader, plan.Offers.Select(offer => offer.Item));
 
         if (AiItemPool.Accepts(plan.Target.Type))
             state.Pool.Insert(plan.Target);
@@ -524,6 +612,27 @@ internal static class StrategicAiEconomy
         StrategicAiTelemetry.Report(state.Player,
             $"traded {string.Join(", ", plan.Offers.Select(offer => offer.Item.ID))} for " +
             $"{plan.Target.ID} with {trader.Name} (AI barter value x{TradeBenefit(state):0.0})");
+    }
+
+    static void PruneAndStoreTraderOffers(Trader trader, IEnumerable<Item> offers)
+    {
+        Item[] offeredItems = offers.ToArray();
+        if (trader.Items.MaxCount == ItemList.Infinite)
+        {
+            foreach (Item item in offeredItems)
+                trader.Items.Add(item);
+            return;
+        }
+
+        HashSet<Item> kept = trader.Items.Concat(offeredItems)
+            .OrderByDescending(item => item.TradeValue)
+            .ThenBy(item => item.Type.IsClass("useless"))
+            .Take(trader.Items.MaxCount)
+            .ToHashSet();
+        foreach (Item item in trader.Items.Where(item => !kept.Contains(item)).ToArray())
+            trader.Items.Remove(item);
+        foreach (Item item in offeredItems.Where(kept.Contains))
+            trader.Items.Add(item);
     }
 
     static bool CanPlanTrade(ClassicAiState state, Trader trader)
@@ -540,11 +649,7 @@ internal static class StrategicAiEconomy
         if (trader == null || trader.Items.Count == 0)
             return null;
 
-        int maxOffers = trader.Items.MaxCount - trader.Items.Count + 1;
-        if (maxOffers <= 0)
-            return null;
-
-        List<TradeAsset> temporaryPoolAssets = TakeSurplusPoolContainers(state);
+        List<TradeAsset> temporaryPoolAssets = TakeSurplusPoolAssets(state);
         List<TradeAsset> allCandidates = state.Player.Group
             .SelectMany(character => character.Items.Select(item => new TradeAsset(character.Items, item, false)))
             .Where(asset => CanSell(state, asset.Item))
@@ -563,8 +668,6 @@ internal static class StrategicAiEconomy
             int remainingFood = state.Player.Group.GetFoodReserve() + state.Player.Group.GetFoodInInventory();
             foreach (TradeAsset candidate in allCandidates.Where(asset => asset.Item.ID != target.ID))
             {
-                if (offers.Count >= maxOffers)
-                    break;
                 if (candidate.Item.FoodValue > 0 &&
                     remainingFood - candidate.Item.FoodValue < state.Player.Group.Count * 6)
                     continue;
@@ -593,12 +696,28 @@ internal static class StrategicAiEconomy
         _ => 1.5f
     };
 
-    static List<TradeAsset> TakeSurplusPoolContainers(ClassicAiState state)
+    static List<TradeAsset> TakeSurplusPoolAssets(ClassicAiState state)
     {
         List<TradeAsset> assets = new();
         while (state.Pool.WaterContainerCount > 1)
         {
             Item item = state.Pool.TakeLeastWaterContainer();
+            if (item == null)
+                break;
+            assets.Add(new TradeAsset(null, item, true));
+        }
+        while (GlobalProtectionStock(state) > DesiredProtectionReserve(state) && state.Pool.ProtectionCount > 0)
+        {
+            Item item = state.Pool.TakeLeastProtection();
+            if (item == null)
+                break;
+            assets.Add(new TradeAsset(null, item, true));
+        }
+        // Three portable production tools are enough to seed the next camps. Convert
+        // additional low-tier tools into denser trade value instead of hoarding them.
+        while (state.Pool.ProductionToolCount > 3)
+        {
+            Item item = state.Pool.TakeLeastProductionTool();
             if (item == null)
                 break;
             assets.Add(new TradeAsset(null, item, true));
@@ -617,25 +736,36 @@ internal static class StrategicAiEconomy
         bool earlyEconomy = state.OwnedCampCount < 3;
         if (NeedsExpansionTool(state) && item.Type.Production != null &&
             IsUsefulForNeutralExpansion(state, item.Type.Production))
-            return 1200 + item.FoodValue + item.DamageValue;
-        if (earlyEconomy && item.Type.Production != null && NeedsProduction(state, item.Type))
-            return 1050 + item.FoodValue;
+            return 1200 + ProductionTradePriority(item.Type.Production);
+        if (item.Type.Production != null && NeedsProduction(state, item.Type))
+        {
+            bool rearCampNeed = state.RootGame.World.Locations.Any(location =>
+                location.Player == state.Player && ShouldPreferProductionAtCamp(state, location) &&
+                location.ValidProductions.Contains(item.Type.Production) &&
+                ProductionToolCount(location, item.Type.Production) < 2);
+            return (rearCampNeed ? 1125 : earlyEconomy ? 1050 : 900) +
+                ProductionTradePriority(item.Type.Production);
+        }
         if (item.DamageValue > 0 && NeedsWeapons(state))
             return 1000 + item.DamageValue;
-        if (item.Type.IsClass("protection") && NeedsDangerProtection(state, item.Type))
+        if (AiItemPool.IsHazardProtection(item.Type) &&
+            (NeedsDangerProtection(state, item.Type) || GlobalProtectionStock(state) < DesiredProtectionReserve(state)))
             return 950 + item.TradeValue;
-        if (item.Type.Production != null && NeedsProduction(state, item.Type))
-            return 900 + item.FoodValue;
         if (IsPump(item) && NeedsAnyPump(state))
             return (earlyEconomy ? 970 : 850) + (item.ID == "item_industrial_pump" ? 20 : 0);
         if (ConstructionMaterials.Contains(item.ID) && NeedsConstructionMaterials(state, item.ID))
         {
             int missing = FocusedRecipe(state).Count(id =>
                 !state.Player.Group.SelectMany(character => character.Items).Any(item => item.ID == id));
-            return (earlyEconomy ? 780 : 700) + System.Math.Max(0, 4 - missing) * 35 + item.TradeValue;
+            bool valuableTrapRecipe = FocusedRecipe(state).Contains("item_spring") &&
+                FocusedRecipe(state).Contains("item_tin") && FocusedRecipe(state).Contains("item_wire");
+            return (valuableTrapRecipe ? 1020 : earlyEconomy ? 780 : 700) +
+                System.Math.Max(0, 4 - missing) * 35 + item.TradeValue;
         }
         if (AiItemPool.IsWaterContainer(item.Type) && NeedsBetterWaterContainers(state, item.Type))
             return 600 + AiItemPool.WaterContainerCapacity(item.Type);
+        if (IsTradeValueUpgrade(state, item))
+            return 500 + item.TradeValue;
 
         int lowestFood = state.Player.Group.SelectMany(character => character.Items)
             .Where(candidate => candidate.FoodValue > 0)
@@ -661,6 +791,9 @@ internal static class StrategicAiEconomy
             return false;
         if (AiItemPool.IsWaterContainer(item.Type))
             return false;
+        if (AiItemPool.IsHazardProtection(item.Type) &&
+            GlobalProtectionStock(state) <= DesiredProtectionReserve(state))
+            return false;
         if (item.Type.IsClass("weapon") && NeedsWeapons(state))
             return false;
         if (ConstructionMaterials.Contains(item.ID) && FocusedRecipe(state).Contains(item.ID) &&
@@ -673,13 +806,34 @@ internal static class StrategicAiEconomy
 
     static int SalePriority(Item item)
     {
-        if (item.FoodValue > 0)
-            return item.FoodValue <= 3 ? 0 : 3;
         if (item.Type.IsClass("useless"))
-            return 1;
+            return 0;
+        if (item.FoodValue > 0)
+            return item.FoodValue <= 3 ? 1 : 3;
         if (item.Type.IsClass("protection"))
             return 2;
         return 3;
+    }
+
+    static float ProductionTradePriority(Production production) =>
+        production.Produce.ID switch
+        {
+            "item_meat" => 240,
+            "item_snake" => 200,
+            "item_rats" => 100,
+            _ => 0
+        } + production.Produce.TradeValue + production.Produce.FoodValue;
+
+    static bool IsTradeValueUpgrade(ClassicAiState state, Item target)
+    {
+        if (AiItemPool.Accepts(target.Type) || target.TradeValue <= 0)
+            return false;
+        float highestUselessValue = state.Player.Group.SelectMany(character => character.Items)
+            .Where(item => item.Type.IsClass("useless") && CanSell(state, item))
+            .Select(item => item.TradeValue)
+            .DefaultIfEmpty(0)
+            .Max();
+        return highestUselessValue > 0 && target.TradeValue > highestUselessValue;
     }
 
     static bool NeedsWeapons(ClassicAiState state)
@@ -688,8 +842,7 @@ internal static class StrategicAiEconomy
         IEnumerable<Character> guards = state.RootGame.World.Locations
             .Where(location => location.Player == state.Player && IsThreatened(state, location))
             .SelectMany(location => location.CampNPC.Where(npc => npc.Player == state.Player));
-        return state.Player.Group.Count == 1 ||
-            followers.Any(character => (character.Items.FindBestWeapon()?.DamageValue ?? 0) == 0) ||
+        return followers.Any(character => (character.Items.FindBestWeapon()?.DamageValue ?? 0) == 0) ||
             guards.Any(character => (character.Items.FindBestWeapon()?.DamageValue ?? 0) < 33);
     }
 
@@ -699,7 +852,17 @@ internal static class StrategicAiEconomy
             return false;
         Location[] camps = state.RootGame.World.Locations.Where(location => location.Player == state.Player).ToArray();
         return camps.Length == 0 || camps.Any(location =>
-            location.ValidProductions.Contains(type.Production) && CompatibleToolCount(location) < 2);
+        {
+            if (!location.ValidProductions.Contains(type.Production) ||
+                ProductionToolCount(location, type.Production) >= 2 ||
+                !ShouldPreferProductionAtCamp(state, location))
+                return false;
+            Production best = location.ValidProductions
+                .OrderByDescending(ProductionTradePriority)
+                .ThenByDescending(production => production.Produce.FoodValue)
+                .FirstOrDefault();
+            return best == type.Production;
+        });
     }
 
     static bool NeedsDangerProtection(ClassicAiState state, ItemType type)
@@ -717,6 +880,20 @@ internal static class StrategicAiEconomy
                     : !state.Pool.HasGasMask()));
         return ownedCampNeed || expansionNeed;
     }
+
+    static int DesiredProtectionReserve(ClassicAiState state)
+    {
+        Location[] camps = state.RootGame.World.Locations
+            .Where(location => location.Player == state.Player)
+            .ToArray();
+        if (camps.Length == 0)
+            return 0;
+        return camps.Length >= 5 || camps.Any(location => location.Danger != null) ? 2 : 1;
+    }
+
+    static int GlobalProtectionStock(ClassicAiState state) => state.Pool.ProtectionCount +
+        state.Player.Group.SelectMany(character => character.Items)
+            .Count(item => AiItemPool.IsHazardProtection(item.Type));
 
     static bool NeedsBetterWaterContainers(ClassicAiState state, ItemType offered)
     {
@@ -746,11 +923,11 @@ internal static class StrategicAiEconomy
                 recipes.Add(new[] { "item_unloaded_pistol", "item_ammunition" });
         }
         if (state.RootGame.World.Locations.Any(location => location.Player == state.Player &&
-            HasConstructibleProductionNeed(location) &&
+            ShouldPreferProductionAtCamp(state, location) && HasConstructibleProductionNeed(location) &&
             location.ValidProductions.Any(production => production.Produce.ID == "item_meat")))
             recipes.Add(new[] { "item_spring", "item_tin", "item_wire" });
         if (state.RootGame.World.Locations.Any(location => location.Player == state.Player &&
-            HasConstructibleProductionNeed(location) &&
+            ShouldPreferProductionAtCamp(state, location) && HasConstructibleProductionNeed(location) &&
             location.ValidProductions.Any(production => production.Produce.ID == "item_rats")))
             recipes.Add(new[] { "item_wire", "item_woodpile", "item_screws" });
         if (NeedsAnyPump(state))
@@ -760,9 +937,21 @@ internal static class StrategicAiEconomy
         }
 
         return recipes
-            .OrderByDescending(recipe => recipe.Count(id => carried.Any(item => item.ID == id)))
+            .OrderByDescending(RecipePriority)
+            .ThenByDescending(recipe => recipe.Count(id => carried.Any(item => item.ID == id)))
             .ThenBy(recipe => recipe.Length)
             .FirstOrDefault() ?? Array.Empty<string>();
+    }
+
+    static int RecipePriority(string[] recipe)
+    {
+        if (recipe.Contains("item_spring") && recipe.Contains("item_tin") && recipe.Contains("item_wire"))
+            return 4;
+        if (recipe.Contains("item_unloaded_rifle") || recipe.Contains("item_unloaded_pistol"))
+            return 3;
+        if (recipe.Contains("item_screws") && recipe.Contains("item_woodpile") && recipe.Contains("item_wire"))
+            return 2;
+        return 1;
     }
 
     static bool NeedsAnyConstruction(ClassicAiState state) =>
@@ -783,18 +972,16 @@ internal static class StrategicAiEconomy
 
     static bool IsPump(Item item) => item.Type.IsClass("pump") || item.ID == "item_industrial_pump";
 
-    static int CompatibleToolCount(Location camp)
-    {
-        HashSet<Production> valid = camp.ValidProductions.ToHashSet();
-        return camp.Rooms.SelectMany(room => room.Items)
-            .Concat(camp.CampNPC.SelectMany(npc => npc.Items))
-            .Count(item => item.Type.Production != null && valid.Contains(item.Type.Production));
-    }
+    static int ProductionToolCount(Location camp, Production production) => camp.Rooms
+        .SelectMany(room => room.Items)
+        .Concat(camp.CampNPC.SelectMany(npc => npc.Items))
+        .Count(item => item.Type.Production == production);
 
     static bool HasConstructibleProductionNeed(Location camp)
     {
-        return CompatibleToolCount(camp) < 2 && camp.ValidProductions
-            .Any(production => production.Produce.ID is "item_rats" or "item_meat");
+        return camp.ValidProductions.Any(production =>
+            (production.Produce.ID is "item_rats" or "item_meat") &&
+            ProductionToolCount(camp, production) < 2);
     }
 
     static bool HasNeutralExpansionOpportunity(ClassicAiState state) => state.RootGame.World.Locations

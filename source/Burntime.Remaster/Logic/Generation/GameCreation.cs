@@ -295,6 +295,8 @@ namespace Burntime.Remaster.Logic.Generation
                 string[] items = settings.StartItems;
                 foreach (string item in items)
                 {
+                    if (player.Type == PlayerType.Ai && item == "item_advice")
+                        continue;
                     player.Character.Items.Add(game.ItemTypes[item].Generate());
                 }
             }

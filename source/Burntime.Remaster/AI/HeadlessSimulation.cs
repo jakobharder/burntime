@@ -238,7 +238,24 @@ public static class HeadlessSimulation
         foreach (Location location in game.World.Locations.Where(location => location.Player is not null).OrderBy(location => location.Id))
         {
             Character[] defenders = location.CampNPC.Where(character => character.Player == location.Player).ToArray();
-            report.AppendLine($"- {LocationLabel(location)}: {PlayerLabel(location.Player!)}, {defenders.Length} NPC(s)");
+            Item[] campItems = location.Rooms.SelectMany(room => room.Items)
+                .Concat(defenders.SelectMany(character => character.Items))
+                .ToArray();
+            Production? bestProduction = location.ValidProductions
+                .OrderByDescending(production => production.Produce.TradeValue)
+                .ThenByDescending(production => production.Produce.FoodValue)
+                .FirstOrDefault();
+            Item[] usedTraps = location.Production == null
+                ? Array.Empty<Item>()
+                : campItems.Where(item => item.Type.Production == location.Production).ToArray();
+            string bestTrap = bestProduction == null
+                ? "none"
+                : $"{TrapTypeLabel(game, bestProduction)} -> {bestProduction.Produce.ID}";
+            string usedTrap = location.Production == null
+                ? "none"
+                : $"{FormatItems(usedTraps)} -> {location.Production.Produce.ID}";
+            report.AppendLine($"- {LocationLabel(location)}: {PlayerLabel(location.Player!)}, {defenders.Length} NPC(s); " +
+                $"items {FormatItems(campItems)}; highest possible trap {bestTrap}; used trap {usedTrap}");
             foreach (Character defender in defenders)
             {
                 string weapon = defender.Weapon?.Type.ID ?? "none";
@@ -261,6 +278,18 @@ public static class HeadlessSimulation
             float tradeValue = campItems.Sum(item => item.TradeValue);
             report.AppendLine($"- {PlayerLabel(player)}: {campItems.Length} items, " +
                 $"trade value {tradeValue:0}; {FormatItems(campItems)}");
+        }
+
+        report.AppendLine();
+        report.AppendLine("AI item pools (shared, slotless inventory)");
+        foreach (Player player in game.World.Players)
+        {
+            var contents = (player.AiState as ClassicAiState)?.Pool.GetContents().ToArray() ??
+                Array.Empty<(ItemType Type, int Count)>();
+            float tradeValue = contents.Sum(entry => entry.Type.TradeValue * entry.Count);
+            Dictionary<string, int> counts = contents.ToDictionary(entry => entry.Type.ID, entry => entry.Count);
+            report.AppendLine($"- {PlayerLabel(player)}: {counts.Values.Sum()} items, " +
+                $"trade value {tradeValue:0}; {FormatItems(counts)}");
         }
 
         report.AppendLine();
@@ -293,6 +322,13 @@ public static class HeadlessSimulation
         1 => "normal",
         _ => "hard"
     };
+
+    static string TrapTypeLabel(ClassicGame game, Production production)
+    {
+        string[] preferred = { "item_trap", "item_snake_trap", "item_rat_trap", "item_knife", "item_axe", "item_pitchfork" };
+        return preferred.FirstOrDefault(id =>
+            game.ItemTypes.Contains(id) && game.ItemTypes[id].Production == production) ?? "base production";
+    }
 
     static string FormatGroupState(Player player)
     {

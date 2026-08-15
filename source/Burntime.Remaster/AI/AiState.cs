@@ -691,11 +691,14 @@ namespace Burntime.Remaster.AI
                 .Concat(npc.Items)
                 .FirstOrDefault(item => item.Type.Production != null &&
                     GetAvailableProducts(CurrentLocation).Contains(item.Type.Production.Produce.ID));
-            Item trap = existingTool != null
-                ? null
-                : ItemPool.HasTrap(GetAvailableProducts(CurrentLocation))
+            bool preferProductionUpgrade = StrategicAiEconomy.ShouldPreferProductionAtCamp(this, CurrentLocation) &&
+                ItemPool.HasHigherValueTrap(existingTool?.Type.Production?.Produce.TradeValue ?? -1,
+                    GetAvailableProducts(CurrentLocation));
+            Item trap = existingTool == null || preferProductionUpgrade
+                ? ItemPool.HasTrap(GetAvailableProducts(CurrentLocation))
                     ? ItemPool.GetBestTrap(GetAvailableProducts(CurrentLocation))
-                    : TakeCompatibleGroupProduction(CurrentLocation);
+                    : existingTool == null ? TakeCompatibleGroupProduction(CurrentLocation) : null
+                : null;
             if (trap != null)
             {
                 if (trap.Type.IsClass("weapon") && !npc.Items.IsFull)

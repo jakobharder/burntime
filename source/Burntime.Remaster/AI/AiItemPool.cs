@@ -238,6 +238,10 @@ namespace Burntime.Remaster.AI
             .Where(item => item.Count > 0 && item.Type.Production != null)
             .Sum(item => item.Count);
 
+        public int ProtectionCount => items
+            .Where(item => item.Count > 0 && IsHazardProtection(item.Type))
+            .Sum(item => item.Count);
+
         public int WaterContainerCount => items
             .Where(item => item.Count > 0 && IsWaterContainer(item.Type))
             .Sum(item => item.Count);
@@ -247,6 +251,40 @@ namespace Burntime.Remaster.AI
             .Select(item => WaterContainerCapacity(item.Type))
             .DefaultIfEmpty(0)
             .Max();
+
+        internal System.Collections.Generic.IEnumerable<(ItemType Type, int Count)> GetContents() => items
+            .Where(item => item.Count > 0)
+            .Select(item => (item.Type, item.Count));
+
+        public bool HasHigherValueTrap(float productionValue, params string[] availableProducts) => items
+            .Any(item => item.Count > 0 && item.Type.Production != null &&
+                availableProducts.Contains(item.Type.Production.Produce.ID) &&
+                item.Type.Production.Produce.TradeValue > productionValue);
+
+        public Item GetBestGeneralProtection()
+        {
+            PoolItem item = FindPoolItem("item_protection_suit", "item_gas_mask", "item_paper_helmet");
+            return item != null ? Take(item) : null;
+        }
+
+        public Item TakeLeastProtection()
+        {
+            PoolItem item = FindPoolItem("item_paper_helmet", "item_gas_mask", "item_protection_suit");
+            return item != null ? Take(item) : null;
+        }
+
+        public Item TakeLeastProductionTool()
+        {
+            PoolItem item = items
+                .Where(candidate => candidate.Count > 0 && candidate.Type.Production != null)
+                .OrderBy(candidate => candidate.Type.Production.Produce.TradeValue)
+                .ThenBy(candidate => candidate.Type.DamageValue)
+                .FirstOrDefault();
+            return item != null ? Take(item) : null;
+        }
+
+        internal static bool IsHazardProtection(ItemType type) =>
+            type.GetProtection("gas") != null || type.GetProtection("radiation") != null;
 
         public Item TakeLeastWaterContainer()
         {

@@ -344,68 +344,6 @@ namespace Burntime.Remaster.Logic
         }
         #endregion
 
-        public void ClearItemsAfterTakeover()
-        {
-            if (container.Root is not ClassicGame root)
-                return;
-
-            foreach (var room in Rooms)
-                room.Items.Clear();
-
-            var list = new List<Item?>();
-
-            // all levels
-            if (root.World.Difficulty <= 2)
-            {
-                // random food
-                list.Add(root.ItemTypes.GenerateClass(new string[] { "food" }, Array.Empty<string>(), 1));
-
-                // 20% chance of a rare/special
-                list.Add(root.ItemTypes.GenerateClass(new string[] { "rare", "special" }, new string[] { "nodrop" }, 0.2f));
-
-                // 50% chance of a bottle or canteen
-                list.Add(root.ItemTypes.GenerateClass(new string[] { "bottle" }, Array.Empty<string>(), 0.5f));
-
-                // 0-2 random items
-                list.AddRange(root.ItemTypes.GenerateClass(new string[] { "material", "useless" }, Array.Empty<string>(), 0, 2));
-            }
-
-            // level 2 and 1
-            if (root.World.Difficulty <= 1)
-            {
-                // 50% chance of a food trap
-                list.Add(root.ItemTypes.GenerateClass(new string[] { "trap" }, Array.Empty<string>(), 0.5f));
-
-                // another 20% chance of a rare/special
-                list.Add(root.ItemTypes.GenerateClass(new string[] { "rare", "special" }, Array.Empty<string>(), 0.2f));
-
-                // 0-2 random items
-                list.AddRange(root.ItemTypes.GenerateClass(new string[] { "material", "useless" }, Array.Empty<string>(), 0, 2));
-            }
-
-            // level 1 only
-            if (root.World.Difficulty == 0)
-            {
-                // random food
-                list.AddRange(root.ItemTypes.GenerateClass(new string[] { "food" }, Array.Empty<string>(), 1, 2));
-
-                // another 50% chance of a food trap
-                list.Add(root.ItemTypes.GenerateClass(new string[] { "trap" }, Array.Empty<string>(), 0.5f));
-
-                // another 20% chance of a rare/special
-                list.Add(root.ItemTypes.GenerateClass(new string[] { "rare", "special", "protection_parts" }, Array.Empty<string>(), 0.2f));
-
-                // 1-2 random items
-                list.AddRange(root.ItemTypes.GenerateClass(new string[] { "material", "useless" }, Array.Empty<string>(), 1, 2));
-            }
-
-            foreach (var item in list)
-            {
-                if (item is not null)
-                    StoreItemRandom(item);
-            }
-        }
-
         protected override void AfterResolving()
         {
             base.AfterResolving();

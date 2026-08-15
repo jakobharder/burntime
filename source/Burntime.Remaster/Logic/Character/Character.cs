@@ -400,11 +400,6 @@ namespace Burntime.Remaster.Logic
             {
                 if (IsLastInCamp)
                 {
-                    if (Player != Root.World.ActivePlayerObj)
-                    {
-                        // clear some items if we just freed an enemy camp
-                        Location.ClearItemsAfterTakeover();
-                    }
                     Location.Player = null;
                 }
             }

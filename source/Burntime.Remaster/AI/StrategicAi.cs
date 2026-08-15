@@ -138,18 +138,19 @@ internal static class StrategicAiPlanner
 
         if (player.Group.Count > observation.DesiredGroupSize)
         {
-            if (observation.Current.Player == player)
+            Location? stationCamp = StrategicAiEconomy.FindBestCampForStationing(state);
+            if (stationCamp == observation.Current)
             {
                 candidates.Add(new StrategicAiDecision(
                     StrategicAiAction.StationFollower,
                     1080,
                     observation.Current,
-                    Reason: "station follower not supported by the traveling economy"));
+                    Reason: "reinforce the weakest frontier camp with a surplus follower"));
             }
             else
             {
-                AddTravelCandidate(state, candidates, FindNearestOwnedCamp(state), 1080,
-                    "return surplus follower to a camp");
+                AddTravelCandidate(state, candidates, stationCamp ?? FindNearestOwnedCamp(state), 1080,
+                    "return surplus follower to the weakest frontier camp");
             }
         }
 
