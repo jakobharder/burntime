@@ -121,6 +121,11 @@ internal static class StrategicAiEconomy
 
     public static Location FindBestCampForCollection(ClassicAiState state)
     {
+        // The group already carries enough safe offers for a useful purchase.
+        // Spending more turns filling its inventory would only build a stockpile.
+        if (ShouldVisitTrader(state))
+            return null;
+
         return state.RootGame.World.Locations
             .Where(location => location.Player == state.Player && location != state.Current)
             .Select(location => new

@@ -248,6 +248,22 @@ public static class HeadlessSimulation
         }
 
         report.AppendLine();
+        report.AppendLine("Combined camp inventory (room storage and stationed NPCs)");
+        foreach (Player player in game.World.Players)
+        {
+            Item[] campItems = game.World.Locations
+                .Where(location => location.Player == player)
+                .SelectMany(location => location.Rooms.SelectMany(room => room.Items)
+                    .Concat(location.CampNPC
+                        .Where(character => character.Player == player)
+                        .SelectMany(character => character.Items)))
+                .ToArray();
+            float tradeValue = campItems.Sum(item => item.TradeValue);
+            report.AppendLine($"- {PlayerLabel(player)}: {campItems.Length} items, " +
+                $"trade value {tradeValue:0}; {FormatItems(campItems)}");
+        }
+
+        report.AppendLine();
         report.AppendLine("Timeline");
         if (events.Count == 0)
             report.AppendLine("- No strategic actions recorded.");

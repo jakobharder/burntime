@@ -162,13 +162,24 @@ internal static class StrategicAiPlanner
                 Reason: "owned camp lacks compatible production equipment"));
         }
 
+        Location? target = ValidatePersistentTarget(state, observation, policy);
+        if (target == null)
+        {
+            target = SelectTerritorialTarget(state, observation, policy);
+            state.StrategicTarget = target;
+        }
+
         bool earlyEconomy = state.OwnedCampCount < 3;
         bool expansionNeedsEquipment = StrategicAiEconomy.NeedsExpansionTool(state);
+        // Economy work prepares the next expansion push. Once a claim or attack is
+        // already safe and reachable, gathering and trading must not postpone it.
+        float preparedEconomyScore = target == null ? float.PositiveInfinity : 300;
         if (StrategicAiEconomy.ShouldContinueTrading(state))
         {
             candidates.Add(new StrategicAiDecision(
                 StrategicAiAction.Wait,
-                expansionNeedsEquipment ? policy.ExpansionEconomyScore : earlyEconomy ? 900 : 740,
+                System.Math.Min(preparedEconomyScore,
+                    expansionNeedsEquipment ? policy.ExpansionEconomyScore : earlyEconomy ? 900 : 740),
                 observation.Current,
                 Reason: "continue trading surplus goods for needed equipment"));
         }
@@ -176,18 +187,21 @@ internal static class StrategicAiPlanner
         {
             Location? tradeCity = StrategicAiEconomy.FindBestTradeCity(state) ?? FindNearestCity(state);
             AddTravelCandidate(state, candidates, tradeCity,
-                expansionNeedsEquipment ? policy.ExpansionEconomyScore : earlyEconomy ? 880 : 720,
+                System.Math.Min(preparedEconomyScore,
+                    expansionNeedsEquipment ? policy.ExpansionEconomyScore : earlyEconomy ? 880 : 720),
                 "deliver surplus goods and trade for needed equipment");
         }
 
         Location? collectionCamp = StrategicAiEconomy.FindBestCampForCollection(state);
         AddTravelCandidate(state, candidates, collectionCamp,
-            expansionNeedsEquipment ? policy.ExpansionEconomyScore - 10 : earlyEconomy ? 850 : 700,
+            System.Math.Min(preparedEconomyScore,
+                expansionNeedsEquipment ? policy.ExpansionEconomyScore - 10 : earlyEconomy ? 850 : 700),
             "collect camp surplus to finance expansion");
 
         Location? deliveryCamp = StrategicAiEconomy.FindBestCampForDelivery(state);
         AddTravelCandidate(state, candidates, deliveryCamp,
-            expansionNeedsEquipment ? policy.ExpansionEconomyScore - 20 : earlyEconomy ? 840 : 690,
+            System.Math.Min(preparedEconomyScore,
+                expansionNeedsEquipment ? policy.ExpansionEconomyScore - 20 : earlyEconomy ? 840 : 690),
             "deliver functional equipment or a complete recipe to camp");
 
         if (state.WaitTurns > 0 && !observation.CriticalSupplies)
@@ -197,13 +211,6 @@ internal static class StrategicAiPlanner
                 StrategicAiAction.Wait,
                 900,
                 Reason: "expansion cooldown"));
-        }
-
-        Location? target = ValidatePersistentTarget(state, observation, policy);
-        if (target == null)
-        {
-            target = SelectTerritorialTarget(state, observation, policy);
-            state.StrategicTarget = target;
         }
 
         if (target != null)
