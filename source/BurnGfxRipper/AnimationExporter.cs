@@ -1,5 +1,6 @@
 ﻿using Burntime.Data.BurnGfx;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 #if WINDOWS
@@ -26,6 +27,7 @@ class AnimationExporter
         SpriteLoaderAni ani = new();
         ani.Process(file);
         Directory.CreateDirectory(dir);
+        List<GifFrame> gifFrames = new();
 
         for (int i = 0; i < ani.FrameCount; i++)
         {
@@ -35,15 +37,21 @@ class AnimationExporter
             BitmapData loc = bmp.LockBits(new Rectangle(0, 0, ani.FrameSize.x, ani.FrameSize.y), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
             using MemoryStream mem = new();
             ani.Render(mem, loc.Stride);
-            Marshal.Copy(mem.ToArray(), 0, loc.Scan0, ani.FrameSize.y * loc.Stride);
+            byte[] pixels = mem.ToArray();
+            Marshal.Copy(pixels, 0, loc.Scan0, ani.FrameSize.y * loc.Stride);
             bmp.UnlockBits(loc);
             TextureUtils.Save(bmp, Path.Combine(dir, i + ".png"));
+            gifFrames.Add(new GifFrame(pixels, ani.FrameSize.x, ani.FrameSize.y));
 #else
             using MemoryStream mem = new();
             ani.Render(mem, ani.FrameSize.x * 4);
-            PngWriter.SaveBgra(mem.ToArray(), ani.FrameSize.x, ani.FrameSize.y, Path.Combine(dir, i + ".png"));
+            byte[] pixels = mem.ToArray();
+            PngWriter.SaveBgra(pixels, ani.FrameSize.x, ani.FrameSize.y, Path.Combine(dir, i + ".png"));
+            gifFrames.Add(new GifFrame(pixels, ani.FrameSize.x, ani.FrameSize.y));
 #endif
         }
+
+        GifWriter.Save(gifFrames, dir + ".gif");
     }
 
 #if WINDOWS
