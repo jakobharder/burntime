@@ -73,8 +73,61 @@ jobs:
           path: artifacts/macos-arm64/Burntime-macOS-arm64.dmg
           if-no-files-found: error
 
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Publish linux-x64
+        run: >-
+          dotnet publish source/Burntime.MonoGame/Burntime.MonoGame.csproj
+          -c Release
+          -r linux-x64
+          --self-contained true
+          -p:DebugSymbols=false
+          -p:PublishReadyToRun=false
+          -p:TieredCompilation=false
+          -p:PublishSingleFile=true
+
+      - name: Build tools
+        run: dotnet build source/PakConverter -c Release -p:DebugSymbols=false
+
+      - name: Create paks
+        working-directory: bin/Release/linux-x64/publish/game
+        run: |
+          ../../../../tools/Release/PakConverter classic
+          ../../../../tools/Release/PakConverter classic_de
+          ../../../../tools/Release/PakConverter classic_newgfx
+          ../../../../tools/Release/PakConverter amiga
+          ../../../../tools/Release/PakConverter music
+
+      - name: Remove source folders
+        run: |
+          rm -r ./bin/Release/linux-x64/publish/game/classic
+          rm -r ./bin/Release/linux-x64/publish/game/classic_newgfx
+          rm -r ./bin/Release/linux-x64/publish/game/classic_de
+          rm -r ./bin/Release/linux-x64/publish/game/classic_es
+          rm -r ./bin/Release/linux-x64/publish/game/classic_jp
+          rm -r ./bin/Release/linux-x64/publish/game/amiga
+          rm -r ./bin/Release/linux-x64/publish/game/music
+
+      - name: Package
+        run: tar -czf burntime-${{ github.ref_name }}-linux-x64.tar.gz -C bin/Release/linux-x64/publish .
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-release
+          path: burntime-${{ github.ref_name }}-linux-x64.tar.gz
+          if-no-files-found: error
+
   release:
-    needs: [windows, macos]
+    needs: [windows, macos, linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -87,6 +140,11 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: macos-release
+          path: release
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-release
           path: release
 
       - name: Create draft release

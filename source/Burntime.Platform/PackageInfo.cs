@@ -121,7 +121,13 @@ public class PackageInfo
             file = inVFS.GetFile(packageName + ":info.txt", FileOpenMode.Read);
         // open file without loading the package
         else
-            file = inVFS.GetFile(inFileName + ":info.txt", FileOpenMode.NoPackage);
+        {
+            // inFileName is a physical path. Passing it through FilePath would
+            // lowercase every path component, which breaks on case-sensitive
+            // file systems when a parent directory contains uppercase letters.
+            PackageFactory factory = new();
+            file = factory.OpenFileDirectly(inFileName, "info.txt", FileOpenMode.Read);
+        }
 
         return TryCreate(packageName, file);
     }
