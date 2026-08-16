@@ -19,6 +19,7 @@
 - Fixed first encounter dialog
 - Camp NPCs now always roam around after turn
 - Following NPCs walk less on the same spot
+- Fixed dogs/mutants spawning all at the same spot
 
 ## 1.0.4 (2024-12-03)
 

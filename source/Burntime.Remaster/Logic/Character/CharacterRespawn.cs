@@ -120,9 +120,16 @@ public sealed class CharacterRespawn : StateObject
 
             Character character = respawn.Character;
             Location location = respawn.Location;
+            bool spawnAtDeathLocation = respawn.Character.Location == location;
+            Platform.Vector2 deathPosition = character.Position;
 
             character.Revive();
             location.EnterLocation(character);
+
+            if (spawnAtDeathLocation)
+            {
+                character.Position = deathPosition;
+            }
 
             respawnList.Remove(respawn);
             i--;
