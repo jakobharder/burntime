@@ -12,6 +12,7 @@
   - Camp takeover now leaves storage intact
 - Disabled dog/mutant spawning in original mode
 - Reduced dog/mutant spawning in extended mode
+- Dogs/mutants don't attack in cities anymore
 
 ### Fixes
 
