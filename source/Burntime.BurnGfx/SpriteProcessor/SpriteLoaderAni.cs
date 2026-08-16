@@ -47,6 +47,9 @@ namespace Burntime.Data.BurnGfx
 
         public void Process(ResourceID ID)
         {
+            size = new Vector2();
+            lastFrame = null;
+            
             if (ID.EndIndex == -1)
                 frameCount = 1;
             else
@@ -56,15 +59,17 @@ namespace Burntime.Data.BurnGfx
             progressive = ID.Custom == "p";
 
             File file = FileSystem.GetFile(ID.File);
+            if (file == null)
+            {
+                raw = null;
+                return;
+            }
+
             raw = new RawImageFileReader(file);
             raw.ReadHeader();
 
             if (!ID.IndexProvided)
                 frameCount = raw.ImageCount;
-
-            size = new Vector2();
-
-            lastFrame = null;
         }
 
         public DataObject Process(ResourceID ID, IResourceManager ResourceManager)

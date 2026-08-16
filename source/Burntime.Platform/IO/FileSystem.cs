@@ -237,10 +237,12 @@ public class FileSystem
             return null;
         }
 
+        File? opened = null;
+
         if ((mode & FileOpenMode.NoPackage) == FileOpenMode.NoPackage)
         {
             PackageFactory factory = new PackageFactory();
-            return factory.OpenFileDirectly(GetBasedPath(path.Package), path.PathWithoutPackage, mode);
+            opened = factory.OpenFileDirectly(GetBasedPath(path.Package), path.PathWithoutPackage, mode);
         }
         else
         {
@@ -256,34 +258,20 @@ public class FileSystem
                 if (file == null)
                     Log.Warning("File not found: " + path);
 
-                return file;
+                opened = file;
             }
             else
             {
-                return vfs.GetFile(path, mode);
+                opened = vfs.GetFile(path, mode);
             }
         }
 
-            //    string[] token = path.Package.Split(new char[] { '\\', '/' });
-            //if (!dicPackages.ContainsKey(token[token.Length - 1].ToLower()))
-            //{
-            //    if (PackagePak.IsPak(basePath + path.Package))
-            //    {
-            //        PackagePak pak = new PackagePak("", basePath + path.Package);
-            //        File file = pak.GetFile(path.PathWithoutPackage, false);
-            //        pak.Close();
+        if (opened == null)
+        {
+            Log.Warning("File path not found: " + path);
+        }
 
-            //        return file;
-            //    }
-            //    else
-            //    {
-            //        SystemFile file = new SystemFile(basePath + path.Package + "/" + path.PathWithoutPackage, path, false);
-            //        return file;
-            //    }
-            //}
-
-            //IPackage p = dicPackages[token[token.Length - 1].ToLower()];
-            //return p.GetFile(path, WriteAccess);
+        return opened;
     }
 
     // create virtual file
