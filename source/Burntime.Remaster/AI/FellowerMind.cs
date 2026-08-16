@@ -10,10 +10,31 @@ namespace Burntime.Remaster.AI
     class FellowerMind : CharacterMind
     {
         protected StateLink<Character> leader;
+        [NonSerialized]
+        protected double followAngle;
+        [NonSerialized]
+        protected bool hasFollowAngle;
+
         public Character Leader
         {
             get { return leader; }
             set { leader = value; }
+        }
+
+        private Vector2 GetFollowTarget(int radius)
+        {
+            // Keep the same formation direction between path refreshes. The flag
+            // also allows minds from older saves to initialize the angle lazily.
+            if (!hasFollowAngle)
+            {
+                followAngle = (Burntime.Platform.Math.Random.Next() % 360) * System.Math.PI / 180;
+                hasFollowAngle = true;
+            }
+
+            Vector2 offset;
+            offset.x = (int)(System.Math.Sin(followAngle) * radius);
+            offset.y = (int)(System.Math.Cos(followAngle) * radius);
+            return Leader.Position + offset;
         }
 
         protected override void InitInstance(object[] parameter)
@@ -36,48 +57,30 @@ namespace Burntime.Remaster.AI
             // if too far from leader, then follow
             if (distance > 150)
             {
-                distance = (Leader.Position - Owner.Path.MoveTo).Length;
+                Vector2 followTarget = GetFollowTarget(28);
+                distance = (followTarget - Owner.Path.MoveTo).Length;
 
                 // update path only if leader position and own destination are too far away
-                if (distance > 140)
-                {
-                    double r = (Burntime.Platform.Math.Random.Next() % 360) * System.Math.PI / 180;
-                    Vector2 margin;
-                    margin.x = (int)(System.Math.Sin(r) * 14);
-                    margin.y = (int)(System.Math.Cos(r) * 14);
-
-                    Owner.Path.MoveTo = Leader.Position;// +margin;
-                }
+                if (distance > 120)
+                    Owner.Path.MoveTo = followTarget;
             }
-            else if (distance > 30)
+            else if (distance > 40)
             {
-                distance = (Leader.Position - Owner.Path.MoveTo).Length;
+                Vector2 followTarget = GetFollowTarget(14);
+                distance = (followTarget - Owner.Path.MoveTo).Length;
 
                 // update path only if leader position and own destination are too far away
                 if (distance > 20)
-                {
-                    double r = (Burntime.Platform.Math.Random.Next() % 360) * System.Math.PI / 180;
-                    Vector2 margin;
-                    margin.x = (int)(System.Math.Sin(r) * 14);
-                    margin.y = (int)(System.Math.Cos(r) * 14);
-
-                    Owner.Path.MoveTo = Leader.Position;// +margin;
-                }
+                    Owner.Path.MoveTo = followTarget;
             }
             else if (distance < 15)
             {
-                distance = (Leader.Position - Owner.Path.MoveTo).Length;
+                Vector2 followTarget = GetFollowTarget(14);
+                distance = (followTarget - Owner.Path.MoveTo).Length;
 
-                // update path only if leader position and own destination are too close
-                if (distance < 10)
-                {
-                    double r = (Burntime.Platform.Math.Random.Next() % 360) * System.Math.PI / 180;
-                    Vector2 margin;
-                    margin.x = (int)(System.Math.Sin(r) * 14);
-                    margin.y = (int)(System.Math.Cos(r) * 14);
-
-                    Owner.Path.MoveTo = Leader.Position + margin;
-                }
+                // settle into the follower's stable formation position
+                if (distance > 1)
+                    Owner.Path.MoveTo = followTarget;
             }
         }
     }
