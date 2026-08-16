@@ -11,6 +11,10 @@
   - They attack, plan attacks and retreat in danger
   - Camp takeover now leaves storage intact
 
+### Fixes
+
+- Fixed first encounter dialog
+
 ## 1.0.4 (2024-12-03)
 
 ### Changes
