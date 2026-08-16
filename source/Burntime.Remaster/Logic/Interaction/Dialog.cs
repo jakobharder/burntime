@@ -94,9 +94,9 @@ namespace Burntime.Remaster.Logic
             return conv;
         }
 
-        Conversation GetGreetingConversation(Character boss)
+        Conversation GetGreetingConversation(Character boss, bool firstEncounter)
         {
-            int index = (lastDialog == null || lastDialog.Object != this) ? 2 : 3;
+            int index = firstEncounter ? 2 : 3;
             int file = MenFile;
 
             if (Parent.Player != null && Parent.Player != boss.Player)
@@ -183,12 +183,13 @@ namespace Burntime.Remaster.Logic
         public virtual Conversation GetConversation(Character boss, ConversationType type)
         {
             lastDialog = this;
+            bool firstEncounter = false;
 
-            // change conversation to talk if met the first time
+            // change greeting on first encounter the first time
             if (!talkedPlayer.Contains(boss.Player))
             {
                 talkedPlayer.Add(boss.Player);
-                type = ConversationType.Talk;
+                firstEncounter = true;
             }
          
             switch (type)
@@ -196,7 +197,7 @@ namespace Burntime.Remaster.Logic
                 case ConversationType.Dismiss: return GetDismissConversation(boss);
                 case ConversationType.Abandon: return GetAbandonConversation(boss);
                 case ConversationType.Capture: return GetCaptureConversation(boss);
-                case ConversationType.Greeting: return GetGreetingConversation(boss);
+                case ConversationType.Greeting: return GetGreetingConversation(boss, firstEncounter);
                 case ConversationType.Talk: return GetTalkConversation(boss);
             }
 

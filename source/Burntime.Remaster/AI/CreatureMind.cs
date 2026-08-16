@@ -27,9 +27,18 @@ namespace Burntime.Remaster.AI
             }
 
             bool runAway = false;
+            bool canAttack = !Owner.Location.IsCity;
+
+            // Fighting is disabled in cities, so creatures must not initiate an
+            // attack that the player cannot answer there.
+            if (!canAttack && attack != null)
+            {
+                attack = null;
+                Owner.Path.MoveTo = Owner.Position;
+            }
 
             // attack player controlled character
-            if (attack != null)
+            if (canAttack && attack != null)
             {
                 if (!attack.IsDead && (attack.Position - Owner.Position).Length < 20)
                 {
@@ -46,28 +55,31 @@ namespace Burntime.Remaster.AI
                 }
             }
 
-            if (waitAfterAttack >= 0)
+            if (canAttack)
             {
-                // wait for next possible attack
-                waitAfterAttack -= elapsed;
-            }
-            else
-            {
-                Player player = (Player)container.Root.CurrentPlayer;
-                Character sel = player.SelectedCharacter;
-
-                if (player.Location == Owner.Location && (sel.Position - Owner.Position).Length < 200)
+                if (waitAfterAttack >= 0)
                 {
-                    // attack with a chance of 33%
-                    if (Burntime.Platform.Math.Random.Next() % 3 == 0)
-                    {
-                        tryToAttack = 0;
-                        attack = sel;
-                        Owner.Path.MoveTo = sel.Position;
-                    }
+                    // wait for next possible attack
+                    waitAfterAttack -= elapsed;
+                }
+                else
+                {
+                    Player player = (Player)container.Root.CurrentPlayer;
+                    Character sel = player.SelectedCharacter;
 
-                    // wait 3 ~ 7 seconds for next possible attack
-                    waitAfterAttack = 3 + Burntime.Platform.Math.Random.Next() % 5;
+                    if (player.Location == Owner.Location && (sel.Position - Owner.Position).Length < 200)
+                    {
+                        // attack with a chance of 33%
+                        if (Burntime.Platform.Math.Random.Next() % 3 == 0)
+                        {
+                            tryToAttack = 0;
+                            attack = sel;
+                            Owner.Path.MoveTo = sel.Position;
+                        }
+
+                        // wait 3 ~ 7 seconds for next possible attack
+                        waitAfterAttack = 3 + Burntime.Platform.Math.Random.Next() % 5;
+                    }
                 }
             }
 

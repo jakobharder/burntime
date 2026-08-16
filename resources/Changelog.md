@@ -4,12 +4,22 @@
 
 ### Changes
 
-- First MacOS support
-- Updated dependencies (.NET 10, MonoGame 3.8.5)
+- First MacOS/Linux support
 - Reworked AI player behavior
   - They play more closely by the rules now, with trade and inventory boosts
   - They attack, plan attacks and retreat in danger
   - Camp takeover now leaves storage intact
+- Disabled dog/mutant spawning in original mode
+- Reduced dog/mutant spawning in extended mode
+- Dogs/mutants don't attack in cities anymore
+- Updated dependencies (.NET 10, MonoGame 3.8.5)
+
+### Fixes
+
+- Fixed first encounter dialog
+- Camp NPCs now always roam around after turn
+- Following NPCs walk less on the same spot
+- Fixed dogs/mutants spawning all at the same spot
 
 ## 1.0.4 (2024-12-03)
 

@@ -25,6 +25,7 @@ public sealed class CharacterRespawn : StateObject
         }
 
         public void Turn() => remainingTime--;
+        public void Reset(int time) => remainingTime = time;
     }
 
     StateLinkList<RespawnObject> respawnList;
@@ -94,6 +95,9 @@ public sealed class CharacterRespawn : StateObject
             _ => npcRespawn,
         };
 
+        if (timeToSpawn <= 0)
+            return;
+
         // set for respawn in same location
         Location location = character.Location;
 
@@ -103,22 +107,50 @@ public sealed class CharacterRespawn : StateObject
 
     public void Turn()
     {
-        // update respawn list
+        // Update all timers before respawning so resetting another character below
+        // always starts a full interval on the next turn.
         for (int i = 0; i < respawnList.Count; i++)
-        {
             respawnList[i].Turn();
 
-            // if remaing time is zero, then respawn
-            if (respawnList[i].RemainingTime == 0)
+        for (int i = 0; i < respawnList.Count; i++)
+        {
+            RespawnObject respawn = respawnList[i];
+            if (respawn.RemainingTime > 0)
+                continue;
+
+            Character character = respawn.Character;
+            Location location = respawn.Location;
+            bool spawnAtDeathLocation = respawn.Character.Location == location;
+            Platform.Vector2 deathPosition = character.Position;
+
+            character.Revive();
+            location.EnterLocation(character);
+
+            if (spawnAtDeathLocation)
             {
-                respawnList[i].Character.Revive();
+                character.Position = deathPosition;
+            }
 
-                // enter specified location
-                respawnList[i].Location.EnterLocation(respawnList[i].Character);
+            respawnList.Remove(respawn);
+            i--;
 
-                // remove from list
-                respawnList.Remove(respawnList[i]);
-                i--;
+            int campRespawnTime = character.Class switch
+            {
+                CharClass.Dog => dogRespawn,
+                CharClass.Mutant => mutantRespawn,
+                _ => 0,
+            };
+
+            if (campRespawnTime <= 0)
+                continue;
+
+            // Camps restore dogs and mutants one at a time. Spawning one starts
+            // a new full interval for all other dead characters of that class.
+            for (int pendingIndex = 0; pendingIndex < respawnList.Count; pendingIndex++)
+            {
+                RespawnObject pending = respawnList[pendingIndex];
+                if (pending.Location == location && pending.Character.Class == character.Class)
+                    pending.Reset(campRespawnTime);
             }
         }
     }
