@@ -6,6 +6,10 @@
 
 - First MacOS support
 - Updated dependencies (.NET 10, MonoGame 3.8.5)
+- Reworked AI player behavior
+  - They play more closely by the rules now, with trade and inventory boosts
+  - They attack, plan attacks and retreat in danger
+  - Camp takeover now leaves storage intact
 
 ## 1.0.4 (2024-12-03)
 

@@ -6,10 +6,15 @@ namespace Burntime.Platform
 {
     static public class Math
     {
-        static readonly Random random = new((int)DateTime.Now.Ticks);
+        static Random random = new((int)DateTime.Now.Ticks);
         static public Random Random
         {
             get { return random; }
+        }
+
+        static public void SetRandomSeed(int seed)
+        {
+            random = new Random(seed);
         }
 
         static public int Min(int val1, int val2)

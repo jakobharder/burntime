@@ -51,7 +51,7 @@ namespace Burntime.Remaster.Logic.Generation
             app.GameServer.Create(container.Root, container);
         }
 
-        public void CreateNewGame(NewGameInfo Info)
+        public void CreateNewGame(NewGameInfo Info, bool startServer = true)
         {
             new LogicFactory();
 
@@ -127,7 +127,8 @@ namespace Burntime.Remaster.Logic.Generation
 
             container.Synchronize(false); // DEBUG
 
-            app.Server.Run();
+            if (startServer)
+                app.Server.Run();
         }
 
         void AddPlayer(ClassicGame game, NewGameInfo Info, Burntime.Data.BurnGfx.Save.SaveGame gamdat, GameSettings settings)
@@ -294,6 +295,8 @@ namespace Burntime.Remaster.Logic.Generation
                 string[] items = settings.StartItems;
                 foreach (string item in items)
                 {
+                    if (player.Type == PlayerType.Ai && item == "item_advice")
+                        continue;
                     player.Character.Items.Add(game.ItemTypes[item].Generate());
                 }
             }

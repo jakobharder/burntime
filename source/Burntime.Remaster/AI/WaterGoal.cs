@@ -42,20 +42,7 @@ namespace Burntime.Remaster.AI
             foreach (var item in Player.Group.GetEmptyWaterItems())
                 Player.Location.Source.RefillItem(item);
 
-            // put still empty items into own camps storage
-            var sourceRoom = Player.Location.GetSourceRoom();
-            if (sourceRoom != null)
-            {
-                var items = Player.Group.GetEmptyWaterItems();
-                foreach (var item in items)
-                {
-                    if (sourceRoom.Items.IsFull)
-                        break;
-
-                    if (sourceRoom.Items.Add(item))
-                        item.Owner.Remove(item);
-                }
-            }
+            // Keep empty containers with their carriers for the next usable water source.
         }
 
         public void Act()

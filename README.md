@@ -36,6 +36,23 @@ dotnet build source/Burntime.MonoGame/Burntime.MonoGame.csproj -c Debug
 dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj
 ```
 
+### Headless AI simulation
+
+Run a deterministic four-AI game without opening a window:
+
+```sh
+dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- \
+  --ai-simulate --turns 100 --difficulty hard --seed 123 --report ai-run.txt
+```
+
+- `--turns`: number of turns; default `100`.
+- `--difficulty`: `easy`, `normal`, or `hard`; default `hard`.
+- `--seed`: random seed for reproducible runs; default `1`.
+- `--report`: optional output file; without it, the report is printed to the terminal.
+- `--extended`: optionally use the extended-game item set instead of 1993 rules.
+
+The report summarizes player condition, travel, camps, stationed NPCs, and major timeline events.
+
 ### Publish
 
 ```sh

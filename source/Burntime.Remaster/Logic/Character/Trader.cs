@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Design.Serialization;
+using System.Linq;
 
 namespace Burntime.Remaster.Logic
 {
@@ -47,6 +48,8 @@ namespace Burntime.Remaster.Logic
             item.Type = Type;
             itemRefreshs.Add(item);
         }
+
+        public IEnumerable<ItemType> GetAssortment() => itemRefreshs.Select(item => item.Type.Object);
 
         protected override void InitInstance(object[] parameter)
         {

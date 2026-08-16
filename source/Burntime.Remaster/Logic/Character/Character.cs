@@ -372,14 +372,21 @@ namespace Burntime.Remaster.Logic
             // if hire item is food or water then use it
             if (hireItem.FoodValue != 0)
                 Food = System.Math.Min(MaxFood, Food + hireItem.FoodValue);
-            if (hireItem.WaterValue != 0)
-                Water = System.Math.Min(MaxWater, Water + hireItem.WaterValue);
 
-            // prevent 0 food / 0 water situation depending on difficulty setting
+            // prevent 0 food situation depending on difficulty setting
             if (Food < difficulty)
                 Food = difficulty;
-            if (Water < difficulty)
-                Water = difficulty;
+
+            // AI recruits always use normal starting water. Human recruits depend on game difficulty.
+            (int minimumWater, int maximumWater) = boss.Type == PlayerType.Ai
+                ? (1, 4)
+                : classic.World.Difficulty switch
+                {
+                    0 => (3, 5),
+                    1 => (1, 4),
+                    _ => (0, 2)
+                };
+            Water = Burntime.Platform.Math.Random.Next(minimumWater, maximumWater + 1);
         }
 
         public void Dismiss()
@@ -393,11 +400,6 @@ namespace Burntime.Remaster.Logic
             {
                 if (IsLastInCamp)
                 {
-                    if (Player != Root.World.ActivePlayerObj)
-                    {
-                        // clear some items if we just freed an enemy camp
-                        Location.ClearItemsAfterTakeover();
-                    }
                     Location.Player = null;
                 }
             }
@@ -499,6 +501,8 @@ namespace Burntime.Remaster.Logic
                 attack(defender, attacker, defendWithAmmo, isPlayer ? difficultyFactor : 1);
 
                 container.Notify(new AttackEvent(attacker, defender));
+                if (defender.Player?.AiState is AI.ClassicAiState strategicAi)
+                    strategicAi.RecordAttack(attacker, defender);
                 if (defender.IsDead || attacker.IsDead)
                     break;
             }
@@ -764,6 +768,17 @@ namespace Burntime.Remaster.Logic
 
             Weapon = Items.FindBestWeapon(Weapon);
             return attackValue * Experience / 100;
+        }
+
+        internal int PrepareStrategicAttack()
+        {
+            return UseBestEquipment(allowAmmo: true);
+        }
+
+        internal float PrepareStrategicDefense()
+        {
+            Protection = Items.FindBestDefense(Protection);
+            return DefenseValue;
         }
 
         /// <summary>

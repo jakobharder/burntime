@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Burntime.Remaster.Logic;
 using Burntime.Framework;
 using Burntime.Framework.States;
+using System.Linq;
 
 namespace Burntime.Remaster.AI
 {
@@ -51,6 +52,14 @@ namespace Burntime.Remaster.AI
         protected AiSettings settings;
         protected int wait;
         protected StateLink<AiItemPool> itemPool;
+        [System.Runtime.Serialization.OptionalField]
+        protected StateLink<Player> retaliatingAgainst;
+        [System.Runtime.Serialization.OptionalField]
+        protected StateLink<Location> recentlyContestedCamp;
+        [System.Runtime.Serialization.OptionalField]
+        protected int retaliationUntilDay;
+        [System.Runtime.Serialization.OptionalField]
+        protected int contestedUntilDay;
         #endregion
 
         #region protected properties
@@ -101,64 +110,11 @@ namespace Burntime.Remaster.AI
         #endregion
 
         /// <summary>
-        /// Make some logic preparations.
-        /// </summary>
-        protected void FirstTurn()
-        {
-            // add some traps, weapons to pool
-            ItemPool.Insert(Game.ItemTypes["item_knife"]);
-            ItemPool.Insert(Game.ItemTypes["item_knife"]);
-            ItemPool.Insert(Game.ItemTypes["item_knife"]);
-            ItemPool.Insert(Game.ItemTypes["item_rat_trap"]);
-            ItemPool.Insert(Game.ItemTypes["item_snake_trap"]);
-        }
-
-        /// <summary>
         /// Process AI player turn.
         /// </summary>
         public void Turn()
         {
-            if (Game.World.Day == 1)
-                FirstTurn();
-
-            bool busy = true;
-
-            // update items
             UpdateItems();
-
-            // hire npc if noone in group
-            if (Player.Group.Count == 1)
-            {
-                mode = Mode.HireNpc;
-            }
-
-            while (busy)
-            {
-                switch (mode)
-                {
-                    case Mode.None:
-                        busy = TurnModeNone();
-                        break;
-                    case Mode.LookForNextCamp:
-                        busy = TurnModeLookForNextCamp();
-                        break;
-                    case Mode.HireNpc:
-                        busy = TurnModeHireNpc();
-                        break;
-                    case Mode.WaitInterval:
-                        busy = TurnModeWaitInterval();
-                        break;
-                }
-            }
-
-            if (IsHome || CurrentLocation.IsCity)
-            {
-                // refresh meat, wineskin
-                RefreshGroupReserves();
-
-                // refresh health, food and water
-                RefreshGroupAttributes();
-            }
 
             List<IAiGoal> goals = new List<IAiGoal>();
             goals.Add(new WaterGoal(player));
@@ -166,8 +122,178 @@ namespace Burntime.Remaster.AI
             foreach (var goal in goals)
                 goal.AlwaysDo();
 
+            StrategicAiEconomy.Run(this);
+
+            StrategicAiDecision decision = StrategicAiPlanner.Choose(this);
+            StrategicAiExecutor.Execute(this, decision);
             DebugOutput(goals);
         }
+
+        #region strategic AI access
+        internal ClassicGame RootGame => Game;
+        internal Location Current => CurrentLocation;
+        internal Location StrategicTarget
+        {
+            get => headedLocation;
+            set => headedLocation = value;
+        }
+        internal AiItemPool Pool => ItemPool;
+        internal AiSettings Configuration => settings;
+        internal int OwnedCampCount => CampCount;
+        internal int HumanCampBenchmark => MaxHumanCampCount;
+        internal bool IsRetaliatingAgainst(Player opponent) =>
+            retaliatingAgainst != null && retaliatingAgainst.Object == opponent &&
+            RootGame.World.Day <= retaliationUntilDay;
+        internal bool WasRecentlyContested(Location location) =>
+            recentlyContestedCamp != null && recentlyContestedCamp.Object == location &&
+            RootGame.World.Day <= contestedUntilDay;
+        internal int WaitTurns
+        {
+            get => wait;
+            set => wait = value;
+        }
+
+        internal bool CanClaim(Location location) => CanCreateCamp(location);
+        internal bool CanStationCamp() => Player.Group.Count > 1 || CanRecruit(allowGeneratedPayment: CurrentLocation.IsCity);
+        internal bool HasHireableNpc() => CanHireNpc();
+        internal bool CanRecruit(bool allowGeneratedPayment)
+        {
+            Character candidate = GetHireableNpc();
+            if (candidate == null || Player.Group.Count >= Group.MAX_PEOPLE)
+                return false;
+            if (candidate.HireItems.Count == 0 || allowGeneratedPayment)
+                return true;
+            return candidate.HireItems.Any(type => Player.Character.Items.Find(type) != null);
+        }
+        internal string[] AvailableProducts(Location location) => GetAvailableProducts(location);
+
+        internal bool NeedsCampImprovement()
+        {
+            if (!IsHome)
+                return false;
+            string[] products = GetAvailableProducts(CurrentLocation);
+            if (!ItemPool.HasTrap(products))
+                return false;
+
+            bool HasCompatibleProduction(Item item) => item.Type.Production != null &&
+                products.Contains(item.Type.Production.Produce.ID);
+            return !CurrentLocation.Rooms.SelectMany(room => room.Items).Any(HasCompatibleProduction) &&
+                !CurrentLocation.CampNPC.SelectMany(character => character.Items).Any(HasCompatibleProduction);
+        }
+
+        internal Character Recruit(bool allowGeneratedPayment)
+        {
+            return HireNpc(allowGeneratedPayment);
+        }
+
+        internal Character StationSurplusFollower()
+        {
+            if (!IsHome || Player.Group.Count <= 1)
+                return null;
+            Character npc = Player.Group
+                .Where(character => character != Player.Character)
+                .OrderBy(character => character.Class switch
+                {
+                    CharClass.Doctor => 3,
+                    CharClass.Technician => 3,
+                    CharClass.Mercenary => 2,
+                    _ => 1
+                })
+                .ThenBy(character => character.AttackValue + character.DefenseValue)
+                .FirstOrDefault();
+            if (npc != null)
+                JoinCamp(npc);
+            return npc;
+        }
+
+        internal Character SelectCampNpc()
+        {
+            Character recruit = CanHireNpc() ? HireNpc(allowGeneratedPayment: CurrentLocation.IsCity) : null;
+            if (recruit != null)
+                return recruit;
+            return Player.Group.Count > 1 ? Player.Group[1] : null;
+        }
+
+        internal void CreateCamp(Character npc)
+        {
+            JoinCamp(npc);
+            StrategicTarget = null;
+            ResetWait();
+        }
+
+        internal void MarkRecentlyCaptured(Location location, ClassicAiPolicy policy)
+        {
+            recentlyContestedCamp = location;
+            contestedUntilDay = RootGame.World.Day + policy.ContestedCampMemoryTurns;
+            wait = System.Math.Max(wait, policy.AttackCooldownTurns);
+        }
+
+        internal void RecordAttack(Character attacker, Character defender)
+        {
+            if (attacker.Player == null || defender.Player != Player || attacker.Player == Player)
+                return;
+
+            recentlyContestedCamp = defender.Location;
+            contestedUntilDay = RootGame.World.Day + ClassicAiPolicy.ForDifficulty(
+                RootGame.World.Difficulty).ContestedCampMemoryTurns;
+
+            if (attacker.Player.Type != PlayerType.Human)
+                return;
+            retaliatingAgainst = attacker.Player;
+            retaliationUntilDay = RootGame.World.Day + ClassicAiPolicy.ForDifficulty(
+                RootGame.World.Difficulty).RetaliationTurns;
+            StrategicAiTelemetry.Report(Player,
+                $"will retaliate against {attacker.Player.Name} after the attack at {defender.Location.Title}");
+        }
+
+        internal bool ImproveCamp()
+        {
+            if (!IsHome || !ItemPool.HasTrap(GetAvailableProducts(CurrentLocation)))
+                return false;
+
+            Item trap = ItemPool.GetBestTrap(GetAvailableProducts(CurrentLocation));
+            if (trap == null)
+                return false;
+            CurrentLocation.StoreItemRandom(trap);
+            return true;
+        }
+
+        internal void AddEmergencySupplies(ClassicAiPolicy policy)
+        {
+            if (!IsHome && !CurrentLocation.IsCity)
+                return;
+
+            bool lowFood = Player.Group.Any(character => character.Food <= 2) &&
+                Player.Group.GetFoodReserve() + Player.Group.GetFoodInInventory() < Player.Group.Count * 2;
+            bool lowWater = Player.Group.Any(character => character.Water <= 1) &&
+                Player.Group.GetWaterReserve() + Player.Group.GetWaterInInventory() < Player.Group.Count;
+
+            if (lowFood && !Player.Character.Items.Contains("item_meat") && !Player.Character.Items.IsFull)
+                Player.Character.Items.Add(Game.ItemTypes["item_meat"].Generate());
+            if (lowWater && !HasWaterContainer(Player.Character) && !Player.Character.Items.IsFull)
+            {
+                Item container = ItemPool.HasWaterContainer()
+                    ? ItemPool.GetBestWaterContainer()
+                    : Game.ItemTypes["item_full_wineskin"].Generate();
+                Player.Character.Items.Add(container);
+            }
+
+            // Safe locations provide bounded recovery, not the former full refill/heal.
+            foreach (Character character in Player.Group)
+            {
+                character.Food = System.Math.Max(character.Food, policy.SafeFoodFloor);
+                character.Water = System.Math.Max(character.Water, policy.SafeWaterFloor);
+                character.Health = System.Math.Min(100, character.Health + policy.SafeHealing);
+            }
+        }
+
+        internal void ResetWait()
+        {
+            wait = settings.MaxInterval > settings.MinInterval
+                ? Burntime.Platform.Math.Random.Next(settings.MinInterval, settings.MaxInterval)
+                : settings.MinInterval;
+        }
+        #endregion
 
         #region debug
         private void DebugOutput(IEnumerable<IAiGoal> goals)
@@ -504,41 +630,88 @@ namespace Burntime.Remaster.AI
             if (itemPool == null)
                 itemPool = container.Create<AiItemPool>();
 
-            // add items from ground to item pool
-            ItemPool.Insert(CurrentLocation.Items);
+            // Strategic equipment is shared through the AI pool. Keep other goods as real items so
+            // they can be used for future trading instead of disappearing into the abstract pool.
+            foreach (Item item in CurrentLocation.Items.ToArray())
+            {
+                if (AiItemPool.Accepts(item.Type))
+                {
+                    ItemPool.Insert(item);
+                    CurrentLocation.Items.Remove(item);
+                }
+                else if (ItemPool.TryReserveConstructionMaterial(item))
+                {
+                    // Preserve the first copy even when the travel group deliberately
+                    // kept only limited room for unexpected ground loot.
+                    CurrentLocation.Items.Remove(item);
+                }
+                else if (TryStoreInGroup(item))
+                {
+                    CurrentLocation.Items.Remove(item);
+                }
+                else if (StrategicAiEconomy.TryReplaceCargo(
+                    this, item, out Item replaced, out Character carrier))
+                {
+                    CurrentLocation.Items.Remove(item);
+                    carrier.Items.Add(item);
+                    CurrentLocation.Items.Add(replaced);
+                    StrategicAiTelemetry.Report(Player,
+                        $"replaced cargo {replaced.ID} with higher-value ground find {item.ID}");
+                }
+                else if (IsHome && CurrentLocation.Rooms.Any(room => !room.Items.IsFull))
+                {
+                    CurrentLocation.StoreItemRandom(item);
+                    CurrentLocation.Items.Remove(item);
+                }
+            }
 
-            // remove all items from ground
-            CurrentLocation.Items.Clear();
+            EquipWaterContainers(Player.Group.Where(character => character != Player.Character));
+            if (IsHome)
+                EquipWaterContainers(
+                    CurrentLocation.CampNPC.Where(character => character.Player == Player),
+                    useCampStorage: true);
 
-            int turn = Game.World.Day;
+        }
 
-            // add weapons to pool (TODO make dependent on difficulty)
-            if (turn % 3 == 0)
-                ItemPool.Insert(Game.ItemTypes["item_knife"]);
-            if (turn % 10 == 0)
-                ItemPool.Insert(Game.ItemTypes["item_axe"]);
-            if (turn % 15 == 0)
-                ItemPool.Insert(Game.ItemTypes["item_pitchfork"]);
-            if (turn % 20 == 0)
-                ItemPool.Insert(Game.ItemTypes["item_loaded_rifle"]);
-            if (turn % 17 == 0)
-                ItemPool.Insert(Game.ItemTypes["item_loaded_pistol"]);
+        private bool TryStoreInGroup(Item item)
+        {
+            Character carrier = Player.Group.FirstOrDefault(character => !character.Items.IsFull);
+            return carrier != null && carrier.Items.Add(item);
+        }
 
-            // add traps to pool
-            if (turn % 3 == 0)
-                ItemPool.Insert(Game.ItemTypes["item_knife"]);
-            if (turn % 7 == 0)
-                ItemPool.Insert(Game.ItemTypes["item_rat_trap"]);
-            if (turn % 11 == 0)
-                ItemPool.Insert(Game.ItemTypes["item_snake_trap"]);
-            if (turn % 14 == 0)
-                ItemPool.Insert(Game.ItemTypes["item_trap"]);
+        private static bool HasWaterContainer(Character character) =>
+            character.Items.Any(item => AiItemPool.IsWaterContainer(item.Type));
 
-            // add protection items to pool
-            if (turn % 25 == 0)
-                ItemPool.Insert(Game.ItemTypes["item_gas_mask"]);
-            if (turn % 50 == 0)
-                ItemPool.Insert(Game.ItemTypes["item_protection_suit"]);
+        private void EquipWaterContainers(IEnumerable<Character> characters, bool useCampStorage = false)
+        {
+            foreach (Character character in characters)
+            {
+                if (HasWaterContainer(character) || character.Items.IsFull)
+                    continue;
+
+                Item container = ItemPool.HasWaterContainer()
+                    ? ItemPool.GetBestWaterContainer()
+                    : useCampStorage ? TakeBestStoredWaterContainer() : null;
+                if (container != null)
+                    character.Items.Add(container);
+            }
+        }
+
+        private Item TakeBestStoredWaterContainer()
+        {
+            var stored = CurrentLocation.Rooms
+                .SelectMany(room => room.Items.Select(item => new { Room = room, Item = item }))
+                .Where(entry => AiItemPool.IsWaterContainer(entry.Item.Type))
+                .OrderByDescending(entry => entry.Item.WaterValue > 0
+                    ? entry.Item.WaterValue
+                    : entry.Item.Type.Full.WaterValue)
+                .ThenByDescending(entry => entry.Item.WaterValue)
+                .FirstOrDefault();
+            if (stored == null)
+                return null;
+
+            stored.Room.Items.Remove(stored.Item);
+            return stored.Item;
         }
         #endregion
 
@@ -549,24 +722,57 @@ namespace Burntime.Remaster.AI
         /// <param name="npc">NPC to join camp</param>
         protected void JoinCamp(Character npc)
         {
+            EquipWaterContainers(new[] { npc }, useCampStorage: true);
+
+            if (CurrentLocation.Danger != null && !npc.Items.IsFull)
+            {
+                Item protection = CurrentLocation.Danger.Type == "radiation"
+                    ? ItemPool.GetProtectionSuit()
+                    : ItemPool.GetGasMask();
+                if (protection != null)
+                {
+                    npc.Items.Add(protection);
+                    npc.Protection = protection;
+                }
+            }
+
             // join camp
             npc.JoinCamp();
 
-            // add production
-            if (ItemPool.HasTrap(GetAvailableProducts(CurrentLocation)))
+            // Add a real compatible production tool. A carried weapon such as a knife can
+            // remain on the guard and serve both defense and maggot production.
+            Item existingTool = CurrentLocation.Rooms.SelectMany(room => room.Items)
+                .Concat(npc.Items)
+                .FirstOrDefault(item => item.Type.Production != null &&
+                    GetAvailableProducts(CurrentLocation).Contains(item.Type.Production.Produce.ID));
+            bool preferProductionUpgrade = StrategicAiEconomy.ShouldPreferProductionAtCamp(this, CurrentLocation) &&
+                ItemPool.HasHigherValueTrap(existingTool?.Type.Production?.Produce.TradeValue ?? -1,
+                    GetAvailableProducts(CurrentLocation));
+            Item trap = existingTool == null || preferProductionUpgrade
+                ? ItemPool.HasTrap(GetAvailableProducts(CurrentLocation))
+                    ? ItemPool.GetBestTrap(GetAvailableProducts(CurrentLocation))
+                    : existingTool == null ? TakeCompatibleGroupProduction(CurrentLocation) : null
+                : null;
+            if (trap != null)
             {
-                Item trap = ItemPool.GetBestTrap(GetAvailableProducts(CurrentLocation));
-
-                // put item into a room if available
-                if (CurrentLocation.Rooms.Count > 0)
+                if (trap.Type.IsClass("weapon") && !npc.Items.IsFull)
+                {
+                    if (!npc.Items.Contains(trap))
+                        npc.Items.Add(trap);
+                    npc.Weapon = trap;
+                }
+                else if (CurrentLocation.Rooms.Count > 0)
                 {
                     CurrentLocation.StoreItemRandom(trap);
                 }
-                // otherwise add to NPC inventory
                 else
                 {
                     npc.Items.Add(trap);
                 }
+            }
+            else if (existingTool?.DamageValue > 0)
+            {
+                npc.Weapon = existingTool;
             }
         }
 
@@ -585,8 +791,11 @@ namespace Burntime.Remaster.AI
             if (location.Player != null)
                 return false;
 
-            // no appropriate trap available
-            if (!ItemPool.HasTrap(GetAvailableProducts(location)))
+            // A safe one-NPC camp may bootstrap from the location's base food yield.
+            // Threatened camps still require real equipment before expansion.
+            bool hasProductionTool = ItemPool.HasTrap(GetAvailableProducts(location)) ||
+                FindCompatibleGroupProduction(location) != null;
+            if (!hasProductionTool && !StrategicAiEconomy.CanBootstrapCamp(this, location))
                 return false;
 
             // in case of hazards
@@ -607,6 +816,25 @@ namespace Burntime.Remaster.AI
             }
 
             return true;
+        }
+
+        private Item FindCompatibleGroupProduction(Location location)
+        {
+            string[] products = GetAvailableProducts(location);
+            return Player.Group.SelectMany(character => character.Items)
+                .Where(item => item.Type.Production != null && products.Contains(item.Type.Production.Produce.ID))
+                .OrderByDescending(item => item.Type.Production.Produce.FoodValue)
+                .FirstOrDefault();
+        }
+
+        private Item TakeCompatibleGroupProduction(Location location)
+        {
+            Item item = FindCompatibleGroupProduction(location);
+            if (item == null)
+                return null;
+            Character owner = Player.Group.First(character => character.Items.Contains(item));
+            owner.Items.Remove(item);
+            return item;
         }
 
         /// <summary>
@@ -655,46 +883,71 @@ namespace Burntime.Remaster.AI
         /// <returns>NPC</returns>
         protected Character GetHireableNpc()
         {
-            foreach (Character ch in CurrentLocation.Characters)
-            {
-                if (!ch.IsDead && !ch.IsHired && ch.IsHuman && !ch.IsTrader)
+            bool hasDoctor = Player.Group.Any(character => character.Class == CharClass.Doctor);
+            return CurrentLocation.Characters
+                .Where(character => !character.IsDead && !character.IsHired && character.IsHuman && !character.IsTrader)
+                .OrderByDescending(character => character.Class switch
                 {
-                    // this one is available
-                    return ch;
-                }
-            }
-
-            return null;
+                    CharClass.Mercenary => 40,
+                    CharClass.Doctor when !hasDoctor => 35,
+                    CharClass.Technician => 25,
+                    CharClass.Doctor => 15,
+                    _ => 10
+                })
+                .ThenByDescending(character => character.Experience)
+                .FirstOrDefault();
         }
 
         /// <summary>
         /// Hire NPC and add to group.
         /// </summary>
         /// <returns>hired NPC</returns>
-        protected Character HireNpc()
+        protected Character HireNpc(bool allowGeneratedPayment = true)
         {
             Character ch = GetHireableNpc();
+            if (ch == null || Player.Group.Count >= Group.MAX_PEOPLE)
+                return null;
+
             if (ch.HireItems.Count > 0)
             {
-                // clear items to prevent required item not getting in
-                Player.Character.Items.Clear();
+                Item payment = ch.HireItems
+                    .Select(type => Player.Character.Items.Find(type))
+                    .FirstOrDefault(item => item != null);
 
-                // add required item
-                Player.Character.Items.Add(ch.HireItems.Last.Generate());
+                if (payment == null && allowGeneratedPayment)
+                {
+                    if (Player.Character.Items.IsFull)
+                    {
+                        Item leastUseful = Player.Character.Items.OrderBy(item => item.TradeValue).First();
+                        CurrentLocation.StoreItemRandom(leastUseful);
+                        Player.Character.Items.Remove(leastUseful);
+                    }
+
+                    ItemType paymentType = ch.HireItems.OrderBy(type => type.TradeValue).First();
+                    Player.Character.Items.Add(paymentType.Generate());
+                }
+                else if (payment == null)
+                {
+                    return null;
+                }
             }
 
             // hire
             ch.Hire(Player);
 
-            // clear items
-            ch.Items.Clear();
+            EquipWaterContainers(new[] { ch });
 
             // add weapon to npc
-            if (ItemPool.HasWeapon())
+            if (ItemPool.HasWeapon() && !ch.Items.IsFull)
             {
-                Item weapon = ItemPool.GetBestWeapon();
-                ch.Items.Add(weapon);
-                ch.SelectItem(weapon);
+                // An unarmed new follower needs the tool now. Knives still serve food
+                // production later when that follower is stationed at a camp.
+                Item weapon = ItemPool.GetBestWeapon(allowProductionTool: true);
+                if (weapon != null)
+                {
+                    ch.Items.Add(weapon);
+                    ch.SelectItem(weapon);
+                }
             }
 
             return ch;

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using Burntime.Platform.IO;
 using Burntime.Platform.Resource;
 
@@ -12,6 +13,12 @@ namespace Burntime.Remaster.Logic.Interaction
 
     public class Constructions : DataObject
     {
+        public interface IConstructionMaterialReserve
+        {
+            int GetConstructionMaterialCount(string itemId);
+            bool TryConsumeConstructionMaterial(string itemId);
+        }
+
         public class ConstructionInfo
         {
             public string Result;
@@ -201,6 +208,52 @@ namespace Burntime.Remaster.Logic.Interaction
             constr.Dialog = conv;
             constr.construction = construction;
             return constr;
+        }
+
+        /// <summary>
+        /// Construct the first requested result whose recipe requirements are met.
+        /// AI-controlled groups use this to share materials across their current inventories
+        /// and capped empire-wide construction reserve without class restrictions.
+        /// </summary>
+        public Item TryConstructAny(
+            IEnumerable<IItemCollection> sources,
+            IConstructionMaterialReserve reserve,
+            ClassicGame world,
+            params string[] requestedResults)
+        {
+            List<IItemCollection> availableSources = sources.Distinct().ToList();
+            foreach (string result in requestedResults)
+            {
+                ConstructionInfo recipe = constructions.Values
+                    .SelectMany(entries => entries)
+                    .FirstOrDefault(entry => entry.Result == result);
+                if (recipe == null || !ContainsAll(availableSources, reserve, recipe.Items) ||
+                    !ContainsAll(availableSources, reserve, recipe.Tools))
+                    continue;
+
+                foreach (string itemId in recipe.Items)
+                {
+                    IItemCollection owner = availableSources.FirstOrDefault(source => source.Contains(itemId));
+                    if (owner != null)
+                        owner.Remove(owner.Find(itemId));
+                    else
+                        reserve.TryConsumeConstructionMaterial(itemId);
+                }
+
+                return world.ItemTypes[result].Generate();
+            }
+
+            return null;
+        }
+
+        static bool ContainsAll(
+            IEnumerable<IItemCollection> sources,
+            IConstructionMaterialReserve reserve,
+            IEnumerable<string> itemIds)
+        {
+            return itemIds.GroupBy(itemId => itemId).All(group =>
+                sources.Sum(source => source.GetCount(group.Key)) +
+                    (reserve?.GetConstructionMaterialCount(group.Key) ?? 0) >= group.Count());
         }
     }
 }
