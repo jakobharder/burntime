@@ -1,8 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Platforms>x86</Platforms>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>BurnGfxRipper</RootNamespace>
     <AssemblyName>BurnGfxRipper</AssemblyName>
     <StartupObject>BurnGfxRipper.Program</StartupObject>
@@ -16,20 +15,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="BurnGfx">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\bin\Debug\BurnGfx.dll</HintPath>
-    </Reference>
-    <Reference Include="Framework">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\bin\Debug\Burntime.Framework.dll</HintPath>
-    </Reference>
-    <Reference Include="Platform">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\bin\Debug\Burntime.Platform.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="System.Drawing.Common" Version="7.0.0" />
+    <ProjectReference Include="..\Burntime.BurnGfx\Burntime.BurnGfx.csproj" />
+    <Compile Remove="SpriteSheet.cs" />
+    <Compile Remove="TextureUtils.cs" />
+    <Compile Remove="TileExporter.cs" />
   </ItemGroup>
 </Project>

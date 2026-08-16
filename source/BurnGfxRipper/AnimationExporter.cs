@@ -1,10 +1,12 @@
 ﻿using Burntime.Data.BurnGfx;
 using System;
-using System.Drawing.Imaging;
-using System.Drawing;
-using System.Runtime.InteropServices;
-using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+#if WINDOWS
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
+#endif
 
 namespace BurnGfxRipper;
 
@@ -12,46 +14,45 @@ class AnimationExporter
 {
     public void Export(string file, string dir, CommandParameter parameter)
     {
-        if (!parameter.MegaTexture)
-        {
-            ExportAsSpriteSheet(file, dir, parameter);
-            //ExportAsSeparateFiles(file, dir, parameter);
-        }
-        else
-        {
-            ExportAsSingleFile(file, dir, parameter);
-        }
+        ExportAsSeparateFiles(file, dir, parameter);
+
+        // Sprite-sheet modes are retained below for the Windows/System.Drawing build.
+        // if (!parameter.MegaTexture) ExportAsSpriteSheet(file, dir, parameter);
+        // else ExportAsSingleFile(file, dir, parameter);
     }
 
     private void ExportAsSeparateFiles(string file, string dir, CommandParameter parameter)
     {
-        SpriteLoaderAni ani = new SpriteLoaderAni();
+        SpriteLoaderAni ani = new();
         ani.Process(file);
-
-        System.IO.Directory.CreateDirectory(dir);
+        Directory.CreateDirectory(dir);
 
         for (int i = 0; i < ani.FrameCount; i++)
         {
             ani.SetFrame(i);
-
-            Bitmap bmp = new Bitmap(ani.FrameSize.x, ani.FrameSize.y, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-            BitmapData loc = bmp.LockBits(new Rectangle(0, 0, ani.FrameSize.x, ani.FrameSize.y), ImageLockMode.ReadWrite, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-            System.IO.MemoryStream mem = new System.IO.MemoryStream();
+#if WINDOWS
+            Bitmap bmp = new(ani.FrameSize.x, ani.FrameSize.y, PixelFormat.Format32bppArgb);
+            BitmapData loc = bmp.LockBits(new Rectangle(0, 0, ani.FrameSize.x, ani.FrameSize.y), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb);
+            using MemoryStream mem = new();
             ani.Render(mem, loc.Stride);
-
             Marshal.Copy(mem.ToArray(), 0, loc.Scan0, ani.FrameSize.y * loc.Stride);
-
             bmp.UnlockBits(loc);
-            TextureUtils.Save(bmp, dir + "\\" + i + ".png");
+            TextureUtils.Save(bmp, Path.Combine(dir, i + ".png"));
+#else
+            using MemoryStream mem = new();
+            ani.Render(mem, ani.FrameSize.x * 4);
+            PngWriter.SaveBgra(mem.ToArray(), ani.FrameSize.x, ani.FrameSize.y, Path.Combine(dir, i + ".png"));
+#endif
         }
     }
 
+#if WINDOWS
     void ExportAsSpriteSheet(string originalFilePath, string dir, CommandParameter parameter)
     {
         SpriteLoaderAni loader = new();
         loader.Process(originalFilePath);
-        System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(dir));
-        string outputFilePath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(dir), System.IO.Path.GetFileNameWithoutExtension(originalFilePath));
+        Directory.CreateDirectory(Path.GetDirectoryName(dir));
+        string outputFilePath = Path.Combine(Path.GetDirectoryName(dir), Path.GetFileNameWithoutExtension(originalFilePath));
 
         var animations = Enumerable.Range(0, loader.FrameCount)
             .Select(index => { loader.SetFrame(index); return loader.FrameSize; })
@@ -83,10 +84,10 @@ class AnimationExporter
     {
         SpriteLoaderAni ani = new();
         ani.Process(originalFilePath);
-        System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(dir));
+        Directory.CreateDirectory(Path.GetDirectoryName(dir));
 
         ani.SetFrame(0);
-        string outputFilePath = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(dir), System.IO.Path.GetFileNameWithoutExtension(originalFilePath));
+        string outputFilePath = Path.Combine(Path.GetDirectoryName(dir), Path.GetFileNameWithoutExtension(originalFilePath));
 
         var progressive = new SpriteSheet(parameter.TextureWidth, ani.Size.x, ani.Size.y, ani.FrameCount, parameter.Padding ? 1 : 0);
         progressive.Render(ani, false);
@@ -97,5 +98,5 @@ class AnimationExporter
         TextureUtils.Save(baseImage.Bitmap, outputFilePath + "_base.png", parameter);
         TextureUtils.Save(baseImage.Bitmap, progressive.Bitmap, outputFilePath + "_full.png", parameter);
     }
+#endif
 }
-
