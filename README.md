@@ -6,8 +6,8 @@ Burntime is a remaster and expansion of Max Design's PC strategy game 'Burntime'
 
 ## How to get
 
-- [Steam](https://store.steampowered.com/app/3269080/Burntime_Remastered/) (Windows)
-- [Direct Download](https://github.com/jakobharder/burntime/releases) (Windows & MacOS)
+- [Steam](https://store.steampowered.com/app/3269080/Burntime_Remastered/) (Windows & SteamOS Proton)
+- [Direct Download](https://github.com/jakobharder/burntime/releases) (Windows, MacOS & Linux)
 
 ## Notes
 
@@ -39,18 +39,11 @@ dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj
 ### Publish
 
 ```sh
-# macOS, Apple Silicon
-dotnet publish source/Burntime.MonoGame/Burntime.MonoGame.csproj -c Release -r osx-arm64 --self-contained true -p:PublishSingleFile=true
-
-# macOS, Intel
-dotnet publish source/Burntime.MonoGame/Burntime.MonoGame.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=true
-
-# Linux, 64-bit
-dotnet publish source/Burntime.MonoGame/Burntime.MonoGame.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true
-
-# Windows, 64-bit
-dotnet publish source/Burntime.MonoGame/Burntime.MonoGame.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+dotnet publish source/Burntime.MonoGame/Burntime.MonoGame.csproj -c Release -r <platform> --self-contained true -p:PublishSingleFile=true
 ```
+
+Use one of the following instead of `<platform>`:
+- `osx-arm64`, `osx-x64`, `linux-x64`, `win-x64`
 
 Visual Studio users: open `source/Burntime.sln` and select `Burntime.MonoGame` as the startup project.
 

@@ -1,7 +1,6 @@
 name: macOS
 
 on:
-  workflow_dispatch:
   pull_request:
     branches: [main]
     paths:
@@ -12,7 +11,6 @@ on:
 
 jobs:
   build:
-    if: github.event_name == 'pull_request'
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,24 +23,3 @@ jobs:
 
       - name: Build
         run: dotnet build source/Burntime.MonoGame/Burntime.MonoGame.csproj --configuration Release
-
-  package:
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: "10.0.x"
-
-      - name: Build ad-hoc signed DMG
-        run: ./packaging/macos/package.sh arm64
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Burntime-macOS-arm64-unsigned
-          path: artifacts/macos-arm64/Burntime-macOS-arm64.dmg
-          if-no-files-found: error
