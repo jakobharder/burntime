@@ -322,8 +322,9 @@ namespace Burntime.Remaster.Logic
             Player.Group.Remove(this);
             Location = Player.Location;
             Location.Player = Player;
-            Mind = container.Create<AI.PlayerControlledMind>(new object[] { this });
-            Path = container.Create<PathFinding.ComplexPath>();
+            Mind = container.Create<AI.SimpleMind>(new object[] { this });
+            Path = container.Create<PathFinding.SimplePath>();
+            Path.MoveTo = Position;
         }
 
         public void LeaveCamp()
@@ -618,6 +619,16 @@ namespace Burntime.Remaster.Logic
             Water--;
             if (Water < 0)
                 Water = 0;
+
+            // Selecting a stationed NPC gives it a player-controlled mind. At the
+            // start of each new day, camp NPCs return to roaming independently of
+            // whether their camp belongs to a human or AI player.
+            if (IsStationed && Mind is not AI.SimpleMind)
+            {
+                Mind = container.Create<AI.SimpleMind>(new object[] { this });
+                Path = container.Create<PathFinding.SimplePath>();
+                Path.MoveTo = Position;
+            }
 
             //Dialog.Turn();
         }

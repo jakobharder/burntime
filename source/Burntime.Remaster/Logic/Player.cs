@@ -9,6 +9,7 @@ using Burntime.Platform.Graphics;
 using Burntime.Framework.States;
 using Burntime.Data.BurnGfx;
 using System.Linq;
+using System.ComponentModel;
 
 namespace Burntime.Remaster.Logic
 {
@@ -191,6 +192,8 @@ namespace Burntime.Remaster.Logic
             // select single character
             selectedCharacter = targetCharacter;
             targetCharacter.Mind = container.Create<AI.PlayerControlledMind>(new object[] { targetCharacter });
+            targetCharacter.Path = container.Create<PathFinding.ComplexPath>();
+            targetCharacter.Path.MoveTo = targetCharacter.Position;
             singleMode = true;
             return true;
         }

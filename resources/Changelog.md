@@ -10,10 +10,13 @@
   - They play more closely by the rules now, with trade and inventory boosts
   - They attack, plan attacks and retreat in danger
   - Camp takeover now leaves storage intact
+- Disabled dog/mutant spawning in original mode
+- Reduced dog/mutant spawning in extended mode
 
 ### Fixes
 
 - Fixed first encounter dialog
+- Fixed NPCs not roaming around
 
 ## 1.0.4 (2024-12-03)
 
