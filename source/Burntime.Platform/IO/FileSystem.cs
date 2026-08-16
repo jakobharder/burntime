@@ -389,7 +389,7 @@ public class FileSystem
     static private string GetBasedPath(string path)
     {
         if (!System.IO.Path.IsPathRooted(path))
-            return basePath + path;
+            return System.IO.Path.Combine(basePath, path);
         return path;
     }
 

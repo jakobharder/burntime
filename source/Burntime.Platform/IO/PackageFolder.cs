@@ -2,7 +2,9 @@
 
 class PackageFolder : IPackage
 {
-    Dictionary<String, File> dicFiles;
+    // Virtual paths are case-insensitive, but the physical path must retain its
+    // original casing on case-sensitive file systems such as Linux.
+    Dictionary<string, string> dicFiles;
     String path;
     String name;
     string subPath;
@@ -23,7 +25,7 @@ class PackageFolder : IPackage
         this.name = name;
         this.subPath = subPath;
 
-        dicFiles = new Dictionary<string, File>();
+        dicFiles = new Dictionary<string, string>();
         ParseFolder("", path + "/" + subPath);
     }
 
@@ -45,7 +47,8 @@ class PackageFolder : IPackage
                 if (name.StartsWith("."))
                     continue;
 
-                dicFiles.Add(relpath + name.ToLower(), null);
+                string relativePath = relpath + name;
+                dicFiles.Add(relativePath.ToLowerInvariant(), relativePath);
             }
 
             string[] dirs = Directory.GetDirectories(path);
@@ -57,7 +60,7 @@ class PackageFolder : IPackage
                 if (name.StartsWith("."))
                     continue;
 
-                ParseFolder(relpath + name.ToLower() + "/", dir);
+                ParseFolder(relpath + name + "/", dir);
             }
 
         }
@@ -73,9 +76,9 @@ class PackageFolder : IPackage
         if ((mode & FileOpenMode.NoPackage) == FileOpenMode.NoPackage)
             throw new InvalidOperationException();
 
-        if (!dicFiles.ContainsKey(filePath.PathWithoutPackage))
+        if (!dicFiles.TryGetValue(filePath.PathWithoutPackage, out string physicalPath))
             return null;
-        return new SystemFile(path + "/" + subPath + filePath.PathWithoutPackage, name + ":" + filePath.PathWithoutPackage, mode == FileOpenMode.Write);
+        return new SystemFile(System.IO.Path.Combine(path, subPath, physicalPath), name + ":" + filePath.PathWithoutPackage, mode == FileOpenMode.Write);
     }
 
     public bool ExistsFile(FilePath filePath)
@@ -95,10 +98,11 @@ class PackageFolder : IPackage
 
         try
         {
-            string directory = System.IO.Path.GetDirectoryName(path + "/" + subPath + filePath.PathWithoutPackage);
+            string physicalPath = System.IO.Path.Combine(path, subPath, filePath.PathWithoutPackage);
+            string directory = System.IO.Path.GetDirectoryName(physicalPath);
             if (!System.IO.Directory.Exists(directory))
                 System.IO.Directory.CreateDirectory(directory);
-            FileStream stream = new FileStream(path + "/" + subPath + filePath.PathWithoutPackage, FileMode.CreateNew);
+            FileStream stream = new FileStream(physicalPath, FileMode.CreateNew);
             stream.Close();
         }
         catch
@@ -106,7 +110,7 @@ class PackageFolder : IPackage
             return false;
         }
 
-        dicFiles.Add(filePath.PathWithoutPackage, null);
+        dicFiles.Add(filePath.PathWithoutPackage, filePath.PathWithoutPackage);
 
         return true;
     }
@@ -118,7 +122,7 @@ class PackageFolder : IPackage
 
         try
         {
-            System.IO.File.Delete(path + "/" + subPath + filePath.PathWithoutPackage);
+            System.IO.File.Delete(System.IO.Path.Combine(path, subPath, dicFiles[filePath.PathWithoutPackage]));
         }
         catch
         {

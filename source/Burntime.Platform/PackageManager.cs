@@ -80,7 +80,7 @@ public class PackageManager
             return true;
         }
 
-        PackageInfo info = PackageInfo.TryCreate(basePath + package, vfs);
+        PackageInfo info = PackageInfo.TryCreate(System.IO.Path.Combine(basePath, package), vfs);
         if (info == null)
             return false;
 
@@ -91,7 +91,7 @@ public class PackageManager
             if (!vfs.ExistsMount(package))
             {
                 PackageFactory factory = new PackageFactory();
-                IPackage p = factory.OpenPackage(basePath + package);
+                IPackage p = factory.OpenPackage(System.IO.Path.Combine(basePath, package));
                 vfs.Mount(package, p);
             }
 
@@ -161,7 +161,7 @@ public class PackageManager
         List<PackageInfo> list = new List<PackageInfo>();
         foreach (string str in paks)
         {
-            PackageInfo info = PackageInfo.TryCreate(basePath + str, FileSystem.VFS);
+            PackageInfo info = PackageInfo.TryCreate(System.IO.Path.Combine(basePath, str), FileSystem.VFS);
             if (info != null)
                 list.Add(info);
         }
@@ -211,7 +211,7 @@ public class PackageManager
             if (!vfs.ExistsMount(info.Package))
             {
                 PackageFactory factory = new PackageFactory();
-                IPackage p = factory.OpenPackage(basePath + info.Package);
+                IPackage p = factory.OpenPackage(System.IO.Path.Combine(basePath, info.Package));
                 vfs.Mount(info.Package, p);
             }
         }
@@ -234,7 +234,7 @@ public class PackageManager
                     if (!vfs.ExistsMount(info.Package))
                     {
                         PackageFactory factory = new PackageFactory();
-                        IPackage package = factory.OpenPackage(basePath + info.Package, subPath);
+                        IPackage package = factory.OpenPackage(System.IO.Path.Combine(basePath, info.Package), subPath);
                         vfs.Mount(info.Package, package);
 
                         ApplyPatches(info, vfs);
