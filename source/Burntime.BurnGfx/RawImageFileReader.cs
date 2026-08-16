@@ -41,6 +41,14 @@ namespace Burntime.Data.BurnGfx
 
         public void ReadHeader()
         {
+            count = 0;
+
+            if (file == null || file.Length < sizeof(ushort))
+            {
+                Log.Warning("Animation header is missing or empty: " + (file?.Name ?? "<unknown>"));
+                return;
+            }
+
             ushort[] header = new ushort[0x1000];
             int endread = 0x1000;
 
@@ -71,7 +79,13 @@ namespace Burntime.Data.BurnGfx
 
         public bool ReadImage(int index)
         {
-            if (header.Length <= index + 1)
+            if (header == null || index < 0 || index >= header.Length)
+            {
+                Log.Warning($"Animation frame {index} is out of range in {file?.Name ?? "<unknown>"} ({header?.Length ?? 0} frames)");
+                return false;
+            }
+
+            if (index + 1 >= header.Length)
                 return _Read(file.GetSubFile(header[index], 0), BurnGfxData.Instance.GetRawColorTable(file.Name));
             else
                 return _Read(file.GetSubFile(header[index], header[index + 1] - 1), BurnGfxData.Instance.GetRawColorTable(file.Name));
