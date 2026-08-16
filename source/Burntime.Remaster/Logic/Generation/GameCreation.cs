@@ -56,7 +56,7 @@ namespace Burntime.Remaster.Logic.Generation
             new LogicFactory();
 
             // load game settings
-            settings = new GameSettings("gamesettings.txt");
+            settings = new GameSettings(Info.ExtendedGame ? "gamesettings_extended.txt" : "gamesettings_original.txt");
             settings.SetDifficulty(Info.Difficulty);
 
             // set up game server

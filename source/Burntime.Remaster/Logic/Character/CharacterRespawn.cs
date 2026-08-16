@@ -94,6 +94,9 @@ public sealed class CharacterRespawn : StateObject
             _ => npcRespawn,
         };
 
+        if (timeToSpawn <= 0)
+            return;
+
         // set for respawn in same location
         Location location = character.Location;
 
