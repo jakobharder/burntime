@@ -501,6 +501,8 @@ namespace Burntime.Remaster.Logic
                 attack(defender, attacker, defendWithAmmo, isPlayer ? difficultyFactor : 1);
 
                 container.Notify(new AttackEvent(attacker, defender));
+                if (defender.Player?.AiState is AI.ClassicAiState strategicAi)
+                    strategicAi.RecordAttack(attacker, defender);
                 if (defender.IsDead || attacker.IsDead)
                     break;
             }

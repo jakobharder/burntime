@@ -52,6 +52,14 @@ namespace Burntime.Remaster.AI
         protected AiSettings settings;
         protected int wait;
         protected StateLink<AiItemPool> itemPool;
+        [System.Runtime.Serialization.OptionalField]
+        protected StateLink<Player> retaliatingAgainst;
+        [System.Runtime.Serialization.OptionalField]
+        protected StateLink<Location> recentlyContestedCamp;
+        [System.Runtime.Serialization.OptionalField]
+        protected int retaliationUntilDay;
+        [System.Runtime.Serialization.OptionalField]
+        protected int contestedUntilDay;
         #endregion
 
         #region protected properties
@@ -133,6 +141,12 @@ namespace Burntime.Remaster.AI
         internal AiSettings Configuration => settings;
         internal int OwnedCampCount => CampCount;
         internal int HumanCampBenchmark => MaxHumanCampCount;
+        internal bool IsRetaliatingAgainst(Player opponent) =>
+            retaliatingAgainst != null && retaliatingAgainst.Object == opponent &&
+            RootGame.World.Day <= retaliationUntilDay;
+        internal bool WasRecentlyContested(Location location) =>
+            recentlyContestedCamp != null && recentlyContestedCamp.Object == location &&
+            RootGame.World.Day <= contestedUntilDay;
         internal int WaitTurns
         {
             get => wait;
@@ -205,6 +219,31 @@ namespace Burntime.Remaster.AI
             JoinCamp(npc);
             StrategicTarget = null;
             ResetWait();
+        }
+
+        internal void MarkRecentlyCaptured(Location location, ClassicAiPolicy policy)
+        {
+            recentlyContestedCamp = location;
+            contestedUntilDay = RootGame.World.Day + policy.ContestedCampMemoryTurns;
+            wait = System.Math.Max(wait, policy.AttackCooldownTurns);
+        }
+
+        internal void RecordAttack(Character attacker, Character defender)
+        {
+            if (attacker.Player == null || defender.Player != Player || attacker.Player == Player)
+                return;
+
+            recentlyContestedCamp = defender.Location;
+            contestedUntilDay = RootGame.World.Day + ClassicAiPolicy.ForDifficulty(
+                RootGame.World.Difficulty).ContestedCampMemoryTurns;
+
+            if (attacker.Player.Type != PlayerType.Human)
+                return;
+            retaliatingAgainst = attacker.Player;
+            retaliationUntilDay = RootGame.World.Day + ClassicAiPolicy.ForDifficulty(
+                RootGame.World.Difficulty).RetaliationTurns;
+            StrategicAiTelemetry.Report(Player,
+                $"will retaliate against {attacker.Player.Name} after the attack at {defender.Location.Title}");
         }
 
         internal bool ImproveCamp()

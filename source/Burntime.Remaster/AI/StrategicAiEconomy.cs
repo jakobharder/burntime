@@ -431,6 +431,62 @@ internal static class StrategicAiEconomy
             .FirstOrDefault();
     }
 
+    public static Location FindBestCampForReinforcement(ClassicAiState state, int garrisonTarget)
+    {
+        if (garrisonTarget <= 1)
+            return null;
+
+        return state.RootGame.World.Locations
+            .Where(location => location.Player == state.Player && IsCriticalCamp(state, location))
+            .Select(location => new
+            {
+                Location = location,
+                Route = StrategicAiPlanner.FindRoute(state.Player, state.Current, location),
+                Guards = location.CampNPC.Count(npc => npc.Player == state.Player && !npc.IsDead)
+            })
+            .Where(candidate => candidate.Route != null && candidate.Guards < garrisonTarget &&
+                CanSupportAdditionalGuard(state, candidate.Location, candidate.Guards))
+            .OrderBy(candidate => candidate.Guards)
+            .ThenBy(candidate => candidate.Route.Days)
+            .Select(candidate => candidate.Location)
+            .FirstOrDefault();
+    }
+
+    public static bool IsCriticalCamp(ClassicAiState state, Location location)
+    {
+        if (IsStrategicLocation(state, location) || IsThreatened(state, location))
+            return true;
+
+        return false;
+    }
+
+    public static bool IsStrategicLocation(ClassicAiState state, Location location)
+    {
+        if (state.WasRecentlyContested(location))
+            return true;
+
+        int openRoutes = Enumerable.Range(0, location.Neighbors.Count)
+            .Count(index => location.WayLengths[index] > 0);
+        if (openRoutes <= 2 || location.Source?.Water > 0)
+            return true;
+
+        Production.Rate production = location.GetFoodProductionRate();
+        return production.FoodPerDay >= 4;
+    }
+
+    static bool CanSupportAdditionalGuard(ClassicAiState state, Location camp, int currentGuards)
+    {
+        if (camp.Production == null)
+            return false;
+
+        int toolCount = camp.Rooms.Sum(room => room.Items.Count(item =>
+                item.Type.Production == camp.Production)) +
+            camp.CampNPC.Where(npc => npc.Player == state.Player && !npc.IsDead)
+                .Sum(npc => npc.Items.Count(item => item.Type.Production == camp.Production));
+        Production.Rate projected = camp.Production.GetRate(toolCount, currentGuards + 1);
+        return !projected.IsCampStarving && projected.FoodPerDay >= currentGuards + 1;
+    }
+
     public static bool ShouldReserveProductionTool(ClassicAiState state)
     {
         if (!HasNeutralExpansionOpportunity(state))

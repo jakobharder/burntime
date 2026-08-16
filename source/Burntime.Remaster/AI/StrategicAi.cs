@@ -42,6 +42,14 @@ internal sealed class ClassicAiPolicy
     public float NeutralTargetScore { get; init; }
     public float HostileTargetScore { get; init; }
     public float ExpansionEconomyScore { get; init; }
+    public int MaxHumanCampDefendersToAttack { get; init; }
+    public bool TreatUnarmedLoneHumanGuardAsUndefended { get; init; }
+    public int CriticalGarrisonTarget { get; init; }
+    public int AttackCooldownTurns { get; init; }
+    public int RetaliationTurns { get; init; } = 20;
+    public int ContestedCampMemoryTurns { get; init; } = 16;
+    public float StrategicHostileTargetBonus { get; init; }
+    public bool UseDetailedCombatEstimate { get; init; }
     public bool AllowGeneratedRecruitPaymentInCities { get; init; } = true;
     public int SafeFoodFloor { get; init; } = 10;
     public int SafeWaterFloor { get; init; } = 10;
@@ -50,11 +58,18 @@ internal sealed class ClassicAiPolicy
     public static ClassicAiPolicy ForDifficulty(int difficulty) => difficulty switch
     {
         0 => new ClassicAiPolicy { DesiredGroupSize = 2, MinimumAttackRatio = 1.35f,
-            NeutralTargetScore = 690, HostileTargetScore = 430, ExpansionEconomyScore = 850 },
+            NeutralTargetScore = 690, HostileTargetScore = 430, ExpansionEconomyScore = 850,
+            MaxHumanCampDefendersToAttack = 0, TreatUnarmedLoneHumanGuardAsUndefended = true,
+            CriticalGarrisonTarget = 1, AttackCooldownTurns = 4 },
         1 => new ClassicAiPolicy { DesiredGroupSize = 3, MinimumAttackRatio = 1.05f,
-            NeutralTargetScore = 770, HostileTargetScore = 560, ExpansionEconomyScore = 900 },
+            NeutralTargetScore = 770, HostileTargetScore = 560, ExpansionEconomyScore = 900,
+            MaxHumanCampDefendersToAttack = 1, CriticalGarrisonTarget = 2,
+            AttackCooldownTurns = 2, StrategicHostileTargetBonus = 35 },
         _ => new ClassicAiPolicy { DesiredGroupSize = 4, MinimumAttackRatio = 0.75f,
-            NeutralTargetScore = 860, HostileTargetScore = 680, ExpansionEconomyScore = 950 }
+            NeutralTargetScore = 860, HostileTargetScore = 680, ExpansionEconomyScore = 950,
+            MaxHumanCampDefendersToAttack = int.MaxValue, CriticalGarrisonTarget = 3,
+            AttackCooldownTurns = 0, StrategicHostileTargetBonus = 100,
+            UseDetailedCombatEstimate = true }
     };
 }
 
@@ -77,14 +92,25 @@ internal static class StrategicAiPlanner
 
         if (IsHostile(observation.Current, player))
         {
-            if (!IsAttackSuitable(player, observation.Current, policy) && player.PreviousLocation != null)
+            if (!IsAttackSuitable(state, player, observation.Current, policy))
             {
-                candidates.Add(new StrategicAiDecision(
-                    StrategicAiAction.Travel,
-                    1250,
-                    player.PreviousLocation,
-                    player.PreviousLocation,
-                    "retreat from an attack that is no longer safe"));
+                if (player.PreviousLocation != null)
+                {
+                    candidates.Add(new StrategicAiDecision(
+                        StrategicAiAction.Travel,
+                        1250,
+                        player.PreviousLocation,
+                        player.PreviousLocation,
+                        "retreat from an attack that is no longer safe"));
+                }
+                else
+                {
+                    candidates.Add(new StrategicAiDecision(
+                        StrategicAiAction.Wait,
+                        1250,
+                        observation.Current,
+                        Reason: "will not initiate an unsuitable attack without a retreat route"));
+                }
             }
             else
             {
@@ -123,13 +149,20 @@ internal static class StrategicAiPlanner
         }
 
         bool generatedPaymentAllowed = observation.Current.IsCity && policy.AllowGeneratedRecruitPaymentInCities;
-        if (player.Group.Count < observation.DesiredGroupSize && state.CanRecruit(generatedPaymentAllowed))
+        Location? reinforcementCamp = StrategicAiEconomy.FindBestCampForReinforcement(
+            state, policy.CriticalGarrisonTarget);
+        bool needsGarrisonRecruit = reinforcementCamp != null &&
+            player.Group.Count >= observation.DesiredGroupSize && player.Group.Count < Group.MAX_PEOPLE;
+        if ((player.Group.Count < observation.DesiredGroupSize || needsGarrisonRecruit) &&
+            state.CanRecruit(generatedPaymentAllowed))
         {
             candidates.Add(new StrategicAiDecision(
                 StrategicAiAction.Recruit,
-                player.Group.Count == 1 ? 980 : 760,
+                player.Group.Count == 1 ? 980 : needsGarrisonRecruit ? 830 : 760,
                 observation.Current,
-                Reason: "group needs another recruit"));
+                Reason: needsGarrisonRecruit
+                    ? $"critical camp {reinforcementCamp!.Title} needs another guard"
+                    : "group needs another recruit"));
         }
         else if (player.Group.Count == 1)
         {
@@ -140,22 +173,27 @@ internal static class StrategicAiPlanner
                     : "fill the caravan before recruiting in a city");
         }
 
-        if (player.Group.Count > observation.DesiredGroupSize)
+        if (reinforcementCamp != null && player.Group.Count > observation.DesiredGroupSize)
         {
-            Location? stationCamp = StrategicAiEconomy.FindBestCampForStationing(state);
-            if (stationCamp == observation.Current)
+            if (reinforcementCamp == observation.Current)
             {
                 candidates.Add(new StrategicAiDecision(
                     StrategicAiAction.StationFollower,
                     1080,
                     observation.Current,
-                    Reason: "reinforce the weakest frontier camp with a surplus follower"));
+                    Reason: $"raise critical garrison toward {policy.CriticalGarrisonTarget} guards"));
             }
             else
             {
-                AddTravelCandidate(state, candidates, stationCamp ?? FindNearestOwnedCamp(state), 1080,
-                    "return surplus follower to the weakest frontier camp");
+                AddTravelCandidate(state, candidates, reinforcementCamp, 1080,
+                    $"reinforce critical camp toward {policy.CriticalGarrisonTarget} guards");
             }
+        }
+        else if (reinforcementCamp != null && player.Group.Count >= observation.DesiredGroupSize &&
+            !state.HasHireableNpc())
+        {
+            AddTravelCandidate(state, candidates, FindNearestCity(state), 800,
+                "find a recruit for a critical camp garrison");
         }
 
         if (state.NeedsCampImprovement())
@@ -302,7 +340,7 @@ internal static class StrategicAiPlanner
             return observation.NeutralExpansionAllowed && state.CanClaim(target) ? target : null;
         if (target.Player == observation.Player)
             return null;
-        if (!IsAttackSuitable(observation.Player, target, policy))
+        if (!IsAttackSuitable(state, observation.Player, target, policy))
         {
             StrategicAiTelemetry.Report(observation.Player,
                 $"abandoned target {target.Title}: group is not safely prepared to attack");
@@ -330,17 +368,21 @@ internal static class StrategicAiPlanner
             {
                 targets.Add((location, policy.NeutralTargetScore - route.Days * 8 + Jitter()));
             }
-            else if (IsHostile(location, observation.Player) && IsAttackSuitable(observation.Player, location, policy))
+            else if (IsHostile(location, observation.Player) &&
+                IsAttackSuitable(state, observation.Player, location, policy))
             {
-                float weakness = System.Math.Max(-100, 100 - DefenderStrength(location));
-                targets.Add((location, policy.HostileTargetScore + weakness - route.Days * 6 + Jitter()));
+                float weakness = System.Math.Max(-100, 100 - AssessedDefenderStrength(location, policy));
+                float strategicBonus = StrategicAiEconomy.IsStrategicLocation(state, location)
+                    ? policy.StrategicHostileTargetBonus
+                    : 0;
+                targets.Add((location, policy.HostileTargetScore + weakness + strategicBonus - route.Days * 6 + Jitter()));
             }
         }
 
         return targets.OrderByDescending(target => target.Score).FirstOrDefault().Location;
     }
 
-    static bool IsAttackSuitable(Player player, Location target, ClassicAiPolicy policy)
+    static bool IsAttackSuitable(ClassicAiState state, Player player, Location target, ClassicAiPolicy policy)
     {
         Character[] followers = player.Group
             .Where(character => character != player.Character && !character.IsDead)
@@ -349,7 +391,24 @@ internal static class StrategicAiPlanner
             (character.Items.FindBestWeapon()?.DamageValue ?? 0) <= 0))
             return false;
 
-        float defenders = DefenderStrength(target);
+        Character[] livingDefenders = target.CampNPC
+            .Where(character => !character.IsDead && character.Player == target.Player)
+            .ToArray();
+        if (target.Player?.Type == PlayerType.Human && !state.IsRetaliatingAgainst(target.Player))
+        {
+            int visibleDefenders = livingDefenders.Length;
+            if (policy.TreatUnarmedLoneHumanGuardAsUndefended && visibleDefenders == 1 &&
+                (livingDefenders[0].Items.FindBestWeapon()?.DamageValue ?? 0) <= 0)
+                visibleDefenders = 0;
+            if (visibleDefenders > policy.MaxHumanCampDefendersToAttack)
+                return false;
+        }
+
+        float defenders = policy.UseDetailedCombatEstimate
+            ? livingDefenders.Sum(character =>
+                character.AttackValue + character.DefenseValue + character.Health / 10f)
+            : livingDefenders.Sum(character =>
+                (character.Items.FindBestWeapon()?.DamageValue ?? character.BaseAttackValue) + 10f);
         if (defenders <= 0)
             return true;
         return AttackerStrength(player) / defenders >= policy.MinimumAttackRatio;
@@ -367,9 +426,17 @@ internal static class StrategicAiPlanner
         .Where(character => !character.IsDead)
         .Sum(character => character.AttackValue + character.DefenseValue + character.Health / 10f);
 
-    static float DefenderStrength(Location location) => location.CampNPC
-        .Where(character => !character.IsDead && character.Player == location.Player)
-        .Sum(character => character.AttackValue + character.DefenseValue + character.Health / 10f);
+    static float AssessedDefenderStrength(Location location, ClassicAiPolicy policy)
+    {
+        Character[] defenders = location.CampNPC
+            .Where(character => !character.IsDead && character.Player == location.Player)
+            .ToArray();
+        return policy.UseDetailedCombatEstimate
+            ? defenders.Sum(character =>
+                character.AttackValue + character.DefenseValue + character.Health / 10f)
+            : defenders.Sum(character =>
+                (character.Items.FindBestWeapon()?.DamageValue ?? character.BaseAttackValue) + 10f);
+    }
 
     static int Jitter() => Burntime.Platform.Math.Random.Next(-20, 21);
 
@@ -609,6 +676,8 @@ internal static class StrategicCombatResolver
             if (guard != null)
             {
                 state.CreateCamp(guard);
+                state.MarkRecentlyCaptured(location, ClassicAiPolicy.ForDifficulty(
+                    state.RootGame.World.Difficulty));
                 StrategicAiTelemetry.Report(attacker, $"captured {location.Title} and stationed {guard.Name}");
             }
             else
