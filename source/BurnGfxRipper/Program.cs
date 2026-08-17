@@ -47,9 +47,15 @@ class Program
 {
     static void Main(string[] args)
     {
+        if (args.Length == 2 && args[0] == "--gif")
+        {
+            new AnimationExporter().ExportSceneGif(args[1]);
+            return;
+        }
+
         if (args.Length == 0)
         {
-            Console.WriteLine("usage:\nburngfxripper.exe filename\n\npress key");
+            Console.WriteLine("usage:\nburngfxripper.exe filename\nburngfxripper.exe --gif filename.ani.txt\n\npress key");
             Console.ReadKey();
             return;
         }
@@ -74,8 +80,6 @@ class Program
                     ExportColorTables(path, file);
                     return;
                 }
-
-                bool stretch = true;
 
                 switch (ext)
                 {

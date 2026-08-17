@@ -12,10 +12,9 @@ internal sealed record GifFrame(byte[] Bgra, int Width, int Height);
 internal static class GifWriter
 {
     private const int TransparentIndex = 255;
-    private static readonly ushort FrameDelay =
-        (ushort)Math.Round(100f / new SpriteAnimation(1).Speed);
+    private const ushort FrameDelay = 20;
 
-    public static void Save(IReadOnlyList<GifFrame> frames, string path)
+    public static void Save(IReadOnlyList<GifFrame> frames, string path, ushort frameDelay = FrameDelay)
     {
         if (frames.Count == 0)
             return;
@@ -43,7 +42,7 @@ internal static class GifWriter
 
         foreach (GifFrame frame in frames)
         {
-            WriteGraphicControlExtension(output);
+            WriteGraphicControlExtension(output, frameDelay);
             output.WriteByte(0x2c);
             WriteUInt16(output, 0);
             WriteUInt16(output, 0);
@@ -91,10 +90,10 @@ internal static class GifWriter
         return result;
     }
 
-    private static void WriteGraphicControlExtension(Stream output)
+    private static void WriteGraphicControlExtension(Stream output, ushort frameDelay)
     {
         output.Write([0x21, 0xf9, 0x04, 0x05]); // keep previous canvas + transparency
-        WriteUInt16(output, FrameDelay);
+        WriteUInt16(output, frameDelay);
         output.WriteByte(TransparentIndex);
         output.WriteByte(0);
     }
