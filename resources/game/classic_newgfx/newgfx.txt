@@ -95,6 +95,8 @@ pngsheet@gfx/ui/start_buttons.png?3?64x24=pngsheet@gfx/start_buttons.png?3?121x5
 sta.ani?8=pngsheet@gfx/start_flags.png?0?90x54
 sta.ani?9=pngsheet@gfx/start_flags.png?1?90x54
 
+gst.raw=pngsheet@gfx/items/gst_nearest.png?{0}?60x72
+
 [newgfx_native]
 ' Graphics only used in remastered mode
 
@@ -128,13 +130,6 @@ sta.pac=gfx/sta.png
 ' Old upscale graphics. They should be replaced by 60x72 verisons eventually.
 
 sprite_scale=2x2.375
-ges_00.ani=pngsheet@gfx/faces/ges_00.png?0-39?136x152
-ges_01.ani=pngsheet@gfx/faces/ges_01.png?0?136x133
-ges_02.ani=pngsheet@gfx/faces/ges_02.png?0-39?136x152
-ges_03.ani=pngsheet@gfx/faces/ges_03.png?0-39?136x152
-ges_04.ani=pngsheet@gfx/faces/ges_04.png?0-39?136x152
-ges_05.ani=pngsheet@gfx/faces/ges_05.png?0-39?136x152
-gst.raw=pngsheet@gfx/items/gst.png?{0}?64x76
 raum_0.pac=gfx/backgrounds/room0.png
 raum_1.pac=gfx/backgrounds/room1.png
 raum_2.pac=gfx/backgrounds/room2.png
