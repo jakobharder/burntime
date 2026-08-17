@@ -9,10 +9,35 @@ namespace PakConverter
 
         static void Main(string[] args)
         {
-            if (args.Length != 1)
+            if (args.Length is < 1 or > 2)
             {
-                Console.WriteLine("usage: pakconverter.exe foldername");
+                Console.WriteLine("usage: pakconverter.exe foldername | pakconverter.exe archive.pak [output-folder]");
                 Console.ReadKey();
+                return;
+            }
+
+            if (args[0].EndsWith(".pak", StringComparison.OrdinalIgnoreCase))
+            {
+                string output = args.Length == 2
+                    ? args[1]
+                    : System.IO.Path.Combine(System.IO.Path.GetDirectoryName(args[0])!, System.IO.Path.GetFileNameWithoutExtension(args[0]));
+
+                Console.Write("extract " + args[0] + " to " + output + "... ");
+                _cursor.Save();
+                try
+                {
+                    FileSystem.ConvertPakToFolder(args[0], output, Feedback);
+                }
+                catch (Exception e)
+                {
+                    _cursor.Restore();
+                    Console.WriteLine("failed");
+                    Console.WriteLine(e.Message);
+                    Console.ReadKey();
+                    return;
+                }
+                _cursor.Restore();
+                Console.WriteLine("finished");
                 return;
             }
 

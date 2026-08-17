@@ -292,6 +292,36 @@ public class FileSystem
 
     public delegate void ConvertFeedback(float percentage);
 
+    public static void ConvertPakToFolder(string path, string outputPath, ConvertFeedback feedback)
+    {
+        if (path.EndsWith(".pak", StringComparison.OrdinalIgnoreCase))
+            path = Path.ChangeExtension(path, null)!;
+
+        IPackage package = OpenPackage(path);
+        if (package == null)
+            throw new InvalidOperationException($"Could not open package: {path}");
+
+        Directory.CreateDirectory(outputPath);
+        int index = 0;
+        foreach (string fileName in package.Files)
+        {
+            File file = package.GetFile(fileName, FileOpenMode.Read);
+            string target = Path.Combine(outputPath, fileName);
+            string? folder = Path.GetDirectoryName(target);
+            if (folder != null)
+                Directory.CreateDirectory(folder);
+
+            using (FileStream output = new FileStream(target, FileMode.Create, FileAccess.Write))
+                file.Stream.CopyTo(output);
+            file.Close();
+
+            index++;
+            feedback?.Invoke((float)index / package.Files.Count);
+        }
+
+        package.Close();
+    }
+
     static public void ConvertFolderToPak(string path, ConvertFeedback feedback)
     {
         if (feedback != null)
