@@ -1,0 +1,1 @@
+0-8 200x117 speed=4.5 interval=1 progressive=false cumulative=true endless=true

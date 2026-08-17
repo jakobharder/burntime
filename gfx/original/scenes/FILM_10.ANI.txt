@@ -1,0 +1,1 @@
+0-9 125x92 speed=5 interval=3 endless=true

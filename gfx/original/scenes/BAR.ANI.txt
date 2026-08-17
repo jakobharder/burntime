@@ -1,0 +1,1 @@
+0-33 206x67 interval=6 progressive=false cumulative=true endless=true

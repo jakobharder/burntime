@@ -1,0 +1,4 @@
+0-10 16x68 cumulative=true endless=true
+11-21 176x86 cumulative=true endless=true
+22-32 264x77 cumulative=true endless=true
+33-72 166x20 delay=8 cumulative=true endless=false

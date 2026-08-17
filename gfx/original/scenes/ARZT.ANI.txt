@@ -1,0 +1,1 @@
+0-5 211x65 speed=6.5 interval=4 progressive=false cumulative=true endless=true
