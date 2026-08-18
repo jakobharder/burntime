@@ -3,6 +3,9 @@ name: Linux
 on:
   pull_request:
     branches: [ main ]
+    paths:
+      - "source/**"
+      - ".github/workflows/linux.yml"
 
 jobs:
   build:

@@ -1,8 +1,11 @@
-name: main
+name: Windows
 
 on:
   pull_request:
     branches: [ main ]
+    paths:
+      - "source/**"
+      - ".github/workflows/windows.yml"
 
 jobs:
   build:
