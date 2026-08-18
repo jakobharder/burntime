@@ -1,0 +1,3 @@
+0-17 98x120 speed=6.5 interval=4 progressive=false cumulative=true endless=true
+18-19 77x89 speed=6.5 interval=5 progressive=true cumulative=true endless=true
+20-21 106x59 speed=6.5 progressive=false endless=true

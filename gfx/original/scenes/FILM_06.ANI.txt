@@ -1,0 +1,2 @@
+0-5 49x46 speed=6.5 interval=6 endless=true
+6-15 179x96 speed=6.5 endless=true

@@ -84,10 +84,17 @@ namespace Burntime.Data.BurnGfx
 
             if (g.hasColorTable)
             {
-
-                g.table = new ColorTable();
-                g.table.FromPac(g.memFile, g.colorTableOffset, g.moveCmd);
-                BurnGfxData.Instance.AddPacColorTable(filePath, g.table);
+                try
+                {
+                    g.table = new ColorTable();
+                    g.table.FromPac(g.memFile, g.colorTableOffset, g.moveCmd);
+                    BurnGfxData.Instance.AddPacColorTable(filePath, g.table);
+                }
+                catch (IndexOutOfRangeException)
+                {
+                    Log.Warning($"Unsupported color table in {filePath}; using the default palette.");
+                    g.table = BurnGfxData.Instance.DefaultColorTable;
+                }
 
             //    g.table.save(filePath);
             }

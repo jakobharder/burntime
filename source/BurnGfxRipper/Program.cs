@@ -1,11 +1,6 @@
 ﻿using System;
-using System.Drawing;
-using System.Drawing.Imaging;
-using System.Runtime.InteropServices;
-
 using Burntime.Platform.IO;
 using Burntime.Data.BurnGfx;
-using System.Security.Cryptography;
 
 namespace BurnGfxRipper;
 
@@ -52,9 +47,15 @@ class Program
 {
     static void Main(string[] args)
     {
+        if (args.Length == 2 && args[0] == "--gif")
+        {
+            new AnimationExporter().ExportSceneGif(args[1]);
+            return;
+        }
+
         if (args.Length == 0)
         {
-            Console.WriteLine("usage:\nburngfxripper.exe filename\n\npress key");
+            Console.WriteLine("usage:\nburngfxripper.exe filename\nburngfxripper.exe --gif filename.ani.txt\n\npress key");
             Console.ReadKey();
             return;
         }
@@ -72,15 +73,13 @@ class Program
 
                 String ext = System.IO.Path.GetExtension(arg).ToLower();
                 String file = System.IO.Path.GetFileName(arg);
-                String dir = path + "\\" + file + "_output";
+                String dir = System.IO.Path.Combine(path, file + "_output");
 
                 if (parameter.Palette)
                 {
                     ExportColorTables(path, file);
                     return;
                 }
-
-                bool stretch = true;
 
                 switch (ext)
                 {
@@ -94,8 +93,7 @@ class Program
                         }
                         else if (file.StartsWith("zei_", StringComparison.InvariantCultureIgnoreCase))
                         {
-                            var exporter = new TileExporter();
-                            exporter.Export(file, dir, parameter);
+                            Console.WriteLine("tile extraction is not supported by this portable build");
                         }
                         else
                         {
@@ -109,15 +107,9 @@ class Program
                             SpriteLoaderPac pac = new SpriteLoaderPac();
                             pac.Process(file);
 
-                            Bitmap bmp = new Bitmap(pac.Size.x, pac.Size.y, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                            BitmapData loc = bmp.LockBits(new Rectangle(0, 0, pac.Size.x, pac.Size.y), ImageLockMode.ReadWrite, System.Drawing.Imaging.PixelFormat.Format32bppArgb);
-                            System.IO.MemoryStream mem = new System.IO.MemoryStream();
-                            pac.Render(mem, loc.Stride);
-
-                            Marshal.Copy(mem.ToArray(), 0, loc.Scan0, pac.Size.y * loc.Stride);
-
-                            bmp.UnlockBits(loc);
-                            TextureUtils.Save(bmp, dir + ".png");
+                            using System.IO.MemoryStream mem = new();
+                            pac.Render(mem, pac.Size.x * 4);
+                            PngWriter.SaveBgra(mem.ToArray(), pac.Size.x, pac.Size.y, dir + ".png");
                         }
                         break;
                 }
@@ -135,17 +127,6 @@ class Program
 
     static void ExportColorTables(string basePath, string fileName)
     {
-        using Bitmap bmp = new(256, 1, PixelFormat.Format24bppRgb);
-        for (int i = 0; i < 256; i++)
-            bmp.SetPixel(i, 0, Color.FromArgb(BurnGfxData.Instance.DefaultColorTable.GetColor(i).ToInt()));
-
-        bmp.Save(System.IO.Path.Combine(basePath, System.IO.Path.GetFileNameWithoutExtension(fileName) + "_palette.png"));
-
-        using Bitmap bmp2 = new(256, 38, PixelFormat.Format24bppRgb);
-        for (int map = 0; map < 38; map++)
-            for (int i = 0; i < 256; i++)
-                bmp2.SetPixel(i, map, Color.FromArgb(BurnGfxData.Instance.GetMapColorTable(map).GetColor(i).ToInt()));
-
-        bmp2.Save(System.IO.Path.Combine(basePath, "maps_palette.png"));
+        throw new NotSupportedException("palette extraction is not supported by this portable build");
     }
 }

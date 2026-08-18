@@ -1,0 +1,3 @@
+0-11 201x22 speed=6.1 interval=1 progressive=false cumulative=true endless=true
+12-13 237x28 speed=8 progressive=false endless=true
+14-64 231x55 speed=6.6 interval=6 progressive=false cumulative=true endless=true
