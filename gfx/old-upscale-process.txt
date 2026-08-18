@@ -1,0 +1,11 @@
+- upscayl to 4x
+- downscale to 2x and correct ratio
+  - some scenes include a black border, I removed that before scaling down to the wanted target size
+- reapply color palette (preferabbly using dithering)
+
+for scene animations:
+- apply frames to background
+- upscayl the full images
+- reapply color palette
+- calculate the pixel location from the original position, corrected by ratio
+  (not every position appropriate because of the ratio change)

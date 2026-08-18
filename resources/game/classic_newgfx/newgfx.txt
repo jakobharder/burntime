@@ -126,7 +126,7 @@ ges_27.ani=pngani@gfx/faces/geometry_true/ges_27.png
 ges_28.ani=pngani@gfx/faces/geometry_true/ges_28.png
 ges_29.ani=pngani@gfx/faces/geometry_true/ges_29.png
 
-gst.raw=pngsheet@gfx/items/gst_nearest.png?{0}?60x72
+gst.raw=pngsheet@gfx/items/gst2.png?{0}?60x72
 
 [newgfx_native]
 ' Graphics only used in remastered mode
