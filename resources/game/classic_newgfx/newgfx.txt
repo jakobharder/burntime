@@ -95,6 +95,37 @@ pngsheet@gfx/ui/start_buttons.png?3?64x24=pngsheet@gfx/start_buttons.png?3?121x5
 sta.ani?8=pngsheet@gfx/start_flags.png?0?90x54
 sta.ani?9=pngsheet@gfx/start_flags.png?1?90x54
 
+ges_00.ani=pngani@gfx/faces/geometry_true/ges_00.png
+ges_01.ani=pngani@gfx/faces/geometry_true/ges_01.png
+ges_02.ani=pngani@gfx/faces/geometry_true/ges_02.png
+ges_03.ani=pngani@gfx/faces/geometry_true/ges_03.png
+ges_04.ani=pngani@gfx/faces/geometry_true/ges_04.png
+ges_05.ani=pngani@gfx/faces/geometry_true/ges_05.png
+ges_06.ani=pngani@gfx/faces/geometry_true/ges_06.png
+ges_07.ani=pngani@gfx/faces/geometry_true/ges_07.png
+ges_08.ani=pngani@gfx/faces/geometry_true/ges_08.png
+ges_09.ani=pngani@gfx/faces/geometry_true/ges_09.png
+ges_10.ani=pngani@gfx/faces/geometry_true/ges_10.png
+ges_11.ani=pngani@gfx/faces/geometry_true/ges_11.png
+ges_12.ani=pngani@gfx/faces/geometry_true/ges_12.png
+ges_13.ani=pngani@gfx/faces/geometry_true/ges_13.png
+ges_14.ani=pngani@gfx/faces/geometry_true/ges_14.png
+ges_15.ani=pngani@gfx/faces/geometry_true/ges_15.png
+ges_16.ani=pngani@gfx/faces/geometry_true/ges_16.png
+ges_17.ani=pngani@gfx/faces/geometry_true/ges_17.png
+ges_18.ani=pngani@gfx/faces/geometry_true/ges_18.png
+ges_19.ani=pngani@gfx/faces/geometry_true/ges_19.png
+ges_20.ani=pngani@gfx/faces/geometry_true/ges_20.png
+ges_21.ani=pngani@gfx/faces/geometry_true/ges_21.png
+ges_22.ani=pngani@gfx/faces/geometry_true/ges_22.png
+ges_23.ani=pngani@gfx/faces/geometry_true/ges_23.png
+ges_24.ani=pngani@gfx/faces/geometry_true/ges_24.png
+ges_25.ani=pngani@gfx/faces/geometry_true/ges_25.png
+ges_26.ani=pngani@gfx/faces/geometry_true/ges_26.png
+ges_27.ani=pngani@gfx/faces/geometry_true/ges_27.png
+ges_28.ani=pngani@gfx/faces/geometry_true/ges_28.png
+ges_29.ani=pngani@gfx/faces/geometry_true/ges_29.png
+
 gst.raw=pngsheet@gfx/items/gst_nearest.png?{0}?60x72
 
 [newgfx_native]
