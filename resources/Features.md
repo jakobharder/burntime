@@ -1,23 +1,30 @@
 # Features
 
-The game is a complete port of the original DOS version to Windows with some adjustments and an extended game mode.
+The game is a complete remake and expansion of the original DOS version for Windows, macOS and Linux.
+
+Some improvements were also taken from the Amiga version that has been released later.
 
 ## Non-Gameplay Changes
 
-- Support for wide-screen resolutions. Some images are enlarged accordingly.
-- Remastered graphics with double resolution and corrected aspect ratio.
-- Technicians have their own skin. All skins are true to the character class without exceptions.
-- Music can be toggled between DOS and Amiga.
+- support for wide-screen resolutions; some locations and interfaces are enlarged accordingly
+- graphics with double resolution and corrected aspect ratio
+- toggle between original and remastered graphics
+- technicians have their own skin; all skins are true to the character class without exceptions
+- music can be toggled between DOS, Amiga and off
+- Amiga hit, bark and death sounds
 
 ## Gameplay Changes
 
 - game adjustments
   - attacks are always followed by counter attacks to avoid attack spamming
-  - toggle to switch between original and extended game
+  - toggle to switch between original 1993 and extended game rules
   - toggle to disable AI players
 - quality of life
-  - attack/defense/protection values displayed in inventory
+  - attack, defense and protection values displayed in inventory
   - auto equip weapons and protection
+  - gas, radiation and insufficient travel supply warnings displayed in the main UI
+  - save games display day and camp numbers
+  - maps can be scrolled with the right mouse button
 - minor location adjustments
   - some locations are larger to fill wide screens
   - Monastery got another gap in the wall to go through
@@ -25,31 +32,35 @@ The game is a complete port of the original DOS version to Windows with some adj
 
 ## Extended Game
 
-The extended game mode adds new items, locations and gameplay features.
-You can disable these changes in the start menu.
+The extended game mode adds new items and gameplay features.
+You can disable these changes in the start menu by selecting the original 1993 mode.
 
 - additional items
+  - pistol
+  - paper helmet
 - clothes provide a small defense boost
+- dogs and mutants respawn outside cities
 
 ## Difficulty Levels
 
-Generally, items are more rare on higher difficulty levels.
-Respawning of NPCs, dog and others is adjusted.
-Enemies are more aggressive.
+Generally, items are rarer on higher difficulty levels.
+Starting experience and the food and water carried by newly hired NPCs are reduced.
+Traders and mutants are tougher, while AI players expand more aggressively and make riskier attacks.
 
 ### I Easy
 
 - start items
-  - meat, a full canteen, an empty bottle, and a knife
+  - meat, a full canteen, an empty bottle and a knife
 - respawns
   - trader after 20 days
   - NPCs after 10 days
-  - dogs after 30 days
-  - mutants after 30 days
+  - dogs after 20 days in extended mode; no respawn in 1993 mode
+  - mutants after 100 days in extended mode; no respawn in 1993 mode
 - dropped items and in rooms
   - food, water, weapons and building materials can be found
 - enemies
-  - Make camps in the same pace of the player
+  - prefer smaller groups and safe attacks
+  - make camps at about the same pace as the player
 
 ### II Normal
 
@@ -58,28 +69,28 @@ Enemies are more aggressive.
 - respawns
   - trader after 50 days
   - NPCs after 20 days
-  - dogs after 100 days
-  - mutants after 20 days
-- weapons cannot be found
+  - dogs after 40 days in extended mode; no respawn in 1993 mode
+  - mutants after 80 days in extended mode; no respawn in 1993 mode
 - dropped items and in rooms
   - no weapons
   - less food
-- trader, dogs and mutants are stronger
-- enemies:
-  - make camps a bit faster than the player
+- enemies
+  - use larger groups and attack lightly defended camps
+  - can make up to four camps more than the player
 
 ### III Hard
 
 - start items
   - maggots and a knife
-- respawns:
+  - an additional advice note in extended mode
+- respawns
   - trader after 150 days
   - NPCs after 30 days
-  - dogs don't respawn
-  - mutants after 5 days
-- dropped items and in rooms:
-  - no weapons or food
-  - less materials
-- trader, dogs and mutants are dangerously strong
-- enemies:
+  - dogs after 80 days in extended mode; no respawn in 1993 mode
+  - mutants after 60 days in extended mode; no respawn in 1993 mode
+- dropped items and in rooms
+  - no weapons or food on the ground
+  - less food and fewer materials in rooms
+- enemies
+  - use the largest groups and make riskier attacks
   - make camps independent of player progress
