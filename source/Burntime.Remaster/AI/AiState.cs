@@ -141,6 +141,8 @@ namespace Burntime.Remaster.AI
         internal AiSettings Configuration => settings;
         internal int OwnedCampCount => CampCount;
         internal int HumanCampBenchmark => MaxHumanCampCount;
+        internal bool HasHumanPlayers => RootGame.World.Players.Any(candidate =>
+            candidate.Type == PlayerType.Human);
         internal bool IsRetaliatingAgainst(Player opponent) =>
             retaliatingAgainst != null && retaliatingAgainst.Object == opponent &&
             RootGame.World.Day <= retaliationUntilDay;
@@ -883,19 +885,23 @@ namespace Burntime.Remaster.AI
         /// <returns>NPC</returns>
         protected Character GetHireableNpc()
         {
-            bool hasDoctor = Player.Group.Any(character => character.Class == CharClass.Doctor);
-            return CurrentLocation.Characters
+            Character[] available = CurrentLocation.Characters
                 .Where(character => !character.IsDead && !character.IsHired && character.IsHuman && !character.IsTrader)
-                .OrderByDescending(character => character.Class switch
-                {
-                    CharClass.Mercenary => 40,
-                    CharClass.Doctor when !hasDoctor => 35,
-                    CharClass.Technician => 25,
-                    CharClass.Doctor => 15,
-                    _ => 10
-                })
-                .ThenByDescending(character => character.Experience)
-                .FirstOrDefault();
+                .ToArray();
+            if (available.Length == 0)
+                return null;
+
+            (int minimum, int maximum) = RootGame.World.Difficulty switch
+            {
+                0 => (0, 40),
+                1 => (20, 60),
+                _ => (40, int.MaxValue)
+            };
+            Character[] preferred = available
+                .Where(character => character.Experience >= minimum && character.Experience <= maximum)
+                .ToArray();
+            Character[] candidates = preferred.Length > 0 ? preferred : available;
+            return candidates[Burntime.Platform.Math.Random.Next(candidates.Length)];
         }
 
         /// <summary>

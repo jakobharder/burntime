@@ -164,6 +164,15 @@ namespace Burntime.Remaster.AI
             return null;
         }
 
+        public Item GetBestWeapon(
+            Func<ItemType, bool> allowed,
+            int minimumDamage = 0,
+            bool allowProductionTool = true)
+        {
+            PoolItem item = FindBestWeaponPoolItem(minimumDamage, allowProductionTool, allowed);
+            return item != null ? Take(item) : null;
+        }
+
         /// <summary>
         /// Get the largest available water container, preferring a full variant.
         /// </summary>
@@ -252,6 +261,14 @@ namespace Burntime.Remaster.AI
         public bool HasBetterWeapon(int damage, bool allowProductionTool = true)
         {
             return FindBestWeaponPoolItem(damage, allowProductionTool) != null;
+        }
+
+        public bool HasBetterWeapon(
+            int damage,
+            bool allowProductionTool,
+            Func<ItemType, bool> allowed)
+        {
+            return FindBestWeaponPoolItem(damage, allowProductionTool, allowed) != null;
         }
 
         public int ProductionToolCount => items
@@ -344,21 +361,25 @@ namespace Burntime.Remaster.AI
             return item != null ? Take(item) : null;
         }
 
-        internal static bool IsFirearm(ItemType type) =>
-            type.ID is "item_loaded_rifle" or "item_loaded_pistol";
+        internal static bool IsFirearm(ItemType? type) =>
+            type != null && (type.ID is "item_loaded_rifle" or "item_loaded_pistol");
 
         internal static int WaterContainerCapacity(ItemType type) =>
             type.WaterValue > 0 ? type.WaterValue : type.Full?.WaterValue ?? 0;
 
-        PoolItem FindBestWeaponPoolItem(int minimumDamage, bool allowProductionTool)
+        PoolItem FindBestWeaponPoolItem(
+            int minimumDamage,
+            bool allowProductionTool,
+            Func<ItemType, bool>? allowed = null)
         {
-            // Ammunition is finite. Firearms remain valuable barter assets, but the
-            // strategic AI defends camps with reusable melee weapons.
-            string[] weaponOrder = { "item_pitchfork", "item_axe", "item_knife" };
+            string[] weaponOrder = {
+                "item_loaded_rifle", "item_loaded_pistol", "item_pitchfork", "item_axe", "item_knife"
+            };
             return weaponOrder
                 .Select(id => items.FirstOrDefault(item => item.Type.ID == id && item.Count > 0))
                 .FirstOrDefault(item => item != null && item.Type.DamageValue > minimumDamage &&
-                    (allowProductionTool || item.Type.Production == null));
+                    (allowProductionTool || item.Type.Production == null) &&
+                    (allowed == null ? !IsFirearm(item.Type) : allowed(item.Type)));
         }
 
         /// <summary>

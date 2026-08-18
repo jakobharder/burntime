@@ -325,13 +325,6 @@ public static class HeadlessSimulation
             foreach (string entry in events)
                 report.AppendLine("- " + entry);
 
-        if (options.Difficulty < 2)
-        {
-            report.AppendLine();
-            report.AppendLine("Note: the current easy/normal AI camp limit is relative to human camp ownership. " +
-                "With no humans, this limits each AI to the configured fixed lead.");
-        }
-
         return report.ToString();
     }
 

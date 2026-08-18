@@ -29,8 +29,7 @@ internal static class StrategicAiEconomy
 
         ConstructPortableWeapon(state);
 
-        Trader trader = FindEncounteredTrader(state);
-        if (trader != null)
+        foreach (Trader trader in EncounteredTraders(state))
         {
             TradeWithTrader(state, trader);
             RefillConstructionReserve(state);
@@ -185,25 +184,21 @@ internal static class StrategicAiEconomy
 
     public static bool ShouldContinueTrading(ClassicAiState state)
     {
-        Trader trader = state.Current.LocalTrader;
-        if (!state.Current.IsCity || trader == null)
-            return false;
-        return CanPlanTrade(state, trader);
+        return state.Current.IsCity && EncounteredTraders(state).Any(trader => CanPlanTrade(state, trader));
     }
 
-    static Trader FindEncounteredTrader(ClassicAiState state)
+    static IEnumerable<Trader> EncounteredTraders(ClassicAiState state)
     {
-        // Preserve normal city trading. Roaming traders are purely opportunistic:
-        // use one when expansion or collection happens to cross its path, but never
-        // wait for it or make it a travel destination.
+        List<Trader> traders = new();
         if (state.Current.IsCity && state.Current.LocalTrader != null)
-            return state.Current.LocalTrader;
+            traders.Add(state.Current.LocalTrader);
 
-        return state.Current.Characters
+        traders.AddRange(state.Current.Characters
             .OfType<Trader>()
             .Where(trader => !trader.IsDead && trader.Items.Count > 0)
             .OrderByDescending(trader => TraderOpportunityScore(state, trader))
-            .FirstOrDefault(trader => CanPlanTrade(state, trader));
+            .Where(trader => !traders.Contains(trader)));
+        return traders;
     }
 
     public static int RecommendedGroupSize(ClassicAiState state, int difficultyMaximum)
@@ -501,15 +496,25 @@ internal static class StrategicAiEconomy
     {
         Player player = state.Player;
         var camps = state.RootGame.World.Locations.Where(location => location.Player == player).ToArray();
+        Character[] group = player.Group.Where(character => !character.IsDead).ToArray();
+        NormalizeWeaponLimits(state, group, isCamp: false);
+        foreach (Location camp in camps)
+            NormalizeWeaponLimits(state,
+                camp.CampNPC.Where(npc => npc.Player == player && !npc.IsDead).ToArray(), isCamp: true);
+
         var frontierGuards = camps.Where(location => IsThreatened(state, location))
-            .SelectMany(location => location.CampNPC.Where(npc => npc.Player == player && !npc.IsDead));
+            .SelectMany(location => location.CampNPC.Where(npc => npc.Player == player && !npc.IsDead))
+            .ToArray();
         var rearGuards = camps.Where(location => !IsThreatened(state, location))
-            .SelectMany(location => location.CampNPC.Where(npc => npc.Player == player && !npc.IsDead));
+            .SelectMany(location => location.CampNPC.Where(npc => npc.Player == player && !npc.IsDead))
+            .ToArray();
 
         foreach (Character guard in frontierGuards)
-            EquipWeapon(state, guard, upgradeWeakWeapon: true, "frontier guard");
+            EquipWeapon(state, guard,
+                guard.Location.CampNPC.Where(npc => npc.Player == player && !npc.IsDead).ToArray(),
+                isCamp: true, upgradeWeakWeapon: true, "frontier guard");
         foreach (Character follower in player.Group.Where(character => character != player.Character && !character.IsDead))
-            EquipWeapon(state, follower, upgradeWeakWeapon: false, "follower");
+            EquipWeapon(state, follower, group, isCamp: false, upgradeWeakWeapon: false, "follower");
         foreach (Location camp in camps.Where(location => location.Danger != null))
         {
             foreach (Character guard in camp.CampNPC.Where(npc => npc.Player == player && !npc.IsDead))
@@ -542,6 +547,8 @@ internal static class StrategicAiEconomy
     static void EquipWeapon(
         ClassicAiState state,
         Character character,
+        IReadOnlyCollection<Character> unit,
+        bool isCamp,
         bool upgradeWeakWeapon,
         string role)
     {
@@ -550,15 +557,16 @@ internal static class StrategicAiEconomy
         int desiredMinimum = upgradeWeakWeapon && currentDamage < 33 ? currentDamage : currentDamage > 0 ? int.MaxValue : 0;
         bool reserveProductionTool = ShouldReserveProductionTool(state);
         bool allowProductionTool = currentDamage == 0 || !reserveProductionTool;
+        bool Allowed(ItemType type) => WeaponAllowed(state, unit, character, isCamp, type);
         if (desiredMinimum == int.MaxValue ||
-            !state.Pool.HasBetterWeapon(desiredMinimum, allowProductionTool))
+            !state.Pool.HasBetterWeapon(desiredMinimum, allowProductionTool, Allowed))
         {
             if (current != null)
                 character.Weapon = current;
             return;
         }
 
-        Item weapon = state.Pool.GetBestWeapon(desiredMinimum, allowProductionTool);
+        Item weapon = state.Pool.GetBestWeapon(Allowed, desiredMinimum, allowProductionTool);
         if (weapon == null)
             return;
 
@@ -576,6 +584,62 @@ internal static class StrategicAiEconomy
         character.Weapon = weapon;
         string location = character.IsStationed ? $" at {character.Location.Title}" : "";
         StrategicAiTelemetry.Report(state.Player, $"equipped {role} {character.Name}{location} with {weapon.ID}");
+    }
+
+    static void NormalizeWeaponLimits(
+        ClassicAiState state,
+        IReadOnlyCollection<Character> unit,
+        bool isCamp)
+    {
+        int firearmLimit = isCamp && state.RootGame.World.Difficulty == 2 ? 1 : 0;
+        int pitchforkLimit = state.RootGame.World.Difficulty == 0 ? 0 : 1;
+        int firearms = 0;
+        int pitchforks = 0;
+
+        foreach (Character character in unit.OrderByDescending(member => member.Experience))
+        {
+            foreach (Item weapon in character.Items.Where(item =>
+                AiItemPool.IsFirearm(item.Type) || item.ID == "item_pitchfork").ToArray())
+            {
+                bool allowed = AiItemPool.IsFirearm(weapon.Type)
+                    ? firearms++ < firearmLimit
+                    : pitchforks++ < pitchforkLimit;
+                if (allowed)
+                    continue;
+
+                if (character.Weapon == weapon)
+                    character.Weapon = null;
+                character.Items.Remove(weapon);
+                state.Pool.Insert(weapon);
+                StrategicAiTelemetry.Report(state.Player,
+                    $"reserved restricted weapon {weapon.ID} carried by {character.Name}");
+            }
+            character.Weapon = character.Items.FindBestWeapon(character.Weapon);
+        }
+    }
+
+    static bool WeaponAllowed(
+        ClassicAiState state,
+        IReadOnlyCollection<Character> unit,
+        Character recipient,
+        bool isCamp,
+        ItemType type)
+    {
+        if (AiItemPool.IsFirearm(type))
+        {
+            if (!isCamp || state.RootGame.World.Difficulty < 2)
+                return false;
+            return unit.Where(character => character != recipient)
+                .SelectMany(character => character.Items)
+                .Count(item => AiItemPool.IsFirearm(item.Type)) < 1;
+        }
+        if (type.ID != "item_pitchfork")
+            return true;
+        if (state.RootGame.World.Difficulty == 0)
+            return false;
+        return unit.Where(character => character != recipient)
+            .SelectMany(character => character.Items)
+            .Count(item => item.ID == "item_pitchfork") < 1;
     }
 
     static void CarryStrategicProtection(ClassicAiState state)

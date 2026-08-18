@@ -43,7 +43,7 @@ internal sealed class ClassicAiPolicy
     public float HostileTargetScore { get; init; }
     public float ExpansionEconomyScore { get; init; }
     public int MaxHumanCampDefendersToAttack { get; init; }
-    public bool TreatUnarmedLoneHumanGuardAsUndefended { get; init; }
+    public bool TreatLoneKnifeGuardAsUndefended { get; init; }
     public int CriticalGarrisonTarget { get; init; }
     public int AttackCooldownTurns { get; init; }
     public int RetaliationTurns { get; init; } = 20;
@@ -59,7 +59,7 @@ internal sealed class ClassicAiPolicy
     {
         0 => new ClassicAiPolicy { DesiredGroupSize = 2, MinimumAttackRatio = 1.35f,
             NeutralTargetScore = 690, HostileTargetScore = 430, ExpansionEconomyScore = 850,
-            MaxHumanCampDefendersToAttack = 0, TreatUnarmedLoneHumanGuardAsUndefended = true,
+            MaxHumanCampDefendersToAttack = 0, TreatLoneKnifeGuardAsUndefended = true,
             CriticalGarrisonTarget = 1, AttackCooldownTurns = 4 },
         1 => new ClassicAiPolicy { DesiredGroupSize = 3, MinimumAttackRatio = 1.05f,
             NeutralTargetScore = 770, HostileTargetScore = 560, ExpansionEconomyScore = 900,
@@ -295,7 +295,8 @@ internal static class StrategicAiPlanner
         Player player = state.Player;
         bool critical = player.Group.Any(character => character.Health < 40 || character.Food <= 3 || character.Water <= 2);
         bool safe = state.Current.IsCity || state.Current.Player == player;
-        bool neutralAllowed = state.OwnedCampCount < state.HumanCampBenchmark + state.Configuration.MaxAdvance;
+        bool neutralAllowed = !state.HasHumanPlayers ||
+            state.OwnedCampCount < state.HumanCampBenchmark + state.Configuration.MaxAdvance;
 
         return new StrategicAiObservation
         {
@@ -391,14 +392,24 @@ internal static class StrategicAiPlanner
             (character.Items.FindBestWeapon()?.DamageValue ?? 0) <= 0))
             return false;
 
+        Character[] attackers = player.Group.Where(character => !character.IsDead).ToArray();
+        if (attackers.Any(character =>
+                AiItemPool.IsFirearm(character.Items.FindBestWeapon()?.Type)) ||
+            attackers.Count(character => character.Items.FindBestWeapon()?.ID == "item_pitchfork") >
+                (state.RootGame.World.Difficulty == 0 ? 0 : 1))
+            return false;
+
         Character[] livingDefenders = target.CampNPC
             .Where(character => !character.IsDead && character.Player == target.Player)
             .ToArray();
         if (target.Player?.Type == PlayerType.Human && !state.IsRetaliatingAgainst(target.Player))
         {
             int visibleDefenders = livingDefenders.Length;
-            if (policy.TreatUnarmedLoneHumanGuardAsUndefended && visibleDefenders == 1 &&
-                (livingDefenders[0].Items.FindBestWeapon()?.DamageValue ?? 0) <= 0)
+            Item? loneGuardWeapon = visibleDefenders == 1
+                ? livingDefenders[0].Items.FindBestWeapon()
+                : null;
+            if (policy.TreatLoneKnifeGuardAsUndefended && visibleDefenders == 1 &&
+                (loneGuardWeapon == null || loneGuardWeapon.ID == "item_knife"))
                 visibleDefenders = 0;
             if (visibleDefenders > policy.MaxHumanCampDefendersToAttack)
                 return false;
