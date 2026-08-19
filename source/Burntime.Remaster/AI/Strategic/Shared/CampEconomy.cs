@@ -41,6 +41,10 @@ internal static class CampEconomy
             .Select(index => camp.Neighbors[index])
             .Count(neighbor => neighbor.Player == player) >= 2;
 
+    public static bool OpensCityAccess(Location camp) =>
+        Enumerable.Range(0, camp.Neighbors.Count)
+            .Any(index => camp.WayLengths[index] > 0 && camp.Neighbors[index].IsCity);
+
     public static int RouteSecurityValue(Location camp)
     {
         int openRoutes = Enumerable.Range(0, camp.Neighbors.Count)

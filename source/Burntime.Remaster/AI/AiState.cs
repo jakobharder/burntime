@@ -261,7 +261,8 @@ namespace Burntime.Remaster.AI
             if (!IsHome)
                 return null;
             int minimumGuards = ReinforcementTask.IsCriticalCamp(this, CurrentLocation)
-                ? criticalGarrisonTarget
+                ? ReinforcementTask.SustainableGarrisonTarget(
+                    CurrentLocation, criticalGarrisonTarget)
                 : 1;
             Character npc = CurrentLocation.CampNPC
                 .Where(character => character.Player == Player && !character.IsDead)

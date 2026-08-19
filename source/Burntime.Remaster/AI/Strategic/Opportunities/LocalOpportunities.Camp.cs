@@ -71,6 +71,9 @@ internal static partial class LocalOpportunities
 
     internal static void InstallProductionFromPool(ClassicAiState state, Location camp)
     {
+        if (state.HasSettlementPlan && ExpansionTask.ShouldReserveProductionTool(state))
+            return;
+
         string[] products = camp.ValidProductions
             .Where(production => TradeTask.NeedsProductionResult(state, camp, production.Produce.ID))
             .OrderByDescending(TradeTask.ProductionTradePriority)

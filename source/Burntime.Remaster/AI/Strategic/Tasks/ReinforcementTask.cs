@@ -60,9 +60,10 @@ internal static partial class ReinforcementTask
             {
                 Location = location,
                 Route = RouteFinder.Find(state.Player, state.Current, location),
-                Guards = CampEconomy.LivingGuardCount(location, state.Player)
+                Guards = CampEconomy.LivingGuardCount(location, state.Player),
+                Target = SustainableGarrisonTarget(location, garrisonTarget)
             })
-            .Where(candidate => candidate.Route != null && candidate.Guards < garrisonTarget &&
+            .Where(candidate => candidate.Route != null && candidate.Guards < candidate.Target &&
                 CanSupportAdditionalGuard(state, candidate.Location, candidate.Guards))
             .OrderBy(candidate => candidate.Guards)
             .ThenBy(candidate => candidate.Route.Days)
@@ -84,9 +85,9 @@ internal static partial class ReinforcementTask
                 AttackRoute = RouteFinder.Find(state.Player, location, target),
                 Sustainable = CanSupportGarrison(state, location, stagedGuardTarget)
             })
-            .Where(candidate => candidate.CurrentRoute != null && candidate.AttackRoute != null)
-            .OrderByDescending(candidate => candidate.Sustainable)
-            .ThenBy(candidate => candidate.AttackRoute!.Days)
+            .Where(candidate => candidate.CurrentRoute != null && candidate.AttackRoute != null &&
+                candidate.Sustainable)
+            .OrderBy(candidate => candidate.AttackRoute!.Days)
             .ThenByDescending(candidate => candidate.Location.Source?.Water ?? 0)
             .ThenBy(candidate => candidate.CurrentRoute!.Days)
             .Select(candidate => candidate.Location)
@@ -149,7 +150,7 @@ internal static partial class ReinforcementTask
 
     internal static bool CanSupportAdditionalGuard(ClassicAiState state, Location camp, int currentGuards)
     {
-        if (camp.Production == null)
+        if (camp.Production == null || (camp.Source?.Water ?? 0) < currentGuards + 1)
             return false;
 
         int toolCount = camp.Rooms.Sum(room => room.Items.Count(item =>
@@ -160,9 +161,12 @@ internal static partial class ReinforcementTask
         return !projected.IsCampStarving && projected.FoodPerDay >= currentGuards + 1;
     }
 
+    internal static int SustainableGarrisonTarget(Location camp, int policyTarget) =>
+        System.Math.Max(1, System.Math.Min(policyTarget, camp.Source?.Water ?? 0));
+
     static bool CanSupportGarrison(ClassicAiState state, Location camp, int guardTarget)
     {
-        if (camp.Production == null)
+        if (camp.Production == null || (camp.Source?.Water ?? 0) < guardTarget)
             return false;
 
         int toolCount = camp.Rooms.Sum(room => room.Items.Count(item =>

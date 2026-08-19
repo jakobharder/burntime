@@ -28,6 +28,10 @@ internal static partial class RecruitmentTask
         int desiredGroupSize = context.TravelGroupSize;
         Location? reinforcementCamp = ReinforcementTask.FindBestCampForReinforcement(
             state, policy.CriticalGarrisonTarget);
+        int reinforcementTarget = reinforcementCamp == null
+            ? 0
+            : ReinforcementTask.SustainableGarrisonTarget(
+                reinforcementCamp, policy.CriticalGarrisonTarget);
 
         if (!TradeTask.ShouldVisitTrader(state) &&
             player.Group.Count < desiredGroupSize &&
@@ -74,7 +78,7 @@ internal static partial class RecruitmentTask
         }
 
         return new RecruitmentNeeds(
-            desiredGroupSize, reinforcementCamp, policy.CriticalGarrisonTarget);
+            desiredGroupSize, reinforcementCamp, reinforcementTarget);
     }
 
     static RecruitmentNeeds AddAttackPreparationCandidates(
@@ -176,7 +180,8 @@ internal static partial class RecruitmentTask
             return false;
         int guards = CampEconomy.LivingGuardCount(state.Current, state.Player);
         int minimum = ReinforcementTask.IsCriticalCamp(state, state.Current)
-            ? criticalGarrisonTarget
+            ? ReinforcementTask.SustainableGarrisonTarget(
+                state.Current, criticalGarrisonTarget)
             : 1;
         return guards > minimum;
     }

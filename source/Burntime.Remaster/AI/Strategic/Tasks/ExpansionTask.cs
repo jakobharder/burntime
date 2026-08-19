@@ -21,7 +21,7 @@ internal static partial class ExpansionTask
         bool suitableCurrentClaim = IsSuitableCurrentClaim(state, context);
         bool currentCanBecomeCamp = state.CanClaim(context.Current) && suitableCurrentClaim;
         bool canClaimCurrent = currentCanBecomeCamp && state.CanStationCamp();
-        if (currentCanBecomeCamp && !state.CanStationCamp())
+        if (currentCanBecomeCamp && !state.CanStationCamp() && !state.HasSettlementPlan)
             state.SetSettlementTarget(context.Current);
         Location? target = ValidatePersistentTarget(state, context, policy);
         if (target == null && !(canClaimCurrent && state.StrategicTarget == null))
@@ -63,7 +63,9 @@ internal static partial class ExpansionTask
         bool selectedDestination = state.StrategicTarget == current;
         bool firstCamp = !HasOwnedCamp(state);
         bool securesRoute = CampEconomy.ConnectsOwnedCamps(current, state.Player);
-        if (!selectedDestination && !firstCamp && !securesRoute)
+        bool onwardWaypoint = state.HasSettlementPlan &&
+            state.StrategicTarget != null && state.StrategicTarget != current;
+        if (!selectedDestination && !firstCamp && !securesRoute && !onwardWaypoint)
             return false;
 
         Character? settler = state.SelectCampNpc();
@@ -200,7 +202,8 @@ internal static partial class ExpansionTask
         if (target.Player == null)
         {
             if (context.NeutralExpansionAllowed && state.CanClaim(target) &&
-                HasExpansionRouteSupplies(state, context, route))
+                (HasExpansionRouteSupplies(state, context, route) ||
+                    state.Player.Group.Count <= 1))
                 return target;
             state.StrategicTarget = null;
             return null;
@@ -244,8 +247,8 @@ internal static partial class ExpansionTask
                 (!hasAcceptableFirstCamp || CampEconomy.IsAcceptableFirstCamp(location)) &&
                 HasExpansionRouteSupplies(state, context, route))
             {
-                targets.Add((location, NeutralTargetScore(state, policy, location) -
-                    route.Days * 8 + Jitter()));
+                targets.Add((location, NeutralTargetScore(state, policy, location) +
+                    NeutralFrontierScore(state, location) - route.Days * 24 + Jitter()));
             }
             else if (AttackTask.HasGroupWeapon(context.Player) &&
                 AttackTask.IsHostile(location, context.Player) &&
@@ -358,6 +361,27 @@ internal static partial class ExpansionTask
     static float NeutralTargetScore(ClassicAiState state, AiPolicy policy, Location location) =>
         policy.NeutralTargetScore + CampEconomy.TerritorialValue(location) +
         (CampEconomy.ConnectsOwnedCamps(location, state.Player) ? 900 : 0);
+
+    static int NeutralFrontierScore(ClassicAiState state, Location location)
+    {
+        if (!HasOwnedCamp(state))
+            return 0;
+
+        // Expansion should normally grow outward from established territory.
+        // Rich but remote camps remain future objectives instead of pulling a
+        // young faction across the map before its local network is useful.
+        int distance = DistanceFromOwnedTerritory(state, location, maximum: 4);
+        int locality = distance switch
+        {
+            1 => 500,
+            2 => 300,
+            3 => 100,
+            4 => 0,
+            _ => -300
+        };
+        int cityAccess = CampEconomy.OpensCityAccess(location) ? 250 : 0;
+        return locality + cityAccess;
+    }
 
     static float TargetScore(ClassicAiState state, AiPolicy policy, Location? target)
     {
