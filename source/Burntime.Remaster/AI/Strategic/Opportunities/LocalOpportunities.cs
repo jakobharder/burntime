@@ -13,6 +13,8 @@ internal static partial class LocalOpportunities
         ConstructPortableEconomicUpgrade(state);
         EquipEmpire(state);
 
+        ExpansionTask.TryClaimCurrentAsLocalOpportunity(state);
+
         if (state.Current.Player == state.Player)
         {
             ProvisionGroupFromCampSurplus(state, state.Current);

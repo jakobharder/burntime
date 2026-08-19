@@ -51,6 +51,31 @@ internal static partial class ExpansionTask
             AttackTask.IsHostile(target, context.Player));
     }
 
+    public static bool TryClaimCurrentAsLocalOpportunity(ClassicAiState state)
+    {
+        AiContext context = AiContext.Create(
+            state, AiPolicy.ForDifficulty(state.RootGame.World.Difficulty));
+        Location current = context.Current;
+        if (!state.CanClaim(current) || !state.CanStationCamp() ||
+            !IsSuitableCurrentClaim(state, context))
+            return false;
+
+        bool selectedDestination = state.StrategicTarget == current;
+        bool firstCamp = !HasOwnedCamp(state);
+        bool securesRoute = CampEconomy.ConnectsOwnedCamps(current, state.Player);
+        if (!selectedDestination && !firstCamp && !securesRoute)
+            return false;
+
+        Character? settler = state.SelectCampNpc();
+        if (settler == null)
+            return false;
+
+        state.CreateCamp(settler);
+        AiTelemetry.Report(state.Player,
+            $"claimed {current.Title} as a local opportunity using {settler.Name}");
+        return true;
+    }
+
     public static void AddImmediateClaimCandidate(
         AiContext context,
         TerritorialPlan plan,
