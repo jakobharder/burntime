@@ -70,9 +70,18 @@ internal static partial class ExpansionTask
         if (settler == null)
             return false;
 
+        Location? onwardSettlement = state.HasSettlementPlan &&
+            state.StrategicTarget != current
+            ? state.StrategicTarget
+            : null;
         state.CreateCamp(settler);
+        if (onwardSettlement != null)
+            state.SetSettlementTarget(onwardSettlement);
         AiTelemetry.Report(state.Player,
-            $"claimed {current.Title} as a local opportunity using {settler.Name}");
+            onwardSettlement == null
+                ? $"claimed {current.Title} as a local opportunity using {settler.Name}"
+                : $"claimed waypoint {current.Title} using {settler.Name} while continuing toward " +
+                    onwardSettlement.Title);
         return true;
     }
 
