@@ -9,7 +9,19 @@ internal static partial class TradeTask
 {
     internal static void TradeWithTrader(ClassicAiState state, Trader trader)
     {
-        if (trader == null || trader.Items.Count == 0)
+        if (trader == null)
+            return;
+
+        bool firstExposureToday = EconomicSupport.RecordTraderExposure(state, trader);
+        bool snakeTrapAvailable = trader.Items.Any(item => item.ID == "item_snake_trap");
+        bool demandedSnakeTrapAvailable = snakeTrapAvailable && HasStrategicSnakeTrapNeed(state);
+        if (demandedSnakeTrapAvailable)
+            EconomicSupport.StartSnakeTrapCampaign(state);
+        if (firstExposureToday && snakeTrapAvailable)
+            AiTelemetry.Report(state.Player,
+                $"encountered item_snake_trap with {trader.Name}" +
+                (demandedSnakeTrapAvailable ? " for current or future camp production" : string.Empty));
+        if (trader.Items.Count == 0)
             return;
 
         HashSet<Item> soldToTrader = new();
@@ -60,6 +72,8 @@ internal static partial class TradeTask
 
             RestoreUnusedPoolAssets(state, plan.TemporaryPoolAssets.Except(plan.Offers));
             completed++;
+            if (plan.Target.ID == "item_snake_trap")
+                EconomicSupport.CompleteSnakeTrapCampaign(state);
             string action = IsStrategicPurchase(state, plan.Target) ? "traded" : "consolidated";
             AiTelemetry.Report(state.Player,
                 $"{action} {string.Join(", ", plan.Offers.Select(offer => offer.Item.ID))} for " +
@@ -142,16 +156,24 @@ internal static partial class TradeTask
         {
             bool spendReserves =
                 target.ID == "item_snake_trap" &&
-                    (HasRegionalSnakeTrapNeed(state) || HasOwnedProductionNeed(state, "item_snake")) ||
+                    HasStrategicSnakeTrapNeed(state) ||
                 AdvancesOwnedMeatTrapRecipe(state, target.ID) ||
                 IsEarlyRareProductionPurchase(state, target.ID);
+            List<TradeAsset> exceptionalPoolAssets = target.ID == "item_snake_trap" && spendReserves
+                ? state.Pool.TakeConstructionMaterials()
+                    .Select(item => new TradeAsset(null, item, true))
+                    .ToList()
+                : new List<TradeAsset>();
             List<TradeAsset> allCandidates = state.Player.Group
                 .SelectMany(character => character.Items
                     .Select(item => new TradeAsset(character.Items, item, false)))
                 .Where(asset => CanSell(state, asset.Item) ||
-                    (spendReserves && IsHighReturnLiquidReserve(asset.Item)))
+                    (spendReserves && (IsHighReturnLiquidReserve(asset.Item) ||
+                        TradeTask.ConstructionMaterials.Contains(asset.Item.ID))))
                 .Concat(temporaryPoolAssets)
-                .OrderBy(asset => asset.Item.TradeValue)
+                .Concat(exceptionalPoolAssets)
+                .OrderBy(asset => IsFullWaterContainer(asset.Item) ? 0 : 1)
+                .ThenBy(asset => asset.Item.TradeValue)
                 .ThenBy(asset => SalePriority(asset.Item))
                 .ToList();
             List<TradeAsset> offers = new();
@@ -168,17 +190,23 @@ internal static partial class TradeTask
             {
                 if (!strategicPurchase && candidate.Item.TradeValue >= target.TradeValue)
                     continue;
-                if (!spendReserves && candidate.Item.FoodValue > 0 && remainingFood - candidate.Item.FoodValue +
-                    target.FoodValue < TradeTask.DesiredPortableFood(state))
+                int foodFloor = spendReserves
+                    ? state.Player.Group.Count * 3
+                    : TradeTask.DesiredPortableFood(state);
+                if (candidate.Item.FoodValue > 0 && remainingFood - candidate.Item.FoodValue +
+                    target.FoodValue < foodFloor)
                     continue;
-                if (!spendReserves && AiItemPool.IsWaterContainer(candidate.Item.Type) &&
+                int waterFloor = spendReserves
+                    ? state.Player.Group.Count * 3
+                    : TradeTask.DesiredPortableWaterCapacity(state);
+                if (AiItemPool.IsWaterContainer(candidate.Item.Type) &&
                     remainingWaterCapacity - AiItemPool.WaterContainerCapacity(candidate.Item.Type) +
-                        AiItemPool.WaterContainerCapacity(target.Type) < TradeTask.DesiredPortableWaterCapacity(state))
+                        AiItemPool.WaterContainerCapacity(target.Type) < waterFloor)
                     continue;
                 if (spendReserves && candidate.Item.DamageValue > 0 &&
                     !AiItemPool.IsFirearm(candidate.Item.Type) && remainingMeleeWeapons <= 1)
                     continue;
-                if (TradeTask.ConstructionMaterials.Contains(candidate.Item.ID) &&
+                if (!spendReserves && TradeTask.ConstructionMaterials.Contains(candidate.Item.ID) &&
                     remainingMaterials[candidate.Item.ID] <= DesiredMaterialStock(state, candidate.Item.ID))
                     continue;
 
@@ -194,12 +222,35 @@ internal static partial class TradeTask
                     break;
             }
 
+            // Greedy accumulation can overshoot badly when the last item is
+            // valuable. Remove dispensable offers from highest value to lowest as
+            // long as the remaining bundle still meets the effective barter price.
+            // Preserve empty containers before full ones: a full container is the
+            // more useful trade asset and its cheaper empty form can be reacquired.
+            foreach (TradeAsset candidate in offers
+                .OrderBy(asset => OfferRemovalGroup(asset.Item))
+                .ThenByDescending(asset => asset.Item.TradeValue)
+                .ToArray())
+            {
+                if (offers.Count <= 1)
+                    break;
+                float withoutCandidate = offers
+                    .Where(offer => offer != candidate)
+                    .Sum(offer => offer.Item.TradeValue * TradeBenefit(state));
+                if ((int)withoutCandidate < (int)target.TradeValue)
+                    continue;
+                offers.Remove(candidate);
+                offeredValue = withoutCandidate;
+            }
+
             bool canStoreTarget = AiItemPool.Accepts(target.Type) ||
                 state.Player.Group.GetFreeSlotCount() > 0 || offers.Any(offer => !offer.FromPool);
             bool compressesCargo = strategicPurchase || offers.Count >= 2;
             if (offers.Count > 0 && compressesCargo &&
                 (int)offeredValue >= (int)target.TradeValue && canStoreTarget)
-                return new TradePlan(target, offers, temporaryPoolAssets);
+                return new TradePlan(target, offers, temporaryPoolAssets.Concat(exceptionalPoolAssets).ToList());
+
+            RestoreUnusedPoolAssets(state, exceptionalPoolAssets);
         }
 
         RestoreUnusedPoolAssets(state, temporaryPoolAssets);
@@ -216,6 +267,15 @@ internal static partial class TradeTask
     internal static bool IsHighReturnLiquidReserve(Item item) =>
         item.FoodValue > 0 || AiItemPool.IsWaterContainer(item.Type) ||
         (item.DamageValue > 0 && !AiItemPool.IsFirearm(item.Type));
+
+    static bool IsFullWaterContainer(Item item) =>
+        item.WaterValue > 0 && item.Type.Empty != null;
+
+    static bool IsEmptyWaterContainer(Item item) =>
+        item.WaterValue == 0 && item.Type.Full?.WaterValue > 0;
+
+    static int OfferRemovalGroup(Item item) =>
+        IsEmptyWaterContainer(item) ? 0 : IsFullWaterContainer(item) ? 2 : 1;
 
     internal static bool AdvancesOwnedMeatTrapRecipe(ClassicAiState state, string itemId)
     {
@@ -242,6 +302,9 @@ internal static partial class TradeTask
         .Where(camp => NeedsProductionResult(state, camp, "item_snake"))
         .Select(camp => RouteFinder.Find(state.Player, state.Current, camp))
         .Any(route => route != null && route.Days <= 7);
+
+    internal static bool HasStrategicSnakeTrapNeed(ClassicAiState state) =>
+        HasPotentialProductionNeed(state, "item_snake");
 
     internal static List<TradeAsset> TakeSurplusPoolAssets(ClassicAiState state)
     {
@@ -282,7 +345,12 @@ internal static partial class TradeTask
     internal static void RestoreUnusedPoolAssets(ClassicAiState state, IEnumerable<TradeAsset> assets)
     {
         foreach (TradeAsset asset in assets.Where(asset => asset.FromPool))
-            state.Pool.Insert(asset.Item);
+        {
+            if (TradeTask.ConstructionMaterials.Contains(asset.Item.ID))
+                state.Pool.TryReserveConstructionMaterial(asset.Item);
+            else
+                state.Pool.Insert(asset.Item);
+        }
     }
 
     internal sealed record TradeAsset(IItemCollection Owner, Item Item, bool FromPool);

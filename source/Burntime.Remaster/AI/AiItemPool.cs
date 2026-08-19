@@ -320,6 +320,21 @@ namespace Burntime.Remaster.AI
             return true;
         }
 
+        /// <summary>
+        /// Temporarily materialize construction reserves for an exceptional trade.
+        /// The caller must return every unused item through TryReserveConstructionMaterial.
+        /// </summary>
+        internal System.Collections.Generic.IEnumerable<Item> TakeConstructionMaterials()
+        {
+            foreach (PoolItem item in items
+                .Where(item => item.Count > 0 && IsConstructionMaterial(item.Type.ID))
+                .ToArray())
+            {
+                while (item.Count > 0)
+                    yield return Take(item);
+            }
+        }
+
         public bool HasHigherValueTrap(float productionValue, params string[] availableProducts) => items
             .Any(item => item.Count > 0 && item.Type.Production != null &&
                 availableProducts.Contains(item.Type.Production.Produce.ID) &&

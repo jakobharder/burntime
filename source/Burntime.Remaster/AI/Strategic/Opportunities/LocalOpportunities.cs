@@ -8,6 +8,7 @@ internal static partial class LocalOpportunities
     {
         UseLocalWaterSource(state);
         RemoveAdviceItems(state);
+        EconomicSupport.ApplySlumpSupport(state);
         RefillConstructionReserve(state);
         ConstructPortableEconomicUpgrade(state);
         EquipEmpire(state);

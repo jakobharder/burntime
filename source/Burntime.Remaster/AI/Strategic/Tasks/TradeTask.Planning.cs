@@ -52,7 +52,8 @@ internal static partial class TradeTask
             {
                 Location = location,
                 Route = RouteFinder.Find(state.Player, state.Current, location),
-                AssortmentScore = TraderAssortmentOpportunityScore(state, location.LocalTrader)
+                AssortmentScore = TraderAssortmentOpportunityScore(state, location.LocalTrader) +
+                    EconomicSupport.TraderNoveltyScore(state, location.LocalTrader)
             })
             .Where(candidate => candidate.Route != null && candidate.AssortmentScore > 0)
             .OrderByDescending(candidate => candidate.AssortmentScore - candidate.Route.Days * 5)
@@ -76,7 +77,11 @@ internal static partial class TradeTask
 
     internal static float TraderAssortmentOpportunityScore(ClassicAiState state, Trader trader)
     {
-        float[] opportunities = trader.GetAssortment()
+        ItemType[] assortment = trader.GetAssortment()
+            .GroupBy(type => type.ID)
+            .Select(group => group.First())
+            .ToArray();
+        float[] opportunities = assortment
             .Select(type => TradeTask.AssortmentShoppingPriority(state, type))
             .Where(priority => priority > 0)
             .OrderByDescending(priority => priority)
@@ -84,7 +89,20 @@ internal static partial class TradeTask
             .ToArray();
         if (opportunities.Length == 0)
             return 0;
-        return opportunities[0] + opportunities.Skip(1).Sum() * 0.25f;
+
+        // Stock is random, so this is an assortment-probability preference rather
+        // than a search for a known item. Smaller assortments containing several
+        // currently useful trap inputs are more likely to advance the recipe.
+        string[] meatInputs = { "item_spring", "item_tin", "item_wire" };
+        int usefulMeatInputs = assortment.Count(type => meatInputs.Contains(type.ID) &&
+            ConstructionMaterialPriority(state, type.ID) > 0);
+        float materialLikelihood = usefulMeatInputs * 600f / Math.Max(1, assortment.Length);
+        float snakeLikelihood = assortment.Any(type => type.ID == "item_snake_trap") &&
+            HasStrategicSnakeTrapNeed(state)
+                ? 1000f / Math.Max(1, assortment.Length)
+                : 0;
+        return opportunities[0] + opportunities.Skip(1).Sum() * 0.25f +
+            materialLikelihood + snakeLikelihood;
     }
 
     public static bool ShouldContinueTrading(ClassicAiState state)
@@ -100,10 +118,15 @@ internal static partial class TradeTask
 
         traders.AddRange(state.Current.Characters
             .OfType<Trader>()
-            .Where(trader => !trader.IsDead && trader.Items.Count > 0)
-            .OrderByDescending(trader => TraderOpportunityScore(state, trader))
-            .Where(trader => !traders.Contains(trader)));
-        return traders;
+            .Where(trader => !trader.IsDead && trader.Items.Count > 0));
+
+        // Inspect every trader's current stock before executing the first trade.
+        // This prevents a routine local purchase from consuming the capital needed
+        // for a rarer, higher-return item carried by a roaming trader at the same
+        // location.
+        return traders
+            .Distinct()
+            .OrderByDescending(trader => TraderOpportunityScore(state, trader));
     }
 
     internal static int CargoSpaceReserve(ClassicAiState state) => 0;
@@ -154,31 +177,24 @@ internal static partial class TradeTask
             capital.Sum(item => item.TradeValue) >= MinimumTradeValue;
     }
 
-    internal static bool HasPreparedTradeCargo(ClassicAiState state) =>
-        HasSubstantialTradeCargo(state) || HasAffordableHighReturnTradeCargo(state);
+    internal static bool HasPreparedTradeCargo(ClassicAiState state)
+    {
+        bool upgradeCampaign = ReachableHighReturnPurchaseTypes(state).Any();
+        return upgradeCampaign
+            ? HasAffordableHighReturnTradeCargo(state)
+            : HasSubstantialTradeCargo(state);
+    }
 
     internal static bool HasAffordableHighReturnTradeCargo(ClassicAiState state)
     {
-        Item[] assets = state.Player.Group.SelectMany(character => character.Items)
-            .Where(item => TradeTask.CanSell(state, item) || TradeTask.IsHighReturnLiquidReserve(item))
-            .ToArray();
-        if (assets.Length == 0)
-            return false;
-
-        int meleeWeapons = assets.Count(item =>
-            item.DamageValue > 0 && !AiItemPool.IsFirearm(item.Type));
-        float spendableValue = assets
-            .Where(item => item.DamageValue == 0 || AiItemPool.IsFirearm(item.Type))
-            .Sum(item => item.TradeValue) +
-            assets.Where(item => item.DamageValue > 0 && !AiItemPool.IsFirearm(item.Type))
-                .OrderBy(item => item.TradeValue)
-                .Take(System.Math.Max(0, meleeWeapons - 1))
-                .Sum(item => item.TradeValue);
-        float buyingPower = spendableValue * TradeTask.TradeBenefit(state);
+        float buyingPower = SurvivalSafeEconomicCapital(state) * TradeTask.TradeBenefit(state);
         if (buyingPower <= 0)
             return false;
+        return ReachableHighReturnPurchaseTypes(state).Any(type => type.TradeValue <= buyingPower);
+    }
 
-        return state.RootGame.World.Locations
+    static IEnumerable<ItemType> ReachableHighReturnPurchaseTypes(ClassicAiState state) =>
+        state.RootGame.World.Locations
             .Where(city => city.IsCity && city != state.Current && city.LocalTrader != null &&
                 RouteFinder.Find(state.Player, state.Current, city) != null)
             .SelectMany(city =>
@@ -186,7 +202,47 @@ internal static partial class TradeTask
                 Trader trader = city.LocalTrader;
                 return trader.GetAssortment();
             })
-            .Any(type => IsHighReturnReservePurchase(state, type) && type.TradeValue <= buyingPower);
+            .Where(type => IsHighReturnReservePurchase(state, type))
+            .GroupBy(type => type.ID)
+            .Select(group => group.First());
+
+    static float SurvivalSafeEconomicCapital(ClassicAiState state)
+    {
+        Item[] inventory = state.Player.Group.SelectMany(character => character.Items).ToArray();
+        HashSet<Item> spendable = inventory.Where(item => CanSell(state, item)).ToHashSet();
+        int food = PortableFoodSupply(state);
+        int foodFloor = state.Player.Group.Count * 3;
+        foreach (Item item in inventory.Where(item => item.FoodValue > 0 && !spendable.Contains(item))
+            .OrderBy(item => item.TradeValue))
+        {
+            if (food - item.FoodValue < foodFloor)
+                continue;
+            spendable.Add(item);
+            food -= item.FoodValue;
+        }
+
+        int water = PortableWaterSupply(state);
+        int waterFloor = state.Player.Group.Count * 3;
+        foreach (Item item in inventory.Where(item => AiItemPool.IsWaterContainer(item.Type) &&
+            !spendable.Contains(item)).OrderBy(item => item.TradeValue))
+        {
+            int capacity = AiItemPool.WaterContainerCapacity(item.Type);
+            if (water - capacity < waterFloor)
+                continue;
+            spendable.Add(item);
+            water -= capacity;
+        }
+
+        foreach (Item item in inventory.Where(item => ConstructionMaterials.Contains(item.ID)))
+            spendable.Add(item);
+
+        Item[] protectedMelee = inventory.Where(item => item.DamageValue > 0 && !AiItemPool.IsFirearm(item.Type) &&
+                !spendable.Contains(item))
+            .OrderBy(item => item.TradeValue)
+            .ToArray();
+        foreach (Item item in protectedMelee.Take(Math.Max(0, protectedMelee.Length - 1)))
+            spendable.Add(item);
+        return spendable.Sum(item => item.TradeValue);
     }
 
     internal static bool CityHasHighReturnReservePurchase(ClassicAiState state, Location city)
@@ -197,8 +253,7 @@ internal static partial class TradeTask
     }
 
     internal static bool IsHighReturnReservePurchase(ClassicAiState state, ItemType type) =>
-        type.ID == "item_snake_trap" &&
-            (TradeTask.HasRegionalSnakeTrapNeed(state) || TradeTask.HasOwnedProductionNeed(state, "item_snake")) ||
+        type.ID == "item_snake_trap" && TradeTask.HasStrategicSnakeTrapNeed(state) ||
         TradeTask.AdvancesOwnedMeatTrapRecipe(state, type.ID) ||
         TradeTask.IsEarlyRareProductionPurchase(state, type.ID);
 

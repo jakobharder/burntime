@@ -315,8 +315,14 @@ public static class HeadlessSimulation
             string preparedCityCargo = FormatCargoFill(result.PreparedCityCargo, result.PreparedCityCapacity);
             string incidentalCityCargo = FormatCargoFill(result.IncidentalCityCargo, result.IncidentalCityCapacity);
             string roamingCargo = FormatCargoFill(result.RoamingCargo, result.RoamingCapacity);
+            string slumpComponents = result.SlumpComponents.Count == 0
+                ? "none"
+                : string.Join(", ", result.SlumpComponents.OrderBy(entry => entry.Key)
+                    .Select(entry => $"{entry.Key} x{entry.Value}"));
             report.AppendLine($"- {PlayerLabel(player)}: sustainable camp income " +
                 $"{sustainableIncome:0.0} trade value/day; first advanced trap turn {firstTrap}; " +
+                $"snake-trap sightings/purchases {result.SnakeTrapEncounters}/{result.SnakeTrapPurchases}; " +
+                $"25-turn slump components {slumpComponents}; " +
                 $"prepared city barter arrivals {result.PreparedCityVisits} at {preparedCityCargo} cargo; " +
                 $"incidental city barter visits {result.IncidentalCityVisits} at {incidentalCityCargo} cargo; " +
                 $"roaming barter encounters {result.RoamingVisits} at {roamingCargo} cargo; " +
@@ -436,6 +442,8 @@ public static class HeadlessSimulation
             @"^(traded|consolidated).*\(value (\d+) -> (\d+),", RegexOptions.Compiled);
         static readonly Regex CollectionPattern = new(
             @"^collected .*\(trade value (\d+)\)$", RegexOptions.Compiled);
+        static readonly Regex SlumpSupportPattern = new(
+            @"^economic slump support generated (\S+) ", RegexOptions.Compiled);
 
         readonly ClassicGame game;
         readonly Dictionary<Player, PlayerEconomyMetrics> players;
@@ -451,6 +459,18 @@ public static class HeadlessSimulation
         public void Observe(Player player, int turn, string message)
         {
             PlayerEconomyMetrics result = players[player];
+            if (message.StartsWith("encountered item_snake_trap"))
+                result.SnakeTrapEncounters++;
+            if (message.StartsWith("traded") && message.Contains(" for item_snake_trap "))
+                result.SnakeTrapPurchases++;
+
+            Match slumpSupport = SlumpSupportPattern.Match(message);
+            if (slumpSupport.Success)
+            {
+                string component = slumpSupport.Groups[1].Value;
+                result.SlumpComponents[component] = result.SlumpComponents.GetValueOrDefault(component) + 1;
+            }
+
             if (result.FirstAdvancedTrapTurn == null &&
                 (message.Contains("item_trap") || message.Contains("item_rat_trap") ||
                     message.Contains("item_snake_trap")) &&
@@ -508,6 +528,9 @@ public static class HeadlessSimulation
     sealed class PlayerEconomyMetrics
     {
         public int? FirstAdvancedTrapTurn;
+        public int SnakeTrapEncounters;
+        public int SnakeTrapPurchases;
+        public readonly Dictionary<string, int> SlumpComponents = new();
         public int PreparedCityVisits;
         public int PreparedCityCargo;
         public int PreparedCityCapacity;

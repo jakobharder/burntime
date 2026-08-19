@@ -19,6 +19,8 @@ internal static partial class TradeTask
         // already safe and reachable, gathering and trading must not postpone it.
         bool economyGrowthNeeded = ExpansionTask.ShouldPrioritizeEconomicGrowth(state);
         float improvementReturn = EconomicReturn.BestEmpireImprovement(state);
+        bool fundedSnakeTrapCampaign = EconomicSupport.IsSavingForSnakeTrap(state) &&
+            TradeTask.HasAffordableHighReturnTradeCargo(state);
         // Missing productive capacity matters, but an uncertain trader assortment
         // must not outrank a strong reachable camp by itself. Finished equipment
         // and complete recipes receive the larger, actionable delivery bonus.
@@ -46,6 +48,8 @@ internal static partial class TradeTask
             float tradeScore = System.Math.Min(preparedEconomyScore,
                 expansionNeedsEquipment ? policy.ExpansionEconomyScore : earlyEconomy ? 880 : 720) +
                 returnBonus;
+            if (fundedSnakeTrapCampaign)
+                tradeScore = System.Math.Max(tradeScore, 1850);
             if (TradeTask.ShouldReduceTradeCaravan(state))
             {
                 candidates.Add(new AiDecision(

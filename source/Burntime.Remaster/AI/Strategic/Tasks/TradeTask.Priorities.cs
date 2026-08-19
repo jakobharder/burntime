@@ -12,12 +12,18 @@ internal static partial class TradeTask
         bool earlyEconomy = state.OwnedCampCount < 3;
         bool productionEconomyNeeded = ExpansionTask.ShouldPrioritizeEconomicGrowth(state);
         bool productionUpgradeNeeded = EconomicReturn.BestEmpireProductionImprovement(state) > 0.01f;
+        bool firstAdvancedTrapNeeded = !EconomicSupport.HasAdvancedTrap(state);
+        if (item.ID == "item_snake_trap" && HasStrategicSnakeTrapNeed(state))
+            return 5000;
+        if (EconomicSupport.IsSavingForSnakeTrap(state) && item.FoodValue == 0 &&
+            !AiItemPool.IsWaterContainer(item.Type))
+            return 0;
         if (item.Type.Production != null)
         {
             int ownedProductionDemand = MissingProductionToolCount(
                 state, item.Type.Production.Produce.ID);
             if (ownedProductionDemand > 0)
-                return 1700 + ownedProductionDemand * 100 +
+                return 1700 + (firstAdvancedTrapNeeded ? 500 : 0) + ownedProductionDemand * 100 +
                     ProductionTradePriority(item.Type.Production) +
                     EconomicReturn.ProductionToolReturn(state, item.Type.Production) * 120;
         }
@@ -36,7 +42,7 @@ internal static partial class TradeTask
         // knife or pump must not postpone a nearly complete production upgrade.
         float materialPriority = ConstructionMaterialPriority(state, item.ID);
         if (materialPriority > 0)
-            return materialPriority + item.TradeValue;
+            return materialPriority + (firstAdvancedTrapNeeded ? 300 : 0) + item.TradeValue;
 
         if (item.DamageValue > 0 && !AiItemPool.IsFirearm(item.Type) && NeedsWeapons(state))
             return 920 + item.DamageValue;
@@ -80,12 +86,18 @@ internal static partial class TradeTask
         bool earlyEconomy = state.OwnedCampCount < 3;
         bool productionEconomyNeeded = ExpansionTask.ShouldPrioritizeEconomicGrowth(state);
         bool productionUpgradeNeeded = EconomicReturn.BestEmpireProductionImprovement(state) > 0.01f;
+        bool firstAdvancedTrapNeeded = !EconomicSupport.HasAdvancedTrap(state);
+        if (type.ID == "item_snake_trap" && HasStrategicSnakeTrapNeed(state))
+            return 5000;
+        if (EconomicSupport.IsSavingForSnakeTrap(state) && type.FoodValue == 0 &&
+            !AiItemPool.IsWaterContainer(type))
+            return 0;
         if (type.Production != null)
         {
             int ownedProductionDemand = MissingProductionToolCount(
                 state, type.Production.Produce.ID);
             if (ownedProductionDemand > 0)
-                return 1700 + ownedProductionDemand * 100 +
+                return 1700 + (firstAdvancedTrapNeeded ? 500 : 0) + ownedProductionDemand * 100 +
                     ProductionTradePriority(type.Production) +
                     EconomicReturn.ProductionToolReturn(state, type.Production) * 120;
         }
@@ -98,7 +110,7 @@ internal static partial class TradeTask
 
         float materialPriority = ConstructionMaterialPriority(state, type.ID);
         if (materialPriority > 0)
-            return materialPriority + type.TradeValue;
+            return materialPriority + (firstAdvancedTrapNeeded ? 300 : 0) + type.TradeValue;
         if (type.DamageValue > 0 && !AiItemPool.IsFirearm(type) && NeedsWeapons(state))
             return 920 + type.DamageValue;
         if (AiItemPool.IsHazardProtection(type) &&
