@@ -50,7 +50,7 @@ internal static partial class TradeTask
                 returnBonus;
             if (fundedSnakeTrapCampaign)
                 tradeScore = System.Math.Max(tradeScore, 1850);
-            if (TradeTask.ShouldReduceTradeCaravan(state))
+            if (!preparingAttack && TradeTask.ShouldReduceTradeCaravan(state))
             {
                 candidates.Add(new AiDecision(
                     AiAction.StationTradeFollower, tradeScore + 20, context.Current,

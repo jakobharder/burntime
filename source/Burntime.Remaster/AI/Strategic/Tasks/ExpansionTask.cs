@@ -28,7 +28,17 @@ internal static partial class ExpansionTask
         {
             target = SelectTerritorialTarget(state, context, policy);
             if (AttackTask.IsHostile(target, context.Player))
+            {
+                int eliminationBonus = TerritorialEliminationBonus(state, target!);
+                if (eliminationBonus > 0)
+                {
+                    int remainingCamps = CountOwnedCamps(state, target!.Player!);
+                    AiTelemetry.Report(context.Player,
+                        $"prioritized territorial elimination of {target.Player!.Name}: " +
+                        $"{remainingCamps} nearby camp{(remainingCamps == 1 ? "" : "s")} remain");
+                }
                 state.StartAttackPlan(target!, policy);
+            }
             else
                 state.SetSettlementTarget(target);
         }
@@ -213,12 +223,71 @@ internal static partial class ExpansionTask
                     state.WasRecentlyContested(location))
                     ? policy.StrategicHostileTargetBonus
                     : 0;
-                targets.Add((location, policy.HostileTargetScore + weakness + strategicBonus -
-                    route.Days * 6 + Jitter()));
+                float eliminationBonus = TerritorialEliminationBonus(state, location);
+                targets.Add((location, policy.HostileTargetScore + weakness + strategicBonus +
+                    eliminationBonus - route.Days * 6 + Jitter()));
             }
         }
 
         return targets.OrderByDescending(target => target.Score).FirstOrDefault().Location;
+    }
+
+    static int TerritorialEliminationBonus(ClassicAiState state, Location target)
+    {
+        Player? opponent = target.Player;
+        if (opponent == null || opponent == state.Player || opponent.IsDead)
+            return 0;
+
+        int remainingCamps = CountOwnedCamps(state, opponent);
+        if (remainingCamps is < 1 or > 2)
+            return 0;
+
+        int frontierDistance = DistanceFromOwnedTerritory(state, target, maximum: 2);
+        return (remainingCamps, frontierDistance) switch
+        {
+            (1, 1) => 650,
+            (1, 2) => 400,
+            (2, 1) => 300,
+            (2, 2) => 150,
+            _ => 0
+        };
+    }
+
+    static int CountOwnedCamps(ClassicAiState state, Player player) =>
+        state.RootGame.World.Locations.Count(location => location.Player == player);
+
+    static int DistanceFromOwnedTerritory(
+        ClassicAiState state,
+        Location target,
+        int maximum)
+    {
+        Queue<(Location Location, int Distance)> queue = new();
+        HashSet<Location> visited = new();
+        foreach (Location camp in state.RootGame.World.Locations.Where(location =>
+            location.Player == state.Player))
+        {
+            queue.Enqueue((camp, 0));
+            visited.Add(camp);
+        }
+
+        while (queue.Count > 0)
+        {
+            (Location location, int distance) = queue.Dequeue();
+            if (distance >= maximum)
+                continue;
+            for (int index = 0; index < location.Neighbors.Count; index++)
+            {
+                if (location.WayLengths[index] <= 0)
+                    continue;
+                Location neighbor = location.Neighbors[index];
+                int neighborDistance = distance + 1;
+                if (neighbor == target)
+                    return neighborDistance;
+                if (visited.Add(neighbor))
+                    queue.Enqueue((neighbor, neighborDistance));
+            }
+        }
+        return int.MaxValue;
     }
 
     static bool IsSuitableCurrentClaim(ClassicAiState state, AiContext context)
