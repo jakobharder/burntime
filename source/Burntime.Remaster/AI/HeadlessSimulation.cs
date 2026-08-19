@@ -53,7 +53,7 @@ public static class HeadlessSimulation
         Player? winner = null;
         int activeTurn = 0;
         EconomyMetrics economy = new(game);
-        StrategicAiTelemetry.Sink = (eventPlayer, message) =>
+        AiTelemetry.Sink = (eventPlayer, message) =>
         {
             events.Add($"Turn {activeTurn}: {PlayerLabel(eventPlayer)} {message}.");
             economy.Observe(eventPlayer, activeTurn, message);
@@ -102,7 +102,7 @@ public static class HeadlessSimulation
         }
         finally
         {
-            StrategicAiTelemetry.Sink = null;
+            AiTelemetry.Sink = null;
         }
 
         return BuildReport(game, options, completedTurns, winner, events, economy);
@@ -492,7 +492,7 @@ public static class HeadlessSimulation
         public void RecordCappedCampTurn()
         {
             foreach (Location camp in game.World.Locations.Where(location =>
-                location.Player != null && StrategicAiEconomy.IsFoodStockCapped(location)))
+                location.Player != null && CampEconomy.IsFoodStockCapped(location)))
                 players[camp.Player].CappedCampTurns++;
         }
     }

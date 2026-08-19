@@ -1,0 +1,135 @@
+using System.Collections.Generic;
+using System.Linq;
+using Burntime.Remaster.Logic;
+
+namespace Burntime.Remaster.AI;
+
+internal static class StrategicCombatResolver
+{
+    const int MaxRounds = 100;
+
+    public static void Resolve(ClassicAiState state)
+    {
+        Player attacker = state.Player;
+        Location location = state.Current;
+        Player? defenderOwner = location.Player;
+        if (defenderOwner == null || defenderOwner == attacker || location.IsCity)
+        {
+            state.StrategicTarget = null;
+            return;
+        }
+
+        List<Character> originalDefenders = location.CampNPC
+            .Where(character => character.Player == defenderOwner && !character.IsDead)
+            .ToList();
+        List<Character> originalAttackers = attacker.Group.Where(character => !character.IsDead).ToList();
+        Dictionary<Character, Item[]> carriedBeforeCombat = originalAttackers
+            .ToDictionary(character => character, character => character.Items.ToArray());
+        float initialAttackerStrength = CombatStrength.Attacker(attacker);
+        float initialDefenderStrength = CombatStrength.AssessedDefenders(
+            location, AiPolicy.ForDifficulty(state.RootGame.World.Difficulty));
+        AiTelemetry.Report(attacker,
+            $"attacks {defenderOwner.Name}'s camp at {location.Title}: " +
+            $"{attacker.Group.Count} attackers against {originalDefenders.Count} defenders");
+
+        for (int round = 1; round <= MaxRounds; round++)
+        {
+            List<Character> defenders = originalDefenders.Where(character => !character.IsDead).ToList();
+            if (defenders.Count == 0)
+                break;
+
+            if (!attacker.Group.Any(character => character != attacker.Character && !character.IsDead))
+                break;
+
+            foreach (Character fighter in attacker.Group.Where(character => !character.IsDead).ToArray())
+            {
+                Character? target = defenders.Where(character => !character.IsDead)
+                    .OrderBy(character => character.Health)
+                    .FirstOrDefault();
+                if (target == null)
+                    break;
+                DealDamage(fighter, target);
+            }
+
+            defenders = originalDefenders.Where(character => !character.IsDead).ToList();
+            foreach (Character fighter in defenders)
+            {
+                Character? target = attacker.Group
+                    .Where(character => !character.IsDead && character != attacker.Character)
+                    .OrderBy(character => character.Health)
+                    .FirstOrDefault();
+                if (target == null)
+                    break;
+                DealDamage(fighter, target);
+            }
+        }
+
+        foreach (Character casualty in originalDefenders.Where(character => character.IsDead))
+            AiTelemetry.Report(attacker, $"defeated defender {casualty.Name} at {location.Title}");
+        foreach (Character casualty in originalAttackers.Where(character => character.IsDead && character != attacker.Character))
+            AiTelemetry.Report(attacker, $"lost follower {casualty.Name} in the attack on {location.Title}");
+
+        Item[] ownDrops = originalAttackers
+            .Where(character => character.IsDead && character != attacker.Character)
+            .SelectMany(character => carriedBeforeCombat[character])
+            .ToArray();
+        state.CollectCombatLoot(ownDrops);
+
+        bool defendersDefeated = originalDefenders.All(character => character.IsDead);
+        if (defendersDefeated)
+        {
+            Character? guard = attacker.Group
+                .Where(character => character != attacker.Character && !character.IsDead)
+                .OrderBy(character => character.AttackValue + character.DefenseValue)
+                .FirstOrDefault();
+
+            location.Player = null;
+            if (guard != null)
+            {
+                state.CreateCamp(guard);
+                state.MarkRecentlyCaptured(location, AiPolicy.ForDifficulty(
+                    state.RootGame.World.Difficulty));
+                AiTelemetry.Report(attacker, $"captured {location.Title} and stationed {guard.Name}");
+            }
+            else
+            {
+                state.StrategicTarget = null;
+                state.ResetWait();
+                AiTelemetry.Report(attacker,
+                    $"won at {location.Title}, but it remains neutral without a surviving follower");
+            }
+        }
+        else
+        {
+            state.StrategicTarget = null;
+            state.RecordFailedAttack(location, originalAttackers.Count, initialAttackerStrength,
+                initialDefenderStrength, AiPolicy.ForDifficulty(state.RootGame.World.Difficulty));
+            Location? safeLocation = StrategicAi.FindNearestLogistics(state, requireReachable: true);
+            RouteFinder.Route? safeRoute = safeLocation == null
+                ? null
+                : RouteFinder.Find(attacker, location, safeLocation);
+            Location? retreat = safeRoute?.NextStep ?? attacker.PreviousLocation;
+            if (retreat != null && attacker.CanTravel(location, retreat))
+            {
+                attacker.Travel(retreat);
+                AiTelemetry.Report(attacker,
+                    $"retreated from {location.Title} toward " +
+                    $"{safeLocation?.Title ?? retreat.Title} via {retreat.Title} before risking the leader");
+            }
+            else
+            {
+                AiTelemetry.Report(attacker,
+                    $"failed to defeat {location.Title}'s defenders; leader survived");
+            }
+        }
+    }
+
+    static void DealDamage(Character attacker, Character defender)
+    {
+        int attack = attacker.PrepareStrategicAttack();
+        float defense = defender.PrepareStrategicDefense();
+        float randomFactor = 0.85f + (float)Burntime.Platform.Math.Random.NextDouble() * 0.30f;
+        int damage = (int)System.Math.Max(1, (attack - defense) * randomFactor);
+        defender.Health -= damage;
+    }
+}

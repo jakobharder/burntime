@@ -283,8 +283,16 @@ namespace Burntime.Remaster.AI
             .Where(item => item.Count > 0 && IsWaterContainer(item.Type))
             .Sum(item => item.Count);
 
+        public int TotalWaterContainerCapacity => items
+            .Where(item => item.Count > 0 && IsWaterContainer(item.Type))
+            .Sum(item => item.Count * AiItemPool.WaterContainerCapacity(item.Type));
+
         public int FirearmCount => items
             .Where(item => item.Count > 0 && IsFirearm(item.Type))
+            .Sum(item => item.Count);
+
+        public int MeleeWeaponCount => items
+            .Where(item => item.Count > 0 && item.Type.DamageValue > 0 && !IsFirearm(item.Type))
             .Sum(item => item.Count);
 
         public int BestWaterContainerCapacity => items
