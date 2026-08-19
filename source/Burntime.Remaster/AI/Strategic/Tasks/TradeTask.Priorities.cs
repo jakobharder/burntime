@@ -11,13 +11,15 @@ internal static partial class TradeTask
     {
         bool earlyEconomy = state.OwnedCampCount < 3;
         bool productionEconomyNeeded = ExpansionTask.ShouldPrioritizeEconomicGrowth(state);
+        bool productionUpgradeNeeded = EconomicReturn.BestEmpireProductionImprovement(state) > 0.01f;
         if (item.Type.Production != null)
         {
             int ownedProductionDemand = MissingProductionToolCount(
                 state, item.Type.Production.Produce.ID);
             if (ownedProductionDemand > 0)
                 return 1700 + ownedProductionDemand * 100 +
-                    ProductionTradePriority(item.Type.Production);
+                    ProductionTradePriority(item.Type.Production) +
+                    EconomicReturn.ProductionToolReturn(state, item.Type.Production) * 120;
         }
         if (CanPrepareProductionInAdvance(state) && ExpansionTask.NeedsExpansionTool(state) &&
             item.Type.Production != null &&
@@ -43,9 +45,10 @@ internal static partial class TradeTask
             return (NeedsDangerProtection(state, item.Type) ? 900 : productionEconomyNeeded ? 560 : 800) +
                 item.TradeValue;
         if (IsPump(item) && NeedsAnyPump(state) &&
-            (!productionEconomyNeeded || NeedsCriticalPump(state)))
-            return (productionEconomyNeeded ? 540 : earlyEconomy ? 780 : 720) +
-                (item.ID == "item_industrial_pump" ? 20 : 0);
+            (!productionUpgradeNeeded || NeedsCriticalPump(state)))
+            return (productionUpgradeNeeded ? 540 : earlyEconomy ? 780 : 720) +
+                (item.ID == "item_industrial_pump" ? 20 : 0) +
+                EconomicReturn.BestEmpireImprovement(state) * 100;
 
         int portableFood = TradeTask.PortableFoodSupply(state);
         if (item.FoodValue > 0 && portableFood < TradeTask.DesiredPortableFood(state))
@@ -76,13 +79,15 @@ internal static partial class TradeTask
     {
         bool earlyEconomy = state.OwnedCampCount < 3;
         bool productionEconomyNeeded = ExpansionTask.ShouldPrioritizeEconomicGrowth(state);
+        bool productionUpgradeNeeded = EconomicReturn.BestEmpireProductionImprovement(state) > 0.01f;
         if (type.Production != null)
         {
             int ownedProductionDemand = MissingProductionToolCount(
                 state, type.Production.Produce.ID);
             if (ownedProductionDemand > 0)
                 return 1700 + ownedProductionDemand * 100 +
-                    ProductionTradePriority(type.Production);
+                    ProductionTradePriority(type.Production) +
+                    EconomicReturn.ProductionToolReturn(state, type.Production) * 120;
         }
         if (CanPrepareProductionInAdvance(state) && ExpansionTask.NeedsExpansionTool(state) &&
             type.Production != null &&
@@ -101,9 +106,10 @@ internal static partial class TradeTask
             return (NeedsDangerProtection(state, type) ? 900 : productionEconomyNeeded ? 560 : 800) +
                 type.TradeValue;
         if (IsPump(type) && NeedsAnyPump(state) &&
-            (!productionEconomyNeeded || NeedsCriticalPump(state)))
-            return (productionEconomyNeeded ? 540 : earlyEconomy ? 780 : 720) +
-                (type.ID == "item_industrial_pump" ? 20 : 0);
+            (!productionUpgradeNeeded || NeedsCriticalPump(state)))
+            return (productionUpgradeNeeded ? 540 : earlyEconomy ? 780 : 720) +
+                (type.ID == "item_industrial_pump" ? 20 : 0) +
+                EconomicReturn.BestEmpireImprovement(state) * 100;
         if (type.FoodValue > 0 && TradeTask.PortableFoodSupply(state) < TradeTask.DesiredPortableFood(state))
             return 900 + type.FoodValue * 12 + type.TradeValue;
         if (AiItemPool.IsWaterContainer(type) && NeedsBetterWaterContainers(state, type))

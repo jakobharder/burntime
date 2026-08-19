@@ -43,6 +43,11 @@ internal static class StrategicAi
                     FindNearestLogistics(state, requireReachable: true) ?? FindNearestLogistics(state),
                     1050, "seek emergency supplies");
             }
+
+            // Survival is a hard constraint. Do not allow a lucrative trade,
+            // settlement, or attack score to override recovery or retreat.
+            if (candidates.Count > 0)
+                return SelectAndReport(player, candidates);
         }
 
         TerritorialPlan territory = ExpansionTask.CreatePlan(state, observation, policy);
@@ -57,11 +62,13 @@ internal static class StrategicAi
 
         if (state.NeedsCampImprovement())
         {
+            float economicGain = System.Math.Max(0,
+                EconomicReturn.MarginalCampImprovement(state, observation.Current));
             candidates.Add(new AiDecision(
                 AiAction.ImproveCamp,
-                500,
+                650 + economicGain * 180,
                 observation.Current,
-                Reason: "owned camp lacks compatible production equipment"));
+                Reason: $"improve sustainable camp income by about {economicGain:0.0} value/day"));
         }
 
         TradeTask.AddCandidates(

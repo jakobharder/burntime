@@ -308,11 +308,15 @@ public static class HeadlessSimulation
         foreach (Player player in game.World.Players)
         {
             PlayerEconomyMetrics result = economy[player];
+            float sustainableIncome = player.AiState is ClassicAiState ai
+                ? EconomicReturn.SustainableEmpireIncome(ai)
+                : 0;
             string firstTrap = result.FirstAdvancedTrapTurn?.ToString() ?? "none";
             string preparedCityCargo = FormatCargoFill(result.PreparedCityCargo, result.PreparedCityCapacity);
             string incidentalCityCargo = FormatCargoFill(result.IncidentalCityCargo, result.IncidentalCityCapacity);
             string roamingCargo = FormatCargoFill(result.RoamingCargo, result.RoamingCapacity);
-            report.AppendLine($"- {PlayerLabel(player)}: first advanced trap turn {firstTrap}; " +
+            report.AppendLine($"- {PlayerLabel(player)}: sustainable camp income " +
+                $"{sustainableIncome:0.0} trade value/day; first advanced trap turn {firstTrap}; " +
                 $"prepared city barter arrivals {result.PreparedCityVisits} at {preparedCityCargo} cargo; " +
                 $"incidental city barter visits {result.IncidentalCityVisits} at {incidentalCityCargo} cargo; " +
                 $"roaming barter encounters {result.RoamingVisits} at {roamingCargo} cargo; " +

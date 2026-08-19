@@ -44,18 +44,29 @@ internal static class RouteOpportunities
                 Camp = camp,
                 ToCamp = RouteFinder.Find(state.Player, state.Current, camp),
                 ToCity = RouteFinder.Find(state.Player, camp, tradeCity),
-                Slots = LocalOpportunities.ProjectedCampCollectibleCount(state, camp, 0),
-                Value = LocalOpportunities.ProjectedCampCollectibleValue(state, camp, 0),
                 NeighborsCity = camp.Neighbors.Contains(tradeCity)
             })
-            .Where(candidate => candidate.ToCamp != null && candidate.ToCity != null &&
+            .Where(candidate => candidate.ToCamp != null && candidate.ToCity != null)
+            .Select(candidate => new
+            {
+                candidate.Camp,
+                candidate.ToCamp,
+                candidate.ToCity,
+                candidate.NeighborsCity,
+                Slots = LocalOpportunities.ProjectedCampCollectibleCount(
+                    state, candidate.Camp, candidate.ToCamp!.Days),
+                Value = LocalOpportunities.ProjectedCampCollectibleValue(
+                    state, candidate.Camp, candidate.ToCamp!.Days)
+            })
+            .Where(candidate =>
                 candidate.Slots > 0 &&
                 TradeTask.IsSubstantialTradeLot(
                     carriedCapital.Length + candidate.Slots,
                     carriedCapital.Sum(item => item.TradeValue) + candidate.Value))
-            .OrderByDescending(candidate => candidate.NeighborsCity)
+            .OrderByDescending(candidate => EconomicReturn.TripValuePerDay(
+                candidate.Value, candidate.ToCamp!.Days + candidate.ToCity!.Days))
             .ThenByDescending(candidate => candidate.Slots >= freeSlots)
-            .ThenByDescending(candidate => candidate.Value)
+            .ThenByDescending(candidate => candidate.NeighborsCity)
             .ThenBy(candidate => candidate.ToCamp!.Days + candidate.ToCity!.Days)
             .Select(candidate => candidate.Camp)
             .FirstOrDefault();

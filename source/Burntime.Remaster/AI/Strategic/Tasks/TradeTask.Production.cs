@@ -25,11 +25,17 @@ internal static partial class TradeTask
                 75 + ratDemand * 200);
 
         if (NeedsAnyPump(state) &&
-            (!ExpansionTask.ShouldPrioritizeEconomicGrowth(state) || NeedsCriticalPump(state)))
+            (EconomicReturn.BestEmpireProductionImprovement(state) <= 0.01f || NeedsCriticalPump(state)))
         {
-            yield return new("item_hand_pump", new[] { "item_broken_pump", "item_rags", "item_hose" }, 45);
+            int pumpValue = (int)(state.RootGame.World.Locations
+                .Where(camp => camp.Player == state.Player)
+                .Select(camp => EconomicReturn.MarginalWaterImprovement(state, camp))
+                .DefaultIfEmpty(0)
+                .Max() * 100);
+            yield return new("item_hand_pump", new[] { "item_broken_pump", "item_rags", "item_hose" },
+                45 + pumpValue);
             yield return new("item_industrial_pump",
-                new[] { "item_spare_parts", "item_iron_pipe", "item_rags", "item_hose" }, 55);
+                new[] { "item_spare_parts", "item_iron_pipe", "item_rags", "item_hose" }, 55 + pumpValue);
         }
 
         ItemType protectiveSuit = state.RootGame.ItemTypes["item_protection_suit"];

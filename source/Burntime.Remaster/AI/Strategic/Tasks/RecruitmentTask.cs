@@ -51,7 +51,7 @@ internal static partial class RecruitmentTask
         {
             candidates.Add(new AiDecision(
                 AiAction.Recruit,
-                preparingAttack ? 1040 : needsSettler ? 1700 : context.Current.IsCity ? 990 :
+                preparingAttack ? 1040 : needsSettler ? 2100 : context.Current.IsCity ? 990 :
                     player.Group.Count == 1 ? 980 : needsGarrisonRecruit ? 830 : 760,
                 context.Current,
                 Reason: preparingAttack
@@ -69,7 +69,7 @@ internal static partial class RecruitmentTask
             Location? preparationCamp = TradeTask.FindBestCampForCityPreparation(state);
             StrategicAi.AddTravelCandidate(
                 state, candidates, preparationCamp ?? StrategicAi.FindNearestCity(state),
-                preparingAttack ? 1030 : needsSettler ? 1690 : 970,
+                preparingAttack ? 1030 : needsSettler ? 2090 : 970,
                 preparingAttack
                     ? $"prepare attack on {target!.Title}: find recruits"
                     : needsSettler

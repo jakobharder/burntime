@@ -64,6 +64,10 @@ namespace Burntime.Remaster.AI
         protected int contestedUntilDay;
         [System.Runtime.Serialization.OptionalField]
         protected int attackPlanUntilDay;
+        // Runtime-only intent marker. Legacy serialized fields remain unchanged;
+        // losing this hint on load merely causes the target to be reevaluated.
+        [NonSerialized]
+        bool strategicTargetWasNeutral;
         [System.Runtime.Serialization.OptionalField]
         protected StateLink<Location> deferredAttackCamp;
         [System.Runtime.Serialization.OptionalField]
@@ -146,8 +150,18 @@ namespace Burntime.Remaster.AI
             {
                 headedLocation = value;
                 if (value == null)
+                {
                     attackPlanUntilDay = 0;
+                    strategicTargetWasNeutral = false;
+                }
             }
+        }
+        internal bool HasSettlementPlan => strategicTargetWasNeutral && StrategicTarget != null;
+        internal void SetSettlementTarget(Location location)
+        {
+            headedLocation = location;
+            attackPlanUntilDay = 0;
+            strategicTargetWasNeutral = location != null;
         }
         internal AiItemPool Pool => ItemPool;
         internal AiSettings Configuration => settings;
@@ -288,6 +302,7 @@ namespace Burntime.Remaster.AI
             if (StrategicTarget == location && attackPlanUntilDay > 0)
                 return;
             headedLocation = location;
+            strategicTargetWasNeutral = false;
             attackPlanUntilDay = RootGame.World.Day + policy.AttackPlanTurns;
             AiTelemetry.Report(Player,
                 $"started attack plan for {location.Title} with {policy.AttackPlanTurns} days to prepare");

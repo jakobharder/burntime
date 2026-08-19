@@ -249,7 +249,8 @@ internal static partial class TradeTask
                 carriedCapital.Length + LocalOpportunities.ProjectedCampCollectibleCount(
                     state, candidate.Location, candidate.TravelDays),
                 carriedCapital.Sum(item => item.TradeValue) + candidate.Value))
-            .OrderByDescending(candidate => candidate.Value - candidate.Detour * 10)
+            .OrderByDescending(candidate => EconomicReturn.TripValuePerDay(
+                candidate.Value, candidate.TravelDays + candidate.Detour))
             .Select(candidate => candidate.Location)
             .FirstOrDefault();
     }

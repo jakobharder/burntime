@@ -11,12 +11,18 @@ internal static class RegionalOpportunities
         List<AiDecision> candidates,
         float score)
     {
+        Location? camp = FindBestCampForDelivery(state);
+        if (camp == null)
+            return;
+        float economicGain = System.Math.Max(
+            System.Math.Max(0, EconomicReturn.MarginalCampImprovement(state, camp)),
+            EconomicReturn.MarginalWaterImprovement(state, camp));
         StrategicAi.AddTravelCandidate(
             state,
             candidates,
-            FindBestCampForDelivery(state),
-            score,
-            "deliver functional equipment or a complete recipe to camp");
+            camp,
+            score + System.Math.Min(400, economicGain * 180),
+            $"deliver an upgrade worth about {economicGain:0.0} sustainable value/day");
     }
 
     static Location? FindBestCampForDelivery(ClassicAiState state)
@@ -42,7 +48,11 @@ internal static class RegionalOpportunities
                 Route = RouteFinder.Find(state.Player, state.Current, location)
             })
             .Where(candidate => candidate.Route != null)
-            .OrderBy(candidate => candidate.Route!.Days)
+            .OrderByDescending(candidate =>
+                System.Math.Max(
+                    EconomicReturn.MarginalCampImprovement(state, candidate.Location),
+                    EconomicReturn.MarginalWaterImprovement(state, candidate.Location)))
+            .ThenBy(candidate => candidate.Route!.Days)
             .Select(candidate => candidate.Location)
             .FirstOrDefault();
     }

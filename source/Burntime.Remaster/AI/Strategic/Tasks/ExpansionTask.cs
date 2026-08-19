@@ -22,7 +22,7 @@ internal static partial class ExpansionTask
         bool currentCanBecomeCamp = state.CanClaim(context.Current) && suitableCurrentClaim;
         bool canClaimCurrent = currentCanBecomeCamp && state.CanStationCamp();
         if (currentCanBecomeCamp && !state.CanStationCamp())
-            state.StrategicTarget = context.Current;
+            state.SetSettlementTarget(context.Current);
         Location? target = ValidatePersistentTarget(state, context, policy);
         if (target == null && !(canClaimCurrent && state.StrategicTarget == null))
         {
@@ -30,14 +30,14 @@ internal static partial class ExpansionTask
             if (AttackTask.IsHostile(target, context.Player))
                 state.StartAttackPlan(target!, policy);
             else
-                state.StrategicTarget = target;
+                state.SetSettlementTarget(target);
         }
 
         return new TerritorialPlan(
             canClaimCurrent,
-            CurrentClaimScore(context.Current),
+            CurrentClaimScore(state, context.Current),
             target,
-            TargetScore(policy, target),
+            TargetScore(state, policy, target),
             AttackTask.IsHostile(target, context.Player));
     }
 
@@ -48,11 +48,14 @@ internal static partial class ExpansionTask
     {
         if (!plan.PreparingAttack && plan.CanClaimCurrent)
         {
+            bool routeCamp = CampEconomy.ConnectsOwnedCamps(context.Current, context.Player);
             candidates.Add(new AiDecision(
                 AiAction.ClaimNeutral,
                 plan.CurrentClaimScore,
                 context.Current,
-                Reason: $"claim {CampEconomy.StrategicRole(context.Current)} at current location"));
+                Reason: routeCamp
+                    ? "claim neutral camp connecting owned territory"
+                    : $"claim {CampEconomy.StrategicRole(context.Current)} at current location"));
         }
     }
 
@@ -115,24 +118,7 @@ internal static partial class ExpansionTask
     }
 
     public static bool ShouldPrioritizeEconomicGrowth(ClassicAiState state)
-    {
-        Location[] productiveCamps = state.RootGame.World.Locations
-            .Where(location => location.Player == state.Player &&
-                LocalOpportunities.ShouldPreferProductionAtCamp(state, location))
-            .ToArray();
-        if (productiveCamps.Length == 0)
-            return false;
-
-        return productiveCamps.Any(camp =>
-        {
-            Production best = camp.ValidProductions
-                .Where(production => production.Produce.ID is "item_meat" or "item_rats" or "item_snake")
-                .OrderByDescending(TradeTask.ProductionTradePriority)
-                .FirstOrDefault();
-            return best != null && CampEconomy.ProductionToolCount(camp, best) <
-                CampEconomy.DesiredProductionToolCount(state, camp, best);
-        });
-    }
+        => EconomicReturn.BestEmpireImprovement(state) > 0.01f;
 
     public static bool ShouldReserveProductionTool(ClassicAiState state)
     {
@@ -170,14 +156,20 @@ internal static partial class ExpansionTask
         if (target.Player == null)
         {
             if (context.NeutralExpansionAllowed && state.CanClaim(target) &&
-                SupplyCalculator.HasTerritorialRouteSupplies(
-                    context.Player, context.Current, route, hostileTarget: false))
+                HasExpansionRouteSupplies(state, context, route))
                 return target;
             state.StrategicTarget = null;
             return null;
         }
         if (target.Player == context.Player)
         {
+            state.StrategicTarget = null;
+            return null;
+        }
+        if (state.HasSettlementPlan)
+        {
+            AiTelemetry.Report(context.Player,
+                $"released settlement target {target.Title}: another player claimed it first");
             state.StrategicTarget = null;
             return null;
         }
@@ -206,10 +198,10 @@ internal static partial class ExpansionTask
             if (location.Player == null && context.NeutralExpansionAllowed &&
                 state.CanClaim(location) &&
                 (!hasAcceptableFirstCamp || CampEconomy.IsAcceptableFirstCamp(location)) &&
-                SupplyCalculator.HasTerritorialRouteSupplies(
-                    context.Player, context.Current, route, hostileTarget: false))
+                HasExpansionRouteSupplies(state, context, route))
             {
-                targets.Add((location, NeutralTargetScore(policy, location) - route.Days * 8 + Jitter()));
+                targets.Add((location, NeutralTargetScore(state, policy, location) -
+                    route.Days * 8 + Jitter()));
             }
             else if (AttackTask.HasGroupWeapon(context.Player) &&
                 AttackTask.IsHostile(location, context.Player) &&
@@ -246,26 +238,49 @@ internal static partial class ExpansionTask
                 !CampEconomy.IsAcceptableFirstCamp(location) || !state.CanClaim(location))
                 return false;
             RouteFinder.Route? route = RouteFinder.Find(context.Player, context.Current, location);
-            return route != null && SupplyCalculator.HasTerritorialRouteSupplies(
-                context.Player, context.Current, route, hostileTarget: false);
+            return route != null && HasExpansionRouteSupplies(state, context, route);
         });
 
     static bool HasOwnedCamp(ClassicAiState state) => state.RootGame.World.Locations
         .Any(location => location.Player == state.Player);
 
-    static float CurrentClaimScore(Location location) =>
-        1050 + CampEconomy.TerritorialValue(location) * 0.5f;
+    static float CurrentClaimScore(ClassicAiState state, Location location)
+    {
+        if (CampEconomy.ConnectsOwnedCamps(location, state.Player) ||
+            state.StrategicTarget != null && state.StrategicTarget != location)
+            return 2300;
+        return 1050 + CampEconomy.TerritorialValue(location) * 0.5f;
+    }
 
-    static float NeutralTargetScore(AiPolicy policy, Location location) =>
-        policy.NeutralTargetScore + CampEconomy.TerritorialValue(location);
+    static float NeutralTargetScore(ClassicAiState state, AiPolicy policy, Location location) =>
+        policy.NeutralTargetScore + CampEconomy.TerritorialValue(location) +
+        (CampEconomy.ConnectsOwnedCamps(location, state.Player) ? 900 : 0);
 
-    static float TargetScore(AiPolicy policy, Location? target)
+    static float TargetScore(ClassicAiState state, AiPolicy policy, Location? target)
     {
         if (target == null)
             return 0;
         if (target.Player == null)
-            return NeutralTargetScore(policy, target);
+            return NeutralTargetScore(state, policy, target);
         return 1010;
+    }
+
+    static bool HasExpansionRouteSupplies(
+        ClassicAiState state,
+        AiContext context,
+        RouteFinder.Route route)
+    {
+        if (SupplyCalculator.HasTerritorialRouteSupplies(
+            context.Player, context.Current, route, hostileTarget: false))
+            return true;
+
+        Location step = route.NextStep;
+        if (step.Player != null || step.IsCity || context.Player.Group.Count <= 1 ||
+            !state.CanClaim(step))
+            return false;
+        RouteFinder.Route? leg = RouteFinder.Find(context.Player, context.Current, step);
+        return leg != null && SupplyCalculator.HasRouteSupplies(
+            context.Player, leg, hostileTarget: false);
     }
 
     static int Jitter() => Burntime.Platform.Math.Random.Next(-20, 21);

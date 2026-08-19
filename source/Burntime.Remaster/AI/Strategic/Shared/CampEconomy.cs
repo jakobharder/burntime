@@ -35,6 +35,12 @@ internal static class CampEconomy
     public static bool IsAcceptableFirstCamp(Location camp) =>
         HasAdvancedFoodPotential(camp) || HasRatFoodPotential(camp);
 
+    public static bool ConnectsOwnedCamps(Location camp, Player player) =>
+        Enumerable.Range(0, camp.Neighbors.Count)
+            .Where(index => camp.WayLengths[index] > 0)
+            .Select(index => camp.Neighbors[index])
+            .Count(neighbor => neighbor.Player == player) >= 2;
+
     public static int RouteSecurityValue(Location camp)
     {
         int openRoutes = Enumerable.Range(0, camp.Neighbors.Count)
@@ -64,7 +70,8 @@ internal static class CampEconomy
         int waterValue = System.Math.Min(camp.Source?.Water ?? 0, 5) * 25;
         int establishedBonus = IsWellEstablishedPotential(camp) ? 300 : 0;
         int routeValue = foodValue == 0 ? RouteSecurityValue(camp) : 0;
-        return foodValue + waterValue + establishedBonus + routeValue;
+        int economicValue = (int)(EconomicReturn.PotentialCamp(camp).SustainableValuePerDay * 35);
+        return foodValue + waterValue + establishedBonus + routeValue + economicValue;
     }
 
     public static string StrategicRole(Location camp)
@@ -97,8 +104,9 @@ internal static class CampEconomy
             return production.MaxToolCount;
 
         int guards = LivingGuardCount(camp, state.Player);
-        int localSecondGain = production.GetRate(production.MaxToolCount, guards).FoodPerDay -
-            production.GetRate(production.MaxToolCount - 1, guards).FoodPerDay;
+        float localSecondGain =
+            EconomicReturn.Assess(camp, production, production.MaxToolCount, guards).SustainableValuePerDay -
+            EconomicReturn.Assess(camp, production, production.MaxToolCount - 1, guards).SustainableValuePerDay;
 
         // Move a second trap only when the extra production gained at an unstarted
         // camp repays the route within roughly one week. A remote first trap is
@@ -111,8 +119,11 @@ internal static class CampEconomy
             .Select(location => new
             {
                 Route = RouteFinder.Find(state.Player, camp, location),
-                FirstGain = production.GetRate(1, LivingGuardCount(location, state.Player)).FoodPerDay -
-                    production.GetRate(0, LivingGuardCount(location, state.Player)).FoodPerDay
+                FirstGain =
+                    EconomicReturn.Assess(location, production, 1,
+                        LivingGuardCount(location, state.Player)).SustainableValuePerDay -
+                    EconomicReturn.Assess(location, production, 0,
+                        LivingGuardCount(location, state.Player)).SustainableValuePerDay
             })
             .Any(candidate => candidate.Route != null && candidate.FirstGain > localSecondGain &&
                 candidate.Route.Days <= (candidate.FirstGain - localSecondGain) * 7);
