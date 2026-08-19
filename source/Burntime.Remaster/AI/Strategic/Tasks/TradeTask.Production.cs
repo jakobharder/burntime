@@ -70,7 +70,10 @@ internal static partial class TradeTask
         if (source == null || source.Items.Any(IsPump))
             return false;
         int guards = camp.CampNPC.Count();
-        return camp.Source.Water < System.Math.Max(2, guards + 1);
+        int strategicMinimum = CampEconomy.HasAdvancedFoodPotential(camp)
+            ? CampEconomy.PlentyOfWater
+            : 2;
+        return camp.Source.Water < System.Math.Max(strategicMinimum, guards + 1);
     }
 
     internal static bool IsPump(Item item) => IsPump(item.Type);

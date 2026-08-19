@@ -224,13 +224,16 @@ public static class HeadlessSimulation
         foreach (Player player in game.World.Players)
         {
             int camps = game.World.Locations.Count(location => location.Player == player);
+            int establishedCamps = game.World.Locations.Count(location =>
+                location.Player == player && CampEconomy.IsWellEstablished(location));
             int defenders = game.World.Locations.Sum(location => location.CampNPC.Count(character => character.Player == player));
             string state = player.IsDead || player.Character.IsDead ? "dead" : "alive";
             string travel = player.IsTraveling
                 ? $"traveling to {LocationLabel(player.Destination)} ({player.RemainingDays} days left)"
                 : $"at {LocationLabel(player.Location)}";
 
-            report.AppendLine($"- {PlayerLabel(player)}: {state}, {travel}, {camps} camps, " +
+            report.AppendLine($"- {PlayerLabel(player)}: {state}, {travel}, {camps} camps " +
+                $"({establishedCamps} well established), " +
                 $"group {player.Group.Count}, defenders {defenders}, " +
                 $"health {player.Character.Health}, food {player.Character.Food}, water {player.Character.Water}");
             foreach (Character member in player.Group)
@@ -262,6 +265,7 @@ public static class HeadlessSimulation
                 ? "none"
                 : $"{FormatItems(usedTraps)} -> {location.Production.Produce.ID}";
             report.AppendLine($"- {LocationLabel(location)}: {PlayerLabel(location.Player!)}, {defenders.Length} NPC(s); " +
+                $"water {location.Source.Water}/day; role {CampEconomy.StrategicRole(location)}; " +
                 $"items {FormatItems(campItems)}; highest possible trap {bestTrap}; used trap {usedTrap}");
             foreach (Character defender in defenders)
             {

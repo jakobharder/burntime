@@ -6,7 +6,9 @@ namespace Burntime.Remaster.AI;
 
 internal readonly record struct TerritorialPlan(
     bool CanClaimCurrent,
+    float CurrentClaimScore,
     Location? Target,
+    float TargetScore,
     bool PreparingAttack);
 
 internal static partial class ExpansionTask
@@ -16,7 +18,11 @@ internal static partial class ExpansionTask
         AiContext context,
         AiPolicy policy)
     {
-        bool canClaimCurrent = state.CanClaim(context.Current) && state.CanStationCamp();
+        bool suitableCurrentClaim = IsSuitableCurrentClaim(state, context);
+        bool currentCanBecomeCamp = state.CanClaim(context.Current) && suitableCurrentClaim;
+        bool canClaimCurrent = currentCanBecomeCamp && state.CanStationCamp();
+        if (currentCanBecomeCamp && !state.CanStationCamp())
+            state.StrategicTarget = context.Current;
         Location? target = ValidatePersistentTarget(state, context, policy);
         if (target == null && !(canClaimCurrent && state.StrategicTarget == null))
         {
@@ -29,7 +35,9 @@ internal static partial class ExpansionTask
 
         return new TerritorialPlan(
             canClaimCurrent,
+            CurrentClaimScore(context.Current),
             target,
+            TargetScore(policy, target),
             AttackTask.IsHostile(target, context.Player));
     }
 
@@ -42,9 +50,9 @@ internal static partial class ExpansionTask
         {
             candidates.Add(new AiDecision(
                 AiAction.ClaimNeutral,
-                1250,
+                plan.CurrentClaimScore,
                 context.Current,
-                Reason: "neutral sustainable camp at current location"));
+                Reason: $"claim {CampEconomy.StrategicRole(context.Current)} at current location"));
         }
     }
 
@@ -69,9 +77,11 @@ internal static partial class ExpansionTask
 
         if (!plan.PreparingAttack)
         {
+            if (plan.Target == context.Current)
+                return;
             StrategicAi.AddTravelCandidate(
-                state, candidates, plan.Target, policy.NeutralTargetScore,
-                "advance toward neutral territory");
+                state, candidates, plan.Target, plan.TargetScore,
+                $"advance toward {CampEconomy.StrategicRole(plan.Target)}");
         }
         else if (AttackTask.CanAdvancePlan(state, plan.Target, policy))
         {
@@ -144,6 +154,8 @@ internal static partial class ExpansionTask
             return null;
         if (target == context.Current)
         {
+            if (target.Player == null && state.CanClaim(target) && !state.CanStationCamp())
+                return target;
             state.StrategicTarget = null;
             return null;
         }
@@ -178,6 +190,9 @@ internal static partial class ExpansionTask
         AiPolicy policy)
     {
         List<(Location Location, float Score)> targets = new();
+        bool needsFirstCamp = !HasOwnedCamp(state);
+        bool hasAcceptableFirstCamp = needsFirstCamp &&
+            HasReachableAcceptableFirstCamp(state, context);
         foreach (Location location in state.RootGame.World.Locations)
         {
             if (location == context.Current || location.IsCity ||
@@ -190,10 +205,11 @@ internal static partial class ExpansionTask
 
             if (location.Player == null && context.NeutralExpansionAllowed &&
                 state.CanClaim(location) &&
+                (!hasAcceptableFirstCamp || CampEconomy.IsAcceptableFirstCamp(location)) &&
                 SupplyCalculator.HasTerritorialRouteSupplies(
                     context.Player, context.Current, route, hostileTarget: false))
             {
-                targets.Add((location, policy.NeutralTargetScore - route.Days * 8 + Jitter()));
+                targets.Add((location, NeutralTargetScore(policy, location) - route.Days * 8 + Jitter()));
             }
             else if (AttackTask.HasGroupWeapon(context.Player) &&
                 AttackTask.IsHostile(location, context.Player) &&
@@ -211,6 +227,45 @@ internal static partial class ExpansionTask
         }
 
         return targets.OrderByDescending(target => target.Score).FirstOrDefault().Location;
+    }
+
+    static bool IsSuitableCurrentClaim(ClassicAiState state, AiContext context)
+    {
+        if (HasOwnedCamp(state) || CampEconomy.IsAcceptableFirstCamp(context.Current))
+            return true;
+
+        // A maggot-only site remains a last-resort first camp, but never wins while
+        // a reachable rat, meat, or snake site can bootstrap the territory.
+        return !HasReachableAcceptableFirstCamp(state, context);
+    }
+
+    static bool HasReachableAcceptableFirstCamp(ClassicAiState state, AiContext context) =>
+        state.RootGame.World.Locations.Any(location =>
+        {
+            if (location == context.Current || location.IsCity || location.Player != null ||
+                !CampEconomy.IsAcceptableFirstCamp(location) || !state.CanClaim(location))
+                return false;
+            RouteFinder.Route? route = RouteFinder.Find(context.Player, context.Current, location);
+            return route != null && SupplyCalculator.HasTerritorialRouteSupplies(
+                context.Player, context.Current, route, hostileTarget: false);
+        });
+
+    static bool HasOwnedCamp(ClassicAiState state) => state.RootGame.World.Locations
+        .Any(location => location.Player == state.Player);
+
+    static float CurrentClaimScore(Location location) =>
+        1050 + CampEconomy.TerritorialValue(location) * 0.5f;
+
+    static float NeutralTargetScore(AiPolicy policy, Location location) =>
+        policy.NeutralTargetScore + CampEconomy.TerritorialValue(location);
+
+    static float TargetScore(AiPolicy policy, Location? target)
+    {
+        if (target == null)
+            return 0;
+        if (target.Player == null)
+            return NeutralTargetScore(policy, target);
+        return 1010;
     }
 
     static int Jitter() => Burntime.Platform.Math.Random.Next(-20, 21);

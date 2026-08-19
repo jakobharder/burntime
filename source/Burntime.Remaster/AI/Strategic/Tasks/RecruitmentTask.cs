@@ -44,16 +44,20 @@ internal static partial class RecruitmentTask
 
         bool needsGarrisonRecruit = reinforcementCamp != null &&
             player.Group.Count >= desiredGroupSize && player.Group.Count < Group.MAX_PEOPLE;
+        bool needsSettler = !preparingAttack && target is { IsCity: false, Player: null } &&
+            player.Group.Count == 1;
         if ((player.Group.Count < desiredGroupSize || needsGarrisonRecruit) &&
             state.CanRecruit(generatedPaymentAllowed))
         {
             candidates.Add(new AiDecision(
                 AiAction.Recruit,
-                preparingAttack ? 1040 : context.Current.IsCity ? 990 :
+                preparingAttack ? 1040 : needsSettler ? 1700 : context.Current.IsCity ? 990 :
                     player.Group.Count == 1 ? 980 : needsGarrisonRecruit ? 830 : 760,
                 context.Current,
                 Reason: preparingAttack
                     ? $"prepare attack on {target!.Title}: recruit toward {desiredGroupSize} people"
+                    : needsSettler
+                    ? $"recruit a settler for {CampEconomy.StrategicRole(target!)} at {target!.Title}"
                     : needsGarrisonRecruit
                     ? $"critical camp {reinforcementCamp!.Title} needs another guard"
                     : context.Current.IsCity
@@ -65,9 +69,11 @@ internal static partial class RecruitmentTask
             Location? preparationCamp = TradeTask.FindBestCampForCityPreparation(state);
             StrategicAi.AddTravelCandidate(
                 state, candidates, preparationCamp ?? StrategicAi.FindNearestCity(state),
-                preparingAttack ? 1030 : 970,
+                preparingAttack ? 1030 : needsSettler ? 1690 : 970,
                 preparingAttack
                     ? $"prepare attack on {target!.Title}: find recruits"
+                    : needsSettler
+                    ? $"find a settler for {target!.Title}"
                     : preparationCamp == null
                     ? "leader needs a recruit before claiming camps"
                     : "fill the caravan before recruiting in a city");

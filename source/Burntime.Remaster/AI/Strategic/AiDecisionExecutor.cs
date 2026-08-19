@@ -66,8 +66,9 @@ internal static class AiDecisionExecutor
 
             case AiAction.Travel:
                 // Supply, recruiting and shopping trips are intermediate steps of an
-                // attack plan. Do not let their immediate destination replace its target.
-                if (decision.Target != null && !state.HasAttackPlan)
+                // attack or settlement plan. Keep a non-city strategic destination.
+                if (decision.Target != null &&
+                    (state.StrategicTarget == null || state.StrategicTarget.IsCity))
                     state.StrategicTarget = decision.Target;
                 if (decision.NextStep != null)
                 {
