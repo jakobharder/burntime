@@ -274,6 +274,21 @@ namespace Burntime.Remaster.AI
             return npc;
         }
 
+        internal Character MobilizeCampFollower(int minimumGuards)
+        {
+            if (!IsHome)
+                return null;
+            Character npc = CurrentLocation.CampNPC
+                .Where(character => character.Player == Player && !character.IsDead)
+                .OrderByDescending(character => character.AttackValue + character.DefenseValue)
+                .FirstOrDefault();
+            if (npc == null || CurrentLocation.CampNPC.Count(character =>
+                    character.Player == Player && !character.IsDead) <= minimumGuards)
+                return null;
+            npc.LeaveCamp();
+            return npc;
+        }
+
         internal Character SelectCampNpc()
         {
             Character recruit = CanHireNpc() ? HireNpc(allowGeneratedPayment: CurrentLocation.IsCity) : null;

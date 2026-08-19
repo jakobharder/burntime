@@ -77,7 +77,7 @@ internal static class StrategicAi
         ExpansionTask.AddCandidates(state, observation, policy, territory, candidates);
 
         if (!preparingAttack && player.Group.Count > 1 &&
-            player.Group.Count < observation.DesiredGroupSize && !state.HasHireableNpc())
+            player.Group.Count < observation.TravelGroupSize && !state.HasHireableNpc())
         {
             Location? preparationCamp = TradeTask.FindBestCampForCityPreparation(state);
             AddTravelCandidate(state, candidates, preparationCamp ?? FindNearestCity(state), 560,

@@ -2,7 +2,8 @@ namespace Burntime.Remaster.AI;
 
 internal sealed class AiPolicy
 {
-    public int DesiredGroupSize { get; init; }
+    public int TravelGroupSize { get; init; }
+    public int AttackGroupSize { get; init; }
     public float MinimumAttackRatio { get; init; }
     public float NeutralTargetScore { get; init; }
     public float HostileTargetScore { get; init; }
@@ -25,15 +26,15 @@ internal sealed class AiPolicy
 
     public static AiPolicy ForDifficulty(int difficulty) => difficulty switch
     {
-        0 => new AiPolicy { DesiredGroupSize = 2, MinimumAttackRatio = 1.35f,
+        0 => new AiPolicy { TravelGroupSize = 2, AttackGroupSize = 2, MinimumAttackRatio = 1.35f,
             NeutralTargetScore = 690, HostileTargetScore = 430, ExpansionEconomyScore = 850,
             MaxHumanCampDefendersToAttack = 0, TreatLoneKnifeGuardAsUndefended = true,
             CriticalGarrisonTarget = 1, AttackCooldownTurns = 4 },
-        1 => new AiPolicy { DesiredGroupSize = 3, MinimumAttackRatio = 1.05f,
+        1 => new AiPolicy { TravelGroupSize = 2, AttackGroupSize = 3, MinimumAttackRatio = 1.05f,
             NeutralTargetScore = 770, HostileTargetScore = 560, ExpansionEconomyScore = 900,
             MaxHumanCampDefendersToAttack = 1, CriticalGarrisonTarget = 2,
             AttackCooldownTurns = 2, StrategicHostileTargetBonus = 35 },
-        _ => new AiPolicy { DesiredGroupSize = 4, MinimumAttackRatio = 0.75f,
+        _ => new AiPolicy { TravelGroupSize = 2, AttackGroupSize = 4, MinimumAttackRatio = 0.75f,
             NeutralTargetScore = 860, HostileTargetScore = 680, ExpansionEconomyScore = 950,
             MaxHumanCampDefendersToAttack = int.MaxValue, CriticalGarrisonTarget = 3,
             AttackCooldownTurns = 0, StrategicHostileTargetBonus = 100,

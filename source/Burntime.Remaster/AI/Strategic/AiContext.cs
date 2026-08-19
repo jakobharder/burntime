@@ -11,7 +11,7 @@ internal sealed class AiContext
     public required IReadOnlyList<Character> Group { get; init; }
     public required bool CriticalSupplies { get; init; }
     public required bool SafeLocation { get; init; }
-    public required int DesiredGroupSize { get; init; }
+    public required int TravelGroupSize { get; init; }
     public required bool NeutralExpansionAllowed { get; init; }
 
     public static AiContext Create(ClassicAiState state, AiPolicy policy)
@@ -30,8 +30,7 @@ internal sealed class AiContext
             Group = player.Group.ToArray(),
             CriticalSupplies = critical,
             SafeLocation = safe,
-            DesiredGroupSize = RecruitmentTask.RecommendedGroupSize(
-                state, policy.DesiredGroupSize),
+            TravelGroupSize = policy.TravelGroupSize,
             NeutralExpansionAllowed = neutralAllowed
         };
     }

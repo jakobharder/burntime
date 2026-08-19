@@ -14,28 +14,38 @@ internal static partial class ReinforcementTask
         List<AiDecision> candidates)
     {
         Location? camp = recruitment.ReinforcementCamp;
-        if (camp != null && state.Player.Group.Count > recruitment.DesiredGroupSize)
+        if (camp != null && state.Player.Group.Count > recruitment.TravelGroupSize)
         {
+            // A third or fourth traveller is either a guard in transit or a
+            // survivor of a temporary attack force. Deposit that surplus before
+            // ordinary expansion or trade turns it back into a roaming party.
+            const float priority = 2000;
             if (camp == context.Current)
             {
                 candidates.Add(new AiDecision(
                     AiAction.StationFollower,
-                    1080,
+                    priority,
                     context.Current,
-                    Reason: $"raise critical garrison toward {policy.CriticalGarrisonTarget} guards"));
+                    Reason: recruitment.IsAttackStaging
+                        ? $"stage a recruited guard at frontier camp {camp.Title}"
+                        : $"raise critical garrison toward {recruitment.ReinforcementTarget} guards"));
             }
             else
             {
-                StrategicAi.AddTravelCandidate(state, candidates, camp, 1080,
-                    $"reinforce critical camp toward {policy.CriticalGarrisonTarget} guards");
+                StrategicAi.AddTravelCandidate(state, candidates, camp, priority,
+                    recruitment.IsAttackStaging
+                        ? $"deliver a recruited guard to frontier camp {camp.Title}"
+                        : $"reinforce critical camp toward {recruitment.ReinforcementTarget} guards");
             }
         }
-        else if (camp != null && state.Player.Group.Count >= recruitment.DesiredGroupSize &&
+        else if (camp != null && state.Player.Group.Count >= recruitment.TravelGroupSize &&
             !state.HasHireableNpc())
         {
             StrategicAi.AddTravelCandidate(
                 state, candidates, StrategicAi.FindNearestCity(state), 800,
-                "find a recruit for a critical camp garrison");
+                recruitment.IsAttackStaging
+                    ? $"find another guard for frontier camp {camp.Title}"
+                    : "find a recruit for a critical camp garrison");
         }
     }
 
@@ -56,6 +66,29 @@ internal static partial class ReinforcementTask
                 CanSupportAdditionalGuard(state, candidate.Location, candidate.Guards))
             .OrderBy(candidate => candidate.Guards)
             .ThenBy(candidate => candidate.Route.Days)
+            .Select(candidate => candidate.Location)
+            .FirstOrDefault();
+    }
+
+    public static Location? FindAttackStagingCamp(
+        ClassicAiState state,
+        Location target,
+        int stagedGuardTarget)
+    {
+        return state.RootGame.World.Locations
+            .Where(location => location.Player == state.Player && location != target)
+            .Select(location => new
+            {
+                Location = location,
+                CurrentRoute = RouteFinder.Find(state.Player, state.Current, location),
+                AttackRoute = RouteFinder.Find(state.Player, location, target),
+                Sustainable = CanSupportGarrison(state, location, stagedGuardTarget)
+            })
+            .Where(candidate => candidate.CurrentRoute != null && candidate.AttackRoute != null)
+            .OrderByDescending(candidate => candidate.Sustainable)
+            .ThenBy(candidate => candidate.AttackRoute!.Days)
+            .ThenByDescending(candidate => candidate.Location.Source?.Water ?? 0)
+            .ThenBy(candidate => candidate.CurrentRoute!.Days)
             .Select(candidate => candidate.Location)
             .FirstOrDefault();
     }
@@ -125,5 +158,18 @@ internal static partial class ReinforcementTask
                 .Sum(npc => npc.Items.Count(item => item.Type.Production == camp.Production));
         Production.Rate projected = camp.Production.GetRate(toolCount, currentGuards + 1);
         return !projected.IsCampStarving && projected.FoodPerDay >= currentGuards + 1;
+    }
+
+    static bool CanSupportGarrison(ClassicAiState state, Location camp, int guardTarget)
+    {
+        if (camp.Production == null)
+            return false;
+
+        int toolCount = camp.Rooms.Sum(room => room.Items.Count(item =>
+                item.Type.Production == camp.Production)) +
+            camp.CampNPC.Where(npc => npc.Player == state.Player && !npc.IsDead)
+                .Sum(npc => npc.Items.Count(item => item.Type.Production == camp.Production));
+        Production.Rate projected = camp.Production.GetRate(toolCount, guardTarget);
+        return !projected.IsCampStarving && projected.FoodPerDay >= guardTarget;
     }
 }

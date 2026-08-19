@@ -69,7 +69,7 @@ internal static class AttackTask
             state.StrategicTarget = null;
             return null;
         }
-        bool currentReady = context.Player.Group.Count >= policy.DesiredGroupSize &&
+        bool currentReady = context.Player.Group.Count >= policy.AttackGroupSize &&
             IsSuitable(state, context.Player, target, policy) &&
             SupplyCalculator.HasRouteSupplies(context.Player, route, hostileTarget: true);
         if (!currentReady)
@@ -103,7 +103,7 @@ internal static class AttackTask
         AiPolicy policy)
     {
         Player player = state.Player;
-        if (player.Group.Count < policy.DesiredGroupSize || !HasGroupWeapon(player))
+        if (player.Group.Count < policy.AttackGroupSize || !HasGroupWeapon(player))
             return false;
         RouteFinder.Route? route = RouteFinder.Find(player, state.Current, target);
         if (route == null)
@@ -196,7 +196,7 @@ internal static class AttackTask
         AiPolicy policy,
         Location currentTarget)
     {
-        if (context.Player.Group.Count < policy.DesiredGroupSize)
+        if (context.Player.Group.Count < policy.AttackGroupSize)
             return null;
 
         return state.RootGame.World.Locations

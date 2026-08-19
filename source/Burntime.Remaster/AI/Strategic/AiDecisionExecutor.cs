@@ -46,6 +46,13 @@ internal static class AiDecisionExecutor
                         $"recalled {recalled.Name} from {state.Current.Title}");
                 break;
 
+            case AiAction.MobilizeFrontierFollower:
+                Character? mobilized = state.MobilizeCampFollower(minimumGuards: 1);
+                if (mobilized != null)
+                    AiTelemetry.Report(player,
+                        $"mobilized {mobilized.Name} from the frontier at {state.Current.Title}");
+                break;
+
             case AiAction.ImproveCamp:
                 if (state.ImproveCamp())
                     AiTelemetry.Report(player, $"improved production at {state.Current.Title}");

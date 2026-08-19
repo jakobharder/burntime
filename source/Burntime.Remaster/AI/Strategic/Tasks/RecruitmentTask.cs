@@ -1,12 +1,13 @@
 using System.Collections.Generic;
-using System.Linq;
 using Burntime.Remaster.Logic;
 
 namespace Burntime.Remaster.AI;
 
 internal readonly record struct RecruitmentNeeds(
-    int DesiredGroupSize,
-    Location? ReinforcementCamp);
+    int TravelGroupSize,
+    Location? ReinforcementCamp,
+    int ReinforcementTarget = 0,
+    bool IsAttackStaging = false);
 
 internal static partial class RecruitmentTask
 {
@@ -18,20 +19,17 @@ internal static partial class RecruitmentTask
         bool preparingAttack,
         List<AiDecision> candidates)
     {
+        if (preparingAttack)
+            return AddAttackPreparationCandidates(state, context, policy, target!, candidates);
+
         Player player = state.Player;
         bool generatedPaymentAllowed = context.Current.IsCity &&
             policy.AllowGeneratedRecruitPaymentInCities;
-        int desiredGroupSize = preparingAttack
-            ? CanProvisionFullAttackGroup(state, target!, policy.DesiredGroupSize)
-                ? policy.DesiredGroupSize
-                : context.DesiredGroupSize
-            : context.DesiredGroupSize;
-        Location? reinforcementCamp = preparingAttack
-            ? null
-            : ReinforcementTask.FindBestCampForReinforcement(
-                state, policy.CriticalGarrisonTarget);
+        int desiredGroupSize = context.TravelGroupSize;
+        Location? reinforcementCamp = ReinforcementTask.FindBestCampForReinforcement(
+            state, policy.CriticalGarrisonTarget);
 
-        if (!preparingAttack && !TradeTask.ShouldVisitTrader(state) &&
+        if (!TradeTask.ShouldVisitTrader(state) &&
             player.Group.Count < desiredGroupSize &&
             RecruitmentTask.CanRecallFollower(state, policy.CriticalGarrisonTarget))
         {
@@ -44,19 +42,17 @@ internal static partial class RecruitmentTask
 
         bool needsGarrisonRecruit = reinforcementCamp != null &&
             player.Group.Count >= desiredGroupSize && player.Group.Count < Group.MAX_PEOPLE;
-        bool needsSettler = !preparingAttack && target is { IsCity: false, Player: null } &&
+        bool needsSettler = target is { IsCity: false, Player: null } &&
             player.Group.Count == 1;
         if ((player.Group.Count < desiredGroupSize || needsGarrisonRecruit) &&
             state.CanRecruit(generatedPaymentAllowed))
         {
             candidates.Add(new AiDecision(
                 AiAction.Recruit,
-                preparingAttack ? 1040 : needsSettler ? 2100 : context.Current.IsCity ? 990 :
+                needsSettler ? 2100 : context.Current.IsCity ? 990 :
                     player.Group.Count == 1 ? 980 : needsGarrisonRecruit ? 830 : 760,
                 context.Current,
-                Reason: preparingAttack
-                    ? $"prepare attack on {target!.Title}: recruit toward {desiredGroupSize} people"
-                    : needsSettler
+                Reason: needsSettler
                     ? $"recruit a settler for {CampEconomy.StrategicRole(target!)} at {target!.Title}"
                     : needsGarrisonRecruit
                     ? $"critical camp {reinforcementCamp!.Title} needs another guard"
@@ -69,40 +65,109 @@ internal static partial class RecruitmentTask
             Location? preparationCamp = TradeTask.FindBestCampForCityPreparation(state);
             StrategicAi.AddTravelCandidate(
                 state, candidates, preparationCamp ?? StrategicAi.FindNearestCity(state),
-                preparingAttack ? 1030 : needsSettler ? 2090 : 970,
-                preparingAttack
-                    ? $"prepare attack on {target!.Title}: find recruits"
-                    : needsSettler
+                needsSettler ? 2090 : 970,
+                needsSettler
                     ? $"find a settler for {target!.Title}"
                     : preparationCamp == null
                     ? "leader needs a recruit before claiming camps"
                     : "fill the caravan before recruiting in a city");
         }
 
-        return new RecruitmentNeeds(desiredGroupSize, reinforcementCamp);
+        return new RecruitmentNeeds(
+            desiredGroupSize, reinforcementCamp, policy.CriticalGarrisonTarget);
     }
 
-    public static int RecommendedGroupSize(ClassicAiState state, int difficultyMaximum)
+    static RecruitmentNeeds AddAttackPreparationCandidates(
+        ClassicAiState state,
+        AiContext context,
+        AiPolicy policy,
+        Location target,
+        List<AiDecision> candidates)
     {
-        Location[] camps = state.RootGame.World.Locations
-            .Where(location => location.Player == state.Player)
-            .ToArray();
-        if (camps.Length == 0)
-            return 2;
-
-        int dailyExportFood = camps.Sum(camp =>
+        Player player = state.Player;
+        int travelGroupSize = context.TravelGroupSize;
+        if (player.Group.Count < travelGroupSize)
         {
-            Production.Rate rate = camp.GetFoodProductionRate();
-            int guards = CampEconomy.LivingGuardCount(camp, state.Player);
-            return camp.Production == null || rate.IsCampStarving
-                ? 0
-                : System.Math.Max(0, rate.FoodPerDay - guards);
-        });
+            AddRecruitOrCityCandidate(state, context, policy, candidates,
+                1040, 1030, $"restore the two-person travel group before attacking {target.Title}");
+            return new RecruitmentNeeds(travelGroupSize, null);
+        }
 
-        // Preserve daily output for barter and improvements instead of treating
-        // merely non-starving camps as permission to grow the roaming group.
-        int supported = System.Math.Max(2, dailyExportFood - TradeTask.DailyTradeFoodMargin);
-        return System.Math.Min(difficultyMaximum, supported);
+        if (policy.AttackGroupSize <= travelGroupSize ||
+            player.Group.Count >= policy.AttackGroupSize)
+            return new RecruitmentNeeds(policy.AttackGroupSize, null);
+
+        int stagingTarget = policy.AttackGroupSize - travelGroupSize + 1;
+        Location? stagingCamp = ReinforcementTask.FindAttackStagingCamp(
+            state, target, stagingTarget);
+        if (stagingCamp == null)
+            return new RecruitmentNeeds(travelGroupSize, null);
+
+        int stagedGuards = CampEconomy.LivingGuardCount(stagingCamp, player);
+        if (context.Current == stagingCamp &&
+            player.Group.Count > travelGroupSize && stagedGuards > 1)
+        {
+            candidates.Add(new AiDecision(
+                AiAction.MobilizeFrontierFollower,
+                1100,
+                stagingCamp,
+                Reason: $"temporarily mobilize another frontier guard for the attack on {target.Title}"));
+            return new RecruitmentNeeds(policy.AttackGroupSize, null);
+        }
+
+        if (stagedGuards < stagingTarget && player.Group.Count <= travelGroupSize)
+        {
+            AddRecruitOrCityCandidate(state, context, policy, candidates,
+                1040, 1030,
+                $"recruit a guard to stage at frontier camp {stagingCamp.Title}");
+            return new RecruitmentNeeds(
+                travelGroupSize, stagingCamp, stagingTarget, IsAttackStaging: true);
+        }
+
+        if (stagedGuards < stagingTarget)
+            return new RecruitmentNeeds(
+                travelGroupSize, stagingCamp, stagingTarget, IsAttackStaging: true);
+
+        if (context.Current != stagingCamp)
+        {
+            StrategicAi.AddTravelCandidate(state, candidates, stagingCamp, 1090,
+                $"assemble the attack group for {target.Title} at frontier camp {stagingCamp.Title}");
+        }
+        else if (stagedGuards > 1)
+        {
+            candidates.Add(new AiDecision(
+                AiAction.MobilizeFrontierFollower,
+                1100,
+                stagingCamp,
+                Reason: $"temporarily mobilize a frontier guard for the attack on {target.Title}"));
+        }
+
+        return new RecruitmentNeeds(policy.AttackGroupSize, null);
+    }
+
+    static void AddRecruitOrCityCandidate(
+        ClassicAiState state,
+        AiContext context,
+        AiPolicy policy,
+        List<AiDecision> candidates,
+        float recruitScore,
+        float travelScore,
+        string reason)
+    {
+        bool generatedPaymentAllowed = context.Current.IsCity &&
+            policy.AllowGeneratedRecruitPaymentInCities;
+        if (state.CanRecruit(generatedPaymentAllowed))
+        {
+            candidates.Add(new AiDecision(
+                AiAction.Recruit,
+                recruitScore,
+                context.Current,
+                Reason: reason));
+            return;
+        }
+
+        StrategicAi.AddTravelCandidate(
+            state, candidates, StrategicAi.FindNearestCity(state), travelScore, reason);
     }
 
     public static bool CanRecallFollower(ClassicAiState state, int criticalGarrisonTarget)
@@ -116,25 +181,4 @@ internal static partial class RecruitmentTask
         return guards > minimum;
     }
 
-    static bool CanProvisionFullAttackGroup(
-        ClassicAiState state,
-        Location target,
-        int desiredGroupSize)
-    {
-        if (state.Player.Group.Count >= desiredGroupSize)
-            return true;
-        RouteFinder.Route? route = RouteFinder.Find(state.Player, state.Current, target);
-        if (route == null)
-            return false;
-
-        // Attackers are a temporary mobilization, not the permanent roaming
-        // group. Existing camp maintenance leaves protected local food stock in
-        // place, so accumulated portable provisions may fund the expedition even
-        // when daily production cannot sustain this larger group indefinitely.
-        int requiredPerPerson = route.Days + 3;
-        int food = state.Player.Group.GetFoodReserve() + state.Player.Group.GetFoodInInventory();
-        int water = state.Player.Group.GetWaterReserve() + state.Player.Group.GetWaterInInventory();
-        return food >= desiredGroupSize * requiredPerPerson &&
-            water >= desiredGroupSize * requiredPerPerson;
-    }
 }

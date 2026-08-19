@@ -9,6 +9,7 @@ internal enum AiAction
     StationFollower,
     StationTradeFollower,
     RecallFollower,
+    MobilizeFrontierFollower,
     ImproveCamp,
     ClaimNeutral,
     AttackHostile,
