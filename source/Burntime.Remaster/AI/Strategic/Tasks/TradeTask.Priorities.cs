@@ -76,7 +76,7 @@ internal static partial class TradeTask
             return 640 + (item.FoodValue - lowestFood) * 12 + item.TradeValue;
         }
         if (AiItemPool.IsWaterContainer(item.Type) && NeedsBetterWaterContainers(state, item.Type))
-            return (state.HasAttackPlan ? 760 : 600) +
+            return (state.HasAttackPlan ? 1150 : 1050) +
                 AiItemPool.WaterContainerCapacity(item.Type);
         if (IsTradeValueUpgrade(state, item))
             return 500 + item.TradeValue;
@@ -127,7 +127,7 @@ internal static partial class TradeTask
         if (type.FoodValue > 0 && TradeTask.PortableFoodSupply(state) < TradeTask.DesiredPortableFood(state))
             return 900 + type.FoodValue * 12 + type.TradeValue;
         if (AiItemPool.IsWaterContainer(type) && NeedsBetterWaterContainers(state, type))
-            return (state.HasAttackPlan ? 760 : 600) + AiItemPool.WaterContainerCapacity(type);
+            return (state.HasAttackPlan ? 1150 : 1050) + AiItemPool.WaterContainerCapacity(type);
         return 0;
     }
 
@@ -135,7 +135,9 @@ internal static partial class TradeTask
     {
         if (state.Player.Group.Any(character => character.Weapon == item || character.Protection == item))
             return false;
-        if ((IsPump(item) && NeedsAnyPump(state)) ||
+        // A working pump encountered before the low-water camp is claimed is a
+        // scarce strategic asset, not generic barter filler.
+        if ((IsPump(item) && HasForeseeablePumpNeed(state)) ||
             (item.Type.Production != null && state.OwnedCampCount == 0))
             return false;
         if (item.FoodValue > 0 && TradeTask.PortableFoodSupply(state) - item.FoodValue <

@@ -168,6 +168,9 @@ internal static partial class ExpansionTask
     {
         if (!TradeTask.HasNeutralExpansionOpportunity(state))
             return false;
+        if (EconomicSupport.AdvancedTrapCoverage(state) < 0.5f &&
+            EconomicSupport.HasPooledAdvancedTrap(state))
+            return false;
         int portableTools = state.Pool.ProductionToolCount + state.Player.Group
             .SelectMany(character => character.Items)
             .Count(item => item.Type.Production != null);
@@ -271,15 +274,25 @@ internal static partial class ExpansionTask
                 AttackTask.IsTerritorialFrontierTarget(state, location) &&
                 AttackTask.IsTargetAllowed(state, location, policy))
             {
+                DefenseEstimate defense = DefenseIntelligence.Estimate(state, location);
                 float weakness = System.Math.Max(
-                    -100, 100 - DefenseIntelligence.Estimate(state, location).EstimatedStrength);
+                    -100, 100 - defense.EstimatedStrength);
                 float strategicBonus = (ReinforcementTask.IsStrategicLocation(state, location) ||
                     state.WasRecentlyContested(location))
                     ? policy.StrategicHostileTargetBonus
                     : 0;
                 float eliminationBonus = TerritorialEliminationBonus(state, location);
+                float proactiveConflict = state.RootGame.World.Day >= policy.ProactiveConflictDay
+                    ? policy.ProactiveConflictBonus
+                    : 0;
+                // A human player would remember leaving a contacted defender near
+                // death and finish that fight after recovering instead of starting
+                // a fresh campaign elsewhere.
+                float finishingBonus = defense.BasedOnContact && defense.ExpectedDefenders == 1
+                    ? 700
+                    : 0;
                 targets.Add((location, policy.HostileTargetScore + weakness + strategicBonus +
-                    eliminationBonus - route.Days * 6 + Jitter()));
+                    eliminationBonus + proactiveConflict + finishingBonus - route.Days * 6 + Jitter()));
             }
         }
 

@@ -357,7 +357,8 @@ namespace Burntime.Remaster.AI
             bool madeProgress = false)
         {
             failedAttackCamp = location;
-            failedAttackUntilDay = RootGame.World.Day + policy.FailedAttackMemoryTurns;
+            failedAttackUntilDay = RootGame.World.Day +
+                (madeProgress ? 3 : policy.FailedAttackMemoryTurns);
             failedAttackGroupSize = groupSize;
             failedAttackerStrength = attackerStrength;
             failedDefenderStrength = defenderStrength;
@@ -884,11 +885,16 @@ namespace Burntime.Remaster.AI
                 if (payment == null && allowGeneratedPayment)
                 {
                     if (!TryPlanRecruitmentPayment(ch, out ItemType paymentType,
-                        out List<(IItemCollection Owner, Item Item)> paymentAssets))
+                        out List<RecruitmentAsset> paymentAssets))
                         return null;
 
-                    foreach ((IItemCollection owner, Item item) in paymentAssets)
-                        owner.Remove(item);
+                    foreach (RecruitmentAsset asset in paymentAssets)
+                    {
+                        if (asset.FromPool)
+                            ItemPool.TryConsumeConstructionMaterial(asset.Item.ID);
+                        else
+                            asset.Owner.Remove(asset.Item);
+                    }
                     Player.Character.Items.Add(paymentType.Generate());
                     AiTelemetry.Report(Player,
                         $"funded recruitment of {ch.Name} with " +
@@ -932,12 +938,12 @@ namespace Burntime.Remaster.AI
         bool TryPlanRecruitmentPayment(
             Character recruit,
             out ItemType paymentType,
-            out List<(IItemCollection Owner, Item Item)> paymentAssets)
+            out List<RecruitmentAsset> paymentAssets)
         {
             paymentType = recruit.HireItems
                 .OrderBy(type => type.TradeValue)
                 .FirstOrDefault();
-            paymentAssets = new List<(IItemCollection Owner, Item Item)>();
+            paymentAssets = new List<RecruitmentAsset>();
             if (paymentType == null)
                 return true;
 
@@ -945,17 +951,21 @@ namespace Burntime.Remaster.AI
             int remainingWaterCapacity = TradeTask.PortableWaterCapacity(this);
             List<RecruitmentAsset> candidates = Player.Group
                 .SelectMany(character => character.Items
-                    .Select(item => new RecruitmentAsset(character.Items, item, Portable: true)))
+                    .Select(item => new RecruitmentAsset(
+                        character.Items, item, Portable: true, FromPool: false)))
                 .ToList();
+            candidates.AddRange(ItemPool.GetContents()
+                .Where(entry => AiItemPool.IsConstructionMaterial(entry.Type.ID))
+                .SelectMany(entry => Enumerable.Range(0, entry.Count)
+                    .Select(_ => new RecruitmentAsset(
+                        null, entry.Type.Generate(), Portable: false, FromPool: true))));
             foreach (Location camp in RootGame.World.Locations.Where(location =>
-                location.Player == Player && location.Production != null))
+                location.Player == Player))
             {
-                int reserve = LocalOpportunities.CampFoodItemReserve;
                 candidates.AddRange(camp.Rooms
                     .SelectMany(room => room.Items
-                        .Where(item => item.Type == camp.Production.Produce)
-                        .Select(item => new RecruitmentAsset(room.Items, item, Portable: false)))
-                    .Skip(reserve));
+                        .Select(item => new RecruitmentAsset(
+                            room.Items, item, Portable: false, FromPool: false))));
             }
 
             float paidValue = 0;
@@ -968,7 +978,7 @@ namespace Burntime.Remaster.AI
                 if (!CanUseForRecruitmentPayment(asset.Item,
                     remainingFood, remainingWaterCapacity, asset.Portable))
                     continue;
-                paymentAssets.Add((asset.Owner, asset.Item));
+                paymentAssets.Add(asset);
                 paidValue += asset.Item.TradeValue;
                 if (asset.Portable)
                 {
@@ -987,14 +997,15 @@ namespace Burntime.Remaster.AI
 
             // Reduce greedy overpayment with the same high-to-low removal pass
             // used by barter offers.
-            foreach ((IItemCollection owner, Item item) in paymentAssets
+            foreach (RecruitmentAsset asset in paymentAssets
                 .OrderByDescending(asset => asset.Item.TradeValue)
                 .ToArray())
             {
-                if (paymentAssets.Count <= 1 || paidValue - item.TradeValue < paymentType.TradeValue)
+                if (paymentAssets.Count <= 1 ||
+                    paidValue - asset.Item.TradeValue < paymentType.TradeValue)
                     continue;
-                paymentAssets.Remove((owner, item));
-                paidValue -= item.TradeValue;
+                paymentAssets.Remove(asset);
+                paidValue -= asset.Item.TradeValue;
             }
 
             // Character.Hire consumes the formal payment from the leader. Ensure
@@ -1002,11 +1013,12 @@ namespace Burntime.Remaster.AI
             if (Player.Character.Items.IsFull &&
                 !paymentAssets.Any(asset => asset.Owner == Player.Character.Items))
             {
-                (IItemCollection Owner, Item Item) leaderAsset = Player.Character.Items
+                RecruitmentAsset leaderAsset = Player.Character.Items
                     .Where(item => CanUseForRecruitmentPayment(
                         item, remainingFood, remainingWaterCapacity, portable: true))
                     .OrderBy(item => item.TradeValue)
-                    .Select(item => ((IItemCollection)Player.Character.Items, item))
+                    .Select(item => new RecruitmentAsset(
+                        Player.Character.Items, item, Portable: true, FromPool: false))
                     .FirstOrDefault();
                 if (leaderAsset.Item == null)
                 {
@@ -1035,7 +1047,8 @@ namespace Burntime.Remaster.AI
             if (Player.Group.Any(character => character.Weapon == item || character.Protection == item))
                 return false;
             if (item.Type.Production != null || TradeTask.IsPump(item) ||
-                TradeTask.ConstructionMaterialPriority(this, item.ID) > 0)
+                TradeTask.ConstructionMaterialPriority(this, item.ID) > 0 &&
+                    TradeTask.CompletesUsefulRecipe(this, item.ID))
                 return false;
             if (portable && item.FoodValue > 0 &&
                 remainingFood - item.FoodValue < Player.Group.Count * 3)
@@ -1044,6 +1057,8 @@ namespace Burntime.Remaster.AI
                 remainingWaterCapacity - AiItemPool.WaterContainerCapacity(item.Type) <
                     TradeTask.DesiredWaterContainerCapacity(this))
                 return false;
+            if (!portable && AiItemPool.IsWaterContainer(item.Type))
+                return false;
             if (AiItemPool.IsHazardProtection(item.Type) &&
                 TradeTask.NeedsDangerProtection(this, item.Type))
                 return false;
@@ -1051,9 +1066,10 @@ namespace Burntime.Remaster.AI
         }
 
         readonly record struct RecruitmentAsset(
-            IItemCollection Owner,
+            IItemCollection? Owner,
             Item Item,
-            bool Portable);
+            bool Portable,
+            bool FromPool);
 
         #endregion
     }

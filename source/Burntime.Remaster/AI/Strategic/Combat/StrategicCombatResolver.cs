@@ -118,7 +118,8 @@ internal static class StrategicCombatResolver
         else
         {
             state.StrategicTarget = null;
-            bool madeProgress = survivingDefenders.Length < originalDefenders.Count;
+            bool madeProgress = survivingDefenders.Length < originalDefenders.Count ||
+                survivingDefenders.Any(character => character.Health < 100);
             state.RecordFailedAttack(location, originalAttackers.Count, initialAttackerStrength,
                 initialDefenderStrength, AiPolicy.ForDifficulty(state.RootGame.World.Difficulty),
                 madeProgress);

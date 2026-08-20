@@ -86,6 +86,24 @@ internal static class EconomicSupport
 
     internal static bool HasAdvancedTrap(ClassicAiState state) => AdvancedTrapCount(state) > 0;
 
+    internal static float AdvancedTrapCoverage(ClassicAiState state)
+    {
+        Location[] camps = state.RootGame.World.Locations
+            .Where(location => location.Player == state.Player)
+            .ToArray();
+        if (camps.Length == 0)
+            return 0;
+        int covered = camps.Count(camp => camp.Rooms.SelectMany(room => room.Items)
+            .Concat(camp.CampNPC
+                .Where(npc => npc.Player == state.Player && !npc.IsDead)
+                .SelectMany(npc => npc.Items))
+            .Any(item => AdvancedTrapIds.Contains(item.ID)));
+        return covered / (float)camps.Length;
+    }
+
+    internal static bool HasPooledAdvancedTrap(ClassicAiState state) => state.Pool.GetContents()
+        .Any(entry => entry.Count > 0 && AdvancedTrapIds.Contains(entry.Type.ID));
+
     internal static bool IsSavingForSnakeTrap(ClassicAiState state) =>
         Progress.GetOrCreateValue(state.Player).SavingForSnakeTrap &&
         TradeTask.HasStrategicSnakeTrapNeed(state);
@@ -115,6 +133,27 @@ internal static class EconomicSupport
         return firstExposureToday;
     }
 
+    internal static bool HasBeenStrategicallyStalled(ClassicAiState state, int turns)
+    {
+        ProgressState progress = Progress.GetOrCreateValue(state.Player);
+        int day = state.RootGame.World.Day;
+        int campCount = state.RootGame.World.Locations.Count(location =>
+            location.Player == state.Player);
+        Location current = state.Current;
+
+        if (!progress.StrategicProgressInitialized || progress.LastStrategicLocation != current ||
+            progress.LastCampCount != campCount)
+        {
+            progress.StrategicProgressInitialized = true;
+            progress.LastStrategicLocation = current;
+            progress.LastCampCount = campCount;
+            progress.LastStrategicProgressDay = day;
+            return false;
+        }
+
+        return day - progress.LastStrategicProgressDay >= turns;
+    }
+
     static int AdvancedTrapCount(ClassicAiState state)
     {
         int pooled = state.Pool.GetContents()
@@ -138,6 +177,10 @@ internal static class EconomicSupport
         public int LastAdvancedTrapDay;
         public int AdvancedTrapCount;
         public bool SavingForSnakeTrap;
+        public bool StrategicProgressInitialized;
+        public Location LastStrategicLocation;
+        public int LastCampCount;
+        public int LastStrategicProgressDay;
         public readonly Dictionary<int, int> TraderExposureDay = new();
     }
 }

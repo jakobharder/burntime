@@ -18,6 +18,8 @@ internal sealed class AiPolicy
     public int AttackPlanTurns { get; init; } = 40;
     public int AttackPlanRetryDelay { get; init; } = 10;
     public float StrategicHostileTargetBonus { get; init; }
+    public int ProactiveConflictDay { get; init; } = int.MaxValue;
+    public float ProactiveConflictBonus { get; init; }
     public bool UseDetailedCombatEstimate { get; init; }
     public bool AllowGeneratedRecruitPaymentInCities { get; init; } = true;
     public int SafeFoodFloor { get; init; } = 10;
@@ -38,6 +40,7 @@ internal sealed class AiPolicy
             NeutralTargetScore = 860, HostileTargetScore = 680, ExpansionEconomyScore = 950,
             MaxHumanCampDefendersToAttack = int.MaxValue, CriticalGarrisonTarget = 3,
             AttackCooldownTurns = 0, StrategicHostileTargetBonus = 100,
+            ProactiveConflictDay = 35, ProactiveConflictBonus = 1200,
             UseDetailedCombatEstimate = true }
     };
 }

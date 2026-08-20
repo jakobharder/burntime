@@ -28,7 +28,7 @@ internal static class StrategicAi
         if (AttackTask.TryAddImmediateResponse(state, observation, policy, candidates))
             return SelectAndReport(player, candidates);
 
-        if (observation.CriticalSupplies)
+        if (observation.CriticalSupplies && !CanFinishCommittedSettlementJourney(state))
         {
             if (observation.SafeLocation)
             {
@@ -93,6 +93,17 @@ internal static class StrategicAi
                 : "no reachable expansion target with current supplies";
         candidates.Add(new AiDecision(AiAction.Wait, 0, Reason: idleReason));
         return SelectAndReport(player, candidates);
+    }
+
+    static bool CanFinishCommittedSettlementJourney(ClassicAiState state)
+    {
+        Location? target = state.StrategicTarget;
+        if (!state.HasSettlementPlan || target == null || target.Player != null ||
+            state.Player.Group.Any(character => character.Health < 40))
+            return false;
+        RouteFinder.Route? route = RouteFinder.Find(state.Player, state.Current, target);
+        return route != null && SupplyCalculator.HasRouteSupplies(
+            state.Player, route, hostileTarget: false);
     }
 
     static AiDecision SelectAndReport(Player player, List<AiDecision> candidates)

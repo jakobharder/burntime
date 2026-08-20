@@ -72,9 +72,14 @@ internal static partial class TradeTask
     internal static bool NeedsAnyPump(ClassicAiState state) => state.RootGame.World.Locations
         .Any(location => location.Player == state.Player && NeedsPump(location));
 
+    internal static bool HasForeseeablePumpNeed(ClassicAiState state) =>
+        NeedsAnyPump(state) || state.RootGame.World.Locations.Any(location =>
+            !location.IsCity && location.Player == null &&
+            CampEconomy.CanSustainCamp(location) && NeedsPump(location));
+
     internal static bool NeedsCriticalPump(ClassicAiState state) => state.RootGame.World.Locations
         .Any(location => location.Player == state.Player && location.GetSourceRoom() != null &&
-            !location.GetSourceRoom().Items.Any(IsPump) && location.Source.Water <= 0);
+            !location.GetSourceRoom().Items.Any(IsPump) && location.Source.Water <= 1);
 
     internal static bool NeedsPump(Location camp)
     {
@@ -90,7 +95,10 @@ internal static partial class TradeTask
 
     internal static bool IsPump(Item item) => IsPump(item.Type);
 
-    internal static bool IsPump(ItemType type) => type.IsClass("pump") || type.ID == "item_industrial_pump";
+    // Only working pumps improve a water source. Broken pumps and other pump
+    // parts are construction materials, not installed water infrastructure.
+    internal static bool IsPump(ItemType type) =>
+        type.ID is "item_hand_pump" or "item_industrial_pump";
 
     internal static bool NeedsProductionResult(
         ClassicAiState state,

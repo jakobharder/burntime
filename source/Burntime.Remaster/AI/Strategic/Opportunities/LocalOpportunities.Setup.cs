@@ -231,12 +231,18 @@ internal static partial class LocalOpportunities
         IReadOnlyCollection<Character> group)
     {
         Location camp = state.Current;
-        if (camp.Player != state.Player || ReinforcementTask.IsThreatened(state, camp) ||
-            state.WasRecentlyContested(camp))
+        Character[] unarmedTravellers = travellers.Where(character =>
+            (character.Items.FindBestWeapon()?.DamageValue ?? 0) == 0).ToArray();
+        bool groupIsCompletelyUnarmed = unarmedTravellers.Length > 0 && group.All(character =>
+            (character.Items.FindBestWeapon()?.DamageValue ?? 0) == 0);
+        bool threatened = ReinforcementTask.IsThreatened(state, camp) ||
+            state.WasRecentlyContested(camp);
+        bool emergencyBorrow = threatened && groupIsCompletelyUnarmed &&
+            EconomicSupport.HasBeenStrategicallyStalled(state, turns: 12);
+        if (camp.Player != state.Player || threatened && !emergencyBorrow)
             return;
 
-        foreach (Character traveller in travellers.Where(character =>
-            (character.Items.FindBestWeapon()?.DamageValue ?? 0) == 0))
+        foreach (Character traveller in unarmedTravellers)
         {
             var stored = camp.Rooms
                 .SelectMany(room => room.Items.Select(item => new { Room = room, Item = item }))
@@ -272,8 +278,11 @@ internal static partial class LocalOpportunities
             guard.Items.Remove(transferred);
             state.Pool.Insert(transferred);
             AiTelemetry.Report(state.Player,
-                $"transferred {transferred.ID} from rear guard {guard.Name} at {camp.Title} " +
-                $"to the travelling group");
+                threatened
+                    ? $"borrowed {transferred.ID} from guard {guard.Name} at threatened {camp.Title} " +
+                        "to unblock the travelling group"
+                    : $"transferred {transferred.ID} from rear guard {guard.Name} at {camp.Title} " +
+                        "to the travelling group");
             EquipWeapon(state, traveller, group, isCamp: false,
                 upgradeWeakWeapon: false,
                 traveller == state.Player.Character ? "leader" : "follower");

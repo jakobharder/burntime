@@ -169,7 +169,7 @@ internal static partial class LocalOpportunities
 
     internal static void InstallConstructedItem(ClassicAiState state, Location camp, Item item)
     {
-        if (item.Type.IsClass("pump") || item.ID == "item_industrial_pump")
+        if (TradeTask.IsPump(item))
         {
             Room source = camp.GetSourceRoom();
             if (source != null && !source.Items.IsFull)

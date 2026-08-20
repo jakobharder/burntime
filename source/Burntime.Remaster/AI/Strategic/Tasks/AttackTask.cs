@@ -22,7 +22,8 @@ internal static class AttackTask
 
         if (!IsSuitable(state, player, context.Current, policy))
         {
-            Location? retreat = StrategicAi.FindNearestLogistics(state, requireReachable: true);
+            Location? suppliedRetreat = StrategicAi.FindNearestLogistics(state, requireReachable: true);
+            Location? retreat = suppliedRetreat ?? StrategicAi.FindNearestLogistics(state);
             if (retreat != null)
             {
                 candidates.Add(new AiDecision(
@@ -30,7 +31,9 @@ internal static class AttackTask
                     1250,
                     retreat,
                     RouteFinder.Find(player, context.Current, retreat)?.NextStep,
-                    "retreat toward the nearest reachable safe location"));
+                    suppliedRetreat != null
+                        ? "retreat toward the nearest reachable safe location"
+                        : "make an emergency retreat despite insufficient route supplies"));
             }
             else
             {
