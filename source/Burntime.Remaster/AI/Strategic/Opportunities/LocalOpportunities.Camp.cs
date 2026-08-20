@@ -8,6 +8,9 @@ namespace Burntime.Remaster.AI;
 internal static partial class LocalOpportunities
 {
     internal const int CampWeaponReserve = 2;
+    // Stationed NPCs consume the camp's daily production directly. Physical food
+    // items are therefore available for provisioning, export, and other spending.
+    internal const int CampFoodItemReserve = 0;
 
     public static bool ShouldPreferProductionAtCamp(ClassicAiState state, Location location) =>
         location.Danger == null && !ReinforcementTask.IsThreatened(state, location);
@@ -32,8 +35,7 @@ internal static partial class LocalOpportunities
         while (state.Player.Group.Any(character => character.Food < character.MaxFood))
         {
             int storedFood = camp.Rooms.Sum(room => room.Items.Count(item => item.FoodValue > 0));
-            int campReserve = System.Math.Max(2,
-                CampEconomy.LivingGuardCount(camp, state.Player));
+            int campReserve = CampFoodItemReserve;
 
             List<(IItemCollection Owner, Item Item)> candidates = state.Player.Group
                 .SelectMany(character => character.Items
@@ -215,7 +217,7 @@ internal static partial class LocalOpportunities
             return;
 
         int stock = camp.Rooms.Sum(room => room.Items.GetCount(camp.Production.Produce));
-        int reserve = System.Math.Max(2, camp.CampNPC.Count(npc => npc.Player == state.Player));
+        int reserve = CampFoodItemReserve;
         int collected = 0;
         foreach (Room room in camp.Rooms)
         {

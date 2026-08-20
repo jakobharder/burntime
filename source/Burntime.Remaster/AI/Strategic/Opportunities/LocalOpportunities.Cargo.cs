@@ -23,8 +23,7 @@ internal static partial class LocalOpportunities
             {
                 int storedFood = current.Rooms.Sum(room =>
                     room.Items.Count(item => item.FoodValue > 0));
-                int campReserve = System.Math.Max(1,
-                    CampEconomy.LivingGuardCount(current, player));
+                int campReserve = CampFoodItemReserve;
                 if (storedFood > campReserve)
                     candidates.AddRange(current.Rooms.SelectMany(room => room.Items
                         .Where(item => item.FoodValue > 0)
@@ -101,7 +100,7 @@ internal static partial class LocalOpportunities
             int stock = camp.Rooms.Sum(room => room.Items.GetCount(camp.Production.Produce));
             stock = System.Math.Min(Location.MaxStockFood,
                 stock + ProjectedProductionItems(camp, travelDays));
-            int reserve = System.Math.Max(2, camp.CampNPC.Count(npc => npc.Player == state.Player));
+            int reserve = CampFoodItemReserve;
             value += System.Math.Max(0, stock - reserve) * camp.Production.Produce.TradeValue;
         }
 
@@ -121,7 +120,7 @@ internal static partial class LocalOpportunities
             int stock = camp.Rooms.Sum(room => room.Items.GetCount(camp.Production.Produce));
             stock = System.Math.Min(Location.MaxStockFood,
                 stock + ProjectedProductionItems(camp, travelDays));
-            int reserve = System.Math.Max(2, camp.CampNPC.Count(npc => npc.Player == state.Player));
+            int reserve = CampFoodItemReserve;
             count += System.Math.Max(0, stock - reserve);
         }
 

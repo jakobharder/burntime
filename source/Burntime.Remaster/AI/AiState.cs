@@ -950,8 +950,7 @@ namespace Burntime.Remaster.AI
             foreach (Location camp in RootGame.World.Locations.Where(location =>
                 location.Player == Player && location.Production != null))
             {
-                int reserve = System.Math.Max(2,
-                    CampEconomy.LivingGuardCount(camp, Player));
+                int reserve = LocalOpportunities.CampFoodItemReserve;
                 candidates.AddRange(camp.Rooms
                     .SelectMany(room => room.Items
                         .Where(item => item.Type == camp.Production.Produce)
