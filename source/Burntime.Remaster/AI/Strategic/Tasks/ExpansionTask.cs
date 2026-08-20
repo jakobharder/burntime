@@ -21,8 +21,6 @@ internal static partial class ExpansionTask
         bool suitableCurrentClaim = IsSuitableCurrentClaim(state, context);
         bool currentCanBecomeCamp = state.CanClaim(context.Current) && suitableCurrentClaim;
         bool canClaimCurrent = currentCanBecomeCamp && state.CanStationCamp();
-        if (currentCanBecomeCamp && !state.CanStationCamp() && !state.HasSettlementPlan)
-            state.SetSettlementTarget(context.Current);
         Location? target = ValidatePersistentTarget(state, context, policy);
         if (target == null && !(canClaimCurrent && state.StrategicTarget == null))
         {
@@ -186,7 +184,9 @@ internal static partial class ExpansionTask
             return null;
         if (target == context.Current)
         {
-            if (target.Player == null && state.CanClaim(target) && !state.CanStationCamp())
+            if (target.Player == null &&
+                (state.CanClaim(target) && !state.CanStationCamp() ||
+                    state.HasSettlementPlan && state.Player.Group.Count > 1))
                 return target;
             state.StrategicTarget = null;
             return null;
@@ -201,9 +201,11 @@ internal static partial class ExpansionTask
         }
         if (target.Player == null)
         {
-            if (context.NeutralExpansionAllowed && state.CanClaim(target) &&
-                (HasExpansionRouteSupplies(state, context, route) ||
-                    state.Player.Group.Count <= 1))
+            bool committedSettler = state.HasSettlementPlan && state.Player.Group.Count > 1;
+            if (context.NeutralExpansionAllowed &&
+                (committedSettler || state.CanClaim(target) &&
+                    (HasExpansionRouteSupplies(state, context, route) ||
+                        state.Player.Group.Count <= 1)))
                 return target;
             state.StrategicTarget = null;
             return null;
@@ -234,9 +236,23 @@ internal static partial class ExpansionTask
             HasReachableAcceptableFirstCamp(state, context);
         foreach (Location location in state.RootGame.World.Locations)
         {
-            if (location == context.Current || location.IsCity ||
-                state.IsAttackTargetDeferred(location))
+            if (location.IsCity || state.IsAttackTargetDeferred(location))
                 continue;
+
+            if (location == context.Current)
+            {
+                if (location.Player == null && context.NeutralExpansionAllowed &&
+                    state.CanClaim(location) &&
+                    (!hasAcceptableFirstCamp || CampEconomy.IsAcceptableFirstCamp(location)))
+                {
+                    // Standing at a viable site does not make it free when a
+                    // settler still has to be recruited elsewhere. Compare it
+                    // with every other candidate instead of promising to return.
+                    targets.Add((location, NeutralTargetScore(state, policy, location) +
+                        NeutralFrontierScore(state, location) + Jitter()));
+                }
+                continue;
+            }
 
             RouteFinder.Route? route = RouteFinder.Find(context.Player, context.Current, location);
             if (route == null)
@@ -380,7 +396,11 @@ internal static partial class ExpansionTask
             _ => -300
         };
         int cityAccess = CampEconomy.OpensCityAccess(location) ? 250 : 0;
-        return locality + cityAccess;
+        int earlyAdvancedFood = state.OwnedCampCount < 2 &&
+            CampEconomy.HasAdvancedFoodPotential(location)
+            ? 300
+            : 0;
+        return locality + cityAccess + earlyAdvancedFood;
     }
 
     static float TargetScore(ClassicAiState state, AiPolicy policy, Location? target)

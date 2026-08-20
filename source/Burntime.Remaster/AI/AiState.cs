@@ -681,10 +681,15 @@ namespace Burntime.Remaster.AI
             bool preferProductionUpgrade = LocalOpportunities.ShouldPreferProductionAtCamp(this, CurrentLocation) &&
                 ItemPool.HasHigherValueTrap(existingTool?.Type.Production?.Produce.TradeValue ?? -1,
                     GetAvailableProducts(CurrentLocation));
+            bool reserveLastPortableTool = existingTool == null &&
+                ExpansionTask.CanBootstrapCamp(this, CurrentLocation) &&
+                ExpansionTask.ShouldReserveProductionTool(this);
             Item trap = existingTool == null || preferProductionUpgrade
                 ? ItemPool.HasTrap(GetAvailableProducts(CurrentLocation))
                     ? ItemPool.GetBestTrap(GetAvailableProducts(CurrentLocation))
-                    : existingTool == null ? TakeCompatibleGroupProduction(CurrentLocation) : null
+                    : existingTool == null && !reserveLastPortableTool
+                        ? TakeCompatibleGroupProduction(CurrentLocation)
+                        : null
                 : null;
             if (trap != null)
             {

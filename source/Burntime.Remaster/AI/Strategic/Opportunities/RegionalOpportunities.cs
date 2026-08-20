@@ -30,7 +30,8 @@ internal static class RegionalOpportunities
         bool carriesPump = state.Player.Group.SelectMany(character => character.Items)
             .Any(TradeTask.IsPump);
         bool completeRecipe = TradeTask.HasCompleteUsefulRecipe(state);
-        bool hasProductionUpgrade = state.RootGame.World.Locations
+        bool reserveProductionTool = ExpansionTask.ShouldReserveProductionTool(state);
+        bool hasProductionUpgrade = !reserveProductionTool && state.RootGame.World.Locations
             .Where(location => location.Player == state.Player)
             .Any(location => LocalOpportunities.HasPortableBestProduction(state, location));
         if (!carriesPump && !completeRecipe && !hasProductionUpgrade)
@@ -40,7 +41,8 @@ internal static class RegionalOpportunities
             .Where(location => location.Player == state.Player && location != state.Current)
             .Where(location =>
                 (carriesPump && TradeTask.NeedsPump(location)) ||
-                LocalOpportunities.HasPortableBestProduction(state, location) ||
+                (!reserveProductionTool &&
+                    LocalOpportunities.HasPortableBestProduction(state, location)) ||
                 (completeRecipe && TradeTask.CanUseCompleteRecipeAtCamp(state, location)))
             .Select(location => new
             {

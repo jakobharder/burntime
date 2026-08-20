@@ -60,7 +60,8 @@ internal static class StrategicAi
         ReinforcementTask.AddCandidates(
             state, observation, policy, recruitment, candidates);
 
-        if (state.NeedsCampImprovement())
+        if (state.NeedsCampImprovement() &&
+            !ExpansionTask.ShouldReserveProductionTool(state))
         {
             float economicGain = System.Math.Max(0,
                 EconomicReturn.MarginalCampImprovement(state, observation.Current));

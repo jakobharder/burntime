@@ -71,7 +71,7 @@ internal static partial class LocalOpportunities
 
     internal static void InstallProductionFromPool(ClassicAiState state, Location camp)
     {
-        if (state.HasSettlementPlan && ExpansionTask.ShouldReserveProductionTool(state))
+        if (ExpansionTask.ShouldReserveProductionTool(state))
             return;
 
         string[] products = camp.ValidProductions

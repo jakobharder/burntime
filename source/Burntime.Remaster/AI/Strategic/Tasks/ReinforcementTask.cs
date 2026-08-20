@@ -54,6 +54,14 @@ internal static partial class ReinforcementTask
         if (garrisonTarget <= 1)
             return null;
 
+        // A young faction must finish forming a useful local network before it
+        // spends every available recruit filling its first camps to the maximum.
+        // One additional guard is enough early security; mature empires use the
+        // full difficulty-specific target below.
+        int effectiveTarget = state.OwnedCampCount < 4
+            ? System.Math.Min(garrisonTarget, 2)
+            : garrisonTarget;
+
         return state.RootGame.World.Locations
             .Where(location => location.Player == state.Player && IsCriticalCamp(state, location))
             .Select(location => new
@@ -61,7 +69,7 @@ internal static partial class ReinforcementTask
                 Location = location,
                 Route = RouteFinder.Find(state.Player, state.Current, location),
                 Guards = CampEconomy.LivingGuardCount(location, state.Player),
-                Target = SustainableGarrisonTarget(location, garrisonTarget)
+                Target = SustainableGarrisonTarget(location, effectiveTarget)
             })
             .Where(candidate => candidate.Route != null && candidate.Guards < candidate.Target &&
                 CanSupportAdditionalGuard(state, candidate.Location, candidate.Guards))
