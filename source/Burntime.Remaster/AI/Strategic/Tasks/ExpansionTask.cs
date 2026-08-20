@@ -272,7 +272,7 @@ internal static partial class ExpansionTask
                 AttackTask.IsTargetAllowed(state, location, policy))
             {
                 float weakness = System.Math.Max(
-                    -100, 100 - CombatStrength.AssessedDefenders(location, policy));
+                    -100, 100 - DefenseIntelligence.Estimate(state, location).EstimatedStrength);
                 float strategicBonus = (ReinforcementTask.IsStrategicLocation(state, location) ||
                     state.WasRecentlyContested(location))
                     ? policy.StrategicHostileTargetBonus

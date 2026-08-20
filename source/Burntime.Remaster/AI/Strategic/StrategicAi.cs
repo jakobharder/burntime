@@ -8,6 +8,7 @@ internal static class StrategicAi
 {
     public static void RunTurn(ClassicAiState state)
     {
+        DefenseIntelligence.ObserveWorld(state);
         LocalOpportunities.Apply(state);
         if (LocalOpportunities.ConsumeAvailableSupplies(state))
             AiTelemetry.Report(state.Player,

@@ -320,8 +320,13 @@ namespace Burntime.Remaster.AI
             headedLocation = location;
             strategicTargetWasNeutral = false;
             attackPlanUntilDay = RootGame.World.Day + policy.AttackPlanTurns;
+            DefenseEstimate defense = DefenseIntelligence.Estimate(this, location);
+            int attackGroupSize = AttackTask.RequiredAttackGroupSize(this, location, policy);
             AiTelemetry.Report(Player,
-                $"started attack plan for {location.Title} with {policy.AttackPlanTurns} days to prepare");
+                $"started attack plan for {location.Title}: " +
+                $"{(defense.BasedOnContact ? "observed" : "inferred")} about " +
+                $"{defense.ExpectedDefenders} defender{(defense.ExpectedDefenders == 1 ? "" : "s")}, " +
+                $"preparing {attackGroupSize} attackers with {policy.AttackPlanTurns} days available");
         }
 
         internal void MarkAttackPlanReady(Location location)
@@ -345,15 +350,17 @@ namespace Burntime.Remaster.AI
             int groupSize,
             float attackerStrength,
             float defenderStrength,
-            AiPolicy policy)
+            AiPolicy policy,
+            bool madeProgress = false)
         {
             failedAttackCamp = location;
             failedAttackUntilDay = RootGame.World.Day + policy.FailedAttackMemoryTurns;
             failedAttackGroupSize = groupSize;
             failedAttackerStrength = attackerStrength;
             failedDefenderStrength = defenderStrength;
-            AiTelemetry.Report(Player,
-                $"will reconsider {location.Title} only after recruiting, re-equipping, or weakening its defenders");
+            AiTelemetry.Report(Player, madeProgress
+                ? $"learned the reduced defense at {location.Title} and may return after recovering"
+                : $"will reconsider {location.Title} only after recruiting, re-equipping, or weakening its defenders");
         }
 
         internal bool HasImprovedSinceFailedAttack(

@@ -16,6 +16,10 @@ internal static class AttackTask
         if (!IsHostile(context.Current, player))
             return false;
 
+        DefenseIntelligence.ObserveEncounter(state, context.Current,
+            context.Current.CampNPC.Where(character =>
+                character.Player == context.Current.Player && !character.IsDead));
+
         if (!IsSuitable(state, player, context.Current, policy))
         {
             Location? retreat = StrategicAi.FindNearestLogistics(state, requireReachable: true);
@@ -76,7 +80,8 @@ internal static class AttackTask
             state.StrategicTarget = null;
             return null;
         }
-        bool currentReady = context.Player.Group.Count >= policy.AttackGroupSize &&
+        int requiredGroupSize = RequiredAttackGroupSize(state, target, policy);
+        bool currentReady = context.Player.Group.Count >= requiredGroupSize &&
             IsSuitable(state, context.Player, target, policy) &&
             SupplyCalculator.HasRouteSupplies(context.Player, route, hostileTarget: true);
         if (!currentReady)
@@ -110,7 +115,8 @@ internal static class AttackTask
         AiPolicy policy)
     {
         Player player = state.Player;
-        if (player.Group.Count < policy.AttackGroupSize || !HasGroupWeapon(player) ||
+        if (player.Group.Count < RequiredAttackGroupSize(state, target, policy) ||
+            !HasGroupWeapon(player) ||
             !IsTerritorialFrontierTarget(state, target))
             return false;
         RouteFinder.Route? route = RouteFinder.Find(player, state.Current, target);
@@ -152,15 +158,7 @@ internal static class AttackTask
                 (state.RootGame.World.Difficulty == 0 ? 0 : 1))
             return false;
 
-        Character[] livingDefenders = target.CampNPC
-            .Where(character => !character.IsDead && character.Player == target.Player)
-            .ToArray();
-
-        float defenders = policy.UseDetailedCombatEstimate
-            ? livingDefenders.Sum(character =>
-                character.AttackValue + character.DefenseValue + character.Health / 10f)
-            : livingDefenders.Sum(character =>
-                (character.Items.FindBestWeapon()?.DamageValue ?? character.BaseAttackValue) + 10f);
+        float defenders = DefenseIntelligence.Estimate(state, target).EstimatedStrength;
         if (defenders <= 0)
             return true;
         float attackersStrength = CombatStrength.Attacker(player);
@@ -179,15 +177,19 @@ internal static class AttackTask
         if (target.Player?.Type != PlayerType.Human || state.IsRetaliatingAgainst(target.Player))
             return true;
 
-        Character[] defenders = target.CampNPC
-            .Where(character => !character.IsDead && character.Player == target.Player)
-            .ToArray();
-        int visibleDefenders = defenders.Length;
-        Item? loneGuardWeapon = visibleDefenders == 1 ? defenders[0].Items.FindBestWeapon() : null;
-        if (policy.TreatLoneKnifeGuardAsUndefended && visibleDefenders == 1 &&
-            (loneGuardWeapon == null || loneGuardWeapon.ID == "item_knife"))
-            visibleDefenders = 0;
-        return visibleDefenders <= policy.MaxHumanCampDefendersToAttack;
+        int estimatedDefenders = DefenseIntelligence.Estimate(state, target).ExpectedDefenders;
+        if (policy.TreatLoneKnifeGuardAsUndefended && estimatedDefenders == 1)
+            estimatedDefenders = 0;
+        return estimatedDefenders <= policy.MaxHumanCampDefendersToAttack;
+    }
+
+    public static int RequiredAttackGroupSize(
+        ClassicAiState state,
+        Location target,
+        AiPolicy policy)
+    {
+        int expectedDefenders = DefenseIntelligence.Estimate(state, target).ExpectedDefenders;
+        return System.Math.Clamp(expectedDefenders + 1, 2, policy.AttackGroupSize);
     }
 
     public static bool IsTerritorialFrontierTarget(ClassicAiState state, Location target)
@@ -242,14 +244,12 @@ internal static class AttackTask
         AiPolicy policy,
         Location currentTarget)
     {
-        if (context.Player.Group.Count < policy.AttackGroupSize)
-            return null;
-
         return state.RootGame.World.Locations
             .Where(location => location != currentTarget && location != context.Current &&
                 !location.IsCity && !state.IsAttackTargetDeferred(location) &&
                 IsHostile(location, context.Player) &&
                 IsTerritorialFrontierTarget(state, location) &&
+                context.Player.Group.Count >= RequiredAttackGroupSize(state, location, policy) &&
                 IsTargetAllowed(state, location, policy) &&
                 IsSuitable(state, context.Player, location, policy))
             .Select(location => new
@@ -260,7 +260,7 @@ internal static class AttackTask
             .Where(candidate => candidate.Route != null &&
                 SupplyCalculator.HasRouteSupplies(
                     context.Player, candidate.Route, hostileTarget: true))
-            .OrderBy(candidate => CombatStrength.AssessedDefenders(candidate.Location, policy))
+            .OrderBy(candidate => DefenseIntelligence.Estimate(state, candidate.Location).EstimatedStrength)
             .ThenBy(candidate => candidate.Route!.Days)
             .Select(candidate => candidate.Location)
             .FirstOrDefault();

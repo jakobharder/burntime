@@ -90,6 +90,7 @@ internal static partial class RecruitmentTask
     {
         Player player = state.Player;
         int travelGroupSize = context.TravelGroupSize;
+        int attackGroupSize = AttackTask.RequiredAttackGroupSize(state, target, policy);
         if (player.Group.Count < travelGroupSize)
         {
             AddRecruitOrCityCandidate(state, context, policy, candidates,
@@ -97,11 +98,11 @@ internal static partial class RecruitmentTask
             return new RecruitmentNeeds(travelGroupSize, null);
         }
 
-        if (policy.AttackGroupSize <= travelGroupSize ||
-            player.Group.Count >= policy.AttackGroupSize)
-            return new RecruitmentNeeds(policy.AttackGroupSize, null);
+        if (attackGroupSize <= travelGroupSize ||
+            player.Group.Count >= attackGroupSize)
+            return new RecruitmentNeeds(attackGroupSize, null);
 
-        int stagingTarget = policy.AttackGroupSize - travelGroupSize + 1;
+        int stagingTarget = attackGroupSize - travelGroupSize + 1;
         Location? stagingCamp = ReinforcementTask.FindAttackStagingCamp(
             state, target, stagingTarget);
         if (stagingCamp == null)
@@ -116,7 +117,7 @@ internal static partial class RecruitmentTask
                 1100,
                 stagingCamp,
                 Reason: $"temporarily mobilize another frontier guard for the attack on {target.Title}"));
-            return new RecruitmentNeeds(policy.AttackGroupSize, null);
+            return new RecruitmentNeeds(attackGroupSize, null);
         }
 
         if (stagedGuards < stagingTarget && player.Group.Count <= travelGroupSize)
@@ -146,7 +147,7 @@ internal static partial class RecruitmentTask
                 Reason: $"temporarily mobilize a frontier guard for the attack on {target.Title}"));
         }
 
-        return new RecruitmentNeeds(policy.AttackGroupSize, null);
+        return new RecruitmentNeeds(attackGroupSize, null);
     }
 
     static void AddRecruitOrCityCandidate(
