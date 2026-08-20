@@ -187,8 +187,9 @@ internal static partial class TradeTask
             List<TradeAsset> offers = new();
             float offeredValue = 0;
             int remainingFood = TradeTask.PortableFoodSupply(state);
-            int remainingWaterCapacity = TradeTask.PortableWaterSupply(state) + temporaryPoolAssets
-                .Sum(asset => AiItemPool.WaterContainerCapacity(asset.Item.Type));
+            int acquiredWaterCapacity = AiItemPool.WaterContainerCapacity(target.Type);
+            int remainingWaterCapacity = TradeTask.PortableWaterSupply(state) + acquiredWaterCapacity +
+                temporaryPoolAssets.Sum(asset => AiItemPool.WaterContainerCapacity(asset.Item.Type));
             int remainingMeleeWeapons = state.Player.Group.SelectMany(character => character.Items)
                 .Count(item => item.DamageValue > 0 && !AiItemPool.IsFirearm(item.Type));
             Dictionary<string, int> remainingMaterials = TradeTask.ConstructionMaterials
@@ -204,12 +205,14 @@ internal static partial class TradeTask
                 if (candidate.Item.FoodValue > 0 && remainingFood - candidate.Item.FoodValue +
                     target.FoodValue < foodFloor)
                     continue;
+                // A completed production upgrade outranks standing container
+                // reserves. Ordinary barter must preserve the full water target;
+                // exceptional trap purchases may spend it but keep survival water.
                 int waterFloor = spendReserves
                     ? state.Player.Group.Count * 3
                     : TradeTask.DesiredPortableWaterCapacity(state);
                 if (AiItemPool.IsWaterContainer(candidate.Item.Type) &&
-                    remainingWaterCapacity - AiItemPool.WaterContainerCapacity(candidate.Item.Type) +
-                        AiItemPool.WaterContainerCapacity(target.Type) < waterFloor)
+                    remainingWaterCapacity - AiItemPool.WaterContainerCapacity(candidate.Item.Type) < waterFloor)
                     continue;
                 if (spendReserves && candidate.Item.DamageValue > 0 &&
                     !AiItemPool.IsFirearm(candidate.Item.Type) && remainingMeleeWeapons <= 1)
@@ -355,11 +358,18 @@ internal static partial class TradeTask
     internal static List<TradeAsset> TakeSurplusPoolAssets(ClassicAiState state)
     {
         List<TradeAsset> assets = new();
-        while (state.Pool.WaterContainerCount > 1)
+        int requiredPoolCapacity = System.Math.Max(0,
+            RequiredUnstationedWaterContainerCapacity(state) - PortableWaterCapacity(state));
+        while (state.Pool.WaterContainerCount > 0)
         {
             Item item = state.Pool.TakeLeastWaterContainer();
             if (item == null)
                 break;
+            if (state.Pool.TotalWaterContainerCapacity < requiredPoolCapacity)
+            {
+                state.Pool.Insert(item);
+                break;
+            }
             assets.Add(new TradeAsset(null, item, true));
         }
         while (GlobalProtectionStock(state) > DesiredProtectionReserve(state) && state.Pool.ProtectionCount > 0)

@@ -9,10 +9,12 @@ internal static class SupplyCalculator
         RouteFinder.Route route,
         bool hostileTarget)
     {
-        int margin = hostileTarget ? 3 : 0;
-        int required = route.Days + margin;
-        return player.Group.GetLowestFoodWithInventory() >= required &&
-            player.Group.GetLowestWaterWithInventory() >= required;
+        int foodRequired = route.Days + 
+            System.Math.Max(0, hostileTarget ? (route.Days - 1) : 0);
+        int waterRequired = route.Days +
+            System.Math.Max(0, hostileTarget ? route.Days : 0);
+        return player.Group.GetLowestFoodWithInventory() >= foodRequired &&
+            player.Group.GetLowestWaterWithInventory() >= waterRequired;
     }
 
     public static bool HasTerritorialRouteSupplies(

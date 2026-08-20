@@ -9,7 +9,6 @@ namespace Burntime.Remaster.AI;
 internal static partial class TradeTask
 {
     const int StandingFoodDays = 9;
-    const int StandingWaterDays = 7;
     const int MinimumTradeValue = 25;
     const int MinimumTradeItems = 4;
     const int MaximumCaravanPeople = 2;
@@ -181,8 +180,18 @@ internal static partial class TradeTask
     internal static int DesiredPortableFood(ClassicAiState state) =>
         state.Player.Group.Count * StandingFoodDays;
 
+    internal static int DesiredWaterContainerCapacity(ClassicAiState state)
+    {
+        // A canteen (capacity 3) is one traveller's standing reserve. A wineskin
+        // (capacity 5) is efficient enough to be shared by two travellers.
+        int pairs = state.Player.Group.Count / 2;
+        int singles = state.Player.Group.Count % 2;
+        return pairs * 5 + singles * 3;
+    }
+
     internal static int DesiredPortableWaterCapacity(ClassicAiState state) =>
-        state.Player.Group.Count * StandingWaterDays;
+        state.Player.Group.Sum(character => character.MaxWater) +
+        DesiredWaterContainerCapacity(state);
 
     internal static int DesiredCaravanSlots(ClassicAiState state) => state.Player.Group
         .Take(MaximumCaravanPeople)

@@ -161,13 +161,14 @@ internal static partial class LocalOpportunities
             AiTelemetry.Report(player, $"equipped {npc.Name} with {container.ID}");
         }
 
+        StockCampWaterContainers(state, camps);
+
         CarryStrategicProtection(state);
     }
 
     internal static void CarryStandingWaterContainers(ClassicAiState state, IReadOnlyCollection<Character> group)
     {
-        while (TradeTask.PortableWaterSupply(state) < TradeTask.DesiredPortableWaterCapacity(state) &&
-            state.Pool.HasWaterContainer())
+        while (TradeTask.PortableWaterCapacity(state) < TradeTask.DesiredWaterContainerCapacity(state))
         {
             Character carrier = group
                 .Where(character => !character.Items.IsFull)
@@ -177,10 +178,50 @@ internal static partial class LocalOpportunities
                 .FirstOrDefault();
             if (carrier == null)
                 break;
-            Item container = state.Pool.GetBestWaterContainer();
+            Item container = state.Pool.HasWaterContainer()
+                ? state.Pool.GetBestWaterContainer()
+                : state.Current.Player == state.Player
+                    ? TakeStoredWaterContainer(state.Current)
+                    : null;
+            if (container == null)
+                break;
             carrier.Items.Add(container);
             AiTelemetry.Report(state.Player,
                 $"added standing water reserve {container.ID} to {carrier.Name}");
+        }
+    }
+
+    static Item TakeStoredWaterContainer(Location camp)
+    {
+        var stored = camp.Rooms
+            .SelectMany(room => room.Items
+                .Where(item => AiItemPool.IsWaterContainer(item.Type))
+                .Select(item => new { Room = room, Item = item }))
+            .OrderByDescending(entry => AiItemPool.WaterContainerCapacity(entry.Item.Type))
+            .ThenByDescending(entry => entry.Item.WaterValue)
+            .FirstOrDefault();
+        if (stored == null)
+            return null;
+        stored.Room.Items.Remove(stored.Item);
+        return stored.Item;
+    }
+
+    static void StockCampWaterContainers(ClassicAiState state, IEnumerable<Location> camps)
+    {
+        foreach (Location camp in camps)
+        {
+            int stock = TradeTask.CampWaterContainerCount(camp);
+            while (stock < TradeTask.DesiredCampWaterContainerCount && state.Pool.HasWaterContainer())
+            {
+                Room room = camp.Rooms.FirstOrDefault();
+                if (room == null || room.Items.IsFull)
+                    break;
+                Item container = state.Pool.GetBestWaterContainer();
+                room.Items.Add(container);
+                stock++;
+                AiTelemetry.Report(state.Player,
+                    $"stocked {container.ID} as water reserve at {camp.Title}");
+            }
         }
     }
 

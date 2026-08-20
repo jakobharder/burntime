@@ -7,6 +7,8 @@ namespace Burntime.Remaster.AI;
 
 internal static partial class TradeTask
 {
+    internal const int DesiredCampWaterContainerCount = 2;
+
     internal static float ShoppingPriority(ClassicAiState state, Item item)
     {
         bool earlyEconomy = state.OwnedCampCount < 3;
@@ -146,10 +148,10 @@ internal static partial class TradeTask
             return false;
         if (AiItemPool.IsWaterContainer(item.Type))
         {
-            int remainingCapacity = TradeTask.PortableWaterSupply(state) +
+            int remainingCapacity = TradeTask.PortableWaterCapacity(state) +
                 state.Pool.TotalWaterContainerCapacity -
                 AiItemPool.WaterContainerCapacity(item.Type);
-            if (remainingCapacity < TradeTask.DesiredPortableWaterCapacity(state))
+            if (remainingCapacity < RequiredUnstationedWaterContainerCapacity(state))
                 return false;
         }
         if (AiItemPool.IsHazardProtection(item.Type) &&
@@ -291,15 +293,24 @@ internal static partial class TradeTask
     internal static bool NeedsBetterWaterContainers(ClassicAiState state, ItemType offered)
     {
         int offeredCapacity = AiItemPool.WaterContainerCapacity(offered);
-        if (TradeTask.PortableWaterSupply(state) + state.Pool.TotalWaterContainerCapacity <
-            TradeTask.DesiredPortableWaterCapacity(state))
+        if (TradeTask.PortableWaterCapacity(state) + state.Pool.TotalWaterContainerCapacity <
+            RequiredUnstationedWaterContainerCapacity(state))
             return true;
-        IEnumerable<Character> guards = state.RootGame.World.Locations
-            .Where(location => location.Player == state.Player)
-            .SelectMany(location => location.CampNPC.Where(npc => npc.Player == state.Player));
-        return guards.Any(npc => !HasWaterContainer(npc)) ||
-            offeredCapacity > state.Pool.BestWaterContainerCapacity;
+        return offeredCapacity > state.Pool.BestWaterContainerCapacity;
     }
+
+    internal static int CampWaterContainerCount(Location camp) =>
+        camp.Rooms.SelectMany(room => room.Items)
+            .Count(item => AiItemPool.IsWaterContainer(item.Type));
+
+    internal static int CampWaterContainerShortfall(ClassicAiState state) =>
+        state.RootGame.World.Locations
+            .Where(camp => camp.Player == state.Player)
+            .Sum(camp => System.Math.Max(0,
+                DesiredCampWaterContainerCount - CampWaterContainerCount(camp)));
+
+    internal static int RequiredUnstationedWaterContainerCapacity(ClassicAiState state) =>
+        DesiredWaterContainerCapacity(state) + CampWaterContainerShortfall(state) * 3;
 
     internal static float ConstructionMaterialPriority(ClassicAiState state, string itemId)
     {
