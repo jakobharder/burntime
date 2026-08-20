@@ -55,6 +55,13 @@ internal static class AttackTask
         Location target,
         RouteFinder.Route route)
     {
+        if (!IsTerritorialFrontierTarget(state, target))
+        {
+            AiTelemetry.Report(context.Player,
+                $"released attack plan for {target.Title}: viable neutral territory still blocks the frontier");
+            state.StrategicTarget = null;
+            return null;
+        }
         if (!HasGroupWeapon(context.Player))
         {
             AiTelemetry.Report(context.Player,
@@ -103,7 +110,8 @@ internal static class AttackTask
         AiPolicy policy)
     {
         Player player = state.Player;
-        if (player.Group.Count < policy.AttackGroupSize || !HasGroupWeapon(player))
+        if (player.Group.Count < policy.AttackGroupSize || !HasGroupWeapon(player) ||
+            !IsTerritorialFrontierTarget(state, target))
             return false;
         RouteFinder.Route? route = RouteFinder.Find(player, state.Current, target);
         if (route == null)
@@ -182,6 +190,44 @@ internal static class AttackTask
         return visibleDefenders <= policy.MaxHumanCampDefendersToAttack;
     }
 
+    public static bool IsTerritorialFrontierTarget(ClassicAiState state, Location target)
+    {
+        if (!IsHostile(target, state.Player))
+            return false;
+
+        Queue<Location> frontier = new();
+        HashSet<Location> visited = new();
+        foreach (Location camp in state.RootGame.World.Locations.Where(location =>
+            location.Player == state.Player))
+        {
+            frontier.Enqueue(camp);
+            visited.Add(camp);
+        }
+
+        while (frontier.Count > 0)
+        {
+            Location current = frontier.Dequeue();
+            for (int index = 0; index < current.Neighbors.Count; index++)
+            {
+                if (current.WayLengths[index] <= 0)
+                    continue;
+                Location neighbor = current.Neighbors[index];
+                if (neighbor == target)
+                    return true;
+                if (!visited.Add(neighbor))
+                    continue;
+
+                // Cities cannot be owned, and a site incapable of sustaining even
+                // one guard would only create a liability. Both may be skipped when
+                // determining whether hostile territory is on the real frontier.
+                if (neighbor.IsCity ||
+                    neighbor.Player == null && !CampEconomy.CanSustainCamp(neighbor))
+                    frontier.Enqueue(neighbor);
+            }
+        }
+        return false;
+    }
+
     public static bool HasGroupWeapon(Player player) => player.Group.Any(character =>
         !character.IsDead &&
         (character.Items.FindBestWeapon()?.DamageValue ?? 0) > 0);
@@ -203,6 +249,7 @@ internal static class AttackTask
             .Where(location => location != currentTarget && location != context.Current &&
                 !location.IsCity && !state.IsAttackTargetDeferred(location) &&
                 IsHostile(location, context.Player) &&
+                IsTerritorialFrontierTarget(state, location) &&
                 IsTargetAllowed(state, location, policy) &&
                 IsSuitable(state, context.Player, location, policy))
             .Select(location => new

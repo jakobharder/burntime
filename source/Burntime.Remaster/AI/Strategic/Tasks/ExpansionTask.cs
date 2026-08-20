@@ -268,6 +268,7 @@ internal static partial class ExpansionTask
             }
             else if (AttackTask.HasGroupWeapon(context.Player) &&
                 AttackTask.IsHostile(location, context.Player) &&
+                AttackTask.IsTerritorialFrontierTarget(state, location) &&
                 AttackTask.IsTargetAllowed(state, location, policy))
             {
                 float weakness = System.Math.Max(

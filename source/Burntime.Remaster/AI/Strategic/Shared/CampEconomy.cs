@@ -35,6 +35,22 @@ internal static class CampEconomy
     public static bool IsAcceptableFirstCamp(Location camp) =>
         HasAdvancedFoodPotential(camp) || HasRatFoodPotential(camp);
 
+    public static bool CanSustainCamp(Location camp)
+    {
+        if (camp.IsCity || (camp.Source?.Water ?? 0) < 1)
+            return false;
+
+        // Territorial continuity is about the site's inherent value, not whether
+        // the travelling group happens to carry its tool today. A camp that can
+        // feed one guard when fully equipped is worth claiming before the AI
+        // projects force beyond it.
+        return camp.ValidProductions.Any(production =>
+        {
+            Production.Rate rate = production.GetRate(production.MaxToolCount, npcCount: 1);
+            return !rate.IsCampStarving && rate.FoodPerDay >= 1;
+        });
+    }
+
     public static bool ConnectsOwnedCamps(Location camp, Player player) =>
         Enumerable.Range(0, camp.Neighbors.Count)
             .Where(index => camp.WayLengths[index] > 0)

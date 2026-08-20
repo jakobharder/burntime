@@ -76,7 +76,8 @@ internal static partial class TradeTask
         Location nearestCity = FindBestTradeCity(state);
         int cityDays = RouteFinder.Find(state.Player, state.Current, nearestCity)?.Days ?? int.MaxValue;
         return state.RootGame.World.Locations
-            .Where(location => !location.IsCity && location != state.Current)
+            .Where(location => !location.IsCity && location != state.Current &&
+                (location.Player == null || location.Player == state.Player))
             .Select(location => new
             {
                 Location = location,
