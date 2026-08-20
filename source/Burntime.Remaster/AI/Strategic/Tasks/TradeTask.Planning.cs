@@ -28,7 +28,9 @@ internal static partial class TradeTask
         // useful trade. A substantial one-camp pickup may still take the group out
         // of an otherwise idle city and prepare the next attempt.
         if (state.Current.IsCity)
-            return RouteOpportunities.FindCityTradePickupCamp(state) != null;
+            return HasPreparedTradeCargo(state)
+                ? FindBestTradeCity(state) != null
+                : RouteOpportunities.FindCityTradePickupCamp(state) != null;
         if (FindBestTradeCity(state) == null)
             return false;
 
@@ -46,6 +48,7 @@ internal static partial class TradeTask
 
     public static Location FindBestTradeCity(ClassicAiState state)
     {
+        bool departingOwnedCamp = state.Current.Player == state.Player;
         return state.RootGame.World.Locations
             .Where(location => location.IsCity && location != state.Current && location.LocalTrader != null)
             .Select(location => new
@@ -56,7 +59,45 @@ internal static partial class TradeTask
                     EconomicSupport.TraderNoveltyScore(state, location.LocalTrader)
             })
             .Where(candidate => candidate.Route != null && candidate.AssortmentScore > 0)
-            .OrderByDescending(candidate => candidate.AssortmentScore - candidate.Route.Days * 5)
+            // Export locally first. From an owned camp, use the nearest market whose
+            // assortment can help; after that market has been inspected, selection
+            // from the city itself again favors a new regional assortment.
+            .OrderBy(candidate => departingOwnedCamp ? candidate.Route.Days : 0)
+            .ThenByDescending(candidate => candidate.AssortmentScore - candidate.Route.Days * 5)
+            .Select(candidate => candidate.Location)
+            .FirstOrDefault();
+    }
+
+    internal static Location FindBestRegionalTradeStop(ClassicAiState state)
+    {
+        if (state.Current.Player != state.Player || !HasPreparedTradeCargo(state))
+            return null;
+
+        Location nearestCity = FindBestTradeCity(state);
+        int cityDays = RouteFinder.Find(state.Player, state.Current, nearestCity)?.Days ?? int.MaxValue;
+        return state.RootGame.World.Locations
+            .Where(location => !location.IsCity && location != state.Current)
+            .Select(location => new
+            {
+                Location = location,
+                Route = RouteFinder.Find(state.Player, state.Current, location),
+                Traders = location.Characters.OfType<Trader>()
+                    .Where(trader => !trader.IsDead)
+                    .ToArray()
+            })
+            .Where(candidate => candidate.Route != null && candidate.Traders.Length > 0 &&
+                candidate.Route.Days <= Math.Min(4, cityDays))
+            .Select(candidate => new
+            {
+                candidate.Location,
+                candidate.Route,
+                Score = candidate.Traders.Max(trader =>
+                    TraderAssortmentOpportunityScore(state, trader) +
+                    EconomicSupport.TraderNoveltyScore(state, trader))
+            })
+            .Where(candidate => candidate.Score > 0)
+            .OrderByDescending(candidate => candidate.Score - candidate.Route.Days * 25)
+            .ThenBy(candidate => candidate.Route.Days)
             .Select(candidate => candidate.Location)
             .FirstOrDefault();
     }

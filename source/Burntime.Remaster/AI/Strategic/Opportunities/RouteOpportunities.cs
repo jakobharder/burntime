@@ -13,27 +13,28 @@ internal static class RouteOpportunities
         float score)
     {
         Location? routeAlignedPickup = FindCityTradePickupCamp(state);
+        Location? regionalTradeStop = routeAlignedPickup == null
+            ? TradeTask.FindBestRegionalTradeStop(state)
+            : null;
         StrategicAi.AddTravelCandidate(
             state,
             candidates,
-            routeAlignedPickup ?? tradeCity,
+            routeAlignedPickup ?? regionalTradeStop ?? tradeCity,
             score,
-            routeAlignedPickup == null
-                ? "deliver surplus goods and trade for needed equipment"
-                : "fill the city caravan at an owned camp near the trader");
+            routeAlignedPickup != null
+                ? "fill the city caravan at an owned camp near the trader"
+                : regionalTradeStop != null
+                    ? "offer local exports to a nearby roaming trader before the regional market"
+                    : "deliver surplus goods and trade for needed equipment");
     }
 
     public static Location? FindCityTradePickupCamp(ClassicAiState state)
     {
-        if (state.Player.Group.GetFreeSlotCount() == 0)
+        if (state.Player.Group.GetFreeSlotCount() == 0 || TradeTask.HasPreparedTradeCargo(state))
             return null;
 
         Location? tradeCity = TradeTask.FindBestTradeCity(state);
         if (tradeCity == null)
-            return null;
-        // A substantial load collected at an owned camp completes the one allowed
-        // pickup. Continue to the city instead of chaining through another camp.
-        if (state.Current.Player == state.Player && TradeTask.HasPreparedTradeCargo(state))
             return null;
         int freeSlots = state.Player.Group.GetFreeSlotCount();
         Item[] carriedCapital = TradeTask.TradeCapital(state);

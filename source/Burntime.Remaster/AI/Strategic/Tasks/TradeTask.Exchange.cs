@@ -49,7 +49,8 @@ internal static partial class TradeTask
                 break;
 
             float offeredValue = plan.Offers.Sum(offer => offer.Item.TradeValue);
-            trader.Items.Remove(plan.Target);
+            foreach (Item target in plan.Targets)
+                trader.Items.Remove(target);
             foreach (TradeAsset offer in plan.Offers)
             {
                 if (!offer.FromPool)
@@ -65,19 +66,26 @@ internal static partial class TradeTask
 
             PruneAndStoreTraderOffers(trader, plan.Offers.Select(offer => offer.Item));
 
-            if (AiItemPool.Accepts(plan.Target.Type))
-                state.Pool.Insert(plan.Target);
-            else
-                state.Player.Group.First(character => !character.Items.IsFull).Items.Add(plan.Target);
+            foreach (Item target in plan.Targets)
+            {
+                if (AiItemPool.Accepts(target.Type))
+                    state.Pool.Insert(target);
+                else
+                    state.Player.Group.First(character => !character.Items.IsFull).Items.Add(target);
+            }
 
             RestoreUnusedPoolAssets(state, plan.TemporaryPoolAssets.Except(plan.Offers));
             completed++;
-            if (plan.Target.ID == "item_snake_trap")
+            if (plan.Targets.Any(target => target.ID == "item_snake_trap"))
                 EconomicSupport.CompleteSnakeTrapCampaign(state);
-            string action = IsStrategicPurchase(state, plan.Target) ? "traded" : "consolidated";
+            string action = plan.Targets.Any(target => IsStrategicPurchase(state, target))
+                ? "traded"
+                : "consolidated";
+            float receivedValue = plan.Targets.Sum(target => target.TradeValue);
             AiTelemetry.Report(state.Player,
                 $"{action} {string.Join(", ", plan.Offers.Select(offer => offer.Item.ID))} for " +
-                $"{plan.Target.ID} with {trader.Name} (value {offeredValue:0} -> {plan.Target.TradeValue:0}, " +
+                $"{string.Join(", ", plan.Targets.Select(target => target.ID))} with {trader.Name} " +
+                $"(value {offeredValue:0} -> {receivedValue:0}, " +
                 $"AI barter value x{TradeBenefit(state):0.0})");
 
             // Firearm parts are never shopping goals, but when normal value trading
@@ -243,12 +251,20 @@ internal static partial class TradeTask
                 offeredValue = withoutCandidate;
             }
 
-            bool canStoreTarget = AiItemPool.Accepts(target.Type) ||
-                state.Player.Group.GetFreeSlotCount() > 0 || offers.Any(offer => !offer.FromPool);
+            float barterBudget = offers.Sum(offer => offer.Item.TradeValue * TradeBenefit(state));
+            List<Item> targets = BuildReceivedBasket(state, trader, target, excludedTargets,
+                barterBudget);
+            int freedPortableSlots = offers.Count(offer => !offer.FromPool);
+            int neededPortableSlots = targets.Count(item => !AiItemPool.Accepts(item.Type));
+            bool canStoreTarget = neededPortableSlots <=
+                state.Player.Group.GetFreeSlotCount() + freedPortableSlots;
             bool compressesCargo = strategicPurchase || offers.Count >= 2;
+            float receivedUtility = targets.Sum(item => AcquisitionUtilityValue(state, item));
+            bool avoidsSevereWaste = receivedUtility >= offers.Sum(offer => offer.Item.TradeValue) * 0.65f;
             if (offers.Count > 0 && compressesCargo &&
-                (int)offeredValue >= (int)target.TradeValue && canStoreTarget)
-                return new TradePlan(target, offers, temporaryPoolAssets.Concat(exceptionalPoolAssets).ToList());
+                (int)offeredValue >= (int)target.TradeValue && canStoreTarget && avoidsSevereWaste)
+                return new TradePlan(targets, offers,
+                    temporaryPoolAssets.Concat(exceptionalPoolAssets).ToList());
 
             RestoreUnusedPoolAssets(state, exceptionalPoolAssets);
         }
@@ -276,6 +292,36 @@ internal static partial class TradeTask
 
     static int OfferRemovalGroup(Item item) =>
         IsEmptyWaterContainer(item) ? 0 : IsFullWaterContainer(item) ? 2 : 1;
+
+    static List<Item> BuildReceivedBasket(
+        ClassicAiState state,
+        Trader trader,
+        Item primary,
+        ISet<Item> excludedTargets,
+        float barterBudget)
+    {
+        List<Item> targets = new() { primary };
+        float remaining = barterBudget - primary.TradeValue;
+        while (remaining >= 1)
+        {
+            Item filler = trader.Items
+                .Where(item => item != primary && !targets.Contains(item) && item.TradeValue > 0 &&
+                    item.TradeValue <= remaining &&
+                    (excludedTargets == null || !excludedTargets.Contains(item)))
+                .OrderByDescending(item => ShoppingPriority(state, item) > 0)
+                .ThenByDescending(item => CompletesUsefulRecipe(state, item.ID))
+                .ThenByDescending(item => item.TradeValue)
+                .FirstOrDefault();
+            if (filler == null)
+                break;
+            targets.Add(filler);
+            remaining -= filler.TradeValue;
+        }
+        return targets;
+    }
+
+    static float AcquisitionUtilityValue(ClassicAiState state, Item item) =>
+        item.TradeValue * (CompletesUsefulRecipe(state, item.ID) ? 2f : 1f);
 
     internal static bool AdvancesOwnedMeatTrapRecipe(ClassicAiState state, string itemId)
     {
@@ -355,7 +401,7 @@ internal static partial class TradeTask
 
     internal sealed record TradeAsset(IItemCollection Owner, Item Item, bool FromPool);
     internal sealed record TradePlan(
-        Item Target,
+        List<Item> Targets,
         List<TradeAsset> Offers,
         List<TradeAsset> TemporaryPoolAssets);
     internal sealed class TradeFailureState

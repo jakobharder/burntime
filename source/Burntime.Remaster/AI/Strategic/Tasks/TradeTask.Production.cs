@@ -51,6 +51,12 @@ internal static partial class TradeTask
     internal static bool HasCompleteUsefulRecipe(ClassicAiState state) => UsefulConstructionOpportunities(state)
         .Any(opportunity => opportunity.Materials.All(component => HasConstructionComponent(state, component)));
 
+    internal static bool CompletesUsefulRecipe(ClassicAiState state, string itemId) =>
+        UsefulConstructionOpportunities(state).Any(opportunity =>
+            opportunity.Materials.Contains(itemId) &&
+            opportunity.Materials.Where(component => component != itemId)
+                .All(component => HasConstructionComponent(state, component)));
+
     internal static bool CanUseCompleteRecipeAtCamp(ClassicAiState state, Location camp) =>
         UsefulConstructionOpportunities(state)
             .Where(opportunity => opportunity.Materials.All(component => HasConstructionComponent(state, component)))
