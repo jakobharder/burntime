@@ -194,13 +194,16 @@ namespace Burntime.Remaster.AI
         internal bool HasHireableNpc() => CanHireNpc();
         internal bool CanRecruit(bool allowGeneratedPayment)
         {
-            Character candidate = GetHireableNpc();
+            Character candidate = GetHireableNpc(
+                requireAffordable: true,
+                allowGeneratedPayment: allowGeneratedPayment);
             if (candidate == null || Player.Group.Count >= Group.MAX_PEOPLE)
                 return false;
-            if (candidate.HireItems.Count == 0 || allowGeneratedPayment)
-                return true;
-            return candidate.HireItems.Any(type => Player.Character.Items.Find(type) != null);
+            return true;
         }
+        internal bool ShouldReserveSettlerPayment => CurrentLocation.IsCity && HasSettlementPlan &&
+            Player.Group.Count == 1 && GetHireableCandidates().Any(candidate =>
+                CanFundRecruit(candidate, allowGeneratedPayment: true));
         internal string[] AvailableProducts(Location location) => GetAvailableProducts(location);
 
         internal bool NeedsCampImprovement()
@@ -826,13 +829,13 @@ namespace Burntime.Remaster.AI
         /// Get a NPC that is available for hire
         /// </summary>
         /// <returns>NPC</returns>
-        protected Character GetHireableNpc()
+        Character[] GetHireableCandidates()
         {
             Character[] available = CurrentLocation.Characters
                 .Where(character => !character.IsDead && !character.IsHired && character.IsHuman && !character.IsTrader)
                 .ToArray();
             if (available.Length == 0)
-                return null;
+                return available;
 
             (int minimum, int maximum) = RootGame.World.Difficulty switch
             {
@@ -843,7 +846,20 @@ namespace Burntime.Remaster.AI
             Character[] preferred = available
                 .Where(character => character.Experience >= minimum && character.Experience <= maximum)
                 .ToArray();
-            Character[] candidates = preferred.Length > 0 ? preferred : available;
+            return preferred.Length > 0 ? preferred : available;
+        }
+
+        protected Character GetHireableNpc(
+            bool requireAffordable = false,
+            bool allowGeneratedPayment = false)
+        {
+            Character[] candidates = GetHireableCandidates();
+            if (requireAffordable)
+                candidates = candidates
+                    .Where(candidate => CanFundRecruit(candidate, allowGeneratedPayment))
+                    .ToArray();
+            if (candidates.Length == 0)
+                return null;
             return candidates[Burntime.Platform.Math.Random.Next(candidates.Length)];
         }
 
@@ -853,7 +869,9 @@ namespace Burntime.Remaster.AI
         /// <returns>hired NPC</returns>
         protected Character HireNpc(bool allowGeneratedPayment = true)
         {
-            Character ch = GetHireableNpc();
+            Character ch = GetHireableNpc(
+                requireAffordable: true,
+                allowGeneratedPayment: allowGeneratedPayment);
             if (ch == null || Player.Group.Count >= Group.MAX_PEOPLE)
                 return null;
 
@@ -865,19 +883,28 @@ namespace Burntime.Remaster.AI
 
                 if (payment == null && allowGeneratedPayment)
                 {
-                    if (Player.Character.Items.IsFull)
-                    {
-                        Item leastUseful = Player.Character.Items.OrderBy(item => item.TradeValue).First();
-                        CurrentLocation.StoreItemRandom(leastUseful);
-                        Player.Character.Items.Remove(leastUseful);
-                    }
+                    if (!TryPlanRecruitmentPayment(ch, out ItemType paymentType,
+                        out List<(IItemCollection Owner, Item Item)> paymentAssets))
+                        return null;
 
-                    ItemType paymentType = ch.HireItems.OrderBy(type => type.TradeValue).First();
+                    foreach ((IItemCollection owner, Item item) in paymentAssets)
+                        owner.Remove(item);
                     Player.Character.Items.Add(paymentType.Generate());
+                    AiTelemetry.Report(Player,
+                        $"funded recruitment of {ch.Name} with " +
+                        $"{string.Join(", ", paymentAssets.Select(asset => asset.Item.ID))} " +
+                        $"(required value {paymentType.TradeValue}, paid " +
+                        $"{paymentAssets.Sum(asset => asset.Item.TradeValue)})");
                 }
                 else if (payment == null)
                 {
                     return null;
+                }
+                else
+                {
+                    AiTelemetry.Report(Player,
+                        $"funded recruitment of {ch.Name} with requested {payment.ID} " +
+                        $"(required value {payment.TradeValue}, paid {payment.TradeValue})");
                 }
             }
 
@@ -901,6 +928,133 @@ namespace Burntime.Remaster.AI
 
             return ch;
         }
+
+        bool TryPlanRecruitmentPayment(
+            Character recruit,
+            out ItemType paymentType,
+            out List<(IItemCollection Owner, Item Item)> paymentAssets)
+        {
+            paymentType = recruit.HireItems
+                .OrderBy(type => type.TradeValue)
+                .FirstOrDefault();
+            paymentAssets = new List<(IItemCollection Owner, Item Item)>();
+            if (paymentType == null)
+                return true;
+
+            int remainingFood = TradeTask.PortableFoodSupply(this);
+            int remainingWaterCapacity = TradeTask.PortableWaterCapacity(this);
+            List<RecruitmentAsset> candidates = Player.Group
+                .SelectMany(character => character.Items
+                    .Select(item => new RecruitmentAsset(character.Items, item, Portable: true)))
+                .ToList();
+            foreach (Location camp in RootGame.World.Locations.Where(location =>
+                location.Player == Player && location.Production != null))
+            {
+                int reserve = System.Math.Max(2,
+                    CampEconomy.LivingGuardCount(camp, Player));
+                candidates.AddRange(camp.Rooms
+                    .SelectMany(room => room.Items
+                        .Where(item => item.Type == camp.Production.Produce)
+                        .Select(item => new RecruitmentAsset(room.Items, item, Portable: false)))
+                    .Skip(reserve));
+            }
+
+            float paidValue = 0;
+            foreach (RecruitmentAsset asset in candidates
+                .Where(asset => CanUseForRecruitmentPayment(asset.Item,
+                    remainingFood, remainingWaterCapacity, asset.Portable))
+                .OrderBy(asset => asset.Item.TradeValue)
+                .ThenBy(asset => TradeTask.SalePriority(asset.Item)))
+            {
+                if (!CanUseForRecruitmentPayment(asset.Item,
+                    remainingFood, remainingWaterCapacity, asset.Portable))
+                    continue;
+                paymentAssets.Add((asset.Owner, asset.Item));
+                paidValue += asset.Item.TradeValue;
+                if (asset.Portable)
+                {
+                    remainingFood -= asset.Item.FoodValue;
+                    remainingWaterCapacity -= AiItemPool.WaterContainerCapacity(asset.Item.Type);
+                }
+                if (paidValue >= paymentType.TradeValue)
+                    break;
+            }
+
+            if (paidValue < paymentType.TradeValue)
+            {
+                paymentAssets.Clear();
+                return false;
+            }
+
+            // Reduce greedy overpayment with the same high-to-low removal pass
+            // used by barter offers.
+            foreach ((IItemCollection owner, Item item) in paymentAssets
+                .OrderByDescending(asset => asset.Item.TradeValue)
+                .ToArray())
+            {
+                if (paymentAssets.Count <= 1 || paidValue - item.TradeValue < paymentType.TradeValue)
+                    continue;
+                paymentAssets.Remove((owner, item));
+                paidValue -= item.TradeValue;
+            }
+
+            // Character.Hire consumes the formal payment from the leader. Ensure
+            // the value-backed bundle also frees a leader slot when necessary.
+            if (Player.Character.Items.IsFull &&
+                !paymentAssets.Any(asset => asset.Owner == Player.Character.Items))
+            {
+                (IItemCollection Owner, Item Item) leaderAsset = Player.Character.Items
+                    .Where(item => CanUseForRecruitmentPayment(
+                        item, remainingFood, remainingWaterCapacity, portable: true))
+                    .OrderBy(item => item.TradeValue)
+                    .Select(item => ((IItemCollection)Player.Character.Items, item))
+                    .FirstOrDefault();
+                if (leaderAsset.Item == null)
+                {
+                    paymentAssets.Clear();
+                    return false;
+                }
+                paymentAssets.Add(leaderAsset);
+            }
+            return true;
+        }
+
+        bool CanFundRecruit(Character recruit, bool allowGeneratedPayment)
+        {
+            if (recruit.HireItems.Count == 0 ||
+                recruit.HireItems.Any(type => Player.Character.Items.Find(type) != null))
+                return true;
+            return allowGeneratedPayment && TryPlanRecruitmentPayment(recruit, out _, out _);
+        }
+
+        bool CanUseForRecruitmentPayment(
+            Item item,
+            int remainingFood,
+            int remainingWaterCapacity,
+            bool portable)
+        {
+            if (Player.Group.Any(character => character.Weapon == item || character.Protection == item))
+                return false;
+            if (item.Type.Production != null || TradeTask.IsPump(item) ||
+                TradeTask.ConstructionMaterialPriority(this, item.ID) > 0)
+                return false;
+            if (portable && item.FoodValue > 0 &&
+                remainingFood - item.FoodValue < Player.Group.Count * 3)
+                return false;
+            if (portable && AiItemPool.IsWaterContainer(item.Type) &&
+                remainingWaterCapacity - AiItemPool.WaterContainerCapacity(item.Type) <
+                    TradeTask.DesiredWaterContainerCapacity(this))
+                return false;
+            if (AiItemPool.IsHazardProtection(item.Type) &&
+                TradeTask.NeedsDangerProtection(this, item.Type))
+                return false;
+            return item.ID != "item_advice" && item.TradeValue > 0;
+        }
+
+        readonly record struct RecruitmentAsset(
+            IItemCollection Owner,
+            Item Item,
+            bool Portable);
 
         #endregion
     }

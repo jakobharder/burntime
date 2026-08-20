@@ -23,6 +23,8 @@ internal static class AiDecisionExecutor
                 AiTelemetry.Report(player, recruit == null
                     ? "could not afford an available recruit"
                     : $"hired {recruit.Name} ({recruit.Class})");
+                if (recruit != null)
+                    LocalOpportunities.Apply(state);
                 break;
 
             case AiAction.StationFollower:

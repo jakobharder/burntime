@@ -25,12 +25,18 @@ internal static partial class LocalOpportunities
 
         ConstructPortableWeapon(state);
 
-        foreach (Trader trader in TradeTask.EncounteredTraders(state))
+        // An affordable settler is the immediate local prerequisite for the
+        // planned camp. Reserve that real payment bundle before ordinary city
+        // barter can consume it; recruitment remains the turn's strategic action.
+        if (!state.ShouldReserveSettlerPayment)
         {
-            TradeTask.TradeWithTrader(state, trader);
-            RefillConstructionReserve(state);
-            ConstructPortableEconomicUpgrade(state);
-            ConstructPortableWeapon(state);
+            foreach (Trader trader in TradeTask.EncounteredTraders(state))
+            {
+                TradeTask.TradeWithTrader(state, trader);
+                RefillConstructionReserve(state);
+                ConstructPortableEconomicUpgrade(state);
+                ConstructPortableWeapon(state);
+            }
         }
 
         // A purchase or construction may satisfy an equipment need immediately.
