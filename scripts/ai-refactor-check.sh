@@ -2,7 +2,7 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
-expected_hash="71373afbe2f21b5bdb89406f3d6d8985f93a5807b8508d95cb6c455dd18360d9"
+expected_hash="4d2ba3d6680bc83c54e75fbb9f7bbbc58267d154d584a62d2786a1b5bf0c6a85"
 report="$(mktemp "${TMPDIR:-/tmp}/burntime-ai-refactor.XXXXXX")"
 trap 'rm -f "$report"' EXIT
 
@@ -20,4 +20,4 @@ if [[ "$actual_hash" != "$expected_hash" ]]; then
   exit 1
 fi
 
-echo "AI refactor baseline matched: $actual_hash"
+echo "AI behavior baseline matched: $actual_hash"
