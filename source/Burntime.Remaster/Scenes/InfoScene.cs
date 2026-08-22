@@ -284,6 +284,15 @@ namespace Burntime.Remaster.Scenes
             return true;
         }
 
+        public override bool OnKeyPress(char key)
+        {
+            if (char.ToLowerInvariant(key) != 'f')
+                return false;
+
+            OnButtonBack();
+            return true;
+        }
+
         void OnButtonListUp()
         {
             if (items.Count <= 1)

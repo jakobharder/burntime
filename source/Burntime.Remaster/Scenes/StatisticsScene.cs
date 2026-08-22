@@ -122,6 +122,15 @@ namespace Burntime.Remaster.Scenes
             return true;
         }
 
+        public override bool OnKeyPress(char key)
+        {
+            if (char.ToLowerInvariant(key) != 'r')
+                return false;
+
+            app.SceneManager.PreviousScene();
+            return true;
+        }
+
         protected override void OnActivateScene(object parameter)
         {
             app.RenderMouse = false;

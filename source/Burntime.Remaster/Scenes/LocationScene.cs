@@ -211,9 +211,23 @@ namespace Burntime.Remaster
             if (app.GameState is not ClassicGame game)
                 return false;
 
+            key = char.ToLowerInvariant(key);
+
             if (key == 'q')
             {
                 OnMenuInventory();
+                return true;
+            }
+
+            if (key == ' ')
+            {
+                OnMenuMap();
+                return true;
+            }
+
+            if (key == 'f')
+            {
+                OnMenuInfo();
                 return true;
             }
 

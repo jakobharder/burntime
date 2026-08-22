@@ -187,6 +187,15 @@ namespace Burntime.Remaster.Scenes
             return true;
         }
 
+        public override bool OnKeyPress(char key)
+        {
+            if (char.ToLowerInvariant(key) != 'q')
+                return false;
+
+            OnButtonExit();
+            return true;
+        }
+
         void OnLeftClickItemInventory(Framework.States.StateObject state)
         {
             BurntimeClassic classic = app as BurntimeClassic;

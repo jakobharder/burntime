@@ -110,9 +110,30 @@ namespace Burntime.Remaster
             if (app.GameState is not ClassicGame game)
                 return false;
 
+            key = char.ToLowerInvariant(key);
+
             if (key == 'q')
             {
                 OnMenuInventory();
+                return true;
+            }
+
+            if (key == ' ')
+            {
+                app.SceneManager.SetScene("LocationScene");
+                return true;
+            }
+
+            if (key == 'r')
+            {
+                OnMenuStatistics();
+                return true;
+            }
+
+            if (key == 'f' && !game.World.ActiveLocationObj.IsCity)
+            {
+                (app as BurntimeClassic).InfoCity = game.World.ActivePlayerObj.Location;
+                app.SceneManager.SetScene("InfoScene");
                 return true;
             }
 
