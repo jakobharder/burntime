@@ -223,6 +223,20 @@ public class Container : Window
         base.KeyPress(Key);
     }
 
+    internal override void VKeyPress(SystemKey Key)
+    {
+        if (!visible)
+            return;
+
+        foreach (Window window in windows)
+        {
+            if (window.IsVisible)
+                window.VKeyPress(Key);
+        }
+
+        base.VKeyPress(Key);
+    }
+
     public override void OnResizeScreen()
     {
         base.OnResizeScreen();

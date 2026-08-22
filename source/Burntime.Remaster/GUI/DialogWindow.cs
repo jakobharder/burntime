@@ -15,7 +15,8 @@ namespace Burntime.Remaster
         FaceWindow face;
         GuiFont fontText;
         GuiFont fontOptions;
-        GuiFont fontChoice;
+        GuiFont fontKeyChoice;
+        GuiFont fontMouseChoice;
 
         Character character;
         Character self;
@@ -24,6 +25,7 @@ namespace Burntime.Remaster
         int dlgoffset = 0;
         int dialogmode;
         int hover = -1;
+        int selectedChoice = -1;
 
         public ConversationType Type { get; private set; }
         public bool PlayMusic { get; set; } = true;
@@ -48,13 +50,15 @@ namespace Burntime.Remaster
 
             fontText = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 164, 56));
             fontOptions = new GuiFont(BurntimeClassic.FontName, new PixelColor(108, 116, 168));
-            fontChoice = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
+            fontKeyChoice = new GuiFont(BurntimeClassic.FontName, new PixelColor(144, 160, 212));
+            fontMouseChoice = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
 
             CaptureAllMouseMove = true;
         }
 
         public override void OnShow()
         {
+            HasFocus = true;
             hover = -1;
             base.OnShow();
 
@@ -64,6 +68,7 @@ namespace Burntime.Remaster
 
         public override void OnHide()
         {
+            HasFocus = false;
             base.OnHide();
 
             if (PlayMusic)
@@ -72,6 +77,7 @@ namespace Burntime.Remaster
 
         public void SetCharacter(Character character, Conversation conversation, bool showFace = false)
         {
+            result = ConversationActionType.None;
             self = null;
             this.character = character;
             this.conversation = conversation;
@@ -82,6 +88,7 @@ namespace Burntime.Remaster
 
             dialogmode = (conversation.Text.Length < 3) ? 1 : 0;
             dlgoffset = 0;
+            selectedChoice = FirstVisibleChoice();
 
             ready = true;
         }
@@ -93,6 +100,7 @@ namespace Burntime.Remaster
 
         public void SetCharacter(Character self, Character character, ConversationType type)
         {
+            result = ConversationActionType.None;
             this.self = self;
             this.character = character;
             Type = type;
@@ -102,6 +110,7 @@ namespace Burntime.Remaster
 
             dialogmode = (conversation.Text.Length < 3) ? 1 : 0;
             dlgoffset = 0;
+            selectedChoice = FirstVisibleChoice();
 
             ready = true;
         }
@@ -110,50 +119,143 @@ namespace Burntime.Remaster
         {
             if (hover == 0 && dialogmode == 0)
             {
-                dlgoffset += 2;
-                if (dlgoffset + 2 >= conversation.Text.Length)
-                {
-                    dialogmode = 1;
-                }
+                AdvanceText();
             }
             else if (hover != -1)
-            {
-                BurntimeClassic classic = app as BurntimeClassic;
-                result = conversation.Choices[hover].Action.Type;
-
-                dialogmode = 0;
-                dlgoffset = 0;
-                switch (conversation.Choices[hover].Action.Type)
-                {
-                    case ConversationActionType.Talk:
-                        conversation = character.Dialog.GetConversation(self, ConversationType.Talk);
-                        break;
-                    case ConversationActionType.Trade:
-                        Hide();
-                        classic.Game.World.ActiveTraderObj = character as Trader;
-                        app.SceneManager.SetScene("TraderScene");
-                        break;
-                    case ConversationActionType.Yes:
-                    case ConversationActionType.No:
-                    case ConversationActionType.Exit:
-                        Hide();
-                        break;
-                    case ConversationActionType.HireRequirements:
-                        conversation = character.Dialog.GetConversation(self, ConversationType.Hire);
-                        break;
-                    case ConversationActionType.Profession:
-                        conversation = character.Dialog.GetConversation(self, ConversationType.Profession);
-                        break;
-                    case ConversationActionType.Hire:
-                        Hire();
-                        Hide();
-                        break;
-                }
-
-                dialogmode = (conversation.Text.Length <= 3) ? 1 : 0;
-            }
+                SelectChoice(hover);
 
             return true;
+        }
+
+        public override bool OnVKeyPress(SystemKey key)
+        {
+            if (key == SystemKey.Escape)
+            {
+                result = ConversationActionType.Exit;
+                Hide();
+                return true;
+            }
+
+            if (dialogmode == 0)
+            {
+                if (key != SystemKey.Enter)
+                    return false;
+
+                AdvanceText();
+                return true;
+            }
+
+            if (dialogmode != 1)
+                return false;
+
+            if (key == SystemKey.Up)
+            {
+                MoveSelection(-1);
+                return true;
+            }
+
+            if (key == SystemKey.Down)
+            {
+                MoveSelection(1);
+                return true;
+            }
+
+            if (key != SystemKey.Enter || selectedChoice == -1)
+                return false;
+
+            SelectChoice(selectedChoice);
+            return true;
+        }
+
+        public override bool OnKeyPress(char key)
+        {
+            if (dialogmode != 1)
+                return false;
+
+            switch (char.ToLowerInvariant(key))
+            {
+                case 'w':
+                    MoveSelection(-1);
+                    return true;
+                case 's':
+                    MoveSelection(1);
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        void AdvanceText()
+        {
+            dlgoffset += 2;
+            if (dlgoffset + 2 >= conversation.Text.Length)
+                dialogmode = 1;
+        }
+
+        int FirstVisibleChoice()
+        {
+            for (int i = 0; i < conversation.Choices.Length; i++)
+                if (!string.IsNullOrEmpty(conversation.Choices[i].Text))
+                    return i;
+
+            return -1;
+        }
+
+        void MoveSelection(int direction)
+        {
+            if (selectedChoice == -1)
+            {
+                selectedChoice = FirstVisibleChoice();
+                return;
+            }
+
+            for (int offset = 1; offset < conversation.Choices.Length; offset++)
+            {
+                int candidate = (selectedChoice + direction * offset + conversation.Choices.Length) % conversation.Choices.Length;
+                if (!string.IsNullOrEmpty(conversation.Choices[candidate].Text))
+                {
+                    selectedChoice = candidate;
+                    return;
+                }
+            }
+        }
+
+        void SelectChoice(int choice)
+        {
+            BurntimeClassic classic = app as BurntimeClassic;
+            result = conversation.Choices[choice].Action.Type;
+
+            dialogmode = 0;
+            dlgoffset = 0;
+            switch (conversation.Choices[choice].Action.Type)
+            {
+                case ConversationActionType.Talk:
+                    conversation = character.Dialog.GetConversation(self, ConversationType.Talk);
+                    break;
+                case ConversationActionType.Trade:
+                    Hide();
+                    classic.Game.World.ActiveTraderObj = character as Trader;
+                    app.SceneManager.SetScene("TraderScene");
+                    break;
+                case ConversationActionType.Yes:
+                case ConversationActionType.No:
+                case ConversationActionType.Exit:
+                    Hide();
+                    break;
+                case ConversationActionType.HireRequirements:
+                    conversation = character.Dialog.GetConversation(self, ConversationType.Hire);
+                    break;
+                case ConversationActionType.Profession:
+                    conversation = character.Dialog.GetConversation(self, ConversationType.Profession);
+                    break;
+                case ConversationActionType.Hire:
+                    Hire();
+                    Hide();
+                    break;
+            }
+
+            dialogmode = (conversation.Text.Length < 3) ? 1 : 0;
+            selectedChoice = FirstVisibleChoice();
         }
 
         public override bool OnMouseMove(Vector2 position)
@@ -224,9 +326,9 @@ namespace Burntime.Remaster
                 textPos.y = 85;
 
                 if (hover == 0)
-                    fontChoice.DrawText(target, textPos, txt[499], TextAlignment.Left, VerticalTextAlignment.Top);
+                    fontMouseChoice.DrawText(target, textPos, txt[499], TextAlignment.Left, VerticalTextAlignment.Top);
                 else
-                    fontOptions.DrawText(target, textPos, txt[499], TextAlignment.Left, VerticalTextAlignment.Top);
+                    fontKeyChoice.DrawText(target, textPos, txt[499], TextAlignment.Left, VerticalTextAlignment.Top);
             }
             else
             {
@@ -237,7 +339,9 @@ namespace Burntime.Remaster
                     String line = conversation.Choices[i].Text;
 
                     if (hover == i)
-                        fontChoice.DrawText(target, textPos, line, TextAlignment.Left, VerticalTextAlignment.Top);
+                        fontMouseChoice.DrawText(target, textPos, line, TextAlignment.Left, VerticalTextAlignment.Top);
+                    else if (selectedChoice == i)
+                        fontKeyChoice.DrawText(target, textPos, line, TextAlignment.Left, VerticalTextAlignment.Top);
                     else
                         fontOptions.DrawText(target, textPos, line, TextAlignment.Left, VerticalTextAlignment.Top);
                     textPos.y += 11;

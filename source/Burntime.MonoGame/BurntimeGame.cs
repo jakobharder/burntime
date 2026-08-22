@@ -309,7 +309,7 @@ namespace Burntime.MonoGame
                         break;
                     }
 
-                    if (key == Keys.Escape || key == Keys.Pause || key == Keys.Enter
+                    if (key == Keys.Escape || key == Keys.Pause || key == Keys.Enter || key == Keys.Up || key == Keys.Down
                         || key == Keys.F1 || key == Keys.F2 || key == Keys.F3 || key == Keys.F4 || key == Keys.F8 || key == Keys.F9)
                     {
                         DeviceManager?.VKeyPress(key switch
@@ -317,6 +317,8 @@ namespace Burntime.MonoGame
                             Keys.Escape => SystemKey.Escape,
                             Keys.Pause => SystemKey.Pause,
                             Keys.Enter => SystemKey.Enter,
+                            Keys.Up => SystemKey.Up,
+                            Keys.Down => SystemKey.Down,
                             Keys.F1 => SystemKey.F1,
                             Keys.F2 => SystemKey.F2,
                             Keys.F3 => SystemKey.F3,

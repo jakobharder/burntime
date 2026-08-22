@@ -113,17 +113,19 @@ sealed class MouseDevice : IMouseDevice
 
 public enum SystemKey
 {
-    None = 0,//,System.Windows.Forms.Keys.None,
-    F1 = 1,//System.Windows.Forms.Keys.F1,
-    F2 = 2,//System.Windows.Forms.Keys.F2,
-    F3 = 3,//System.Windows.Forms.Keys.F3,
-    F4 = 4,//System.Windows.Forms.Keys.F4,
-    F8 = 8,
-    F9 = 9,
-    Escape = 5,//System.Windows.Forms.Keys.Escape,
-    Pause = 6,//System.Windows.Forms.Keys.Pause
+    None = 0,
+    F1,
+    F2,
+    F3,
+    F4,
+    F8,
+    F9,
+    Escape,
+    Pause,
     Enter,
-    Other
+    Other,
+    Up,
+    Down
 }
 
 [Flags]
