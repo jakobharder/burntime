@@ -136,8 +136,70 @@ namespace Burntime.Remaster.AI
         /// </summary>
         public void Turn()
         {
+            HuntOneDogForMeat();
             UpdateItems();
             StrategicAi.RunTurn(this);
+        }
+
+        private void HuntOneDogForMeat()
+        {
+            Dog dog = CurrentLocation.Characters
+                .OfType<Dog>()
+                .FirstOrDefault(candidate => !candidate.IsDead);
+            if (dog == null)
+                return;
+
+            Item[] existingMeat = CurrentLocation.Items
+                .Where(item => item.ID == "item_meat")
+                .ToArray();
+            dog.Die();
+            Item meat = CurrentLocation.Items
+                .FirstOrDefault(item => item.ID == "item_meat" &&
+                    !existingMeat.Contains(item));
+            if (meat == null)
+                return;
+
+            string destination = "on the ground";
+            if (TryStoreInGroup(meat))
+            {
+                CurrentLocation.Items.Remove(meat);
+                destination = "in the travelling group";
+            }
+            else if (LocalOpportunities.StoreItemInCamp(CurrentLocation, meat))
+            {
+                CurrentLocation.Items.Remove(meat);
+                destination = $"in a room at {CurrentLocation.Title}";
+            }
+            else if (LocalOpportunities.TryReplaceCargo(
+                this, meat, out Item replaced, out Character carrier))
+            {
+                CurrentLocation.Items.Remove(meat);
+                carrier.Items.Add(meat);
+                CurrentLocation.Items.Add(replaced);
+                destination = $"with {carrier.Name}, replacing {replaced.ID}";
+            }
+            else
+            {
+                var forced = Player.Group
+                    .SelectMany(character => character.Items.Select(item =>
+                        new { Character = character, Item = item }))
+                    .Where(entry => !AiItemPool.IsWaterContainer(entry.Item.Type) &&
+                        entry.Character.Weapon != entry.Item &&
+                        entry.Character.Protection != entry.Item)
+                    .OrderBy(entry => entry.Item.Type.TradeValue)
+                    .FirstOrDefault();
+                if (forced != null)
+                {
+                    forced.Character.Items.Remove(forced.Item);
+                    CurrentLocation.Items.Add(forced.Item);
+                    CurrentLocation.Items.Remove(meat);
+                    forced.Character.Items.Add(meat);
+                    destination = $"with {forced.Character.Name}, replacing {forced.Item.ID}";
+                }
+            }
+
+            AiTelemetry.Report(Player,
+                $"killed one dog for free at {CurrentLocation.Title} and stored item_meat {destination}");
         }
 
         #region strategic AI access
