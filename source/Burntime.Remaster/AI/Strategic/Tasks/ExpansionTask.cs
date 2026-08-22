@@ -287,6 +287,13 @@ internal static partial class ExpansionTask
         }
         if (target.Player == null)
         {
+            if (!IsSustainableNeutralFrontier(state, target))
+            {
+                AiTelemetry.Report(context.Player,
+                    $"abandoned settlement target {target.Title}: an enemy takeover made its frontier route too remote");
+                state.StrategicTarget = null;
+                return null;
+            }
             if (context.NeutralExpansionAllowed && state.CanClaim(target) &&
                 HasTravellingHazardProtection(state, target) &&
                 (HasSettlementRouteSupplies(state, context, target, route) ||
@@ -354,6 +361,7 @@ internal static partial class ExpansionTask
 
             if (location.Player == null && context.NeutralExpansionAllowed &&
                 state.CanClaim(location) && HasTravellingHazardProtection(state, location) &&
+                IsSustainableNeutralFrontier(state, location) &&
                 (!hasAcceptableFirstCamp || CampEconomy.IsAcceptableFirstCamp(location)) &&
                 (HasSettlementRouteSupplies(state, context, location, route) ||
                     CanWaitForSettlementFood(state, context, location, route)))
@@ -451,12 +459,21 @@ internal static partial class ExpansionTask
                 int neighborDistance = distance + 1;
                 if (neighbor == target)
                     return neighborDistance;
+                // Neutral expansion may advance through friendly, city, and
+                // unclaimed locations, but not through an opponent's camp. A
+                // takeover must force destination selection to reconsider the
+                // newly exposed frontier instead of following a remote detour.
+                if (!neighbor.IsCity && neighbor.Player != null && neighbor.Player != state.Player)
+                    continue;
                 if (visited.Add(neighbor))
                     queue.Enqueue((neighbor, neighborDistance));
             }
         }
         return int.MaxValue;
     }
+
+    static bool IsSustainableNeutralFrontier(ClassicAiState state, Location target) =>
+        DistanceFromOwnedTerritory(state, target, maximum: 4) != int.MaxValue;
 
     static bool IsSuitableCurrentClaim(ClassicAiState state, AiContext context)
     {
