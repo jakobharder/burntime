@@ -367,7 +367,8 @@ internal static partial class ExpansionTask
                     CanWaitForSettlementFood(state, context, location, route)))
             {
                 targets.Add((location, NeutralTargetScore(state, policy, location) +
-                    NeutralFrontierScore(state, location) - route.Days * 24 + Jitter()));
+                    NeutralFrontierScore(state, location) +
+                    CorridorFrontierScore(state, location) - route.Days * 24 + Jitter()));
             }
             else if (AttackTask.HasGroupWeapon(context.Player) &&
                 AttackTask.IsHostile(location, context.Player) &&
@@ -630,6 +631,60 @@ internal static partial class ExpansionTask
             : 0;
         return locality + cityAccess + earlyAdvancedFood + earlyProductionDeployment +
             earlyNetworkOpening;
+    }
+
+    static int CorridorFrontierScore(ClassicAiState state, Location location)
+    {
+        // A camp can be strategically useful before it is economically ideal
+        // when it is the first sustainable step into another neutral region.
+        // Keep this bonus below the value of a high-food/high-water camp and a
+        // ready cheap attack; it is a tie-breaker toward connected territory,
+        // not permission to stretch through a poor route.
+        if (!CampEconomy.CanSustainCamp(location) ||
+            DistanceFromOwnedTerritory(state, location, maximum: 2) == int.MaxValue)
+            return 0;
+
+        int forwardDirections = Enumerable.Range(0, location.Neighbors.Count)
+            .Where(index => location.WayLengths[index] > 0)
+            .Select(index => location.Neighbors[index])
+            .Where(neighbor => neighbor.Player != state.Player &&
+                !AttackTask.IsHostile(neighbor, state.Player))
+            .Count(neighbor => HasForwardSustainableNeutral(location, neighbor, state.Player));
+        return forwardDirections switch
+        {
+            0 => 0,
+            1 => 180,
+            _ => 240
+        };
+    }
+
+    static bool HasForwardSustainableNeutral(Location origin, Location firstStep, Player player)
+    {
+        const int maximumForwardHops = 2;
+        Queue<(Location Location, int Hops)> queue = new();
+        HashSet<Location> visited = new() { origin };
+        queue.Enqueue((firstStep, 1));
+        visited.Add(firstStep);
+
+        while (queue.Count > 0)
+        {
+            (Location location, int hops) = queue.Dequeue();
+            if (location.Player == null && CampEconomy.CanSustainCamp(location))
+                return true;
+            if (hops >= maximumForwardHops ||
+                AttackTask.IsHostile(location, player))
+                continue;
+
+            for (int index = 0; index < location.Neighbors.Count; index++)
+            {
+                if (location.WayLengths[index] <= 0)
+                    continue;
+                Location neighbor = location.Neighbors[index];
+                if (!AttackTask.IsHostile(neighbor, player) && visited.Add(neighbor))
+                    queue.Enqueue((neighbor, hops + 1));
+            }
+        }
+        return false;
     }
 
     static bool HasPortableCompatibleProduction(ClassicAiState state, Location location) =>
