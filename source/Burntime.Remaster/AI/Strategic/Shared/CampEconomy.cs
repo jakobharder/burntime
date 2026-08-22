@@ -59,16 +59,20 @@ internal static class CampEconomy
     {
         groupSize = System.Math.Max(1, groupSize);
         int production = camp.Source?.Water ?? 0;
-        if (production >= groupSize)
+        int residentConsumption = camp.Player == null
+            ? 0
+            : LivingGuardCount(camp, camp.Player);
+        if (production >= residentConsumption + groupSize)
             return true;
 
         int storedWater = StoredWaterValue(camp) + (camp.Source?.Reserve ?? 0);
         if (storedWater >= groupSize * reserveDays)
             return true;
 
-        // A reusable container lets a low-output well accumulate a portable
-        // reserve over several turns. Empty and full variants both qualify.
-        return production > 0 && camp.Rooms.SelectMany(room => room.Items)
+        // A reusable container only helps when the well has water left after
+        // resident guards drink. Otherwise its reserve can never accumulate
+        // enough to fill the container for a visiting group.
+        return production > residentConsumption && camp.Rooms.SelectMany(room => room.Items)
             .Concat(camp.CampNPC.SelectMany(character => character.Items))
             .Any(item => AiItemPool.IsWaterContainer(item.Type));
     }

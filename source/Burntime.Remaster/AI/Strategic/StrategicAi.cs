@@ -219,8 +219,12 @@ internal static class StrategicAi
             return;
         bool normallySupplied = SupplyCalculator.HasTerritorialRouteSupplies(
             state.Player, state.Current, route, hostileTarget: false);
+        bool dehydrationEscape = allowSurvivableRecoveryRisk &&
+            SupplyCalculator.IsDehydrationTravelNoWorseThanWaiting(
+                state.Player, state.Current, route);
         if (!normallySupplied && (!allowSurvivableRecoveryRisk ||
-            !SupplyCalculator.CanSurviveRecoveryRoute(state.Player, route)))
+            !SupplyCalculator.CanSurviveRecoveryRoute(state.Player, route)) &&
+            !dehydrationEscape)
             return;
         candidates.Add(new AiDecision(
             AiAction.Travel,

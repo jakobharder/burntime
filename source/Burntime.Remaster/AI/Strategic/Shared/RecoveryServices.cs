@@ -96,10 +96,10 @@ internal static class RecoveryServices
                 Help = HelpScore(player, location, needsFood, needsWater, needsDoctor,
                     starving, dehydrated, canPayDoctor)
             })
-            .Where(candidate => candidate.Route != null && candidate.ReturnRoute != null &&
-                candidate.Help > 0 &&
-                CanProvisionReturnTrip(state, candidate.Location, candidate.Route,
-                    candidate.ReturnRoute) &&
+            .Where(candidate => candidate.Route != null && candidate.Help > 0 &&
+                (dehydrated || candidate.ReturnRoute != null &&
+                    CanProvisionReturnTrip(state, candidate.Location, candidate.Route,
+                        candidate.ReturnRoute)) &&
                 (!requireReachable || SupplyCalculator.HasRouteSupplies(
                     player, candidate.Route, hostileTarget: false) ||
                     SupplyCalculator.CanSurviveRecoveryRoute(player, candidate.Route)))

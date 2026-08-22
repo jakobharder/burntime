@@ -130,6 +130,33 @@ internal static class SupplyCalculator
         return player.Group.Min(character => character.Health) > expectedDamage;
     }
 
+    public static bool IsDehydrationTravelNoWorseThanWaiting(
+        Player player,
+        Location current,
+        RouteFinder.Route route)
+    {
+        if (!player.Group.Any(character => character.Water == 0))
+            return false;
+
+        int routeWaterShortageDays = System.Math.Max(0,
+            route.Days - player.Group.GetLowestWaterWithInventory());
+
+        int residentConsumption = current.Player == null
+            ? 0
+            : CampEconomy.LivingGuardCount(current, current.Player);
+        int dailyWaterSurplus = System.Math.Max(0,
+            (current.Source?.Water ?? 0) - residentConsumption);
+        int localWater = player.Group.GetWaterInInventory() +
+            CampEconomy.StoredWaterValue(current) +
+            (current.Source?.Reserve ?? 0) +
+            dailyWaterSurplus * route.Days;
+        int[] localReserves = player.Group.Select(character => character.Water).ToArray();
+        int waitWaterShortageDays = System.Math.Max(0, route.Days -
+            Group.GetLowestAfterDistribution(localReserves, localWater));
+
+        return routeWaterShortageDays <= waitWaterShortageDays;
+    }
+
     public static bool HasProjectedRecruitTerritorialSupplies(
         Player player,
         Location start,
