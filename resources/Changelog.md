@@ -9,10 +9,12 @@
   - They play more closely by the rules now, with trade and inventory boosts
   - They attack, plan attacks and retreat in danger
   - Camp takeover now leaves storage intact
+  - Enclosed AIs immediately die on easy; on medium/hard they attack or die trying
 - Disabled dog/mutant spawning in original mode
 - Reduced dog/mutant spawning in extended mode
 - Dogs/mutants don't attack in cities anymore
 - Updated dependencies (.NET 10, MonoGame 3.8.5)
+- Remastered all character portraits and item graphics
 
 ### Fixes
 
