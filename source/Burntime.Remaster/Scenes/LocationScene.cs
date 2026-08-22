@@ -211,6 +211,12 @@ namespace Burntime.Remaster
             if (app.GameState is not ClassicGame game)
                 return false;
 
+            if (key == 'q')
+            {
+                OnMenuInventory();
+                return true;
+            }
+
             if (game.CheatsEnabled)
             {
                 string[] items = null;

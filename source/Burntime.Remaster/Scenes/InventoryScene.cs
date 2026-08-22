@@ -178,6 +178,15 @@ namespace Burntime.Remaster.Scenes
             app.SceneManager.PreviousScene();
         }
 
+        public override bool OnVKeyPress(SystemKey key)
+        {
+            if (key != SystemKey.Escape)
+                return false;
+
+            OnButtonExit();
+            return true;
+        }
+
         void OnLeftClickItemInventory(Framework.States.StateObject state)
         {
             BurntimeClassic classic = app as BurntimeClassic;

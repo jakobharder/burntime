@@ -110,6 +110,12 @@ namespace Burntime.Remaster
             if (app.GameState is not ClassicGame game)
                 return false;
 
+            if (key == 'q')
+            {
+                OnMenuInventory();
+                return true;
+            }
+
             if (!game.CheatsEnabled)
             {
                 enteredText += key;
@@ -133,7 +139,7 @@ namespace Burntime.Remaster
                     view.Player.Character.Health = 100;
                     return true;
                 }
-                else if (key == 'q')
+                else if (key == 'p')
                 {
                     ToggleFastTravel();
                     return true;

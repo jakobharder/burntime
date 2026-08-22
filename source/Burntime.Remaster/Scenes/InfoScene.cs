@@ -275,6 +275,15 @@ namespace Burntime.Remaster.Scenes
             app.SceneManager.PreviousScene();
         }
 
+        public override bool OnVKeyPress(SystemKey key)
+        {
+            if (key != SystemKey.Escape)
+                return false;
+
+            OnButtonBack();
+            return true;
+        }
+
         void OnButtonListUp()
         {
             if (items.Count <= 1)

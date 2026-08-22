@@ -208,6 +208,23 @@ class TraderScene : Scene
         exchangeTop.ExchangeResult = ExchangeResult.Ng;
     }
 
+    public override bool OnVKeyPress(SystemKey key)
+    {
+        if (key == SystemKey.Escape)
+        {
+            OnButtonExit();
+            return true;
+        }
+
+        if (key == SystemKey.Enter)
+        {
+            OnButtonAccept();
+            return true;
+        }
+
+        return false;
+    }
+
     void OnLeftClickItemInventory(Framework.States.StateObject State)
     {
         if (exchangeBottom.Grid.Contains(State as Item))
