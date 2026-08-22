@@ -153,12 +153,28 @@ internal static partial class ExpansionTask
                 return;
             RouteFinder.Route? route = RouteFinder.Find(
                 context.Player, context.Current, plan.Target);
-            if (route == null || !HasSettlementRouteSupplies(
-                state, context, plan.Target, route))
+            if (route == null)
                 return;
-            StrategicAi.AddTravelCandidate(
-                state, candidates, plan.Target, plan.TargetScore,
-                $"advance toward {CampEconomy.StrategicRole(plan.Target)}");
+            if (!HasSettlementRouteSupplies(state, context, plan.Target, route))
+            {
+                candidates.Add(new AiDecision(
+                    AiAction.Wait,
+                    10,
+                    plan.Target,
+                    Reason: $"settlement route to {plan.Target.Title} is waiting for travel reserves"));
+                return;
+            }
+
+            // HasSettlementRouteSupplies already approves either the complete
+            // expedition or a supplied first leg to an owned camp/city. Preserve
+            // that staged approval instead of recalculating the full journey in
+            // AddTravelCandidate and silently dropping the movement.
+            candidates.Add(new AiDecision(
+                AiAction.Travel,
+                plan.TargetScore - route.Days,
+                plan.Target,
+                route.NextStep,
+                $"advance toward {CampEconomy.StrategicRole(plan.Target)}"));
         }
         else if (AttackTask.CanAdvancePlan(state, plan.Target, policy))
         {
@@ -428,6 +444,13 @@ internal static partial class ExpansionTask
 
     static bool IsSuitableCurrentClaim(ClassicAiState state, AiContext context)
     {
+        // Do not consume a committed settler at a barren intermediate stop. It
+        // must remain with the travelling group unless the waypoint can support
+        // the new guard as a real camp while the expedition continues onward.
+        if (state.HasSettlementPlan && state.StrategicTarget != context.Current &&
+            !CampEconomy.CanSustainCamp(context.Current))
+            return false;
+
         if (HasOwnedCamp(state) || CampEconomy.IsAcceptableFirstCamp(context.Current))
             return true;
 
