@@ -46,12 +46,19 @@ internal static partial class ExpansionTask
             if (AttackTask.IsHostile(target, context.Player))
             {
                 int eliminationBonus = TerritorialEliminationBonus(state, target!);
+                int pocketBonus = ClaimedPocketScore(state, context, policy, target!);
                 if (eliminationBonus > 0)
                 {
                     int remainingCamps = CountOwnedCamps(state, target!.Player!);
                     AiTelemetry.Report(context.Player,
                         $"prioritized territorial elimination of {target.Player!.Name}: " +
                         $"{remainingCamps} nearby camp{(remainingCamps == 1 ? "" : "s")} remain");
+                }
+                else if (pocketBonus > 0)
+                {
+                    AiTelemetry.Report(context.Player,
+                        $"prioritized isolated pocket at {target!.Title} held by " +
+                        $"{target.Player!.Name}");
                 }
                 state.StartAttackPlan(target!, policy);
             }
@@ -350,7 +357,8 @@ internal static partial class ExpansionTask
                     // settler still has to be recruited elsewhere. Compare it
                     // with every other candidate instead of promising to return.
                     targets.Add((location, NeutralTargetScore(state, policy, location) +
-                        NeutralFrontierScore(state, location) + Jitter()));
+                        NeutralFrontierScore(state, location) +
+                        UnclaimedPocketScore(state, location) + Jitter()));
                 }
                 continue;
             }
@@ -366,9 +374,10 @@ internal static partial class ExpansionTask
                 (HasSettlementRouteSupplies(state, context, location, route) ||
                     CanWaitForSettlementFood(state, context, location, route)))
             {
-                targets.Add((location, NeutralTargetScore(state, policy, location) +
+                    targets.Add((location, NeutralTargetScore(state, policy, location) +
                     NeutralFrontierScore(state, location) +
-                    CorridorFrontierScore(state, location) - route.Days * 24 + Jitter()));
+                    CorridorFrontierScore(state, location) +
+                    UnclaimedPocketScore(state, location) - route.Days * 24 + Jitter()));
             }
             else if (AttackTask.HasGroupWeapon(context.Player) &&
                 AttackTask.IsHostile(location, context.Player) &&
@@ -383,6 +392,7 @@ internal static partial class ExpansionTask
                     ? policy.StrategicHostileTargetBonus
                     : 0;
                 float eliminationBonus = TerritorialEliminationBonus(state, location);
+                float pocketBonus = ClaimedPocketScore(state, context, policy, location);
                 float proactiveConflict = state.RootGame.World.Day >= policy.ProactiveConflictDay
                     ? policy.ProactiveConflictBonus
                     : 0;
@@ -393,7 +403,8 @@ internal static partial class ExpansionTask
                     ? 700
                     : 0;
                 targets.Add((location, policy.HostileTargetScore + weakness + strategicBonus +
-                    eliminationBonus + proactiveConflict + finishingBonus - route.Days * 6 + Jitter()));
+                    eliminationBonus + pocketBonus + proactiveConflict + finishingBonus -
+                    route.Days * 6 + Jitter()));
             }
         }
 
@@ -428,6 +439,79 @@ internal static partial class ExpansionTask
             (2, 2) => 150,
             _ => 0
         };
+    }
+
+    static int UnclaimedPocketScore(ClassicAiState state, Location target)
+    {
+        // A neutral site caught between established camps is cheap territory to
+        // settle and should not be forgotten behind larger frontier ambitions.
+        // The bonus is deliberately small: food, water and safe route economics
+        // still decide whether this is a worthwhile expansion.
+        int controlledNeighbors = Enumerable.Range(0, target.Neighbors.Count)
+            .Where(index => target.WayLengths[index] > 0)
+            .Select(index => target.Neighbors[index])
+            .Count(neighbor => neighbor.Player != null && neighbor.Player != state.Player);
+        if (controlledNeighbors < 2)
+            return 0;
+        return state.Current == target || state.Player.IsTraveling &&
+            state.Player.Destination == target
+            ? 210
+            : 90;
+    }
+
+    static int ClaimedPocketScore(
+        ClassicAiState state,
+        AiContext context,
+        AiPolicy policy,
+        Location target)
+    {
+        if (!IsEnemyPocket(state, target))
+            return 0;
+
+        // A cut-off enemy camp is a useful cleanup target even when its owner
+        // still controls more territory elsewhere. Reward a ready attack more
+        // strongly, and make an arrival in the pocket urgent instead of letting
+        // the group drift away again.
+        int score = 110;
+        if (AttackTask.CanAdvancePlan(state, target, policy))
+            score += 180;
+        if (context.Current == target || context.Player.IsTraveling &&
+            context.Player.Destination == target)
+        {
+            score += 240;
+        }
+        return score;
+    }
+
+    static bool IsEnemyPocket(ClassicAiState state, Location target)
+    {
+        Player? owner = target.Player;
+        if (owner == null || owner == state.Player)
+            return false;
+
+        Queue<Location> queue = new();
+        HashSet<Location> visited = new() { target };
+        queue.Enqueue(target);
+        while (queue.Count > 0)
+        {
+            Location location = queue.Dequeue();
+            for (int index = 0; index < location.Neighbors.Count; index++)
+            {
+                if (location.WayLengths[index] <= 0)
+                    continue;
+                Location neighbor = location.Neighbors[index];
+                // Camps held by another faction are impassable for the pocket's
+                // owner, exactly as they are for normal route planning.
+                if (neighbor.Player != null && neighbor.Player != owner)
+                    continue;
+                if (!visited.Add(neighbor))
+                    continue;
+                if (neighbor.Player == owner)
+                    return false;
+                queue.Enqueue(neighbor);
+            }
+        }
+        return true;
     }
 
     static int CountOwnedCamps(ClassicAiState state, Player player) =>
@@ -589,7 +673,8 @@ internal static partial class ExpansionTask
         if (CampEconomy.ConnectsOwnedCamps(location, state.Player) ||
             state.StrategicTarget != null && state.StrategicTarget != location)
             return 2300;
-        return 1050 + CampEconomy.TerritorialValue(location) * 0.5f;
+        return 1050 + CampEconomy.TerritorialValue(location) * 0.5f +
+            UnclaimedPocketScore(state, location);
     }
 
     static float NeutralTargetScore(ClassicAiState state, AiPolicy policy, Location location) =>
