@@ -1,0 +1,16 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug Burntime",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build Burntime (Debug)",
+            "program": "${workspaceFolder}/bin/Debug/Burntime.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/bin/Debug",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        }
+    ]
+}
