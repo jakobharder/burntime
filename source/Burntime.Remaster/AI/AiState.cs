@@ -68,6 +68,15 @@ namespace Burntime.Remaster.AI
         // losing this hint on load merely causes the target to be reevaluated.
         [NonSerialized]
         bool strategicTargetWasNeutral;
+        // A persistent wait for the same target and reason means the current
+        // plan is not making progress. This is runtime-only: loading a game
+        // gives the plan a fresh chance under the then-current world state.
+        [NonSerialized]
+        Location? stalledWaitTarget;
+        [NonSerialized]
+        string? stalledWaitReason;
+        [NonSerialized]
+        int consecutiveStalledWaits;
         [System.Runtime.Serialization.OptionalField]
         protected StateLink<Location> deferredAttackCamp;
         [System.Runtime.Serialization.OptionalField]
@@ -249,6 +258,44 @@ namespace Burntime.Remaster.AI
         {
             get => wait;
             set => wait = value;
+        }
+
+        internal bool CancelStalledStrategicWait(AiDecision decision, out int waitTurns)
+        {
+            waitTurns = 0;
+            if (decision.Action != AiAction.Wait || decision.Target == null)
+            {
+                ResetStalledStrategicWait();
+                return false;
+            }
+
+            if (stalledWaitTarget == decision.Target &&
+                stalledWaitReason == decision.Reason)
+            {
+                consecutiveStalledWaits++;
+            }
+            else
+            {
+                stalledWaitTarget = decision.Target;
+                stalledWaitReason = decision.Reason;
+                consecutiveStalledWaits = 1;
+            }
+
+            const int maximumConsecutiveWaits = 5;
+            if (consecutiveStalledWaits < maximumConsecutiveWaits)
+                return false;
+
+            waitTurns = consecutiveStalledWaits;
+            StrategicTarget = null;
+            ResetStalledStrategicWait();
+            return true;
+        }
+
+        void ResetStalledStrategicWait()
+        {
+            stalledWaitTarget = null;
+            stalledWaitReason = null;
+            consecutiveStalledWaits = 0;
         }
 
         internal bool CanClaim(Location location) => CanCreateCamp(location);

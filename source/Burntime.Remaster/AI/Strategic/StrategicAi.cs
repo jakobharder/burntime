@@ -177,6 +177,12 @@ internal static class StrategicAi
             .First();
         selected = ForceCityDeparture(state, candidates, selected);
         string target = selected.Target == null ? "none" : selected.Target.Title;
+        if (state.CancelStalledStrategicWait(selected, out int waitTurns))
+        {
+            AiTelemetry.Report(player,
+                $"abandoned strategic target {target}: waited {waitTurns} consecutive turns " +
+                $"without progress ({selected.Reason})");
+        }
         AiTelemetry.Report(player,
             $"decision {selected.Action}, target {target}, score {selected.Score:0}: {selected.Reason}");
         return selected;
