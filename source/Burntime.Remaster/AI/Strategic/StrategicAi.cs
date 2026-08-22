@@ -138,12 +138,18 @@ internal static class StrategicAi
                 preparationCamp == null ? "look for recruits" : "collect trade cargo before looking for recruits");
         }
 
-        string idleReason = ExpansionTask.NeedsExpansionTool(state)
-            ? "expansion blocked: no portable production tool and no affordable or collectible route"
-            : !AttackTask.HasGroupWeapon(player)
-                ? "expansion blocked: group has no weapon and no equipment route is available"
-                : "no reachable expansion target with current supplies";
-        candidates.Add(new AiDecision(AiAction.Wait, 0, Reason: idleReason));
+        string idleReason = preparingAttack && target != null
+            ? AttackTask.AdvanceBlockingReason(state, target, policy)
+            : ExpansionTask.NeedsExpansionTool(state)
+                ? "expansion blocked: no portable production tool and no affordable or collectible route"
+                : !AttackTask.HasGroupWeapon(player)
+                    ? "expansion blocked: group has no weapon and no equipment route is available"
+                    : "no eligible neutral or hostile frontier target with current supplies";
+        candidates.Add(new AiDecision(
+            AiAction.Wait,
+            0,
+            preparingAttack ? target : null,
+            Reason: idleReason));
         if (timer.ElapsedMilliseconds >= 500)
             AiTelemetry.Report(player,
                 $"slow decision planning {timer.ElapsedMilliseconds} ms: context " +

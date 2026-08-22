@@ -145,6 +145,44 @@ internal static class AttackTask
             IsSuitable(state, player, target, policy);
     }
 
+    public static string AdvanceBlockingReason(
+        ClassicAiState state,
+        Location target,
+        AiPolicy policy)
+    {
+        Player player = state.Player;
+        int requiredGroupSize = RequiredAttackGroupSize(state, target, policy);
+        if (player.Group.Count < requiredGroupSize)
+            return $"attack plan for {target.Title} is waiting for {requiredGroupSize} attackers";
+        if (!HasGroupWeapon(player))
+            return $"attack plan for {target.Title} is waiting for a weapon";
+        if (!IsTerritorialFrontierTarget(state, target))
+            return $"attack plan for {target.Title} is no longer on the territorial frontier";
+
+        RouteFinder.Route? route = RouteFinder.Find(player, state.Current, target);
+        if (route == null)
+            return $"attack plan for {target.Title} has no permitted route";
+
+        if (route.NextStep.Player == player &&
+            !CampEconomy.CanProvisionTravelGroupWater(route.NextStep, player.Group.Count))
+        {
+            return $"attack plan for {target.Title} is waiting for camp water capacity";
+        }
+
+        bool supplied = route.NextStep == target
+            ? SupplyCalculator.HasRouteSupplies(player, route, hostileTarget: true)
+            : route.NextStep.Player == player || route.NextStep.IsCity
+                ? RouteFinder.Find(player, state.Current, route.NextStep) is { } safeLeg &&
+                    SupplyCalculator.HasRouteSupplies(player, safeLeg, hostileTarget: false)
+                : SupplyCalculator.HasRouteSupplies(player, route, hostileTarget: true);
+        if (!supplied)
+            return $"attack plan for {target.Title} is waiting for route supplies";
+        if (!IsSuitable(state, player, target, policy))
+            return $"attack plan for {target.Title} is waiting for safe combat readiness";
+
+        return $"attack plan for {target.Title} is waiting for a legal advance";
+    }
+
     public static bool IsSuitable(
         ClassicAiState state,
         Player player,
