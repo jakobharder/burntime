@@ -1,100 +1,59 @@
-# AI Behavior
+# AI Strategy
 
-AI players manage survival, inventory, construction, travel, trade, combat and camps every turn.
-Difficulty changes how quickly they expand, how large their groups and garrisons become, and how much risk they accept.
+Computer players aim to expand and attack weak rivals.
+Difficulty changes pace and combat aggressiveness.
 
-## General Behavior
+## General Strategy
 
-- survival
-  - seeks an owned camp or city when health falls below 40, food falls to 3 or water falls to 2
-  - only chooses routes for which every group member has enough food and water
-  - reserves 3 additional days of food and water when travelling to attack a camp
-  - [cheat] at owned camps and cities, emergency recovery raises food and water to at least 10 and heals up to 25 health
-  - [cheat] can receive one meat or full wineskin there when reserves are critically low
-- group
-  - recruits available NPCs and equips followers before expanding
-  - never attacks without armed followers
-  - chooses randomly among NPCs in the difficulty-specific experience range
-  - chooses randomly among all available NPCs when none match that range
-- camps
-  - claims only sustainable locations and stations one follower as the first guard
-  - requires suitable protection before claiming a location with gas or radiation
-  - collects surplus food and useful items, improves production and delivers equipment
-  - recruits and stations additional guards at threatened or strategically useful camps
-- attacks
-  - remembers a strategic target between turns while the route and attack remain safe
-  - prefers weak, nearby camps; routes through hostile locations are not allowed by the game
-  - treats a recently contested camp as strategically important for 16 days
-  - retaliates against a human player for 20 days after one of its defenders is attacked
-  - retaliation ignores the normal limit on human camp defenders, but still requires sufficient strength
-  - captures a defeated camp and stations the weakest surviving follower as its guard
-  - retreats to the previous location when an attack is no longer safe or fails
-- economy
-  - gathers items from the ground, its group and its camps instead of receiving unlimited equipment
-  - [cheat] builds weapons, protection and food-production tools from materials shared across the group and reserve without class restrictions
-  - keeps food, water, production tools and construction materials needed for future expansion
-  - [cheat] can generate the cheapest required hiring item when recruiting in a city
-  - visits city traders deliberately but uses roaming traders only when already passing through their location
-  - trades with the fixed city trader and every roaming trader currently in the city
+- **Survival:** Keeps groups supplied; recovers or retreats before trading or expanding. Uses only routes with a safe return. Doctors treat serious injuries; restaurants and pubs are ignored. No rescue supplies are generated.
+- **Camps:** Travellers eat before surplus is exported. The AI favors productive, well-watered sites and links between territory, cities and future expansion. Camps need sustainable food, suitable equipment or neighboring support; stored food alone is insufficient. It prioritizes early maggot production, then traps, pumps and construction. Hazards require protection.
+- **Cities:** Can recruit, barter or use a doctor, but never waits. Followers are raised to 3 food and 3 water each city turn; the boss gets this only while owning a camp. This aid is not portable.
+- **Groups:** Normal travel groups have at most two people. A second traveller is used when sustainable or needed for a settlement, garrison or attack. Recruits use real goods or surplus; each starts with 5 food and 5 water.
+- **Trade and conflict:** Trades real goods for useful equipment, especially trap parts, and always keeps a return route. Prefers neutral expansion, but prepares for weak or valuable enemy camps; it abandons unsafe attacks, retaliates when attacked, garrisons victories and retreats after failure.
 
-## I Easy
+## Difficulty Differences
 
-- group
-  - travels with up to 2 people, including the leader
-  - recruits NPCs with 0-40% experience when available
-- camps
-  - sets an expansion wait of 3-5 turns after creating a camp
-  - can control at most 2 camps more than the leading human player
-  - ignores this limit in an all-AI game
-  - uses 1 guard per camp
-  - guards use only knives or axes, never pitchforks or guns
-  - considers a camp threatened when an opponent is directly adjacent
-- attacks
-  - normally attacks a human camp with a single guard armed with at most a knife
-  - attacks with knives and axes, never pitchforks or guns
-  - requires about 135% of the estimated defender strength
-  - waits 4 turns after capturing an enemy camp before attacking again
-- economy
-  - trades surplus goods at normal item value
+| Behavior | I Easy | II Normal | III Hard |
+| --- | --- | --- | --- |
+| Normal travelling-group target | Up to 2 people | Up to 2 people | Up to 2 people |
+| Temporary attack-group target | Up to 2 people | Up to 3 people | Up to 4 people |
+| Preferred recruit experience | 0–40% | 20–60% | 40% or more |
+| Pause after establishing a camp | 3–5 turns | 1–4 turns | 0–2 turns |
+| Expansion relative to the leading human | At most 2 camps ahead | At most 5 camps ahead | No practical limit |
+| Important-camp garrison target | 1 guard | 2 guards | 3 guards |
+| Camp considered threatened | Opponent directly adjacent | Opponent within 2 connected locations | Opponent within 2 connected locations |
+| Human camps normally considered for attack | Empty, or a lone unarmed/knife guard | At most 1 defender | Any defender count |
+| Required estimated attack strength | About 135% of defenders | About 105% of defenders | About 75% of defenders, using a more detailed estimate |
+| Preference for strategic enemy camps | None | Moderate | Strong |
+| Pause after capturing an enemy camp | 4 turns | 2 turns | None |
+| Heavy weapons | No pitchforks or guns | At most 1 pitchfork; no guns | At most 1 pitchfork; camps may use 1 gun |
+| Effective value of AI trade offers | 100% | 120% | 150% |
+| Effective value of AI recovery payments | 150% | 180% | 225% |
 
-## II Normal
+- Targets can be limited by food, recruitment, equipment and travel safety.
+- Expansion limits do not apply without human players.
 
-- group
-  - travels with up to 3 people when its camps can support them
-  - recruits NPCs with 20-60% experience when available
-- camps
-  - sets an expansion wait of 1-4 turns after creating a camp
-  - can control at most 5 camps more than the leading human player
-  - ignores this limit in an all-AI game
-  - aims for 2 guards in threatened or strategically useful camps
-  - each camp uses at most 1 pitchfork and no guns
-  - considers a camp threatened when an opponent is within 2 connected locations
-- attacks
-  - normally attacks human camps with at most 1 defender
-  - at most 1 group member uses a pitchfork and none use guns
-  - requires about 105% of the estimated defender strength
-  - gives strategically useful enemy camps a small preference
-  - waits 2 turns after capturing an enemy camp before attacking again
-- economy
-  - [cheat] values offered goods at 120% when trading for needed equipment
+## Where does AI cheat?
 
-## III Hard
+Computer player generally must follow the same rules, with these exceptions:
 
-- group
-  - travels with up to 4 people when at least 4 camps and 2 self-supporting camps can feed them
-  - recruits NPCs with at least 40% experience when available
-- camps
-  - sets an expansion wait of 0-2 turns after creating a camp
-  - expands independently of human camp progress
-  - aims for 3 guards in threatened or strategically useful camps
-  - each camp uses at most 1 gun and 1 pitchfork
-  - considers a camp threatened when an opponent is within 2 connected locations
-- attacks
-  - has no fixed limit on the number of human camp defenders it may challenge
-  - at most 1 group member uses a pitchfork and none use guns
-  - attacks with about 75% of the estimated defender strength when the risk is otherwise acceptable
-  - assesses defenders using their attack, defense and health instead of a simplified weapon estimate
-  - strongly prefers strategically useful enemy camps
-  - has no cooldown after capturing an enemy camp
-- economy
-  - [cheat] values offered goods at 150% when trading for needed equipment
+- Can construct without a technician.
+- Can pay recruits also with non-food/water items.
+- May generate a missing trap component if it gets stuck.
+- Normal and Hard receive a trade advantage
+- AI player recover some food/water for free in cities - if they stil own a camp
+
+## Requirements
+
+- hard AIs shall be able to successfully attack and conquer a camp within the first 100 turns
+- AIs shall reach 3 camps within the first 30 turns
+- AIs shall have 50% advanced trap coverage by turn 100
+- AIs shall have on average at least 1 water container in stock per camp by turn 100
+- AIs shall use only information human players would have
+- AIs shall avoid cheating, only in rare stuck situations
+- AIs shall use water pumps (if appropriate) by turn 200
+- easy AIs shall not defeat human players, only infrequently attack to ensure human players learn to garrison
+- easy AIs shall be easy to conquer
+- AIs shall not starve on their own, only in combination of hostilities
+- AIs shall attack with all they have till death when they are locked in between foreign camps (excluding cities and unsustainable locations)
+  - except easy, there they shall simply die immediately
