@@ -29,6 +29,7 @@ namespace Burntime.Remaster.Scenes
             app.RenderMouse = false;
             handled = false;
             CaptureAllMouseClicks = true;
+            MusicLoop = true;
 
             Windows.Remove(ani1);
             Windows.Remove(ani2);
@@ -54,6 +55,7 @@ namespace Burntime.Remaster.Scenes
             else if (game.ImageScene == "film_05.pac")
             {
                 Music = "sounds/trader.ogg";
+                MusicLoop = false;
 
                 ani1 = new Image(app);
                 ani1.Background = "film_05.ani?0-17?p";
@@ -82,6 +84,7 @@ namespace Burntime.Remaster.Scenes
             else if (game.ImageScene == "film_10.pac")
             {
                 Music = "sounds/trader.ogg";
+                MusicLoop = false;
 
                 ani1 = new Image(app);
                 ani1.Background = "film_10.ani";
