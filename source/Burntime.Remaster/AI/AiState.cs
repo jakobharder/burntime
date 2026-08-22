@@ -91,6 +91,8 @@ namespace Burntime.Remaster.AI
         protected float failedAttackerStrength;
         [System.Runtime.Serialization.OptionalField]
         protected float failedDefenderStrength;
+        [System.Runtime.Serialization.OptionalField]
+        protected StateLink<Location> lastChanceAttackTarget;
         #endregion
 
         #region protected properties
@@ -251,6 +253,11 @@ namespace Burntime.Remaster.AI
         internal bool HasAttackPlan => StrategicTarget != null &&
             !StrategicTarget.IsCity && StrategicTarget.Player != null &&
             StrategicTarget.Player != Player;
+        internal Location? LastChanceAttackTarget
+        {
+            get => lastChanceAttackTarget != null ? lastChanceAttackTarget.Object : null;
+            set => lastChanceAttackTarget = value;
+        }
         internal bool IsAttackTargetDeferred(Location location) =>
             deferredAttackCamp != null && deferredAttackCamp.Object == location &&
             RootGame.World.Day <= deferredAttackUntilDay;

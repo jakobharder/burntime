@@ -11,6 +11,8 @@ internal static class StrategicAi
     {
         Stopwatch totalTimer = Stopwatch.StartNew();
         DefenseIntelligence.ObserveWorld(state);
+        if (TryHandleLastChance(state))
+            return;
         Location? bestTradeCity = TradeTask.FindBestTradeCity(state);
         LocalOpportunities.Apply(state, bestTradeCity);
         long localMilliseconds = totalTimer.ElapsedMilliseconds;
@@ -42,6 +44,78 @@ internal static class StrategicAi
             AiTelemetry.Report(state.Player,
                 $"slow AI turn {totalTimer.ElapsedMilliseconds} ms: local opportunities " +
                 $"{localMilliseconds} ms; {string.Join("; ", actionTimings)}");
+    }
+
+    static bool TryHandleLastChance(ClassicAiState state)
+    {
+        Player player = state.Player;
+        Location current = state.Current;
+        bool trapped = current.Neighbors
+            .Where((_, index) => current.WayLengths[index] > 0)
+            .Where(neighbor => player.CanTravel(current, neighbor))
+            .All(neighbor => neighbor.IsCity || !CampEconomy.CanSustainCamp(neighbor) ||
+                neighbor.Player != null && neighbor.Player != player);
+        if (!trapped)
+        {
+            state.LastChanceAttackTarget = null;
+            return false;
+        }
+
+        if (state.RootGame.World.Difficulty == 0)
+        {
+            player.Character.Health = 0;
+            AiTelemetry.Report(player,
+                $"was trapped at {current.Title} with no viable destination and dies on easy");
+            return true;
+        }
+
+        Location? target = state.LastChanceAttackTarget;
+        if (!AttackTask.IsHostile(target, player))
+        {
+            target = state.RootGame.World.Locations
+                .Where(location => AttackTask.IsHostile(location, player))
+                .Select(location => new
+                {
+                    Location = location,
+                    Route = RouteFinder.Find(player, current, location),
+                    Strength = DefenseIntelligence.Estimate(state, location).EstimatedStrength
+                })
+                .Where(candidate => candidate.Route != null)
+                .OrderBy(candidate => candidate.Strength)
+                .ThenBy(candidate => candidate.Route!.Days)
+                .Select(candidate => candidate.Location)
+                .FirstOrDefault();
+            state.LastChanceAttackTarget = target;
+        }
+
+        if (target == null)
+        {
+            player.Character.Health = 0;
+            AiTelemetry.Report(player,
+                $"was trapped at {current.Title} with no reachable hostile camp and dies");
+            return true;
+        }
+
+        RouteFinder.Route? route = RouteFinder.Find(player, current, target);
+        if (current == target)
+        {
+            AiTelemetry.Report(player,
+                $"last-chance assault on {target.Title}: committing every survivor until victory or death");
+            StrategicCombatResolver.Resolve(state, fightToDeath: true);
+        }
+        else if (route?.NextStep != null && player.CanTravel(current, route.NextStep))
+        {
+            player.Travel(route.NextStep);
+            AiTelemetry.Report(player,
+                $"last-chance assault advances on weakest reachable camp {target.Title} via {route.NextStep.Title}");
+        }
+        else
+        {
+            player.Character.Health = 0;
+            AiTelemetry.Report(player,
+                $"could not advance the last-chance assault on {target.Title} and dies");
+        }
+        return true;
     }
 
     static AiDecision Choose(ClassicAiState state, Location? bestTradeCity)

@@ -8,7 +8,7 @@ internal static class StrategicCombatResolver
 {
     const int MaxRounds = 100;
 
-    public static void Resolve(ClassicAiState state)
+    public static void Resolve(ClassicAiState state, bool fightToDeath = false)
     {
         Player attacker = state.Player;
         Location location = state.Current;
@@ -40,7 +40,7 @@ internal static class StrategicCombatResolver
             if (defenders.Count == 0)
                 break;
 
-            if (!attacker.Group.Any(character => character != attacker.Character && !character.IsDead))
+            if (!fightToDeath && !attacker.Group.Any(character => character != attacker.Character && !character.IsDead))
                 break;
 
             int defendersBeforeRound = defenders.Count;
@@ -58,7 +58,8 @@ internal static class StrategicCombatResolver
             foreach (Character fighter in defenders)
             {
                 Character? target = attacker.Group
-                    .Where(character => !character.IsDead && character != attacker.Character)
+                    .Where(character => !character.IsDead &&
+                        (fightToDeath || character != attacker.Character))
                     .OrderBy(character => character.Health)
                     .FirstOrDefault();
                 if (target == null)
@@ -71,7 +72,7 @@ internal static class StrategicCombatResolver
                 character != attacker.Character && character.IsDead);
             bool followerInDanger = attacker.Group.Any(character =>
                 character != attacker.Character && !character.IsDead && character.Health <= 35);
-            if (defenders.Count > 0 && !lostFollower && (killedDefender || followerInDanger))
+            if (!fightToDeath && defenders.Count > 0 && !lostFollower && (killedDefender || followerInDanger))
             {
                 tacticalWithdrawal = true;
                 break;
@@ -94,6 +95,7 @@ internal static class StrategicCombatResolver
         DefenseIntelligence.ObserveEncounter(state, location, survivingDefenders);
         if (defendersDefeated)
         {
+            state.LastChanceAttackTarget = null;
             Character? guard = attacker.Group
                 .Where(character => character != attacker.Character && !character.IsDead)
                 .OrderBy(character => character.AttackValue + character.DefenseValue)
@@ -118,11 +120,15 @@ internal static class StrategicCombatResolver
         else
         {
             state.StrategicTarget = null;
+            if (!fightToDeath)
+                state.LastChanceAttackTarget = null;
             bool madeProgress = survivingDefenders.Length < originalDefenders.Count ||
                 survivingDefenders.Any(character => character.Health < 100);
             state.RecordFailedAttack(location, originalAttackers.Count, initialAttackerStrength,
                 initialDefenderStrength, AiPolicy.ForDifficulty(state.RootGame.World.Difficulty),
                 madeProgress);
+            if (fightToDeath)
+                return;
             Location? safeLocation = StrategicAi.FindNearestLogistics(state, requireReachable: true);
             RouteFinder.Route? safeRoute = safeLocation == null
                 ? null
