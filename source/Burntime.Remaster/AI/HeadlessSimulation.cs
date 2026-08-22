@@ -182,8 +182,12 @@ public static class HeadlessSimulation
         Character[] stationed = removedFromGroup.Union(newCampMembers).Distinct().ToArray();
         foreach (Character character in stationed)
         {
-            events.Add($"{prefix} created a camp at {LocationLabel(character.Location)} using " +
-                $"{CharacterLabel(character)}; NPC inventory: {FormatItems(character.Items)}; " +
+            bool firstCampMember = before.CampMembers.Length == 0 &&
+                before.CampOwner != player;
+            string action = firstCampMember
+                ? $"created a camp at {LocationLabel(character.Location)} using {CharacterLabel(character)}"
+                : $"stationed {CharacterLabel(character)} at {LocationLabel(character.Location)}";
+            events.Add($"{prefix} {action}; NPC inventory: {FormatItems(character.Items)}; " +
                 $"camp room items: {FormatItems(character.Location.Rooms.SelectMany(room => room.Items))}.");
         }
 
@@ -466,6 +470,7 @@ public static class HeadlessSimulation
         public required Character[] Group { get; init; }
         public required Dictionary<Character, Dictionary<string, int>> Inventory { get; init; }
         public required Character[] CampMembers { get; init; }
+        public required Player? CampOwner { get; init; }
         public required Dictionary<string, int> GroundItems { get; init; }
         public required Dictionary<string, bool> GroundItemTypes { get; init; }
         public required Dictionary<string, int> RoomItems { get; init; }
@@ -480,6 +485,7 @@ public static class HeadlessSimulation
                 Group = group,
                 Inventory = group.ToDictionary(character => character, character => CountItems(character.Items)),
                 CampMembers = player.Location.CampNPC.Where(character => character.Player == player).ToArray(),
+                CampOwner = player.Location.Player,
                 GroundItems = CountItems(groundItems),
                 GroundItemTypes = groundItems
                     .GroupBy(item => item.Type.ID)

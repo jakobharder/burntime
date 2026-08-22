@@ -11,8 +11,23 @@ internal static class StrategicAi
         DefenseIntelligence.ObserveWorld(state);
         LocalOpportunities.Apply(state);
 
-        AiDecision decision = Choose(state);
-        AiDecisionExecutor.Execute(state, decision);
+        const int maximumStrategicActions = 10;
+        for (int action = 0; action < maximumStrategicActions; action++)
+        {
+            AiDecision decision = Choose(state);
+            AiDecisionExecutor.Execute(state, decision);
+
+            // Waiting and travelling deliberately consume the rest of the world
+            // turn. Other local strategic actions may expose the next useful step
+            // immediately, so continue choosing until one of these boundaries.
+            if (decision.Action == AiAction.Wait || state.Player.IsTraveling ||
+                state.Player.IsDead)
+                break;
+
+            if (action == maximumStrategicActions - 1)
+                AiTelemetry.Report(state.Player,
+                    $"stopped local strategy after {maximumStrategicActions} actions to avoid an infinite loop");
+        }
     }
 
     static AiDecision Choose(ClassicAiState state)
