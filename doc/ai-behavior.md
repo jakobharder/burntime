@@ -42,6 +42,7 @@ Computer player generally must follow the same rules, with these exceptions:
 - May generate a missing trap component if it gets stuck.
 - Normal and Hard receive a trade advantage
 - AI player recover some food/water for free in cities - if they stil own a camp
+- AI boss has 9 inventory slots
 
 ## Requirements
 

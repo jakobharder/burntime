@@ -87,7 +87,9 @@ internal static partial class RecruitmentTask
             localSettler, generatedPaymentAllowed,
             out int localPaymentFood, out _);
         RouteFinder.Route? soloReturn = needsSettler
-            ? FindProvisionedReturnRoute(state, context, target!)
+            ? state.OwnedCampCount > 0
+                ? FindProvisionedReturnRoute(state, context, target!)
+                : RouteFinder.Find(player, target!, context.Current)
             : null;
         (int recruitFood, int recruitWater) = ProjectedRecruitReserves();
         bool settlementReady = !needsSettler || settlementRoute != null &&
