@@ -354,10 +354,10 @@ namespace Burntime.Remaster.AI
 
         internal Character SelectCampNpc()
         {
-            Character recruit = CanHireNpc() ? HireNpc(allowGeneratedPayment: CurrentLocation.IsCity) : null;
-            if (recruit != null)
-                return recruit;
-            return Player.Group.Count > 1 ? Player.Group[1] : null;
+            if (Player.Group.Count > 1)
+                return Player.Group[1];
+
+            return CanHireNpc() ? HireNpc(allowGeneratedPayment: CurrentLocation.IsCity) : null;
         }
 
         internal void CreateCamp(Character npc)

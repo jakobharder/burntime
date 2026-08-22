@@ -109,7 +109,7 @@ internal static class RecoveryServices
             .FirstOrDefault();
     }
 
-    internal static bool CanWaitForLocalRecovery(ClassicAiState state)
+    internal static bool CanSustainLocally(ClassicAiState state)
     {
         Player player = state.Player;
         Location current = state.Current;
@@ -121,6 +121,35 @@ internal static class RecoveryServices
         bool hasWater = !needsWater || current.Player == player &&
             CampEconomy.CanProvisionTravelGroupWater(current, player.Group.Count);
         return hasFood && hasWater;
+    }
+
+    internal static bool CanBuildTravelReserve(ClassicAiState state)
+    {
+        Player player = state.Player;
+        Location current = state.Current;
+        if (current.Player != player)
+            return false;
+
+        bool needsFood = player.Group.Any(character => character.Food <= 3);
+        bool needsWater = player.Group.Any(character => character.Water <= 2);
+        bool canBuildFood = !needsFood || CampEconomy.StoredFoodValue(current) > 0 ||
+            CampEconomy.FoodSurplusPerDay(current) > player.Group.Count;
+        bool canBuildWater = !needsWater || CampEconomy.StoredWaterValue(current) > 0 ||
+            (current.Source?.Water ?? 0) > player.Group.Count;
+        return canBuildFood && canBuildWater;
+    }
+
+    internal static bool CanRecoverLocallyForTravel(ClassicAiState state)
+    {
+        if (!CanSustainLocally(state))
+            return false;
+
+        Location current = state.Current;
+        bool neighboringFoodSupport = Enumerable.Range(0, current.Neighbors.Count)
+            .Any(index => current.WayLengths[index] > 0 &&
+                current.Neighbors[index].Player == state.Player &&
+                CampEconomy.FoodSurplusPerDay(current.Neighbors[index]) > 0);
+        return neighboringFoodSupport || CanBuildTravelReserve(state);
     }
 
     internal static bool CanProvisionReturnTrip(

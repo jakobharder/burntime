@@ -37,7 +37,7 @@ internal static class StrategicAi
                 "seek real food, water, or medical services",
                 allowSurvivableRecoveryRisk: true);
             if (reachableRecovery == null && player.Group.Count > 1 &&
-                !RecoveryServices.CanWaitForLocalRecovery(state))
+                !RecoveryServices.CanRecoverLocallyForTravel(state))
             {
                 candidates.Add(new AiDecision(
                     AiAction.ReleaseFollower,
