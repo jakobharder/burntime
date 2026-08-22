@@ -36,7 +36,8 @@ internal static partial class ExpansionTask
         AiPolicy policy)
     {
         bool suitableCurrentClaim = IsSuitableCurrentClaim(state, context);
-        bool currentCanBecomeCamp = state.CanClaim(context.Current) && suitableCurrentClaim;
+        bool currentCanBecomeCamp = state.CanClaim(context.Current) && suitableCurrentClaim &&
+            HasTravellingHazardProtection(state, context.Current);
         bool canClaimCurrent = currentCanBecomeCamp && state.CanStationCamp();
         Location? target = ValidatePersistentTarget(state, context, policy);
         if (target == null && !(canClaimCurrent && state.StrategicTarget == null))
@@ -72,6 +73,7 @@ internal static partial class ExpansionTask
             state, AiPolicy.ForDifficulty(state.RootGame.World.Difficulty));
         Location current = context.Current;
         if (!state.CanClaim(current) || !state.CanStationCamp() ||
+            !HasTravellingHazardProtection(state, current) ||
             !IsSuitableCurrentClaim(state, context))
             return false;
 
@@ -286,6 +288,7 @@ internal static partial class ExpansionTask
         if (target.Player == null)
         {
             if (context.NeutralExpansionAllowed && state.CanClaim(target) &&
+                HasTravellingHazardProtection(state, target) &&
                 (HasSettlementRouteSupplies(state, context, target, route) ||
                     CanWaitForSettlementFood(state, context, target, route)))
                 return target;
@@ -333,7 +336,7 @@ internal static partial class ExpansionTask
             if (location == context.Current)
             {
                 if (location.Player == null && context.NeutralExpansionAllowed &&
-                    state.CanClaim(location) &&
+                    state.CanClaim(location) && HasTravellingHazardProtection(state, location) &&
                     (!hasAcceptableFirstCamp || CampEconomy.IsAcceptableFirstCamp(location)))
                 {
                     // Standing at a viable site does not make it free when a
@@ -350,7 +353,7 @@ internal static partial class ExpansionTask
                 continue;
 
             if (location.Player == null && context.NeutralExpansionAllowed &&
-                state.CanClaim(location) &&
+                state.CanClaim(location) && HasTravellingHazardProtection(state, location) &&
                 (!hasAcceptableFirstCamp || CampEconomy.IsAcceptableFirstCamp(location)) &&
                 (HasSettlementRouteSupplies(state, context, location, route) ||
                     CanWaitForSettlementFood(state, context, location, route)))
@@ -386,6 +389,15 @@ internal static partial class ExpansionTask
         }
 
         return targets.OrderByDescending(target => target.Score).FirstOrDefault().Location;
+    }
+
+    internal static bool HasTravellingHazardProtection(ClassicAiState state, Location location)
+    {
+        if (location.Danger == null)
+            return true;
+
+        return state.Player.Group.All(character => character.Items.Any(item =>
+            item.Type.GetProtection(location.Danger.Type) != null));
     }
 
     static int TerritorialEliminationBonus(ClassicAiState state, Location target)
@@ -470,7 +482,8 @@ internal static partial class ExpansionTask
         state.RootGame.World.Locations.Any(location =>
         {
             if (location == context.Current || location.IsCity || location.Player != null ||
-                !CampEconomy.IsAcceptableFirstCamp(location) || !state.CanClaim(location))
+                !CampEconomy.IsAcceptableFirstCamp(location) || !state.CanClaim(location) ||
+                !HasTravellingHazardProtection(state, location))
                 return false;
             RouteFinder.Route? route = RouteFinder.Find(context.Player, context.Current, location);
             return route != null && HasSettlementRouteSupplies(

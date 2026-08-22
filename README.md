@@ -41,8 +41,7 @@ dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj
 Run a deterministic four-AI game without opening a window:
 
 ```sh
-dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- \
-  --ai-simulate --turns 100 --difficulty hard --seed 123 --report ai-run.txt
+scripts/ai-simulate.sh --turns 100 --difficulty hard --seed 123 --report ai-run.txt
 ```
 
 - `--turns`: number of turns; default `100`.
@@ -52,6 +51,12 @@ dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- \
 - `--extended`: optionally use the extended-game item set instead of 1993 rules.
 
 The report summarizes player condition, travel, camps, stationed NPCs, and major timeline events.
+
+Check that the standard AI baseline has not changed:
+
+```sh
+scripts/ai-refactor-check.sh
+```
 
 ### Publish
 

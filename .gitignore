@@ -7,3 +7,4 @@ launchSettings.json
 .DS_Store
 artifacts/
 bindebug
+*~lock~

@@ -180,7 +180,9 @@ internal static partial class RecruitmentTask
             .Select(index => context.Current.Neighbors[index])
             .Where(waypoint => !waypoint.IsCity && waypoint.Player == null &&
                 CampEconomy.IsAcceptableFirstCamp(waypoint) &&
-                state.CanClaim(waypoint) && CampEconomy.CanSustainCamp(waypoint))
+                state.CanClaim(waypoint) &&
+                ExpansionTask.HasTravellingHazardProtection(state, waypoint) &&
+                CampEconomy.CanSustainCamp(waypoint))
             .Select(waypoint => new
             {
                 Waypoint = waypoint,
