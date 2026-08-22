@@ -16,16 +16,39 @@ internal static class RouteOpportunities
         Location? regionalTradeStop = routeAlignedPickup == null
             ? TradeTask.FindBestRegionalTradeStop(state)
             : null;
+        Location? destination = routeAlignedPickup ?? regionalTradeStop ?? tradeCity;
+        if (!HasProvisionedReturn(state, destination))
+            return;
         StrategicAi.AddTravelCandidate(
             state,
             candidates,
-            routeAlignedPickup ?? regionalTradeStop ?? tradeCity,
+            destination,
             score,
             routeAlignedPickup != null
                 ? "fill the city caravan at an owned camp near the trader"
                 : regionalTradeStop != null
                     ? "offer local exports to a nearby roaming trader before the regional market"
                     : "deliver surplus goods and trade for needed equipment");
+    }
+
+    static bool HasProvisionedReturn(ClassicAiState state, Location? destination)
+    {
+        if (destination == null)
+            return false;
+        RouteFinder.Route? outbound = RouteFinder.Find(
+            state.Player, state.Current, destination);
+        if (outbound == null)
+            return false;
+
+        return state.RootGame.World.Locations
+            .Where(camp => camp.Player == state.Player &&
+                CampEconomy.CanProvisionFood(camp) &&
+                CampEconomy.CanProvisionTravelGroupWater(
+                    camp, state.Player.Group.Count))
+            .Select(camp => RouteFinder.Find(state.Player, destination, camp))
+            .Where(route => route != null)
+            .Any(returnRoute => RecoveryServices.CanProvisionReturnTrip(
+                state, destination, outbound, returnRoute!));
     }
 
     public static Location? FindCityTradePickupCamp(ClassicAiState state)

@@ -15,11 +15,22 @@ internal static partial class TradeTask
         bool productionEconomyNeeded = ExpansionTask.ShouldPrioritizeEconomicGrowth(state);
         bool productionUpgradeNeeded = EconomicReturn.BestEmpireProductionImprovement(state) > 0.01f;
         bool firstAdvancedTrapNeeded = !EconomicSupport.HasAdvancedTrap(state);
+        if (RecruitmentTask.PlannedFutureSettlementPaymentType(state) == item.Type)
+            return 5100 + item.TradeValue;
         if (item.ID == "item_snake_trap" && HasStrategicSnakeTrapNeed(state))
             return 5000;
         if (EconomicSupport.IsSavingForSnakeTrap(state) && item.FoodValue == 0 &&
             !AiItemPool.IsWaterContainer(item.Type))
             return 0;
+        if (item.HealValue > 0 && RecoveryServices.NeedsDoctorPayment(state))
+            return 6000 + item.HealValue;
+        if (NeedsCriticalWaterWaypointUpgrade(state))
+        {
+            if (IsPump(item))
+                return 4900 + (item.ID == "item_industrial_pump" ? 20 : 0);
+            if (AiItemPool.IsWaterContainer(item.Type))
+                return 4800 + AiItemPool.WaterContainerCapacity(item.Type);
+        }
         if (item.Type.Production != null)
         {
             int ownedProductionDemand = MissingProductionToolCount(
@@ -89,11 +100,22 @@ internal static partial class TradeTask
         bool productionEconomyNeeded = ExpansionTask.ShouldPrioritizeEconomicGrowth(state);
         bool productionUpgradeNeeded = EconomicReturn.BestEmpireProductionImprovement(state) > 0.01f;
         bool firstAdvancedTrapNeeded = !EconomicSupport.HasAdvancedTrap(state);
+        if (RecruitmentTask.PlannedFutureSettlementPaymentType(state) == type)
+            return 5100 + type.TradeValue;
         if (type.ID == "item_snake_trap" && HasStrategicSnakeTrapNeed(state))
             return 5000;
         if (EconomicSupport.IsSavingForSnakeTrap(state) && type.FoodValue == 0 &&
             !AiItemPool.IsWaterContainer(type))
             return 0;
+        if (type.HealValue > 0 && RecoveryServices.NeedsDoctorPayment(state))
+            return 6000 + type.HealValue;
+        if (NeedsCriticalWaterWaypointUpgrade(state))
+        {
+            if (IsPump(type))
+                return 4900 + (type.ID == "item_industrial_pump" ? 20 : 0);
+            if (AiItemPool.IsWaterContainer(type))
+                return 4800 + AiItemPool.WaterContainerCapacity(type);
+        }
         if (type.Production != null)
         {
             int ownedProductionDemand = MissingProductionToolCount(
@@ -133,6 +155,8 @@ internal static partial class TradeTask
 
     internal static bool CanSell(ClassicAiState state, Item item)
     {
+        if (RecruitmentTask.PlannedFutureSettlementPaymentType(state) == item.Type)
+            return false;
         if (state.Player.Group.Any(character => character.Weapon == item || character.Protection == item))
             return false;
         // A working pump encountered before the low-water camp is claimed is a
@@ -140,9 +164,18 @@ internal static partial class TradeTask
         if ((IsPump(item) && HasForeseeablePumpNeed(state)) ||
             (item.Type.Production != null && state.OwnedCampCount == 0))
             return false;
-        if (item.FoodValue > 0 && TradeTask.PortableFoodSupply(state) - item.FoodValue <
-            TradeTask.DesiredPortableFood(state))
+        if (AiItemPool.IsWaterContainer(item.Type) &&
+            NeedsCriticalWaterWaypointUpgrade(state))
             return false;
+        if (item.FoodValue > 0)
+        {
+            int requiredFoodInventory = state.Current.IsCity && state.OwnedCampCount > 0
+                ? RecoveryServices.RequiredReturnFoodInventory(state)
+                : Math.Max(0, TradeTask.DesiredPortableFood(state) -
+                    state.Player.Group.GetFoodReserve());
+            if (state.Player.Group.GetFoodInInventory() - item.FoodValue < requiredFoodInventory)
+                return false;
+        }
         if (item.Type.Production != null && HasNeutralExpansionOpportunity(state) &&
             state.Pool.ProductionToolCount == 0 &&
             state.Player.Group.SelectMany(character => character.Items)
@@ -150,6 +183,10 @@ internal static partial class TradeTask
             return false;
         if (AiItemPool.IsWaterContainer(item.Type))
         {
+            if (state.Current.IsCity && state.OwnedCampCount > 0 && item.WaterValue > 0 &&
+                state.Player.Group.GetWaterInInventory() - item.WaterValue <
+                    RecoveryServices.RequiredReturnWaterInventory(state))
+                return false;
             int remainingCapacity = TradeTask.PortableWaterCapacity(state) +
                 state.Pool.TotalWaterContainerCapacity -
                 AiItemPool.WaterContainerCapacity(item.Type);
@@ -203,6 +240,7 @@ internal static partial class TradeTask
     }
 
     internal static bool IsStrategicPurchase(ClassicAiState state, Item item) =>
+        RecruitmentTask.PlannedFutureSettlementPaymentType(state) == item.Type ||
         item.Type.Production != null ||
         (item.FoodValue > 0 && TradeTask.PortableFoodSupply(state) < TradeTask.DesiredPortableFood(state)) ||
         (!AiItemPool.IsFirearm(item.Type) && item.DamageValue > 0 && NeedsWeapons(state)) ||

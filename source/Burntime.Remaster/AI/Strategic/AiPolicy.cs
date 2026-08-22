@@ -22,9 +22,6 @@ internal sealed class AiPolicy
     public float ProactiveConflictBonus { get; init; }
     public bool UseDetailedCombatEstimate { get; init; }
     public bool AllowGeneratedRecruitPaymentInCities { get; init; } = true;
-    public int SafeFoodFloor { get; init; } = 10;
-    public int SafeWaterFloor { get; init; } = 10;
-    public int SafeHealing { get; init; } = 25;
 
     public static AiPolicy ForDifficulty(int difficulty) => difficulty switch
     {

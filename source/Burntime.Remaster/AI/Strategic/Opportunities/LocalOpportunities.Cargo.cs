@@ -12,11 +12,13 @@ internal static partial class LocalOpportunities
         Player player = state.Player;
         Location current = state.Current;
         bool consumed = false;
+        ItemType? reservedPayment = RecruitmentTask.PlannedFutureSettlementPaymentType(state);
         while (player.Group.Any(character => character.Food <= 3))
         {
             List<(IItemCollection Owner, Item Food)> candidates = player.Group
                 .SelectMany(character => character.Items
-                    .Where(item => item.FoodValue > 0)
+                    .Where(item => item.FoodValue > 0 &&
+                        reservedPayment != item.Type)
                     .Select(item => ((IItemCollection)character.Items, item)))
                 .ToList();
             if (current.Player == player)
@@ -26,7 +28,8 @@ internal static partial class LocalOpportunities
                 int campReserve = CampFoodItemReserve;
                 if (storedFood > campReserve)
                     candidates.AddRange(current.Rooms.SelectMany(room => room.Items
-                        .Where(item => item.FoodValue > 0)
+                        .Where(item => item.FoodValue > 0 &&
+                            reservedPayment != item.Type)
                         .Select(item => ((IItemCollection)room.Items, item))));
             }
 
@@ -46,7 +49,10 @@ internal static partial class LocalOpportunities
 
         while (player.Group.Any(character => character.Water <= 2))
         {
-            Item water = player.Group.FindWater();
+            Item water = player.Group.SelectMany(character => character.Items)
+                .Where(item => item.WaterValue > 0 && item.Type != reservedPayment)
+                .OrderByDescending(item => item.WaterValue)
+                .FirstOrDefault();
             if (water == null)
                 break;
             player.Group.Drink(null, water.WaterValue);
@@ -192,6 +198,11 @@ internal static partial class LocalOpportunities
             return 9000 + TradeTask.ProductionTradePriority(item.Type.Production);
         if (AiItemPool.IsHazardProtection(item.Type) && TradeTask.NeedsDangerProtection(state, item.Type))
             return 8000 + item.TradeValue;
+        // Food value is also slot efficiency. Once cheap maggots and rats have
+        // been eaten, prefer compact meat and snakes over similarly valued cargo
+        // without making food untouchable economic capital.
+        if (item.FoodValue > 0)
+            return item.TradeValue + item.FoodValue * 2;
         return item.TradeValue;
     }
 

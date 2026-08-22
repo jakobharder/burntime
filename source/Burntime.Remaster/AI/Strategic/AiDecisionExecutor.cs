@@ -10,13 +10,6 @@ internal static class AiDecisionExecutor
         AiPolicy policy = AiPolicy.ForDifficulty(state.RootGame.World.Difficulty);
         switch (decision.Action)
         {
-            case AiAction.Recover:
-                bool usedCheat = state.RecoverAtSafeLocation(policy);
-                AiTelemetry.Report(player, usedCheat
-                    ? "received limited emergency supplies at a safe location"
-                    : "recovered using carried or stored supplies");
-                break;
-
             case AiAction.Recruit:
                 Character? recruit = state.Recruit(
                     allowGeneratedPayment: state.Current.IsCity && policy.AllowGeneratedRecruitPaymentInCities);
@@ -24,7 +17,43 @@ internal static class AiDecisionExecutor
                     ? "could not afford an available recruit"
                     : $"hired {recruit.Name} ({recruit.Class})");
                 if (recruit != null)
+                {
                     LocalOpportunities.Apply(state);
+                    if (player.Group.Contains(recruit) && decision.NextStep != null &&
+                        player.CanTravel(state.Current, decision.NextStep))
+                    {
+                        player.Travel(decision.NextStep);
+                        AiTelemetry.Report(player,
+                            $"departs toward {decision.Target?.Title ?? decision.NextStep.Title} " +
+                            $"with new settler via {decision.NextStep.Title}");
+                    }
+                }
+                break;
+
+            case AiAction.ReleaseFollower:
+                Location? recovery;
+                do
+                {
+                    Character? released = state.ReleaseFollowerForSurvival();
+                    if (released == null)
+                        break;
+                    AiTelemetry.Report(player,
+                        $"released {released.Name} completely because the group had no survivable recovery route");
+                    recovery = RecoveryServices.FindDestination(state, requireReachable: true);
+                }
+                while (recovery == null && player.Group.Count > 1);
+
+                recovery = RecoveryServices.FindDestination(state, requireReachable: true);
+                RouteFinder.Route? recoveryRoute = recovery == null
+                    ? null
+                    : RouteFinder.Find(player, state.Current, recovery);
+                if (recoveryRoute?.NextStep != null &&
+                    player.CanTravel(state.Current, recoveryRoute.NextStep))
+                {
+                    player.Travel(recoveryRoute.NextStep);
+                    AiTelemetry.Report(player,
+                        $"departs toward {recovery!.Title} after reducing the group to a survivable size");
+                }
                 break;
 
             case AiAction.StationFollower:
@@ -65,6 +94,7 @@ internal static class AiDecisionExecutor
                 if (npc != null)
                 {
                     state.CreateCamp(npc);
+                    LocalOpportunities.ProvisionGroupFromCampSurplus(state, state.Current);
                     AiTelemetry.Report(player, $"claimed {state.Current.Title} using {npc.Name}");
                 }
                 break;
@@ -76,14 +106,20 @@ internal static class AiDecisionExecutor
             case AiAction.Travel:
                 // Supply, recruiting and shopping trips are intermediate steps of an
                 // attack or settlement plan. Keep a non-city strategic destination.
-                if (decision.Target != null &&
-                    (state.StrategicTarget == null || state.StrategicTarget.IsCity))
-                    state.StrategicTarget = decision.Target;
-                if (decision.NextStep != null)
+                if (decision.NextStep != null &&
+                    player.CanTravel(state.Current, decision.NextStep))
                 {
+                    if (decision.Target != null &&
+                        (state.StrategicTarget == null || state.StrategicTarget.IsCity))
+                        state.StrategicTarget = decision.Target;
                     player.Travel(decision.NextStep);
                     AiTelemetry.Report(player,
                         $"travels toward {decision.Target?.Title ?? decision.NextStep.Title} via {decision.NextStep.Title}");
+                }
+                else if (decision.NextStep != null)
+                {
+                    AiTelemetry.Report(player,
+                        $"did not travel toward {decision.NextStep.Title}: route is no longer permitted");
                 }
                 break;
 

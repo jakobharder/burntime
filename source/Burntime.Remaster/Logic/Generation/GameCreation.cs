@@ -292,7 +292,9 @@ namespace Burntime.Remaster.Logic.Generation
                 player.Character.Items.Clear();
 
                 // add items
-                string[] items = settings.StartItems;
+                IEnumerable<string> items = player.Type == PlayerType.Ai
+                    ? settings.GetStartItems(0).Concat(new[] { "item_knife" })
+                    : settings.StartItems;
                 foreach (string item in items)
                 {
                     if (player.Type == PlayerType.Ai && item == "item_advice")

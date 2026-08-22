@@ -177,7 +177,9 @@ internal static partial class TradeTask
                     .Select(item => new TradeAsset(character.Items, item, false)))
                 .Where(asset => CanSell(state, asset.Item) ||
                     (spendReserves && (IsHighReturnLiquidReserve(asset.Item) ||
-                        TradeTask.ConstructionMaterials.Contains(asset.Item.ID))))
+                        TradeTask.ConstructionMaterials.Contains(asset.Item.ID)) &&
+                        !(AiItemPool.IsWaterContainer(asset.Item.Type) &&
+                            NeedsCriticalWaterWaypointUpgrade(state))))
                 .Concat(temporaryPoolAssets)
                 .Concat(exceptionalPoolAssets)
                 .OrderBy(asset => IsFullWaterContainer(asset.Item) ? 0 : 1)
@@ -186,7 +188,17 @@ internal static partial class TradeTask
                 .ToList();
             List<TradeAsset> offers = new();
             float offeredValue = 0;
-            int remainingFood = TradeTask.PortableFoodSupply(state);
+            int remainingFoodInventory = state.Player.Group.GetFoodInInventory();
+            int requiredFoodInventory = state.Current.IsCity && state.OwnedCampCount > 0
+                ? RecoveryServices.RequiredReturnFoodInventory(state)
+                : spendReserves
+                    ? state.Player.Group.Sum(character => Math.Max(0, 3 - character.Food))
+                    : Math.Max(0, TradeTask.DesiredPortableFood(state) -
+                        state.Player.Group.GetFoodReserve());
+            int remainingWaterInventory = state.Player.Group.GetWaterInInventory();
+            int requiredWaterInventory = state.Current.IsCity && state.OwnedCampCount > 0
+                ? RecoveryServices.RequiredReturnWaterInventory(state)
+                : 0;
             int acquiredWaterCapacity = AiItemPool.WaterContainerCapacity(target.Type);
             int remainingWaterCapacity = TradeTask.PortableWaterSupply(state) + acquiredWaterCapacity +
                 temporaryPoolAssets.Sum(asset => AiItemPool.WaterContainerCapacity(asset.Item.Type));
@@ -199,11 +211,13 @@ internal static partial class TradeTask
             {
                 if (!strategicPurchase && candidate.Item.TradeValue >= target.TradeValue)
                     continue;
-                int foodFloor = spendReserves
-                    ? state.Player.Group.Count * 3
-                    : TradeTask.DesiredPortableFood(state);
-                if (candidate.Item.FoodValue > 0 && remainingFood - candidate.Item.FoodValue +
-                    target.FoodValue < foodFloor)
+                if (!candidate.FromPool && candidate.Item.FoodValue > 0 &&
+                    remainingFoodInventory - candidate.Item.FoodValue + target.FoodValue <
+                        requiredFoodInventory)
+                    continue;
+                if (!candidate.FromPool && candidate.Item.WaterValue > 0 &&
+                    remainingWaterInventory - candidate.Item.WaterValue + target.WaterValue <
+                        requiredWaterInventory)
                     continue;
                 // A completed production upgrade outranks standing container
                 // reserves. Ordinary barter must preserve the full water target;
@@ -223,7 +237,11 @@ internal static partial class TradeTask
 
                 offers.Add(candidate);
                 offeredValue += candidate.Item.TradeValue * TradeBenefit(state);
-                remainingFood -= candidate.Item.FoodValue;
+                if (!candidate.FromPool)
+                {
+                    remainingFoodInventory -= candidate.Item.FoodValue;
+                    remainingWaterInventory -= candidate.Item.WaterValue;
+                }
                 remainingWaterCapacity -= AiItemPool.WaterContainerCapacity(candidate.Item.Type);
                 if (candidate.Item.DamageValue > 0 && !AiItemPool.IsFirearm(candidate.Item.Type))
                     remainingMeleeWeapons--;

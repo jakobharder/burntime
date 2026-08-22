@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Burntime.Data.BurnGfx;
 using Burntime.Remaster.Logic;
 using Burntime.Remaster.Logic.Generation;
 
@@ -226,6 +227,20 @@ public static class HeadlessSimulation
         report.AppendLine($"Winner: {(winner is null ? "none" : PlayerLabel(winner))}");
         report.AppendLine();
 
+        report.AppendLine("Recovery service locations");
+        foreach (Location location in game.World.Locations.Where(location =>
+            location.Map?.Entrances?.Any(entrance => entrance.RoomType is
+                RoomType.Restaurant or RoomType.Pub or RoomType.Doctor) == true))
+        {
+            string services = string.Join(", ", location.Map.Entrances
+                .Where(entrance => entrance.RoomType is
+                    RoomType.Restaurant or RoomType.Pub or RoomType.Doctor)
+                .Select(entrance => entrance.RoomType.ToString().ToLowerInvariant())
+                .Distinct());
+            report.AppendLine($"- {LocationLabel(location)}: {services}");
+        }
+        report.AppendLine();
+
         report.AppendLine("Players");
         foreach (Player player in game.World.Players)
         {
@@ -271,6 +286,7 @@ public static class HeadlessSimulation
                 ? "none"
                 : $"{FormatItems(usedTraps)} -> {location.Production.Produce.ID}";
             report.AppendLine($"- {LocationLabel(location)}: {PlayerLabel(location.Player!)}, {defenders.Length} NPC(s); " +
+                $"food surplus {CampEconomy.FoodSurplusPerDay(location)}/day; " +
                 $"water {location.Source.Water}/day; role {CampEconomy.StrategicRole(location)}; " +
                 $"items {FormatItems(campItems)}; highest possible trap {bestTrap}; used trap {usedTrap}");
             foreach (Character defender in defenders)
@@ -362,7 +378,8 @@ public static class HeadlessSimulation
                 $"({advancedCoverage:0}%); camp water containers {containers}/{camps.Length} " +
                 $"({containersPerCamp:0.0}/camp); camps with pumps {pumps}; " +
                 $"unmet pump needs {unmetPumpNeeds}; " +
-                $"emergency recoveries {result.EmergencyRecoveries}; " +
+                $"city minimum top-ups {result.CityMinimumTopUps}; " +
+                $"paid doctor visits {result.DoctorVisits}; " +
                 $"generated slump components {result.SlumpComponents.Values.Sum()}");
         }
 
@@ -501,8 +518,10 @@ public static class HeadlessSimulation
             PlayerEconomyMetrics result = players[player];
             if (message.StartsWith("encountered item_snake_trap"))
                 result.SnakeTrapEncounters++;
-            if (message.StartsWith("received limited emergency supplies"))
-                result.EmergencyRecoveries++;
+            if (message.StartsWith("paid doctor"))
+                result.DoctorVisits++;
+            if (message.StartsWith("received city minimum"))
+                result.CityMinimumTopUps++;
             if (message.StartsWith("traded") && message.Contains(" for item_snake_trap "))
                 result.SnakeTrapPurchases++;
 
@@ -600,6 +619,7 @@ public static class HeadlessSimulation
         public int CappedCampTurns;
         public int? CampsAtTurn30;
         public int Conquests;
-        public int EmergencyRecoveries;
+        public int DoctorVisits;
+        public int CityMinimumTopUps;
     }
 }

@@ -4,8 +4,8 @@ namespace Burntime.Remaster.AI;
 
 internal enum AiAction
 {
-    Recover,
     Recruit,
+    ReleaseFollower,
     StationFollower,
     StationTradeFollower,
     RecallFollower,

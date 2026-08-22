@@ -242,31 +242,21 @@ namespace Burntime.Remaster.Logic
             return GetLowestAfterDistribution(reserves, food);
         }
 
-        private int GetLowestAfterDistribution(int[] reserves, int distribute)
+        internal static int GetLowestAfterDistribution(int[] reserves, int distribute)
         {
-            if (characterList.Count == 0)
+            if (reserves.Length == 0)
                 return 0;
-
-            if (distribute == 0)
-                return reserves.Min();
-
-            int lowest = 0;
-            for (; distribute > 0; lowest++)
-            {
-                for (int i = 0; i < reserves.Length; i++)
-                {
-                    if (reserves[i] == lowest)
-                    {
-                        distribute--;
-                        reserves[i]++;
-
-                        if (distribute == 0)
-                            break;
-                    }
-                }
-            }
-
+            DistributeToLowest(reserves, distribute);
             return reserves.Min();
+        }
+
+        internal static void DistributeToLowest(int[] reserves, int supply)
+        {
+            while (supply-- > 0 && reserves.Length > 0)
+            {
+                int index = Array.IndexOf(reserves, reserves.Min());
+                reserves[index]++;
+            }
         }
         
         public bool IsInDanger() => this.Sum(x => x.GetDangerRate()) > 0;

@@ -78,8 +78,13 @@ internal static partial class TradeTask
             CampEconomy.CanSustainCamp(location) && NeedsPump(location));
 
     internal static bool NeedsCriticalPump(ClassicAiState state) => state.RootGame.World.Locations
-        .Any(location => location.Player == state.Player && location.GetSourceRoom() != null &&
-            !location.GetSourceRoom().Items.Any(IsPump) && location.Source.Water <= 1);
+        .Any(location => location.Player == state.Player && NeedsPump(location) &&
+            CampEconomy.IsTravelWaterBottleneck(location));
+
+    internal static bool NeedsCriticalWaterWaypointUpgrade(ClassicAiState state) =>
+        state.RootGame.World.Locations.Any(location =>
+            location.Player == state.Player &&
+            CampEconomy.IsTravelWaterBottleneck(location));
 
     internal static bool NeedsPump(Location camp)
     {

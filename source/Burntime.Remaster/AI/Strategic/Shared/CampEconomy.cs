@@ -9,6 +9,9 @@ internal static class CampEconomy
     // still refill travel containers. This is the strategic threshold for a
     // camp with reliable water, rather than merely any water at all.
     internal const int PlentyOfWater = 3;
+    // After feeding its stationed guards, a mature waypoint should still produce
+    // one daily food unit for each member of the normal two-person travel group.
+    internal const int TravelFoodSurplusTarget = 2;
 
     public static bool HasProductionPotential(Location camp, string productId) =>
         camp.AvailableProducts != null &&
@@ -30,7 +33,48 @@ internal static class CampEconomy
     public static bool IsWellEstablished(Location camp) => camp.Player != null &&
         camp.Production != null &&
         camp.Production.Produce.ID is "item_meat" or "item_snake" &&
-        HasPlentyOfWater(camp);
+        HasPlentyOfWater(camp) && FoodSurplusPerDay(camp) >= TravelFoodSurplusTarget;
+
+    public static int FoodSurplusPerDay(Location camp)
+    {
+        int guards = camp.Player == null ? 0 : LivingGuardCount(camp, camp.Player);
+        return camp.GetFoodProductionRate().FoodPerDay - guards;
+    }
+
+    public static int StoredFoodValue(Location camp) => camp.Rooms
+        .SelectMany(room => room.Items)
+        .Sum(item => item.FoodValue);
+
+    public static int StoredWaterValue(Location camp) => camp.Rooms
+        .SelectMany(room => room.Items)
+        .Sum(item => item.WaterValue);
+
+    public static bool CanProvisionFood(Location camp) =>
+        StoredFoodValue(camp) > 0 || camp.Production != null && FoodSurplusPerDay(camp) > 0;
+
+    public static bool CanProvisionTravelGroupWater(
+        Location camp,
+        int groupSize,
+        int reserveDays = 3)
+    {
+        groupSize = System.Math.Max(1, groupSize);
+        int production = camp.Source?.Water ?? 0;
+        if (production >= groupSize)
+            return true;
+
+        int storedWater = StoredWaterValue(camp) + (camp.Source?.Reserve ?? 0);
+        if (storedWater >= groupSize * reserveDays)
+            return true;
+
+        // A reusable container lets a low-output well accumulate a portable
+        // reserve over several turns. Empty and full variants both qualify.
+        return production > 0 && camp.Rooms.SelectMany(room => room.Items)
+            .Concat(camp.CampNPC.SelectMany(character => character.Items))
+            .Any(item => AiItemPool.IsWaterContainer(item.Type));
+    }
+
+    public static bool IsTravelWaterBottleneck(Location camp, int groupSize = 2) =>
+        camp.Player != null && !CanProvisionTravelGroupWater(camp, groupSize);
 
     public static bool IsAcceptableFirstCamp(Location camp) =>
         HasAdvancedFoodPotential(camp) || HasRatFoodPotential(camp);

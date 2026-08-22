@@ -23,15 +23,62 @@ internal static partial class LocalOpportunities
         InstallProductionFromPool(state, camp);
         camp.AutoSelectFoodProduction(onlyIfStarving: false);
         InstallLoosePump(state, camp);
+        StockCriticalWaterContainerFromGroup(state, camp);
         ConstructForCamp(state, camp);
+        CollectFutureRecruitmentPayment(state, camp);
         CollectProducedSurplus(state, camp);
         CollectStoredTradeGoods(state, camp);
+    }
+
+    static void StockCriticalWaterContainerFromGroup(ClassicAiState state, Location camp)
+    {
+        if (!CampEconomy.IsTravelWaterBottleneck(camp))
+            return;
+
+        int portableCapacity = TradeTask.PortableWaterCapacity(state);
+        var container = state.Player.Group
+            .SelectMany(character => character.Items
+                .Where(item => AiItemPool.IsWaterContainer(item.Type))
+                .Select(item => new { Character = character, Item = item }))
+            .Where(entry => portableCapacity -
+                AiItemPool.WaterContainerCapacity(entry.Item.Type) >=
+                TradeTask.DesiredWaterContainerCapacity(state))
+            .OrderBy(entry => AiItemPool.WaterContainerCapacity(entry.Item.Type))
+            .FirstOrDefault();
+        Room room = camp.Rooms.FirstOrDefault(candidate => !candidate.Items.IsFull);
+        if (container == null || room == null)
+            return;
+
+        container.Character.Items.Remove(container.Item);
+        room.Items.Add(container.Item);
+        AiTelemetry.Report(state.Player,
+            $"stocked {container.Item.ID} as critical water reserve at {camp.Title}");
+    }
+
+    static void CollectFutureRecruitmentPayment(ClassicAiState state, Location camp)
+    {
+        ItemType? paymentType = RecruitmentTask.PlannedFutureSettlementPaymentType(state);
+        if (paymentType == null || state.Player.Character.Items.Find(paymentType) != null ||
+            state.Player.Character.Items.IsFull)
+            return;
+
+        Room? room = camp.Rooms.FirstOrDefault(candidate =>
+            candidate.Items.Find(paymentType) != null);
+        Item? payment = room?.Items.Find(paymentType);
+        if (payment == null)
+            return;
+        room!.Items.Remove(payment);
+        state.Player.Character.Items.Add(payment);
+        AiTelemetry.Report(state.Player,
+            $"reserved {payment.ID} from {camp.Title} for the recruit at " +
+            $"{state.StrategicTarget!.Title}");
     }
 
     internal static void ProvisionGroupFromCampSurplus(ClassicAiState state, Location camp)
     {
         int consumedItems = 0;
         int consumedFood = 0;
+        ItemType? reservedPayment = RecruitmentTask.PlannedFutureSettlementPaymentType(state);
         while (state.Player.Group.Any(character => character.Food < character.MaxFood))
         {
             int storedFood = camp.Rooms.Sum(room => room.Items.Count(item => item.FoodValue > 0));
@@ -39,12 +86,14 @@ internal static partial class LocalOpportunities
 
             List<(IItemCollection Owner, Item Item)> candidates = state.Player.Group
                 .SelectMany(character => character.Items
-                    .Where(item => item.FoodValue > 0)
+                    .Where(item => item.FoodValue > 0 &&
+                        reservedPayment != item.Type)
                     .Select(item => ((IItemCollection)character.Items, item)))
                 .ToList();
             if (storedFood > campReserve)
                 candidates.AddRange(camp.Rooms.SelectMany(room => room.Items
-                    .Where(item => item.FoodValue > 0)
+                    .Where(item => item.FoodValue > 0 &&
+                        reservedPayment != item.Type)
                     .Select(item => ((IItemCollection)room.Items, item))));
             (IItemCollection Owner, Item Item) candidate = candidates
                 .OrderBy(entry => entry.Item.FoodValue)
@@ -264,6 +313,7 @@ internal static partial class LocalOpportunities
                 !camp.ValidProductions.Contains(entry.Item.Type.Production))
             .Where(entry => !TradeTask.IsPump(entry.Item) && CanCollectForTrade(state, entry.Item))
             .OrderByDescending(entry => TradeTask.ConstructionMaterialPriority(state, entry.Item.ID))
+            .ThenByDescending(entry => entry.Item.FoodValue)
             .ThenByDescending(entry => entry.Item.TradeValue)
             .ToArray();
         foreach (var candidate in candidates)

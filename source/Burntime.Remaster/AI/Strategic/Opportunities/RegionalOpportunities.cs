@@ -14,6 +14,8 @@ internal static class RegionalOpportunities
         Location? camp = FindBestCampForDelivery(state);
         if (camp == null)
             return;
+        bool criticalWaterDelivery = CampEconomy.IsTravelWaterBottleneck(camp) &&
+            (CarriesPump(state) || CarriesSpareWaterContainer(state));
         float economicGain = System.Math.Max(
             System.Math.Max(0, EconomicReturn.MarginalCampImprovement(state, camp)),
             EconomicReturn.MarginalWaterImprovement(state, camp));
@@ -21,26 +23,44 @@ internal static class RegionalOpportunities
             state,
             candidates,
             camp,
-            score + System.Math.Min(400, economicGain * 180),
-            $"deliver an upgrade worth about {economicGain:0.0} sustainable value/day");
+            (criticalWaterDelivery ? System.Math.Max(score, 2200) : score) +
+                System.Math.Min(400, economicGain * 180),
+            criticalWaterDelivery
+                ? "secure a critical water waypoint"
+                : $"deliver an upgrade worth about {economicGain:0.0} sustainable value/day");
+    }
+
+    static bool CarriesPump(ClassicAiState state) => state.Player.Group
+        .SelectMany(character => character.Items)
+        .Any(TradeTask.IsPump);
+
+    static bool CarriesSpareWaterContainer(ClassicAiState state)
+    {
+        int portableCapacity = TradeTask.PortableWaterCapacity(state);
+        return state.Player.Group.SelectMany(character => character.Items)
+            .Where(item => AiItemPool.IsWaterContainer(item.Type))
+            .Any(item => portableCapacity - AiItemPool.WaterContainerCapacity(item.Type) >=
+                TradeTask.DesiredWaterContainerCapacity(state));
     }
 
     static Location? FindBestCampForDelivery(ClassicAiState state)
     {
-        bool carriesPump = state.Player.Group.SelectMany(character => character.Items)
-            .Any(TradeTask.IsPump);
+        bool carriesPump = CarriesPump(state);
+        bool carriesSpareWaterContainer = CarriesSpareWaterContainer(state);
         bool completeRecipe = TradeTask.HasCompleteUsefulRecipe(state);
         bool reserveProductionTool = ExpansionTask.ShouldReserveProductionTool(state);
         bool hasProductionUpgrade = !reserveProductionTool && state.RootGame.World.Locations
             .Where(location => location.Player == state.Player)
             .Any(location => LocalOpportunities.HasPortableBestProduction(state, location));
-        if (!carriesPump && !completeRecipe && !hasProductionUpgrade)
+        if (!carriesPump && !carriesSpareWaterContainer && !completeRecipe && !hasProductionUpgrade)
             return null;
 
         return state.RootGame.World.Locations
             .Where(location => location.Player == state.Player && location != state.Current)
             .Where(location =>
                 (carriesPump && TradeTask.NeedsPump(location)) ||
+                (carriesSpareWaterContainer &&
+                    CampEconomy.IsTravelWaterBottleneck(location)) ||
                 (!reserveProductionTool &&
                     LocalOpportunities.HasPortableBestProduction(state, location)) ||
                 (completeRecipe && TradeTask.CanUseCompleteRecipeAtCamp(state, location)))
@@ -51,6 +71,9 @@ internal static class RegionalOpportunities
             })
             .Where(candidate => candidate.Route != null)
             .OrderByDescending(candidate =>
+                (carriesPump || carriesSpareWaterContainer) &&
+                CampEconomy.IsTravelWaterBottleneck(candidate.Location))
+            .ThenByDescending(candidate =>
                 System.Math.Max(
                     EconomicReturn.MarginalCampImprovement(state, candidate.Location),
                     EconomicReturn.MarginalWaterImprovement(state, candidate.Location)))

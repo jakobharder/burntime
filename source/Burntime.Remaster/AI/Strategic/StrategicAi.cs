@@ -10,9 +10,6 @@ internal static class StrategicAi
     {
         DefenseIntelligence.ObserveWorld(state);
         LocalOpportunities.Apply(state);
-        if (LocalOpportunities.ConsumeAvailableSupplies(state))
-            AiTelemetry.Report(state.Player,
-                "consumed carried or surplus camp supplies before emergency recovery");
 
         AiDecision decision = Choose(state);
         AiDecisionExecutor.Execute(state, decision);
@@ -25,30 +22,40 @@ internal static class StrategicAi
         AiContext observation = AiContext.Create(state, policy);
         List<AiDecision> candidates = new();
 
+        ExpansionTask.CancelSettlementAtHostileWaypoint(state, observation);
+
         if (AttackTask.TryAddImmediateResponse(state, observation, policy, candidates))
-            return SelectAndReport(player, candidates);
+            return SelectAndReport(state, candidates);
 
         if (observation.CriticalSupplies && !CanFinishCommittedSettlementJourney(state))
         {
-            if (observation.SafeLocation)
+            Location? reachableRecovery = RecoveryServices.FindDestination(
+                state, requireReachable: true);
+            Location? recovery = reachableRecovery ??
+                RecoveryServices.FindDestination(state, requireReachable: false);
+            AddTravelCandidate(state, candidates, recovery, 1100,
+                "seek real food, water, or medical services",
+                allowSurvivableRecoveryRisk: true);
+            if (reachableRecovery == null && player.Group.Count > 1 &&
+                !RecoveryServices.CanWaitForLocalRecovery(state))
             {
                 candidates.Add(new AiDecision(
-                    AiAction.Recover,
-                    1100,
+                    AiAction.ReleaseFollower,
+                    1110,
                     observation.Current,
-                    Reason: "critical food, water, or health"));
+                    Reason: "release followers when the enlarged group has no survivable recovery option"));
             }
-            else
-            {
-                AddTravelCandidate(state, candidates,
-                    FindNearestLogistics(state, requireReachable: true) ?? FindNearestLogistics(state),
-                    1050, "seek emergency supplies");
-            }
+            candidates.Add(new AiDecision(
+                AiAction.Wait,
+                recovery == null ? 1090 : 900,
+                observation.Current,
+                Reason: recovery == null
+                    ? "no affordable local recovery and no useful destination"
+                    : "cannot yet reach a provisioned recovery destination safely"));
 
-            // Survival is a hard constraint. Do not allow a lucrative trade,
-            // settlement, or attack score to override recovery or retreat.
-            if (candidates.Count > 0)
-                return SelectAndReport(player, candidates);
+            // Survival remains a hard constraint, but it now consumes real goods
+            // at real facilities. If none are usable, the faction may fail.
+            return SelectAndReport(state, candidates);
         }
 
         TerritorialPlan territory = ExpansionTask.CreatePlan(state, observation, policy);
@@ -92,30 +99,94 @@ internal static class StrategicAi
                 ? "expansion blocked: group has no weapon and no equipment route is available"
                 : "no reachable expansion target with current supplies";
         candidates.Add(new AiDecision(AiAction.Wait, 0, Reason: idleReason));
-        return SelectAndReport(player, candidates);
+        return SelectAndReport(state, candidates);
     }
 
     static bool CanFinishCommittedSettlementJourney(ClassicAiState state)
     {
         Location? target = state.StrategicTarget;
         if (!state.HasSettlementPlan || target == null || target.Player != null ||
-            state.Player.Group.Any(character => character.Health < 40))
+            state.Player.Group.Any(character => character.Health <= 40))
             return false;
         RouteFinder.Route? route = RouteFinder.Find(state.Player, state.Current, target);
         return route != null && SupplyCalculator.HasRouteSupplies(
             state.Player, route, hostileTarget: false);
     }
 
-    static AiDecision SelectAndReport(Player player, List<AiDecision> candidates)
+    static AiDecision SelectAndReport(ClassicAiState state, List<AiDecision> candidates)
     {
+        Player player = state.Player;
         AiDecision selected = candidates
             .OrderByDescending(candidate => candidate.Score)
             .ThenBy(_ => Burntime.Platform.Math.Random.Next())
             .First();
+        selected = ForceCityDeparture(state, candidates, selected);
         string target = selected.Target == null ? "none" : selected.Target.Title;
         AiTelemetry.Report(player,
             $"decision {selected.Action}, target {target}, score {selected.Score:0}: {selected.Reason}");
         return selected;
+    }
+
+    static AiDecision ForceCityDeparture(
+        ClassicAiState state,
+        List<AiDecision> candidates,
+        AiDecision selected)
+    {
+        if (!state.Current.IsCity || selected.Action != AiAction.Wait)
+            return selected;
+
+        AiDecision? plannedDeparture = candidates
+            .Where(candidate => candidate.Action == AiAction.Travel &&
+                candidate.NextStep != null &&
+                state.Player.CanTravel(state.Current, candidate.NextStep))
+            .OrderByDescending(candidate => candidate.Score)
+            .FirstOrDefault();
+        if (plannedDeparture != null)
+            return plannedDeparture;
+
+        // A city may be used for its immediate recruit, barter, doctor and 3/3
+        // waypoint effects, but never as an indefinite refuge. Prefer returning
+        // to the faction's real economy. This final fallback deliberately ignores
+        // survival projections; the human travel rules still determine which
+        // direct departure is legal.
+        Location? destination = state.RootGame.World.Locations
+            .Where(location => location.Player == state.Player &&
+                CampEconomy.CanProvisionFood(location) &&
+                CampEconomy.CanProvisionTravelGroupWater(
+                    location, state.Player.Group.Count))
+            .Select(location => new
+            {
+                Location = location,
+                Route = RouteFinder.Find(state.Player, state.Current, location)
+            })
+            .Where(candidate => candidate.Route?.NextStep != null &&
+                state.Player.CanTravel(state.Current, candidate.Route.NextStep))
+            .OrderBy(candidate => candidate.Route!.Days)
+            .Select(candidate => candidate.Location)
+            .FirstOrDefault();
+        destination ??= state.StrategicTarget != state.Current
+            ? state.StrategicTarget
+            : null;
+        RouteFinder.Route? route = destination == null
+            ? null
+            : RouteFinder.Find(state.Player, state.Current, destination);
+        Location? nextStep = route?.NextStep;
+        if (nextStep == null || !state.Player.CanTravel(state.Current, nextStep))
+        {
+            nextStep = Enumerable.Range(0, state.Current.Neighbors.Count)
+                .Where(index => state.Current.WayLengths[index] > 0)
+                .Select(index => state.Current.Neighbors[index])
+                .FirstOrDefault(neighbor => state.Player.CanTravel(state.Current, neighbor));
+            destination = nextStep;
+        }
+        return nextStep == null
+            ? selected
+            : new AiDecision(
+                AiAction.Travel,
+                selected.Score,
+                destination,
+                nextStep,
+                "leave the city instead of depending on it for survival");
     }
 
     internal static void AddTravelCandidate(
@@ -123,12 +194,18 @@ internal static class StrategicAi
         List<AiDecision> candidates,
         Location? target,
         float score,
-        string reason)
+        string reason,
+        bool allowSurvivableRecoveryRisk = false)
     {
         if (target == null)
             return;
         RouteFinder.Route? route = RouteFinder.Find(state.Player, state.Current, target);
         if (route?.NextStep == null)
+            return;
+        bool normallySupplied = SupplyCalculator.HasTerritorialRouteSupplies(
+            state.Player, state.Current, route, hostileTarget: false);
+        if (!normallySupplied && (!allowSurvivableRecoveryRisk ||
+            !SupplyCalculator.CanSurviveRecoveryRoute(state.Player, route)))
             return;
         candidates.Add(new AiDecision(
             AiAction.Travel,

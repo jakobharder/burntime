@@ -11,6 +11,8 @@ internal static class RouteFinder
         if (start == target)
             return new Route(target, 0);
 
+        bool retreatOnly = IsHostile(start, player);
+        Location? retreat = retreatOnly ? player.PreviousLocation : null;
         Dictionary<Location, int> distance = new() { [start] = 0 };
         Dictionary<Location, Location> previous = new();
         HashSet<Location> visited = new();
@@ -32,7 +34,16 @@ internal static class RouteFinder
             {
                 Location neighbor = current.Neighbors[index];
                 int length = current.WayLengths[index];
-                if (length <= 0 || (IsHostile(neighbor, player) && neighbor != target))
+                bool forcedRetreat = current == start && retreatOnly && neighbor == retreat;
+                if (current == start && retreatOnly && !forcedRetreat)
+                    continue;
+                if (length <= 0 || IsHostile(neighbor, player) && neighbor != target &&
+                    !forcedRetreat)
+                    continue;
+                // Returning into a second hostile camp is legal, but that camp
+                // would again restrict the human player to going back. Do not
+                // invent an onward route through it.
+                if (forcedRetreat && IsHostile(neighbor, player) && neighbor != target)
                     continue;
 
                 int candidate = distance[current] + length;

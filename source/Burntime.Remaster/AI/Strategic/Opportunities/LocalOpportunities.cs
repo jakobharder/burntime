@@ -6,8 +6,17 @@ internal static partial class LocalOpportunities
 {
     public static void Apply(ClassicAiState state)
     {
+        RecoveryServices.ApplyCityMinimum(state);
         UseLocalWaterSource(state);
         RemoveAdviceItems(state);
+
+        if (state.Current.Player == state.Player)
+            ProvisionGroupFromCampSurplus(state, state.Current);
+        if (ConsumeAvailableSupplies(state))
+            AiTelemetry.Report(state.Player,
+                "consumed carried or stored supplies before seeking paid recovery");
+        RecoveryServices.UseDoctor(state);
+
         EconomicSupport.ApplySlumpSupport(state);
         RefillConstructionReserve(state);
         ConstructPortableEconomicUpgrade(state);
@@ -17,7 +26,6 @@ internal static partial class LocalOpportunities
 
         if (state.Current.Player == state.Player)
         {
-            ProvisionGroupFromCampSurplus(state, state.Current);
             MaintainCurrentCamp(state);
             if (TradeTask.ShouldVisitTrader(state))
                 FillCityCaravan(state, state.Current);
@@ -28,7 +36,7 @@ internal static partial class LocalOpportunities
         // An affordable settler is the immediate local prerequisite for the
         // planned camp. Reserve that real payment bundle before ordinary city
         // barter can consume it; recruitment remains the turn's strategic action.
-        if (!state.ShouldReserveSettlerPayment)
+        if (!state.ShouldReserveSettlerPayment || RecoveryServices.NeedsDoctorPayment(state))
         {
             foreach (Trader trader in TradeTask.EncounteredTraders(state))
             {
@@ -38,6 +46,10 @@ internal static partial class LocalOpportunities
                 ConstructPortableWeapon(state);
             }
         }
+
+        // A trader may have supplied the food item required by the local doctor.
+        // Resolve that local opportunity before selecting a regional action.
+        RecoveryServices.UseDoctor(state);
 
         // A purchase or construction may satisfy an equipment need immediately.
         EquipEmpire(state);

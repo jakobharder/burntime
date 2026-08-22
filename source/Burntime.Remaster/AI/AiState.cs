@@ -192,6 +192,53 @@ namespace Burntime.Remaster.AI
         internal bool CanClaim(Location location) => CanCreateCamp(location);
         internal bool CanStationCamp() => Player.Group.Count > 1 || CanRecruit(allowGeneratedPayment: CurrentLocation.IsCity);
         internal bool HasHireableNpc() => CanHireNpc();
+        internal Character FindRecruitAt(
+            Location location,
+            bool requireAffordable,
+            bool allowGeneratedPayment)
+        {
+            IEnumerable<Character> candidates = GetHireableCandidates(location);
+            if (requireAffordable)
+                candidates = candidates.Where(candidate =>
+                    CanFundRecruit(candidate, allowGeneratedPayment));
+            return candidates
+                .OrderBy(candidate => candidate.HireItems
+                    .Select(type => type.TradeValue)
+                    .DefaultIfEmpty(0)
+                    .Min())
+                .ThenBy(candidate => candidate.Name)
+                .FirstOrDefault();
+        }
+        internal bool RecruitmentSupplyCost(
+            Character recruit,
+            bool allowGeneratedPayment,
+            out int food,
+            out int water)
+        {
+            food = 0;
+            water = 0;
+            if (recruit == null)
+                return false;
+
+            Item exactPayment = recruit.HireItems
+                .Select(type => Player.Character.Items.Find(type))
+                .FirstOrDefault(item => item != null);
+            if (exactPayment != null)
+            {
+                food = exactPayment.FoodValue;
+                water = exactPayment.WaterValue;
+                return true;
+            }
+            if (recruit.HireItems.Count == 0)
+                return true;
+            if (!allowGeneratedPayment ||
+                !TryPlanRecruitmentPayment(recruit, out _, out List<RecruitmentAsset> assets))
+                return false;
+
+            food = assets.Where(asset => asset.Portable).Sum(asset => asset.Item.FoodValue);
+            water = assets.Where(asset => asset.Portable).Sum(asset => asset.Item.WaterValue);
+            return true;
+        }
         internal bool CanRecruit(bool allowGeneratedPayment)
         {
             Character candidate = GetHireableNpc(
@@ -223,6 +270,18 @@ namespace Burntime.Remaster.AI
         internal Character Recruit(bool allowGeneratedPayment)
         {
             return HireNpc(allowGeneratedPayment);
+        }
+
+        internal Character ReleaseFollowerForSurvival()
+        {
+            Character follower = Player.Group
+                .Where(character => character != Player.Character)
+                .OrderBy(character => character.Health)
+                .ThenBy(character => character.Water)
+                .ThenBy(character => character.Food)
+                .FirstOrDefault();
+            follower?.Dismiss();
+            return follower;
         }
 
         internal Character StationSurplusFollower()
@@ -421,58 +480,6 @@ namespace Burntime.Remaster.AI
                 return false;
             CurrentLocation.StoreItemRandom(trap);
             return true;
-        }
-
-        internal bool RecoverAtSafeLocation(AiPolicy policy)
-        {
-            if (!IsHome && !CurrentLocation.IsCity)
-                return false;
-
-            LocalOpportunities.ConsumeAvailableSupplies(this);
-            bool usedCheat = false;
-
-            bool lowFood = Player.Group.Any(character => character.Food <= 2) &&
-                Player.Group.GetFoodReserve() + Player.Group.GetFoodInInventory() < Player.Group.Count * 2;
-            bool lowWater = Player.Group.Any(character => character.Water <= 1) &&
-                Player.Group.GetWaterReserve() + Player.Group.GetWaterInInventory() < Player.Group.Count;
-
-            if (lowFood && !Player.Character.Items.Contains("item_meat") && !Player.Character.Items.IsFull)
-            {
-                Player.Character.Items.Add(Game.ItemTypes["item_meat"].Generate());
-                usedCheat = true;
-            }
-            if (lowWater && !HasWaterContainer(Player.Character) && !Player.Character.Items.IsFull)
-            {
-                Item container = ItemPool.HasWaterContainer()
-                    ? ItemPool.GetBestWaterContainer()
-                    : Game.ItemTypes["item_full_wineskin"].Generate();
-                Player.Character.Items.Add(container);
-                usedCheat = true;
-            }
-
-            // Real carried and camp supplies are consumed first. The bounded safe-location
-            // recovery remains a last-resort safeguard for otherwise stranded AI groups.
-            if (Player.Group.Any(character => character.Food <= 3))
-            {
-                foreach (Character character in Player.Group)
-                    character.Food = System.Math.Max(character.Food, policy.SafeFoodFloor);
-                usedCheat = true;
-            }
-            if (Player.Group.Any(character => character.Water <= 2))
-            {
-                foreach (Character character in Player.Group)
-                    character.Water = System.Math.Max(character.Water, policy.SafeWaterFloor);
-                usedCheat = true;
-            }
-            foreach (Character character in Player.Group)
-            {
-                if (character.Health < 40)
-                {
-                    character.Health = System.Math.Min(100, character.Health + policy.SafeHealing);
-                    usedCheat = true;
-                }
-            }
-            return usedCheat;
         }
 
         internal void ResetWait()
@@ -830,9 +837,11 @@ namespace Burntime.Remaster.AI
         /// Get a NPC that is available for hire
         /// </summary>
         /// <returns>NPC</returns>
-        Character[] GetHireableCandidates()
+        Character[] GetHireableCandidates() => GetHireableCandidates(CurrentLocation);
+
+        Character[] GetHireableCandidates(Location location)
         {
-            Character[] available = CurrentLocation.Characters
+            Character[] available = location.Characters
                 .Where(character => !character.IsDead && !character.IsHired && character.IsHuman && !character.IsTrader)
                 .ToArray();
             if (available.Length == 0)

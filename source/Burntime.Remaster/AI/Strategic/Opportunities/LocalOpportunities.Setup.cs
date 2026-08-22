@@ -208,7 +208,9 @@ internal static partial class LocalOpportunities
 
     static void StockCampWaterContainers(ClassicAiState state, IEnumerable<Location> camps)
     {
-        foreach (Location camp in camps)
+        foreach (Location camp in camps
+            .OrderByDescending(camp => CampEconomy.IsTravelWaterBottleneck(camp))
+            .ThenBy(camp => camp.Source?.Water ?? 0))
         {
             int stock = TradeTask.CampWaterContainerCount(camp);
             while (stock < TradeTask.DesiredCampWaterContainerCount && state.Pool.HasWaterContainer())
@@ -247,6 +249,7 @@ internal static partial class LocalOpportunities
             var stored = camp.Rooms
                 .SelectMany(room => room.Items.Select(item => new { Room = room, Item = item }))
                 .Where(entry => IsMeleeWeapon(entry.Item) &&
+                    CanWithdrawRearWeapon(state, camp, entry.Item) &&
                     WeaponAllowed(state, group, traveller, isCamp: false, entry.Item.Type))
                 .OrderBy(entry => entry.Item.DamageValue)
                 .FirstOrDefault();
@@ -266,6 +269,7 @@ internal static partial class LocalOpportunities
                 .Where(character => character.Player == state.Player && !character.IsDead)
                 .Where(character => character.Items.FindBestWeapon() is Item weapon &&
                     !AiItemPool.IsFirearm(weapon.Type) &&
+                    CanWithdrawRearWeapon(state, camp, weapon) &&
                     WeaponAllowed(state, group, traveller, isCamp: false, weapon.Type))
                 .OrderBy(character => character.Items.FindBestWeapon()!.DamageValue)
                 .FirstOrDefault();
@@ -287,6 +291,19 @@ internal static partial class LocalOpportunities
                 upgradeWeakWeapon: false,
                 traveller == state.Player.Character ? "leader" : "follower");
         }
+    }
+
+    static bool CanWithdrawRearWeapon(ClassicAiState state, Location camp, Item weapon)
+    {
+        Production? production = weapon.Type.Production;
+        if (production == null || camp.Production != production ||
+            CampEconomy.ProductionToolCount(camp, production) > 1)
+            return true;
+
+        // A knife or similar weapon can be the camp's only production tool.
+        // Keep it on the guard unless base output or a stocked neighboring camp
+        // can support the travellers without it.
+        return ExpansionTask.CanBootstrapCamp(state, camp);
     }
 
     internal static void StockCurrentCampWeaponReserve(ClassicAiState state)

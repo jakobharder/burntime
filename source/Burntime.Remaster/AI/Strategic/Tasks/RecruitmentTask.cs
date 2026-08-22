@@ -1,16 +1,19 @@
 using System.Collections.Generic;
+using System.Linq;
 using Burntime.Remaster.Logic;
 
 namespace Burntime.Remaster.AI;
 
 internal readonly record struct RecruitmentNeeds(
-    int TravelGroupSize,
     Location? ReinforcementCamp,
     int ReinforcementTarget = 0,
     bool IsAttackStaging = false);
 
 internal static partial class RecruitmentTask
 {
+    const int StandingTravelGroupFoodSurplus = 4;
+    const int InitialRecruitReserve = 5;
+
     public static RecruitmentNeeds AddCandidates(
         ClassicAiState state,
         AiContext context,
@@ -25,60 +28,338 @@ internal static partial class RecruitmentTask
         Player player = state.Player;
         bool generatedPaymentAllowed = context.Current.IsCity &&
             policy.AllowGeneratedRecruitPaymentInCities;
-        int desiredGroupSize = context.TravelGroupSize;
-        Location? reinforcementCamp = ReinforcementTask.FindBestCampForReinforcement(
-            state, policy.CriticalGarrisonTarget);
+        if (target == null && state.OwnedCampCount == 0 && player.Group.Count == 1)
+        {
+            Location? firstCampWaypoint = FindFirstCampWaypoint(state, context, policy);
+            StrategicAi.AddTravelCandidate(
+                state, candidates, firstCampWaypoint, 2095,
+                firstCampWaypoint == null
+                    ? "advance to a viable first-camp waypoint"
+                    : $"advance to viable first-camp waypoint {firstCampWaypoint.Title}");
+        }
+        bool hasCommittedSettler = target is { IsCity: false, Player: null } &&
+            player.Group.Count > 1;
+        Location? reinforcementCamp = hasCommittedSettler
+            ? null
+            : ReinforcementTask.FindBestCampForReinforcement(
+                state, policy.CriticalGarrisonTarget);
         int reinforcementTarget = reinforcementCamp == null
             ? 0
             : ReinforcementTask.SustainableGarrisonTarget(
                 reinforcementCamp, policy.CriticalGarrisonTarget);
+        bool needsSettler = target is { IsCity: false, Player: null } &&
+            player.Group.Count == 1;
+        bool needsGarrisonFollower = reinforcementCamp != null &&
+            player.Group.Count == 1;
+        bool standingFollowerSupported =
+            EmpireFoodSurplus(state) >= StandingTravelGroupFoodSurplus;
+        int desiredGroupSize = standingFollowerSupported
+            ? context.TravelGroupSize
+            : 1;
+        bool needsFollower = player.Group.Count < context.TravelGroupSize &&
+            (needsSettler || needsGarrisonFollower || standingFollowerSupported);
 
         if (!TradeTask.ShouldVisitTrader(state) &&
-            player.Group.Count < desiredGroupSize &&
+            needsFollower &&
             RecruitmentTask.CanRecallFollower(state, policy.CriticalGarrisonTarget))
         {
             candidates.Add(new AiDecision(
                 AiAction.RecallFollower,
-                1010,
+                needsSettler ? 2130 : 1010,
                 context.Current,
-                Reason: $"recall a surplus camp follower toward {desiredGroupSize} people"));
+                Reason: needsSettler
+                    ? $"recall a settler for {target!.Title}"
+                    : needsGarrisonFollower
+                    ? $"recall a guard for delivery to {reinforcementCamp!.Title}"
+                    : $"recall a surplus camp follower toward {desiredGroupSize} people"));
         }
 
-        bool needsGarrisonRecruit = reinforcementCamp != null &&
-            player.Group.Count >= desiredGroupSize && player.Group.Count < Group.MAX_PEOPLE;
-        bool needsSettler = target is { IsCity: false, Player: null } &&
-            player.Group.Count == 1;
-        if ((player.Group.Count < desiredGroupSize || needsGarrisonRecruit) &&
-            state.CanRecruit(generatedPaymentAllowed))
+        bool canRecruit = state.CanRecruit(generatedPaymentAllowed);
+        RouteFinder.Route? settlementRoute = needsSettler
+            ? RouteFinder.Find(player, context.Current, target!)
+            : null;
+        (int recruitFood, int recruitWater) = ProjectedRecruitReserves();
+        bool settlementReady = !needsSettler || settlementRoute != null &&
+            SupplyCalculator.HasProjectedRecruitTerritorialSupplies(
+                player, context.Current, settlementRoute, recruitFood, recruitWater);
+
+        if (needsSettler && canRecruit && !settlementReady)
+        {
+            Location? preparationCamp = FindBestOwnedSettlementStagingCamp(
+                state, target!);
+            StrategicAi.AddTravelCandidate(
+                state, candidates, preparationCamp, 2120,
+                $"provision at an owned camp before recruiting a settler for {target!.Title}");
+            candidates.Add(new AiDecision(
+                AiAction.Wait,
+                2110,
+                context.Current,
+                Reason: $"delay recruitment until the projected two-person route to {target!.Title} is supplied"));
+        }
+        else if (needsFollower && canRecruit)
         {
             candidates.Add(new AiDecision(
                 AiAction.Recruit,
-                needsSettler ? 2100 : context.Current.IsCity ? 990 :
-                    player.Group.Count == 1 ? 980 : needsGarrisonRecruit ? 830 : 760,
-                context.Current,
+                needsSettler ? 2100 : needsGarrisonFollower ? 1040 :
+                    context.Current.IsCity ? 990 : 980,
+                needsSettler ? target : context.Current,
+                needsSettler ? settlementRoute?.NextStep : null,
                 Reason: needsSettler
                     ? $"recruit a settler for {CampEconomy.StrategicRole(target!)} at {target!.Title}"
-                    : needsGarrisonRecruit
+                    : needsGarrisonFollower
                     ? $"critical camp {reinforcementCamp!.Title} needs another guard"
                     : context.Current.IsCity
                     ? $"city opportunity: recruit toward {desiredGroupSize} people"
                     : "group needs another recruit"));
         }
-        else if (player.Group.Count < desiredGroupSize)
+        else if (needsFollower && !canRecruit)
         {
-            Location? preparationCamp = TradeTask.FindBestCampForCityPreparation(state);
-            StrategicAi.AddTravelCandidate(
-                state, candidates, preparationCamp ?? StrategicAi.FindNearestCity(state),
-                needsSettler ? 2090 : 970,
-                needsSettler
-                    ? $"find a settler for {target!.Title}"
-                    : preparationCamp == null
-                    ? "leader needs a recruit before claiming camps"
-                    : "fill the caravan before recruiting in a city");
+            bool directSettlementRecruit = needsSettler &&
+                AddDestinationRecruitCandidate(state, context, target!, candidates);
+            if (!directSettlementRecruit)
+            {
+                Location? preparationCamp = TradeTask.FindBestCampForCityPreparation(state);
+                Location? recruitmentCity = needsSettler
+                    ? FindSafeSettlementRecruitmentCity(state, context, policy, target!)
+                    : StrategicAi.FindNearestCity(state);
+                Location? firstCampWaypoint = needsSettler &&
+                    state.OwnedCampCount == 0 && preparationCamp == null
+                    ? FindFirstCampWaypoint(state, context, policy)
+                    : null;
+                StrategicAi.AddTravelCandidate(
+                    state, candidates, preparationCamp ?? recruitmentCity,
+                    needsSettler ? 2090 : needsGarrisonFollower ? 1030 : 970,
+                    needsSettler
+                        ? $"find a safely staged settler for {target!.Title}"
+                        : needsGarrisonFollower
+                        ? $"find a guard for delivery to {reinforcementCamp!.Title}"
+                        : preparationCamp == null
+                        ? "leader needs a recruit before claiming camps"
+                        : "fill the caravan before recruiting in a city");
+                StrategicAi.AddTravelCandidate(
+                    state, candidates, firstCampWaypoint, 2095,
+                    firstCampWaypoint == null
+                        ? "advance to a viable first-camp waypoint"
+                        : $"advance to viable first-camp waypoint {firstCampWaypoint.Title}");
+            }
         }
 
-        return new RecruitmentNeeds(
-            desiredGroupSize, reinforcementCamp, reinforcementTarget);
+        return new RecruitmentNeeds(reinforcementCamp, reinforcementTarget);
+    }
+
+    static Location? FindFirstCampWaypoint(
+        ClassicAiState state,
+        AiContext context,
+        AiPolicy policy)
+    {
+        return Enumerable.Range(0, context.Current.Neighbors.Count)
+            .Where(index => context.Current.WayLengths[index] > 0)
+            .Select(index => context.Current.Neighbors[index])
+            .Where(waypoint => !waypoint.IsCity && waypoint.Player == null &&
+                CampEconomy.IsAcceptableFirstCamp(waypoint) &&
+                state.CanClaim(waypoint) && CampEconomy.CanSustainCamp(waypoint))
+            .Select(waypoint => new
+            {
+                Waypoint = waypoint,
+                Route = RouteFinder.Find(context.Player, context.Current, waypoint),
+                LocalRecruit = state.FindRecruitAt(
+                    waypoint, requireAffordable: true, allowGeneratedPayment: false),
+                ProjectedContext = new AiContext
+                {
+                    Player = context.Player,
+                    Current = waypoint,
+                    Group = context.Group,
+                    CriticalSupplies = context.CriticalSupplies,
+                    SafeLocation = false,
+                    TravelGroupSize = context.TravelGroupSize,
+                    NeutralExpansionAllowed = context.NeutralExpansionAllowed
+                }
+            })
+            .Where(candidate => candidate.Route != null && candidate.Route.Days > 0 &&
+                SupplyCalculator.HasRouteSupplies(
+                    context.Player, candidate.Route, hostileTarget: false))
+            .Where(candidate => candidate.LocalRecruit != null &&
+                    state.RecruitmentSupplyCost(
+                        candidate.LocalRecruit, allowGeneratedPayment: false,
+                        out _, out _) &&
+                    CanRemainAtNewCamp(state, candidate.Waypoint, candidate.LocalRecruit) ||
+                FindSafeSettlementRecruitmentCity(
+                    state, candidate.ProjectedContext, policy, candidate.Waypoint) != null)
+            .OrderByDescending(candidate => candidate.LocalRecruit != null)
+            .ThenByDescending(candidate => CampEconomy.TerritorialValue(candidate.Waypoint))
+            .ThenBy(candidate => candidate.Route!.Days)
+            .Select(candidate => candidate.Waypoint)
+            .FirstOrDefault();
+    }
+
+    static int EmpireFoodSurplus(ClassicAiState state) => state.RootGame.World.Locations
+        .Where(location => location.Player == state.Player)
+        .Sum(CampEconomy.FoodSurplusPerDay);
+
+    internal static (int Food, int Water) ProjectedRecruitReserves() =>
+        (InitialRecruitReserve, InitialRecruitReserve);
+
+    static bool AddDestinationRecruitCandidate(
+        ClassicAiState state,
+        AiContext context,
+        Location target,
+        List<AiDecision> candidates)
+    {
+        Character recruit = state.FindRecruitAt(
+            target, requireAffordable: true, allowGeneratedPayment: false);
+        if (recruit == null || !state.RecruitmentSupplyCost(
+            recruit, allowGeneratedPayment: false, out int paymentFood, out int paymentWater))
+            return false;
+
+        RouteFinder.Route? outbound = RouteFinder.Find(state.Player, context.Current, target);
+        RouteFinder.Route? returnRoute = state.OwnedCampCount > 0
+            ? FindProvisionedReturnRoute(state, context, target)
+            : RouteFinder.Find(state.Player, target, context.Current);
+        if (outbound == null || returnRoute == null ||
+            !SupplyCalculator.HasRouteSupplies(
+                state.Player, outbound, hostileTarget: false, paymentFood, paymentWater))
+            return false;
+
+        bool hasRoundTripSupplies = SupplyCalculator.HasSettlementRoundTripSupplies(
+            state.Player, outbound, returnRoute, paymentFood, paymentWater);
+        bool canRefillAtSettlement = CampEconomy.CanProvisionTravelGroupWater(
+            target, state.Player.Group.Count);
+        if (!hasRoundTripSupplies && !(canRefillAtSettlement &&
+            SupplyCalculator.HasSettlementRoundTripFood(
+                state.Player, outbound, returnRoute)))
+            return false;
+
+        candidates.Add(new AiDecision(
+            AiAction.Travel,
+            2110 - outbound.Days,
+            target,
+            outbound.NextStep,
+            $"hire {recruit.Name} at {target.Title} with the reserved requested item, then establish the camp"));
+        return true;
+    }
+
+    static Location? FindSafeSettlementRecruitmentCity(
+        ClassicAiState state,
+        AiContext context,
+        AiPolicy policy,
+        Location target)
+    {
+        int cityMinimum = state.OwnedCampCount > 0 ? RecoveryServices.CityMinimum : 0;
+        bool requiresSustainableRecovery = state.OwnedCampCount > 0;
+        return state.RootGame.World.Locations
+            .Where(city => city.IsCity && city != context.Current)
+            .Select(city =>
+            {
+                Character recruit = state.FindRecruitAt(
+                    city,
+                    requireAffordable: true,
+                    allowGeneratedPayment: policy.AllowGeneratedRecruitPaymentInCities);
+                RouteFinder.Route? toCity = RouteFinder.Find(state.Player, context.Current, city);
+                RouteFinder.Route? onward = RouteFinder.Find(state.Player, city, target);
+                RouteFinder.Route? returnRoute = requiresSustainableRecovery
+                    ? FindProvisionedReturnRoute(state, context, city)
+                    : RouteFinder.Find(state.Player, city, context.Current);
+                RouteFinder.Route? settlementReturn = requiresSustainableRecovery
+                    ? FindProvisionedReturnRoute(state, context, target)
+                    : CanRemainAtNewCamp(state, target, recruit)
+                        ? new RouteFinder.Route(target, 0)
+                        : RouteFinder.Find(state.Player, target, city);
+                bool funded = state.RecruitmentSupplyCost(
+                    recruit,
+                    policy.AllowGeneratedRecruitPaymentInCities,
+                    out int paymentFood,
+                    out int paymentWater);
+                (int recruitFood, int recruitWater) = ProjectedRecruitReserves();
+                return new
+                {
+                    City = city,
+                    Recruit = recruit,
+                    ToCity = toCity,
+                    Onward = onward,
+                    Return = returnRoute,
+                    SettlementReturn = settlementReturn,
+                    Funded = funded,
+                    RecruitFood = recruitFood,
+                    RecruitWater = recruitWater,
+                    PaymentFood = paymentFood,
+                    PaymentWater = paymentWater
+                };
+            })
+            .Where(candidate => candidate.Recruit != null && candidate.Funded &&
+                candidate.ToCity != null && candidate.Onward != null && candidate.Return != null &&
+                candidate.SettlementReturn != null &&
+                SupplyCalculator.HasStagedRecruitSettlementSupplies(
+                    state.Player, candidate.ToCity, candidate.Onward,
+                    candidate.SettlementReturn, cityMinimum,
+                    candidate.RecruitFood, candidate.RecruitWater,
+                    candidate.PaymentFood, candidate.PaymentWater) &&
+                SupplyCalculator.HasStagingCityReturnSupplies(
+                    state.Player, candidate.ToCity, candidate.Return, cityMinimum,
+                    candidate.PaymentFood, candidate.PaymentWater))
+            .OrderBy(candidate => candidate.ToCity!.Days + candidate.Onward!.Days)
+            .Select(candidate => candidate.City)
+            .FirstOrDefault();
+    }
+
+    static bool CanRemainAtNewCamp(
+        ClassicAiState state,
+        Location target,
+        Character recruit)
+    {
+        // Once the first camp is founded, its guard and the remaining solo leader
+        // may stay there instead of carrying supplies for an artificial immediate
+        // return to the recruitment city. Only waive that return when the actual
+        // equipment they bring can sustainably feed both people and the local
+        // water source can do the same.
+        if (target.IsCity || (target.Source?.Water ?? 0) < 2 || recruit == null)
+            return false;
+
+        Item exactPayment = recruit.HireItems
+            .Select(type => state.Player.Character.Items.Find(type))
+            .FirstOrDefault(item => item != null);
+        return target.ValidProductions.Any(production =>
+        {
+            int toolCount = state.Player.Group
+                .SelectMany(character => character.Items)
+                .Concat(recruit.Items)
+                .Count(item => item.Type.Production == production && item != exactPayment);
+            toolCount += state.Pool.GetContents()
+                .Where(entry => entry.Type.Production == production)
+                .Sum(entry => entry.Count);
+            return production.GetRate(toolCount, npcCount: 1).FoodPerDay >= 2;
+        });
+    }
+
+    static RouteFinder.Route? FindProvisionedReturnRoute(
+        ClassicAiState state,
+        AiContext context,
+        Location start) => state.RootGame.World.Locations
+        .Where(camp => camp.Player == context.Player &&
+            CampEconomy.CanProvisionFood(camp) &&
+            CampEconomy.CanProvisionTravelGroupWater(
+                camp, context.Player.Group.Count))
+        .Select(camp => RouteFinder.Find(context.Player, start, camp))
+        .Where(route => route != null)
+        .OrderBy(route => route!.Days)
+        .FirstOrDefault();
+
+    internal static ItemType? PlannedFutureSettlementPaymentType(ClassicAiState state)
+    {
+        Location? target = state.HasSettlementPlan && state.Player.Group.Count == 1
+            ? state.StrategicTarget
+            : null;
+        if (target == null || target.IsCity || target.Player != null)
+            return null;
+
+        Character recruit = state.FindRecruitAt(
+            target, requireAffordable: true, allowGeneratedPayment: false) ??
+            state.FindRecruitAt(target, requireAffordable: false, allowGeneratedPayment: false);
+        if (recruit == null)
+            return null;
+        return recruit.HireItems
+            .OrderBy(type => state.Player.Character.Items.Find(type) == null ? 1 : 0)
+            .ThenBy(type => type.TradeValue)
+            .FirstOrDefault();
     }
 
     static RecruitmentNeeds AddAttackPreparationCandidates(
@@ -95,18 +376,18 @@ internal static partial class RecruitmentTask
         {
             AddRecruitOrCityCandidate(state, context, policy, candidates,
                 1040, 1030, $"restore the two-person travel group before attacking {target.Title}");
-            return new RecruitmentNeeds(travelGroupSize, null);
+            return new RecruitmentNeeds(null);
         }
 
         if (attackGroupSize <= travelGroupSize ||
             player.Group.Count >= attackGroupSize)
-            return new RecruitmentNeeds(attackGroupSize, null);
+            return new RecruitmentNeeds(null);
 
         int stagingTarget = attackGroupSize - travelGroupSize + 1;
         Location? stagingCamp = ReinforcementTask.FindAttackStagingCamp(
             state, target, stagingTarget);
         if (stagingCamp == null)
-            return new RecruitmentNeeds(travelGroupSize, null);
+            return new RecruitmentNeeds(null);
 
         int stagedGuards = CampEconomy.LivingGuardCount(stagingCamp, player);
         if (context.Current == stagingCamp &&
@@ -117,21 +398,12 @@ internal static partial class RecruitmentTask
                 1100,
                 stagingCamp,
                 Reason: $"temporarily mobilize another frontier guard for the attack on {target.Title}"));
-            return new RecruitmentNeeds(attackGroupSize, null);
-        }
-
-        if (stagedGuards < stagingTarget && player.Group.Count <= travelGroupSize)
-        {
-            AddRecruitOrCityCandidate(state, context, policy, candidates,
-                1040, 1030,
-                $"recruit a guard to stage at frontier camp {stagingCamp.Title}");
-            return new RecruitmentNeeds(
-                travelGroupSize, stagingCamp, stagingTarget, IsAttackStaging: true);
+            return new RecruitmentNeeds(null);
         }
 
         if (stagedGuards < stagingTarget)
             return new RecruitmentNeeds(
-                travelGroupSize, stagingCamp, stagingTarget, IsAttackStaging: true);
+                stagingCamp, stagingTarget, IsAttackStaging: true);
 
         if (context.Current != stagingCamp)
         {
@@ -147,7 +419,7 @@ internal static partial class RecruitmentTask
                 Reason: $"temporarily mobilize a frontier guard for the attack on {target.Title}"));
         }
 
-        return new RecruitmentNeeds(attackGroupSize, null);
+        return new RecruitmentNeeds(null);
     }
 
     static void AddRecruitOrCityCandidate(
@@ -186,5 +458,31 @@ internal static partial class RecruitmentTask
             : 1;
         return guards > minimum;
     }
+
+    static Location? FindBestOwnedSettlementStagingCamp(
+        ClassicAiState state,
+        Location target) =>
+        state.RootGame.World.Locations
+            .Where(location => location.Player == state.Player && location != state.Current &&
+                CampEconomy.CanProvisionFood(location) &&
+                CampEconomy.CanProvisionTravelGroupWater(
+                    location, state.Player.Group.Count + 1))
+            .Select(location => new
+            {
+                Location = location,
+                Route = RouteFinder.Find(state.Player, state.Current, location),
+                Onward = RouteFinder.Find(state.Player, location, target)
+            })
+            .Where(candidate => candidate.Route != null && candidate.Onward != null &&
+                SupplyCalculator.HasTerritorialRouteSupplies(
+                    state.Player, state.Current, candidate.Route, hostileTarget: false))
+            // A staging camp must make progress toward the settlement. Choosing
+            // only by distance from the leader can bounce forever between two
+            // nearby camps whose full reserves still cannot support the onward
+            // route.
+            .OrderBy(candidate => candidate.Onward!.Days)
+            .ThenBy(candidate => candidate.Route!.Days)
+            .Select(candidate => candidate.Location)
+            .FirstOrDefault();
 
 }

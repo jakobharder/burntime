@@ -14,40 +14,56 @@ internal static partial class ReinforcementTask
         List<AiDecision> candidates)
     {
         Location? camp = recruitment.ReinforcementCamp;
-        if (camp != null && state.Player.Group.Count > recruitment.TravelGroupSize)
+        bool demobilizingSurplus = camp == null && state.Player.Group.Count > 2;
+        if (demobilizingSurplus)
+            camp = FindBestCampForSurplusFollower(state);
+        if (camp != null && state.Player.Group.Count > 1)
         {
-            // A third or fourth traveller is either a guard in transit or a
-            // survivor of a temporary attack force. Deposit that surplus before
-            // ordinary expansion or trade turns it back into a roaming party.
-            const float priority = 2000;
+            // Deliver the normal second traveller, then recruit or recall its
+            // replacement only if another concrete personnel task needs one.
+            // Garrison logistics must never create a third roaming traveller.
+            float priority = demobilizingSurplus || recruitment.IsAttackStaging
+                ? 2000
+                : 830;
             if (camp == context.Current)
             {
                 candidates.Add(new AiDecision(
                     AiAction.StationFollower,
                     priority,
                     context.Current,
-                    Reason: recruitment.IsAttackStaging
+                    Reason: demobilizingSurplus
+                        ? "demobilize a surplus attack follower"
+                        : recruitment.IsAttackStaging
                         ? $"stage a recruited guard at frontier camp {camp.Title}"
                         : $"raise critical garrison toward {recruitment.ReinforcementTarget} guards"));
             }
             else
             {
                 StrategicAi.AddTravelCandidate(state, candidates, camp, priority,
-                    recruitment.IsAttackStaging
+                    demobilizingSurplus
+                        ? $"demobilize a surplus attack follower at {camp.Title}"
+                        : recruitment.IsAttackStaging
                         ? $"deliver a recruited guard to frontier camp {camp.Title}"
                         : $"reinforce critical camp toward {recruitment.ReinforcementTarget} guards");
             }
         }
-        else if (camp != null && state.Player.Group.Count >= recruitment.TravelGroupSize &&
-            !state.HasHireableNpc())
-        {
-            StrategicAi.AddTravelCandidate(
-                state, candidates, StrategicAi.FindNearestCity(state), 800,
-                recruitment.IsAttackStaging
-                    ? $"find another guard for frontier camp {camp.Title}"
-                    : "find a recruit for a critical camp garrison");
-        }
     }
+
+    static Location? FindBestCampForSurplusFollower(ClassicAiState state) =>
+        state.RootGame.World.Locations
+            .Where(location => location.Player == state.Player)
+            .Select(location => new
+            {
+                Location = location,
+                Route = RouteFinder.Find(state.Player, state.Current, location),
+                Guards = CampEconomy.LivingGuardCount(location, state.Player)
+            })
+            .Where(candidate => candidate.Route != null &&
+                CanSupportAdditionalGuard(state, candidate.Location, candidate.Guards))
+            .OrderBy(candidate => candidate.Route!.Days)
+            .ThenByDescending(candidate => CampEconomy.FoodSurplusPerDay(candidate.Location))
+            .Select(candidate => candidate.Location)
+            .FirstOrDefault();
 
     public static Location FindBestCampForReinforcement(ClassicAiState state, int garrisonTarget)
     {

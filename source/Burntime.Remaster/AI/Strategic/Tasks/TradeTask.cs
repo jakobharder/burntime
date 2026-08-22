@@ -13,6 +13,14 @@ internal static partial class TradeTask
         bool preparingAttack,
         List<AiDecision> candidates)
     {
+        // Once the second traveller has been recruited for a concrete neutral
+        // settlement, that follower is committed cargo. Provision and finish the
+        // camp before considering ordinary trader visits; otherwise a harmless
+        // low-score round trip can repeatedly replace the next settlement leg.
+        if (territorialTarget is { IsCity: false, Player: null } &&
+            state.HasSettlementPlan && state.Player.Group.Count > 1)
+            return;
+
         bool earlyEconomy = state.OwnedCampCount < 3;
         bool expansionNeedsEquipment = ExpansionTask.NeedsExpansionTool(state);
         // Economy work prepares the next expansion push. Once a claim or attack is

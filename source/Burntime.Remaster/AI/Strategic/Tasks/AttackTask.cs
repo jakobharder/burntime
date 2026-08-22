@@ -132,6 +132,10 @@ internal static class AttackTask
 
         if (route.NextStep.Player == player || route.NextStep.IsCity)
         {
+            if (route.NextStep.Player == player &&
+                !CampEconomy.CanProvisionTravelGroupWater(
+                    route.NextStep, player.Group.Count))
+                return false;
             RouteFinder.Route? safeLeg = RouteFinder.Find(player, state.Current, route.NextStep);
             return safeLeg != null && SupplyCalculator.HasRouteSupplies(
                 player, safeLeg, hostileTarget: false);
