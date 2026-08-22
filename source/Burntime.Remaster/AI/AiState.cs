@@ -628,7 +628,13 @@ namespace Burntime.Remaster.AI
 
             CollectGroundItems();
 
-            EquipWaterContainers(Player.Group.Where(character => character != Player.Character));
+            if (IsHome)
+                StockCampWaterContainers();
+
+            // Keep a camp stock when possible, but use it for the travelling
+            // group when an expedition needs the capacity. A canteen covers one
+            // traveller; a wineskin may cover two.
+            EquipTravelWaterContainers();
             if (IsHome)
                 EquipWaterContainers(
                     CurrentLocation.CampNPC.Where(character => character.Player == Player),
@@ -699,6 +705,25 @@ namespace Burntime.Remaster.AI
         private static bool HasWaterContainer(Character character) =>
             character.Items.Any(item => AiItemPool.IsWaterContainer(item.Type));
 
+        private void EquipTravelWaterContainers()
+        {
+            int required = TradeTask.DesiredWaterContainerCapacity(this);
+            while (TradeTask.PortableWaterCapacity(this) < required)
+            {
+                Character carrier = Player.Group.FirstOrDefault(character => !character.Items.IsFull &&
+                    !HasWaterContainer(character));
+                if (carrier == null)
+                    return;
+
+                Item container = ItemPool.HasWaterContainer()
+                    ? ItemPool.GetBestWaterContainer()
+                    : IsHome ? TakeBestStoredWaterContainer() : null;
+                if (container == null)
+                    return;
+                carrier.Items.Add(container);
+            }
+        }
+
         private void EquipWaterContainers(IEnumerable<Character> characters, bool useCampStorage = false)
         {
             foreach (Character character in characters)
@@ -729,6 +754,21 @@ namespace Burntime.Remaster.AI
 
             stored.Room.Items.Remove(stored.Item);
             return stored.Item;
+        }
+
+        private void StockCampWaterContainers()
+        {
+            while (TradeTask.CampWaterContainerCount(CurrentLocation) <
+                TradeTask.DesiredCampWaterContainerCount && ItemPool.HasWaterContainer())
+            {
+                Item container = ItemPool.TakeLeastWaterContainer();
+                if (container == null || !LocalOpportunities.StoreItemInCamp(CurrentLocation, container))
+                {
+                    if (container != null)
+                        ItemPool.Insert(container);
+                    return;
+                }
+            }
         }
         #endregion
 

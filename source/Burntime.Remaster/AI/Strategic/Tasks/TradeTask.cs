@@ -28,7 +28,7 @@ internal static partial class TradeTask
         // must complete without re-running or selecting ordinary trade errands
         // between each local strategic action. Required weapons are acquired
         // before an attack plan is accepted.
-        if (preparingAttack)
+        if (preparingAttack && !NeedsAttackWaterPreparation(state))
             return;
 
         Stopwatch timer = Stopwatch.StartNew();
@@ -48,7 +48,7 @@ internal static partial class TradeTask
         // and complete recipes receive the larger, actionable delivery bonus.
         float returnBonus = System.Math.Min(250, improvementReturn * 100);
         float preparedEconomyScore = preparingAttack
-            ? 1000
+            ? 1250
             : territorialTarget == null || economyGrowthNeeded
             ? float.PositiveInfinity
             : 300;
@@ -110,4 +110,7 @@ internal static partial class TradeTask
                 $"{tradeCandidateMilliseconds - continueTradingMilliseconds} ms, delivery " +
                 $"{deliveryMilliseconds - tradeCandidateMilliseconds} ms");
     }
+
+    internal static bool NeedsAttackWaterPreparation(ClassicAiState state) =>
+        PortableWaterCapacity(state) < DesiredWaterContainerCapacity(state);
 }

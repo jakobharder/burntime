@@ -98,7 +98,8 @@ internal static class StrategicAi
         Location? target = territory.Target;
         bool preparingAttack = territory.PreparingAttack;
         ExpansionTask.AddImmediateClaimCandidate(observation, territory, candidates);
-        bool shouldVisitTrader = TradeTask.ShouldVisitTrader(state, bestTradeCity);
+        bool shouldVisitTrader = TradeTask.ShouldVisitTrader(state, bestTradeCity) ||
+            preparingAttack && TradeTask.NeedsAttackWaterPreparation(state);
         long tradePlanMilliseconds = timer.ElapsedMilliseconds;
 
         RecruitmentNeeds recruitment = RecruitmentTask.AddCandidates(

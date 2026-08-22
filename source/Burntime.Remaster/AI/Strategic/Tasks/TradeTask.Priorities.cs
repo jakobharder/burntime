@@ -80,6 +80,9 @@ internal static partial class TradeTask
             return 0;
         if (item.HealValue > 0 && RecoveryServices.NeedsDoctorPayment(state))
             return 6000 + item.HealValue;
+        if (AiItemPool.IsWaterContainer(item.Type) && state.HasAttackPlan &&
+            NeedsAttackWaterPreparation(state))
+            return 5500 + AiItemPool.WaterContainerCapacity(item.Type);
         if (NeedsCriticalWaterWaypointUpgrade(state))
         {
             if (IsPump(item))
