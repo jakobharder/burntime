@@ -78,10 +78,27 @@ internal static partial class RecruitmentTask
         RouteFinder.Route? settlementRoute = needsSettler
             ? RouteFinder.Find(player, context.Current, target!)
             : null;
+        Character? localSettler = needsSettler
+            ? state.FindRecruitAt(context.Current, requireAffordable: true,
+                allowGeneratedPayment: generatedPaymentAllowed)
+            : null;
+        bool localSettlerFunded = state.RecruitmentSupplyCost(
+            localSettler, generatedPaymentAllowed,
+            out int localPaymentFood, out _);
+        RouteFinder.Route? soloReturn = needsSettler
+            ? FindProvisionedReturnRoute(state, context, target!)
+            : null;
         (int recruitFood, int recruitWater) = ProjectedRecruitReserves();
         bool settlementReady = !needsSettler || settlementRoute != null &&
             SupplyCalculator.HasProjectedRecruitTerritorialSupplies(
-                player, context.Current, settlementRoute, recruitFood, recruitWater);
+                player, context.Current, settlementRoute, recruitFood, recruitWater) &&
+            localSettlerFunded && soloReturn != null &&
+            SupplyCalculator.HasProjectedRecruitSoloReturnFood(
+                player, settlementRoute, recruitFood,
+                CanRemainAtNewCamp(state, target!, localSettler)
+                    ? 0
+                    : soloReturn.Days,
+                localPaymentFood);
 
         // Prefer picking the settler up as late in the journey as possible. A
         // solo leader puts much less pressure on food and water while crossing
@@ -300,7 +317,9 @@ internal static partial class RecruitmentTask
         List<AiDecision> candidates)
     {
         RouteFinder.Route? direct = RouteFinder.Find(state.Player, context.Current, target);
-        if (direct == null)
+        RouteFinder.Route? soloReturn = FindProvisionedReturnRoute(
+            state, context, target);
+        if (direct == null || soloReturn == null)
             return false;
 
         var stop = state.RootGame.World.Locations
@@ -325,7 +344,10 @@ internal static partial class RecruitmentTask
                     Onward = onward,
                     Funded = funded,
                     PaymentFood = paymentFood,
-                    PaymentWater = paymentWater
+                    PaymentWater = paymentWater,
+                    SoloReturnDays = CanRemainAtNewCamp(state, target, recruit)
+                        ? 0
+                        : soloReturn.Days
                 };
             })
             // Restrict this preference to actual shortest-route stops. Off-route
@@ -339,7 +361,8 @@ internal static partial class RecruitmentTask
                     state.Player, candidate.ToStop, candidate.Onward,
                     candidate.Location.IsCity ? RecoveryServices.CityMinimum : 0,
                     InitialRecruitReserve, InitialRecruitReserve,
-                    candidate.PaymentFood, candidate.PaymentWater))
+                    candidate.PaymentFood, candidate.PaymentWater,
+                    candidate.SoloReturnDays))
             .OrderBy(candidate => candidate.Onward!.Days)
             .ThenBy(candidate => candidate.ToStop!.Days)
             .FirstOrDefault();

@@ -81,7 +81,8 @@ internal static class SupplyCalculator
         int recruitFood,
         int recruitWater,
         int unavailableFood,
-        int unavailableWater)
+        int unavailableWater,
+        int soloFoodReturnDays = 0)
     {
         if (player.Group.Count != 1)
             return false;
@@ -90,7 +91,7 @@ internal static class SupplyCalculator
         return HasStagedRecruitStat(
                 leader.Food, leader.MaxFood,
                 player.Group.GetFoodInInventory() - unavailableFood,
-                toStop.Days, onward.Days, returnDays: 0,
+                toStop.Days, onward.Days, soloFoodReturnDays,
                 arrivalMinimum, recruitFood) &&
             HasStagedRecruitStat(
                 leader.Water, leader.MaxWater,
@@ -210,6 +211,20 @@ internal static class SupplyCalculator
         return sustainableWaypoint && firstLeg != null &&
             HasProjectedRecruitRouteSupplies(
                 player, firstLeg, recruitFood, recruitWater);
+    }
+
+    public static bool HasProjectedRecruitSoloReturnFood(
+        Player player,
+        RouteFinder.Route outbound,
+        int recruitFood,
+        int returnDays,
+        int unavailableFood = 0)
+    {
+        if (player.Group.Count != 1)
+            return true;
+        int available = player.Character.Food + recruitFood +
+            System.Math.Max(0, player.Group.GetFoodInInventory() - unavailableFood);
+        return available >= outbound.Days * 2 + returnDays;
     }
 
     static bool HasProjectedRecruitRouteSupplies(

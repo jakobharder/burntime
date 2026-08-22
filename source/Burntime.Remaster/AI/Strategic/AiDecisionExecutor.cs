@@ -34,11 +34,34 @@ internal static class AiDecisionExecutor
                 Location? recovery;
                 do
                 {
-                    Character? released = state.ReleaseFollowerForSurvival();
-                    if (released == null)
-                        break;
-                    AiTelemetry.Report(player,
-                        $"released {released.Name} completely because the group had no survivable recovery route");
+                    Character? removed;
+                    if (state.Current.Player == null &&
+                        CampEconomy.HasFoodProductionPotential(state.Current) &&
+                        (state.Current.Source?.Water ?? 0) > 1)
+                    {
+                        removed = state.SelectCampNpc();
+                        if (removed == null)
+                            break;
+                        state.CreateCamp(removed);
+                        AiTelemetry.Report(player,
+                            $"created an emergency camp at {state.Current.Title} using {removed.Name} instead of releasing them");
+                    }
+                    else if (state.Current.Player == player)
+                    {
+                        removed = state.StationSurplusFollower();
+                        if (removed == null)
+                            break;
+                        AiTelemetry.Report(player,
+                            $"stationed {removed.Name} at {state.Current.Title} instead of releasing them");
+                    }
+                    else
+                    {
+                        removed = state.ReleaseFollowerForSurvival();
+                        if (removed == null)
+                            break;
+                        AiTelemetry.Report(player,
+                            $"released {removed.Name} completely because the location cannot support a camp");
+                    }
                     recovery = RecoveryServices.FindDestination(state, requireReachable: true);
                 }
                 while (recovery == null && player.Group.Count > 1);
