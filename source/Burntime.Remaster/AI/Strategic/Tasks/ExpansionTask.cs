@@ -201,6 +201,10 @@ internal static partial class ExpansionTask
 
     public static bool CanBootstrapCamp(ClassicAiState state, Location location)
     {
+        // Stored supplies and neighboring camps may help establish a productive
+        // site, but must never turn a permanently barren location into a camp.
+        if (!CampEconomy.HasFoodProductionPotential(location))
+            return false;
         if (ReinforcementTask.IsThreatened(state, location))
             return false;
         bool hasLocalSurplus = location.ValidProductions.Any(production =>
@@ -444,6 +448,9 @@ internal static partial class ExpansionTask
 
     static bool IsSuitableCurrentClaim(ClassicAiState state, AiContext context)
     {
+        if (!CampEconomy.HasFoodProductionPotential(context.Current))
+            return false;
+
         // Do not consume a committed settler at a barren intermediate stop. It
         // must remain with the travelling group unless the waypoint can support
         // the new guard as a real camp while the expedition continues onward.

@@ -83,7 +83,14 @@ internal static partial class RecruitmentTask
             SupplyCalculator.HasProjectedRecruitTerritorialSupplies(
                 player, context.Current, settlementRoute, recruitFood, recruitWater);
 
-        if (needsSettler && canRecruit && !settlementReady)
+        // Prefer picking the settler up as late in the journey as possible. A
+        // solo leader puts much less pressure on food and water while crossing
+        // the supply network than a two-person group recruited at the origin.
+        bool remoteSettlerPlanned = needsSettler &&
+            (AddDestinationRecruitCandidate(state, context, target!, candidates) ||
+                AddRouteRecruitCandidate(state, context, policy, target!, candidates));
+
+        if (needsSettler && !remoteSettlerPlanned && canRecruit && !settlementReady)
         {
             Location? preparationCamp = FindBestOwnedSettlementStagingCamp(
                 state, target!);
@@ -96,7 +103,7 @@ internal static partial class RecruitmentTask
                 context.Current,
                 Reason: $"delay recruitment until the projected two-person route to {target!.Title} is supplied"));
         }
-        else if (needsFollower && canRecruit)
+        else if (needsFollower && !remoteSettlerPlanned && canRecruit)
         {
             candidates.Add(new AiDecision(
                 AiAction.Recruit,
@@ -112,11 +119,9 @@ internal static partial class RecruitmentTask
                     ? $"city opportunity: recruit toward {desiredGroupSize} people"
                     : "group needs another recruit"));
         }
-        else if (needsFollower && !canRecruit)
+        else if (needsFollower && !remoteSettlerPlanned && !canRecruit)
         {
-            bool directSettlementRecruit = needsSettler &&
-                AddDestinationRecruitCandidate(state, context, target!, candidates);
-            if (!directSettlementRecruit)
+            if (needsSettler || needsGarrisonFollower || standingFollowerSupported)
             {
                 Location? preparationCamp = TradeTask.FindBestCampForCityPreparation(state);
                 Location? recruitmentCity = needsSettler
@@ -199,6 +204,55 @@ internal static partial class RecruitmentTask
     internal static (int Food, int Water) ProjectedRecruitReserves() =>
         (InitialRecruitReserve, InitialRecruitReserve);
 
+    internal static bool TryAddCriticalRouteRecruitContinuation(
+        ClassicAiState state,
+        AiContext context,
+        AiPolicy policy,
+        List<AiDecision> candidates)
+    {
+        Location? target = state.StrategicTarget;
+        if (!state.HasSettlementPlan || target == null || target.Player != null ||
+            state.Player.Group.Count != 1)
+            return false;
+
+        RouteFinder.Route? direct = RouteFinder.Find(state.Player, context.Current, target);
+        if (direct == null)
+            return false;
+
+        var stop = state.RootGame.World.Locations
+            .Where(location => location != context.Current && location != target &&
+                (location.IsCity || location.Player == state.Player ||
+                    CampEconomy.CanSustainCamp(location)))
+            .Select(location => new
+            {
+                Location = location,
+                Recruit = state.FindRecruitAt(
+                    location, requireAffordable: true,
+                    allowGeneratedPayment: location.IsCity &&
+                        policy.AllowGeneratedRecruitPaymentInCities),
+                ToStop = RouteFinder.Find(state.Player, context.Current, location),
+                Onward = RouteFinder.Find(state.Player, location, target)
+            })
+            .Where(candidate => candidate.Recruit != null &&
+                candidate.ToStop != null && candidate.Onward != null &&
+                candidate.ToStop.Days + candidate.Onward.Days == direct.Days &&
+                SupplyCalculator.CanSurviveRecoveryRoute(
+                    state.Player, candidate.ToStop))
+            .OrderBy(candidate => candidate.Onward!.Days)
+            .ThenBy(candidate => candidate.ToStop!.Days)
+            .FirstOrDefault();
+        if (stop == null)
+            return false;
+
+        candidates.Add(new AiDecision(
+            AiAction.Travel,
+            1115 - stop.ToStop!.Days,
+            stop.Location,
+            stop.ToStop.NextStep,
+            $"continue the survivable solo approach to route recruit {stop.Recruit!.Name} at {stop.Location.Title}"));
+        return true;
+    }
+
     static bool AddDestinationRecruitCandidate(
         ClassicAiState state,
         AiContext context,
@@ -235,6 +289,69 @@ internal static partial class RecruitmentTask
             target,
             outbound.NextStep,
             $"hire {recruit.Name} at {target.Title} with the reserved requested item, then establish the camp"));
+        return true;
+    }
+
+    static bool AddRouteRecruitCandidate(
+        ClassicAiState state,
+        AiContext context,
+        AiPolicy policy,
+        Location target,
+        List<AiDecision> candidates)
+    {
+        RouteFinder.Route? direct = RouteFinder.Find(state.Player, context.Current, target);
+        if (direct == null)
+            return false;
+
+        var stop = state.RootGame.World.Locations
+            .Where(location => location != context.Current && location != target)
+            .Select(location =>
+            {
+                bool generatedPayment = location.IsCity &&
+                    policy.AllowGeneratedRecruitPaymentInCities;
+                Character recruit = state.FindRecruitAt(
+                    location, requireAffordable: true,
+                    allowGeneratedPayment: generatedPayment);
+                RouteFinder.Route? toStop = RouteFinder.Find(
+                    state.Player, context.Current, location);
+                RouteFinder.Route? onward = RouteFinder.Find(state.Player, location, target);
+                bool funded = state.RecruitmentSupplyCost(
+                    recruit, generatedPayment, out int paymentFood, out int paymentWater);
+                return new
+                {
+                    Location = location,
+                    Recruit = recruit,
+                    ToStop = toStop,
+                    Onward = onward,
+                    Funded = funded,
+                    PaymentFood = paymentFood,
+                    PaymentWater = paymentWater
+                };
+            })
+            // Restrict this preference to actual shortest-route stops. Off-route
+            // cities remain the final fallback handled below.
+            .Where(candidate => candidate.Recruit != null && candidate.Funded &&
+                (candidate.Location.IsCity || candidate.Location.Player == state.Player ||
+                    CampEconomy.CanSustainCamp(candidate.Location)) &&
+                candidate.ToStop != null && candidate.Onward != null &&
+                candidate.ToStop.Days + candidate.Onward.Days == direct.Days &&
+                SupplyCalculator.HasStagedRecruitOutboundSupplies(
+                    state.Player, candidate.ToStop, candidate.Onward,
+                    candidate.Location.IsCity ? RecoveryServices.CityMinimum : 0,
+                    InitialRecruitReserve, InitialRecruitReserve,
+                    candidate.PaymentFood, candidate.PaymentWater))
+            .OrderBy(candidate => candidate.Onward!.Days)
+            .ThenBy(candidate => candidate.ToStop!.Days)
+            .FirstOrDefault();
+        if (stop == null)
+            return false;
+
+        candidates.Add(new AiDecision(
+            AiAction.Travel,
+            2108 - stop.ToStop!.Days,
+            stop.Location,
+            stop.ToStop.NextStep,
+            $"pick up {stop.Recruit!.Name} at route stop {stop.Location.Title} before settling {target.Title}"));
         return true;
     }
 

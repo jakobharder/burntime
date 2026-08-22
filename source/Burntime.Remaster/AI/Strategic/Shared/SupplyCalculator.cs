@@ -73,6 +73,32 @@ internal static class SupplyCalculator
                 cityMinimum, recruitWater);
     }
 
+    public static bool HasStagedRecruitOutboundSupplies(
+        Player player,
+        RouteFinder.Route toStop,
+        RouteFinder.Route onward,
+        int arrivalMinimum,
+        int recruitFood,
+        int recruitWater,
+        int unavailableFood,
+        int unavailableWater)
+    {
+        if (player.Group.Count != 1)
+            return false;
+
+        Character leader = player.Character;
+        return HasStagedRecruitStat(
+                leader.Food, leader.MaxFood,
+                player.Group.GetFoodInInventory() - unavailableFood,
+                toStop.Days, onward.Days, returnDays: 0,
+                arrivalMinimum, recruitFood) &&
+            HasStagedRecruitStat(
+                leader.Water, leader.MaxWater,
+                player.Group.GetWaterInInventory() - unavailableWater,
+                toStop.Days, onward.Days, returnDays: 0,
+                arrivalMinimum, recruitWater);
+    }
+
     public static bool HasStagingCityReturnSupplies(
         Player player,
         RouteFinder.Route toCity,

@@ -44,6 +44,10 @@ internal static class StrategicAi
 
         if (observation.CriticalSupplies && !CanFinishCommittedSettlementJourney(state))
         {
+            if (RecruitmentTask.TryAddCriticalRouteRecruitContinuation(
+                state, observation, policy, candidates))
+                return SelectAndReport(state, candidates);
+
             Location? reachableRecovery = RecoveryServices.FindDestination(
                 state, requireReachable: true);
             Location? recovery = reachableRecovery ??

@@ -24,6 +24,14 @@ internal static class CampEconomy
     public static bool HasRatFoodPotential(Location camp) =>
         HasProductionPotential(camp, "item_rats");
 
+    public static bool HasFoodProductionPotential(Location camp) =>
+        !camp.IsCity && camp.ValidProductions.Any(production =>
+        {
+            Production.Rate rate = production.GetRate(
+                production.MaxToolCount, npcCount: 1);
+            return !rate.IsCampStarving && rate.FoodPerDay >= 1;
+        });
+
     public static bool HasPlentyOfWater(Location camp) =>
         camp.Source != null && camp.Source.Water >= PlentyOfWater;
 
@@ -92,11 +100,7 @@ internal static class CampEconomy
         // the travelling group happens to carry its tool today. A camp that can
         // feed one guard when fully equipped is worth claiming before the AI
         // projects force beyond it.
-        return camp.ValidProductions.Any(production =>
-        {
-            Production.Rate rate = production.GetRate(production.MaxToolCount, npcCount: 1);
-            return !rate.IsCampStarving && rate.FoodPerDay >= 1;
-        });
+        return HasFoodProductionPotential(camp);
     }
 
     public static bool ConnectsOwnedCamps(Location camp, Player player) =>
