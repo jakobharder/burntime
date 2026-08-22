@@ -12,6 +12,26 @@ internal static partial class LocalOpportunities
     // items are therefore available for provisioning, export, and other spending.
     internal const int CampFoodItemReserve = 0;
 
+    internal static bool StoreItemInCamp(Location camp, Item item)
+    {
+        bool waterContainer = AiItemPool.IsWaterContainer(item.Type);
+        Room room = camp.Rooms
+            .Where(candidate => !candidate.Items.IsFull)
+            .OrderBy(candidate => waterContainer ? !candidate.IsWaterSource : candidate.IsWaterSource)
+            .FirstOrDefault();
+        if (room == null)
+            return false;
+
+        if (room.IsWaterSource && item.Type.Full != null &&
+            camp.Source.Reserve >= item.Type.Full.WaterValue)
+        {
+            item.MakeFull();
+            camp.Source.Reserve -= item.WaterValue;
+        }
+        room.Items.Add(item);
+        return true;
+    }
+
     public static bool ShouldPreferProductionAtCamp(ClassicAiState state, Location location) =>
         location.Danger == null && !ReinforcementTask.IsThreatened(state, location);
 
@@ -45,12 +65,10 @@ internal static partial class LocalOpportunities
                 TradeTask.DesiredWaterContainerCapacity(state))
             .OrderBy(entry => AiItemPool.WaterContainerCapacity(entry.Item.Type))
             .FirstOrDefault();
-        Room room = camp.Rooms.FirstOrDefault(candidate => !candidate.Items.IsFull);
-        if (container == null || room == null)
+        if (container == null || !StoreItemInCamp(camp, container.Item))
             return;
 
         container.Character.Items.Remove(container.Item);
-        room.Items.Add(container.Item);
         AiTelemetry.Report(state.Player,
             $"stocked {container.Item.ID} as critical water reserve at {camp.Title}");
     }
@@ -135,7 +153,11 @@ internal static partial class LocalOpportunities
         Item tool = state.Pool.GetBestTrap(products);
         if (tool == null)
             return;
-        camp.StoreItemRandom(tool);
+        if (!StoreItemInCamp(camp, tool))
+        {
+            state.Pool.Insert(tool);
+            return;
+        }
         camp.AutoSelectFoodProduction(onlyIfStarving: false);
         AiTelemetry.Report(state.Player, $"installed {tool.ID} for food production at {camp.Title}");
     }
@@ -224,13 +246,13 @@ internal static partial class LocalOpportunities
             if (source != null && !source.Items.IsFull)
                 source.Items.Add(item);
             else
-                camp.StoreItemRandom(item);
+                StoreItemInCamp(camp, item);
             return;
         }
 
         if (item.Type.Production != null)
         {
-            camp.StoreItemRandom(item);
+            StoreItemInCamp(camp, item);
             camp.AutoSelectFoodProduction(onlyIfStarving: false);
             return;
         }

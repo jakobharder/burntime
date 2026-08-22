@@ -478,7 +478,11 @@ namespace Burntime.Remaster.AI
             Item trap = ItemPool.GetBestTrap(GetAvailableProducts(CurrentLocation));
             if (trap == null)
                 return false;
-            CurrentLocation.StoreItemRandom(trap);
+            if (!LocalOpportunities.StoreItemInCamp(CurrentLocation, trap))
+            {
+                ItemPool.Insert(trap);
+                return false;
+            }
             return true;
         }
 
@@ -618,8 +622,8 @@ namespace Burntime.Remaster.AI
                 }
                 else if (IsHome && CurrentLocation.Rooms.Any(room => !room.Items.IsFull))
                 {
-                    CurrentLocation.StoreItemRandom(item);
-                    CurrentLocation.Items.Remove(item);
+                    if (LocalOpportunities.StoreItemInCamp(CurrentLocation, item))
+                        CurrentLocation.Items.Remove(item);
                 }
             }
         }
@@ -719,7 +723,8 @@ namespace Burntime.Remaster.AI
                 }
                 else if (CurrentLocation.Rooms.Count > 0)
                 {
-                    CurrentLocation.StoreItemRandom(trap);
+                    if (!LocalOpportunities.StoreItemInCamp(CurrentLocation, trap))
+                        npc.Items.Add(trap);
                 }
                 else
                 {

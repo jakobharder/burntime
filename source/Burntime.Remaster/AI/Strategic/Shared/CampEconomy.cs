@@ -179,7 +179,12 @@ internal static class CampEconomy
             .Where(location => location.Player == state.Player &&
                 LocalOpportunities.ShouldPreferProductionAtCamp(state, location))
             .Where(location => location != camp && location.ValidProductions.Contains(production) &&
-                ProductionToolCount(location, production) == 0)
+                ProductionToolCount(location, production) == 0 &&
+                TradeTask.ProductionTradePriority(production) >= location.ValidProductions
+                    .Where(candidate => ProductionToolCount(location, candidate) > 0)
+                    .Select(TradeTask.ProductionTradePriority)
+                    .DefaultIfEmpty(float.MinValue)
+                    .Max())
             .Select(location => new
             {
                 Route = RouteFinder.Find(state.Player, camp, location),

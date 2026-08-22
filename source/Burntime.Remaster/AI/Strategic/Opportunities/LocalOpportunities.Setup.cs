@@ -215,11 +215,14 @@ internal static partial class LocalOpportunities
             int stock = TradeTask.CampWaterContainerCount(camp);
             while (stock < TradeTask.DesiredCampWaterContainerCount && state.Pool.HasWaterContainer())
             {
-                Room room = camp.Rooms.FirstOrDefault();
-                if (room == null || room.Items.IsFull)
+                if (!camp.Rooms.Any(room => !room.Items.IsFull))
                     break;
                 Item container = state.Pool.GetBestWaterContainer();
-                room.Items.Add(container);
+                if (!StoreItemInCamp(camp, container))
+                {
+                    state.Pool.Insert(container);
+                    break;
+                }
                 stock++;
                 AiTelemetry.Report(state.Player,
                     $"stocked {container.ID} as water reserve at {camp.Title}");
@@ -318,7 +321,11 @@ internal static partial class LocalOpportunities
             Item weapon = state.Pool.GetBestWeapon(type => !AiItemPool.IsFirearm(type));
             if (weapon == null)
                 return;
-            camp.StoreItemRandom(weapon);
+            if (!StoreItemInCamp(camp, weapon))
+            {
+                state.Pool.Insert(weapon);
+                return;
+            }
             AiTelemetry.Report(state.Player,
                 $"stored reserve weapon {weapon.ID} at {camp.Title}");
         }
