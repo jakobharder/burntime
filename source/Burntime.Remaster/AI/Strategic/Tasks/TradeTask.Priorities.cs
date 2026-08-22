@@ -9,6 +9,62 @@ internal static partial class TradeTask
 {
     internal const int DesiredCampWaterContainerCount = 2;
 
+    internal sealed class AssortmentShoppingPriorityState
+    {
+        public ClassicAiState State { get; }
+        public bool EarlyEconomy { get; }
+        public bool ProductionEconomyNeeded { get; }
+        public bool ProductionUpgradeNeeded { get; }
+        public bool FirstAdvancedTrapNeeded { get; }
+        public ItemType PlannedSettlementPaymentType { get; }
+        public bool StrategicSnakeTrapNeeded { get; }
+        public bool SavingForSnakeTrap { get; }
+        public bool DoctorPaymentNeeded { get; }
+        public bool CriticalWaterWaypointUpgradeNeeded { get; }
+        public bool CanPrepareExpansionProduction { get; }
+        public bool WeaponsNeeded { get; }
+        public int GlobalProtectionCount { get; }
+        public int ProtectionReserve { get; }
+        public bool AnyPumpNeeded { get; }
+        public bool CriticalPumpNeeded { get; }
+        public float BestEmpireImprovement { get; }
+        public int PortableFood { get; }
+        public int DesiredPortableFood { get; }
+        public int AvailableWaterContainerCapacity { get; }
+        public int RequiredWaterContainerCapacity { get; }
+        public int BestWaterContainerCapacity { get; }
+        public bool HasAttackPlan { get; }
+
+        public AssortmentShoppingPriorityState(ClassicAiState state)
+        {
+            State = state;
+            EarlyEconomy = state.OwnedCampCount < 3;
+            ProductionEconomyNeeded = ExpansionTask.ShouldPrioritizeEconomicGrowth(state);
+            ProductionUpgradeNeeded = EconomicReturn.BestEmpireProductionImprovement(state) > 0.01f;
+            FirstAdvancedTrapNeeded = !EconomicSupport.HasAdvancedTrap(state);
+            PlannedSettlementPaymentType = RecruitmentTask.PlannedFutureSettlementPaymentType(state);
+            StrategicSnakeTrapNeeded = HasStrategicSnakeTrapNeed(state);
+            SavingForSnakeTrap = EconomicSupport.IsSavingForSnakeTrap(state);
+            DoctorPaymentNeeded = RecoveryServices.NeedsDoctorPayment(state);
+            CriticalWaterWaypointUpgradeNeeded = NeedsCriticalWaterWaypointUpgrade(state);
+            CanPrepareExpansionProduction = CanPrepareProductionInAdvance(state) &&
+                ExpansionTask.NeedsExpansionTool(state);
+            WeaponsNeeded = NeedsWeapons(state);
+            GlobalProtectionCount = GlobalProtectionStock(state);
+            ProtectionReserve = DesiredProtectionReserve(state);
+            AnyPumpNeeded = NeedsAnyPump(state);
+            CriticalPumpNeeded = NeedsCriticalPump(state);
+            BestEmpireImprovement = EconomicReturn.BestEmpireImprovement(state);
+            PortableFood = TradeTask.PortableFoodSupply(state);
+            DesiredPortableFood = TradeTask.DesiredPortableFood(state);
+            AvailableWaterContainerCapacity = TradeTask.PortableWaterCapacity(state) +
+                state.Pool.TotalWaterContainerCapacity;
+            RequiredWaterContainerCapacity = RequiredUnstationedWaterContainerCapacity(state);
+            BestWaterContainerCapacity = state.Pool.BestWaterContainerCapacity;
+            HasAttackPlan = state.HasAttackPlan;
+        }
+    }
+
     internal static float ShoppingPriority(ClassicAiState state, Item item)
     {
         bool earlyEconomy = state.OwnedCampCount < 3;
@@ -94,62 +150,75 @@ internal static partial class TradeTask
         return 0;
     }
 
-    internal static float AssortmentShoppingPriority(ClassicAiState state, ItemType type)
+    internal static float AssortmentShoppingPriority(
+        AssortmentShoppingPriorityState priorityState,
+        ItemType type)
     {
-        bool earlyEconomy = state.OwnedCampCount < 3;
-        bool productionEconomyNeeded = ExpansionTask.ShouldPrioritizeEconomicGrowth(state);
-        bool productionUpgradeNeeded = EconomicReturn.BestEmpireProductionImprovement(state) > 0.01f;
-        bool firstAdvancedTrapNeeded = !EconomicSupport.HasAdvancedTrap(state);
-        if (RecruitmentTask.PlannedFutureSettlementPaymentType(state) == type)
+        ClassicAiState state = priorityState.State;
+        Production? production = type.Production;
+        float productionPriority = production == null ? 0 : ProductionTradePriority(production);
+        bool isPump = IsPump(type);
+        bool isWaterContainer = AiItemPool.IsWaterContainer(type);
+
+        if (priorityState.PlannedSettlementPaymentType == type)
             return 5100 + type.TradeValue;
-        if (type.ID == "item_snake_trap" && HasStrategicSnakeTrapNeed(state))
+        if (type.ID == "item_snake_trap" && priorityState.StrategicSnakeTrapNeeded)
             return 5000;
-        if (EconomicSupport.IsSavingForSnakeTrap(state) && type.FoodValue == 0 &&
-            !AiItemPool.IsWaterContainer(type))
+        if (priorityState.SavingForSnakeTrap && type.FoodValue == 0 && !isWaterContainer)
             return 0;
-        if (type.HealValue > 0 && RecoveryServices.NeedsDoctorPayment(state))
+        if (type.HealValue > 0 && priorityState.DoctorPaymentNeeded)
             return 6000 + type.HealValue;
-        if (NeedsCriticalWaterWaypointUpgrade(state))
+        if (priorityState.CriticalWaterWaypointUpgradeNeeded)
         {
-            if (IsPump(type))
+            if (isPump)
                 return 4900 + (type.ID == "item_industrial_pump" ? 20 : 0);
-            if (AiItemPool.IsWaterContainer(type))
+            if (isWaterContainer)
                 return 4800 + AiItemPool.WaterContainerCapacity(type);
         }
-        if (type.Production != null)
+        if (production != null)
         {
             int ownedProductionDemand = MissingProductionToolCount(
-                state, type.Production.Produce.ID);
+                state, production.Produce.ID);
             if (ownedProductionDemand > 0)
-                return 1700 + (firstAdvancedTrapNeeded ? 500 : 0) + ownedProductionDemand * 100 +
-                    ProductionTradePriority(type.Production) +
-                    EconomicReturn.ProductionToolReturn(state, type.Production) * 120;
+                return 1700 + (priorityState.FirstAdvancedTrapNeeded ? 500 : 0) +
+                    ownedProductionDemand * 100 + productionPriority +
+                    EconomicReturn.ProductionToolReturn(state, production) * 120;
         }
-        if (CanPrepareProductionInAdvance(state) && ExpansionTask.NeedsExpansionTool(state) &&
-            type.Production != null &&
-            IsUsefulForNeutralExpansion(state, type.Production))
-            return 1600 + ProductionTradePriority(type.Production);
-        if (type.Production != null && NeedsProduction(state, type))
-            return 1500 + ProductionTradePriority(type.Production);
+        if (priorityState.CanPrepareExpansionProduction && production != null &&
+            IsUsefulForNeutralExpansion(state, production))
+            return 1600 + productionPriority;
+        if (production != null && NeedsProduction(state, type))
+            return 1500 + productionPriority;
 
         float materialPriority = ConstructionMaterialPriority(state, type.ID);
         if (materialPriority > 0)
-            return materialPriority + (firstAdvancedTrapNeeded ? 300 : 0) + type.TradeValue;
-        if (type.DamageValue > 0 && !AiItemPool.IsFirearm(type) && NeedsWeapons(state))
-            return 920 + type.DamageValue;
-        if (AiItemPool.IsHazardProtection(type) &&
-            (NeedsDangerProtection(state, type) || GlobalProtectionStock(state) < DesiredProtectionReserve(state)))
-            return (NeedsDangerProtection(state, type) ? 900 : productionEconomyNeeded ? 560 : 800) +
+            return materialPriority + (priorityState.FirstAdvancedTrapNeeded ? 300 : 0) +
                 type.TradeValue;
-        if (IsPump(type) && NeedsAnyPump(state) &&
-            (!productionUpgradeNeeded || NeedsCriticalPump(state)))
-            return (productionUpgradeNeeded ? 540 : earlyEconomy ? 780 : 720) +
+        if (type.DamageValue > 0 && !AiItemPool.IsFirearm(type) && priorityState.WeaponsNeeded)
+            return 920 + type.DamageValue;
+        if (AiItemPool.IsHazardProtection(type))
+        {
+            bool dangerProtectionNeeded = NeedsDangerProtection(state, type);
+            if (dangerProtectionNeeded ||
+                priorityState.GlobalProtectionCount < priorityState.ProtectionReserve)
+                return (dangerProtectionNeeded ? 900 : priorityState.ProductionEconomyNeeded ? 560 : 800) +
+                type.TradeValue;
+        }
+        if (isPump && priorityState.AnyPumpNeeded &&
+            (!priorityState.ProductionUpgradeNeeded || priorityState.CriticalPumpNeeded))
+            return (priorityState.ProductionUpgradeNeeded ? 540 : priorityState.EarlyEconomy ? 780 : 720) +
                 (type.ID == "item_industrial_pump" ? 20 : 0) +
-                EconomicReturn.BestEmpireImprovement(state) * 100;
-        if (type.FoodValue > 0 && TradeTask.PortableFoodSupply(state) < TradeTask.DesiredPortableFood(state))
+                priorityState.BestEmpireImprovement * 100;
+        if (type.FoodValue > 0 && priorityState.PortableFood < priorityState.DesiredPortableFood)
             return 900 + type.FoodValue * 12 + type.TradeValue;
-        if (AiItemPool.IsWaterContainer(type) && NeedsBetterWaterContainers(state, type))
-            return (state.HasAttackPlan ? 1150 : 1050) + AiItemPool.WaterContainerCapacity(type);
+        if (isWaterContainer)
+        {
+            int capacity = AiItemPool.WaterContainerCapacity(type);
+            if (priorityState.AvailableWaterContainerCapacity <
+                    priorityState.RequiredWaterContainerCapacity ||
+                capacity > priorityState.BestWaterContainerCapacity)
+                return (priorityState.HasAttackPlan ? 1150 : 1050) + capacity;
+        }
         return 0;
     }
 

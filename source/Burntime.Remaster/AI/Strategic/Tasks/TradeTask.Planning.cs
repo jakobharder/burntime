@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Burntime.Remaster.Logic;
@@ -20,7 +21,12 @@ internal static partial class TradeTask
     internal static readonly HashSet<string> ConstructionMaterials =
         AiItemPool.ConstructionMaterialIds.ToHashSet();
 
-    public static bool ShouldVisitTrader(ClassicAiState state)
+    public static bool ShouldVisitTrader(ClassicAiState state) =>
+        ShouldVisitTrader(state, FindBestTradeCity(state));
+
+    internal static bool ShouldVisitTrader(
+        ClassicAiState state,
+        Location? bestTradeCity)
     {
         // Every local trader was already checked at the start of this turn. Do not
         // shuttle directly between cities when today's stock cannot complete a
@@ -28,9 +34,9 @@ internal static partial class TradeTask
         // of an otherwise idle city and prepare the next attempt.
         if (state.Current.IsCity)
             return HasPreparedTradeCargo(state)
-                ? FindBestTradeCity(state) != null
-                : RouteOpportunities.FindCityTradePickupCamp(state) != null;
-        if (FindBestTradeCity(state) == null)
+                ? bestTradeCity != null
+                : RouteOpportunities.FindCityTradePickupCamp(state, bestTradeCity) != null;
+        if (bestTradeCity == null)
             return false;
 
         // Trader stock is random and may change before arrival. Commit once the
@@ -42,38 +48,52 @@ internal static partial class TradeTask
         // A stocked owned camp on the route may initiate the trip even when the
         // travelling group is empty. This is the same single pickup used by an
         // already loaded caravan, not a chain of collection errands.
-        return RouteOpportunities.FindCityTradePickupCamp(state) != null;
+        return RouteOpportunities.FindCityTradePickupCamp(state, bestTradeCity) != null;
     }
 
     public static Location FindBestTradeCity(ClassicAiState state)
     {
-        bool departingOwnedCamp = state.Current.Player == state.Player;
-        return state.RootGame.World.Locations
+        Stopwatch timer = Stopwatch.StartNew();
+        var reachableCities = state.RootGame.World.Locations
             .Where(location => location.IsCity && location != state.Current && location.LocalTrader != null)
             .Select(location => new
             {
                 Location = location,
-                Route = RouteFinder.Find(state.Player, state.Current, location),
-                AssortmentScore = TraderAssortmentOpportunityScore(state, location.LocalTrader) +
-                    EconomicSupport.TraderNoveltyScore(state, location.LocalTrader)
+                Route = RouteFinder.Find(state.Player, state.Current, location)
             })
-            .Where(candidate => candidate.Route != null && candidate.AssortmentScore > 0)
-            // Export locally first. From an owned camp, use the nearest market whose
-            // assortment can help; after that market has been inspected, selection
-            // from the city itself again favors a new regional assortment.
-            .OrderBy(candidate => departingOwnedCamp ? candidate.Route.Days : 0)
-            .ThenByDescending(candidate => candidate.AssortmentScore - candidate.Route.Days * 5)
-            .Select(candidate => candidate.Location)
-            .FirstOrDefault();
+            .Where(candidate => candidate.Route != null)
+            .ToArray();
+        int nearestDays = reachableCities
+            .Select(candidate => candidate.Route!.Days)
+            .DefaultIfEmpty(int.MaxValue)
+            .Min();
+        var nearestCities = reachableCities
+            .Where(candidate => candidate.Route!.Days == nearestDays)
+            .ToArray();
+        Location? result = nearestCities.Length <= 1
+            ? nearestCities.Select(candidate => candidate.Location).FirstOrDefault()
+            : nearestCities
+                .OrderByDescending(candidate =>
+                    TraderAssortmentOpportunityScore(state, candidate.Location.LocalTrader) +
+                    EconomicSupport.TraderNoveltyScore(state, candidate.Location.LocalTrader))
+                .Select(candidate => candidate.Location)
+                .FirstOrDefault();
+        if (timer.ElapsedMilliseconds >= 10)
+            AiTelemetry.Report(state.Player,
+                $"FindBestTradeCity took {timer.ElapsedMilliseconds} ms");
+        return result;
     }
 
-    internal static Location FindBestRegionalTradeStop(ClassicAiState state)
+    internal static Location FindBestRegionalTradeStop(
+        ClassicAiState state,
+        Location? nearestCity)
     {
         if (state.Current.Player != state.Player || !HasPreparedTradeCargo(state))
             return null;
 
-        Location nearestCity = FindBestTradeCity(state);
-        int cityDays = RouteFinder.Find(state.Player, state.Current, nearestCity)?.Days ?? int.MaxValue;
+        int cityDays = nearestCity == null
+            ? int.MaxValue
+            : RouteFinder.Find(state.Player, state.Current, nearestCity)?.Days ?? int.MaxValue;
         return state.RootGame.World.Locations
             .Where(location => !location.IsCity && location != state.Current &&
                 (location.Player == null || location.Player == state.Player))
@@ -122,13 +142,30 @@ internal static partial class TradeTask
             .GroupBy(type => type.ID)
             .Select(group => group.First())
             .ToArray();
-        float[] opportunities = assortment
-            .Select(type => TradeTask.AssortmentShoppingPriority(state, type))
-            .Where(priority => priority > 0)
-            .OrderByDescending(priority => priority)
-            .Take(3)
-            .ToArray();
-        if (opportunities.Length == 0)
+        AssortmentShoppingPriorityState priorityState = new(state);
+        float firstOpportunity = 0;
+        float secondOpportunity = 0;
+        float thirdOpportunity = 0;
+        foreach (ItemType type in assortment)
+        {
+            float priority = TradeTask.AssortmentShoppingPriority(priorityState, type);
+            if (priority > firstOpportunity)
+            {
+                thirdOpportunity = secondOpportunity;
+                secondOpportunity = firstOpportunity;
+                firstOpportunity = priority;
+            }
+            else if (priority > secondOpportunity)
+            {
+                thirdOpportunity = secondOpportunity;
+                secondOpportunity = priority;
+            }
+            else if (priority > thirdOpportunity)
+            {
+                thirdOpportunity = priority;
+            }
+        }
+        if (firstOpportunity <= 0)
             return 0;
 
         // Stock is random, so this is an assortment-probability preference rather
@@ -142,7 +179,7 @@ internal static partial class TradeTask
             HasStrategicSnakeTrapNeed(state)
                 ? 1000f / Math.Max(1, assortment.Length)
                 : 0;
-        return opportunities[0] + opportunities.Skip(1).Sum() * 0.25f +
+        return firstOpportunity + (secondOpportunity + thirdOpportunity) * 0.25f +
             materialLikelihood + snakeLikelihood;
     }
 
@@ -361,11 +398,12 @@ internal static partial class TradeTask
             .FirstOrDefault();
     }
 
-    public static bool ShouldFillCityCaravanBeforeDeparture(ClassicAiState state)
+    public static bool ShouldFillCityCaravanBeforeDeparture(
+        ClassicAiState state,
+        Location? tradeCity)
     {
         if (state.Current.Player != state.Player || state.Player.Group.GetFreeSlotCount() == 0)
             return false;
-        Location tradeCity = FindBestTradeCity(state);
         if (tradeCity == null)
             return false;
 

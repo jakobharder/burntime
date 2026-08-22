@@ -149,6 +149,20 @@ namespace Burntime.Remaster.AI
             // increase count
             poolItem.Count++;
         }
+
+        internal ItemType[] SnapshotItemTypes() => items
+            .Where(item => item.Count > 0)
+            .SelectMany(item => Enumerable.Range(0, item.Count)
+                .Select(_ => item.Type))
+            .ToArray();
+
+        internal Item TakeForTrade(ItemType type)
+        {
+            PoolItem item = FindPoolItem(type);
+            if (item == null || item.Count <= 0)
+                return null;
+            return Take(item);
+        }
         #endregion
 
         #region public get item methods

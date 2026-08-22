@@ -20,6 +20,7 @@ internal static partial class RecruitmentTask
         AiPolicy policy,
         Location? target,
         bool preparingAttack,
+        bool shouldVisitTrader,
         List<AiDecision> candidates)
     {
         if (preparingAttack)
@@ -59,7 +60,7 @@ internal static partial class RecruitmentTask
         bool needsFollower = player.Group.Count < context.TravelGroupSize &&
             (needsSettler || needsGarrisonFollower || standingFollowerSupported);
 
-        if (!TradeTask.ShouldVisitTrader(state) &&
+        if (!shouldVisitTrader &&
             needsFollower &&
             RecruitmentTask.CanRecallFollower(state, policy.CriticalGarrisonTarget))
         {

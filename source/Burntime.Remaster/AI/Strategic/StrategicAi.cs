@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Burntime.Remaster.Logic;
 
@@ -8,14 +9,22 @@ internal static class StrategicAi
 {
     public static void RunTurn(ClassicAiState state)
     {
+        Stopwatch totalTimer = Stopwatch.StartNew();
         DefenseIntelligence.ObserveWorld(state);
-        LocalOpportunities.Apply(state);
+        Location? bestTradeCity = TradeTask.FindBestTradeCity(state);
+        LocalOpportunities.Apply(state, bestTradeCity);
+        long localMilliseconds = totalTimer.ElapsedMilliseconds;
+        List<string> actionTimings = new();
 
         const int maximumStrategicActions = 10;
         for (int action = 0; action < maximumStrategicActions; action++)
         {
-            AiDecision decision = Choose(state);
-            AiDecisionExecutor.Execute(state, decision);
+            Stopwatch actionTimer = Stopwatch.StartNew();
+            AiDecision decision = Choose(state, bestTradeCity);
+            long chooseMilliseconds = actionTimer.ElapsedMilliseconds;
+            AiDecisionExecutor.Execute(state, decision, bestTradeCity);
+            actionTimings.Add($"{decision.Action} choose {chooseMilliseconds} ms, " +
+                $"execute {actionTimer.ElapsedMilliseconds - chooseMilliseconds} ms");
 
             // Waiting and travelling deliberately consume the rest of the world
             // turn. Other local strategic actions may expose the next useful step
@@ -28,13 +37,20 @@ internal static class StrategicAi
                 AiTelemetry.Report(state.Player,
                     $"stopped local strategy after {maximumStrategicActions} actions to avoid an infinite loop");
         }
+
+        if (totalTimer.ElapsedMilliseconds >= 1000)
+            AiTelemetry.Report(state.Player,
+                $"slow AI turn {totalTimer.ElapsedMilliseconds} ms: local opportunities " +
+                $"{localMilliseconds} ms; {string.Join("; ", actionTimings)}");
     }
 
-    static AiDecision Choose(ClassicAiState state)
+    static AiDecision Choose(ClassicAiState state, Location? bestTradeCity)
     {
+        Stopwatch timer = Stopwatch.StartNew();
         Player player = state.Player;
         AiPolicy policy = AiPolicy.ForDifficulty(state.RootGame.World.Difficulty);
         AiContext observation = AiContext.Create(state, policy);
+        long contextMilliseconds = timer.ElapsedMilliseconds;
         List<AiDecision> candidates = new();
 
         ExpansionTask.CancelSettlementAtHostileWaypoint(state, observation);
@@ -78,14 +94,20 @@ internal static class StrategicAi
         }
 
         TerritorialPlan territory = ExpansionTask.CreatePlan(state, observation, policy);
+        long territoryMilliseconds = timer.ElapsedMilliseconds;
         Location? target = territory.Target;
         bool preparingAttack = territory.PreparingAttack;
         ExpansionTask.AddImmediateClaimCandidate(observation, territory, candidates);
+        bool shouldVisitTrader = TradeTask.ShouldVisitTrader(state, bestTradeCity);
+        long tradePlanMilliseconds = timer.ElapsedMilliseconds;
 
         RecruitmentNeeds recruitment = RecruitmentTask.AddCandidates(
-            state, observation, policy, target, preparingAttack, candidates);
+            state, observation, policy, target, preparingAttack,
+            shouldVisitTrader, candidates);
+        long recruitmentMilliseconds = timer.ElapsedMilliseconds;
         ReinforcementTask.AddCandidates(
             state, observation, policy, recruitment, candidates);
+        long reinforcementMilliseconds = timer.ElapsedMilliseconds;
 
         if (state.NeedsCampImprovement() &&
             !ExpansionTask.ShouldReserveProductionTool(state))
@@ -100,9 +122,12 @@ internal static class StrategicAi
         }
 
         TradeTask.AddCandidates(
-            state, observation, policy, target, preparingAttack, candidates);
+            state, observation, policy, target, preparingAttack,
+            shouldVisitTrader, bestTradeCity, candidates);
+        long tradeMilliseconds = timer.ElapsedMilliseconds;
 
         ExpansionTask.AddCandidates(state, observation, policy, territory, candidates);
+        long expansionMilliseconds = timer.ElapsedMilliseconds;
 
         if (!preparingAttack && player.Group.Count > 1 &&
             player.Group.Count < observation.TravelGroupSize && !state.HasHireableNpc())
@@ -118,6 +143,16 @@ internal static class StrategicAi
                 ? "expansion blocked: group has no weapon and no equipment route is available"
                 : "no reachable expansion target with current supplies";
         candidates.Add(new AiDecision(AiAction.Wait, 0, Reason: idleReason));
+        if (timer.ElapsedMilliseconds >= 500)
+            AiTelemetry.Report(player,
+                $"slow decision planning {timer.ElapsedMilliseconds} ms: context " +
+                $"{contextMilliseconds} ms, territory " +
+                $"{territoryMilliseconds - contextMilliseconds} ms, recruitment " +
+                $"{recruitmentMilliseconds - tradePlanMilliseconds} ms, trade plan " +
+                $"{tradePlanMilliseconds - territoryMilliseconds} ms, reinforcement " +
+                $"{reinforcementMilliseconds - recruitmentMilliseconds} ms, trade " +
+                $"{tradeMilliseconds - reinforcementMilliseconds} ms, expansion " +
+                $"{expansionMilliseconds - tradeMilliseconds} ms");
         return SelectAndReport(state, candidates);
     }
 

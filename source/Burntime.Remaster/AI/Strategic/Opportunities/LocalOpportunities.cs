@@ -4,7 +4,7 @@ namespace Burntime.Remaster.AI;
 
 internal static partial class LocalOpportunities
 {
-    public static void Apply(ClassicAiState state)
+    public static void Apply(ClassicAiState state, Location? bestTradeCity)
     {
         RecoveryServices.ApplyCityMinimum(state);
         UseLocalWaterSource(state);
@@ -16,21 +16,18 @@ internal static partial class LocalOpportunities
             AiTelemetry.Report(state.Player,
                 "consumed carried or stored supplies before seeking paid recovery");
         RecoveryServices.UseDoctor(state);
-
         EconomicSupport.ApplySlumpSupport(state);
         RefillConstructionReserve(state);
         ConstructPortableEconomicUpgrade(state);
         EquipEmpire(state);
-
         ExpansionTask.TryClaimCurrentAsLocalOpportunity(state);
 
         if (state.Current.Player == state.Player)
         {
             MaintainCurrentCamp(state);
-            if (TradeTask.ShouldVisitTrader(state))
+            if (TradeTask.ShouldVisitTrader(state, bestTradeCity))
                 FillCityCaravan(state, state.Current);
         }
-
         ConstructPortableWeapon(state);
 
         // An affordable settler is the immediate local prerequisite for the

@@ -48,23 +48,30 @@ internal static partial class TradeTask
             if (plan == null)
                 break;
 
-            float offeredValue = plan.Offers.Sum(offer => offer.Item.TradeValue);
+            for (int index = 0; index < plan.Offers.Count; index++)
+            {
+                TradeAsset offer = plan.Offers[index];
+                if (!offer.FromPool)
+                    continue;
+                Item item = state.Pool.TakeForTrade(offer.Type) ??
+                    throw new InvalidOperationException("planned pool trade asset is no longer available");
+                plan.Offers[index] = new TradeAsset(null, item, true);
+            }
+            float offeredValue = plan.Offers.Sum(offer => offer.TradeValue);
             foreach (Item target in plan.Targets)
                 trader.Items.Remove(target);
-            foreach (TradeAsset offer in plan.Offers)
+            foreach (TradeAsset offer in plan.Offers.Where(offer => !offer.FromPool))
             {
-                if (!offer.FromPool)
-                {
-                    Character owner = state.Player.Group
-                        .FirstOrDefault(character => character.Items == offer.Owner);
-                    if (owner?.Weapon == offer.Item)
-                        owner.Weapon = null;
-                    offer.Owner.Remove(offer.Item);
-                }
-                soldToTrader.Add(offer.Item);
+                Character owner = state.Player.Group
+                    .FirstOrDefault(character => character.Items == offer.Owner);
+                if (owner?.Weapon == offer.Item)
+                    owner.Weapon = null;
+                offer.Owner.Remove(offer.Item);
             }
+            foreach (TradeAsset offer in plan.Offers)
+                soldToTrader.Add(offer.Item!);
 
-            PruneAndStoreTraderOffers(trader, plan.Offers.Select(offer => offer.Item));
+            PruneAndStoreTraderOffers(trader, plan.Offers.Select(offer => offer.Item!));
 
             foreach (Item target in plan.Targets)
             {
@@ -74,7 +81,6 @@ internal static partial class TradeTask
                     state.Player.Group.First(character => !character.Items.IsFull).Items.Add(target);
             }
 
-            RestoreUnusedPoolAssets(state, plan.TemporaryPoolAssets.Except(plan.Offers));
             completed++;
             if (plan.Targets.Any(target => target.ID == "item_snake_trap"))
                 EconomicSupport.CompleteSnakeTrapCampaign(state);
@@ -83,7 +89,7 @@ internal static partial class TradeTask
                 : "consolidated";
             float receivedValue = plan.Targets.Sum(target => target.TradeValue);
             AiTelemetry.Report(state.Player,
-                $"{action} {string.Join(", ", plan.Offers.Select(offer => offer.Item.ID))} for " +
+                $"{action} {string.Join(", ", plan.Offers.Select(offer => offer.ID))} for " +
                 $"{string.Join(", ", plan.Targets.Select(target => target.ID))} with {trader.Name} " +
                 $"(value {offeredValue:0} -> {receivedValue:0}, " +
                 $"AI barter value x{TradeBenefit(state):0.0})");
@@ -94,18 +100,14 @@ internal static partial class TradeTask
             nextPlan = CreateTradePlan(state, trader, soldToTrader);
         }
 
-        // A seventh hypothetical exchange may have pulled temporary pool goods
-        // while planning. It was not executed, so return every asset it inspected.
-        if (nextPlan != null)
-            RestoreUnusedPoolAssets(state, nextPlan.TemporaryPoolAssets);
-
         if (completed > 0)
         {
             TradeTask.LastReportedTradeFailure.Remove(state.Player);
             return;
         }
 
-        if (trader.Items.Any(item => ShoppingPriority(state, item) > 0) &&
+        if (AiTelemetry.Sink != null &&
+            trader.Items.Any(item => ShoppingPriority(state, item) > 0) &&
             state.Player.Group.SelectMany(character => character.Items).Any(item => CanSell(state, item)))
         {
             string signature = trader.Name;
@@ -143,10 +145,7 @@ internal static partial class TradeTask
     internal static bool CanPlanTrade(ClassicAiState state, Trader trader)
     {
         TradePlan plan = CreateTradePlan(state, trader);
-        if (plan == null)
-            return false;
-        RestoreUnusedPoolAssets(state, plan.TemporaryPoolAssets);
-        return true;
+        return plan != null;
     }
 
     internal static TradePlan CreateTradePlan(ClassicAiState state, Trader trader, ISet<Item> excludedTargets = null)
@@ -154,37 +153,44 @@ internal static partial class TradeTask
         if (trader == null || trader.Items.Count == 0)
             return null;
 
-        List<TradeAsset> temporaryPoolAssets = TakeSurplusPoolAssets(state);
-
+        List<TradeAsset> temporaryPoolAssets = SnapshotSurplusPoolAssets(state);
         foreach (Item target in trader.Items
-            .Where(item => item.TradeValue > 0 && ShoppingPriority(state, item) > 0 &&
+            .Where(item => item.TradeValue > 0 &&
                 (excludedTargets == null || !excludedTargets.Contains(item)))
-            .OrderByDescending(item => ShoppingPriority(state, item))
-            .ThenBy(item => item.TradeValue))
+            .Select(item => new { Item = item, Priority = ShoppingPriority(state, item) })
+            .Where(candidate => candidate.Priority > 0)
+            .OrderByDescending(candidate => candidate.Priority)
+            .ThenBy(candidate => candidate.Item.TradeValue)
+            .Select(candidate => candidate.Item))
         {
             bool spendReserves =
                 target.ID == "item_snake_trap" &&
                     HasStrategicSnakeTrapNeed(state) ||
                 AdvancesOwnedMeatTrapRecipe(state, target.ID) ||
                 IsEarlyRareProductionPurchase(state, target.ID);
+            HashSet<string> temporaryPoolItemIds = temporaryPoolAssets
+                .Select(asset => asset.ID)
+                .ToHashSet();
             List<TradeAsset> exceptionalPoolAssets = target.ID == "item_snake_trap" && spendReserves
-                ? state.Pool.TakeConstructionMaterials()
-                    .Select(item => new TradeAsset(null, item, true))
+                ? state.Pool.SnapshotItemTypes()
+                    .Where(type => TradeTask.ConstructionMaterials.Contains(type.ID) &&
+                        !temporaryPoolItemIds.Contains(type.ID))
+                    .Select(type => new TradeAsset(null, null, type, true))
                     .ToList()
                 : new List<TradeAsset>();
             List<TradeAsset> allCandidates = state.Player.Group
                 .SelectMany(character => character.Items
                     .Select(item => new TradeAsset(character.Items, item, false)))
-                .Where(asset => CanSell(state, asset.Item) ||
-                    (spendReserves && (IsHighReturnLiquidReserve(asset.Item) ||
-                        TradeTask.ConstructionMaterials.Contains(asset.Item.ID)) &&
-                        !(AiItemPool.IsWaterContainer(asset.Item.Type) &&
+                .Where(asset => CanSell(state, asset.Item!) ||
+                    (spendReserves && (IsHighReturnLiquidReserve(asset.Item!) ||
+                        TradeTask.ConstructionMaterials.Contains(asset.ID)) &&
+                        !(AiItemPool.IsWaterContainer(asset.Type) &&
                             NeedsCriticalWaterWaypointUpgrade(state))))
                 .Concat(temporaryPoolAssets)
                 .Concat(exceptionalPoolAssets)
-                .OrderBy(asset => IsFullWaterContainer(asset.Item) ? 0 : 1)
-                .ThenBy(asset => asset.Item.TradeValue)
-                .ThenBy(asset => SalePriority(asset.Item))
+                .OrderBy(asset => IsFullWaterContainer(asset) ? 0 : 1)
+                .ThenBy(asset => asset.TradeValue)
+                .ThenBy(asset => asset.Item == null ? 3 : SalePriority(asset.Item))
                 .ToList();
             List<TradeAsset> offers = new();
             float offeredValue = 0;
@@ -201,22 +207,22 @@ internal static partial class TradeTask
                 : 0;
             int acquiredWaterCapacity = AiItemPool.WaterContainerCapacity(target.Type);
             int remainingWaterCapacity = TradeTask.PortableWaterSupply(state) + acquiredWaterCapacity +
-                temporaryPoolAssets.Sum(asset => AiItemPool.WaterContainerCapacity(asset.Item.Type));
+                temporaryPoolAssets.Sum(asset => AiItemPool.WaterContainerCapacity(asset.Type));
             int remainingMeleeWeapons = state.Player.Group.SelectMany(character => character.Items)
                 .Count(item => item.DamageValue > 0 && !AiItemPool.IsFirearm(item.Type));
             Dictionary<string, int> remainingMaterials = TradeTask.ConstructionMaterials
                 .ToDictionary(itemId => itemId, itemId => PortableMaterialCount(state, itemId));
             bool strategicPurchase = IsStrategicPurchase(state, target);
-            foreach (TradeAsset candidate in allCandidates.Where(asset => asset.Item.ID != target.ID))
+            foreach (TradeAsset candidate in allCandidates.Where(asset => asset.ID != target.ID))
             {
-                if (!strategicPurchase && candidate.Item.TradeValue >= target.TradeValue)
+                if (!strategicPurchase && candidate.TradeValue >= target.TradeValue)
                     continue;
-                if (!candidate.FromPool && candidate.Item.FoodValue > 0 &&
-                    remainingFoodInventory - candidate.Item.FoodValue + target.FoodValue <
+                if (!candidate.FromPool && candidate.FoodValue > 0 &&
+                    remainingFoodInventory - candidate.FoodValue + target.FoodValue <
                         requiredFoodInventory)
                     continue;
-                if (!candidate.FromPool && candidate.Item.WaterValue > 0 &&
-                    remainingWaterInventory - candidate.Item.WaterValue + target.WaterValue <
+                if (!candidate.FromPool && candidate.WaterValue > 0 &&
+                    remainingWaterInventory - candidate.WaterValue + target.WaterValue <
                         requiredWaterInventory)
                     continue;
                 // A completed production upgrade outranks standing container
@@ -225,28 +231,28 @@ internal static partial class TradeTask
                 int waterFloor = spendReserves
                     ? state.Player.Group.Count * 3
                     : TradeTask.DesiredPortableWaterCapacity(state);
-                if (AiItemPool.IsWaterContainer(candidate.Item.Type) &&
-                    remainingWaterCapacity - AiItemPool.WaterContainerCapacity(candidate.Item.Type) < waterFloor)
+                if (AiItemPool.IsWaterContainer(candidate.Type) &&
+                    remainingWaterCapacity - AiItemPool.WaterContainerCapacity(candidate.Type) < waterFloor)
                     continue;
-                if (spendReserves && candidate.Item.DamageValue > 0 &&
-                    !AiItemPool.IsFirearm(candidate.Item.Type) && remainingMeleeWeapons <= 1)
+                if (spendReserves && candidate.DamageValue > 0 &&
+                    !AiItemPool.IsFirearm(candidate.Type) && remainingMeleeWeapons <= 1)
                     continue;
-                if (!spendReserves && TradeTask.ConstructionMaterials.Contains(candidate.Item.ID) &&
-                    remainingMaterials[candidate.Item.ID] <= DesiredMaterialStock(state, candidate.Item.ID))
+                if (!spendReserves && TradeTask.ConstructionMaterials.Contains(candidate.ID) &&
+                    remainingMaterials[candidate.ID] <= DesiredMaterialStock(state, candidate.ID))
                     continue;
 
                 offers.Add(candidate);
-                offeredValue += candidate.Item.TradeValue * TradeBenefit(state);
+                offeredValue += candidate.TradeValue * TradeBenefit(state);
                 if (!candidate.FromPool)
                 {
-                    remainingFoodInventory -= candidate.Item.FoodValue;
-                    remainingWaterInventory -= candidate.Item.WaterValue;
+                    remainingFoodInventory -= candidate.FoodValue;
+                    remainingWaterInventory -= candidate.WaterValue;
                 }
-                remainingWaterCapacity -= AiItemPool.WaterContainerCapacity(candidate.Item.Type);
-                if (candidate.Item.DamageValue > 0 && !AiItemPool.IsFirearm(candidate.Item.Type))
+                remainingWaterCapacity -= AiItemPool.WaterContainerCapacity(candidate.Type);
+                if (candidate.DamageValue > 0 && !AiItemPool.IsFirearm(candidate.Type))
                     remainingMeleeWeapons--;
-                if (TradeTask.ConstructionMaterials.Contains(candidate.Item.ID))
-                    remainingMaterials[candidate.Item.ID]--;
+                if (TradeTask.ConstructionMaterials.Contains(candidate.ID))
+                    remainingMaterials[candidate.ID]--;
                 if ((int)offeredValue >= (int)target.TradeValue)
                     break;
             }
@@ -257,22 +263,22 @@ internal static partial class TradeTask
             // Preserve empty containers before full ones: a full container is the
             // more useful trade asset and its cheaper empty form can be reacquired.
             foreach (TradeAsset candidate in offers
-                .OrderBy(asset => OfferRemovalGroup(asset.Item))
-                .ThenByDescending(asset => asset.Item.TradeValue)
+                .OrderBy(OfferRemovalGroup)
+                .ThenByDescending(asset => asset.TradeValue)
                 .ToArray())
             {
                 if (offers.Count <= 1)
                     break;
                 float withoutCandidate = offers
                     .Where(offer => offer != candidate)
-                    .Sum(offer => offer.Item.TradeValue * TradeBenefit(state));
+                    .Sum(offer => offer.TradeValue * TradeBenefit(state));
                 if ((int)withoutCandidate < (int)target.TradeValue)
                     continue;
                 offers.Remove(candidate);
                 offeredValue = withoutCandidate;
             }
 
-            float barterBudget = offers.Sum(offer => offer.Item.TradeValue * TradeBenefit(state));
+            float barterBudget = offers.Sum(offer => offer.TradeValue * TradeBenefit(state));
             List<Item> targets = BuildReceivedBasket(state, trader, target, excludedTargets,
                 barterBudget);
             int freedPortableSlots = offers.Count(offer => !offer.FromPool);
@@ -281,16 +287,12 @@ internal static partial class TradeTask
                 state.Player.Group.GetFreeSlotCount() + freedPortableSlots;
             bool compressesCargo = strategicPurchase || offers.Count >= 2;
             float receivedUtility = targets.Sum(item => AcquisitionUtilityValue(state, item));
-            bool avoidsSevereWaste = receivedUtility >= offers.Sum(offer => offer.Item.TradeValue) * 0.65f;
+            bool avoidsSevereWaste = receivedUtility >= offers.Sum(offer => offer.TradeValue) * 0.65f;
             if (offers.Count > 0 && compressesCargo &&
                 (int)offeredValue >= (int)target.TradeValue && canStoreTarget && avoidsSevereWaste)
-                return new TradePlan(targets, offers,
-                    temporaryPoolAssets.Concat(exceptionalPoolAssets).ToList());
-
-            RestoreUnusedPoolAssets(state, exceptionalPoolAssets);
+                return new TradePlan(targets, offers);
         }
 
-        RestoreUnusedPoolAssets(state, temporaryPoolAssets);
         return null;
     }
 
@@ -308,11 +310,19 @@ internal static partial class TradeTask
     static bool IsFullWaterContainer(Item item) =>
         item.WaterValue > 0 && item.Type.Empty != null;
 
+    static bool IsFullWaterContainer(TradeAsset asset) =>
+        asset.WaterValue > 0 && asset.Type.Empty != null;
+
     static bool IsEmptyWaterContainer(Item item) =>
         item.WaterValue == 0 && item.Type.Full?.WaterValue > 0;
 
     static int OfferRemovalGroup(Item item) =>
         IsEmptyWaterContainer(item) ? 0 : IsFullWaterContainer(item) ? 2 : 1;
+
+    static int OfferRemovalGroup(TradeAsset asset) =>
+        asset.WaterValue == 0 && asset.Type.Full?.WaterValue > 0
+            ? 0
+            : IsFullWaterContainer(asset) ? 2 : 1;
 
     static List<Item> BuildReceivedBasket(
         ClassicAiState state,
@@ -322,16 +332,25 @@ internal static partial class TradeTask
         float barterBudget)
     {
         List<Item> targets = new() { primary };
+        Item[] rankedFillers = trader.Items
+            .Where(item => item != primary && item.TradeValue > 0 &&
+                (excludedTargets == null || !excludedTargets.Contains(item)))
+            .Select(item => new
+            {
+                Item = item,
+                Priority = ShoppingPriority(state, item),
+                CompletesRecipe = CompletesUsefulRecipe(state, item.ID)
+            })
+            .OrderByDescending(candidate => candidate.Priority > 0)
+            .ThenByDescending(candidate => candidate.CompletesRecipe)
+            .ThenByDescending(candidate => candidate.Item.TradeValue)
+            .Select(candidate => candidate.Item)
+            .ToArray();
         float remaining = barterBudget - primary.TradeValue;
         while (remaining >= 1)
         {
-            Item filler = trader.Items
-                .Where(item => item != primary && !targets.Contains(item) && item.TradeValue > 0 &&
-                    item.TradeValue <= remaining &&
-                    (excludedTargets == null || !excludedTargets.Contains(item)))
-                .OrderByDescending(item => ShoppingPriority(state, item) > 0)
-                .ThenByDescending(item => CompletesUsefulRecipe(state, item.ID))
-                .ThenByDescending(item => item.TradeValue)
+            Item filler = rankedFillers
+                .Where(item => !targets.Contains(item) && item.TradeValue <= remaining)
                 .FirstOrDefault();
             if (filler == null)
                 break;
@@ -373,65 +392,81 @@ internal static partial class TradeTask
     internal static bool HasStrategicSnakeTrapNeed(ClassicAiState state) =>
         HasPotentialProductionNeed(state, "item_snake");
 
-    internal static List<TradeAsset> TakeSurplusPoolAssets(ClassicAiState state)
+    internal static List<TradeAsset> SnapshotSurplusPoolAssets(ClassicAiState state)
     {
         List<TradeAsset> assets = new();
+        List<ItemType> remaining = state.Pool.SnapshotItemTypes().ToList();
         int requiredPoolCapacity = System.Math.Max(0,
             RequiredUnstationedWaterContainerCapacity(state) - PortableWaterCapacity(state));
-        while (state.Pool.WaterContainerCount > 0)
+        int remainingPoolCapacity = state.Pool.TotalWaterContainerCapacity;
+        foreach (ItemType type in remaining
+            .Where(AiItemPool.IsWaterContainer)
+            .OrderBy(AiItemPool.WaterContainerCapacity)
+            .ThenBy(type => type.WaterValue)
+            .ToArray())
         {
-            Item item = state.Pool.TakeLeastWaterContainer();
-            if (item == null)
+            int capacity = AiItemPool.WaterContainerCapacity(type);
+            if (remainingPoolCapacity - capacity < requiredPoolCapacity)
                 break;
-            if (state.Pool.TotalWaterContainerCapacity < requiredPoolCapacity)
-            {
-                state.Pool.Insert(item);
-                break;
-            }
-            assets.Add(new TradeAsset(null, item, true));
+            assets.Add(new TradeAsset(null, null, type, true));
+            remaining.Remove(type);
+            remainingPoolCapacity -= capacity;
         }
-        while (GlobalProtectionStock(state) > DesiredProtectionReserve(state) && state.Pool.ProtectionCount > 0)
+        int surplusProtection = System.Math.Max(0,
+            GlobalProtectionStock(state) - DesiredProtectionReserve(state));
+        foreach (ItemType type in remaining
+            .Where(AiItemPool.IsHazardProtection)
+            .OrderBy(type => type.ID == "item_paper_helmet" ? 0 :
+                type.ID == "item_gas_mask" ? 1 : 2)
+            .Take(surplusProtection)
+            .ToArray())
         {
-            Item item = state.Pool.TakeLeastProtection();
-            if (item == null)
-                break;
-            assets.Add(new TradeAsset(null, item, true));
+            assets.Add(new TradeAsset(null, null, type, true));
+            remaining.Remove(type);
         }
         // Three portable production tools are enough to seed the next camps. Convert
         // additional low-tier tools into denser trade value instead of hoarding them.
-        while (state.Pool.ProductionToolCount > 3)
+        foreach (ItemType type in remaining
+            .Where(type => type.Production != null)
+            .OrderBy(type => type.Production.Produce.TradeValue)
+            .ThenBy(type => type.DamageValue)
+            .Take(System.Math.Max(0, state.Pool.ProductionToolCount - 3))
+            .ToArray())
         {
-            Item item = state.Pool.TakeLeastProductionTool();
-            if (item == null)
-                break;
-            assets.Add(new TradeAsset(null, item, true));
+            assets.Add(new TradeAsset(null, null, type, true));
+            remaining.Remove(type);
         }
-        while (state.Pool.FirearmCount > 0)
+        foreach (ItemType type in remaining
+            .Where(AiItemPool.IsFirearm)
+            .OrderByDescending(type => type.TradeValue)
+            .ToArray())
         {
-            Item item = state.Pool.TakeBestTradeFirearm();
-            if (item == null)
-                break;
-            assets.Add(new TradeAsset(null, item, true));
+            assets.Add(new TradeAsset(null, null, type, true));
+            remaining.Remove(type);
         }
         return assets;
     }
 
-    internal static void RestoreUnusedPoolAssets(ClassicAiState state, IEnumerable<TradeAsset> assets)
+    internal sealed record TradeAsset(
+        IItemCollection Owner,
+        Item? Item,
+        ItemType Type,
+        bool FromPool)
     {
-        foreach (TradeAsset asset in assets.Where(asset => asset.FromPool))
+        public TradeAsset(IItemCollection owner, Item item, bool fromPool)
+            : this(owner, item, item.Type, fromPool)
         {
-            if (TradeTask.ConstructionMaterials.Contains(asset.Item.ID))
-                state.Pool.TryReserveConstructionMaterial(asset.Item);
-            else
-                state.Pool.Insert(asset.Item);
         }
-    }
 
-    internal sealed record TradeAsset(IItemCollection Owner, Item Item, bool FromPool);
+        public string ID => Type.ID;
+        public float TradeValue => Type.TradeValue;
+        public int FoodValue => Type.FoodValue;
+        public int WaterValue => Type.WaterValue;
+        public int DamageValue => Type.DamageValue;
+    }
     internal sealed record TradePlan(
         List<Item> Targets,
-        List<TradeAsset> Offers,
-        List<TradeAsset> TemporaryPoolAssets);
+        List<TradeAsset> Offers);
     internal sealed class TradeFailureState
     {
         public string Signature;

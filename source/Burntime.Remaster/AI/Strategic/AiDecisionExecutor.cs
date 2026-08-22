@@ -4,7 +4,10 @@ namespace Burntime.Remaster.AI;
 
 internal static class AiDecisionExecutor
 {
-    public static void Execute(ClassicAiState state, AiDecision decision)
+    public static void Execute(
+        ClassicAiState state,
+        AiDecision decision,
+        Location? bestTradeCity)
     {
         Player player = state.Player;
         AiPolicy policy = AiPolicy.ForDifficulty(state.RootGame.World.Difficulty);
@@ -18,7 +21,7 @@ internal static class AiDecisionExecutor
                     : $"hired {recruit.Name} ({recruit.Class})");
                 if (recruit != null)
                 {
-                    LocalOpportunities.Apply(state);
+                    LocalOpportunities.Apply(state, bestTradeCity);
                     if (player.Group.Contains(recruit) && decision.NextStep != null &&
                         player.CanTravel(state.Current, decision.NextStep))
                     {

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using Burntime.Remaster.Logic;
 
 namespace Burntime.Remaster.AI;
@@ -16,16 +15,14 @@ internal static class RouteFinder
         Dictionary<Location, int> distance = new() { [start] = 0 };
         Dictionary<Location, Location> previous = new();
         HashSet<Location> visited = new();
+        PriorityQueue<Location, (int Distance, int Sequence)> frontier = new();
+        int sequence = 0;
+        frontier.Enqueue(start, (0, sequence++));
 
-        while (true)
+        while (frontier.TryDequeue(out Location? current, out var priority))
         {
-            Location? current = distance
-                .Where(pair => !visited.Contains(pair.Key))
-                .OrderBy(pair => pair.Value)
-                .Select(pair => pair.Key)
-                .FirstOrDefault();
-            if (current == null)
-                return null;
+            if (visited.Contains(current) || priority.Distance != distance[current])
+                continue;
             if (current == target)
                 break;
             visited.Add(current);
@@ -51,9 +48,13 @@ internal static class RouteFinder
                 {
                     distance[neighbor] = candidate;
                     previous[neighbor] = current;
+                    frontier.Enqueue(neighbor, (candidate, sequence++));
                 }
             }
         }
+
+        if (!distance.ContainsKey(target))
+            return null;
 
         Location step = target;
         while (previous.TryGetValue(step, out Location? parent) && parent != start)

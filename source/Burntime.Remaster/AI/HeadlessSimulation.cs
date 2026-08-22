@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -54,6 +55,8 @@ public static class HeadlessSimulation
         Player? winner = null;
         int activeTurn = 0;
         EconomyMetrics economy = new(game);
+        List<(int Turn, long AiMilliseconds, long WorldMilliseconds, long TotalMilliseconds,
+            string PlayerMilliseconds)> timings = new();
         AiTelemetry.Sink = (eventPlayer, message) =>
         {
             events.Add($"Turn {activeTurn}: {PlayerLabel(eventPlayer)} {message}.");
@@ -64,6 +67,8 @@ public static class HeadlessSimulation
         {
             for (int turn = 1; turn <= options.Turns; turn++)
             {
+                Stopwatch turnTimer = Stopwatch.StartNew();
+                List<string> playerMilliseconds = new();
                 activeTurn = turn;
                 foreach (Player player in game.World.Players)
                 {
@@ -74,8 +79,11 @@ public static class HeadlessSimulation
                     Location beforeLocation = player.Location;
                     Location? beforeDestination = player.Destination;
 
+                    Stopwatch playerTimer = Stopwatch.StartNew();
                     if (player.AiState is ClassicAiState ai)
                         ai.Turn();
+                    playerMilliseconds.Add(
+                        $"{PlayerLabel(player)} {playerTimer.ElapsedMilliseconds} ms");
 
                     RecordDecisionChanges(player, before, turn, events);
 
@@ -86,16 +94,21 @@ public static class HeadlessSimulation
                     }
                 }
 
+                long aiMilliseconds = turnTimer.ElapsedMilliseconds;
+
                 economy.RecordCappedCampTurn();
                 game.Turn();
 
                 foreach (Player player in game.World.Players)
                     player.Turn();
+                long worldMilliseconds = turnTimer.ElapsedMilliseconds - aiMilliseconds;
 
                 RecordOwnershipChanges(game, ownership, turn, events, economy);
                 economy.RecordTurn(turn);
                 foreach (Player player in game.World.Players.Where(player => !player.IsDead))
                     events.Add($"Turn {turn}: {FormatGroupState(player)}");
+                timings.Add((turn, aiMilliseconds, worldMilliseconds,
+                    turnTimer.ElapsedMilliseconds, string.Join(", ", playerMilliseconds)));
                 completedTurns = turn;
                 winner = game.CheckWinner() as Player;
                 if (winner is not null)
@@ -107,7 +120,7 @@ public static class HeadlessSimulation
             AiTelemetry.Sink = null;
         }
 
-        return BuildReport(game, options, completedTurns, winner, events, economy);
+        return BuildReport(game, options, completedTurns, winner, events, economy, timings);
     }
 
     static Dictionary<int, int?> CaptureOwnership(ClassicGame game)
@@ -218,7 +231,9 @@ public static class HeadlessSimulation
         int completedTurns,
         Player? winner,
         IReadOnlyCollection<string> events,
-        EconomyMetrics economy)
+        EconomyMetrics economy,
+        IReadOnlyCollection<(int Turn, long AiMilliseconds, long WorldMilliseconds,
+            long TotalMilliseconds, string PlayerMilliseconds)> timings)
     {
         StringBuilder report = new();
         report.AppendLine("Burntime headless all-AI simulation");
@@ -229,6 +244,23 @@ public static class HeadlessSimulation
         report.AppendLine($"Final world day: {game.World.Day}");
         report.AppendLine($"Rules: {(options.ExtendedGame ? "extended" : "1993")}");
         report.AppendLine($"Winner: {(winner is null ? "none" : PlayerLabel(winner))}");
+        report.AppendLine();
+
+        report.AppendLine("Turn processing performance");
+        var slowTurns = timings
+            .Where(timing => timing.TotalMilliseconds >= 1000)
+            .OrderByDescending(timing => timing.TotalMilliseconds)
+            .ToArray();
+        report.AppendLine($"- Slow turns (>=1000 ms): {slowTurns.Length}/{timings.Count}");
+        var longestTurn = timings.OrderByDescending(timing => timing.TotalMilliseconds).FirstOrDefault();
+        if (timings.Count > 0)
+            report.AppendLine($"- Longest turn: {longestTurn.Turn} at " +
+                $"{longestTurn.TotalMilliseconds} ms (AI {longestTurn.AiMilliseconds} ms, " +
+                $"world {longestTurn.WorldMilliseconds} ms; {longestTurn.PlayerMilliseconds})");
+        foreach (var timing in slowTurns)
+            report.AppendLine($"- Turn {timing.Turn}: {timing.TotalMilliseconds} ms " +
+                $"(AI {timing.AiMilliseconds} ms, world {timing.WorldMilliseconds} ms; " +
+                $"{timing.PlayerMilliseconds})");
         report.AppendLine();
 
         report.AppendLine("Recovery service locations");

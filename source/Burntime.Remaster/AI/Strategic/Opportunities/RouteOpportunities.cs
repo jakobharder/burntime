@@ -12,9 +12,9 @@ internal static class RouteOpportunities
         Location? tradeCity,
         float score)
     {
-        Location? routeAlignedPickup = FindCityTradePickupCamp(state);
+        Location? routeAlignedPickup = FindCityTradePickupCamp(state, tradeCity);
         Location? regionalTradeStop = routeAlignedPickup == null
-            ? TradeTask.FindBestRegionalTradeStop(state)
+            ? TradeTask.FindBestRegionalTradeStop(state, tradeCity)
             : null;
         Location? destination = routeAlignedPickup ?? regionalTradeStop ?? tradeCity;
         if (!HasProvisionedReturn(state, destination))
@@ -51,12 +51,13 @@ internal static class RouteOpportunities
                 state, destination, outbound, returnRoute!));
     }
 
-    public static Location? FindCityTradePickupCamp(ClassicAiState state)
+    public static Location? FindCityTradePickupCamp(
+        ClassicAiState state,
+        Location? tradeCity)
     {
         if (state.Player.Group.GetFreeSlotCount() == 0 || TradeTask.HasPreparedTradeCargo(state))
             return null;
 
-        Location? tradeCity = TradeTask.FindBestTradeCity(state);
         if (tradeCity == null)
             return null;
         int freeSlots = state.Player.Group.GetFreeSlotCount();
