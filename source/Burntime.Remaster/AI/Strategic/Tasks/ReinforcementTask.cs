@@ -14,7 +14,15 @@ internal static partial class ReinforcementTask
         List<AiDecision> candidates)
     {
         Location? camp = recruitment.ReinforcementCamp;
-        bool demobilizingSurplus = camp == null && state.Player.Group.Count > 2;
+        int activeGroupLimit = 2;
+        if (state.HasAttackPlan && state.StrategicTarget != null)
+        {
+            activeGroupLimit = System.Math.Max(activeGroupLimit,
+                AttackTask.RequiredAttackGroupSize(
+                    state, state.StrategicTarget, policy));
+        }
+        bool demobilizingSurplus = camp == null &&
+            state.Player.Group.Count > activeGroupLimit;
         if (demobilizingSurplus)
             camp = FindBestCampForSurplusFollower(state);
         if (camp != null && state.Player.Group.Count > 1)
