@@ -107,6 +107,8 @@ class GameSettings
     ClassStatInfos stats;
 
     public string[] StartItems => config[difficulty].GetStrings("start_items");
+    public string[] GetStartItems(int difficultyLevel) =>
+        config[difficultyLevel.ToString()].GetStrings("start_items");
 
     public int StartRegionCount => config[difficulty].GetInt("start_regions");
     public int[] GetStartLocation(int region) => config[difficulty].GetInts($"start_locations_{region}");

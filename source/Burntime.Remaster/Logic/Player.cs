@@ -300,6 +300,10 @@ namespace Burntime.Remaster.Logic
         /// <param name="destination">destination location</param>
         public void Travel(Location destination)
         {
+            int days = GetTravelDays(Location, destination);
+            if (days <= 0)
+                return;
+
             SelectGroup(Group);
             RefreshScrollPosition = true;
             RefreshMapScrollPosition = true;
@@ -307,15 +311,8 @@ namespace Burntime.Remaster.Logic
             foreach (Character chr in Group)
                 chr.Position = destination.EntryPoint;
 
-            for (int i = 0; i < Location.Neighbors.Count; i++)
-            {
-                if (Location.Neighbors[i] == destination)
-                {
-                    remainingTravelDays = Location.WayLengths[i];
-                    travelDays = remainingTravelDays;
-                    break;
-                }
-            }
+            remainingTravelDays = days;
+            travelDays = days;
 
             // set previous location
             previousLocation = this.Location;
@@ -326,25 +323,9 @@ namespace Burntime.Remaster.Logic
 
         public int GetTravelDays(Location from, Location destination)
         {
-            if (from.Player != null && from.Player != this)
-            {
-                // only if destination = previous location
-                if (previousLocation == null)
-                    return 0;
-
-                if (destination != previousLocation.Object)
-                    return 0;
-            }
-
-            for (int i = 0; i < Location.Neighbors.Count; i++)
-            {
-                if (Location.Neighbors[i] == destination)
-                {
-                    return Location.WayLengths[i];
-                }
-            }
-
-            return 0;
+            if (!CanDepart(from, destination))
+                return 0;
+            return GetDirectTravelDays(from, destination);
         }
 
         /// <summary>
@@ -354,6 +335,17 @@ namespace Burntime.Remaster.Logic
         /// <returns>true if not blocked</returns>
         public bool CanTravel(Location from, Location destination)
         {
+            return CanDepart(from, destination) &&
+                GetDirectTravelDays(from, destination) > 0;
+        }
+
+        bool CanDepart(Location from, Location destination)
+        {
+            // Travel is one committed edge. Neither human nor AI players may
+            // change destination until that edge has completed.
+            if (IsTraveling || from != Location)
+                return false;
+
             if (from.Player != null && from.Player != this)
             {
                 // only if destination = previous location
@@ -365,6 +357,16 @@ namespace Burntime.Remaster.Logic
             }
 
             return true;
+        }
+
+        static int GetDirectTravelDays(Location from, Location destination)
+        {
+            for (int i = 0; i < from.Neighbors.Count; i++)
+            {
+                if (from.Neighbors[i] == destination)
+                    return from.WayLengths[i];
+            }
+            return 0;
         }
         #endregion
 

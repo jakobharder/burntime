@@ -167,7 +167,7 @@ namespace Burntime.Remaster.Logic.Generation
                 game.World.Players[i].Character.Body = Helper.GetCharacterBody(3, color);
                 game.World.Players[i].Character.Path = container.Create<PathFinding.ComplexPath>();
                 game.World.Players[i].Character.Mind = container.Create<AI.PlayerControlledMind>(new object[] { game.World.Players[i].Character });
-                game.World.Players[i].Character.Items.MaxCount = 6;
+                game.World.Players[i].Character.Items.MaxCount = 9;
                 game.World.Players[i].Flag = app.ResourceManager.GetData("burngfxani@syst.raw?" + gamdat.Player[i].Info.FlagId + "-" + (gamdat.Player[i].Info.FlagId + 3));
                 game.World.Players[i].Flag.Object.Animation.Progressive = false;
                 game.World.Players[i].Character.Health = settings.StartHealth;
@@ -189,6 +189,7 @@ namespace Burntime.Remaster.Logic.Generation
                 game.World.Players[0].Name = Info.NameOne;
                 game.World.Players[0].Character.FaceID = Info.FaceOne;
                 game.World.Players[0].Type = PlayerType.Human;
+                game.World.Players[0].Character.Items.MaxCount = 6;
 
                 Burntime.Framework.Network.GameClient client = new Burntime.Framework.Network.GameClient(app, 0, sharedContainer);
                 sharedContainer = client.StateContainer;
@@ -213,6 +214,7 @@ namespace Burntime.Remaster.Logic.Generation
                 game.World.Players[1].Name = Info.NameTwo;
                 game.World.Players[1].Character.FaceID = Info.FaceTwo;
                 game.World.Players[1].Type = PlayerType.Human;
+                game.World.Players[1].Character.Items.MaxCount = 6;
 
                 Burntime.Framework.Network.GameClient client = new Burntime.Framework.Network.GameClient(app, 1, sharedContainer);
                 app.GameServer.AddClient(client);
@@ -292,7 +294,9 @@ namespace Burntime.Remaster.Logic.Generation
                 player.Character.Items.Clear();
 
                 // add items
-                string[] items = settings.StartItems;
+                IEnumerable<string> items = player.Type == PlayerType.Ai
+                    ? settings.GetStartItems(0).Concat(new[] { "item_knife" })
+                    : settings.StartItems;
                 foreach (string item in items)
                 {
                     if (player.Type == PlayerType.Ai && item == "item_advice")

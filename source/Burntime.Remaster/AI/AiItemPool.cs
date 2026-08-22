@@ -149,6 +149,20 @@ namespace Burntime.Remaster.AI
             // increase count
             poolItem.Count++;
         }
+
+        internal ItemType[] SnapshotItemTypes() => items
+            .Where(item => item.Count > 0)
+            .SelectMany(item => Enumerable.Range(0, item.Count)
+                .Select(_ => item.Type))
+            .ToArray();
+
+        internal Item TakeForTrade(ItemType type)
+        {
+            PoolItem item = FindPoolItem(type);
+            if (item == null || item.Count <= 0)
+                return null;
+            return Take(item);
+        }
         #endregion
 
         #region public get item methods
@@ -162,6 +176,15 @@ namespace Burntime.Remaster.AI
             if (item != null)
                 return Take(item);
             return null;
+        }
+
+        public Item GetBestWeapon(
+            Func<ItemType, bool> allowed,
+            int minimumDamage = 0,
+            bool allowProductionTool = true)
+        {
+            PoolItem item = FindBestWeaponPoolItem(minimumDamage, allowProductionTool, allowed);
+            return item != null ? Take(item) : null;
         }
 
         /// <summary>
@@ -254,6 +277,14 @@ namespace Burntime.Remaster.AI
             return FindBestWeaponPoolItem(damage, allowProductionTool) != null;
         }
 
+        public bool HasBetterWeapon(
+            int damage,
+            bool allowProductionTool,
+            Func<ItemType, bool> allowed)
+        {
+            return FindBestWeaponPoolItem(damage, allowProductionTool, allowed) != null;
+        }
+
         public int ProductionToolCount => items
             .Where(item => item.Count > 0 && item.Type.Production != null)
             .Sum(item => item.Count);
@@ -266,8 +297,16 @@ namespace Burntime.Remaster.AI
             .Where(item => item.Count > 0 && IsWaterContainer(item.Type))
             .Sum(item => item.Count);
 
+        public int TotalWaterContainerCapacity => items
+            .Where(item => item.Count > 0 && IsWaterContainer(item.Type))
+            .Sum(item => item.Count * AiItemPool.WaterContainerCapacity(item.Type));
+
         public int FirearmCount => items
             .Where(item => item.Count > 0 && IsFirearm(item.Type))
+            .Sum(item => item.Count);
+
+        public int MeleeWeaponCount => items
+            .Where(item => item.Count > 0 && item.Type.DamageValue > 0 && !IsFirearm(item.Type))
             .Sum(item => item.Count);
 
         public int BestWaterContainerCapacity => items
@@ -293,6 +332,21 @@ namespace Burntime.Remaster.AI
                 return false;
             item.Count--;
             return true;
+        }
+
+        /// <summary>
+        /// Temporarily materialize construction reserves for an exceptional trade.
+        /// The caller must return every unused item through TryReserveConstructionMaterial.
+        /// </summary>
+        internal System.Collections.Generic.IEnumerable<Item> TakeConstructionMaterials()
+        {
+            foreach (PoolItem item in items
+                .Where(item => item.Count > 0 && IsConstructionMaterial(item.Type.ID))
+                .ToArray())
+            {
+                while (item.Count > 0)
+                    yield return Take(item);
+            }
         }
 
         public bool HasHigherValueTrap(float productionValue, params string[] availableProducts) => items
@@ -344,21 +398,25 @@ namespace Burntime.Remaster.AI
             return item != null ? Take(item) : null;
         }
 
-        internal static bool IsFirearm(ItemType type) =>
-            type.ID is "item_loaded_rifle" or "item_loaded_pistol";
+        internal static bool IsFirearm(ItemType? type) =>
+            type != null && (type.ID is "item_loaded_rifle" or "item_loaded_pistol");
 
         internal static int WaterContainerCapacity(ItemType type) =>
             type.WaterValue > 0 ? type.WaterValue : type.Full?.WaterValue ?? 0;
 
-        PoolItem FindBestWeaponPoolItem(int minimumDamage, bool allowProductionTool)
+        PoolItem FindBestWeaponPoolItem(
+            int minimumDamage,
+            bool allowProductionTool,
+            Func<ItemType, bool>? allowed = null)
         {
-            // Ammunition is finite. Firearms remain valuable barter assets, but the
-            // strategic AI defends camps with reusable melee weapons.
-            string[] weaponOrder = { "item_pitchfork", "item_axe", "item_knife" };
+            string[] weaponOrder = {
+                "item_loaded_rifle", "item_loaded_pistol", "item_pitchfork", "item_axe", "item_knife"
+            };
             return weaponOrder
                 .Select(id => items.FirstOrDefault(item => item.Type.ID == id && item.Count > 0))
                 .FirstOrDefault(item => item != null && item.Type.DamageValue > minimumDamage &&
-                    (allowProductionTool || item.Type.Production == null));
+                    (allowProductionTool || item.Type.Production == null) &&
+                    (allowed == null ? !IsFirearm(item.Type) : allowed(item.Type)));
         }
 
         /// <summary>

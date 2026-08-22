@@ -47,6 +47,8 @@ namespace Burntime.Remaster.AI
 
         #region protected attributes
         protected StateLink<Player> player;
+        // Legacy pre-v1.0.4 serialization field. The strategic AI no longer uses
+        // the mode state machine, but the field must remain for old save games.
         protected Mode mode;
         protected StateLink<Location> headedLocation;
         protected AiSettings settings;
@@ -60,6 +62,37 @@ namespace Burntime.Remaster.AI
         protected int retaliationUntilDay;
         [System.Runtime.Serialization.OptionalField]
         protected int contestedUntilDay;
+        [System.Runtime.Serialization.OptionalField]
+        protected int attackPlanUntilDay;
+        // Runtime-only intent marker. Legacy serialized fields remain unchanged;
+        // losing this hint on load merely causes the target to be reevaluated.
+        [NonSerialized]
+        bool strategicTargetWasNeutral;
+        // A persistent wait for the same target and reason means the current
+        // plan is not making progress. This is runtime-only: loading a game
+        // gives the plan a fresh chance under the then-current world state.
+        [NonSerialized]
+        Location? stalledWaitTarget;
+        [NonSerialized]
+        string? stalledWaitReason;
+        [NonSerialized]
+        int consecutiveStalledWaits;
+        [System.Runtime.Serialization.OptionalField]
+        protected StateLink<Location> deferredAttackCamp;
+        [System.Runtime.Serialization.OptionalField]
+        protected int deferredAttackUntilDay;
+        [System.Runtime.Serialization.OptionalField]
+        protected StateLink<Location> failedAttackCamp;
+        [System.Runtime.Serialization.OptionalField]
+        protected int failedAttackUntilDay;
+        [System.Runtime.Serialization.OptionalField]
+        protected int failedAttackGroupSize;
+        [System.Runtime.Serialization.OptionalField]
+        protected float failedAttackerStrength;
+        [System.Runtime.Serialization.OptionalField]
+        protected float failedDefenderStrength;
+        [System.Runtime.Serialization.OptionalField]
+        protected StateLink<Location> lastChanceAttackTarget;
         #endregion
 
         #region protected properties
@@ -114,19 +147,70 @@ namespace Burntime.Remaster.AI
         /// </summary>
         public void Turn()
         {
+            HuntOneDogForMeat();
             UpdateItems();
+            StrategicAi.RunTurn(this);
+        }
 
-            List<IAiGoal> goals = new List<IAiGoal>();
-            goals.Add(new WaterGoal(player));
+        private void HuntOneDogForMeat()
+        {
+            Dog dog = CurrentLocation.Characters
+                .OfType<Dog>()
+                .FirstOrDefault(candidate => !candidate.IsDead);
+            if (dog == null)
+                return;
 
-            foreach (var goal in goals)
-                goal.AlwaysDo();
+            Item[] existingMeat = CurrentLocation.Items
+                .Where(item => item.ID == "item_meat")
+                .ToArray();
+            dog.Die();
+            Item meat = CurrentLocation.Items
+                .FirstOrDefault(item => item.ID == "item_meat" &&
+                    !existingMeat.Contains(item));
+            if (meat == null)
+                return;
 
-            StrategicAiEconomy.Run(this);
+            string destination = "on the ground";
+            if (TryStoreInGroup(meat))
+            {
+                CurrentLocation.Items.Remove(meat);
+                destination = "in the travelling group";
+            }
+            else if (LocalOpportunities.StoreItemInCamp(CurrentLocation, meat))
+            {
+                CurrentLocation.Items.Remove(meat);
+                destination = $"in a room at {CurrentLocation.Title}";
+            }
+            else if (LocalOpportunities.TryReplaceCargo(
+                this, meat, out Item replaced, out Character carrier))
+            {
+                CurrentLocation.Items.Remove(meat);
+                carrier.Items.Add(meat);
+                CurrentLocation.Items.Add(replaced);
+                destination = $"with {carrier.Name}, replacing {replaced.ID}";
+            }
+            else
+            {
+                var forced = Player.Group
+                    .SelectMany(character => character.Items.Select(item =>
+                        new { Character = character, Item = item }))
+                    .Where(entry => !AiItemPool.IsWaterContainer(entry.Item.Type) &&
+                        entry.Character.Weapon != entry.Item &&
+                        entry.Character.Protection != entry.Item)
+                    .OrderBy(entry => entry.Item.Type.TradeValue)
+                    .FirstOrDefault();
+                if (forced != null)
+                {
+                    forced.Character.Items.Remove(forced.Item);
+                    CurrentLocation.Items.Add(forced.Item);
+                    CurrentLocation.Items.Remove(meat);
+                    forced.Character.Items.Add(meat);
+                    destination = $"with {forced.Character.Name}, replacing {forced.Item.ID}";
+                }
+            }
 
-            StrategicAiDecision decision = StrategicAiPlanner.Choose(this);
-            StrategicAiExecutor.Execute(this, decision);
-            DebugOutput(goals);
+            AiTelemetry.Report(Player,
+                $"killed one dog for free at {CurrentLocation.Title} and stored item_meat {destination}");
         }
 
         #region strategic AI access
@@ -135,36 +219,154 @@ namespace Burntime.Remaster.AI
         internal Location StrategicTarget
         {
             get => headedLocation;
-            set => headedLocation = value;
+            set
+            {
+                headedLocation = value;
+                if (value == null)
+                {
+                    attackPlanUntilDay = 0;
+                    strategicTargetWasNeutral = false;
+                }
+            }
+        }
+        internal bool HasSettlementPlan => strategicTargetWasNeutral && StrategicTarget != null;
+        internal void SetSettlementTarget(Location location)
+        {
+            headedLocation = location;
+            attackPlanUntilDay = 0;
+            strategicTargetWasNeutral = location != null;
         }
         internal AiItemPool Pool => ItemPool;
         internal AiSettings Configuration => settings;
         internal int OwnedCampCount => CampCount;
         internal int HumanCampBenchmark => MaxHumanCampCount;
+        internal bool HasHumanPlayers => RootGame.World.Players.Any(candidate =>
+            candidate.Type == PlayerType.Human);
         internal bool IsRetaliatingAgainst(Player opponent) =>
             retaliatingAgainst != null && retaliatingAgainst.Object == opponent &&
             RootGame.World.Day <= retaliationUntilDay;
         internal bool WasRecentlyContested(Location location) =>
             recentlyContestedCamp != null && recentlyContestedCamp.Object == location &&
             RootGame.World.Day <= contestedUntilDay;
+        internal bool IsAttackPlanExpired => attackPlanUntilDay > 0 &&
+            RootGame.World.Day > attackPlanUntilDay;
+        internal bool HasAttackPlan => StrategicTarget != null &&
+            !StrategicTarget.IsCity && StrategicTarget.Player != null &&
+            StrategicTarget.Player != Player;
+        internal Location? LastChanceAttackTarget
+        {
+            get => lastChanceAttackTarget != null ? lastChanceAttackTarget.Object : null;
+            set => lastChanceAttackTarget = value;
+        }
+        internal bool IsAttackTargetDeferred(Location location) =>
+            deferredAttackCamp != null && deferredAttackCamp.Object == location &&
+            RootGame.World.Day <= deferredAttackUntilDay;
         internal int WaitTurns
         {
             get => wait;
             set => wait = value;
         }
 
+        internal bool CancelStalledStrategicWait(AiDecision decision, out int waitTurns)
+        {
+            waitTurns = 0;
+            if (decision.Action != AiAction.Wait || decision.Target == null)
+            {
+                ResetStalledStrategicWait();
+                return false;
+            }
+
+            if (stalledWaitTarget == decision.Target &&
+                stalledWaitReason == decision.Reason)
+            {
+                consecutiveStalledWaits++;
+            }
+            else
+            {
+                stalledWaitTarget = decision.Target;
+                stalledWaitReason = decision.Reason;
+                consecutiveStalledWaits = 1;
+            }
+
+            const int maximumConsecutiveWaits = 5;
+            if (consecutiveStalledWaits < maximumConsecutiveWaits)
+                return false;
+
+            waitTurns = consecutiveStalledWaits;
+            StrategicTarget = null;
+            ResetStalledStrategicWait();
+            return true;
+        }
+
+        void ResetStalledStrategicWait()
+        {
+            stalledWaitTarget = null;
+            stalledWaitReason = null;
+            consecutiveStalledWaits = 0;
+        }
+
         internal bool CanClaim(Location location) => CanCreateCamp(location);
         internal bool CanStationCamp() => Player.Group.Count > 1 || CanRecruit(allowGeneratedPayment: CurrentLocation.IsCity);
         internal bool HasHireableNpc() => CanHireNpc();
+        internal Character FindRecruitAt(
+            Location location,
+            bool requireAffordable,
+            bool allowGeneratedPayment)
+        {
+            IEnumerable<Character> candidates = GetHireableCandidates(location);
+            if (requireAffordable)
+                candidates = candidates.Where(candidate =>
+                    CanFundRecruit(candidate, allowGeneratedPayment));
+            return candidates
+                .OrderBy(candidate => candidate.HireItems
+                    .Select(type => type.TradeValue)
+                    .DefaultIfEmpty(0)
+                    .Min())
+                .ThenBy(candidate => candidate.Name)
+                .FirstOrDefault();
+        }
+        internal bool RecruitmentSupplyCost(
+            Character recruit,
+            bool allowGeneratedPayment,
+            out int food,
+            out int water)
+        {
+            food = 0;
+            water = 0;
+            if (recruit == null)
+                return false;
+
+            Item exactPayment = recruit.HireItems
+                .Select(type => Player.Character.Items.Find(type))
+                .FirstOrDefault(item => item != null);
+            if (exactPayment != null)
+            {
+                food = exactPayment.FoodValue;
+                water = exactPayment.WaterValue;
+                return true;
+            }
+            if (recruit.HireItems.Count == 0)
+                return true;
+            if (!allowGeneratedPayment ||
+                !TryPlanRecruitmentPayment(recruit, out _, out List<RecruitmentAsset> assets))
+                return false;
+
+            food = assets.Where(asset => asset.Portable).Sum(asset => asset.Item.FoodValue);
+            water = assets.Where(asset => asset.Portable).Sum(asset => asset.Item.WaterValue);
+            return true;
+        }
         internal bool CanRecruit(bool allowGeneratedPayment)
         {
-            Character candidate = GetHireableNpc();
+            Character candidate = GetHireableNpc(
+                requireAffordable: true,
+                allowGeneratedPayment: allowGeneratedPayment);
             if (candidate == null || Player.Group.Count >= Group.MAX_PEOPLE)
                 return false;
-            if (candidate.HireItems.Count == 0 || allowGeneratedPayment)
-                return true;
-            return candidate.HireItems.Any(type => Player.Character.Items.Find(type) != null);
+            return true;
         }
+        internal bool ShouldReserveSettlerPayment => CurrentLocation.IsCity && HasSettlementPlan &&
+            Player.Group.Count == 1 && GetHireableCandidates().Any(candidate =>
+                CanFundRecruit(candidate, allowGeneratedPayment: true));
         internal string[] AvailableProducts(Location location) => GetAvailableProducts(location);
 
         internal bool NeedsCampImprovement()
@@ -184,6 +386,18 @@ namespace Burntime.Remaster.AI
         internal Character Recruit(bool allowGeneratedPayment)
         {
             return HireNpc(allowGeneratedPayment);
+        }
+
+        internal Character ReleaseFollowerForSurvival()
+        {
+            Character follower = Player.Group
+                .Where(character => character != Player.Character)
+                .OrderBy(character => character.Health)
+                .ThenBy(character => character.Water)
+                .ThenBy(character => character.Food)
+                .FirstOrDefault();
+            follower?.Dismiss();
+            return follower;
         }
 
         internal Character StationSurplusFollower()
@@ -206,12 +420,60 @@ namespace Burntime.Remaster.AI
             return npc;
         }
 
+        internal Character StationTradeFollower()
+        {
+            if (!IsHome || Player.Group.Count <= 2)
+                return null;
+            Character npc = Player.Group
+                .Where(character => character != Player.Character)
+                .OrderBy(character => character.Items.Sum(item => item.TradeValue))
+                .ThenBy(character => character.AttackValue + character.DefenseValue)
+                .FirstOrDefault();
+            if (npc != null)
+                JoinCamp(npc);
+            return npc;
+        }
+
+        internal Character RecallCampFollower(int criticalGarrisonTarget)
+        {
+            if (!IsHome)
+                return null;
+            int minimumGuards = ReinforcementTask.IsCriticalCamp(this, CurrentLocation)
+                ? ReinforcementTask.SustainableGarrisonTarget(
+                    CurrentLocation, criticalGarrisonTarget)
+                : 1;
+            Character npc = CurrentLocation.CampNPC
+                .Where(character => character.Player == Player && !character.IsDead)
+                .OrderByDescending(character => character.AttackValue + character.DefenseValue)
+                .FirstOrDefault();
+            if (npc == null || CurrentLocation.CampNPC.Count(character =>
+                    character.Player == Player && !character.IsDead) <= minimumGuards)
+                return null;
+            npc.LeaveCamp();
+            return npc;
+        }
+
+        internal Character MobilizeCampFollower(int minimumGuards)
+        {
+            if (!IsHome)
+                return null;
+            Character npc = CurrentLocation.CampNPC
+                .Where(character => character.Player == Player && !character.IsDead)
+                .OrderByDescending(character => character.AttackValue + character.DefenseValue)
+                .FirstOrDefault();
+            if (npc == null || CurrentLocation.CampNPC.Count(character =>
+                    character.Player == Player && !character.IsDead) <= minimumGuards)
+                return null;
+            npc.LeaveCamp();
+            return npc;
+        }
+
         internal Character SelectCampNpc()
         {
-            Character recruit = CanHireNpc() ? HireNpc(allowGeneratedPayment: CurrentLocation.IsCity) : null;
-            if (recruit != null)
-                return recruit;
-            return Player.Group.Count > 1 ? Player.Group[1] : null;
+            if (Player.Group.Count > 1)
+                return Player.Group[1];
+
+            return CanHireNpc() ? HireNpc(allowGeneratedPayment: CurrentLocation.IsCity) : null;
         }
 
         internal void CreateCamp(Character npc)
@@ -221,11 +483,89 @@ namespace Burntime.Remaster.AI
             ResetWait();
         }
 
-        internal void MarkRecentlyCaptured(Location location, ClassicAiPolicy policy)
+        internal void MarkRecentlyCaptured(Location location, AiPolicy policy)
         {
             recentlyContestedCamp = location;
             contestedUntilDay = RootGame.World.Day + policy.ContestedCampMemoryTurns;
+            ClearFailedAttack(location);
             wait = System.Math.Max(wait, policy.AttackCooldownTurns);
+        }
+
+        internal void StartAttackPlan(Location location, AiPolicy policy)
+        {
+            if (StrategicTarget == location && attackPlanUntilDay > 0)
+                return;
+            headedLocation = location;
+            strategicTargetWasNeutral = false;
+            attackPlanUntilDay = RootGame.World.Day + policy.AttackPlanTurns;
+            DefenseEstimate defense = DefenseIntelligence.Estimate(this, location);
+            int attackGroupSize = AttackTask.RequiredAttackGroupSize(this, location, policy);
+            AiTelemetry.Report(Player,
+                $"started attack plan for {location.Title}: " +
+                $"{(defense.BasedOnContact ? "observed" : "inferred")} about " +
+                $"{defense.ExpectedDefenders} defender{(defense.ExpectedDefenders == 1 ? "" : "s")}, " +
+                $"preparing {attackGroupSize} attackers with {policy.AttackPlanTurns} days available");
+        }
+
+        internal void MarkAttackPlanReady(Location location)
+        {
+            if (StrategicTarget != location || attackPlanUntilDay <= 0)
+                return;
+            attackPlanUntilDay = 0;
+            AiTelemetry.Report(Player,
+                $"attack group for {location.Title} is ready; preparation deadline removed");
+        }
+
+        internal void DeferExpiredAttackPlan(Location location, AiPolicy policy)
+        {
+            deferredAttackCamp = location;
+            deferredAttackUntilDay = RootGame.World.Day + policy.AttackPlanRetryDelay;
+            StrategicTarget = null;
+        }
+
+        internal void RecordFailedAttack(
+            Location location,
+            int groupSize,
+            float attackerStrength,
+            float defenderStrength,
+            AiPolicy policy,
+            bool madeProgress = false)
+        {
+            failedAttackCamp = location;
+            failedAttackUntilDay = RootGame.World.Day +
+                (madeProgress ? 3 : policy.FailedAttackMemoryTurns);
+            failedAttackGroupSize = groupSize;
+            failedAttackerStrength = attackerStrength;
+            failedDefenderStrength = defenderStrength;
+            AiTelemetry.Report(Player, madeProgress
+                ? $"learned the reduced defense at {location.Title} and may return after recovering"
+                : $"will reconsider {location.Title} only after recruiting, re-equipping, or weakening its defenders");
+        }
+
+        internal bool HasImprovedSinceFailedAttack(
+            Location location,
+            int groupSize,
+            float attackerStrength,
+            float defenderStrength)
+        {
+            if (failedAttackCamp == null || failedAttackCamp.Object != location ||
+                RootGame.World.Day > failedAttackUntilDay)
+                return true;
+
+            return groupSize > failedAttackGroupSize ||
+                attackerStrength >= failedAttackerStrength * 1.10f ||
+                defenderStrength <= failedDefenderStrength * 0.85f;
+        }
+
+        void ClearFailedAttack(Location location)
+        {
+            if (failedAttackCamp == null || failedAttackCamp.Object != location)
+                return;
+            failedAttackCamp = null;
+            failedAttackUntilDay = 0;
+            failedAttackGroupSize = 0;
+            failedAttackerStrength = 0;
+            failedDefenderStrength = 0;
         }
 
         internal void RecordAttack(Character attacker, Character defender)
@@ -234,15 +574,15 @@ namespace Burntime.Remaster.AI
                 return;
 
             recentlyContestedCamp = defender.Location;
-            contestedUntilDay = RootGame.World.Day + ClassicAiPolicy.ForDifficulty(
+            contestedUntilDay = RootGame.World.Day + AiPolicy.ForDifficulty(
                 RootGame.World.Difficulty).ContestedCampMemoryTurns;
 
             if (attacker.Player.Type != PlayerType.Human)
                 return;
             retaliatingAgainst = attacker.Player;
-            retaliationUntilDay = RootGame.World.Day + ClassicAiPolicy.ForDifficulty(
+            retaliationUntilDay = RootGame.World.Day + AiPolicy.ForDifficulty(
                 RootGame.World.Difficulty).RetaliationTurns;
-            StrategicAiTelemetry.Report(Player,
+            AiTelemetry.Report(Player,
                 $"will retaliate against {attacker.Player.Name} after the attack at {defender.Location.Title}");
         }
 
@@ -254,37 +594,12 @@ namespace Burntime.Remaster.AI
             Item trap = ItemPool.GetBestTrap(GetAvailableProducts(CurrentLocation));
             if (trap == null)
                 return false;
-            CurrentLocation.StoreItemRandom(trap);
+            if (!LocalOpportunities.StoreItemInCamp(CurrentLocation, trap))
+            {
+                ItemPool.Insert(trap);
+                return false;
+            }
             return true;
-        }
-
-        internal void AddEmergencySupplies(ClassicAiPolicy policy)
-        {
-            if (!IsHome && !CurrentLocation.IsCity)
-                return;
-
-            bool lowFood = Player.Group.Any(character => character.Food <= 2) &&
-                Player.Group.GetFoodReserve() + Player.Group.GetFoodInInventory() < Player.Group.Count * 2;
-            bool lowWater = Player.Group.Any(character => character.Water <= 1) &&
-                Player.Group.GetWaterReserve() + Player.Group.GetWaterInInventory() < Player.Group.Count;
-
-            if (lowFood && !Player.Character.Items.Contains("item_meat") && !Player.Character.Items.IsFull)
-                Player.Character.Items.Add(Game.ItemTypes["item_meat"].Generate());
-            if (lowWater && !HasWaterContainer(Player.Character) && !Player.Character.Items.IsFull)
-            {
-                Item container = ItemPool.HasWaterContainer()
-                    ? ItemPool.GetBestWaterContainer()
-                    : Game.ItemTypes["item_full_wineskin"].Generate();
-                Player.Character.Items.Add(container);
-            }
-
-            // Safe locations provide bounded recovery, not the former full refill/heal.
-            foreach (Character character in Player.Group)
-            {
-                character.Food = System.Math.Max(character.Food, policy.SafeFoodFloor);
-                character.Water = System.Math.Max(character.Water, policy.SafeWaterFloor);
-                character.Health = System.Math.Min(100, character.Health + policy.SafeHealing);
-            }
         }
 
         internal void ResetWait()
@@ -292,118 +607,6 @@ namespace Burntime.Remaster.AI
             wait = settings.MaxInterval > settings.MinInterval
                 ? Burntime.Platform.Math.Random.Next(settings.MinInterval, settings.MaxInterval)
                 : settings.MinInterval;
-        }
-        #endregion
-
-        #region debug
-        private void DebugOutput(IEnumerable<IAiGoal> goals)
-        {
-            var ch = player.Object.Character;
-            DebugLog("", player.Object.IsDead ? "dead" : ("in " + ch.Location.Title));
-            DebugLog(" mode", mode.ToString());
-            DebugLog(" values", "health=" + ch.Health + " food=" + ch.Food + " water=" + ch.Water);
-            DebugLog(" npcs", "count=" + player.Object.Group.Count);
-            DebugLog(" items", ch.Items.ToString());
-
-            foreach (var goal in goals)
-                DebugLog(" " + goal.ToString(), "score=" + goal.CalculateScore());
-        }
-
-        private void DebugLog(string key, string info)
-        {
-#warning TODO SlimDX/Mono debug infos
-            //Burntime.Platform.Debug.SetInfo("AI " + player.Object.Character.Name + key, info);
-        }
-        #endregion
-
-        #region turn modes
-        private bool TurnModeNone()
-        {
-            mode = Mode.LookForNextCamp;
-            return true;
-        }
-
-        /// <summary>
-        /// Turn mode - Look for next camp
-        /// </summary>
-        /// <returns>true if no further turn processing is needed</returns>
-        private bool TurnModeLookForNextCamp()
-        {
-            if (MaxHumanCampCount + settings.MaxAdvance <= CampCount)
-            {
-                mode = Mode.None;
-                return false;
-            }
-
-            // if not at home, enemy camp or in a city and resources for a camp are available
-            if (CanCreateCamp(CurrentLocation))
-            {
-                // claim current camp
-                Character npc = GetNpcForCamp();
-                if (npc != null)
-                    JoinCamp(npc);
-
-                if (Player.Group.Count == 1)
-                {
-                    // used group member to hire, find a new one
-                    mode = Mode.HireNpc;
-                    return true;
-                }
-                else
-                {
-                    // wait some time
-                    mode = Mode.WaitInterval;
-                    wait = Burntime.Platform.Math.Random.Next(settings.MinInterval, settings.MaxInterval);
-                }
-            }
-            else
-            {
-                // find next possible camp location
-                headedLocation = NearestFreeCamp();
-                if (headedLocation != null)
-                    Player.Travel(headedLocation);
-                return false;
-            }
-
-            return false;
-        }
-
-        private bool TurnModeHireNpc()
-        {
-            if (CanHireNpc())
-            {
-                Character ch = HireNpc();
-
-                mode = Mode.LookForNextCamp;
-                return true;
-            }
-            else
-            {
-                headedLocation = NearestCity();
-                if (headedLocation != null)
-                    Player.Travel(headedLocation);
-            }
-
-            return false;
-        }
-
-        private bool TurnModeWaitInterval()
-        {
-            wait--;
-            // has finished waiting
-            if (wait <= 0)
-            {
-                // go in camp creating mode only if not too much camps controlled
-                if (MaxHumanCampCount + settings.MaxAdvance > CampCount)
-                {
-                    mode = Mode.LookForNextCamp;
-                    return true;
-                }
-
-                return false;
-            }
-
-            return false;
         }
         #endregion
 
@@ -465,159 +668,6 @@ namespace Burntime.Remaster.AI
             }
         }
 
-        private Location NearestFreeCamp()
-        {
-            int days = 0;
-            List<Location> list = new List<Location>();
-            Location next;
-            if (null != NearestFreeCamp(CurrentLocation, out days, ref list, out next) && next != null)
-                return next;
-
-            return null;
-        }
-
-        private Location NearestFreeCamp(Location current, out int days, ref List<Location> list, out Location next)
-        {
-            next = null;
-
-            if (list.Contains(current))
-            {
-                days = 0;
-                return null;
-            }
-
-            list.Add(current);
-
-            int shortest = 9999;
-            Location nearest = null;
-            for (int i = 0; i < current.WayLengths.Length; i++)
-            {
-                if (current.WayLengths[i] > 0 && current.WayLengths[i] < shortest &&
-                    CanCreateCamp(current.Neighbors[i]) && 
-                    Player.CanTravel(current, current.Neighbors[i]))
-                {
-                    shortest = current.WayLengths[i];
-                    nearest = current.Neighbors[i];
-                }
-            }
-
-            if (nearest != null)
-            {
-                days = shortest;
-                next = nearest;
-                return nearest;
-            }
-
-            shortest = -1;
-            for (int i = 0; i < current.WayLengths.Length; i++)
-            {
-                if (current.WayLengths[i] == 0)
-                    continue;
-
-                // only travel through if not controlled by enemy
-                if (!Player.CanTravel(current, current.Neighbors[i]))
-                    continue;
-
-                days = 0;
-                Location dummy;
-                Location loc = NearestFreeCamp(current.Neighbors[i], out days, ref list, out dummy);
-                if (loc != null)
-                {
-                    if (shortest == -1 || current.WayLengths[i] + days < shortest)
-                    {
-                        shortest = current.WayLengths[i] + days;
-                        nearest = loc;
-                        next = current.Neighbors[i];
-                    }
-                }
-            }
-
-            if (nearest != null)
-            {
-                days = shortest;
-                return nearest;
-            }
-
-            days = 0;
-            return null;
-        }
-
-        private Location NearestCity()
-        {
-            int days = 0;
-            List<Location> list = new List<Location>();
-            Location next;
-            if (null != NearestCity(CurrentLocation, out days, ref list, out next) && next != null)
-                return next;
-
-            return null;
-        }
-
-        private Location NearestCity(Location current, out int days, ref List<Location> list, out Location next)
-        {
-            next = null;
-
-            if (list.Contains(current))
-            {
-                days = 0;
-                return null;
-            }
-
-            list.Add(current);
-
-            int shortest = 9999;
-            Location nearest = null;
-            for (int i = 0; i < current.WayLengths.Length; i++)
-            {
-                if (current.WayLengths[i] > 1 && current.WayLengths[i] < shortest &&
-                    current.Neighbors[i].IsCity)
-                {
-                    shortest = current.WayLengths[i];
-                    nearest = current.Neighbors[i];
-                }
-            }
-
-            if (nearest != null)
-            {
-                days = shortest;
-                next = nearest;
-                return nearest;
-            }
-
-            shortest = -1;
-            for (int i = 0; i < current.WayLengths.Length; i++)
-            {
-                if (current.WayLengths[i] == 0)
-                    continue;
-
-                // only travel through if not controlled by enemy
-                if (current.Neighbors[i].Player != null && current.Neighbors[i].Player != Player)
-                    continue;
-
-                days = 0;
-                Location dummy;
-                Location loc = NearestFreeCamp(current.Neighbors[i], out days, ref list, out dummy);
-                if (loc != null &&
-                    (loc.Player == null || loc.Player == Player)) // only travel through if not controlled by enemy
-                {
-                    if (shortest == -1 || current.WayLengths[i] + days < shortest)
-                    {
-                        shortest = current.WayLengths[i] + days;
-                        nearest = loc;
-                        next = current.Neighbors[i];
-                    }
-                }
-            }
-
-            if (nearest != null)
-            {
-                days = shortest;
-                return nearest;
-            }
-
-            days = 0;
-            return null;
-        }
         #endregion
 
         #region item management
@@ -630,9 +680,43 @@ namespace Burntime.Remaster.AI
             if (itemPool == null)
                 itemPool = container.Create<AiItemPool>();
 
+            CollectGroundItems();
+
+            if (IsHome)
+                StockCampWaterContainers();
+
+            // Keep a camp stock when possible, but use it for the travelling
+            // group when an expedition needs the capacity. A canteen covers one
+            // traveller; a wineskin may cover two.
+            EquipTravelWaterContainers();
+            if (IsHome)
+                EquipWaterContainers(
+                    CurrentLocation.CampNPC.Where(character => character.Player == Player),
+                    useCampStorage: true);
+
+        }
+
+        internal void CollectGroundItems()
+        {
+            if (CurrentLocation.Player != null && CurrentLocation.Player != Player)
+                return;
+            CollectGroundItems(CurrentLocation.Items.ToArray());
+        }
+
+        internal void CollectCombatLoot(IEnumerable<Item> dropped)
+        {
+            Item[] combatDrops = dropped
+                .Where(item => CurrentLocation.Items.Any(ground => ground == item))
+                .Distinct()
+                .ToArray();
+            CollectGroundItems(combatDrops);
+        }
+
+        void CollectGroundItems(IEnumerable<Item> groundItems)
+        {
             // Strategic equipment is shared through the AI pool. Keep other goods as real items so
             // they can be used for future trading instead of disappearing into the abstract pool.
-            foreach (Item item in CurrentLocation.Items.ToArray())
+            foreach (Item item in groundItems)
             {
                 if (AiItemPool.Accepts(item.Type))
                 {
@@ -649,28 +733,21 @@ namespace Burntime.Remaster.AI
                 {
                     CurrentLocation.Items.Remove(item);
                 }
-                else if (StrategicAiEconomy.TryReplaceCargo(
+                else if (LocalOpportunities.TryReplaceCargo(
                     this, item, out Item replaced, out Character carrier))
                 {
                     CurrentLocation.Items.Remove(item);
                     carrier.Items.Add(item);
                     CurrentLocation.Items.Add(replaced);
-                    StrategicAiTelemetry.Report(Player,
+                    AiTelemetry.Report(Player,
                         $"replaced cargo {replaced.ID} with higher-value ground find {item.ID}");
                 }
                 else if (IsHome && CurrentLocation.Rooms.Any(room => !room.Items.IsFull))
                 {
-                    CurrentLocation.StoreItemRandom(item);
-                    CurrentLocation.Items.Remove(item);
+                    if (LocalOpportunities.StoreItemInCamp(CurrentLocation, item))
+                        CurrentLocation.Items.Remove(item);
                 }
             }
-
-            EquipWaterContainers(Player.Group.Where(character => character != Player.Character));
-            if (IsHome)
-                EquipWaterContainers(
-                    CurrentLocation.CampNPC.Where(character => character.Player == Player),
-                    useCampStorage: true);
-
         }
 
         private bool TryStoreInGroup(Item item)
@@ -681,6 +758,25 @@ namespace Burntime.Remaster.AI
 
         private static bool HasWaterContainer(Character character) =>
             character.Items.Any(item => AiItemPool.IsWaterContainer(item.Type));
+
+        private void EquipTravelWaterContainers()
+        {
+            int required = TradeTask.DesiredWaterContainerCapacity(this);
+            while (TradeTask.PortableWaterCapacity(this) < required)
+            {
+                Character carrier = Player.Group.FirstOrDefault(character => !character.Items.IsFull &&
+                    !HasWaterContainer(character));
+                if (carrier == null)
+                    return;
+
+                Item container = ItemPool.HasWaterContainer()
+                    ? ItemPool.GetBestWaterContainer()
+                    : IsHome ? TakeBestStoredWaterContainer() : null;
+                if (container == null)
+                    return;
+                carrier.Items.Add(container);
+            }
+        }
 
         private void EquipWaterContainers(IEnumerable<Character> characters, bool useCampStorage = false)
         {
@@ -712,6 +808,21 @@ namespace Burntime.Remaster.AI
 
             stored.Room.Items.Remove(stored.Item);
             return stored.Item;
+        }
+
+        private void StockCampWaterContainers()
+        {
+            while (TradeTask.CampWaterContainerCount(CurrentLocation) <
+                TradeTask.DesiredCampWaterContainerCount && ItemPool.HasWaterContainer())
+            {
+                Item container = ItemPool.TakeLeastWaterContainer();
+                if (container == null || !LocalOpportunities.StoreItemInCamp(CurrentLocation, container))
+                {
+                    if (container != null)
+                        ItemPool.Insert(container);
+                    return;
+                }
+            }
         }
         #endregion
 
@@ -745,13 +856,18 @@ namespace Burntime.Remaster.AI
                 .Concat(npc.Items)
                 .FirstOrDefault(item => item.Type.Production != null &&
                     GetAvailableProducts(CurrentLocation).Contains(item.Type.Production.Produce.ID));
-            bool preferProductionUpgrade = StrategicAiEconomy.ShouldPreferProductionAtCamp(this, CurrentLocation) &&
+            bool preferProductionUpgrade = LocalOpportunities.ShouldPreferProductionAtCamp(this, CurrentLocation) &&
                 ItemPool.HasHigherValueTrap(existingTool?.Type.Production?.Produce.TradeValue ?? -1,
                     GetAvailableProducts(CurrentLocation));
+            bool reserveLastPortableTool = existingTool == null &&
+                ExpansionTask.CanBootstrapCamp(this, CurrentLocation) &&
+                ExpansionTask.ShouldReserveProductionTool(this);
             Item trap = existingTool == null || preferProductionUpgrade
                 ? ItemPool.HasTrap(GetAvailableProducts(CurrentLocation))
                     ? ItemPool.GetBestTrap(GetAvailableProducts(CurrentLocation))
-                    : existingTool == null ? TakeCompatibleGroupProduction(CurrentLocation) : null
+                    : existingTool == null && !reserveLastPortableTool
+                        ? TakeCompatibleGroupProduction(CurrentLocation)
+                        : null
                 : null;
             if (trap != null)
             {
@@ -763,7 +879,8 @@ namespace Burntime.Remaster.AI
                 }
                 else if (CurrentLocation.Rooms.Count > 0)
                 {
-                    CurrentLocation.StoreItemRandom(trap);
+                    if (!LocalOpportunities.StoreItemInCamp(CurrentLocation, trap))
+                        npc.Items.Add(trap);
                 }
                 else
                 {
@@ -795,7 +912,7 @@ namespace Burntime.Remaster.AI
             // Threatened camps still require real equipment before expansion.
             bool hasProductionTool = ItemPool.HasTrap(GetAvailableProducts(location)) ||
                 FindCompatibleGroupProduction(location) != null;
-            if (!hasProductionTool && !StrategicAiEconomy.CanBootstrapCamp(this, location))
+            if (!hasProductionTool && !ExpansionTask.CanBootstrapCamp(this, location))
                 return false;
 
             // in case of hazards
@@ -881,21 +998,40 @@ namespace Burntime.Remaster.AI
         /// Get a NPC that is available for hire
         /// </summary>
         /// <returns>NPC</returns>
-        protected Character GetHireableNpc()
+        Character[] GetHireableCandidates() => GetHireableCandidates(CurrentLocation);
+
+        Character[] GetHireableCandidates(Location location)
         {
-            bool hasDoctor = Player.Group.Any(character => character.Class == CharClass.Doctor);
-            return CurrentLocation.Characters
+            Character[] available = location.Characters
                 .Where(character => !character.IsDead && !character.IsHired && character.IsHuman && !character.IsTrader)
-                .OrderByDescending(character => character.Class switch
-                {
-                    CharClass.Mercenary => 40,
-                    CharClass.Doctor when !hasDoctor => 35,
-                    CharClass.Technician => 25,
-                    CharClass.Doctor => 15,
-                    _ => 10
-                })
-                .ThenByDescending(character => character.Experience)
-                .FirstOrDefault();
+                .ToArray();
+            if (available.Length == 0)
+                return available;
+
+            (int minimum, int maximum) = RootGame.World.Difficulty switch
+            {
+                0 => (0, 40),
+                1 => (20, 60),
+                _ => (40, int.MaxValue)
+            };
+            Character[] preferred = available
+                .Where(character => character.Experience >= minimum && character.Experience <= maximum)
+                .ToArray();
+            return preferred.Length > 0 ? preferred : available;
+        }
+
+        protected Character GetHireableNpc(
+            bool requireAffordable = false,
+            bool allowGeneratedPayment = false)
+        {
+            Character[] candidates = GetHireableCandidates();
+            if (requireAffordable)
+                candidates = candidates
+                    .Where(candidate => CanFundRecruit(candidate, allowGeneratedPayment))
+                    .ToArray();
+            if (candidates.Length == 0)
+                return null;
+            return candidates[Burntime.Platform.Math.Random.Next(candidates.Length)];
         }
 
         /// <summary>
@@ -904,7 +1040,9 @@ namespace Burntime.Remaster.AI
         /// <returns>hired NPC</returns>
         protected Character HireNpc(bool allowGeneratedPayment = true)
         {
-            Character ch = GetHireableNpc();
+            Character ch = GetHireableNpc(
+                requireAffordable: true,
+                allowGeneratedPayment: allowGeneratedPayment);
             if (ch == null || Player.Group.Count >= Group.MAX_PEOPLE)
                 return null;
 
@@ -916,19 +1054,33 @@ namespace Burntime.Remaster.AI
 
                 if (payment == null && allowGeneratedPayment)
                 {
-                    if (Player.Character.Items.IsFull)
-                    {
-                        Item leastUseful = Player.Character.Items.OrderBy(item => item.TradeValue).First();
-                        CurrentLocation.StoreItemRandom(leastUseful);
-                        Player.Character.Items.Remove(leastUseful);
-                    }
+                    if (!TryPlanRecruitmentPayment(ch, out ItemType paymentType,
+                        out List<RecruitmentAsset> paymentAssets))
+                        return null;
 
-                    ItemType paymentType = ch.HireItems.OrderBy(type => type.TradeValue).First();
+                    foreach (RecruitmentAsset asset in paymentAssets)
+                    {
+                        if (asset.FromPool)
+                            ItemPool.TryConsumeConstructionMaterial(asset.Item.ID);
+                        else
+                            asset.Owner.Remove(asset.Item);
+                    }
                     Player.Character.Items.Add(paymentType.Generate());
+                    AiTelemetry.Report(Player,
+                        $"funded recruitment of {ch.Name} with " +
+                        $"{string.Join(", ", paymentAssets.Select(asset => asset.Item.ID))} " +
+                        $"(required value {paymentType.TradeValue}, paid " +
+                        $"{paymentAssets.Sum(asset => asset.Item.TradeValue)})");
                 }
                 else if (payment == null)
                 {
                     return null;
+                }
+                else
+                {
+                    AiTelemetry.Report(Player,
+                        $"funded recruitment of {ch.Name} with requested {payment.ID} " +
+                        $"(required value {payment.TradeValue}, paid {payment.TradeValue})");
                 }
             }
 
@@ -953,58 +1105,142 @@ namespace Burntime.Remaster.AI
             return ch;
         }
 
-        /// <summary>
-        /// Get NPC for camp creation
-        /// </summary>
-        /// <returns>hired NPC or null</returns>
-        protected Character GetNpcForCamp()
+        bool TryPlanRecruitmentPayment(
+            Character recruit,
+            out ItemType paymentType,
+            out List<RecruitmentAsset> paymentAssets)
         {
-            if (CanHireNpc())
-                return HireNpc();
-            else if (Player.Group.Count > 1)
-                return Player.Group[1];
+            paymentType = recruit.HireItems
+                .OrderBy(type => type.TradeValue)
+                .FirstOrDefault();
+            paymentAssets = new List<RecruitmentAsset>();
+            if (paymentType == null)
+                return true;
 
-            return null;
-        }
-
-        /// <summary>
-        /// Refresh health, food and water values of group members.
-        /// </summary>
-        protected void RefreshGroupAttributes()
-        {
-            // refresh some food/water
-            Player.Group.Drink(null, 10);
-            Player.Group.Eat(null, 10);
-
-            // refresh some health
-            Player.Group.Heal(null, 100);
-        }
-
-        /// <summary>
-        /// Refresh food, water items of group.
-        /// </summary>
-        protected void RefreshGroupReserves()
-        {
-            // refresh meat
-            if (!Player.Character.Items.Contains("item_meat"))
-                Player.Character.Items.Add(Game.ItemTypes["item_meat"].Generate());
-
-            // refresh wineskin
-            if (!Player.Character.Items.Contains("item_empty_wineskin") &&
-                !Player.Character.Items.Contains("item_full_wineskin"))
+            int remainingFood = TradeTask.PortableFoodSupply(this);
+            int remainingWaterCapacity = TradeTask.PortableWaterCapacity(this);
+            List<RecruitmentAsset> candidates = Player.Group
+                .SelectMany(character => character.Items
+                    .Select(item => new RecruitmentAsset(
+                        character.Items, item, Portable: true, FromPool: false)))
+                .ToList();
+            candidates.AddRange(ItemPool.GetContents()
+                .Where(entry => AiItemPool.IsConstructionMaterial(entry.Type.ID))
+                .SelectMany(entry => Enumerable.Range(0, entry.Count)
+                    .Select(_ => new RecruitmentAsset(
+                        null, entry.Type.Generate(), Portable: false, FromPool: true))));
+            foreach (Location camp in RootGame.World.Locations.Where(location =>
+                location.Player == Player))
             {
-                Player.Character.Items.Add(Game.ItemTypes["item_full_wineskin"].Generate());
+                candidates.AddRange(camp.Rooms
+                    .SelectMany(room => room.Items
+                        .Select(item => new RecruitmentAsset(
+                            room.Items, item, Portable: false, FromPool: false))));
             }
 
-            if (Player.Character.Items.Contains("item_empty_wineskin"))
+            float paidValue = 0;
+            foreach (RecruitmentAsset asset in candidates
+                .Where(asset => CanUseForRecruitmentPayment(asset.Item,
+                    remainingFood, remainingWaterCapacity, asset.Portable))
+                .OrderBy(asset => asset.Item.TradeValue)
+                .ThenBy(asset => TradeTask.SalePriority(asset.Item)))
             {
-                foreach (Item item in Player.Character.Items)
+                if (!CanUseForRecruitmentPayment(asset.Item,
+                    remainingFood, remainingWaterCapacity, asset.Portable))
+                    continue;
+                paymentAssets.Add(asset);
+                paidValue += asset.Item.TradeValue;
+                if (asset.Portable)
                 {
-                    if (item.Type == Game.ItemTypes["item_empty_wineskin"])
-                        item.MakeFull();
+                    remainingFood -= asset.Item.FoodValue;
+                    remainingWaterCapacity -= AiItemPool.WaterContainerCapacity(asset.Item.Type);
                 }
+                if (paidValue >= paymentType.TradeValue)
+                    break;
             }
+
+            if (paidValue < paymentType.TradeValue)
+            {
+                paymentAssets.Clear();
+                return false;
+            }
+
+            // Reduce greedy overpayment with the same high-to-low removal pass
+            // used by barter offers.
+            foreach (RecruitmentAsset asset in paymentAssets
+                .OrderByDescending(asset => asset.Item.TradeValue)
+                .ToArray())
+            {
+                if (paymentAssets.Count <= 1 ||
+                    paidValue - asset.Item.TradeValue < paymentType.TradeValue)
+                    continue;
+                paymentAssets.Remove(asset);
+                paidValue -= asset.Item.TradeValue;
+            }
+
+            // Character.Hire consumes the formal payment from the leader. Ensure
+            // the value-backed bundle also frees a leader slot when necessary.
+            if (Player.Character.Items.IsFull &&
+                !paymentAssets.Any(asset => asset.Owner == Player.Character.Items))
+            {
+                RecruitmentAsset leaderAsset = Player.Character.Items
+                    .Where(item => CanUseForRecruitmentPayment(
+                        item, remainingFood, remainingWaterCapacity, portable: true))
+                    .OrderBy(item => item.TradeValue)
+                    .Select(item => new RecruitmentAsset(
+                        Player.Character.Items, item, Portable: true, FromPool: false))
+                    .FirstOrDefault();
+                if (leaderAsset.Item == null)
+                {
+                    paymentAssets.Clear();
+                    return false;
+                }
+                paymentAssets.Add(leaderAsset);
+            }
+            return true;
         }
+
+        bool CanFundRecruit(Character recruit, bool allowGeneratedPayment)
+        {
+            if (recruit.HireItems.Count == 0 ||
+                recruit.HireItems.Any(type => Player.Character.Items.Find(type) != null))
+                return true;
+            return allowGeneratedPayment && TryPlanRecruitmentPayment(recruit, out _, out _);
+        }
+
+        bool CanUseForRecruitmentPayment(
+            Item item,
+            int remainingFood,
+            int remainingWaterCapacity,
+            bool portable)
+        {
+            if (Player.Group.Any(character => character.Weapon == item || character.Protection == item))
+                return false;
+            if (item.Type.Production != null || TradeTask.IsPump(item) ||
+                TradeTask.ConstructionMaterialPriority(this, item.ID) > 0 &&
+                    TradeTask.CompletesUsefulRecipe(this, item.ID))
+                return false;
+            if (portable && item.FoodValue > 0 &&
+                remainingFood - item.FoodValue < Player.Group.Count * 3)
+                return false;
+            if (portable && AiItemPool.IsWaterContainer(item.Type) &&
+                remainingWaterCapacity - AiItemPool.WaterContainerCapacity(item.Type) <
+                    TradeTask.DesiredWaterContainerCapacity(this))
+                return false;
+            if (!portable && AiItemPool.IsWaterContainer(item.Type))
+                return false;
+            if (AiItemPool.IsHazardProtection(item.Type) &&
+                TradeTask.NeedsDangerProtection(this, item.Type))
+                return false;
+            return item.ID != "item_advice" && item.TradeValue > 0;
+        }
+
+        readonly record struct RecruitmentAsset(
+            IItemCollection? Owner,
+            Item Item,
+            bool Portable,
+            bool FromPool);
+
         #endregion
     }
 }

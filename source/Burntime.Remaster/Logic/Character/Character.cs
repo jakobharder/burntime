@@ -370,24 +370,31 @@ namespace Burntime.Remaster.Logic
             ClassicGame classic = (ClassicGame)container.Root;
             int difficulty = 2 - classic.World.Difficulty; // set inverted difficulty (0 hard, 1 normal, 2 easy)
 
-            // if hire item is food or water then use it
-            if (hireItem.FoodValue != 0)
-                Food = System.Math.Min(MaxFood, Food + hireItem.FoodValue);
+            if (boss.Type == PlayerType.Ai)
+            {
+                // Fixed reserves make every AI recruitment option strategically
+                // equivalent, whether it happens in a city or at the target camp.
+                Food = 5;
+                Water = 5;
+            }
+            else
+            {
+                // if hire item is food or water then use it
+                if (hireItem.FoodValue != 0)
+                    Food = System.Math.Min(MaxFood, Food + hireItem.FoodValue);
 
-            // prevent 0 food situation depending on difficulty setting
-            if (Food < difficulty)
-                Food = difficulty;
+                // prevent 0 food situation depending on difficulty setting
+                if (Food < difficulty)
+                    Food = difficulty;
 
-            // AI recruits always use normal starting water. Human recruits depend on game difficulty.
-            (int minimumWater, int maximumWater) = boss.Type == PlayerType.Ai
-                ? (1, 4)
-                : classic.World.Difficulty switch
+                (int minimumWater, int maximumWater) = classic.World.Difficulty switch
                 {
                     0 => (3, 5),
                     1 => (1, 4),
                     _ => (0, 2)
                 };
-            Water = Burntime.Platform.Math.Random.Next(minimumWater, maximumWater + 1);
+                Water = Burntime.Platform.Math.Random.Next(minimumWater, maximumWater + 1);
+            }
         }
 
         public void Dismiss()
@@ -589,14 +596,15 @@ namespace Burntime.Remaster.Logic
             // TODO move location healing to location
             bool doctorAvailable = Player?.Group.Any(chr => chr.Class == CharClass.Doctor) == true ||
                 Location?.CampNPC.Any(chr => chr.Class == CharClass.Doctor && chr.Player == Player) == true;
+            bool aiAutoHealing = Player?.Type == PlayerType.Ai;
             if (doctorAvailable)
             {
-                if (health >= 50)
+                if (health >= 50 || aiAutoHealing)
                     health += 4;
             }
             else
             {
-                if (health >= 70)
+                if (health >= 70 || aiAutoHealing)
                     health += 2;
             }
 

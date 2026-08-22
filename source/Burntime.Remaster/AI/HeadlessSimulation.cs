@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using Burntime.Data.BurnGfx;
 using Burntime.Remaster.Logic;
 using Burntime.Remaster.Logic.Generation;
 
@@ -53,7 +55,9 @@ public static class HeadlessSimulation
         Player? winner = null;
         int activeTurn = 0;
         EconomyMetrics economy = new(game);
-        StrategicAiTelemetry.Sink = (eventPlayer, message) =>
+        List<(int Turn, long AiMilliseconds, long WorldMilliseconds, long TotalMilliseconds,
+            string PlayerMilliseconds)> timings = new();
+        AiTelemetry.Sink = (eventPlayer, message) =>
         {
             events.Add($"Turn {activeTurn}: {PlayerLabel(eventPlayer)} {message}.");
             economy.Observe(eventPlayer, activeTurn, message);
@@ -63,6 +67,8 @@ public static class HeadlessSimulation
         {
             for (int turn = 1; turn <= options.Turns; turn++)
             {
+                Stopwatch turnTimer = Stopwatch.StartNew();
+                List<string> playerMilliseconds = new();
                 activeTurn = turn;
                 foreach (Player player in game.World.Players)
                 {
@@ -73,8 +79,11 @@ public static class HeadlessSimulation
                     Location beforeLocation = player.Location;
                     Location? beforeDestination = player.Destination;
 
+                    Stopwatch playerTimer = Stopwatch.StartNew();
                     if (player.AiState is ClassicAiState ai)
                         ai.Turn();
+                    playerMilliseconds.Add(
+                        $"{PlayerLabel(player)} {playerTimer.ElapsedMilliseconds} ms");
 
                     RecordDecisionChanges(player, before, turn, events);
 
@@ -85,15 +94,21 @@ public static class HeadlessSimulation
                     }
                 }
 
+                long aiMilliseconds = turnTimer.ElapsedMilliseconds;
+
                 economy.RecordCappedCampTurn();
                 game.Turn();
 
                 foreach (Player player in game.World.Players)
                     player.Turn();
+                long worldMilliseconds = turnTimer.ElapsedMilliseconds - aiMilliseconds;
 
-                RecordOwnershipChanges(game, ownership, turn, events);
+                RecordOwnershipChanges(game, ownership, turn, events, economy);
+                economy.RecordTurn(turn);
                 foreach (Player player in game.World.Players.Where(player => !player.IsDead))
                     events.Add($"Turn {turn}: {FormatGroupState(player)}");
+                timings.Add((turn, aiMilliseconds, worldMilliseconds,
+                    turnTimer.ElapsedMilliseconds, string.Join(", ", playerMilliseconds)));
                 completedTurns = turn;
                 winner = game.CheckWinner() as Player;
                 if (winner is not null)
@@ -102,10 +117,10 @@ public static class HeadlessSimulation
         }
         finally
         {
-            StrategicAiTelemetry.Sink = null;
+            AiTelemetry.Sink = null;
         }
 
-        return BuildReport(game, options, completedTurns, winner, events, economy);
+        return BuildReport(game, options, completedTurns, winner, events, economy, timings);
     }
 
     static Dictionary<int, int?> CaptureOwnership(ClassicGame game)
@@ -117,13 +132,18 @@ public static class HeadlessSimulation
         ClassicGame game,
         Dictionary<int, int?> ownership,
         int turn,
-        List<string> events)
+        List<string> events,
+        EconomyMetrics economy)
     {
         foreach (Location location in game.World.Locations)
         {
             int? currentOwner = location.Player?.Index;
-            if (ownership[location.Id] == currentOwner)
+            int? previousOwner = ownership[location.Id];
+            if (previousOwner == currentOwner)
                 continue;
+
+            if (previousOwner.HasValue && currentOwner.HasValue)
+                economy.RecordConquest(game.World.Players[currentOwner.Value]);
 
             string owner = currentOwner.HasValue ? PlayerLabel(game.World.Players[currentOwner.Value]) : "neutral";
             events.Add($"Turn {turn}: {LocationLabel(location)} is now held by {owner}.");
@@ -175,8 +195,12 @@ public static class HeadlessSimulation
         Character[] stationed = removedFromGroup.Union(newCampMembers).Distinct().ToArray();
         foreach (Character character in stationed)
         {
-            events.Add($"{prefix} created a camp at {LocationLabel(character.Location)} using " +
-                $"{CharacterLabel(character)}; NPC inventory: {FormatItems(character.Items)}; " +
+            bool firstCampMember = before.CampMembers.Length == 0 &&
+                before.CampOwner != player;
+            string action = firstCampMember
+                ? $"created a camp at {LocationLabel(character.Location)} using {CharacterLabel(character)}"
+                : $"stationed {CharacterLabel(character)} at {LocationLabel(character.Location)}";
+            events.Add($"{prefix} {action}; NPC inventory: {FormatItems(character.Items)}; " +
                 $"camp room items: {FormatItems(character.Location.Rooms.SelectMany(room => room.Items))}.");
         }
 
@@ -207,7 +231,9 @@ public static class HeadlessSimulation
         int completedTurns,
         Player? winner,
         IReadOnlyCollection<string> events,
-        EconomyMetrics economy)
+        EconomyMetrics economy,
+        IReadOnlyCollection<(int Turn, long AiMilliseconds, long WorldMilliseconds,
+            long TotalMilliseconds, string PlayerMilliseconds)> timings)
     {
         StringBuilder report = new();
         report.AppendLine("Burntime headless all-AI simulation");
@@ -220,17 +246,51 @@ public static class HeadlessSimulation
         report.AppendLine($"Winner: {(winner is null ? "none" : PlayerLabel(winner))}");
         report.AppendLine();
 
+        report.AppendLine("Turn processing performance");
+        var slowTurns = timings
+            .Where(timing => timing.TotalMilliseconds >= 1000)
+            .OrderByDescending(timing => timing.TotalMilliseconds)
+            .ToArray();
+        report.AppendLine($"- Slow turns (>=1000 ms): {slowTurns.Length}/{timings.Count}");
+        var longestTurn = timings.OrderByDescending(timing => timing.TotalMilliseconds).FirstOrDefault();
+        if (timings.Count > 0)
+            report.AppendLine($"- Longest turn: {longestTurn.Turn} at " +
+                $"{longestTurn.TotalMilliseconds} ms (AI {longestTurn.AiMilliseconds} ms, " +
+                $"world {longestTurn.WorldMilliseconds} ms; {longestTurn.PlayerMilliseconds})");
+        foreach (var timing in slowTurns)
+            report.AppendLine($"- Turn {timing.Turn}: {timing.TotalMilliseconds} ms " +
+                $"(AI {timing.AiMilliseconds} ms, world {timing.WorldMilliseconds} ms; " +
+                $"{timing.PlayerMilliseconds})");
+        report.AppendLine();
+
+        report.AppendLine("Recovery service locations");
+        foreach (Location location in game.World.Locations.Where(location =>
+            location.Map?.Entrances?.Any(entrance => entrance.RoomType is
+                RoomType.Restaurant or RoomType.Pub or RoomType.Doctor) == true))
+        {
+            string services = string.Join(", ", location.Map.Entrances
+                .Where(entrance => entrance.RoomType is
+                    RoomType.Restaurant or RoomType.Pub or RoomType.Doctor)
+                .Select(entrance => entrance.RoomType.ToString().ToLowerInvariant())
+                .Distinct());
+            report.AppendLine($"- {LocationLabel(location)}: {services}");
+        }
+        report.AppendLine();
+
         report.AppendLine("Players");
         foreach (Player player in game.World.Players)
         {
             int camps = game.World.Locations.Count(location => location.Player == player);
+            int establishedCamps = game.World.Locations.Count(location =>
+                location.Player == player && CampEconomy.IsWellEstablished(location));
             int defenders = game.World.Locations.Sum(location => location.CampNPC.Count(character => character.Player == player));
             string state = player.IsDead || player.Character.IsDead ? "dead" : "alive";
             string travel = player.IsTraveling
                 ? $"traveling to {LocationLabel(player.Destination)} ({player.RemainingDays} days left)"
                 : $"at {LocationLabel(player.Location)}";
 
-            report.AppendLine($"- {PlayerLabel(player)}: {state}, {travel}, {camps} camps, " +
+            report.AppendLine($"- {PlayerLabel(player)}: {state}, {travel}, {camps} camps " +
+                $"({establishedCamps} well established), " +
                 $"group {player.Group.Count}, defenders {defenders}, " +
                 $"health {player.Character.Health}, food {player.Character.Food}, water {player.Character.Water}");
             foreach (Character member in player.Group)
@@ -262,6 +322,8 @@ public static class HeadlessSimulation
                 ? "none"
                 : $"{FormatItems(usedTraps)} -> {location.Production.Produce.ID}";
             report.AppendLine($"- {LocationLabel(location)}: {PlayerLabel(location.Player!)}, {defenders.Length} NPC(s); " +
+                $"food surplus {CampEconomy.FoodSurplusPerDay(location)}/day; " +
+                $"water {location.Source.Water}/day; role {CampEconomy.StrategicRole(location)}; " +
                 $"items {FormatItems(campItems)}; highest possible trap {bestTrap}; used trap {usedTrap}");
             foreach (Character defender in defenders)
             {
@@ -304,11 +366,21 @@ public static class HeadlessSimulation
         foreach (Player player in game.World.Players)
         {
             PlayerEconomyMetrics result = economy[player];
+            float sustainableIncome = player.AiState is ClassicAiState ai
+                ? EconomicReturn.SustainableEmpireIncome(ai)
+                : 0;
             string firstTrap = result.FirstAdvancedTrapTurn?.ToString() ?? "none";
             string preparedCityCargo = FormatCargoFill(result.PreparedCityCargo, result.PreparedCityCapacity);
             string incidentalCityCargo = FormatCargoFill(result.IncidentalCityCargo, result.IncidentalCityCapacity);
             string roamingCargo = FormatCargoFill(result.RoamingCargo, result.RoamingCapacity);
-            report.AppendLine($"- {PlayerLabel(player)}: first advanced trap turn {firstTrap}; " +
+            string slumpComponents = result.SlumpComponents.Count == 0
+                ? "none"
+                : string.Join(", ", result.SlumpComponents.OrderBy(entry => entry.Key)
+                    .Select(entry => $"{entry.Key} x{entry.Value}"));
+            report.AppendLine($"- {PlayerLabel(player)}: sustainable camp income " +
+                $"{sustainableIncome:0.0} trade value/day; first advanced trap turn {firstTrap}; " +
+                $"snake-trap sightings/purchases {result.SnakeTrapEncounters}/{result.SnakeTrapPurchases}; " +
+                $"25-turn slump components {slumpComponents}; " +
                 $"prepared city barter arrivals {result.PreparedCityVisits} at {preparedCityCargo} cargo; " +
                 $"incidental city barter visits {result.IncidentalCityVisits} at {incidentalCityCargo} cargo; " +
                 $"roaming barter encounters {result.RoamingVisits} at {roamingCargo} cargo; " +
@@ -318,19 +390,42 @@ public static class HeadlessSimulation
         }
 
         report.AppendLine();
+        report.AppendLine("Requirement indicators");
+        foreach (Player player in game.World.Players)
+        {
+            PlayerEconomyMetrics result = economy[player];
+            Location[] camps = game.World.Locations
+                .Where(location => location.Player == player)
+                .ToArray();
+            int advancedCamps = camps.Count(HasAdvancedTrapAtCamp);
+            int containers = camps.Sum(camp => camp.Rooms.SelectMany(room => room.Items)
+                .Concat(camp.CampNPC
+                    .Where(npc => npc.Player == player && !npc.IsDead)
+                    .SelectMany(npc => npc.Items))
+                .Count(item => AiItemPool.IsWaterContainer(item.Type)));
+            int pumps = camps.Count(camp => camp.Rooms.SelectMany(room => room.Items)
+                .Any(TradeTask.IsPump));
+            int unmetPumpNeeds = camps.Count(TradeTask.NeedsPump);
+            string campsAt30 = result.CampsAtTurn30?.ToString() ?? "n/a";
+            float advancedCoverage = camps.Length == 0 ? 0 : advancedCamps * 100f / camps.Length;
+            float containersPerCamp = camps.Length == 0 ? 0 : containers / (float)camps.Length;
+            report.AppendLine($"- {PlayerLabel(player)}: camps at turn 30 {campsAt30}; " +
+                $"conquests {result.Conquests}; advanced-trap coverage {advancedCamps}/{camps.Length} " +
+                $"({advancedCoverage:0}%); camp water containers {containers}/{camps.Length} " +
+                $"({containersPerCamp:0.0}/camp); camps with pumps {pumps}; " +
+                $"unmet pump needs {unmetPumpNeeds}; " +
+                $"city minimum top-ups {result.CityMinimumTopUps}; " +
+                $"paid doctor visits {result.DoctorVisits}; " +
+                $"generated slump components {result.SlumpComponents.Values.Sum()}");
+        }
+
+        report.AppendLine();
         report.AppendLine("Timeline");
         if (events.Count == 0)
             report.AppendLine("- No strategic actions recorded.");
         else
             foreach (string entry in events)
                 report.AppendLine("- " + entry);
-
-        if (options.Difficulty < 2)
-        {
-            report.AppendLine();
-            report.AppendLine("Note: the current easy/normal AI camp limit is relative to human camp ownership. " +
-                "With no humans, this limits each AI to the configured fixed lead.");
-        }
 
         return report.ToString();
     }
@@ -358,6 +453,11 @@ public static class HeadlessSimulation
         return preferred.FirstOrDefault(id =>
             game.ItemTypes.Contains(id) && game.ItemTypes[id].Production == production) ?? "base production";
     }
+
+    static bool HasAdvancedTrapAtCamp(Location camp) => camp.Rooms
+        .SelectMany(room => room.Items)
+        .Concat(camp.CampNPC.SelectMany(npc => npc.Items))
+        .Any(item => item.ID is "item_rat_trap" or "item_snake_trap" or "item_trap");
 
     static string FormatGroupState(Player player)
     {
@@ -402,6 +502,7 @@ public static class HeadlessSimulation
         public required Character[] Group { get; init; }
         public required Dictionary<Character, Dictionary<string, int>> Inventory { get; init; }
         public required Character[] CampMembers { get; init; }
+        public required Player? CampOwner { get; init; }
         public required Dictionary<string, int> GroundItems { get; init; }
         public required Dictionary<string, bool> GroundItemTypes { get; init; }
         public required Dictionary<string, int> RoomItems { get; init; }
@@ -416,6 +517,7 @@ public static class HeadlessSimulation
                 Group = group,
                 Inventory = group.ToDictionary(character => character, character => CountItems(character.Items)),
                 CampMembers = player.Location.CampNPC.Where(character => character.Player == player).ToArray(),
+                CampOwner = player.Location.Player,
                 GroundItems = CountItems(groundItems),
                 GroundItemTypes = groundItems
                     .GroupBy(item => item.Type.ID)
@@ -435,6 +537,8 @@ public static class HeadlessSimulation
             @"^(traded|consolidated).*\(value (\d+) -> (\d+),", RegexOptions.Compiled);
         static readonly Regex CollectionPattern = new(
             @"^collected .*\(trade value (\d+)\)$", RegexOptions.Compiled);
+        static readonly Regex SlumpSupportPattern = new(
+            @"^economic slump support generated (\S+) ", RegexOptions.Compiled);
 
         readonly ClassicGame game;
         readonly Dictionary<Player, PlayerEconomyMetrics> players;
@@ -450,6 +554,22 @@ public static class HeadlessSimulation
         public void Observe(Player player, int turn, string message)
         {
             PlayerEconomyMetrics result = players[player];
+            if (message.StartsWith("encountered item_snake_trap"))
+                result.SnakeTrapEncounters++;
+            if (message.StartsWith("paid doctor"))
+                result.DoctorVisits++;
+            if (message.StartsWith("received city minimum"))
+                result.CityMinimumTopUps++;
+            if (message.StartsWith("traded") && message.Contains(" for item_snake_trap "))
+                result.SnakeTrapPurchases++;
+
+            Match slumpSupport = SlumpSupportPattern.Match(message);
+            if (slumpSupport.Success)
+            {
+                string component = slumpSupport.Groups[1].Value;
+                result.SlumpComponents[component] = result.SlumpComponents.GetValueOrDefault(component) + 1;
+            }
+
             if (result.FirstAdvancedTrapTurn == null &&
                 (message.Contains("item_trap") || message.Contains("item_rat_trap") ||
                     message.Contains("item_snake_trap")) &&
@@ -499,14 +619,28 @@ public static class HeadlessSimulation
         public void RecordCappedCampTurn()
         {
             foreach (Location camp in game.World.Locations.Where(location =>
-                location.Player != null && StrategicAiEconomy.IsFoodStockCapped(location)))
+                location.Player != null && CampEconomy.IsFoodStockCapped(location)))
                 players[camp.Player].CappedCampTurns++;
+        }
+
+        public void RecordConquest(Player player) => players[player].Conquests++;
+
+        public void RecordTurn(int turn)
+        {
+            if (turn != 30)
+                return;
+            foreach (Player player in game.World.Players)
+                players[player].CampsAtTurn30 = game.World.Locations.Count(location =>
+                    location.Player == player);
         }
     }
 
     sealed class PlayerEconomyMetrics
     {
         public int? FirstAdvancedTrapTurn;
+        public int SnakeTrapEncounters;
+        public int SnakeTrapPurchases;
+        public readonly Dictionary<string, int> SlumpComponents = new();
         public int PreparedCityVisits;
         public int PreparedCityCargo;
         public int PreparedCityCapacity;
@@ -521,5 +655,9 @@ public static class HeadlessSimulation
         public int AcquiredTradeValue;
         public int Consolidations;
         public int CappedCampTurns;
+        public int? CampsAtTurn30;
+        public int Conquests;
+        public int DoctorVisits;
+        public int CityMinimumTopUps;
     }
 }
