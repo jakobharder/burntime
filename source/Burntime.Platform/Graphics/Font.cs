@@ -138,7 +138,7 @@ public class Font
             foreach (char ch in charray)
             {
                 char current = translateChar(ch);
-                float kerningOffset = previous != '\0' && kerning.TryGetValue($"{previous}{current}", out int kerningAmount) ? kerningAmount : 0;
+                float kerningOffset = previous == '\0' ? 0 : GetKerningOverlap(previous, current);
                 renderX += kerningOffset;
                 renderX += DrawChar(target, current, new Vector2f(renderX, offset.y), color);
                 if (!char.IsWhiteSpace(ch))
@@ -147,6 +147,11 @@ public class Font
 
             offset.y += (int)(GetHeight() - this.offset);
         }
+    }
+
+    int GetKerningOverlap(char previous, char current)
+    {
+        return kerning.TryGetValue($"{previous}{current}", out int amount) ? amount : 0;
     }
 
     float DrawChar(RenderTarget target, char ch, Vector2f pos, PixelColor color)
@@ -163,6 +168,7 @@ public class Font
 
         Rect rc = new Rect(x, y, 0, 0);
         char last = '\n';
+        char previous = '\0';
         float width = 0;
 
         char[] charray = str.ToCharArray();
@@ -173,12 +179,18 @@ public class Font
                 rc.Height += (int)(GetHeight() - offset);
                 rc.Width = System.Math.Max(rc.Width, (int)System.Math.Round(width));
                 width = 0;
+                previous = '\0';
             }
 
             if (ch != '\n')
             {
-                CharInfo info = charInfo[translateChar(ch)];
+                char current = translateChar(ch);
+                CharInfo info = charInfo[current];
+                if (previous != '\0')
+                    width += GetKerningOverlap(previous, current);
                 width += info.renderWidth;
+                if (!char.IsWhiteSpace(ch))
+                    previous = current;
             }
 
             last = ch;
@@ -195,11 +207,17 @@ public class Font
             _resourceManager.LoadFont(this);
 
         float width = 0;
+        char previous = '\0';
         char[] charray = Text.ToCharArray();
         foreach (char ch in charray)
         {
-            CharInfo info = charInfo[translateChar(ch)];
+            char current = translateChar(ch);
+            CharInfo info = charInfo[current];
+            if (previous != '\0')
+                width += GetKerningOverlap(previous, current);
             width += info.renderWidth;
+            if (!char.IsWhiteSpace(ch))
+                previous = current;
         }
 
         return (int)System.Math.Round(width);

@@ -1,8 +1,18 @@
 ﻿image=highres-font-full.png
 scale=1.875x2.25
 offset=-2
-kerning1=af äf at ct et ot kt lt pt st zt ät öt f. v. y. fJ pJ vJ yJ a? b? c? e? g? i? j? k? l? m? n? o? p? q? r? s? t? u? v? w? x? y? z? St Fa Fc Fd Fg Fi Fj Fm Fn Fo Fp Fq Fr Fs Fu Fv Fw Fx Fy Fz
-kerning2=r. F. P. T. V. Y. Ta Tc Td Te Tg Tj Tä Tü Tö Tm Tn To Tp Tq Tr Ts Tu Tv Tw Tx Ty Tz FJ PJ TJ VJ YJ
+kerning1=Fa Fä Fc Fd Fe Fg Fj Fm Fn Fo Fö Fp Fq Fr Fs Fu Fü Fv Fw Fx Fy Fz
+kerning1=Sf St
+kerning2=Ta Tc Td Te Tg Tj Tm Tn To Tp Tq Tr Ts Tu Tv Tw Tx Ty Tz
+kerning1=Y, V, T, P, F, f, v, y,
+kerning2=r,
+kerning1="T; P; F; f; pv; y; r;"
+kerning1=S? a? ä? b? c? e? g? k? l? m? n? o? ö? p? q? r? s? t? u? v? w? x? y? z?
+kerning1=Y. V. T. P. F. f. v. y. r.
+kerning1=af äf cf ef kf lf of öf pf sf zf
+kerning1=fJ vJ yJ Pj Vj Yj VJ
+kerning2=rJ FJ PJ TJ
+kerning1=at ät ct et kt lt ot öt pt st zt
 lines=1
 height=13
 char0=" !""#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyzüäÄöÖÜß"

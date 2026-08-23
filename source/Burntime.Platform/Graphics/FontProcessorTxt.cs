@@ -50,14 +50,15 @@ namespace Burntime.Platform.Graphics
             charInfo = new Dictionary<char, CharInfo>();
             kerning = new Dictionary<string, int>();
 
-            for (int i = 1; config[""].ContainsKey("kerning" + i); i++)
+            for (int amount = 1; config[""].ContainsKey("kerning" + amount); amount++)
             {
-                foreach (string pair in config[""].Get("kerning" + i).Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                string key = "kerning" + amount;
+                foreach (string pair in config[""].Get(key).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
                 {
                     if (pair.Length != 2)
-                        throw new System.IO.InvalidDataException($"kerning{i} entries must be two-character pairs.");
+                        throw new System.IO.InvalidDataException($"{key} entries must be two-character pairs.");
 
-                    kerning[pair] = -i;
+                    kerning[pair] = -amount;
                 }
             }
 
