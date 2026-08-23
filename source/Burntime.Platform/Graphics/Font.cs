@@ -45,20 +45,47 @@ public struct CharInfo
     public Vector2 spritePos;
 };
 
+public sealed class FontResource
+{
+    public ISprite Sprite { get; private set; } = null!;
+    public IReadOnlyDictionary<char, CharInfo> CharInfo { get; private set; } = new Dictionary<char, CharInfo>();
+    public IReadOnlyDictionary<string, int> Kerning { get; private set; } = new Dictionary<string, int>();
+    public int Offset { get; private set; }
+    public int Height { get; private set; }
+    public bool IsLoaded { get; private set; }
+
+    public void Load(ISprite sprite, Dictionary<char, CharInfo> charInfo, Dictionary<string, int> kerning,
+        int offset, int height)
+    {
+        Sprite = sprite;
+        CharInfo = charInfo;
+        Kerning = kerning;
+        Offset = offset;
+        Height = height;
+        IsLoaded = true;
+    }
+
+    public int Unload()
+    {
+        if (!IsLoaded)
+            return 0;
+
+        int memory = Sprite.Unload();
+        IsLoaded = false;
+        return memory;
+    }
+}
+
 public class Font
 {
     public FontInfo Info;
 
 #warning slimdx todo below for parameters were internal
-    public ISprite sprite;
-    public Dictionary<char, CharInfo> charInfo;
-    public Dictionary<string, int> kerning = [];
-    public int offset;
-    public int height;
+    public FontResource Resource { get; set; } = new();
 
     public TextBorders Borders { get; set; } = TextBorders.Window;
 
-    public bool IsLoaded { get; set; }
+    public bool IsLoaded => Resource.IsLoaded;
     private ResourceManagerBase _resourceManager;
 
     public Font(ResourceManagerBase resourceManager)
@@ -130,7 +157,7 @@ public class Font
                 offset.Max(rb);
             }
 
-            target.SelectSprite(sprite);
+            target.SelectSprite(Resource.Sprite);
 
             float renderX = offset.x;
             char previous = '\0';
@@ -145,19 +172,19 @@ public class Font
                     previous = current;
             }
 
-            offset.y += (int)(GetHeight() - this.offset);
+            offset.y += (int)(GetHeight() - Resource.Offset);
         }
     }
 
     int GetKerningOverlap(char previous, char current)
     {
-        return kerning.TryGetValue($"{previous}{current}", out int amount) ? amount : 0;
+        return Resource.Kerning.TryGetValue($"{previous}{current}", out int amount) ? amount : 0;
     }
 
     float DrawChar(RenderTarget target, char ch, Vector2f pos, PixelColor color)
     {
-        CharInfo info = charInfo[translateChar(ch)];
-        target.DrawSelectedSpriteF(pos + new Vector2f(0, offset), new Rect(info.spritePos, new Vector2(info.imgWidth, info.imgHeight)), color);
+        CharInfo info = Resource.CharInfo[translateChar(ch)];
+        target.DrawSelectedSpriteF(pos + new Vector2f(0, Resource.Offset), new Rect(info.spritePos, new Vector2(info.imgWidth, info.imgHeight)), color);
         return info.renderWidth;
     }
 
@@ -176,7 +203,7 @@ public class Font
         {
             if (last == '\n')
             {
-                rc.Height += (int)(GetHeight() - offset);
+                rc.Height += (int)(GetHeight() - Resource.Offset);
                 rc.Width = System.Math.Max(rc.Width, (int)System.Math.Round(width));
                 width = 0;
                 previous = '\0';
@@ -185,7 +212,7 @@ public class Font
             if (ch != '\n')
             {
                 char current = translateChar(ch);
-                CharInfo info = charInfo[current];
+                CharInfo info = Resource.CharInfo[current];
                 if (previous != '\0')
                     width += GetKerningOverlap(previous, current);
                 width += info.renderWidth;
@@ -212,7 +239,7 @@ public class Font
         foreach (char ch in charray)
         {
             char current = translateChar(ch);
-            CharInfo info = charInfo[current];
+            CharInfo info = Resource.CharInfo[current];
             if (previous != '\0')
                 width += GetKerningOverlap(previous, current);
             width += info.renderWidth;
@@ -225,12 +252,12 @@ public class Font
 
     public virtual int GetHeight()
     {
-        return (int)((height * sprite.Resolution.y + offset * 2));
+        return (int)((Resource.Height * Resource.Sprite.Resolution.y + Resource.Offset * 2));
     }
 
     char translateChar(char ch)
     {
-        if (charInfo.ContainsKey(ch))
+        if (Resource.CharInfo.ContainsKey(ch))
             return ch;
         return '?';
     }
@@ -240,6 +267,6 @@ public class Font
         if (!IsLoaded)
             _resourceManager.LoadFont(this);
 
-        return charInfo.ContainsKey(ch);
+        return Resource.CharInfo.ContainsKey(ch);
     }
 }

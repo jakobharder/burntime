@@ -60,16 +60,12 @@ namespace Burntime.Platform.Resource
 
             lock (fonts)
             {
-                if (fonts.ContainsKey(info))
-                {
-                    font.charInfo = fonts[info].charInfo;
-                    font.kerning = fonts[info].kerning;
-                    font.sprite = fonts[info].sprite;
-                    font.offset = fonts[info].offset;
-                    font.height = fonts[info].height;
-                    font.IsLoaded = true;
+                bool isNewResource = !fonts.TryGetValue(info, out FontResource? resource);
+                resource ??= new FontResource();
+
+                font.Resource = resource;
+                if (resource.IsLoaded)
                     return font;
-                }
 
                 ResourceID id = font.Info.Font;
                 var replaced = GetReplacement(id);
@@ -91,22 +87,17 @@ namespace Burntime.Platform.Resource
                 lock (sprites)
                     MemoryUsage += frame.LoadFromProcessor(processor, keepSystemCopy: true);
 
-                font.sprite = new Sprite(this, "", frame)
+                Sprite sprite = new Sprite(this, "", frame)
                 {
                     Resolution = processor.Factor
                 };
 
-                font.charInfo = processor.CharInfo;
-                font.kerning = processor.Kerning;
-                font.offset = processor.Offset;
-                font.height = processor.Size.y;
+                resource.Load(sprite, processor.CharInfo, processor.Kerning, processor.Offset, processor.Size.y);
+                if (isNewResource)
+                    fonts.Add(info, resource);
 
                 _engine.DecreaseLoadingCount();
-
-                fonts.Add(info, font);
             }
-
-            font.IsLoaded = true;
             return font;
         }
         #endregion

@@ -22,7 +22,7 @@ public struct ResourceInfoFont
 public abstract class ResourceManagerBase : IResourceManager
 {
     protected readonly Dictionary<string, ISprite> sprites = [];
-    protected readonly Dictionary<ResourceInfoFont, Font> fonts = [];
+    protected readonly Dictionary<ResourceInfoFont, FontResource> fonts = [];
     protected readonly DelayLoader delayLoader;
     public bool IsLoading => delayLoader.IsLoading;
 
@@ -80,13 +80,15 @@ public abstract class ResourceManagerBase : IResourceManager
 
         lock (fonts)
         {
-            foreach (Font font in fonts.Values)
+            foreach (FontResource font in fonts.Values)
             {
-                MemoryUsage -= font.sprite.Unload();
-                font.IsLoaded = false;
-                Log.Debug("unload \"" + font.sprite.ID + "\"");
+                if (!font.IsLoaded)
+                    continue;
+
+                string id = font.Sprite.ID;
+                MemoryUsage -= font.Unload();
+                Log.Debug("unload \"" + id + "\"");
             }
-            fonts.Clear();
         }
     }
 
