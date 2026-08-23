@@ -3,6 +3,7 @@
     <OutputType Condition="$([MSBuild]::IsOSPlatform('Windows'))">WinExe</OutputType>
     <OutputType Condition="!$([MSBuild]::IsOSPlatform('Windows'))">Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>14.0</LangVersion>
     <RollForward>Major</RollForward>
     <PublishReadyToRun>false</PublishReadyToRun>
     <TieredCompilation>false</TieredCompilation>
@@ -10,6 +11,7 @@
     <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
     <AssemblyName>Burntime</AssemblyName>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
     <GetProductVersionCommand>&quot;$(MSBuildProjectDirectory)\get-product-version.bat&quot;</GetProductVersionCommand>

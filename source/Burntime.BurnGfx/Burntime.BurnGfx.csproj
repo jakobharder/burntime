@@ -4,6 +4,7 @@
     <RootNamespace>Burntime.Data.BurnGfx</RootNamespace>
     <AssemblyName>BurnGfx</AssemblyName>
     <TargetFramework>net10.0</TargetFramework>
+    <LangVersion>14.0</LangVersion>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
   </PropertyGroup>

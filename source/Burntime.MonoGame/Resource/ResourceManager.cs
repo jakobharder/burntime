@@ -1,12 +1,11 @@
-﻿using System;
-using Burntime.Platform.IO;
+﻿using Burntime.Platform.IO;
 using Burntime.Platform.Graphics;
 using Burntime.MonoGame;
 using Burntime.MonoGame.Graphics;
 
 namespace Burntime.Platform.Resource
 {
-    public class ResourceManager : ResourceManagerBase, IResourceManager, IDisposable
+    public class ResourceManager : ResourceManagerBase, IDisposable
     {
         readonly BurntimeGame _engine;
 
@@ -17,12 +16,12 @@ namespace Burntime.Platform.Resource
         }
 
         #region Font
-        public Font? GetFont(string filePath, PixelColor color)
+        public override Font? GetFont(string filePath, PixelColor color)
         {
             return GetFont(filePath, color, PixelColor.Black);
         }
 
-        public Font? GetFont(string filePath, PixelColor color, PixelColor backColor)
+        public override Font? GetFont(string filePath, PixelColor color, PixelColor backColor)
         {
             ResourceInfoFont info;
             info.Name = filePath;
@@ -111,7 +110,7 @@ namespace Burntime.Platform.Resource
         #endregion
 
         #region Sprites
-        public ISprite GetImage(ResourceID id, ResourceLoadType loadType = ResourceLoadType.Delayed)
+        public override ISprite GetImage(ResourceID id, ResourceLoadType loadType = ResourceLoadType.Delayed)
         {
             return GetSprite(id, loadType);
         }
@@ -145,7 +144,7 @@ namespace Burntime.Platform.Resource
             {
                 Sprite s;
 
-                String format = id.Format;
+                string format = id.Format;
 
                 if (Log.DebugOut)
                 {
@@ -202,7 +201,7 @@ namespace Burntime.Platform.Resource
             }
         }
 
-        internal void Reload(Sprite Sprite, ResourceLoadType LoadType)
+        private void Reload(Sprite Sprite, ResourceLoadType LoadType)
         {
             Sprite.internalFrames[0].IsLoading = true;
 
@@ -211,15 +210,6 @@ namespace Burntime.Platform.Resource
                 delayLoader.Enqueue(Sprite);
                 return;
             }
-
-            // System copied sprites like fonts
-            //for (int i = 0; i < Sprite.internalFrames.Length; i++)
-            //{
-            //    if (Sprite.internalFrames[i].HasSystemCopy)
-            //    {
-            //        // nothing to do
-            //    }
-            //}
 
             ResourceID id = Sprite.ID;
             if (id.File == "" || !spriteProcessors.ContainsKey(id.Format))
@@ -295,9 +285,13 @@ namespace Burntime.Platform.Resource
 
             _engine.DecreaseLoadingCount();
         }
+
+        public override void Reload(ISprite sprite, ResourceLoadType loadType = ResourceLoadType.Delayed)
+        {
+            if (sprite is Sprite s)
+                Reload(s, loadType);
+        }
         #endregion
 
-        ISprite IResourceManager.GetImage(ResourceID id, ResourceLoadType loadType) => GetImage(id, loadType);
-        void IResourceManager.Reload(ISprite sprite, ResourceLoadType loadType) => Reload(sprite as Sprite, loadType);
     }
 }
