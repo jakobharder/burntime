@@ -453,6 +453,11 @@ namespace Burntime.MonoGame
 
         public void RenderSprite(ISprite sprite, Platform.Vector2 pos, Platform.Vector2 srcPos, int srcWidth, int srcHeight, PixelColor color)
         {
+            RenderSpriteF(sprite, (Platform.Vector2f)pos, srcPos, srcWidth, srcHeight, color);
+        }
+
+        public void RenderSpriteF(ISprite sprite, Platform.Vector2f pos, Platform.Vector2 srcPos, int srcWidth, int srcHeight, PixelColor color)
+        {
             if (sprite is not MonoGame.Graphics.Sprite nativeSprite || !nativeSprite.Touch()) return;
 
             Graphics.SpriteEntity entity = new()

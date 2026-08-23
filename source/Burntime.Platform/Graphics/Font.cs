@@ -38,6 +38,7 @@ public struct CharInfo
 {
     public int pos;
     public int width;
+    public float renderWidth;
     public int imgWidth;
     public int imgHeight;
 
@@ -130,21 +131,22 @@ public class Font
 
             target.SelectSprite(sprite);
 
+            float renderX = offset.x;
             char[] charray = str.ToCharArray();
             foreach (char ch in charray)
             {
-                offset.x += DrawChar(target, ch, offset, color);
+                renderX += DrawChar(target, ch, new Vector2f(renderX, offset.y), color);
             }
 
             offset.y += (int)(GetHeight() - this.offset);
         }
     }
 
-    int DrawChar(RenderTarget target, char ch, Vector2 pos, PixelColor color)
+    float DrawChar(RenderTarget target, char ch, Vector2f pos, PixelColor color)
     {
         CharInfo info = charInfo[translateChar(ch)];
-        target.DrawSelectedSprite(pos + new Vector2(0, offset), new Rect(info.spritePos, new Vector2(info.imgWidth, info.imgHeight)), color);
-        return info.width;
+        target.DrawSelectedSpriteF(pos + new Vector2f(0, offset), new Rect(info.spritePos, new Vector2(info.imgWidth, info.imgHeight)), color);
+        return info.renderWidth;
     }
 
     public Rect GetRect(int x, int y, String str)
@@ -154,7 +156,7 @@ public class Font
 
         Rect rc = new Rect(x, y, 0, 0);
         char last = '\n';
-        int width = 0;
+        float width = 0;
 
         char[] charray = str.ToCharArray();
         foreach (char ch in charray)
@@ -162,20 +164,20 @@ public class Font
             if (last == '\n')
             {
                 rc.Height += (int)(GetHeight() - offset);
-                rc.Width = System.Math.Max(rc.Width, width);
+                rc.Width = System.Math.Max(rc.Width, (int)System.Math.Round(width));
                 width = 0;
             }
 
             if (ch != '\n')
             {
                 CharInfo info = charInfo[translateChar(ch)];
-                width += info.width;
+                width += info.renderWidth;
             }
 
             last = ch;
         }
 
-        rc.Width = System.Math.Max(rc.Width, width);
+        rc.Width = System.Math.Max(rc.Width, (int)System.Math.Round(width));
 
         return rc;
     }
@@ -185,15 +187,15 @@ public class Font
         if (!IsLoaded)
             _resourceManager.LoadFont(this);
 
-        int width = 0;
+        float width = 0;
         char[] charray = Text.ToCharArray();
         foreach (char ch in charray)
         {
             CharInfo info = charInfo[translateChar(ch)];
-            width += info.width;
+            width += info.renderWidth;
         }
 
-        return width;
+        return (int)System.Math.Round(width);
     }
 
     public virtual int GetHeight()

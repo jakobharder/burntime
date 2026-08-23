@@ -11,11 +11,11 @@ namespace Burntime.Platform.Graphics
     {
         Vector2 size;
         int offset;
-        float factor;
+        Vector2f factor;
 
         public Vector2 Size { get { return size; } }
         public int Offset { get { return offset; } }
-        public float Factor { get { return factor; } }
+        public Vector2f Factor { get { return factor; } }
 
         public Dictionary<char, CharInfo> CharInfo { get { return charInfo; } }
 
@@ -35,11 +35,15 @@ namespace Burntime.Platform.Graphics
             int lines = config[""].GetInt("lines");
             int height = config[""].GetInt("height");
             offset = config[""].GetInt("offset");
-            factor = config[""].GetFloat("factor");
-            if (factor == 0)
-                factor = 1;
+            Vector2f scale = config[""].GetVector2f("scale", Vector2f.One);
+            // Keep existing one-dimensional font descriptors working.
+            if (scale.y == 0)
+                scale.y = scale.x;
+            if (scale.x == 0 || scale.y == 0)
+                scale = Vector2f.One;
+            factor = Vector2f.One / scale;
 
-            height = (int)(height / factor);
+            height = (int)System.Math.Round(height / factor.y);
 
             charInfo = new Dictionary<char, CharInfo>();
 
@@ -49,18 +53,30 @@ namespace Burntime.Platform.Graphics
                 // read character info
                 string sequence = config[""].Get("char" + line);
                 int[] widths = config[""].GetInts("width" + line);
+                float[] renderWidths = config[""].GetFloats("renderwidth" + line);
                 char[] chars = sequence.ToCharArray();
 
-                int pos = 0;
+                if (renderWidths.Length != 0 && renderWidths.Length != widths.Length)
+                    throw new System.IO.InvalidDataException($"renderwidth{line} must contain one value per character.");
+
+                float sourcePos = 0;
                 for (int i = 0; i < sequence.Length; i++)
                 {
-                    int width = widths[i];// (int)(widths[i] / factor);
+                    int pos = (int)System.Math.Round(sourcePos / factor.x);
+                    sourcePos += widths[i];
+                    int end = (int)System.Math.Round(sourcePos / factor.x);
 
                     CharInfo info = new CharInfo();
                     info.pos = pos;
-                    info.width = width;
+                    info.width = widths[i];
+                    info.renderWidth = renderWidths.Length == 0 ? widths[i] : renderWidths[i];
                     info.imgHeight = height;
-                    info.imgWidth = (int)(widths[i] / factor);
+                    // A render width describes the tight glyph advance. Its source rectangle
+                    // must end at that same edge so padded atlas cells cannot overlap the
+                    // following glyph during rasterization.
+                    info.imgWidth = renderWidths.Length == 0
+                        ? end - pos
+                        : (int)System.Math.Round(info.renderWidth / factor.x);
                     info.spritePos = new Vector2(pos, line * height);
 
                     if (charInfo.ContainsKey(chars[i]))
@@ -68,7 +84,6 @@ namespace Burntime.Platform.Graphics
 
                     charInfo.Add(chars[i], info);
 
-                    pos += (int)(widths[i] / factor);
                 }
             }
 

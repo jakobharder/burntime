@@ -69,6 +69,13 @@ public class RenderTarget
 
         _engine.RenderSprite(_selectedSprite, pos + _rc.Position + Offset, srcRect.Position, srcRect.Width, srcRect.Height, color);
     }
+
+    public void DrawSelectedSpriteF(Vector2f pos, Rect srcRect, PixelColor color)
+    {
+        if (_selectedSprite is null) return;
+
+        _engine.RenderSpriteF(_selectedSprite, pos + _rc.Position + Offset, srcRect.Position, srcRect.Width, srcRect.Height, color);
+    }
     #endregion
 
     public void RenderRect(Vector2 pos, Vector2 size, PixelColor color)

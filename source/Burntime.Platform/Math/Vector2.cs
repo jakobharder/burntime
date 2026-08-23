@@ -245,6 +245,11 @@
             return new Vector2f(left.x - right.x, left.y - right.y);
         }
 
+        public static Vector2f operator -(Vector2f left, Vector2 right)
+        {
+            return new Vector2f(left.x - right.x, left.y - right.y);
+        }
+
         public static Vector2f operator -(Vector2f left)
         {
             return new Vector2f(-left.x, -left.y);
@@ -260,12 +265,22 @@
             return new Vector2f(left.x + right.x, left.y + right.y);
         }
 
+        public static Vector2f operator +(Vector2f left, Vector2 right)
+        {
+            return new Vector2f(left.x + right.x, left.y + right.y);
+        }
+
         public static Vector2f operator +(Vector2f left, float right)
         {
             return new Vector2f(left.x + right, left.y + right);
         }
 
         public static Vector2f operator /(Vector2f left, Vector2f right)
+        {
+            return new Vector2f(left.x / right.x, left.y / right.y);
+        }
+
+        public static Vector2f operator /(Vector2f left, Vector2 right)
         {
             return new Vector2f(left.x / right.x, left.y / right.y);
         }
@@ -285,7 +300,17 @@
             return new Vector2f(left.x * right.x, left.y * right.y);
         }
 
+        public static Vector2f operator *(Vector2f left, Vector2 right)
+        {
+            return new Vector2f(left.x * right.x, left.y * right.y);
+        }
+
         public static Vector2f operator %(Vector2f left, Vector2f right)
+        {
+            return new Vector2f(left.x % right.x, left.y % right.y);
+        }
+
+        public static Vector2f operator %(Vector2f left, Vector2 right)
         {
             return new Vector2f(left.x % right.x, left.y % right.y);
         }

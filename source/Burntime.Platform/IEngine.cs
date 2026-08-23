@@ -33,4 +33,5 @@ public interface IEngine
 
     void RenderSprite(ISprite sprite, Vector2 pos, float alpha = 1);
     void RenderSprite(ISprite sprite, Vector2 pos, Vector2 srcPos, int srcWidth, int srcHeight, PixelColor color);
+    void RenderSpriteF(ISprite sprite, Vector2f pos, Vector2 srcPos, int srcWidth, int srcHeight, PixelColor color);
 }

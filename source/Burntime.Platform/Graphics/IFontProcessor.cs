@@ -10,7 +10,7 @@ namespace Burntime.Platform.Resource
     {
         Dictionary<char, CharInfo> CharInfo { get; }
         int Offset { get; }
-        float Factor { get; }
+        Vector2f Factor { get; }
 
         PixelColor Color { get; set; }
         PixelColor Shadow { get; set; }
