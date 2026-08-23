@@ -202,3 +202,4 @@ maps/mat_000_tiles.png=pngsheet@maps/mat_000_tiles_2x.png?{0}?64x76
 
 [noscale]
 sprite_scale=1x1
+font.txt=highres-font.txt

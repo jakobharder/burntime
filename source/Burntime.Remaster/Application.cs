@@ -120,8 +120,6 @@ namespace Burntime.Remaster
 
             SetMusicMode(UserSettings[""].GetString("music"));
 
-            bool useHighResFont = Settings["system"].GetBool("highres_font");
-
             // add newgfx package
             if (IsNewGfx)
             {
@@ -130,8 +128,6 @@ namespace Burntime.Remaster
                 {
                     ResourceManager.SetResourceReplacement("newgfx.txt");
 
-                    // use highres font anyway
-                    useHighResFont = true;
                 }
             }
             else
@@ -146,12 +142,7 @@ namespace Burntime.Remaster
             //    ResourceManager.SetResourceReplacement("santa.txt");
             //}
 
-            // set highres font
-            if (useHighResFont)
-            {
-                if (FileSystem.ExistsFile("highres-font.txt"))
-                    FontName = "highres-font.txt";
-            }
+            FontName = "font.txt";
         }
 
         public void InitializeHeadless()
@@ -324,6 +315,8 @@ namespace Burntime.Remaster
 
         void RefreshNewGfx()
         {
+            FontName = "font.txt";
+
             if (IsNewGfx)
             {
                 FileSystem.AddPackage("newgfx", "game/classic_newgfx");
@@ -331,13 +324,10 @@ namespace Burntime.Remaster
                 {
                     ResourceManager.SetResourceReplacement("newgfx.txt");
 
-                    // use highres font anyway
-                    if (FileSystem.ExistsFile("highres-font.txt"))
-                        FontName = "highres-font.txt";
                 }
                 else
                 {
-                    ResourceManager.SetResourceReplacement(null);
+                    ResourceManager.SetResourceReplacement(string.Empty);
                 }
             }
             else
@@ -346,7 +336,7 @@ namespace Burntime.Remaster
                 if (FileSystem.ExistsFile("newgfx.txt"))
                     ResourceManager.SetResourceReplacement("newgfx.txt");
                 else
-                    ResourceManager.SetResourceReplacement(null);
+                    ResourceManager.SetResourceReplacement(string.Empty);
             }
 
             Engine.ReloadGraphics();

@@ -71,7 +71,9 @@ namespace Burntime.Platform.Resource
                     return font;
                 }
 
-                FilePath path = font.Info.Font;
+                ResourceID id = font.Info.Font;
+                var replaced = GetReplacement(id);
+                FilePath path = new FilePath(replaced?.Id?.ToString() ?? (string)id);
                 if (!fontProcessors.ContainsKey(path.Extension))
                     return null;
 
