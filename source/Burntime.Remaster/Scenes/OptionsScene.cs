@@ -46,7 +46,7 @@ public class OptionsScene : Scene
 
         disabled = new GuiFont(BurntimeClassic.FontName, new PixelColor(100, 100, 100));
         red = new GuiFont(BurntimeClassic.FontName, new PixelColor(134, 44, 4)) { Borders = TextBorders.None };
-        hover = new GuiFont(BurntimeClassic.FontName, new PixelColor(109, 117, 170));
+        hover = new GuiFont(BurntimeClassic.FontName, new PixelColor(109, 117, 170)) { Borders = TextBorders.None };
         hoverRed = new GuiFont(BurntimeClassic.FontName, new PixelColor(190, 77, 12));
         green = new GuiFont(BurntimeClassic.FontName, new PixelColor(0, 108, 0));
 
