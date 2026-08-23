@@ -52,6 +52,7 @@ public class Font
 #warning slimdx todo below for parameters were internal
     public ISprite sprite;
     public Dictionary<char, CharInfo> charInfo;
+    public Dictionary<string, int> kerning = [];
     public int offset;
     public int height;
 
@@ -132,10 +133,16 @@ public class Font
             target.SelectSprite(sprite);
 
             float renderX = offset.x;
+            char previous = '\0';
             char[] charray = str.ToCharArray();
             foreach (char ch in charray)
             {
-                renderX += DrawChar(target, ch, new Vector2f(renderX, offset.y), color);
+                char current = translateChar(ch);
+                float kerningOffset = previous != '\0' && kerning.TryGetValue($"{previous}{current}", out int kerningAmount) ? kerningAmount : 0;
+                renderX += kerningOffset;
+                renderX += DrawChar(target, current, new Vector2f(renderX, offset.y), color);
+                if (!char.IsWhiteSpace(ch))
+                    previous = current;
             }
 
             offset.y += (int)(GetHeight() - this.offset);

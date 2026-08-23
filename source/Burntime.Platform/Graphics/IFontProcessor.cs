@@ -9,6 +9,7 @@ namespace Burntime.Platform.Resource
     public interface IFontProcessor : ISpriteProcessor
     {
         Dictionary<char, CharInfo> CharInfo { get; }
+        Dictionary<string, int> Kerning { get; }
         int Offset { get; }
         Vector2f Factor { get; }
 

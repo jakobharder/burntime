@@ -13,6 +13,7 @@ namespace Burntime.Data.BurnGfx
         public Vector2f Factor { get { return Vector2f.One; } }
 
         public Dictionary<char, CharInfo> CharInfo { get { return charInfo; } }
+        public Dictionary<string, int> Kerning { get; } = [];
 
         CharInfo[] chars;
         Burntime.Platform.IO.File reader;

@@ -5,7 +5,7 @@ namespace Burntime.Framework;
 public abstract class Scene : Container
 {
     public string? Music { get; set; }
-    public bool MusicLoop { get; set; } = false;
+    public bool MusicLoop { get; set; } = true;
     public bool KeepMusic { get; set; } = false;
 
     public Scene(Module app)

@@ -63,6 +63,7 @@ namespace Burntime.Platform.Resource
                 if (fonts.ContainsKey(info))
                 {
                     font.charInfo = fonts[info].charInfo;
+                    font.kerning = fonts[info].kerning;
                     font.sprite = fonts[info].sprite;
                     font.offset = fonts[info].offset;
                     font.height = fonts[info].height;
@@ -96,6 +97,7 @@ namespace Burntime.Platform.Resource
                 };
 
                 font.charInfo = processor.CharInfo;
+                font.kerning = processor.Kerning;
                 font.offset = processor.Offset;
                 font.height = processor.Size.y;
 

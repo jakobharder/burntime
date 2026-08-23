@@ -18,8 +18,10 @@ namespace Burntime.Platform.Graphics
         public Vector2f Factor { get { return factor; } }
 
         public Dictionary<char, CharInfo> CharInfo { get { return charInfo; } }
+        public Dictionary<string, int> Kerning { get { return kerning; } }
 
         Dictionary<char, CharInfo> charInfo;
+        Dictionary<string, int> kerning = [];
 
         byte[] image;
         int stride;
@@ -46,6 +48,18 @@ namespace Burntime.Platform.Graphics
             height = (int)System.Math.Round(height / factor.y);
 
             charInfo = new Dictionary<char, CharInfo>();
+            kerning = new Dictionary<string, int>();
+
+            for (int i = 1; config[""].ContainsKey("kerning" + i); i++)
+            {
+                foreach (string pair in config[""].Get("kerning" + i).Split(' ', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    if (pair.Length != 2)
+                        throw new System.IO.InvalidDataException($"kerning{i} entries must be two-character pairs.");
+
+                    kerning[pair] = -i;
+                }
+            }
 
             for (int line = 0; line < lines; line++)
             {
@@ -69,7 +83,9 @@ namespace Burntime.Platform.Graphics
                     CharInfo info = new CharInfo();
                     info.pos = pos;
                     info.width = widths[i];
-                    info.renderWidth = renderWidths.Length == 0 ? widths[i] : renderWidths[i];
+                    info.renderWidth = renderWidths.Length == 0
+                        ? widths[i]
+                        : renderWidths[i] * 2 / scale.x;
                     info.imgHeight = height;
                     // A render width describes the tight glyph advance. Its source rectangle
                     // must end at that same edge so padded atlas cells cannot overlap the
