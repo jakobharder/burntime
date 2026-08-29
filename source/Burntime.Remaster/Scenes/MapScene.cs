@@ -12,7 +12,7 @@ namespace Burntime.Remaster
 {
     public class MapScene : Scene, IMapEntranceHandler
     {
-        public override bool UseCardinalGamepadMovement => true;
+        public override bool UseDiagonalGamepadNavigation => true;
         protected override bool UseGamepadDPadNavigation => false;
 
         public override InputAction ResolveInputAction(InputAction action) => action;
@@ -366,6 +366,10 @@ namespace Burntime.Remaster
                 InputAction.MoveDown => new Vector2(0, 1),
                 InputAction.MoveLeft => new Vector2(-1, 0),
                 InputAction.MoveRight => new Vector2(1, 0),
+                InputAction.MoveUpLeft => new Vector2(-1, -1),
+                InputAction.MoveUpRight => new Vector2(1, -1),
+                InputAction.MoveDownLeft => new Vector2(-1, 1),
+                InputAction.MoveDownRight => new Vector2(1, 1),
                 _ => Vector2.Zero
             };
             if (moveDirection != Vector2.Zero)
@@ -442,7 +446,11 @@ namespace Burntime.Remaster
                 new Vector2(0, -1),
                 new Vector2(0, 1),
                 new Vector2(-1, 0),
-                new Vector2(1, 0)
+                new Vector2(1, 0),
+                new Vector2(-1, -1),
+                new Vector2(1, -1),
+                new Vector2(-1, 1),
+                new Vector2(1, 1)
             };
             var candidates = new List<(int Location, Vector2 Difference, float Distance)>();
             int locationCount = System.Math.Min(view.Map.Entrances.Length,
@@ -468,7 +476,7 @@ namespace Burntime.Remaster
                 for (int i = 0; i < candidates.Count; i++)
                 {
                     Vector2 difference = candidates[i].Difference;
-                    if (GetDominantDirection(difference) == directions[d])
+                    if (difference.x * directions[d].x + difference.y * directions[d].y > 0)
                         rankings[d].Add(i);
                 }
                 Vector2 direction = directions[d];
@@ -478,7 +486,8 @@ namespace Burntime.Remaster
                             candidates[right].Distance)));
             }
 
-            int[] assignedCandidate = { -1, -1, -1, -1 };
+            int[] assignedCandidate = new int[directions.Length];
+            Array.Fill(assignedCandidate, -1);
             int[] rankingIndex = new int[directions.Length];
             var candidateOwner = new Dictionary<int, int>();
             var pendingDirections = new Queue<int>();
@@ -549,7 +558,8 @@ namespace Burntime.Remaster
 
         static float GetAlignment(Vector2 difference, Vector2 direction, float distance)
         {
-            return (difference.x * direction.x + difference.y * direction.y) / distance;
+            return (difference.x * direction.x + difference.y * direction.y) /
+                (distance * direction.Length);
         }
 
         static float GetDirectionalScore(Vector2 difference, Vector2 direction, float distance)
@@ -558,14 +568,6 @@ namespace Burntime.Remaster
             double alignment = System.Math.Clamp(GetAlignment(difference, direction, distance), -1f, 1f);
             double normalizedAngle = System.Math.Acos(alignment) / (System.Math.PI / 4.0);
             return distance * (1f + AngularWeight * (float)(normalizedAngle * normalizedAngle));
-        }
-
-        static Vector2 GetDominantDirection(Vector2 difference)
-        {
-            if (System.Math.Abs(difference.x) > System.Math.Abs(difference.y))
-                return new Vector2(difference.x < 0 ? -1 : 1, 0);
-
-            return new Vector2(0, difference.y < 0 ? -1 : 1);
         }
 
         bool CanShowInfo(Logic.Player player, Logic.Location location)
