@@ -51,6 +51,9 @@ namespace Burntime.Remaster.Maps
             if (mapState == null)
                 return;
 
+            if (!app.MouseInputVisible)
+                return;
+
             Character hoveredChar = (Character)GetObjectAt(position);
             if (hoveredChar != null)
             {
@@ -68,6 +71,7 @@ namespace Burntime.Remaster.Maps
                 }
 
                 mapState.Hover = new MapViewHoverInfo(hoveredChar, app.ResourceManager, color);
+                mapState.HoverCharacter = hoveredChar;
             }
         }
 

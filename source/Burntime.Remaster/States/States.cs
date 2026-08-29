@@ -77,6 +77,19 @@ namespace Burntime.Remaster
             UpdateSaveHint();
         }
 
+        /// <summary>
+        /// Applies runtime initialization and compatibility cleanup after a
+        /// save has been fully deserialized and its state links resolved.
+        /// </summary>
+        public void InitAfterLoad()
+        {
+            foreach (Player player in World.Players)
+            {
+                if (player.AiState is AI.ClassicAiState ai)
+                    ai.InitAfterLoad();
+            }
+        }
+
         public override void Turn()
         {
             World.Turn();
@@ -125,6 +138,13 @@ namespace Burntime.Remaster
                 { "days", saveHintDays.ToString() },
                 { "camps", saveHintLocations.ToString() }
             };
+        }
+
+        public override Dictionary<string, string> GetSaveDetails()
+        {
+            Dictionary<string, string> details = GetSaveHint();
+            details["difficulty"] = World.Difficulty.ToString();
+            return details;
         }
 
         public bool CheatsEnabled { get; set; }

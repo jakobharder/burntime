@@ -17,7 +17,12 @@ namespace Burntime.Remaster
 {
     public class LocationScene : Scene, IMapEntranceHandler, IInteractionHandler, ILogicNotifycationHandler
     {
+        protected override bool UseGamepadDPadNavigation => false;
+
+        public override InputAction ResolveInputAction(InputAction action) => action;
+
         const int PICKUP_DISTANCE = 20;
+        const float NEXT_TURN_HOLD_TIME = 0.6f;
 
         MapView view;
         MainUiOriginalWindow gui;
@@ -25,7 +30,13 @@ namespace Burntime.Remaster
         Image cursorAni;
         DialogWindow dialog;
         Maps.MapViewOverlayHoverText hoverInfo;
+        Maps.MapViewOverlayNearbyAction nearbyAction;
         Maps.MapViewOverlayCharacters charOverlay;
+        Character manuallyMovedCharacter;
+        float nextTurnHoldTime;
+        bool nextTurnTriggered;
+        bool cameraPanActive;
+        bool followCharacterAfterPan;
 
         private bool fightMode
         {
@@ -47,6 +58,7 @@ namespace Burntime.Remaster
             view.Overlays.Add(new Maps.MapViewOverlayDroppedItems(App));
             view.Overlays.Add(charOverlay = new Maps.MapViewOverlayCharacters(App));
             view.Overlays.Add(hoverInfo = new Maps.MapViewOverlayHoverText(App));
+            view.Overlays.Add(nearbyAction = new Maps.MapViewOverlayNearbyAction(App));
             view.ClickObject += new EventHandler<ObjectArgs>(view_ClickObject);
             view.Scroll += new EventHandler<MapScrollArgs>(view_Scroll);
             view.ContextMenu += View_ContextMenu;
@@ -79,7 +91,7 @@ namespace Burntime.Remaster
 
         private void View_ContextMenu(Vector2 position, MouseButton button)
         {
-            ShowMenu(position);
+            ShowMenu(position, true);
         }
 
         public override void OnResizeScreen()
@@ -96,12 +108,14 @@ namespace Burntime.Remaster
         void dialog_WindowShow(object sender, EventArgs e)
         {
             hoverInfo.IsVisible = false;
+            nearbyAction.IsVisible = false;
             cursorAni.Hide();
         }
 
         void dialog_WindowHide(object sender, EventArgs e)
         {
             hoverInfo.IsVisible = true;
+            nearbyAction.IsVisible = true;
             cursorAni.Show();
 
             if (dialog.Type == ConversationType.Dismiss)
@@ -123,7 +137,7 @@ namespace Burntime.Remaster
         {
             if (e.Button == MouseButton.Right)
             {
-                ShowMenu(e.Position);
+                ShowMenu(e.Position, true);
                 return;
             }
 
@@ -195,15 +209,151 @@ namespace Burntime.Remaster
             view.Player.LocationScrollPosition = e.Offset;
         }
 
-        public override bool OnVKeyPress(SystemKey key)
+        public override bool OnInputAction(InputAction action)
         {
-            if (key == SystemKey.Pause)
+            if (action == InputAction.NextTurn)
+                return true;
+
+            if (action == InputAction.Back)
             {
-                app.SceneManager.SetScene("PauseScene");
+                OnMenuMap();
                 return true;
             }
 
+            if (action == InputAction.WorldMap)
+            {
+                OnMenuMap();
+                return true;
+            }
+
+            if (action == InputAction.Options)
+            {
+                app.SceneManager.SetScene("OptionsScene");
+                return true;
+            }
+
+            if (action == InputAction.Statistics)
+            {
+                app.SceneManager.SetScene("StatisticsScene");
+                return true;
+            }
+
+            if (action == InputAction.Inventory)
+            {
+                OnMenuInventory();
+                return true;
+            }
+
+            if (action == InputAction.LocationInfo)
+            {
+                OnMenuInfo();
+                return true;
+            }
+
+            if (action == InputAction.GlobalAction)
+            {
+                ShowMenu(view.Boundings.Center, false);
+                return true;
+            }
+
+            if (action == InputAction.LeftArea)
+            {
+                if (!view.Location.IsCity)
+                    OnMenuSpeak();
+                return true;
+            }
+
+            if (action == InputAction.RightArea)
+            {
+                if (!view.Location.IsCity)
+                    OnMenuFight();
+                return true;
+            }
+
+            if (action == InputAction.ToggleInteractionMode)
+            {
+                if (!view.Location.IsCity)
+                {
+                    if (fightMode)
+                        OnMenuSpeak();
+                    else
+                        OnMenuFight();
+                }
+                return true;
+            }
+
+            bool directionalInputActive = app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad;
+
+            if (directionalInputActive && action == InputAction.Primary && nearbyAction.EntranceNumber != -1)
+            {
+                OnMenuSpeak();
+                OnClickEntrance(nearbyAction.EntranceNumber, MouseButton.Left);
+                return true;
+            }
+
+            if (directionalInputActive && action == InputAction.Primary && nearbyAction.Object != null)
+            {
+                OnMenuSpeak();
+                view_ClickObject(view, new ObjectArgs(nearbyAction.Object,
+                    nearbyAction.Object.MapPosition + view.ScrollPosition, MouseButton.Left));
+                return true;
+            }
+
+            if (directionalInputActive && action == InputAction.Secondary)
+            {
+                if (nearbyAction.Object is Character target)
+                    AttackCharacter(target);
+                return true;
+            }
+
+            if (action is InputAction.MoveUp or InputAction.MoveDown or InputAction.MoveLeft or InputAction.MoveRight)
+                return true;
+
+            Vector2 direction = action switch
+            {
+                InputAction.PanCameraUp => new Vector2(0, -1),
+                InputAction.PanCameraDown => new Vector2(0, 1),
+                InputAction.PanCameraLeft => new Vector2(-1, 0),
+                InputAction.PanCameraRight => new Vector2(1, 0),
+                _ => Vector2.Zero
+            };
+            if (direction != Vector2.Zero)
+                return true;
+
             return false;
+        }
+
+        public override bool OnHeldInputAction(InputAction action, float elapsed)
+        {
+            if (action == InputAction.NextTurn)
+            {
+                if (!nextTurnTriggered)
+                {
+                    nextTurnHoldTime += elapsed;
+                    if (nextTurnHoldTime >= NEXT_TURN_HOLD_TIME)
+                    {
+                        nextTurnTriggered = true;
+                        OnMenuTurn();
+                    }
+                }
+                return true;
+            }
+
+            if (action is InputAction.MoveUp or InputAction.MoveDown or InputAction.MoveLeft or InputAction.MoveRight)
+                return true;
+
+            Vector2 direction = action switch
+            {
+                InputAction.PanCameraUp => new Vector2(0, -1),
+                InputAction.PanCameraDown => new Vector2(0, 1),
+                InputAction.PanCameraLeft => new Vector2(-1, 0),
+                InputAction.PanCameraRight => new Vector2(1, 0),
+                _ => Vector2.Zero
+            };
+            if (direction == Vector2.Zero)
+                return false;
+
+            return true;
         }
 
         public override bool OnKeyPress(char key)
@@ -212,24 +362,6 @@ namespace Burntime.Remaster
                 return false;
 
             key = char.ToLowerInvariant(key);
-
-            if (key == 'q')
-            {
-                OnMenuInventory();
-                return true;
-            }
-
-            if (key == ' ')
-            {
-                OnMenuMap();
-                return true;
-            }
-
-            if (key == 'f')
-            {
-                OnMenuInfo();
-                return true;
-            }
 
             if (game.CheatsEnabled)
             {
@@ -267,20 +399,35 @@ namespace Burntime.Remaster
             {
                 cursorAni.Position = app.DeviceManager.Mouse.Position + new Vector2(8, 11);
 
-                var layer = Target.Layer;
-                Target.Layer = gui.Layer - 1;
-                Target.DrawSprite(app.DeviceManager.Mouse.Position, app.MouseImage);
-                Target.Layer = layer;
+                if (app.MouseInputVisible)
+                {
+                    var layer = Target.Layer;
+                    Target.Layer = gui.Layer - 1;
+                    Target.DrawSprite(app.DeviceManager.Mouse.Position, app.MouseImage);
+                    Target.Layer = layer;
+                }
             }
         }
 
         public override void OnUpdate(float Elapsed)
         {
+            ResetNextTurnHoldIfReleased();
+            UpdateCameraPan(Elapsed);
+
             ClassicGame game = app.GameState as ClassicGame;
+            bool manualMovementActive = UpdateManualCharacterMovement();
             game.World.Update(Elapsed);
 
             game.World.ActiveLocationObj.Update(Elapsed);
             game.World.ActivePlayerObj.Update(Elapsed);
+
+            if (followCharacterAfterPan && charOverlay.SelectedCharacter != null)
+                followCharacterAfterPan = !view.FollowWithinMiddleThird(
+                    charOverlay.SelectedCharacter.Position, Elapsed);
+            else if (manualMovementActive && charOverlay.SelectedCharacter != null)
+                view.FollowWithinMiddleThird(charOverlay.SelectedCharacter.Position, Elapsed);
+
+            SyncGamepadCursor();
 
             if (game.World.Time <= 0 || game.World.ActivePlayerObj.IsDead)
             {
@@ -292,8 +439,123 @@ namespace Burntime.Remaster
                 view.Player.SelectGroup(view.Player.Group);
         }
 
+        void SyncGamepadCursor()
+        {
+            if (app.MouseInputVisible)
+                return;
+
+            Vector2? mapPosition = nearbyAction.Position;
+            if (!mapPosition.HasValue && charOverlay.SelectedCharacter != null)
+                mapPosition = charOverlay.SelectedCharacter.Position;
+            if (!mapPosition.HasValue)
+                return;
+
+            app.DeviceManager.MouseMove(view.Boundings.Position + view.ScrollPosition + mapPosition.Value);
+        }
+
+        void ResetNextTurnHoldIfReleased()
+        {
+            if (app.IsInputActionDown(InputAction.NextTurn))
+                return;
+
+            nextTurnHoldTime = 0;
+            nextTurnTriggered = false;
+        }
+
+        void UpdateCameraPan(float elapsed)
+        {
+            Vector2 direction = Vector2.Zero;
+            foreach (InputAction action in app.InputManager.ActionsDown)
+            {
+                direction += action switch
+                {
+                    InputAction.PanCameraUp => new Vector2(0, -1),
+                    InputAction.PanCameraDown => new Vector2(0, 1),
+                    InputAction.PanCameraLeft => new Vector2(-1, 0),
+                    InputAction.PanCameraRight => new Vector2(1, 0),
+                    _ => Vector2.Zero
+                };
+            }
+
+            if (direction == Vector2.Zero)
+            {
+                if (cameraPanActive)
+                {
+                    cameraPanActive = false;
+                    followCharacterAfterPan = true;
+                }
+                return;
+            }
+
+            cameraPanActive = true;
+            followCharacterAfterPan = false;
+            view.Pan(direction, elapsed);
+        }
+
+        bool UpdateManualCharacterMovement()
+        {
+            Character selectedCharacter = charOverlay.SelectedCharacter;
+            if (selectedCharacter == null)
+                return false;
+
+            Vector2 direction = Vector2.Zero;
+            foreach (InputAction action in app.InputManager.ActionsDown)
+            {
+                direction += action switch
+                {
+                    InputAction.MoveUp => new Vector2(0, -1),
+                    InputAction.MoveDown => new Vector2(0, 1),
+                    InputAction.MoveLeft => new Vector2(-1, 0),
+                    InputAction.MoveRight => new Vector2(1, 0),
+                    _ => Vector2.Zero
+                };
+            }
+
+            if (manuallyMovedCharacter != null && manuallyMovedCharacter != selectedCharacter)
+            {
+                if (manuallyMovedCharacter.Path is PathFinding.ManualPath previousPath)
+                    previousPath.Direction = Vector2f.Zero;
+                manuallyMovedCharacter = null;
+            }
+
+            if (direction != Vector2.Zero)
+            {
+                if (selectedCharacter.Path is not PathFinding.ManualPath)
+                {
+                    selectedCharacter.CancelAction();
+                    selectedCharacter.Path = app.GameState.Container.Create<PathFinding.ManualPath>();
+                    selectedCharacter.Path.MoveTo = selectedCharacter.Position;
+                }
+
+                manuallyMovedCharacter = selectedCharacter;
+                ((PathFinding.ManualPath)selectedCharacter.Path).Direction = direction;
+                return true;
+            }
+            else if (selectedCharacter.Path is PathFinding.ManualPath)
+            {
+                ((PathFinding.ManualPath)selectedCharacter.Path).Direction = Vector2f.Zero;
+                manuallyMovedCharacter = null;
+            }
+
+            return false;
+        }
+
+        void EnsureAutomaticPath(Character character)
+        {
+            if (character.Path is PathFinding.ComplexPath)
+                return;
+
+            character.Path = app.GameState.Container.Create<PathFinding.ComplexPath>();
+            character.Path.MoveTo = character.Position;
+        }
+
         protected override void OnActivateScene(object parameter)
         {
+            nextTurnHoldTime = 0;
+            nextTurnTriggered = false;
+            cameraPanActive = false;
+            followCharacterAfterPan = false;
+
             app.RenderMouse = false;
             app.MouseBoundings = view.Boundings;
 
@@ -340,7 +602,7 @@ namespace Burntime.Remaster
             app.GameState.Container.RemoveNotifycationHandler(this);
         }
 
-        void ShowMenu(Vector2 position)
+        void ShowMenu(Vector2 position, bool openedByMouse)
         {
             menu.Clear();
 
@@ -382,7 +644,7 @@ namespace Burntime.Remaster
             menu.AddLine("@burn?367", (CommandHandler)OnMenuInventory);
             menu.AddLine("@burn?357", (CommandHandler)OnMenuTurn);
 
-            menu.Show(position, view.Boundings);
+            menu.Show(position, view.Boundings, openedByMouse);
         }
 
         public void OnMenuInfo()
@@ -518,6 +780,7 @@ namespace Burntime.Remaster
             EntranceObject entranceObject = new EntranceObject(entrance, Number);
             if (!TryEnterRoom(entranceObject, charOverlay.SelectedCharacter))
             {
+                EnsureAutomaticPath(charOverlay.SelectedCharacter);
                 charOverlay.SelectedCharacter.Mind.MoveToObject(new InteractionObject(entranceObject,
                    classic.Game.World.ActiveLocationObj.Rooms[Number].EntryCondition, this));
             }
@@ -527,12 +790,14 @@ namespace Burntime.Remaster
 
         public void OnMouseClickMap(Vector2 position, MouseButton button)
         {
+            EnsureAutomaticPath(charOverlay.SelectedCharacter);
             charOverlay.SelectedCharacter.Mind.MoveToObject(null);
             charOverlay.SelectedCharacter.Path.MoveTo = position;
         }
 
         void MoveCharacter(IMapObject obj)
         {
+            EnsureAutomaticPath(charOverlay.SelectedCharacter);
             charOverlay.SelectedCharacter.Mind.MoveToObject(new InteractionObject(obj, this));
         }
 

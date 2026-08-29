@@ -60,6 +60,23 @@ namespace Burntime.Remaster.GUI
             get { if (activePage == null) return null; return activePage.Character; }
         }
 
+        public void SelectNextCharacter()
+        {
+            if (pages.Count <= 1)
+                return;
+
+            int nextPage = (activePageIndex + 1) % pages.Count;
+            for (int i = 0; i < pages.Count; i++)
+            {
+                if (pageIndices[i] == nextPage)
+                {
+                    OnPage(i);
+                    grid.ResetKeyboardSelection();
+                    return;
+                }
+            }
+        }
+
         public LogicEvent LeftClickItemEvent;
         public LogicEvent RightClickItemEvent;
 
@@ -103,6 +120,7 @@ namespace Burntime.Remaster.GUI
 
             Windows += grid = new ItemGridWindow(App)
             {
+                UnifiedSelection = true,
                 LockPositions = true,
                 Position = new Vector2(side ? 9 : 19, side ? 72 : 83) + basePos,
                 Spacing = new Vector2(4, side ? 16 : 5),

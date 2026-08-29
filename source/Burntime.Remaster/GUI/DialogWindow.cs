@@ -15,8 +15,7 @@ namespace Burntime.Remaster
         FaceWindow face;
         GuiFont fontText;
         GuiFont fontOptions;
-        GuiFont fontKeyChoice;
-        GuiFont fontMouseChoice;
+        GuiFont fontSelectedChoice;
 
         Character character;
         Character self;
@@ -24,8 +23,11 @@ namespace Burntime.Remaster
         bool ready = false;
         int dlgoffset = 0;
         int dialogmode;
-        int hover = -1;
+        int mouseChoice = -1;
         int selectedChoice = -1;
+        Vector2 lastMousePosition;
+        bool hasLastMousePosition;
+        bool mouseHasLeft;
 
         public ConversationType Type { get; private set; }
         public bool PlayMusic { get; set; } = true;
@@ -50,8 +52,7 @@ namespace Burntime.Remaster
 
             fontText = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 164, 56));
             fontOptions = new GuiFont(BurntimeClassic.FontName, new PixelColor(108, 116, 168));
-            fontKeyChoice = new GuiFont(BurntimeClassic.FontName, new PixelColor(144, 160, 212));
-            fontMouseChoice = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
+            fontSelectedChoice = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
 
             CaptureAllMouseMove = true;
         }
@@ -59,7 +60,10 @@ namespace Burntime.Remaster
         public override void OnShow()
         {
             HasFocus = true;
-            hover = -1;
+            lastMousePosition = app.DeviceManager.Mouse.Position - PositionOnScreen;
+            hasLastMousePosition = true;
+            mouseHasLeft = false;
+            ResetSelection();
             base.OnShow();
 
             if (PlayMusic)
@@ -117,19 +121,20 @@ namespace Burntime.Remaster
 
         public override bool OnMouseClick(Vector2 position, MouseButton button)
         {
-            if (hover == 0 && dialogmode == 0)
+            int clickedChoice = ChoiceAt(position);
+            if (clickedChoice == 0 && dialogmode == 0)
             {
                 AdvanceText();
             }
-            else if (hover != -1)
-                SelectChoice(hover);
+            else if (clickedChoice != -1)
+                SelectChoice(clickedChoice);
 
             return true;
         }
 
-        public override bool OnVKeyPress(SystemKey key)
+        public override bool OnInputAction(InputAction action)
         {
-            if (key == SystemKey.Escape)
+            if (action == InputAction.Back)
             {
                 result = ConversationActionType.Exit;
                 Hide();
@@ -138,7 +143,7 @@ namespace Burntime.Remaster
 
             if (dialogmode == 0)
             {
-                if (key != SystemKey.Enter)
+                if (action != InputAction.Primary)
                     return false;
 
                 AdvanceText();
@@ -148,41 +153,23 @@ namespace Burntime.Remaster
             if (dialogmode != 1)
                 return false;
 
-            if (key == SystemKey.Up)
+            if (action.IsUp())
             {
                 MoveSelection(-1);
                 return true;
             }
 
-            if (key == SystemKey.Down)
+            if (action.IsDown())
             {
                 MoveSelection(1);
                 return true;
             }
 
-            if (key != SystemKey.Enter || selectedChoice == -1)
+            if (action != InputAction.Primary || selectedChoice == -1)
                 return false;
 
             SelectChoice(selectedChoice);
             return true;
-        }
-
-        public override bool OnKeyPress(char key)
-        {
-            if (dialogmode != 1)
-                return false;
-
-            switch (char.ToLowerInvariant(key))
-            {
-                case 'w':
-                    MoveSelection(-1);
-                    return true;
-                case 's':
-                    MoveSelection(1);
-                    return true;
-                default:
-                    return false;
-            }
         }
 
         void AdvanceText()
@@ -190,6 +177,7 @@ namespace Burntime.Remaster
             dlgoffset += 2;
             if (dlgoffset + 2 >= conversation.Text.Length)
                 dialogmode = 1;
+            ResetSelection();
         }
 
         int FirstVisibleChoice()
@@ -255,26 +243,50 @@ namespace Burntime.Remaster
             }
 
             dialogmode = (conversation.Text.Length < 3) ? 1 : 0;
-            selectedChoice = FirstVisibleChoice();
+            ResetSelection();
         }
 
         public override bool OnMouseMove(Vector2 position)
+        {
+            if (app.LastInputMode != InputMode.Mouse)
+                return base.OnMouseMove(position);
+
+            if (!mouseHasLeft && hasLastMousePosition && (position - lastMousePosition).Length <= 1)
+                return base.OnMouseMove(position);
+
+            lastMousePosition = position;
+            hasLastMousePosition = true;
+            mouseHasLeft = false;
+
+            if (position.x >= 0 && position.y >= 0 && position.x < Size.x && position.y < Size.y)
+            {
+                mouseChoice = ChoiceAt(position);
+                selectedChoice = mouseChoice;
+            }
+
+            return base.OnMouseMove(position);
+        }
+
+        public override void OnMouseLeave()
+        {
+            mouseChoice = -1;
+            mouseHasLeft = true;
+            base.OnMouseLeave();
+        }
+
+        int ChoiceAt(Vector2 position)
         {
             Vector2 Pos = position;
 
             TextHelper txt = new TextHelper(app, "burn");
             int textx = 55;
 
-            hover = -1;
-
             if (dialogmode == 0)
             {
                 int texty = 85;
                 String line = txt[499];
                 if (Pos.x >= textx && Pos.y >= texty && Pos.x < textx + fontText.GetWidth(line) && Pos.y < texty + 10)
-                {
-                    hover = 0;
-                }
+                    return 0;
             }
             else if (dialogmode == 1)
             {
@@ -284,14 +296,20 @@ namespace Burntime.Remaster
                     String line = conversation.Choices[i].Text;
 
                     if (Pos.x >= textx && Pos.y >= texty && Pos.x < textx + fontText.GetWidth(line) && Pos.y < texty + 10)
-                    {
-                        hover = i;
-                    }
+                        return i;
                     texty += 11;
                 }
             }
 
-            return base.OnMouseMove(Position);
+            return -1;
+        }
+
+        void ResetSelection()
+        {
+            mouseChoice = app.LastInputMode == InputMode.Mouse ? ChoiceAt(lastMousePosition) : -1;
+            selectedChoice = app.LastInputMode == InputMode.Mouse
+                ? mouseChoice
+                : dialogmode == 0 ? 0 : FirstVisibleChoice();
         }
 
         public override void OnRender(RenderTarget target)
@@ -325,10 +343,10 @@ namespace Burntime.Remaster
             {
                 textPos.y = 85;
 
-                if (hover == 0)
-                    fontMouseChoice.DrawText(target, textPos, txt[499], TextAlignment.Left, VerticalTextAlignment.Top);
+                if (selectedChoice == 0)
+                    fontSelectedChoice.DrawText(target, textPos, txt[499], TextAlignment.Left, VerticalTextAlignment.Top);
                 else
-                    fontKeyChoice.DrawText(target, textPos, txt[499], TextAlignment.Left, VerticalTextAlignment.Top);
+                    fontOptions.DrawText(target, textPos, txt[499], TextAlignment.Left, VerticalTextAlignment.Top);
             }
             else
             {
@@ -338,10 +356,8 @@ namespace Burntime.Remaster
                 {
                     String line = conversation.Choices[i].Text;
 
-                    if (hover == i)
-                        fontMouseChoice.DrawText(target, textPos, line, TextAlignment.Left, VerticalTextAlignment.Top);
-                    else if (selectedChoice == i)
-                        fontKeyChoice.DrawText(target, textPos, line, TextAlignment.Left, VerticalTextAlignment.Top);
+                    if (selectedChoice == i)
+                        fontSelectedChoice.DrawText(target, textPos, line, TextAlignment.Left, VerticalTextAlignment.Top);
                     else
                         fontOptions.DrawText(target, textPos, line, TextAlignment.Left, VerticalTextAlignment.Top);
                     textPos.y += 11;

@@ -5,6 +5,20 @@ public class SystemFile : File
     String path;
     public override bool HasFullPath { get { return true; } }
     public override String FullPath { get { return path; } }
+    public override DateTime? LastWriteTimeUtc
+    {
+        get
+        {
+            try
+            {
+                return System.IO.File.GetLastWriteTimeUtc(path);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+    }
 
     String name;
     String package;

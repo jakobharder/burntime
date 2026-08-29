@@ -3,6 +3,7 @@ using Burntime.Framework.GUI;
 using Burntime.Platform;
 using Burntime.Remaster;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Burntime.Classic.Scenes;
 
@@ -11,6 +12,8 @@ internal class OptionsJukeboxPage : Container
     readonly OptionFonts _fonts;
     readonly Dictionary<string, Button> _songButtons = new();
     Button? _lastPlayingButton;
+    Button[] _buttons = [];
+    int _selectedIndex;
 
     public OptionsJukeboxPage(Module app, OptionFonts fonts) : base(app)
     {
@@ -44,6 +47,69 @@ internal class OptionsJukeboxPage : Container
         }
 
         _lastPlayingButton = playingButton;
+    }
+
+    public void SetKeyboardActive(bool active)
+    {
+        HasFocus = active;
+        UpdateSelection();
+    }
+
+    void UpdateSelection()
+    {
+        for (int i = 0; i < _buttons.Length; i++)
+            _buttons[i].IsKeyboardSelected = HasFocus && i == _selectedIndex;
+    }
+
+    void MoveVertical(int direction)
+    {
+        int columnStart = _selectedIndex / 8 * 8;
+        int columnCount = System.Math.Min(8, _buttons.Length - columnStart);
+        int row = (_selectedIndex % 8 + direction + columnCount) % columnCount;
+        _selectedIndex = columnStart + row;
+        UpdateSelection();
+    }
+
+    bool MoveHorizontal(int direction)
+    {
+        int row = _selectedIndex % 8;
+        int column = _selectedIndex / 8;
+        int candidateColumn = column + direction;
+        int candidate = candidateColumn * 8 + row;
+        if (candidateColumn < 0 || candidate >= _buttons.Length)
+            return false;
+
+        _selectedIndex = candidate;
+        UpdateSelection();
+        return true;
+    }
+
+    public override bool OnInputAction(InputAction action)
+    {
+        if (_buttons.Length == 0)
+            return false;
+
+        if (action.IsUp() || action.IsDown())
+        {
+            MoveVertical(action.IsUp() ? -1 : 1);
+            return true;
+        }
+
+        if (action.IsLeft() || action.IsRight())
+        {
+            int direction = action.IsLeft() ? -1 : 1;
+            if (!MoveHorizontal(direction) && direction > 0)
+                return false;
+            return true;
+        }
+
+        if (action == InputAction.Primary)
+        {
+            _buttons[_selectedIndex].OnButtonClick();
+            return true;
+        }
+
+        return false;
     }
 
     static string Capitalize(string str)
@@ -80,6 +146,11 @@ internal class OptionsJukeboxPage : Container
 
             counter++;
         }
+
+        _buttons = _songButtons.Values.ToArray();
+        if (_selectedIndex >= _buttons.Length)
+            _selectedIndex = 0;
+        UpdateSelection();
     }
 
     void PlaySong(string song)

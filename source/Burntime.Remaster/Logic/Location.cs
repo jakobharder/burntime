@@ -155,6 +155,8 @@ namespace Burntime.Remaster.Logic
         // temporary
         [NonSerialized]
         public Maps.MapViewHoverInfo Hover;
+        [NonSerialized]
+        public Character HoverCharacter;
 
         #region food
         public const int MaxStockFood = 6;
@@ -174,6 +176,35 @@ namespace Burntime.Remaster.Logic
             get => AvailableProducts.Where(p => p >= 0).Select(p => ((ClassicGame)Container.Root).Productions[p]);
         }
 
+        public int GetCurrentProductionStockCount()
+        {
+            if (Production == null)
+                return 0;
+            return Rooms.Sum(room => room.Items.GetCount(Production.Produce));
+        }
+
+        internal void ConsumeExcessFoodStock(int maximumItems)
+        {
+            IEnumerable<(IItemCollection Owner, Item Item)> roomFood = Rooms
+                .SelectMany(room => room.Items
+                    .Where(item => item.FoodValue > 0)
+                    .Select(item => ((IItemCollection)room.Items, item)));
+            IEnumerable<(IItemCollection Owner, Item Item)> garrisonFood = CampNPC
+                .Where(npc => npc.Player == Player && !npc.IsDead)
+                .SelectMany(npc => npc.Items
+                    .Where(item => item.FoodValue > 0)
+                    .Select(item => ((IItemCollection)npc.Items, item)));
+            var stored = roomFood
+                .Concat(garrisonFood)
+                .OrderBy(entry => entry.Item.FoodValue)
+                .ThenBy(entry => entry.Item.TradeValue)
+                .ThenBy(entry => entry.Item.ID)
+                .ToArray();
+            int excess = stored.Length - maximumItems;
+            foreach (var entry in stored.Take(System.Math.Max(0, excess)))
+                entry.Owner.Remove(entry.Item);
+        }
+
         public Production.Rate GetFoodProductionRate(Production? production = null)
         {
             production ??= Production;
@@ -187,10 +218,10 @@ namespace Burntime.Remaster.Logic
             return production.GetRate(trapsInRooms + trapsOnNPCs, CampNPC.Count());
         }
 
-        public Production.Rate AutoSelectFoodProduction(bool onlyIfStarving)
+        public Production.Rate AutoSelectFoodProduction(bool onlyIfCurrentProducesNothing)
         {
             var info = GetFoodProductionRate();
-            if (!info.IsCampStarving && onlyIfStarving)
+            if (info.FoodPerDay > 0 && onlyIfCurrentProducesNothing)
                 return info;
 
             foreach (var production in ValidProductions)
@@ -226,12 +257,14 @@ namespace Burntime.Remaster.Logic
             Source.BeginTurn();
 
             // produce food
-            var production = AutoSelectFoodProduction(onlyIfStarving: true);
+            var production = AutoSelectFoodProduction(onlyIfCurrentProducesNothing: true);
             NPCFoodProduction = production.FoodPerDay;
             if (production.ItemDropInterval > 0)
             {
-                int alreadyInStock = Rooms.Sum(room => room.Items.GetCount(Production.Produce));
-                if (alreadyInStock < MaxStockFood)
+                int alreadyInStock = GetCurrentProductionStockCount();
+                // Only the selected product is capped. Food from an older
+                // selection remains untouched until normal use or AI cleanup.
+                if (alreadyInStock < MaxStockFood && Rooms.Any(room => !room.Items.IsFull))
                 {
                     productionState += 1;
                     if (productionState >= production.ItemDropInterval)

@@ -1,4 +1,5 @@
 ﻿using Burntime.Platform.Resource;
+using System.Text;
 
 namespace Burntime.Platform.Graphics;
 
@@ -78,6 +79,11 @@ public sealed class FontResource
 
 public class Font
 {
+    // Inline text markup: {x blinks x, while {{ renders a literal opening brace.
+    const char BlinkMarker = '{';
+
+    readonly record struct ParsedText(string Text, HashSet<int> BlinkingCharacters);
+
     public FontInfo Info;
 
 #warning slimdx todo below for parameters were internal
@@ -102,11 +108,13 @@ public class Font
         target.Layer++;
         if (!Info.Colorize)
         {
-            DrawText(target, position, text, align, verticalAlign, new PixelColor((int)(255 * alpha), 255, 255, 255));
+            DrawText(target, position, text, align, verticalAlign,
+                new PixelColor((int)(255 * alpha), 255, 255, 255));
         }
         else if (Info.UseBackColor)
         {
-            DrawText(target, position, text, align, verticalAlign, new PixelColor((int)(255 * alpha), 255, 255, 255));
+            DrawText(target, position, text, align, verticalAlign,
+                new PixelColor((int)(255 * alpha), 255, 255, 255));
         }
         else
         {
@@ -116,26 +124,36 @@ public class Font
         target.Layer--;
     }
 
-    void DrawText(RenderTarget target, Vector2 position, string text, TextAlignment align, VerticalTextAlignment verticalAlign, PixelColor color)
+    void DrawText(RenderTarget target, Vector2 position, string text, TextAlignment align,
+        VerticalTextAlignment verticalAlign, PixelColor color)
     {
         // TODO: text align
         if (text == null || text.Length == 0)
             return;
 
+        ParsedText parsed = ParseText(text);
         Vector2 offset = new Vector2(position);
 
-        string[] lines = text.Split('\n');
-        foreach (string str in lines)
+        string[] lines = parsed.Text.Split('\n');
+        int characterIndex = 0;
+        for (int lineIndex = 0; lineIndex < lines.Length; lineIndex++)
         {
+            string str = lines[lineIndex];
             if (str.Length == 0)
+            {
+                if (lineIndex < lines.Length - 1)
+                    characterIndex++;
                 continue;
+            }
 
             offset.x = position.x;
+            float lineWidth = GetWidthFPlain(str);
+            float renderX = offset.x;
 
             if (align == TextAlignment.Center)
-                offset.x -= GetRect(0, 0, str).Width / 2;
+                renderX -= lineWidth / 2;
             else if (align == TextAlignment.Right)
-                offset.x -= GetRect(0, 0, str).Width;
+                renderX -= lineWidth;
 
             if (verticalAlign == VerticalTextAlignment.Center)
                 offset.y -= GetHeight() / 2;
@@ -145,21 +163,34 @@ public class Font
             if (Borders == TextBorders.Window)
             {
                 Vector2 lt = new Vector2();
-                Vector2 rb = lt + target.Size - new Vector2(GetWidth(str), GetHeight());
-                offset.Min(lt);
-                offset.Max(rb);
+                float right = lt.x + target.Size.x - lineWidth;
+                int bottom = lt.y + target.Size.y - GetHeight();
+                renderX = System.Math.Max(renderX, lt.x);
+                offset.y = System.Math.Max(offset.y, lt.y);
+                renderX = System.Math.Min(renderX, right);
+                offset.y = System.Math.Min(offset.y, bottom);
             }
             else if (Borders == TextBorders.Screen)
             {
                 Vector2 lt = -target.ScreenOffset + 2;
-                Vector2 rb = lt + target.ScreenSize - new Vector2(GetWidth(str), GetHeight()) - 2;
-                offset.Min(lt);
-                offset.Max(rb);
+                float right = lt.x + target.ScreenSize.x - lineWidth - 2;
+                int bottom = lt.y + target.ScreenSize.y - GetHeight() - 2;
+                renderX = System.Math.Max(renderX, lt.x);
+                offset.y = System.Math.Max(offset.y, lt.y);
+                renderX = System.Math.Min(renderX, right);
+                offset.y = System.Math.Min(offset.y, bottom);
             }
 
             target.SelectSprite(Resource.Sprite);
 
-            float renderX = offset.x;
+            float renderY = offset.y;
+            if (Resource.Sprite.LinearFiltering)
+            {
+                Vector2f snapped = target.SnapToPhysicalPixels(new Vector2f(renderX, renderY));
+                renderX = snapped.x;
+                renderY = snapped.y;
+            }
+
             char previous = '\0';
             char[] charray = str.ToCharArray();
             foreach (char ch in charray)
@@ -167,13 +198,45 @@ public class Font
                 char current = translateChar(ch);
                 float kerningOffset = previous == '\0' ? 0 : GetKerningOverlap(previous, current);
                 renderX += kerningOffset;
-                renderX += DrawChar(target, current, new Vector2f(renderX, offset.y), color);
+                if (parsed.BlinkingCharacters.Contains(characterIndex) && target.TotalElapsed % 1 >= 0.5f)
+                    renderX += Resource.CharInfo[current].renderWidth;
+                else
+                    renderX += DrawChar(target, current, new Vector2f(renderX, renderY), color);
                 if (!char.IsWhiteSpace(ch))
                     previous = current;
+                characterIndex++;
             }
 
             offset.y += (int)(GetHeight() - Resource.Offset);
+            if (lineIndex < lines.Length - 1)
+                characterIndex++;
         }
+    }
+
+    static ParsedText ParseText(string text)
+    {
+        StringBuilder rendered = new(text.Length);
+        HashSet<int> blinkingCharacters = new();
+
+        for (int i = 0; i < text.Length; i++)
+        {
+            char current = text[i];
+            if (current != BlinkMarker)
+            {
+                rendered.Append(current);
+                continue;
+            }
+
+            if (++i >= text.Length)
+                break;
+
+            char escaped = text[i];
+            if (escaped != BlinkMarker)
+                blinkingCharacters.Add(rendered.Length);
+            rendered.Append(escaped);
+        }
+
+        return new ParsedText(rendered.ToString(), blinkingCharacters);
     }
 
     int GetKerningOverlap(char previous, char current)
@@ -193,6 +256,7 @@ public class Font
         if (!IsLoaded)
             _resourceManager.LoadFont(this);
 
+        str = ParseText(str).Text;
         Rect rc = new Rect(x, y, 0, 0);
         char last = '\n';
         char previous = '\0';
@@ -230,12 +294,22 @@ public class Font
 
     public int GetWidth(String Text)
     {
+        return (int)System.Math.Round(GetWidthF(Text));
+    }
+
+    public float GetWidthF(String text)
+    {
         if (!IsLoaded)
             _resourceManager.LoadFont(this);
 
+        return GetWidthFPlain(ParseText(text).Text);
+    }
+
+    float GetWidthFPlain(string text)
+    {
         float width = 0;
         char previous = '\0';
-        char[] charray = Text.ToCharArray();
+        char[] charray = text.ToCharArray();
         foreach (char ch in charray)
         {
             char current = translateChar(ch);
@@ -247,7 +321,7 @@ public class Font
                 previous = current;
         }
 
-        return (int)System.Math.Round(width);
+        return width;
     }
 
     public virtual int GetHeight()

@@ -12,6 +12,7 @@ class SpriteEntity : RenderEntity
     public Vector3 Position;
     public Color Color;
     public Platform.Vector2f Factor = Platform.Vector2f.One;
+    public bool LinearFiltering;
 }
 
 class LineEntity : RenderEntity

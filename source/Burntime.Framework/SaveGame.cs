@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Burntime.Platform.IO;
 using Burntime.Platform.Resource;
 
@@ -8,6 +9,7 @@ namespace Burntime.Framework;
 public class SaveGame
 {
     readonly Platform.IO.File? _file;
+    readonly long _contentPosition;
     public Stream? Stream => _file?.Stream;
 
     public string? Version { get; init; }
@@ -29,6 +31,7 @@ public class SaveGame
         {
             Game = reader.ReadString();
             Version = reader.ReadString();
+            _contentPosition = Stream.Position;
         }
         catch
         {
@@ -55,11 +58,12 @@ public class SaveGame
 
         writer.Write(game);
         writer.Write(version);
+        _contentPosition = Stream.Position;
 
         IsValid = true;
     }
 
-    public Dictionary<string, string>? PeakInfo(IResourceManager resourceManager)
+    public Dictionary<string, string>? PeakInfo(IResourceManager resourceManager, bool includeDetails = false)
     {
         if (!IsValid || Stream is null) return null;
 
@@ -67,13 +71,24 @@ public class SaveGame
         {
             var container = new States.StateManager(resourceManager);
 
+            Stream.Seek(_contentPosition, SeekOrigin.Begin);
             int player = Stream.ReadByte();
             var ids = new List<int>();
             for (int i = 0; i < player; i++)
                 ids.Add(Stream.ReadByte());
 
-            container.Load(Stream, saveHint: true);
-            return container.Root.GetSaveHint();
+            container.Load(Stream, saveHint: !includeDetails);
+            Dictionary<string, string> hints = includeDetails
+                ? container.Root.GetSaveDetails()
+                : container.Root.GetSaveHint();
+            if (includeDetails && ids.Count > 0)
+            {
+                States.PlayerState? firstPlayer = container.Root.Player
+                    .FirstOrDefault(candidate => candidate.Index == ids[0]);
+                if (firstPlayer is not null)
+                    hints["player"] = firstPlayer.Name;
+            }
+            return hints;
         }
         catch
         {

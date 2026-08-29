@@ -139,15 +139,16 @@ namespace Burntime.Remaster.Scenes
             return true;
         }
 
-        public override bool OnVKeyPress(SystemKey key)
+        public override bool OnInputAction(InputAction action)
         {
-            if (key == SystemKey.F8 || key == SystemKey.F9)
-                return false;
+            if (action == InputAction.Primary || action == InputAction.Back)
+            {
+                NextScene();
+                return true;
+            }
 
-            NextScene();
-            return true;
+            return false;
         }
-
         protected override void OnInactivateScene()
         {
             app.Engine.BlendOverlay.Speed = oldSpeed;

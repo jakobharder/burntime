@@ -264,7 +264,6 @@ public class RenderDevice : IDisposable
         const float PIXEL_CORRECTION = 0.0001f;
 
         var transformMatrix = Matrix.CreateScale(new Vector3(_engine.Resolution.Scale.x + PIXEL_CORRECTION, _engine.Resolution.Scale.y + PIXEL_CORRECTION, 1));
-        _spriteBatch.Begin(SpriteSortMode.FrontToBack, Microsoft.Xna.Framework.Graphics.BlendState.NonPremultiplied, SamplerState.PointClamp, null, null, null, transformMatrix);
 
         //SlimDX.Matrix lineMatrix = SlimDX.Matrix.AffineTransformation2D(1, new SlimDX.Vector2(), 0, new SlimDX.Vector2());
         //// TODO engine scale
@@ -274,11 +273,28 @@ public class RenderDevice : IDisposable
 
         if (_renderEntities != null)
         {
-            foreach (var sprite in _renderEntities.OfType<SpriteEntity>())
+            bool? linearFiltering = null;
+            foreach (var sprite in _renderEntities.OfType<SpriteEntity>().OrderBy(sprite => sprite.Position.Z))
             {
                 // diposed texture links may remain in queue after direct3d reset, just skip them
                 if ((sprite.Texture ?? sprite.SpriteFrame.Texture).IsDisposed)
                     continue;
+
+                bool useLinearFiltering = sprite.LinearFiltering &&
+                    (sprite.Factor.x * _engine.Resolution.Scale.x < 1 ||
+                     sprite.Factor.y * _engine.Resolution.Scale.y < 1);
+
+                if (linearFiltering != useLinearFiltering)
+                {
+                    if (linearFiltering.HasValue)
+                        _spriteBatch.End();
+
+                    linearFiltering = useLinearFiltering;
+                    _spriteBatch.Begin(SpriteSortMode.Deferred,
+                        Microsoft.Xna.Framework.Graphics.BlendState.NonPremultiplied,
+                        linearFiltering.Value ? SamplerState.LinearClamp : SamplerState.PointClamp,
+                        null, null, null, transformMatrix);
+                }
 
                 // recompute position for not 1:1 sprite resolutions
                 var position = new Microsoft.Xna.Framework.Vector2(sprite.Position.X, sprite.Position.Y);
@@ -293,7 +309,12 @@ public class RenderDevice : IDisposable
                     SpriteEffects.None,
                     sprite.Position.Z);
             }
+
+            if (linearFiltering.HasValue)
+                _spriteBatch.End();
         }
+
+        _spriteBatch.Begin(SpriteSortMode.FrontToBack, Microsoft.Xna.Framework.Graphics.BlendState.NonPremultiplied, SamplerState.PointClamp, null, null, null, transformMatrix);
 
         BlendOverlay.BlockFadeOut = _engine.IsLoading || BlendOverlay.Block;
         BlendOverlay.Render(elapsedSeconds, _spriteBatch);

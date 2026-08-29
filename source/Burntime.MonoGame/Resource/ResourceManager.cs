@@ -89,7 +89,9 @@ namespace Burntime.Platform.Resource
 
                 Sprite sprite = new Sprite(this, "", frame)
                 {
-                    Resolution = processor.Factor
+                    Resolution = processor.Factor,
+                    // Font filtering is selected later from the final physical scale.
+                    LinearFiltering = true
                 };
 
                 resource.Load(sprite, processor.CharInfo, processor.Kerning, processor.Offset, processor.Size.y);

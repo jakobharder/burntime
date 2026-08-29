@@ -116,15 +116,9 @@ namespace Burntime.Remaster.Scenes
             return true;
         }
 
-        public override bool OnVKeyPress(SystemKey key)
+        public override bool OnInputAction(InputAction action)
         {
-            app.SceneManager.PreviousScene();
-            return true;
-        }
-
-        public override bool OnKeyPress(char key)
-        {
-            if (char.ToLowerInvariant(key) != 'r')
+            if (action != InputAction.Primary && action != InputAction.Back)
                 return false;
 
             app.SceneManager.PreviousScene();

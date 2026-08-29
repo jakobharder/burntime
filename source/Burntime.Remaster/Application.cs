@@ -19,6 +19,9 @@ namespace Burntime.Remaster
 
     public class BurntimeClassic : Module
     {
+        public GamepadBindings GamepadBindings { get; } = new();
+        public KeyboardBindings KeyboardBindings { get; } = new();
+        internal AutosaveManager Autosaves { get; }
         public static new BurntimeClassic Instance
         {
             get { return (BurntimeClassic)instance; }
@@ -73,6 +76,9 @@ namespace Burntime.Remaster
 
         public BurntimeClassic()
         {
+            Autosaves = new AutosaveManager(this);
+            KeyboardActionBindings = KeyboardBindings;
+            GamepadActionBindings = GamepadBindings;
             FindClassesFromAssembly(typeof(BurntimeClassic).Assembly);
         }
 
@@ -99,6 +105,8 @@ namespace Burntime.Remaster
             // read user settings
             UserSettings = new ConfigFile();
             UserSettings.Open("user.txt");
+            KeyboardBindings.Load(Settings, UserSettings);
+            GamepadBindings.Load(Settings, UserSettings);
             FileSystem.LocalizationCode = UserSettings[""].GetString("language");
             Engine.IsFullscreen = UserSettings[""].GetBool("fullscreen", false);
             base.IsNewGfx = UserSettings[""].GetBool("newgfx", true);
@@ -181,6 +189,8 @@ namespace Burntime.Remaster
             UserSettings[""].Set("fullscreen", Engine.IsFullscreen);
             UserSettings[""].Set("newgfx", IsNewGfx);
             UserSettings[""].Set("language", FileSystem.LocalizationCode);
+            KeyboardBindings.Save(UserSettings);
+            GamepadBindings.Save(UserSettings);
             UserSettings.Save("user.txt");
         }
 

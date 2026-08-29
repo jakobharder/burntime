@@ -71,7 +71,8 @@ namespace Burntime.Remaster.Logic
             if (characterList.Count == 0)
                 return eatValue;
 
-            for (int step = 0; step < 9 && eatValue > 0; step++)
+            int maximumFood = characterList.Max(character => character.MaxFood);
+            for (int step = 0; step < maximumFood && eatValue > 0; step++)
             {
                 foreach (Character ch in characterList)
                 {
@@ -80,7 +81,7 @@ namespace Burntime.Remaster.Logic
                         (leader.Position - ch.Position).Length >= RangeFilterValue)
                         continue;
 
-                    if (ch.Food == step)
+                    if (ch.Food == step && ch.Food < ch.MaxFood)
                     {
                         eatValue--;
                         ch.Food++;

@@ -140,19 +140,9 @@ namespace Burntime.Remaster.Scenes
             return true;
         }
 
-        public override bool OnKeyPress(char Key)
+        public override bool OnInputAction(InputAction action)
         {
-            if (!handled)
-            {
-                PreviousScene();
-                handled = true;
-            }
-            return true;
-        }
-
-        public override bool OnVKeyPress(SystemKey key)
-        {
-            if (key == SystemKey.F8 || key == SystemKey.F9)
+            if (action != InputAction.Primary && action != InputAction.Back)
                 return false;
 
             if (!handled)

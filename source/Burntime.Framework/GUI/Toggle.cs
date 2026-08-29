@@ -46,10 +46,14 @@ public class Toggle : Button
 
     public override bool OnMouseClick(Platform.Vector2 Position, Platform.MouseButton Button)
     {
-        State = (State + 1) % states_.Count;
-
-        OnButtonClick();
+        NextState();
         return true;
+    }
+
+    public void NextState()
+    {
+        State = (State + 1) % states_.Count;
+        OnButtonClick();
     }
 
     public override void OnRender(RenderTarget Target)

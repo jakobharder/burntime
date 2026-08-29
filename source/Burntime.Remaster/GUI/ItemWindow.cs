@@ -17,6 +17,7 @@ namespace Burntime.Remaster.GUI
         CommandEvent rightClickEvent;
 
         static List<ItemWindow> hover = new List<ItemWindow>();
+        public bool ShowHoverText { get; set; } = true;
 
         public CommandEvent LeftClickEvent
         {
@@ -93,6 +94,9 @@ namespace Burntime.Remaster.GUI
                     break;
             }
 
+            if (Parent is ItemGridWindow grid)
+                grid.SelectFromMouseClick(index);
+
             if (Button == MouseButton.Left && leftClickEvent != null)
                 leftClickEvent.Execute(index);
             else if (Button == MouseButton.Right && rightClickEvent != null)
@@ -104,8 +108,7 @@ namespace Burntime.Remaster.GUI
         {
             base.OnRender(Target);
 
-            // show hover text only for one item
-            if (GetTopMostItem() == this && text != null)
+            if (ShowHoverText && GetTopMostItem() == this && text != null)
             {
                 Target.Layer += 5;
                 RenderTarget bigger = Target.GetSubBuffer(new Rect(-50, -50, 132, 132));

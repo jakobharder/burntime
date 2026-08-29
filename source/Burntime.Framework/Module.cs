@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 using Burntime.Platform;
@@ -116,6 +117,8 @@ namespace Burntime.Framework
 
         public ISprite MouseImage = null;
         public bool RenderMouse = true;
+        public volatile InputMode LastInputMode = InputMode.Mouse;
+        public bool MouseInputVisible => LastInputMode == InputMode.Mouse;
         public Nullable<Rect> MouseBoundings
         {
             get { return DeviceManager.Mouse.Boundings; }
@@ -126,6 +129,19 @@ namespace Burntime.Framework
         public SceneManager SceneManager;
         public IResourceManager ResourceManager { get; private set; }
         public DeviceManager DeviceManager;
+        public InputManager InputManager { get; } = new();
+        public IKeyboardBindings KeyboardActionBindings { get; protected set; } = new EmptyKeyboardBindings();
+        public IGamepadBindings GamepadActionBindings { get; protected set; } = new EmptyGamepadBindings();
+
+        public bool IsInputActionDown(InputAction action)
+        {
+            if (InputManager.ActionsDown.Contains(action))
+                return true;
+            foreach (GamepadControl control in DeviceManager.GamepadControlsDown)
+                if (GamepadActionBindings.GetAction(control) == action)
+                    return true;
+            return false;
+        }
         public ConfigFile Settings;
 
         public ConfigFile? UserSettings { get; protected set; }
@@ -167,7 +183,7 @@ namespace Burntime.Framework
 
             SceneManager.Render(target);
 
-            if (MouseImage != null && RenderMouse)
+            if (MouseImage != null && RenderMouse && MouseInputVisible)
             {
                 target.Layer = 255;
                 target.DrawSprite(DeviceManager.Mouse.Position, MouseImage);

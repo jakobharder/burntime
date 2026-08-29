@@ -179,6 +179,8 @@ public class Container : Window
     {
         foreach (Window window in windows)
             window.ModalLeave();
+
+        base.ModalLeave();
     }
 
     internal override bool MouseDown(Vector2 position, MouseButton button)
@@ -223,7 +225,7 @@ public class Container : Window
         base.KeyPress(Key);
     }
 
-    internal override void VKeyPress(SystemKey Key)
+    internal override void VKeyPress(SystemKey Key, ModifierKeys modifier = ModifierKeys.None)
     {
         if (!visible)
             return;
@@ -231,10 +233,77 @@ public class Container : Window
         foreach (Window window in windows)
         {
             if (window.IsVisible)
-                window.VKeyPress(Key);
+                window.VKeyPress(Key, modifier);
         }
 
-        base.VKeyPress(Key);
+        base.VKeyPress(Key, modifier);
+    }
+
+    internal override bool InputAction(InputAction action)
+    {
+        if (!visible)
+            return false;
+
+        foreach (Window window in windows)
+        {
+            if (window.IsVisible && window.InputAction(action))
+                return true;
+        }
+
+        return base.InputAction(action);
+    }
+
+    internal override bool HeldInputAction(InputAction action, float elapsed)
+    {
+        if (!visible)
+            return false;
+
+        foreach (Window window in windows)
+        {
+            if (window.IsVisible && window.HeldInputAction(action, elapsed))
+                return true;
+        }
+
+        return base.HeldInputAction(action, elapsed);
+    }
+
+    internal override bool InputGamepadControl(GamepadControl control)
+    {
+        if (!visible)
+            return false;
+
+        foreach (Window window in windows)
+            if (window.IsVisible && window.InputGamepadControl(control))
+                return true;
+
+        return base.InputGamepadControl(control);
+    }
+
+    internal override bool HeldGamepadControl(GamepadControl control, float elapsed)
+    {
+        if (!visible)
+            return false;
+
+        foreach (Window window in windows)
+            if (window.IsVisible && window.HeldGamepadControl(control, elapsed))
+                return true;
+
+        return base.HeldGamepadControl(control, elapsed);
+    }
+
+    internal override bool AcceptsTextInput
+    {
+        get
+        {
+            if (!visible)
+                return false;
+
+            foreach (Window window in windows)
+                if (window.IsVisible && window.AcceptsTextInput)
+                    return true;
+
+            return base.AcceptsTextInput;
+        }
     }
 
     public override void OnResizeScreen()

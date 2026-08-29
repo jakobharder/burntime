@@ -4,6 +4,8 @@ namespace Burntime.Framework;
 
 public abstract class Scene : Container
 {
+    public virtual bool UseCardinalGamepadMovement => false;
+
     public string? Music { get; set; }
     public bool MusicLoop { get; set; } = true;
     public bool KeepMusic { get; set; } = false;

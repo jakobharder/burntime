@@ -1,5 +1,4 @@
 ﻿using Burntime.Platform.Utils;
-using System.Net;
 
 namespace Burntime.Platform;
 
@@ -125,14 +124,18 @@ public enum SystemKey
     Enter,
     Other,
     Up,
-    Down
+    Down,
+    Left,
+    Right,
+    Tab
 }
 
 [Flags]
 public enum ModifierKeys
 {
     None = 0,
-    LeftAlt
+    LeftAlt,
+    Shift
 }
 
 public readonly struct Key
@@ -197,7 +200,29 @@ public class Keyboard
 public class DeviceManager
 {
     private readonly MouseDevice _mouse;
+    private readonly List<GamepadControl> _gamepadControls = new();
+    private readonly HashSet<GamepadControl> _gamepadControlsDown = new();
     public IMouseDevice Mouse => _mouse;
+
+    public GamepadControl[] GamepadControls
+    {
+        get { lock (_gamepadControls) return _gamepadControls.ToArray(); }
+    }
+
+    public GamepadControl[] ConsumeGamepadControls()
+    {
+        lock (_gamepadControls)
+        {
+            GamepadControl[] controls = _gamepadControls.ToArray();
+            _gamepadControls.Clear();
+            return controls;
+        }
+    }
+
+    public GamepadControl[] GamepadControlsDown
+    {
+        get { lock (_gamepadControlsDown) return _gamepadControlsDown.ToArray(); }
+    }
 
 #warning TODO implement proper mouse state
     public bool IsRightDown
@@ -265,6 +290,33 @@ public class DeviceManager
     public void VKeyPress(SystemKey key, ModifierKeys modifier = ModifierKeys.None)
     {
         Keyboard.AddKey(new Key(key, modifier));
+    }
+
+    public void GamepadControlPress(GamepadControl control)
+    {
+        if (control == GamepadControl.None)
+            return;
+        lock (_gamepadControls)
+            _gamepadControls.Add(control);
+    }
+
+    public void SetGamepadControlDown(GamepadControl control, bool isDown)
+    {
+        if (control == GamepadControl.None)
+            return;
+        lock (_gamepadControlsDown)
+        {
+            if (isDown)
+                _gamepadControlsDown.Add(control);
+            else
+                _gamepadControlsDown.Remove(control);
+        }
+    }
+
+    public void ClearGamepadControlsDown()
+    {
+        lock (_gamepadControlsDown)
+            _gamepadControlsDown.Clear();
     }
 
     public void Clear()

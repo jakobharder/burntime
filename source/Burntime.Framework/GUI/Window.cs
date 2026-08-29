@@ -211,6 +211,12 @@ public class Window
         if (!visible)
             return false;
 
+        if (!app.MouseInputVisible)
+        {
+            ModalLeave();
+            return false;
+        }
+
         if (Boundings.PointInside(position))
         {
             if (!isEntered)
@@ -265,11 +271,87 @@ public class Window
             OnKeyPress(key);
     }
 
-    internal virtual void VKeyPress(SystemKey key)
+    internal virtual void VKeyPress(SystemKey key, ModifierKeys modifier = ModifierKeys.None)
     {
         if (hasFocus)
-            OnVKeyPress(key);
+            OnVKeyPress(key, modifier);
     }
+
+    internal virtual bool InputAction(InputAction action)
+    {
+        if (!hasFocus)
+            return false;
+
+        if (OnInputAction(action))
+            return true;
+
+        return false;
+    }
+
+    internal virtual bool HeldInputAction(InputAction action, float elapsed)
+    {
+        return hasFocus && OnHeldInputAction(action, elapsed);
+    }
+
+    internal virtual bool InputGamepadControl(GamepadControl control)
+    {
+        if (!hasFocus)
+            return false;
+
+        InputAction action = UseGamepadDPadNavigation ? GetDPadNavigationAction(control) : global::Burntime.Framework.InputAction.None;
+        if (action == global::Burntime.Framework.InputAction.None)
+            action = app.GamepadActionBindings.GetAction(control);
+        action = ResolveInputAction(action);
+        return action != global::Burntime.Framework.InputAction.None && InputAction(action);
+    }
+
+    internal virtual bool HeldGamepadControl(GamepadControl control, float elapsed)
+    {
+        if (!hasFocus)
+            return false;
+
+        InputAction action = app.GamepadActionBindings.GetAction(control);
+        action = ResolveInputAction(action);
+        return action != global::Burntime.Framework.InputAction.None && HeldInputAction(action, elapsed);
+    }
+
+    protected virtual bool UseGamepadDPadNavigation => true;
+
+    public virtual global::Burntime.Framework.InputAction ResolveInputAction(
+        global::Burntime.Framework.InputAction action) => action switch
+    {
+        global::Burntime.Framework.InputAction.PanCameraUp => global::Burntime.Framework.InputAction.MoveUp,
+        global::Burntime.Framework.InputAction.PanCameraDown => global::Burntime.Framework.InputAction.MoveDown,
+        global::Burntime.Framework.InputAction.PanCameraLeft => global::Burntime.Framework.InputAction.MoveLeft,
+        global::Burntime.Framework.InputAction.PanCameraRight => global::Burntime.Framework.InputAction.MoveRight,
+        global::Burntime.Framework.InputAction.Statistics => global::Burntime.Framework.InputAction.LeftArea,
+        global::Burntime.Framework.InputAction.LocationInfo => global::Burntime.Framework.InputAction.RightArea,
+        global::Burntime.Framework.InputAction.Options or global::Burntime.Framework.InputAction.Inventory or
+            global::Burntime.Framework.InputAction.NextTurn or
+            global::Burntime.Framework.InputAction.ToggleInteractionMode => global::Burntime.Framework.InputAction.None,
+        _ => action
+    };
+
+    public virtual bool TryGetInputAction(Key key, out global::Burntime.Framework.InputAction action)
+    {
+        action = app.KeyboardActionBindings.GetAction(key);
+        if (action == global::Burntime.Framework.InputAction.None)
+            return false;
+
+        action = ResolveInputAction(action);
+        return action != global::Burntime.Framework.InputAction.None;
+    }
+
+    static InputAction GetDPadNavigationAction(GamepadControl control) => control switch
+    {
+        GamepadControl.DPadUp => global::Burntime.Framework.InputAction.MoveUp,
+        GamepadControl.DPadDown => global::Burntime.Framework.InputAction.MoveDown,
+        GamepadControl.DPadLeft => global::Burntime.Framework.InputAction.MoveLeft,
+        GamepadControl.DPadRight => global::Burntime.Framework.InputAction.MoveRight,
+        _ => global::Burntime.Framework.InputAction.None
+    };
+
+    internal virtual bool AcceptsTextInput => hasFocus && WantsTextInput;
 
     internal virtual void Render(RenderTarget target)
     {
@@ -306,6 +388,10 @@ public class Window
     public virtual bool OnMouseUp(Vector2 position, MouseButton button) { return false; }
     public virtual bool OnKeyPress(char key) { return false; }
     public virtual bool OnVKeyPress(SystemKey key) { return false; }
+    public virtual bool OnVKeyPress(SystemKey key, ModifierKeys modifier) => OnVKeyPress(key);
+    public virtual bool OnInputAction(InputAction action) { return false; }
+    public virtual bool OnHeldInputAction(InputAction action, float elapsed) { return false; }
+    public virtual bool WantsTextInput => false;
     // state
     public virtual void OnActivate() { }
     public virtual void OnShow() { }

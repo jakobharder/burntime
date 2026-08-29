@@ -15,6 +15,10 @@ namespace Burntime.Remaster.Logic
             get { return name; }
             set { name = value; }
         }
+
+        // AI bosses can bank one complete meat ration above the classic food
+        // limit. Followers and human-controlled bosses retain the classic cap.
+        public override int MaxFood => Player?.Type == PlayerType.Ai ? 14 : 9;
         
         public override void Die()
         {

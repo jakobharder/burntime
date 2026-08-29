@@ -10,12 +10,13 @@ public class Button : Window
     public TextAlignment TextHorizontalAlign = TextAlignment.Default;
 
     public bool IsHover { get; private set; }
+    public bool IsKeyboardSelected { get; set; }
 
     private bool _isEnabled = true;
     public bool IsEnabled
     {
         get => _isEnabled;
-        set { _isEnabled = value; if (_isEnabled == false) IsHover = false; }
+        set { _isEnabled = value; if (_isEnabled == false) { IsHover = false; IsKeyboardSelected = false; } }
     }
 
     public CommandEvent? Command;
@@ -98,6 +99,8 @@ public class Button : Window
     private string _lastLanguage = string.Empty;
     public override void OnRender(RenderTarget Target)
     {
+        bool isHighlighted = IsHover || IsKeyboardSelected;
+
         if (IsTextOnly && _lastLanguage != app.Language)
         {
             RefreshTextSize();
@@ -127,7 +130,7 @@ public class Button : Window
         HoverImage?.Touch();
         DownImage?.Touch();
 
-        if (IsHover && HoverImage != null)
+        if (isHighlighted && HoverImage != null)
         {
             Target.DrawSprite(HoverImage);
         }
@@ -161,14 +164,14 @@ public class Button : Window
             GuiFont font;
             if (!IsEnabled && DisabledFont is not null)
                 font = DisabledFont;
-            else if (IsEnabled && IsHover && HoverFont is not null)
+            else if (IsEnabled && isHighlighted && HoverFont is not null)
                 font = HoverFont;
             else
                 font = Font;
             font.DrawText(Target, textpos, Text, TextHorizontalAlign, TextVerticalAlign);
         }
 
-        if (IsHover && ToolTipText is not null && ToolTipFont is not null)
+        if (isHighlighted && ToolTipText is not null && ToolTipFont is not null)
         {
             Vector2 textpos;
             textpos.x = Size.x / 2;

@@ -43,9 +43,16 @@ namespace Burntime.Platform.Graphics
                 scale.y = scale.x;
             if (scale.x == 0 || scale.y == 0)
                 scale = Vector2f.One;
-            factor = Vector2f.One / scale;
+            int multiplier = config[""].GetInt("multiplier");
+            if (multiplier <= 0)
+                multiplier = 1;
 
-            height = (int)System.Math.Round(height / factor.y);
+            Vector2f effectiveScale = scale * multiplier;
+            factor = Vector2f.One / effectiveScale;
+
+            // Round at the base export scale first. Higher-resolution atlases are
+            // exact integer multiples of that rasterization.
+            height = (int)System.Math.Round(height * scale.y) * multiplier;
 
             charInfo = new Dictionary<char, CharInfo>();
             kerning = new Dictionary<string, int>();
@@ -77,9 +84,9 @@ namespace Burntime.Platform.Graphics
                 float sourcePos = 0;
                 for (int i = 0; i < sequence.Length; i++)
                 {
-                    int pos = (int)System.Math.Round(sourcePos / factor.x);
+                    int pos = (int)System.Math.Round(sourcePos * scale.x) * multiplier;
                     sourcePos += widths[i];
-                    int end = (int)System.Math.Round(sourcePos / factor.x);
+                    int end = (int)System.Math.Round(sourcePos * scale.x) * multiplier;
 
                     CharInfo info = new CharInfo();
                     info.pos = pos;
