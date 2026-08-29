@@ -3,7 +3,7 @@ name: release
 on:
   push:
     tags:
-      - "*"
+      - "v*"
 
 jobs:
   windows:
@@ -56,6 +56,15 @@ jobs:
           rm -r ./bin/Release/win-x64/publish/game/classic_jp
           rm -r ./bin/Release/win-x64/publish/game/amiga
           rm -r ./bin/Release/win-x64/publish/game/music
+
+      - name: Smoke-test packaged build
+        run: >-
+          ./bin/Release/win-x64/publish/Burntime.exe
+          --ai-simulate
+          --turns 10
+          --difficulty hard
+          --seed 123
+          --report ai-simulation-smoke.txt
 
       - name: Package
         run: |
@@ -138,6 +147,15 @@ jobs:
           rm -r ./bin/Release/linux-x64/publish/game/classic_jp
           rm -r ./bin/Release/linux-x64/publish/game/amiga
           rm -r ./bin/Release/linux-x64/publish/game/music
+
+      - name: Smoke-test packaged build
+        run: >-
+          ./bin/Release/linux-x64/publish/Burntime
+          --ai-simulate
+          --turns 10
+          --difficulty hard
+          --seed 123
+          --report ai-simulation-smoke.txt
 
       - name: Package
         run: tar -czf burntime-${{ github.ref_name }}-linux-x64.tar.gz -C bin/Release/linux-x64/publish .
