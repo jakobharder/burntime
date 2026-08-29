@@ -80,12 +80,16 @@ namespace Burntime.Remaster.PathFinding
 
         static bool IsWalkable(PathMask mask, Vector2f position)
         {
-            if (position.x < 0 || position.y < 0 ||
-                position.x >= mask.Width * mask.Resolution ||
-                position.y >= mask.Height * mask.Resolution)
+            if (position.x < 0 || position.y < 0)
                 return false;
 
-            return mask.IsWalkableMapPosition((Vector2)position);
+            // Use the same centered mask-cell sampling as ComplexPath. Some
+            // original entry points sit just over a blocked cell boundary when
+            // floor-sampled, even though pathfinding places them in the adjacent
+            // walkable cell.
+            Vector2 maskPosition = ((Vector2)position + (mask.Resolution / 2 - 1)) /
+                mask.Resolution;
+            return mask[maskPosition];
         }
 
         public override void DebugRender(RenderTarget target)
