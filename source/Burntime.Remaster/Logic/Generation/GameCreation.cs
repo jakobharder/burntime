@@ -127,6 +127,8 @@ namespace Burntime.Remaster.Logic.Generation
             // set start inventory for player
             SetStartInventory(game);
 
+            game.InitPersistentTelemetry("new");
+
             container.Synchronize(false); // DEBUG
 
             if (startServer)

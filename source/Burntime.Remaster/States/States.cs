@@ -77,6 +77,36 @@ namespace Burntime.Remaster
             UpdateSaveHint();
         }
 
+        internal protected override void AfterDeserialization()
+        {
+            base.AfterDeserialization();
+            persistentTelemetry = null;
+        }
+
+        [System.Runtime.Serialization.OptionalField]
+        byte[]? persistentTelemetryData;
+
+        [NonSerialized]
+        PersistentTelemetry? persistentTelemetry;
+
+        public byte[]? PersistentTelemetryData => persistentTelemetryData;
+
+        internal void InitPersistentTelemetry(string reason)
+        {
+            persistentTelemetry = new PersistentTelemetry(this, persistentTelemetryData);
+            persistentTelemetry.RecordSession(reason);
+        }
+
+        internal void SetPersistentTelemetryData(byte[] data)
+        {
+            persistentTelemetryData = data;
+        }
+
+        internal void NotifyCampOwnershipChanged(Location location, Player? previous, Player? current)
+        {
+            persistentTelemetry?.RecordCampOwnershipChange(location, previous, current);
+        }
+
         /// <summary>
         /// Applies runtime initialization and compatibility cleanup after a
         /// save has been fully deserialized and its state links resolved.
@@ -88,11 +118,14 @@ namespace Burntime.Remaster
                 if (player.AiState is AI.ClassicAiState ai)
                     ai.InitAfterLoad();
             }
+            InitPersistentTelemetry("load");
         }
 
         public override void Turn()
         {
             World.Turn();
+
+            persistentTelemetry?.RecordCompletedTurn();
 
             base.Turn();
             UpdateSaveHint();
@@ -106,7 +139,10 @@ namespace Burntime.Remaster
             foreach (PlayerState player in Player)
             {
                 if (World.VictoryCondition.Object.Process((Player)player))
+                {
+                    persistentTelemetry?.RecordVictory((Player)player);
                     return player;
+                }
             }
 
             return null;

@@ -89,7 +89,14 @@ namespace Burntime.Remaster.Logic
         public Player? Player
         {
             get { return (player != null) ? player : null; }
-            set { player = value; }
+            set
+            {
+                Player? previous = Player;
+                if (previous == value)
+                    return;
+                player = value;
+                (Container.Root as ClassicGame)?.NotifyCampOwnershipChanged(this, previous, value);
+            }
         }
 
         public bool AreEntrancesBlockedFor(Player visitor)
