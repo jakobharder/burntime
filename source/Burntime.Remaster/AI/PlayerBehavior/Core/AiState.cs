@@ -192,15 +192,10 @@ namespace Burntime.Remaster.AI
             itemPool = container.Create<AiItemPool>();
         }
 
-        protected override void AfterResolving()
-        {
-            base.AfterResolving();
-            strategicTargetWasNeutral = headedLocation != null &&
-                headedLocation.Object?.Player == null;
-        }
-
         internal void InitAfterLoad()
         {
+            strategicTargetWasNeutral = headedLocation != null &&
+                headedLocation.Object?.Player == null;
             if (HasAttackPlan)
                 attackPlanUntilDay = RootGame.World.Day +
                     AiPolicy.ForDifficulty(Difficulty).AttackPlanTurns;

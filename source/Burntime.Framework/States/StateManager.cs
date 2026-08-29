@@ -255,6 +255,22 @@ namespace Burntime.Framework.States
             UpdateDebugInfo();
         }
 
+        /// <summary>
+        /// Maintains a shared local state without creating multiplayer snapshots
+        /// or change records. Newly created objects must be promoted before the
+        /// mark phase so their links participate in reachability analysis.
+        /// </summary>
+        public void CollectGarbage()
+        {
+            if (added.Count != 0)
+            {
+                objects.Add(added, externalReferences);
+                added.Clear();
+            }
+            objects.CollectGarbage(root, externalReferences);
+            UpdateDebugInfo();
+        }
+
         public Stream GetAllStates()
         {
             Stream s = new MemoryStream();

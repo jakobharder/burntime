@@ -95,13 +95,14 @@ namespace Burntime.Framework.Network
             Thread.CurrentThread.Name = "GameServer";
             bool gameOver = false;
 
-            // check if we can skip any synchronization (all clients are local)
-            bool skipAnySynchronization = true;
+            // Local clients share the server state and need lifecycle maintenance,
+            // but not multiplayer snapshots or incremental change records.
+            bool localGame = true;
             foreach (GameClient client in Clients)
             {
                 if (!client.IsLocal)
                 {
-                    skipAnySynchronization = false;
+                    localGame = false;
                     break;
                 }
             }
@@ -127,7 +128,9 @@ namespace Burntime.Framework.Network
                 }
 
                 // merge and update server game state
-                if (!skipAnySynchronization)
+                if (localGame)
+                    container.CollectGarbage();
+                else
                     container.Synchronize();
 
                 for (int i = 0; i < wait.Count; i++)
@@ -227,7 +230,7 @@ namespace Burntime.Framework.Network
                         break;
                     }
 
-                    if (!skipAnySynchronization)
+                    if (!localGame)
                         container.Synchronize(false);
 
                     //container.CheckConsistency(); // DEBUG
