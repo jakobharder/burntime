@@ -2,7 +2,7 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
-expected_hash="6de7cba3490518274de9e08bb137faf44ba1587c8008719890015b7d692483d8"
+expected_hash="0d8a86dcc358fbcaa3a3e295152f1456d52d1c77aac129175a809725b8acde6a"
 report="$(mktemp "${TMPDIR:-/tmp}/burntime-ai-refactor.XXXXXX")"
 trap 'rm -f "$report"' EXIT
 
