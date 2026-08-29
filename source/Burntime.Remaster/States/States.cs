@@ -151,6 +151,15 @@ namespace Burntime.Remaster
         int saveHintDays;
         int saveHintLocations;
 
+        // OptionalField keeps saves written before 1.1 loadable. Their default
+        // values are handled by GetSaveHint and the options menu's legacy path.
+        [System.Runtime.Serialization.OptionalField]
+        int saveHintDifficulty;
+        [System.Runtime.Serialization.OptionalField]
+        string? saveHintPlayer;
+        [System.Runtime.Serialization.OptionalField]
+        long saveHintDateTimeUtcTicks;
+
         public override bool HasValidSaveHint => saveHintDays != 0;
 
         public override void UpdateSaveHint()
@@ -159,27 +168,41 @@ namespace Burntime.Remaster
             {
                 saveHintDays = 1;
                 saveHintLocations = 0;
+                saveHintDifficulty = 0;
+                saveHintPlayer = null;
             }
             else
             {
                 saveHintDays = World.Day;
-                saveHintLocations = World.Players.OfType<Player>().FirstOrDefault(x => x.Type == PlayerType.Human)?.GetOwnedLocationCount(World) ?? 0;
+                Player? player = World.Players.OfType<Player>()
+                    .FirstOrDefault(x => x.Type == PlayerType.Human);
+                saveHintLocations = player?.GetOwnedLocationCount(World) ?? 0;
+                saveHintDifficulty = World.Difficulty;
+                saveHintPlayer = player?.Name;
             }
+            saveHintDateTimeUtcTicks = DateTime.UtcNow.Ticks;
         }
 
         public override Dictionary<string, string> GetSaveHint()
         {
-            return new Dictionary<string, string>()
+            var hint = new Dictionary<string, string>()
             {
                 { "days", saveHintDays.ToString() },
-                { "camps", saveHintLocations.ToString() }
+                { "camps", saveHintLocations.ToString() },
+                { "difficulty", saveHintDifficulty.ToString() }
             };
+            if (!string.IsNullOrWhiteSpace(saveHintPlayer))
+                hint["player"] = saveHintPlayer;
+            if (saveHintDateTimeUtcTicks > 0)
+                hint["datetime"] = new DateTime(saveHintDateTimeUtcTicks, DateTimeKind.Utc)
+                    .ToString("O", System.Globalization.CultureInfo.InvariantCulture);
+            return hint;
         }
 
         public override Dictionary<string, string> GetSaveDetails()
         {
             Dictionary<string, string> details = GetSaveHint();
-            details["difficulty"] = World.Difficulty.ToString();
+            details["difficulty"] = World?.Difficulty.ToString() ?? saveHintDifficulty.ToString();
             return details;
         }
 

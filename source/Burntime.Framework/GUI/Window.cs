@@ -265,6 +265,14 @@ public class Window
         return false;
     }
 
+    internal virtual bool MouseWheel(Vector2 position, int delta)
+    {
+        if (!visible || !Boundings.PointInside(position))
+            return false;
+
+        return OnMouseWheel(position - Position, delta);
+    }
+
     internal virtual void KeyPress(char key)
     {
         if (hasFocus)
@@ -386,6 +394,7 @@ public class Window
     public virtual void OnMouseLeave() { }
     public virtual bool OnMouseDown(Vector2 position, MouseButton button) { return false; }
     public virtual bool OnMouseUp(Vector2 position, MouseButton button) { return false; }
+    public virtual bool OnMouseWheel(Vector2 position, int delta) { return false; }
     public virtual bool OnKeyPress(char key) { return false; }
     public virtual bool OnVKeyPress(SystemKey key) { return false; }
     public virtual bool OnVKeyPress(SystemKey key, ModifierKeys modifier) => OnVKeyPress(key);

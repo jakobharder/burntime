@@ -574,6 +574,7 @@ namespace Burntime.Remaster.Logic.Generation
                     app.ActiveClient?.StateContainer ?? container;
                 if (saveContainer is null)
                     throw new InvalidOperationException("No game state is available to save.");
+                saveContainer.Root.UpdateSaveHint();
                 saveContainer.Save(game.Stream);
             }
             finally
@@ -594,7 +595,7 @@ namespace Burntime.Remaster.Logic.Generation
             try
             {
                 if (!game.IsValid || game.Stream is null || game.Game != "classic" ||
-                    game.Version != BurntimeClassic.SavegameVersion)
+                    !BurntimeClassic.IsSupportedSavegameVersion(game.Version))
                     return false;
 
                 int player = game.Stream.ReadByte();

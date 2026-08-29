@@ -211,6 +211,20 @@ public class Container : Window
         return base.MouseUp(position, button);
     }
 
+    internal override bool MouseWheel(Vector2 position, int delta)
+    {
+        if (!visible)
+            return false;
+
+        foreach (Window window in windows)
+        {
+            if (window.IsVisible && window.MouseWheel(position - Position, delta))
+                return true;
+        }
+
+        return base.MouseWheel(position, delta);
+    }
+
     internal override void KeyPress(char Key)
     {
         if (!visible)

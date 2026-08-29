@@ -16,6 +16,12 @@ public struct MouseClickInfo
     public MouseButton Button;
 }
 
+public readonly struct MouseWheelInfo
+{
+    public Vector2 Position { get; init; }
+    public int Delta { get; init; }
+}
+
 public interface IMouseDevice
 {
     Vector2 Position { get; }
@@ -26,6 +32,7 @@ public interface IMouseDevice
     /// thread-safe
     /// </summary>
     IEnumerable<MouseClickInfo> Clicks { get; }
+    IEnumerable<MouseWheelInfo> WheelEvents { get; }
 }
 
 sealed class MouseDevice : IMouseDevice
@@ -35,6 +42,7 @@ sealed class MouseDevice : IMouseDevice
     private Vector2 current = Vector2.Zero;
     private Nullable<Vector2> previous;
     private List<MouseClickInfo> clicks = new List<MouseClickInfo>();
+    private List<MouseWheelInfo> wheelEvents = new List<MouseWheelInfo>();
 
     public bool IsRightDown { get; set; }
     public Rect? Boundings { get; set; }
@@ -90,6 +98,15 @@ sealed class MouseDevice : IMouseDevice
         }
     }
 
+    public IEnumerable<MouseWheelInfo> WheelEvents
+    {
+        get
+        {
+            lock (this)
+                return wheelEvents.ToArray();
+        }
+    }
+
     /// <summary>
     /// thread-safe
     /// </summary>
@@ -107,6 +124,18 @@ sealed class MouseDevice : IMouseDevice
     {
         lock (this)
             clicks.Clear();
+    }
+
+    public void AddWheel(MouseWheelInfo wheel)
+    {
+        lock (this)
+            wheelEvents.Add(wheel);
+    }
+
+    public void ClearWheelEvents()
+    {
+        lock (this)
+            wheelEvents.Clear();
     }
 }
 
@@ -267,6 +296,12 @@ public class DeviceManager
         });
     }
 
+    public void MouseWheel(Vector2 position, int delta)
+    {
+        if (delta != 0)
+            _mouse.AddWheel(new() { Position = new Vector2(position), Delta = delta });
+    }
+
     public void MouseLeave()
     {
         if (_mouse.LastDirection == Vector2.Zero) return;
@@ -322,6 +357,7 @@ public class DeviceManager
     public void Clear()
     {
         _mouse.ClearClicks();
+        _mouse.ClearWheelEvents();
         Keyboard.ClearKeys();
     }
 }

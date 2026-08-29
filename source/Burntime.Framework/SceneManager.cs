@@ -142,6 +142,9 @@ namespace Burntime.Framework
                         handle.MouseClick(click.Position - parentPos, click.Button);
                 }
 
+                foreach (MouseWheelInfo wheel in app.DeviceManager.Mouse.WheelEvents)
+                    handle.MouseWheel(wheel.Position - parentPos, wheel.Delta);
+
                 foreach (InputAction rawAction in app.InputManager.ConsumeActions())
                 {
                     InputAction action = handle.ResolveInputAction(rawAction);

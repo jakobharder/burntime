@@ -27,7 +27,10 @@ namespace Burntime.Remaster
             get { return (BurntimeClassic)instance; }
         }
 
-        public static string SavegameVersion = "0.1.2";
+        public const string SavegameVersion = "1.1";
+        public const string PreviousSavegameVersion = "0.1.2";
+        public static bool IsSupportedSavegameVersion(string? version) =>
+            version == SavegameVersion || version == PreviousSavegameVersion;
         public static string FontName = "font.txt";
 
         public static readonly PixelColor LightGray = new(212, 212, 212);

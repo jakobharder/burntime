@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Burntime.Classic.Scenes;
 
@@ -38,8 +39,18 @@ internal class OptionsSavesPage : Container
         public DateTime LastWriteTimeUtc;
         public bool MetadataLoaded;
 
-        public bool IsValid => Version == BurntimeClassic.SavegameVersion && Hints is not null;
+        public bool IsValid => BurntimeClassic.IsSupportedSavegameVersion(Version) && Hints is not null;
         public bool IsAutosave => AutosaveManager.IsAutosave(FileName);
+    }
+
+    sealed class MetadataLoadResult
+    {
+        public int Generation;
+        public string FileName = "";
+        public DateTime LastWriteTimeUtc;
+        public string? Version;
+        public Dictionary<string, string>? Hints;
+        public string? Error;
     }
 
     sealed class SaveRowButton : Button
@@ -95,6 +106,9 @@ internal class OptionsSavesPage : Container
     int _markedIndex;
     int _scrollOffset;
     int _selectedAction;
+    int _metadataGeneration;
+    int _metadataPreloadIndex;
+    Task<MetadataLoadResult>? _metadataLoadTask;
 
     bool CanCreateSave => app.Server?.StateContainer is not null;
     int SaveEntryOffset => CanCreateSave ? 1 : 0;
@@ -105,6 +119,7 @@ internal class OptionsSavesPage : Container
     public OptionsSavesPage(Module app, OptionFonts fonts) : base(app)
     {
         _fonts = fonts;
+        Size = new Vector2(320, 200);
 
         var saveButtons = new AutoAlignContainer(app)
         {
@@ -165,6 +180,24 @@ internal class OptionsSavesPage : Container
 
         _actionButtons = new[] { _load, _save, _delete };
         CreateSaveRows();
+    }
+
+    public override bool OnMouseWheel(Vector2 position, int delta)
+    {
+        var listBounds = new Rect(LIST_X, LIST_Y, LIST_WIDTH, VISIBLE_SAVE_COUNT * ROW_HEIGHT);
+        if (!listBounds.PointInside(position) || EntryCount <= VISIBLE_SAVE_COUNT)
+            return false;
+
+        int maximumOffset = System.Math.Max(0, EntryCount - VISIBLE_SAVE_COUNT);
+        int newOffset = System.Math.Clamp(_scrollOffset - System.Math.Sign(delta), 0, maximumOffset);
+        if (newOffset != _scrollOffset)
+        {
+            _scrollOffset = newOffset;
+            RefreshVisibleRows();
+            UpdateKeyboardSelection();
+        }
+
+        return true;
     }
 
     public void SetKeyboardActive(bool active)
@@ -343,6 +376,7 @@ internal class OptionsSavesPage : Container
 
     public override void OnUpdate(float elapsed)
     {
+        UpdateMetadataPreload();
         UpdateKeyboardSelection();
         int hoveredEntry = HoveredEntryIndex;
 
@@ -453,6 +487,8 @@ internal class OptionsSavesPage : Container
         _saves.AddRange(refreshed
             .OrderByDescending(save => save.LastWriteTimeUtc)
             .ThenBy(save => save.FileName, StringComparer.OrdinalIgnoreCase));
+        _metadataGeneration++;
+        _metadataPreloadIndex = 0;
 
         if (changed is not null)
         {
@@ -504,7 +540,6 @@ internal class OptionsSavesPage : Container
                 if (saveInfo is null)
                     continue;
 
-                EnsureMetadataLoaded(saveInfo);
                 button.SecondaryText = GetTimestampText(saveInfo);
                 button.Text = GetRowText(saveInfo, button.SecondaryText);
             }
@@ -517,22 +552,97 @@ internal class OptionsSavesPage : Container
         _downIndicator.IsVisible = _scrollOffset + VISIBLE_SAVE_COUNT < EntryCount;
     }
 
-    void EnsureMetadataLoaded(SaveInfo saveInfo)
+    void UpdateMetadataPreload()
     {
-        if (saveInfo.MetadataLoaded)
+        if (_metadataLoadTask is { IsCompleted: true })
+        {
+            MetadataLoadResult? result = null;
+            try
+            {
+                result = _metadataLoadTask.GetAwaiter().GetResult();
+            }
+            catch (Exception exception)
+            {
+                Log.Warning($"Could not inspect save metadata: {exception.Message}");
+            }
+            _metadataLoadTask = null;
+
+            if (result?.Error is { Length: > 0 } error)
+                Log.Warning($"Could not inspect save metadata for '{result.FileName}': {error}");
+
+            if (result is not null && result.Generation == _metadataGeneration &&
+                _saveInfos.TryGetValue(result.FileName, out SaveInfo? saveInfo) &&
+                saveInfo.LastWriteTimeUtc == result.LastWriteTimeUtc)
+            {
+                saveInfo.Version = result.Version;
+                saveInfo.Hints = result.Hints;
+                saveInfo.MetadataLoaded = true;
+
+                int entryIndex = FindEntry(saveInfo.FileName);
+                if (entryIndex >= _scrollOffset && entryIndex < _scrollOffset + VISIBLE_SAVE_COUNT)
+                    RefreshVisibleRows();
+            }
+        }
+
+        if (_metadataLoadTask is not null)
             return;
 
-        var game = new SaveGame("saves/" + saveInfo.FileName);
+        SaveInfo? next = FindNextMetadataToLoad();
+        if (next is null)
+            return;
+
+        int generation = _metadataGeneration;
+        string fileName = next.FileName;
+        DateTime lastWriteTimeUtc = next.LastWriteTimeUtc;
+        var resourceManager = app.ResourceManager;
+        _metadataLoadTask = Task.Run(() => LoadMetadata(resourceManager, generation,
+            fileName, lastWriteTimeUtc));
+    }
+
+    SaveInfo? FindNextMetadataToLoad()
+    {
+        for (int row = 0; row < VISIBLE_SAVE_COUNT; row++)
+        {
+            SaveInfo? visible = GetSaveAtEntry(_scrollOffset + row);
+            if (visible is { MetadataLoaded: false })
+                return visible;
+        }
+
+        while (_metadataPreloadIndex < _saves.Count)
+        {
+            SaveInfo candidate = _saves[_metadataPreloadIndex++];
+            if (!candidate.MetadataLoaded)
+                return candidate;
+        }
+        return null;
+    }
+
+    static MetadataLoadResult LoadMetadata(Platform.Resource.IResourceManager resourceManager,
+        int generation, string fileName, DateTime lastWriteTimeUtc)
+    {
+        var result = new MetadataLoadResult
+        {
+            Generation = generation,
+            FileName = fileName,
+            LastWriteTimeUtc = lastWriteTimeUtc
+        };
+        SaveGame? game = null;
         try
         {
-            saveInfo.Version = game.Version;
-            saveInfo.Hints = game.PeakInfo(app.ResourceManager, includeDetails: true);
-            saveInfo.MetadataLoaded = true;
+            game = new SaveGame("saves/" + fileName);
+            result.Version = game.Version;
+            bool legacy = game.Version == BurntimeClassic.PreviousSavegameVersion;
+            result.Hints = game.PeakInfo(resourceManager, includeDetails: legacy);
+        }
+        catch (Exception exception)
+        {
+            result.Error = exception.Message;
         }
         finally
         {
-            game.Close();
+            game?.Close();
         }
+        return result;
     }
 
     string GetRowText(SaveInfo saveInfo, string timestamp)
@@ -550,9 +660,16 @@ internal class OptionsSavesPage : Container
 
     static string FormatDisplayName(string name, bool isAutosave) => isAutosave ? $"[{name}]" : name;
 
-    static string GetTimestampText(SaveInfo saveInfo) => saveInfo.LastWriteTimeUtc == DateTime.MinValue
+    static string GetTimestampText(SaveInfo saveInfo)
+    {
+        DateTime timestamp = DateTime.TryParse(saveInfo.Hints?.GetValueOrDefault("datetime"),
+            CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTime savedAt)
+            ? savedAt.ToUniversalTime()
+            : saveInfo.LastWriteTimeUtc;
+        return timestamp == DateTime.MinValue
         ? ""
-        : saveInfo.LastWriteTimeUtc.ToLocalTime().ToString("MMM-dd HH:mm", CultureInfo.InvariantCulture);
+        : timestamp.ToLocalTime().ToString("MMM-dd HH:mm", CultureInfo.InvariantCulture);
+    }
 
     static string GetDisplayName(string fileName)
     {

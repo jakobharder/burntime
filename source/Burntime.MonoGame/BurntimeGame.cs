@@ -210,6 +210,7 @@ namespace Burntime.MonoGame
         bool _leftClicked = false;
         bool _rightClicked = false;
         Point? _previousMousePosition;
+        int? _previousScrollWheelValue;
         InputAction _leftStickDirection;
         bool _leftStickNavigationLatched;
 
@@ -249,6 +250,17 @@ namespace Burntime.MonoGame
 
                 var mousePosition = new Vector2f(mouseState.X, mouseState.Y) * (Vector2f)Resolution.Game / (Vector2f)Resolution.Native;
                 DeviceManager.MouseMove(mousePosition);
+
+                if (_previousScrollWheelValue.HasValue && mouseInside)
+                {
+                    int wheelDelta = mouseState.ScrollWheelValue - _previousScrollWheelValue.Value;
+                    if (wheelDelta != 0)
+                    {
+                        _burntimeApp.LastInputMode = InputMode.Mouse;
+                        DeviceManager.MouseWheel(mousePosition, wheelDelta);
+                    }
+                }
+                _previousScrollWheelValue = mouseState.ScrollWheelValue;
 
                 // ignore clicks when not shown and active
                 if (!IsActive) return;
