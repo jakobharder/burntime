@@ -17,6 +17,8 @@ namespace Burntime.MonoGame
 {
     public class BurntimeGame : Game, IEngine, ILoadingCounter
     {
+        const int TargetFramesPerSecond = 60;
+
         public Resolution Resolution { get; } = new();
         public DeviceManager DeviceManager { get; set; }
         public ResourceManager ResourceManager { get; set; }
@@ -69,6 +71,9 @@ namespace Burntime.MonoGame
         public BurntimeGame()
         {
             _graphics = new GraphicsDeviceManager(this);
+            IsFixedTimeStep = true;
+            TargetElapsedTime = TimeSpan.FromSeconds(1.0 / TargetFramesPerSecond);
+            _graphics.SynchronizeWithVerticalRetrace = true;
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
         }
@@ -204,7 +209,7 @@ namespace Burntime.MonoGame
                 RenderDevice.Begin();
                 _burntimeApp.Render(MainTarget);
                 RenderDevice.End();
-            });
+            }, framesPerSecond: TargetFramesPerSecond);
         }
 
         bool _leftClicked = false;
@@ -653,6 +658,7 @@ namespace Burntime.MonoGame
             base.OnExiting(sender, args);
 
             Music.StopThread();
+            _gameThread.Stop();
             _burntimeApp.Close();
         }
 
