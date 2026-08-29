@@ -8,3 +8,5 @@ launchSettings.json
 artifacts/
 bindebug
 *~lock~
+__pycache__
+.cache
