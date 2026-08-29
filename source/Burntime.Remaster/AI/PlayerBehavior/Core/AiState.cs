@@ -25,11 +25,11 @@ namespace Burntime.Remaster.AI
         public int MaxAdvance;
 
         /// <summary>
-        /// Runtime-only test/simulation override, stored as difficulty + 1.
-        /// Loading a save intentionally restores the world's selected difficulty.
+        /// AI policy profile: 0 = easy, 1 = normal, 2 = hard.
+        /// The default value intentionally maps old saves without this field to easy.
         /// </summary>
-        [NonSerialized]
-        public int DifficultyOverride;
+        [System.Runtime.Serialization.OptionalField]
+        public int Difficulty;
     }
     #endregion
 
@@ -308,9 +308,7 @@ namespace Burntime.Remaster.AI
         }
         // The serialized itemPool field name is retained for pre-rename save compatibility.
         internal AiSettings Configuration => settings;
-        internal int Difficulty => settings.DifficultyOverride > 0
-            ? settings.DifficultyOverride - 1
-            : RootGame.World.Difficulty;
+        internal int Difficulty => settings.Difficulty;
         internal int SlumpMaterialGrantsUsed
         {
             get => slumpMaterialGrantsUsed;

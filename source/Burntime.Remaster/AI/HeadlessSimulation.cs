@@ -21,7 +21,6 @@ public sealed class HeadlessSimulationOptions
 
 /// <summary>
 /// Runs a complete game synchronously without starting the server, AI, or render threads.
-/// No fields are added to serialized game-state types.
 /// </summary>
 public static class HeadlessSimulation
 {

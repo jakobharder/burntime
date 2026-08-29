@@ -246,8 +246,7 @@ namespace Burntime.Remaster.Logic.Generation
                     bool explicitDifficulty = Info.AiDifficulties != null &&
                         p.Index < Info.AiDifficulties.Length;
                     AI.AiSettings aiSettings = explicitDifficulty
-                        ? AI.AiPolicy.SettingsFor(
-                            Info.AiDifficulties[p.Index], inheritGameDifficulty: false)
+                        ? AI.AiPolicy.SettingsFor(Info.AiDifficulties[p.Index])
                         : AI.AiPolicy.SettingsForPlayer(p.Index, Info.Difficulty);
                     p.AiState = container.Create<AI.ClassicAiState>(p, aiSettings);
                 }

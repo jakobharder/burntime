@@ -56,20 +56,18 @@ internal sealed class AiPolicy
     {
         string[] configured = Config["players"].GetStrings("difficulties");
         if (playerIndex < 0 || playerIndex >= configured.Length)
-            return SettingsFor(gameDifficulty, inheritGameDifficulty: true);
+            return SettingsFor(gameDifficulty);
         string value = configured[playerIndex];
-        bool inheritGameDifficulty = value.Equals("game", StringComparison.OrdinalIgnoreCase) ||
-            value.Equals("inherit", StringComparison.OrdinalIgnoreCase);
-        return SettingsFor(ParseDifficulty(value, gameDifficulty), inheritGameDifficulty);
+        return SettingsFor(ParseDifficulty(value, gameDifficulty));
     }
 
-    internal static AiSettings SettingsFor(int difficulty, bool inheritGameDifficulty)
+    internal static AiSettings SettingsFor(int difficulty)
     {
         AiPolicy policy = ForDifficulty(difficulty);
         return new AiSettings
         {
             MaxAdvance = policy.CampMaxAdvance,
-            DifficultyOverride = inheritGameDifficulty ? 0 : difficulty + 1
+            Difficulty = difficulty
         };
     }
 
