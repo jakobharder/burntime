@@ -12,7 +12,7 @@ Ha, what a blast!}
 Man oh man. Another hot day!}
 }
 }#
-This damm heat is killing me!}
+This damn heat is killing me!}
 }
 }#
 Come on tell me what you want!}
@@ -20,7 +20,7 @@ Come on tell me what you want!}
 }#
 I'm sure we can arrange something}
 if you give me |C...}
-...then you're the boss.}
+...then you have a deal.}
 }
 }#
 I'm not sure...}
@@ -36,8 +36,6 @@ that you don't get hurt!}
 }#
 }#
 }}
-
-
 
 
 

@@ -22,7 +22,7 @@ and then we'll}
 talk again!}
 }
 }#
-I make usefull things...}
+I make useful things...}
 For example rat traps.}
 }#
 Maybe later sometime...}
@@ -30,7 +30,6 @@ Maybe later sometime...}
 }#
 }#
 }}
-
 
 
 

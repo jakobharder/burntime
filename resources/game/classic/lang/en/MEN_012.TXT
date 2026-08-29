@@ -10,7 +10,7 @@ What?}
 Tell me what you want}
 or take off!}
 }#
-Allright but I want |C.}
+All right but I want |C.}
 }
 }#
 Give me |C and I'll}
@@ -24,5 +24,4 @@ I'm not working for you.}
 }#
 }#
 }}
-
 

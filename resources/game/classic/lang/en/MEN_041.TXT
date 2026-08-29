@@ -1,5 +1,5 @@
-If you keep your eyes pealled}
-you often find usefull things.}
+If you keep your eyes peeled}
+you often find useful things.}
 }#
 Greetings!}
 }
@@ -10,7 +10,7 @@ Greetings, stranger!}
 What's wrong?}
 }
 }#
-Allright. But give me}
+All right. But give me}
 |C!}
 }#
 Okay, if you give me}
@@ -24,4 +24,3 @@ No, preferably not.}
 }#
 }#
 }}
-

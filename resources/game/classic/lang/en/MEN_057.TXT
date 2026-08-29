@@ -9,11 +9,11 @@ Hello my patient!}
 }
 }#
 From a medical point of}
-view the wisdom of living...}
-...in this area is highly}
-debatable!}
+view, living in this area...}
+...is extremely inadvisable!}
+}
 }#
-What's on your heart?}
+What's troubling you?}
 }
 }#
 I'll go along if you give me}
@@ -31,6 +31,5 @@ No! No! No!}
 }#
 }#
 }}
-
 
 

@@ -491,9 +491,9 @@ ZBuff_20}
 End conversation.}
 Would you like to work for me?}
 What's up?}
-Allright, you've got the job.}
+All right, you've got the job.}
 No, stay where you are.}
-Allright, you stay here.}
+All right, you stay here.}
 So what? Get lost!}
 What's your profession?}
 OK, you'll get |C}
@@ -516,10 +516,10 @@ look at you for that.}
 }
 To improve your horrendous}
 condition is going to cost}
-you alot more than that.}
+you a lot more than that.}
 I appreciate people who}
 realize the true value of}
-there health.}
+their health.}
 I won't even kill you for}
 nothing.}
 }
@@ -629,7 +629,7 @@ Or you could try your hand as..}
 ..sounder 19th century in '1869'.}
 What? You don't have this..}
 ..fantastic game yet?}
-Allright, hustle down to your..}
+All right, hustle down to your..}
 ..nearest dealer and pick it up.}
 By the way - in a few months there..}
 ..will be another fascinating..}
@@ -644,14 +644,14 @@ You can stop here, because there..}
 Apparently you don't believe us..}
 ..that's OK, if you don't have..}
 ..anything else to do, but to admire..}
-..this animations.}
+..these animations.}
 }
 }
 }
 Wow, are you ever stubborn!!}
 }
 }
-Allright we'll showing your results again!}
+All right, we'll show your results again!}
 }
 }
 }

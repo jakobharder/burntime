@@ -2,7 +2,7 @@ How should I know?}
 }
 }#
 Hey Bud, you look}
-familar.}
+familiar.}
 }#
 Yeah Bud...}
 }
@@ -12,7 +12,7 @@ What do you want from me?}
 What's wrong?}
 }
 }#
-Allright Bud, for |C}
+All right Bud, for |C}
 I'll be your man!}
 }#
 Hmmm...}
@@ -30,7 +30,6 @@ for breakfast.}
 }#
 }#
 }}
-
 
 
 

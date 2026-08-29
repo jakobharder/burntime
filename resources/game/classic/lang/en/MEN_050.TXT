@@ -6,7 +6,7 @@ suit?}
 In some places it is very}
 dangerous without protection!}
 }#
-Damm radioactivity!}
+Damn radioactivity!}
 You can't see it and you..}
 ...can't smell it.}
 }
@@ -23,7 +23,7 @@ I risk it if you get me}
 |A}
 }
 }#
-If I want do kill myself...}
+If I want to kill myself...}
 }
 ...I'll do it in a different}
 way!}

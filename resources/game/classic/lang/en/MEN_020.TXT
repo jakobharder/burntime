@@ -9,8 +9,8 @@ Hi, everything OK?}
 }#
 What's up now?}
 }
-Do you almost know what}
-you want?}
+Have you decided what}
+you want yet?}
 }#
 Give me |C!}
 }
@@ -25,7 +25,7 @@ less. Get me |C.}
 I'm a mercenary, and I'm}
 proud of it!}
 }#
-I don't want to kill myself}
+I'm not suicidal!}
 }
 }#
 }#
