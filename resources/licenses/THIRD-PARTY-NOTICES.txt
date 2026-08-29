@@ -1,9 +1,8 @@
-Burntime Remastered - Third-Party Notices
-==========================================
+Burntime - Third-Party Notices
+==============================
 
-This file contains notices for third-party software distributed with Burntime
-Remastered. The software is provided by its respective authors under the terms
-shown below.
+This file contains notices for third-party software distributed with Burntime.
+The software is provided by its respective authors under the terms shown below.
 
 
 MonoGame 3.8.5

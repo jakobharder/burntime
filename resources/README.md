@@ -1,6 +1,7 @@
 ﻿# Burntime
 
-Burntime is a remaster and expansion of Max Design's PC strategy game 'Burntime' from 1993.
+Burntime is a remaster and expansion of Max Design's 1993 strategy game 'Burntime'.
+It recreates the original game with remastered graphics and modern platform support, while also adding new and expanded gameplay.
 
 - [Project on GitHub](https://github.com/jakobharder/burntime)
 - [Burntime.org Forum](http://www.burntime.org)
@@ -23,20 +24,19 @@ Key | Scene | Effect
 
 ## Credits
 
-This project is not affiliated with Max Design or the original creators. The
-original game, graphics and other assets remain the property of Max Design and
-their original creators.
+Burntime is a community project and is not affiliated with Max Design or the original developers of Burntime.
+The original game, graphics, music, and other assets were created by Max Design and the original development team.
 
-A big thank you to Martin Lasser, Wilfried Reiter and Hannes Seifert for allowing
-this community remaster to use the original graphics and music.
+Special thanks to to Martin Lasser, Wilfried Reiter and Hannes Seifert for allowing
+this remaster to use the original graphics and music.
 
 ### Remaster
 
 Role | Names
 --- | ---
-Development | Jakob Harder
+Development & remaster | Jakob Harder
 Spanish translation | Germán Jakob
-Contributions | Krystian Rabe, Felix Stolle, Chris1982, graysonwall, Shadow, Maschine, Memento
+Additional contributions | Krystian Rabe, Felix Stolle, Chris1982, graysonwall, Shadow, Maschine, Memento
 
 ### Max Design
 
