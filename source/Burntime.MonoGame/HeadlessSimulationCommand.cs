@@ -34,13 +34,23 @@ internal static class HeadlessSimulationCommand
             burnGfx.Initialize(resources);
             app.InitializeHeadless();
 
+            string? loadGamePath = parsed.LoadSavePath is null
+                ? null
+                : HeadlessFileMounts.MountInputFile(
+                    parsed.LoadSavePath, "ai-simulation-input");
+            string? saveGamePath = parsed.SaveAtEndPath is null
+                ? null
+                : HeadlessFileMounts.MountOutputFile(parsed.SaveAtEndPath);
+
             string report = HeadlessSimulation.Run(app, new HeadlessSimulationOptions
             {
                 Turns = parsed.Turns,
                 Difficulty = parsed.Difficulty,
                 AiDifficulties = parsed.AiDifficulties,
                 Seed = parsed.Seed,
-                ExtendedGame = parsed.ExtendedGame
+                ExtendedGame = parsed.ExtendedGame,
+                LoadGamePath = loadGamePath,
+                SaveGamePath = saveGamePath
             });
 
             if (parsed.ReportPath is null)
@@ -63,7 +73,8 @@ internal static class HeadlessSimulationCommand
         {
             Console.Error.WriteLine(exception.Message);
             Console.Error.WriteLine("Usage: Burntime --ai-simulate [--turns N] [--difficulty easy|normal|hard] " +
-                "[--ai-difficulties easy,normal,hard,hard] [--seed N] [--report PATH] [--extended]");
+                "[--ai-difficulties easy,normal,hard,hard] [--seed N] [--load-save PATH] " +
+                "[--save-at-end PATH] [--report PATH] [--extended]");
             return 2;
         }
         catch (Exception exception)
@@ -100,6 +111,12 @@ internal static class HeadlessSimulationCommand
                     break;
                 case "--report":
                     result.ReportPath = NextValue(args, ref index, argument);
+                    break;
+                case "--load-save":
+                    result.LoadSavePath = NextValue(args, ref index, argument);
+                    break;
+                case "--save-at-end":
+                    result.SaveAtEndPath = NextValue(args, ref index, argument);
                     break;
                 case "--extended":
                     result.ExtendedGame = true;
@@ -157,6 +174,8 @@ internal static class HeadlessSimulationCommand
         public int[]? AiDifficulties { get; set; }
         public int Seed { get; set; } = 1;
         public string? ReportPath { get; set; }
+        public string? LoadSavePath { get; set; }
+        public string? SaveAtEndPath { get; set; }
         public bool ExtendedGame { get; set; }
     }
 

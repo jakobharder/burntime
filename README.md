@@ -49,8 +49,28 @@ scripts/ai-simulate.sh --turns 100 --difficulty hard --seed 123 --report ai-run.
 - `--seed`: random seed for reproducible runs; default `1`.
 - `--report`: optional output file; without it, the report is printed to the terminal.
 - `--extended`: optionally use the extended-game item set instead of 1993 rules.
+- `--load-save`: start the simulation from an existing `.sav` instead of a new game.
+- `--save-at-end`: save the resulting game after the requested turns complete.
 
 The report summarizes player condition, travel, camps, stationed NPCs, and major timeline events.
+
+For example, continue a player save for 25 turns and write a new save:
+
+```sh
+scripts/ai-simulate.sh --load-save old.sav --turns 25 --save-at-end continued.sav
+```
+
+### Save-game compatibility tests
+
+Place historical save fixtures below `tests/savegames`, grouped by release, and run:
+
+```sh
+scripts/savegame-test.sh
+```
+
+Every `.sav` is loaded recursively and advanced through at least one complete
+turn, including human-controlled player slots. See
+[`tests/savegames/README.md`](tests/savegames/README.md) for the fixture layout.
 
 Check that the standard AI baseline has not changed:
 

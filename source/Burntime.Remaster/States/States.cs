@@ -77,7 +77,7 @@ namespace Burntime.Remaster
             UpdateSaveHint();
         }
 
-        internal protected override void AfterDeserialization()
+        protected override void AfterDeserialization()
         {
             base.AfterDeserialization();
             persistentTelemetry = null;

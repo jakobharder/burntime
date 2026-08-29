@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths:
       - "source/**"
+      - "tests/savegames/**"
       - "resources/licenses/**"
       - ".github/workflows/linux.yml"
 
@@ -29,6 +30,15 @@ jobs:
         -r linux-x64
         --self-contained true
         -p:PublishSingleFile=true
+
+    - name: Test historical save games
+      shell: bash
+      run: |
+        if find tests/savegames -type f -iname '*.sav' | grep -q .; then
+          bin/Release/linux-x64/publish/Burntime --savegame-test tests/savegames
+        else
+          echo "No historical save-game fixtures checked in yet."
+        fi
 
     - name: Verify third-party licenses
       run: |

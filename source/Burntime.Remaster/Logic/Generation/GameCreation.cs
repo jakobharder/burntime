@@ -570,7 +570,11 @@ namespace Burntime.Remaster.Logic.Generation
                 for (int i = 0; i < app.Clients.Count; i++)
                     game.Stream.WriteByte((byte)app.Clients[i].Player);
                 //app.Server.StateContainer.Save(game.Stream);
-                app.ActiveClient.StateContainer.Save(game.Stream);
+                Framework.States.StateManager saveContainer =
+                    app.ActiveClient?.StateContainer ?? container;
+                if (saveContainer is null)
+                    throw new InvalidOperationException("No game state is available to save.");
+                saveContainer.Save(game.Stream);
             }
             finally
             {
@@ -578,7 +582,7 @@ namespace Burntime.Remaster.Logic.Generation
             }
         }
 
-        public bool LoadGame(string filename)
+        public bool LoadGame(string filename, bool startServer = true)
         {
             if (container == null)
                 container = new Burntime.Framework.States.StateManager(app.ResourceManager);
@@ -586,18 +590,23 @@ namespace Burntime.Remaster.Logic.Generation
             app.Clients.Clear();
 
             Burntime.Framework.SaveGame game = new Burntime.Framework.SaveGame(filename);
-
-            if (game.Game != "classic" || game.Version != BurntimeClassic.SavegameVersion)
-                return false;
-
-            int player = game.Stream.ReadByte();
             List<int> ids = new List<int>();
-            for (int i = 0; i < player; i++)
-                ids.Add(game.Stream.ReadByte());
+            try
+            {
+                if (!game.IsValid || game.Stream is null || game.Game != "classic" ||
+                    game.Version != BurntimeClassic.SavegameVersion)
+                    return false;
 
-            container.Load(game.Stream);
+                int player = game.Stream.ReadByte();
+                for (int i = 0; i < player; i++)
+                    ids.Add(game.Stream.ReadByte());
 
-            game.Close();
+                container.Load(game.Stream);
+            }
+            finally
+            {
+                game.Close();
+            }
 
             app.Server = new Burntime.Framework.Network.GameServer();
             app.GameServer = app.Server;
@@ -648,7 +657,8 @@ namespace Burntime.Remaster.Logic.Generation
                 p.Flag.Object.Animation.Progressive = false;
             }
 
-            app.Server.Run();
+            if (startServer)
+                app.Server.Run();
 
             app.Autosaves.OnGameLoaded(filename);
 
