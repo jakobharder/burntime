@@ -8,16 +8,16 @@ class InventoryKeyboardNavigation
 {
     readonly InventoryWindow inventory;
     readonly ItemGridWindow roomGrid;
-    readonly Action secondaryAction;
+    readonly Action globalAction;
     readonly Action exitAction;
     bool roomAreaActive;
 
     public InventoryKeyboardNavigation(InventoryWindow inventory, ItemGridWindow roomGrid,
-        Action secondaryAction, Action exitAction)
+        Action globalAction, Action exitAction)
     {
         this.inventory = inventory;
         this.roomGrid = roomGrid;
-        this.secondaryAction = secondaryAction;
+        this.globalAction = globalAction;
         this.exitAction = exitAction;
     }
 
@@ -81,9 +81,9 @@ class InventoryKeyboardNavigation
             return true;
         }
 
-        if (action == InputAction.Secondary)
+        if (action == InputAction.GlobalAction)
         {
-            secondaryAction();
+            globalAction();
             EnsureNonEmptyArea();
             return true;
         }
