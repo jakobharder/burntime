@@ -1,5 +1,19 @@
 # Input layout
 
+## Selection
+
+- **Hover** and **focus** are the same navigation target: mouse mode presents it as
+  hover, keyboard/gamepad mode as focus.
+- Mouse mode has no focused item when nothing is hovered.
+- Entering a page in keyboard/gamepad mode immediately focuses its first enabled item.
+- Switching from mouse to keyboard/gamepad keeps focus on the hovered item, or uses
+  the first enabled item when nothing is hovered.
+- Directional input is applied relative to that focus.
+- Mouse click activates the hovered item. Enter and Gamepad A activate only an item
+  that had visible focus before the button press; otherwise they only establish focus.
+- The resulting **active item**, such as a playing track, active tab or marked save,
+  is persistent state and separate from hover/focus.
+
 ## Action mappings
 
 | InputAction | Keyboard | Gamepad | Context

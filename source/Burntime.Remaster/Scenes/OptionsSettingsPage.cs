@@ -2,6 +2,7 @@
 using Burntime.Framework.GUI;
 using Burntime.Platform;
 using Burntime.Remaster;
+using System;
 
 namespace Burntime.Classic.Scenes;
 
@@ -14,7 +15,7 @@ internal class OptionsSettingsPage : Container
     readonly Button _fullscreenToggle;
     readonly Button _languageToggle;
     readonly Button[] _buttons;
-    int _selectedIndex;
+    int _focusIndex;
 
     readonly Button _hintText;
 
@@ -70,36 +71,61 @@ internal class OptionsSettingsPage : Container
     public void SetKeyboardActive(bool active)
     {
         HasFocus = active;
-        if (active && !_buttons[_selectedIndex].IsEnabled)
-            MoveSelection(1);
-        UpdateSelection();
+        if (active && app.LastInputMode != InputMode.Mouse)
+            _focusIndex = Array.FindIndex(_buttons, button => button.IsEnabled);
+        UpdateFocus();
     }
 
-    void MoveSelection(int direction)
+    void MoveFocus(int direction)
     {
         do
-            _selectedIndex = (_selectedIndex + direction + _buttons.Length) % _buttons.Length;
-        while (!_buttons[_selectedIndex].IsEnabled);
-        UpdateSelection();
+            _focusIndex = (_focusIndex + direction + _buttons.Length) % _buttons.Length;
+        while (!_buttons[_focusIndex].IsEnabled);
+        UpdateFocus();
     }
 
-    void UpdateSelection()
+    void UpdateFocus()
     {
+        bool keyboardFocus = HasFocus && app.LastInputMode != InputMode.Mouse;
+        if (HasFocus && !keyboardFocus)
+            _focusIndex = Array.FindIndex(_buttons, button => button.IsEnabled && button.IsHover);
+
         for (int i = 0; i < _buttons.Length; i++)
-            _buttons[i].IsKeyboardSelected = HasFocus && i == _selectedIndex;
+        {
+            if (keyboardFocus && _buttons[i].IsHover)
+                _buttons[i].OnMouseLeave();
+            _buttons[i].IsKeyboardSelected = keyboardFocus && i == _focusIndex;
+        }
+    }
+
+    bool PrepareFocusForInput()
+    {
+        int visibleFocusIndex = Array.FindIndex(_buttons, button =>
+            button.IsEnabled && (button.IsHover || button.IsKeyboardSelected));
+        bool hadVisibleFocus = visibleFocusIndex >= 0 ||
+            _focusIndex >= 0 && _buttons[_focusIndex].IsEnabled;
+        if (visibleFocusIndex >= 0)
+            _focusIndex = visibleFocusIndex;
+        else if (!hadVisibleFocus)
+            _focusIndex = Array.FindIndex(_buttons, button => button.IsEnabled);
+        UpdateFocus();
+        return hadVisibleFocus;
     }
 
     public override bool OnInputAction(InputAction action)
     {
         if (action.IsUp() || action.IsDown())
         {
-            MoveSelection(action.IsUp() ? -1 : 1);
+            PrepareFocusForInput();
+            MoveFocus(action.IsUp() ? -1 : 1);
             return true;
         }
 
         if (action == InputAction.Primary)
         {
-            _buttons[_selectedIndex].OnButtonClick();
+            if (!PrepareFocusForInput())
+                return true;
+            _buttons[_focusIndex].OnButtonClick();
             return true;
         }
 
@@ -108,6 +134,8 @@ internal class OptionsSettingsPage : Container
 
     public override void OnUpdate(float elapsed)
     {
+        UpdateFocus();
+
         // some options can be triggered via key shortcut
         _newgfxToggle.Text = app.IsNewGfx ? "@newburn?17" : "@newburn?18";
         _musicToggle.Text = BurntimeClassic.Instance.MusicMode switch

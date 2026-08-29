@@ -102,10 +102,10 @@ internal class OptionsSavesPage : Container
     KeyboardArea _keyboardArea;
     // Keyboard navigation is transient; the marked entry remains the target of
     // load/save/delete until another row is explicitly confirmed or clicked.
-    int _cursorIndex;
+    int _saveFocusIndex;
     int _markedIndex;
     int _scrollOffset;
-    int _selectedAction;
+    int _actionFocusIndex;
     int _metadataGeneration;
     int _metadataPreloadIndex;
     Task<MetadataLoadResult>? _metadataLoadTask;
@@ -123,7 +123,9 @@ internal class OptionsSavesPage : Container
 
         var saveButtons = new AutoAlignContainer(app)
         {
-            Position = new Vector2(40, 123),
+            // The hover details are centered in the 10-pixel strip below. Text-only
+            // buttons draw from the top, so offset them by one pixel to share its baseline.
+            Position = new Vector2(40, 124),
             Size = new Vector2(120, 10)
         };
         saveButtons.Windows += _load = new Button(app, OnLoad)
@@ -155,26 +157,29 @@ internal class OptionsSavesPage : Container
         Windows += _hintText = new Button(app)
         {
             Font = _fonts.Blue,
-            Position = new Vector2(40, 123),
+            Position = new Vector2(40, 124),
             Size = new Vector2(120, 10),
             TextHorizontalAlign = Platform.Graphics.TextAlignment.Center,
-            TextVerticalAlign = Platform.Graphics.VerticalTextAlignment.Center
+            TextVerticalAlign = Platform.Graphics.VerticalTextAlignment.Top
         };
+        // The action buttons are nested one layer deeper than this sibling. Keep
+        // hover details above their strip so stale action pixels cannot cover them.
+        _hintText.Layer += 2;
 
-        Windows += _upIndicator = new Button(app, () => MoveEntry(-1))
+        Windows += _upIndicator = new Button(app, () => ScrollList(-1))
         {
-            Font = _fonts.Blue,
+            Font = _fonts.Green,
             HoverFont = _fonts.Orange,
             Position = new Vector2(LIST_X + LIST_WIDTH + 2, LIST_Y),
-            Text = "^",
+            Text = "<",
             IsTextOnly = true
         };
-        Windows += _downIndicator = new Button(app, () => MoveEntry(1))
+        Windows += _downIndicator = new Button(app, () => ScrollList(1))
         {
-            Font = _fonts.Blue,
+            Font = _fonts.Green,
             HoverFont = _fonts.Orange,
             Position = new Vector2(LIST_X + LIST_WIDTH + 2, LIST_Y + (VISIBLE_SAVE_COUNT - 1) * ROW_HEIGHT),
-            Text = "v",
+            Text = ">",
             IsTextOnly = true
         };
 
@@ -188,15 +193,21 @@ internal class OptionsSavesPage : Container
         if (!listBounds.PointInside(position) || EntryCount <= VISIBLE_SAVE_COUNT)
             return false;
 
-        int maximumOffset = System.Math.Max(0, EntryCount - VISIBLE_SAVE_COUNT);
-        int newOffset = System.Math.Clamp(_scrollOffset - System.Math.Sign(delta), 0, maximumOffset);
-        if (newOffset != _scrollOffset)
-        {
-            _scrollOffset = newOffset;
-            RefreshVisibleRows();
-            UpdateKeyboardSelection();
-        }
+        ScrollList(-System.Math.Sign(delta));
 
+        return true;
+    }
+
+    bool ScrollList(int direction)
+    {
+        int maximumOffset = System.Math.Max(0, EntryCount - VISIBLE_SAVE_COUNT);
+        int newOffset = System.Math.Clamp(_scrollOffset + direction, 0, maximumOffset);
+        if (newOffset == _scrollOffset)
+            return false;
+
+        _scrollOffset = newOffset;
+        RefreshVisibleRows();
+        UpdateKeyboardFocus();
         return true;
     }
 
@@ -204,23 +215,30 @@ internal class OptionsSavesPage : Container
     {
         HasFocus = active;
         if (active)
+        {
             _keyboardArea = KeyboardArea.Slots;
+            if (app.LastInputMode != InputMode.Mouse && (_saveFocusIndex < 0 || _saveFocusIndex >= EntryCount))
+            {
+                _saveFocusIndex = EntryCount > 0 ? 0 : -1;
+                EnsureFocusVisible();
+            }
+        }
 
-        UpdateKeyboardSelection();
+        UpdateKeyboardFocus();
     }
 
-    void UpdateKeyboardSelection()
+    void UpdateKeyboardFocus()
     {
-        bool keyboardActive = HasFocus && app.LastInputMode != InputMode.Mouse;
+        bool keyboardFocus = HasFocus && app.LastInputMode != InputMode.Mouse;
         for (int i = 0; i < _saveRows.Length; i++)
         {
             int entryIndex = _scrollOffset + i;
-            _saveRows[i].IsKeyboardSelected = keyboardActive && _keyboardArea == KeyboardArea.Slots &&
-                entryIndex == _cursorIndex && entryIndex < EntryCount;
+            _saveRows[i].IsKeyboardSelected = keyboardFocus && _keyboardArea == KeyboardArea.Slots &&
+                entryIndex == _saveFocusIndex && entryIndex < EntryCount;
         }
 
         for (int i = 0; i < _actionButtons.Length; i++)
-            _actionButtons[i].IsKeyboardSelected = keyboardActive && _keyboardArea == KeyboardArea.Actions && i == _selectedAction;
+            _actionButtons[i].IsKeyboardSelected = keyboardFocus && _keyboardArea == KeyboardArea.Actions && i == _actionFocusIndex;
     }
 
     int HoveredActionIndex => app.LastInputMode == InputMode.Mouse ? Array.FindIndex(_actionButtons,
@@ -238,7 +256,7 @@ internal class OptionsSavesPage : Container
         }
     }
 
-    int ActiveActionIndex
+    int FocusedActionIndex
     {
         get
         {
@@ -246,8 +264,8 @@ internal class OptionsSavesPage : Container
             if (hovered >= 0)
                 return hovered;
 
-            return HasFocus && _keyboardArea == KeyboardArea.Actions && IsActionAvailable(_selectedAction)
-                ? _selectedAction
+            return HasFocus && _keyboardArea == KeyboardArea.Actions && IsActionAvailable(_actionFocusIndex)
+                ? _actionFocusIndex
                 : -1;
         }
     }
@@ -273,11 +291,11 @@ internal class OptionsSavesPage : Container
 
     void MoveEntry(int direction)
     {
-        int candidate = _cursorIndex + direction;
+        int candidate = _saveFocusIndex + direction;
         if (candidate >= 0 && candidate < EntryCount)
         {
-            _cursorIndex = candidate;
-            EnsureCursorVisible();
+            _saveFocusIndex = candidate;
+            EnsureFocusVisible();
             RefreshVisibleRows();
         }
         else if (direction > 0)
@@ -286,15 +304,15 @@ internal class OptionsSavesPage : Container
             return;
         }
 
-        UpdateKeyboardSelection();
+        UpdateKeyboardFocus();
     }
 
-    void EnsureCursorVisible()
+    void EnsureFocusVisible()
     {
-        if (_cursorIndex < _scrollOffset)
-            _scrollOffset = _cursorIndex;
-        else if (_cursorIndex >= _scrollOffset + VISIBLE_SAVE_COUNT)
-            _scrollOffset = _cursorIndex - VISIBLE_SAVE_COUNT + 1;
+        if (_saveFocusIndex < _scrollOffset)
+            _scrollOffset = _saveFocusIndex;
+        else if (_saveFocusIndex >= _scrollOffset + VISIBLE_SAVE_COUNT)
+            _scrollOffset = _saveFocusIndex - VISIBLE_SAVE_COUNT + 1;
 
         int maximumOffset = System.Math.Max(0, EntryCount - VISIBLE_SAVE_COUNT);
         _scrollOffset = System.Math.Clamp(_scrollOffset, 0, maximumOffset);
@@ -303,27 +321,42 @@ internal class OptionsSavesPage : Container
     void SelectFirstEnabledAction()
     {
         SetActionVisibility(true);
-        int preferred = IsActionAvailable(_selectedAction)
-            ? _selectedAction
+        int preferred = IsActionAvailable(_actionFocusIndex)
+            ? _actionFocusIndex
             : Array.FindIndex(_actionButtons, button => button.IsVisible && button.IsEnabled);
         if (preferred < 0)
             return;
 
-        _selectedAction = preferred;
+        _actionFocusIndex = preferred;
         _keyboardArea = KeyboardArea.Actions;
-        UpdateKeyboardSelection();
+        UpdateKeyboardFocus();
+    }
+
+    bool EnsureFocus()
+    {
+        if (_saveFocusIndex >= 0 && _saveFocusIndex < EntryCount)
+            return true;
+
+        if (EntryCount == 0)
+            return false;
+
+        _saveFocusIndex = 0;
+        EnsureFocusVisible();
+        RefreshVisibleRows();
+        UpdateKeyboardFocus();
+        return false;
     }
 
     bool MoveAction(int direction)
     {
-        for (int candidate = _selectedAction + direction;
+        for (int candidate = _actionFocusIndex + direction;
              candidate >= 0 && candidate < _actionButtons.Length;
              candidate += direction)
         {
             if (IsActionAvailable(candidate))
             {
-                _selectedAction = candidate;
-                UpdateKeyboardSelection();
+                _actionFocusIndex = candidate;
+                UpdateKeyboardFocus();
                 return true;
             }
         }
@@ -336,10 +369,15 @@ internal class OptionsSavesPage : Container
         if (_keyboardArea == KeyboardArea.Slots)
         {
             if (action == InputAction.MoveUp || action == InputAction.MoveDown)
+            {
+                EnsureFocus();
                 MoveEntry(action == InputAction.MoveUp ? -1 : 1);
+            }
             else if (action == InputAction.Primary)
             {
-                MarkEntry(_cursorIndex);
+                if (!EnsureFocus())
+                    return true;
+                MarkEntry(_saveFocusIndex);
                 if (IsCreateSelected)
                     OnSave();
                 else
@@ -360,14 +398,14 @@ internal class OptionsSavesPage : Container
         if (action == InputAction.MoveUp)
         {
             _keyboardArea = KeyboardArea.Slots;
-            UpdateKeyboardSelection();
+            UpdateKeyboardFocus();
             return true;
         }
         if (action == InputAction.Primary)
         {
-            int activeAction = ActiveActionIndex;
-            if (activeAction >= 0)
-                _actionButtons[activeAction].OnButtonClick();
+            int focusedAction = FocusedActionIndex;
+            if (focusedAction >= 0)
+                _actionButtons[focusedAction].OnButtonClick();
             return true;
         }
 
@@ -377,14 +415,23 @@ internal class OptionsSavesPage : Container
     public override void OnUpdate(float elapsed)
     {
         UpdateMetadataPreload();
-        UpdateKeyboardSelection();
+        UpdateKeyboardFocus();
         int hoveredEntry = HoveredEntryIndex;
+        int hoveredAction = HoveredActionIndex;
+
+        // Mouse mode has no implicit selection, but retain the hovered row as the
+        // anchor if input switches to keyboard or gamepad before the next update.
+        if (app.LastInputMode == InputMode.Mouse)
+        {
+            _saveFocusIndex = hoveredEntry;
+            _keyboardArea = hoveredAction >= 0 ? KeyboardArea.Actions : KeyboardArea.Slots;
+        }
 
         bool keyboardPreview = app.LastInputMode != InputMode.Mouse && HasFocus &&
             _keyboardArea == KeyboardArea.Slots;
         int previewEntry = hoveredEntry >= 0
             ? hoveredEntry
-            : keyboardPreview ? _cursorIndex : -1;
+            : keyboardPreview ? _saveFocusIndex : -1;
         bool showHint = previewEntry >= 0;
         SaveInfo? displayedSave = GetSaveAtEntry(previewEntry);
 
@@ -405,15 +452,16 @@ internal class OptionsSavesPage : Container
         _load.IsEnabled = SelectedSave?.IsValid == true;
         _delete.IsEnabled = SelectedSave is { IsAutosave: false };
 
-        int hoveredAction = HoveredActionIndex;
-        if (hoveredAction >= 0 && hoveredAction != _selectedAction)
+        if (hoveredAction >= 0 && hoveredAction != _actionFocusIndex)
         {
-            _selectedAction = hoveredAction;
+            _actionFocusIndex = hoveredAction;
             if (HasFocus && _keyboardArea == KeyboardArea.Actions)
-                UpdateKeyboardSelection();
+                UpdateKeyboardFocus();
         }
 
-        if (HasFocus && _keyboardArea == KeyboardArea.Actions && !IsActionAvailable(_selectedAction))
+        // A row preview deliberately hides the actions. Do not let keyboard action
+        // recovery reveal them again on top of the hover details.
+        if (!showHint && HasFocus && _keyboardArea == KeyboardArea.Actions && !IsActionAvailable(_actionFocusIndex))
             SelectFirstEnabledAction();
 
         base.OnUpdate(elapsed);
@@ -461,7 +509,7 @@ internal class OptionsSavesPage : Container
     public void RefreshSaveGames(string? changed = null, bool resetSelection = false)
     {
         string? selectedFile = resetSelection ? null : SelectedSave?.FileName;
-        string? cursorFile = resetSelection ? null : GetSaveAtEntry(_cursorIndex)?.FileName;
+        string? focusedFile = resetSelection ? null : GetSaveAtEntry(_saveFocusIndex)?.FileName;
         string[] files = FileSystem.GetFileNames("saves/", ".sav");
 
         var refreshed = new List<SaveInfo>();
@@ -493,13 +541,13 @@ internal class OptionsSavesPage : Container
         if (changed is not null)
         {
             selectedFile = changed;
-            cursorFile = changed;
+            focusedFile = changed;
         }
 
         if (resetSelection)
         {
             _markedIndex = 0;
-            _cursorIndex = 0;
+            _saveFocusIndex = 0;
         }
         else
         {
@@ -507,15 +555,15 @@ internal class OptionsSavesPage : Container
             if (_markedIndex < 0)
                 _markedIndex = 0;
 
-            _cursorIndex = FindEntry(cursorFile);
-            if (_cursorIndex < 0)
-                _cursorIndex = _markedIndex;
+            _saveFocusIndex = FindEntry(focusedFile);
+            if (_saveFocusIndex < 0)
+                _saveFocusIndex = _markedIndex;
         }
 
-        EnsureCursorVisible();
+        EnsureFocusVisible();
         RefreshVisibleRows();
         _keyboardArea = KeyboardArea.Slots;
-        UpdateKeyboardSelection();
+        UpdateKeyboardFocus();
     }
 
     void RefreshVisibleRows()
@@ -577,10 +625,7 @@ internal class OptionsSavesPage : Container
                 saveInfo.Version = result.Version;
                 saveInfo.Hints = result.Hints;
                 saveInfo.MetadataLoaded = true;
-
-                int entryIndex = FindEntry(saveInfo.FileName);
-                if (entryIndex >= _scrollOffset && entryIndex < _scrollOffset + VISIBLE_SAVE_COUNT)
-                    RefreshVisibleRows();
+                ReorderSaveGames();
             }
         }
 
@@ -658,14 +703,50 @@ internal class OptionsSavesPage : Container
         return displayName;
     }
 
+    void ReorderSaveGames()
+    {
+        string? selectedFile = SelectedSave?.FileName;
+        string? focusedFile = GetSaveAtEntry(_saveFocusIndex)?.FileName;
+
+        _saves.Sort((left, right) =>
+        {
+            int timestampOrder = GetSaveTimestampUtc(right).CompareTo(GetSaveTimestampUtc(left));
+            return timestampOrder != 0
+                ? timestampOrder
+                : StringComparer.OrdinalIgnoreCase.Compare(left.FileName, right.FileName);
+        });
+        _metadataPreloadIndex = 0;
+
+        if (selectedFile is not null)
+            _markedIndex = FindEntry(selectedFile);
+        if (focusedFile is not null)
+            _saveFocusIndex = FindEntry(focusedFile);
+
+        EnsureFocusVisible();
+        RefreshVisibleRows();
+        UpdateKeyboardFocus();
+    }
+
     static string FormatDisplayName(string name, bool isAutosave) => isAutosave ? $"[{name}]" : name;
+
+    static DateTime GetSaveTimestampUtc(SaveInfo saveInfo)
+    {
+        DateTime timestamp = saveInfo.LastWriteTimeUtc;
+        // Legacy saves have no persisted timestamp. Fully peeking them rebuilds the
+        // save hint and assigns the current time, so their file timestamp is the only
+        // reliable date. Current saves persist the actual save time in their hint.
+        if (saveInfo.Version != BurntimeClassic.PreviousSavegameVersion &&
+            DateTime.TryParse(saveInfo.Hints?.GetValueOrDefault("datetime"),
+            CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTime savedAt))
+        {
+            timestamp = savedAt.ToUniversalTime();
+        }
+        return timestamp;
+    }
 
     static string GetTimestampText(SaveInfo saveInfo)
     {
-        DateTime timestamp = DateTime.TryParse(saveInfo.Hints?.GetValueOrDefault("datetime"),
-            CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTime savedAt)
-            ? savedAt.ToUniversalTime()
-            : saveInfo.LastWriteTimeUtc;
+        DateTime timestamp = GetSaveTimestampUtc(saveInfo);
         return timestamp == DateTime.MinValue
         ? ""
         : timestamp.ToLocalTime().ToString("MMM-dd HH:mm", CultureInfo.InvariantCulture);
@@ -706,7 +787,7 @@ internal class OptionsSavesPage : Container
         if (entryIndex < 0 || entryIndex >= EntryCount)
             return;
 
-        _cursorIndex = entryIndex;
+        _saveFocusIndex = entryIndex;
         _keyboardArea = KeyboardArea.Slots;
         MarkEntry(entryIndex);
         if (IsCreateSelected)
@@ -717,7 +798,7 @@ internal class OptionsSavesPage : Container
     {
         _markedIndex = entryIndex;
         RefreshVisibleRows();
-        UpdateKeyboardSelection();
+        UpdateKeyboardFocus();
     }
 
     void OnSave()

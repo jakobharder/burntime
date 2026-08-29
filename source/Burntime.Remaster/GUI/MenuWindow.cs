@@ -22,7 +22,7 @@ namespace Burntime.Remaster.GUI
         readonly GuiImage _middleElement;
         readonly GuiImage _bottomElement;
         readonly GuiFont _defaultFont;
-        readonly GuiFont _selectionFont;
+        readonly GuiFont _focusFont;
 
         const int TOP_HEIGHT = 4;
         const int MIDDLE_HEIGHT = 11;
@@ -38,11 +38,10 @@ namespace Burntime.Remaster.GUI
 
             _defaultFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(108, 116, 168));
             _defaultFont.Borders = TextBorders.Screen;
-            _selectionFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
-            _selectionFont.Borders = TextBorders.Screen;
+            _focusFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
+            _focusFont.Borders = TextBorders.Screen;
 
-            selected = -1;
-            mouseOver = -1;
+            _focusIndex = -1;
             IsModal = true;
             HasFocus = true;
             CaptureAllMouseClicks = true;
@@ -87,14 +86,12 @@ namespace Burntime.Remaster.GUI
             _lastMousePosition = app.DeviceManager.Mouse.Position - PositionOnScreen;
             _mouseSelectionEnabled = openedByMouse;
             _mouseHasLeft = false;
-            mouseOver = openedByMouse ? GetEntryAt(_lastMousePosition) : -1;
-            selected = openedByMouse ? mouseOver : _menuEntries.Count > 0 ? 0 : -1;
+            _focusIndex = openedByMouse ? GetEntryAt(_lastMousePosition) : _menuEntries.Count > 0 ? 0 : -1;
 
             Show();
         }
 
-        int selected;
-        int mouseOver;
+        int _focusIndex;
         Vector2 _lastMousePosition;
         bool _mouseSelectionEnabled;
         bool _mouseHasLeft;
@@ -113,7 +110,7 @@ namespace Burntime.Remaster.GUI
                 target.DrawSprite(new Vector2(itemx, itemy), _middleElement);
                 target.Layer++;
 
-                GuiFont f = selected == i ? _selectionFont : _defaultFont;
+                GuiFont f = _focusIndex == i ? _focusFont : _defaultFont;
                 f.DrawText(target, new Vector2(textx, texty), _menuEntries[i].Text, TextAlignment.Left, VerticalTextAlignment.Top);
                 target.Layer--;
             }
@@ -123,7 +120,7 @@ namespace Burntime.Remaster.GUI
 
         public override void OnMouseLeave()
         {
-            mouseOver = -1;
+            _focusIndex = -1;
             _mouseHasLeft = true;
         }
 
@@ -135,8 +132,7 @@ namespace Burntime.Remaster.GUI
             _lastMousePosition = Position;
             _mouseSelectionEnabled = true;
             _mouseHasLeft = false;
-            mouseOver = GetEntryAt(Position);
-            selected = mouseOver;
+            _focusIndex = GetEntryAt(Position);
             return true;
         }
 
@@ -167,9 +163,9 @@ namespace Burntime.Remaster.GUI
         {
             if (Boundings.PointInside(this.Position + Position))
             {
-                if (mouseOver >= 0 && mouseOver < _menuEntries.Count && Button == MouseButton.Left)
+                if (_focusIndex >= 0 && _focusIndex < _menuEntries.Count && Button == MouseButton.Left)
                 {
-                    Execute(mouseOver);
+                    Execute(_focusIndex);
                 }
                 return true;
             }
@@ -194,16 +190,18 @@ namespace Burntime.Remaster.GUI
                     return true;
 
                 int direction = action.IsUp() ? -1 : 1;
-                selected = selected < 0
-                    ? action.IsUp() ? _menuEntries.Count - 1 : 0
-                    : (selected + direction + _menuEntries.Count) % _menuEntries.Count;
+                if (_focusIndex < 0)
+                    _focusIndex = 0;
+                _focusIndex = (_focusIndex + direction + _menuEntries.Count) % _menuEntries.Count;
                 return true;
             }
 
             if (action == InputAction.Primary)
             {
-                if (selected >= 0 && selected < _menuEntries.Count)
-                    Execute(selected);
+                if (_focusIndex < 0 && _menuEntries.Count > 0)
+                    _focusIndex = 0;
+                else if (_focusIndex >= 0 && _focusIndex < _menuEntries.Count)
+                    Execute(_focusIndex);
                 return true;
             }
 

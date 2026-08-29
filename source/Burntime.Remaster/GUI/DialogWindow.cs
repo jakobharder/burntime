@@ -15,7 +15,7 @@ namespace Burntime.Remaster
         FaceWindow face;
         GuiFont fontText;
         GuiFont fontOptions;
-        GuiFont fontSelectedChoice;
+        GuiFont fontFocusedChoice;
 
         Character character;
         Character self;
@@ -23,8 +23,7 @@ namespace Burntime.Remaster
         bool ready = false;
         int dlgoffset = 0;
         int dialogmode;
-        int mouseChoice = -1;
-        int selectedChoice = -1;
+        int focusChoiceIndex = -1;
         Vector2 lastMousePosition;
         bool hasLastMousePosition;
         bool mouseHasLeft;
@@ -52,7 +51,7 @@ namespace Burntime.Remaster
 
             fontText = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 164, 56));
             fontOptions = new GuiFont(BurntimeClassic.FontName, new PixelColor(108, 116, 168));
-            fontSelectedChoice = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
+            fontFocusedChoice = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
 
             CaptureAllMouseMove = true;
         }
@@ -63,7 +62,7 @@ namespace Burntime.Remaster
             lastMousePosition = app.DeviceManager.Mouse.Position - PositionOnScreen;
             hasLastMousePosition = true;
             mouseHasLeft = false;
-            ResetSelection();
+            ResetFocus();
             base.OnShow();
 
             if (PlayMusic)
@@ -92,7 +91,7 @@ namespace Burntime.Remaster
 
             dialogmode = (conversation.Text.Length < 3) ? 1 : 0;
             dlgoffset = 0;
-            selectedChoice = FirstVisibleChoice();
+            focusChoiceIndex = FirstVisibleChoice();
 
             ready = true;
         }
@@ -114,7 +113,7 @@ namespace Burntime.Remaster
 
             dialogmode = (conversation.Text.Length < 3) ? 1 : 0;
             dlgoffset = 0;
-            selectedChoice = FirstVisibleChoice();
+            focusChoiceIndex = FirstVisibleChoice();
 
             ready = true;
         }
@@ -155,20 +154,26 @@ namespace Burntime.Remaster
 
             if (action.IsUp())
             {
-                MoveSelection(-1);
+                MoveFocus(-1);
                 return true;
             }
 
             if (action.IsDown())
             {
-                MoveSelection(1);
+                MoveFocus(1);
                 return true;
             }
 
-            if (action != InputAction.Primary || selectedChoice == -1)
+            if (action != InputAction.Primary)
                 return false;
 
-            SelectChoice(selectedChoice);
+            if (focusChoiceIndex == -1)
+            {
+                focusChoiceIndex = FirstVisibleChoice();
+                return true;
+            }
+
+            SelectChoice(focusChoiceIndex);
             return true;
         }
 
@@ -177,7 +182,7 @@ namespace Burntime.Remaster
             dlgoffset += 2;
             if (dlgoffset + 2 >= conversation.Text.Length)
                 dialogmode = 1;
-            ResetSelection();
+            ResetFocus();
         }
 
         int FirstVisibleChoice()
@@ -189,20 +194,19 @@ namespace Burntime.Remaster
             return -1;
         }
 
-        void MoveSelection(int direction)
+        void MoveFocus(int direction)
         {
-            if (selectedChoice == -1)
-            {
-                selectedChoice = FirstVisibleChoice();
+            if (focusChoiceIndex == -1)
+                focusChoiceIndex = FirstVisibleChoice();
+            if (focusChoiceIndex == -1)
                 return;
-            }
 
             for (int offset = 1; offset < conversation.Choices.Length; offset++)
             {
-                int candidate = (selectedChoice + direction * offset + conversation.Choices.Length) % conversation.Choices.Length;
+                int candidate = (focusChoiceIndex + direction * offset + conversation.Choices.Length) % conversation.Choices.Length;
                 if (!string.IsNullOrEmpty(conversation.Choices[candidate].Text))
                 {
-                    selectedChoice = candidate;
+                    focusChoiceIndex = candidate;
                     return;
                 }
             }
@@ -243,7 +247,7 @@ namespace Burntime.Remaster
             }
 
             dialogmode = (conversation.Text.Length < 3) ? 1 : 0;
-            ResetSelection();
+            ResetFocus();
         }
 
         public override bool OnMouseMove(Vector2 position)
@@ -260,8 +264,7 @@ namespace Burntime.Remaster
 
             if (position.x >= 0 && position.y >= 0 && position.x < Size.x && position.y < Size.y)
             {
-                mouseChoice = ChoiceAt(position);
-                selectedChoice = mouseChoice;
+                focusChoiceIndex = ChoiceAt(position);
             }
 
             return base.OnMouseMove(position);
@@ -269,7 +272,7 @@ namespace Burntime.Remaster
 
         public override void OnMouseLeave()
         {
-            mouseChoice = -1;
+            focusChoiceIndex = -1;
             mouseHasLeft = true;
             base.OnMouseLeave();
         }
@@ -304,11 +307,10 @@ namespace Burntime.Remaster
             return -1;
         }
 
-        void ResetSelection()
+        void ResetFocus()
         {
-            mouseChoice = app.LastInputMode == InputMode.Mouse ? ChoiceAt(lastMousePosition) : -1;
-            selectedChoice = app.LastInputMode == InputMode.Mouse
-                ? mouseChoice
+            focusChoiceIndex = app.LastInputMode == InputMode.Mouse
+                ? ChoiceAt(lastMousePosition)
                 : dialogmode == 0 ? 0 : FirstVisibleChoice();
         }
 
@@ -343,8 +345,8 @@ namespace Burntime.Remaster
             {
                 textPos.y = 85;
 
-                if (selectedChoice == 0)
-                    fontSelectedChoice.DrawText(target, textPos, txt[499], TextAlignment.Left, VerticalTextAlignment.Top);
+                if (focusChoiceIndex == 0)
+                    fontFocusedChoice.DrawText(target, textPos, txt[499], TextAlignment.Left, VerticalTextAlignment.Top);
                 else
                     fontOptions.DrawText(target, textPos, txt[499], TextAlignment.Left, VerticalTextAlignment.Top);
             }
@@ -356,8 +358,8 @@ namespace Burntime.Remaster
                 {
                     String line = conversation.Choices[i].Text;
 
-                    if (selectedChoice == i)
-                        fontSelectedChoice.DrawText(target, textPos, line, TextAlignment.Left, VerticalTextAlignment.Top);
+                    if (focusChoiceIndex == i)
+                        fontFocusedChoice.DrawText(target, textPos, line, TextAlignment.Left, VerticalTextAlignment.Top);
                     else
                         fontOptions.DrawText(target, textPos, line, TextAlignment.Left, VerticalTextAlignment.Top);
                     textPos.y += 11;
