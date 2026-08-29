@@ -183,6 +183,10 @@ namespace Burntime.Remaster
 
         public override void OnRender(RenderTarget Target)
         {
+            bool showInteractionMode = app.MouseInputVisible && !_dialog.IsVisible;
+            if (_cursorAni.IsVisible != showInteractionMode)
+                _cursorAni.IsVisible = showInteractionMode;
+
             if (app.MouseImage != null)
             {
                 _cursorAni.Position = app.DeviceManager.Mouse.Position + new Vector2(8, 11);
