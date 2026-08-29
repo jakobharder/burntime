@@ -11,6 +11,11 @@ tests/savegames/
     established-ai.sav
 ```
 
+Large fixtures may instead be stored as `.zip` files containing ordinary
+`.sav` files. The test script extracts archives into a temporary directory,
+ignores macOS resource-fork entries, and tests every save they contain. This
+requires the standard `unzip` command.
+
 Keep fixtures small and give each file a name that describes the relevant game
 state. The compatibility test recursively loads every `.sav`, runs at least one
 complete turn for all player slots (including human players), and fails if
