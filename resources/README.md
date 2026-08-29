@@ -23,20 +23,45 @@ Key | Scene | Effect
 
 ## Credits
 
-This project is not affiliated in any way with Max Design and/or the original creators.
-The original game, graphics and other assets are the property of Max Design and their original creators.
+This project is not affiliated with Max Design or the original creators. The
+original game, graphics and other assets remain the property of Max Design and
+their original creators.
 
-A big thanks to Martin Lasser and Hannes Seifert for allowing this community remake effort to use the original graphics and music!
+A big thank you to Martin Lasser, Wilfried Reiter and Hannes Seifert for allowing
+this community remaster to use the original graphics and music.
 
-### Additional Contributors
+### Remaster
 
-The following people helped Jakob Harder to create this remake.
+Role | Names
+--- | ---
+Development | Jakob Harder
+Spanish translation | Germán Jakob
+Contributions | Krystian Rabe, Felix Stolle, Chris1982, graysonwall, Shadow, Maschine, Memento
 
-- Krystian Rabe: additional graphics
-- Felix Stolle: balancing, testing
-- Germán Jakob: Spanish translation
-- Additional testers: Chris1982, graysonwall, Shadow, Maschine, Memento
+### Max Design
+
+Credits for the original *Burntime* game:
+
+Role | Names
+--- | ---
+Idea and concept | Wilfried Reiter, Albert Lasser, Martin Lasser
+Programming | Albert Lasser, Wilfried Reiter
+Graphics | Martin Lasser, Wilfried Reiter
+Music and sound effects | Hannes Seifert
+Handbook | Johann Schilcher, John WooD (JoWooD)
+Cover and package design | Robert Pils
+Testing | Michael Schütter, Manfred Bertl, Dieter Bernauer
+Coffee and customer care | Elisabeth “Lisi, Coffeeee!!” Lasser
+Translation | Patricia Spella
+Special thanks | Greenpeace
 
 ### Libraries
 
-- [MonoGame](https://www.monogame.net/)
+Role | Library
+--- | ---
+Game framework | [MonoGame](https://www.monogame.net/)
+Ogg Vorbis decoding | [NVorbis](https://github.com/NVorbis/NVorbis)
+Image decoding | [StbImageSharp](https://github.com/StbSharp/StbImageSharp)
+
+See [third-party notices](./licenses/THIRD-PARTY-NOTICES.txt) for licenses of direct and
+bundled dependencies.

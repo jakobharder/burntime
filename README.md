@@ -71,9 +71,11 @@ Visual Studio users: open `source/Burntime.sln` and select `Burntime.MonoGame` a
 
 ## Credits
 
+Burntime Remastered is developed and maintained by Jakob Harder, with contributions from the community.
+
 This project is not affiliated in any way with Max Design and/or the original creators.
 The original game, graphics and other assets are the property of Max Design and their original creators.
 
-A big thanks to Martin Lasser, Wilfried Reiter and Hannes Seifert for allowing this community remake effort to use the original graphics and music!
+A big thanks to Martin Lasser, Wilfried Reiter and Hannes Seifert for allowing this community remaster to use the original graphics and music!
 
-See full [list of contributors](./resources/README.md#notes)
+See the full [list of contributors](./resources/README.md#credits).

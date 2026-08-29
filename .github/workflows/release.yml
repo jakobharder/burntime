@@ -20,6 +20,20 @@ jobs:
       - name: Build
         run: dotnet publish source/Burntime.MonoGame -c Release /p:DebugSymbols=false /p:PublishReadyToRun=false /p:TieredCompilation=false --self-contained /p:PublishSingleFile=true
 
+      - name: Verify third-party licenses
+        shell: pwsh
+        run: |
+          $licenses = "./bin/Release/win-x64/publish/licenses"
+          @(
+            "THIRD-PARTY-NOTICES.txt",
+            "DOTNET-THIRD-PARTY-NOTICES.txt",
+            "OPENAL-SOFT-LICENSE.txt"
+          ) | ForEach-Object {
+            if (-not (Test-Path "$licenses/$_" -PathType Leaf)) {
+              throw "Missing packaged third-party license: $licenses/$_"
+            }
+          }
+
       - name: Build tools
         run: dotnet build source/PakConverter -c Release /p:DebugSymbols=false
 
@@ -28,6 +42,7 @@ jobs:
         run: |
           ../../../../tools/Release/PakConverter.exe classic
           ../../../../tools/Release/PakConverter.exe classic_de
+          ../../../../tools/Release/PakConverter.exe classic_es
           ../../../../tools/Release/PakConverter.exe classic_newgfx
           ../../../../tools/Release/PakConverter.exe amiga
           ../../../../tools/Release/PakConverter.exe music
@@ -95,6 +110,12 @@ jobs:
           -p:TieredCompilation=false
           -p:PublishSingleFile=true
 
+      - name: Verify third-party licenses
+        run: |
+          test -f bin/Release/linux-x64/publish/licenses/THIRD-PARTY-NOTICES.txt
+          test -f bin/Release/linux-x64/publish/licenses/DOTNET-THIRD-PARTY-NOTICES.txt
+          test -f bin/Release/linux-x64/publish/licenses/OPENAL-SOFT-LICENSE.txt
+
       - name: Build tools
         run: dotnet build source/PakConverter -c Release -p:DebugSymbols=false
 
@@ -103,6 +124,7 @@ jobs:
         run: |
           ../../../../tools/Release/PakConverter classic
           ../../../../tools/Release/PakConverter classic_de
+          ../../../../tools/Release/PakConverter classic_es
           ../../../../tools/Release/PakConverter classic_newgfx
           ../../../../tools/Release/PakConverter amiga
           ../../../../tools/Release/PakConverter music
