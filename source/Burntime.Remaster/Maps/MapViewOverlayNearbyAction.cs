@@ -65,7 +65,9 @@ class MapViewOverlayNearbyAction : IMapViewOverlay
             EntranceNumber = i;
             Object = null;
             Position = entrance.Area.Center;
-            info = new MapViewHoverInfo(location.Rooms[i], app.ResourceManager, BurntimeClassic.LightGray);
+            info = location.AreEntrancesBlockedFor(player)
+                ? new MapViewHoverInfo(app.ResourceManager.GetString("newburn?103"), entrance.Area.Center, BurntimeClassic.LightGray)
+                : new MapViewHoverInfo(location.Rooms[i], app.ResourceManager, BurntimeClassic.LightGray);
         }
 
         foreach (DroppedItem item in location.Items.MapObjects)

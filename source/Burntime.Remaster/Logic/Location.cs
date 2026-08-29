@@ -92,6 +92,11 @@ namespace Burntime.Remaster.Logic
             set { player = value; }
         }
 
+        public bool AreEntrancesBlockedFor(Player visitor)
+        {
+            return Player != null && Player != visitor;
+        }
+
         // for debug
         public string Title
         {

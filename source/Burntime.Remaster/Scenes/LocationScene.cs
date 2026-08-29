@@ -775,6 +775,8 @@ namespace Burntime.Remaster
         {
             BurntimeClassic classic = app as BurntimeClassic;
             Location loc = classic.Game.World.ActiveLocationObj;
+            if (loc.AreEntrancesBlockedFor(view.Player))
+                return app.ResourceManager.GetString("newburn?103");
             return app.ResourceManager.GetString(loc.Map.Entrances[Number].TitleId);
         }
 
@@ -880,7 +882,7 @@ namespace Burntime.Remaster
                 return false;
             }
 
-            if (view.Location.Player != null && view.Location.Player != view.Player)
+            if (view.Location.AreEntrancesBlockedFor(view.Player))
                 return true;
 
             charOverlay.SelectedCharacter.CancelAction();

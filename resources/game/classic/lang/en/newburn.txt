@@ -101,3 +101,4 @@ Attack {attack}}
 Def. {defense}}
 % gas 
 % rad. 
+Blocked}

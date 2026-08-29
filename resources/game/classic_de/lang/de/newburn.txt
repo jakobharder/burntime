@@ -101,3 +101,4 @@ Angriff {attack}}
 Vert. {defense}}
 % Gas 
 % Rad. 
+Blockiert}

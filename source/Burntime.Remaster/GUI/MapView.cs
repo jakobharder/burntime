@@ -382,7 +382,10 @@ public class MapView : Window
                 }
                 else if (entrance < game.World.ActiveLocationObj.Rooms.Count)
                 {
-                    game.World.ActiveLocationObj.Hover = new MapViewHoverInfo(game.World.ActiveLocationObj.Rooms[entrance], app.ResourceManager, BurntimeClassic.LightGray);
+                    Location location = game.World.ActiveLocationObj;
+                    game.World.ActiveLocationObj.Hover = location.AreEntrancesBlockedFor(game.World.ActivePlayerObj)
+                        ? new MapViewHoverInfo(app.ResourceManager.GetString("newburn?103"), location.Map.Entrances[entrance].Area.Center, BurntimeClassic.LightGray)
+                        : new MapViewHoverInfo(location.Rooms[entrance], app.ResourceManager, BurntimeClassic.LightGray);
                 }
             }
         }
