@@ -13,6 +13,8 @@ namespace Burntime.Remaster.Scenes
 {
     class DoctorScene : Scene
     {
+        public override bool UseDiagonalGamepadNavigation => true;
+
         InventoryWindow inventory;
         ItemGridWindow grid;
         GuiFont font;

@@ -11,6 +11,8 @@ namespace Burntime.Remaster.Scenes
 {
     class InventoryScene : Scene
     {
+        public override bool UseDiagonalGamepadNavigation => true;
+
         InventoryWindow inventory;
         ItemGridWindow grid;
         GuiFont waterSourceFont;
@@ -248,6 +250,10 @@ namespace Burntime.Remaster.Scenes
                 InputAction.MoveDown => new Vector2(0, 1),
                 InputAction.MoveLeft => new Vector2(-1, 0),
                 InputAction.MoveRight => new Vector2(1, 0),
+                InputAction.MoveUpLeft => new Vector2(-1, -1),
+                InputAction.MoveUpRight => new Vector2(1, -1),
+                InputAction.MoveDownLeft => new Vector2(-1, 1),
+                InputAction.MoveDownRight => new Vector2(1, 1),
                 _ => Vector2.Zero
             };
             if (direction != Vector2.Zero)

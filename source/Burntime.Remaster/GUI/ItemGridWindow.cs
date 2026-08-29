@@ -230,7 +230,7 @@ namespace Burntime.Remaster.GUI
                     continue;
 
                 int sideways = System.Math.Abs(difference.x * direction.y - difference.y * direction.x);
-                int score = forward * 1000 + sideways;
+                int score = sideways * 1000 + forward;
                 if (score < selectedScore)
                 {
                     selected = i;
