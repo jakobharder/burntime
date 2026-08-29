@@ -667,7 +667,7 @@ Shack with water}
 Well}
 Cave with water}
 Source}
-Cave}
+High Cave}
 Entrance}
 Ruin}
 Entrance}
