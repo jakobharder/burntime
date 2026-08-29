@@ -211,6 +211,7 @@ namespace Burntime.MonoGame
         bool _rightClicked = false;
         Point? _previousMousePosition;
         InputAction _leftStickDirection;
+        bool _leftStickNavigationLatched;
 
         private void HandleMouseInput()
         {
@@ -432,6 +433,7 @@ namespace Burntime.MonoGame
                 DeviceManager?.ClearGamepadControlsDown();
                 _gamePadWasConnected = false;
                 _leftStickDirection = InputAction.None;
+                _leftStickNavigationLatched = false;
                 return;
             }
 
@@ -511,10 +513,25 @@ namespace Burntime.MonoGame
                 }
             }
 
-            PressOnRising(up, previousUp, InputAction.MoveUp);
-            PressOnRising(down, previousDown, InputAction.MoveDown);
-            PressOnRising(left, previousLeft, InputAction.MoveLeft);
-            PressOnRising(right, previousRight, InputAction.MoveRight);
+            bool stickNavigationActive = up || down || left || right;
+            if (!stickNavigationActive)
+                _leftStickNavigationLatched = false;
+            else if (!_leftStickNavigationLatched)
+            {
+                _leftStickNavigationLatched = true;
+                InputAction navigationAction = _burntimeApp.SceneManager.UseDiagonalGamepadNavigation &&
+                    (up || down) && (left || right)
+                    ? (up, left) switch
+                    {
+                        (true, true) => InputAction.MoveUpLeft,
+                        (true, false) => InputAction.MoveUpRight,
+                        (false, true) => InputAction.MoveDownLeft,
+                        _ => InputAction.MoveDownRight
+                    }
+                    : GetCardinalStickDirection(gamePad.ThumbSticks.Left.X,
+                        gamePad.ThumbSticks.Left.Y, stickThreshold, InputAction.None);
+                _burntimeApp.InputManager.Press(navigationAction);
+            }
             PressOnRising(panUp, previousPanUp, InputAction.PanCameraUp);
             PressOnRising(panDown, previousPanDown, InputAction.PanCameraDown);
             PressOnRising(panLeft, previousPanLeft, InputAction.PanCameraLeft);

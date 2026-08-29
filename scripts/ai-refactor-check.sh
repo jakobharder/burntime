@@ -2,17 +2,21 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
-expected_hash="4d2ba3d6680bc83c54e75fbb9f7bbbc58267d154d584a62d2786a1b5bf0c6a85"
+expected_hash="6de7cba3490518274de9e08bb137faf44ba1587c8008719890015b7d692483d8"
 report="$(mktemp "${TMPDIR:-/tmp}/burntime-ai-refactor.XXXXXX")"
 trap 'rm -f "$report"' EXIT
 
-"$repo_root/scripts/ai-simulate.sh" \
+bash "$repo_root/scripts/ai-simulate.sh" \
   --turns 100 \
   --difficulty hard \
   --seed 123 \
   --report "$report"
 
-actual_hash="$(shasum -a 256 "$report" | awk '{print $1}')"
+actual_hash="$(sed -E \
+  -e '/^- Longest turn:/d' \
+  -e '/ took [0-9]+ ms\.$/d' \
+  -e '/slow AI turn [0-9]+ ms:/d' \
+  "$report" | shasum -a 256 | awk '{print $1}')"
 if [[ "$actual_hash" != "$expected_hash" ]]; then
   echo "AI behavior changed." >&2
   echo "Expected report hash: $expected_hash" >&2

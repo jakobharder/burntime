@@ -113,6 +113,7 @@ namespace Burntime.Framework
 
         public string? LastScene => sceneQueue.LastOrDefault();
         public bool UseCardinalGamepadMovement => activeScene?.UseCardinalGamepadMovement ?? false;
+        public bool UseDiagonalGamepadNavigation => activeScene?.UseDiagonalGamepadNavigation ?? false;
 
         internal void Render(RenderTarget Target) => activeScene?.Render(Target);
 

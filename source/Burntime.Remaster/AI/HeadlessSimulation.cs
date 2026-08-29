@@ -14,6 +14,7 @@ public sealed class HeadlessSimulationOptions
 {
     public int Turns { get; init; } = 100;
     public int Difficulty { get; init; } = 2;
+    public int[]? AiDifficulties { get; init; }
     public int Seed { get; init; } = 1;
     public bool ExtendedGame { get; init; }
 }
@@ -30,6 +31,11 @@ public static class HeadlessSimulation
             throw new ArgumentOutOfRangeException(nameof(options.Turns), "Turn count must be positive.");
         if (options.Difficulty is < 0 or > 2)
             throw new ArgumentOutOfRangeException(nameof(options.Difficulty), "Difficulty must be easy, normal, or hard.");
+        if (options.AiDifficulties != null &&
+            (options.AiDifficulties.Length != 4 ||
+                options.AiDifficulties.Any(difficulty => difficulty is < 0 or > 2)))
+            throw new ArgumentOutOfRangeException(nameof(options.AiDifficulties),
+                "AI difficulties must contain four easy, normal, or hard values.");
 
         Platform.Math.SetRandomSeed(options.Seed);
 
@@ -41,6 +47,7 @@ public static class HeadlessSimulation
             FaceOne = -1,
             FaceTwo = -1,
             Difficulty = options.Difficulty,
+            AiDifficulties = options.AiDifficulties,
             ColorOne = BurntimePlayerColor.Green,
             ColorTwo = BurntimePlayerColor.Red,
             DisableAI = false,
@@ -113,6 +120,14 @@ public static class HeadlessSimulation
                 winner = game.CheckWinner() as Player;
                 if (winner is not null)
                     break;
+
+                Player[] survivors = game.World.Players
+                    .Where(player => !player.IsDead)
+                    .ToArray();
+                if (survivors.Length == 1)
+                    winner = survivors[0];
+                if (survivors.Length <= 1)
+                    break;
             }
         }
         finally
@@ -171,7 +186,7 @@ public static class HeadlessSimulation
 
             events.Add($"{prefix} found at {LocationLabel(before.Location)}: {FormatItems(before.GroundItems)}.");
             if (collected.Count > 0)
-                events.Add($"{prefix} moved to AI item pool: {FormatItems(collected)}.");
+                events.Add($"{prefix} moved to strategic reserve: {FormatItems(collected)}.");
             if (retained.Count > 0)
                 events.Add($"{prefix} retained for inventory or camp storage: {FormatItems(retained)}.");
             if (leftBehind.Count > 0)
@@ -239,6 +254,9 @@ public static class HeadlessSimulation
         report.AppendLine("Burntime headless all-AI simulation");
         report.AppendLine($"Seed: {options.Seed}");
         report.AppendLine($"Difficulty: {DifficultyLabel(options.Difficulty)}");
+        report.AppendLine("AI difficulties: " + string.Join(", ",
+            game.World.Players.Select(player =>
+                $"P{player.Index + 1} {DifficultyLabel((player.AiState as ClassicAiState)?.Difficulty ?? options.Difficulty)}")));
         report.AppendLine($"Requested turns: {options.Turns}");
         report.AppendLine($"Completed turns: {completedTurns}");
         report.AppendLine($"Final world day: {game.World.Day}");
@@ -328,8 +346,10 @@ public static class HeadlessSimulation
             foreach (Character defender in defenders)
             {
                 string weapon = defender.Weapon?.Type.ID ?? "none";
+                string protection = defender.Protection?.Type.ID ?? "none";
                 report.AppendLine($"  - {defender.Name}: {defender.Class}, health {defender.Health}, " +
-                    $"food {defender.Food}, water {defender.Water}, weapon {weapon}");
+                    $"food {defender.Food}, water {defender.Water}, weapon {weapon}, " +
+                    $"protection {protection}, inventory {FormatItems(defender.Items)}");
             }
         }
 
@@ -350,10 +370,10 @@ public static class HeadlessSimulation
         }
 
         report.AppendLine();
-        report.AppendLine("AI item pools (shared, slotless inventory)");
+        report.AppendLine("Strategic reserves (shared, slotless inventory)");
         foreach (Player player in game.World.Players)
         {
-            var contents = (player.AiState as ClassicAiState)?.Pool.GetContents().ToArray() ??
+            var contents = (player.AiState as ClassicAiState)?.Reserve.GetContents().ToArray() ??
                 Array.Empty<(ItemType Type, int Count)>();
             float tradeValue = contents.Sum(entry => entry.Type.TradeValue * entry.Count);
             Dictionary<string, int> counts = contents.ToDictionary(entry => entry.Type.ID, entry => entry.Count);
@@ -404,8 +424,8 @@ public static class HeadlessSimulation
                     .SelectMany(npc => npc.Items))
                 .Count(item => AiItemPool.IsWaterContainer(item.Type)));
             int pumps = camps.Count(camp => camp.Rooms.SelectMany(room => room.Items)
-                .Any(TradeTask.IsPump));
-            int unmetPumpNeeds = camps.Count(TradeTask.NeedsPump);
+                .Any(Trading.IsPump));
+            int unmetPumpNeeds = camps.Count(Trading.NeedsPump);
             string campsAt30 = result.CampsAtTurn30?.ToString() ?? "n/a";
             float advancedCoverage = camps.Length == 0 ? 0 : advancedCamps * 100f / camps.Length;
             float containersPerCamp = camps.Length == 0 ? 0 : containers / (float)camps.Length;

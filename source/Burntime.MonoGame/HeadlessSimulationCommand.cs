@@ -38,6 +38,7 @@ internal static class HeadlessSimulationCommand
             {
                 Turns = parsed.Turns,
                 Difficulty = parsed.Difficulty,
+                AiDifficulties = parsed.AiDifficulties,
                 Seed = parsed.Seed,
                 ExtendedGame = parsed.ExtendedGame
             });
@@ -62,7 +63,7 @@ internal static class HeadlessSimulationCommand
         {
             Console.Error.WriteLine(exception.Message);
             Console.Error.WriteLine("Usage: Burntime --ai-simulate [--turns N] [--difficulty easy|normal|hard] " +
-                "[--seed N] [--report PATH] [--extended]");
+                "[--ai-difficulties easy,normal,hard,hard] [--seed N] [--report PATH] [--extended]");
             return 2;
         }
         catch (Exception exception)
@@ -92,6 +93,10 @@ internal static class HeadlessSimulationCommand
                     break;
                 case "--difficulty":
                     result.Difficulty = ParseDifficulty(NextValue(args, ref index, argument));
+                    break;
+                case "--ai-difficulties":
+                    result.AiDifficulties = ParseAiDifficulties(
+                        NextValue(args, ref index, argument));
                     break;
                 case "--report":
                     result.ReportPath = NextValue(args, ref index, argument);
@@ -136,10 +141,20 @@ internal static class HeadlessSimulationCommand
         _ => throw new ArgumentException("--difficulty must be easy, normal, or hard.")
     };
 
+    static int[] ParseAiDifficulties(string value)
+    {
+        string[] values = value.Split(',', StringSplitOptions.RemoveEmptyEntries |
+            StringSplitOptions.TrimEntries);
+        if (values.Length != 4)
+            throw new ArgumentException("--ai-difficulties must contain four comma-separated values.");
+        return values.Select(ParseDifficulty).ToArray();
+    }
+
     sealed class ParsedOptions
     {
         public int Turns { get; set; } = 100;
         public int Difficulty { get; set; } = 2;
+        public int[]? AiDifficulties { get; set; }
         public int Seed { get; set; } = 1;
         public string? ReportPath { get; set; }
         public bool ExtendedGame { get; set; }

@@ -351,7 +351,7 @@ namespace Burntime.Remaster.Logic
             Path.MoveTo = Position;
         }
 
-        public void Hire(Player boss)
+        public void Hire(Player boss, bool waivePayment = false)
         {
             Location = null;
             boss.Group.Add(this);
@@ -363,12 +363,13 @@ namespace Burntime.Remaster.Logic
             }
 
             Item hireItem = null;
-            for (int i = 0; hireItem == null && i < HireItems.Count; i++)
+            for (int i = 0; !waivePayment && hireItem == null && i < HireItems.Count; i++)
             {
                 hireItem = boss.Character.Items.Find(HireItems[i]);
             }
 
-            boss.Character.Items.Remove(hireItem);
+            if (!waivePayment && hireItem != null)
+                boss.Character.Items.Remove(hireItem);
 
             Mind = container.Create<AI.FellowerMind>(new object[] { this, boss.Character });
             Path = container.Create<PathFinding.ComplexPath>();
@@ -696,14 +697,16 @@ namespace Burntime.Remaster.Logic
 
             Player activePlayer = container.Root.CurrentPlayer as Player;
             bool isActiveGroup = activePlayer?.Group.Contains(this) == true;
-            Path.Speed = isActiveGroup || Class == CharClass.Dog
+            bool isPlayerControlled = activePlayer?.SelectedCharacter == this || Mind is AI.PlayerControlledMind;
+            Path.Speed = isActiveGroup || isPlayerControlled || Mind is not AI.SimpleMind
                 ? WALK_SPEED
-                : Class == CharClass.Mutant
-                    ? WALK_SPEED / 2
-                    : WALK_SPEED * 0.66f;
+                : Class == CharClass.Dog
+                    ? WALK_SPEED
+                    : Class == CharClass.Mutant
+                        ? WALK_SPEED / 2
+                        : WALK_SPEED * 0.66f;
 
             bool isHovered = Location?.HoverCharacter == this;
-            bool isPlayerControlled = activePlayer?.SelectedCharacter == this || Mind is AI.PlayerControlledMind;
             bool isInTalkingDistance = IsHuman && !isActiveGroup && !isPlayerControlled &&
                 activePlayer?.SelectedCharacter != null &&
                 activePlayer.Location == Location &&

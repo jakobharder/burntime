@@ -20,6 +20,7 @@ namespace Burntime.Remaster.Logic.Generation
         public BurntimePlayerColor ColorTwo;
         public bool DisableAI;
         public bool ExtendedGame;
+        public int[] AiDifficulties;
     }
 
     enum BurntimePlayerColor
@@ -53,6 +54,7 @@ namespace Burntime.Remaster.Logic.Generation
 
         public void CreateNewGame(NewGameInfo Info, bool startServer = true)
         {
+            app.Autosaves.OnNewGameCreated();
             new LogicFactory();
 
             // load game settings
@@ -241,7 +243,13 @@ namespace Burntime.Remaster.Logic.Generation
             {
                 if (p.Type == PlayerType.Ai)
                 {
-                    p.AiState = container.Create<AI.ClassicAiState>(p, settings.AiSettings);
+                    bool explicitDifficulty = Info.AiDifficulties != null &&
+                        p.Index < Info.AiDifficulties.Length;
+                    AI.AiSettings aiSettings = explicitDifficulty
+                        ? AI.AiPolicy.SettingsFor(
+                            Info.AiDifficulties[p.Index], inheritGameDifficulty: false)
+                        : AI.AiPolicy.SettingsForPlayer(p.Index, Info.Difficulty);
+                    p.AiState = container.Create<AI.ClassicAiState>(p, aiSettings);
                 }
             }
 
@@ -552,14 +560,21 @@ namespace Burntime.Remaster.Logic.Generation
         public void SaveGame(string filename)
         {
             Burntime.Framework.SaveGame game = new Burntime.Framework.SaveGame(filename, "classic", BurntimeClassic.SavegameVersion);
+            try
+            {
+                if (!game.IsValid || game.Stream is null)
+                    throw new InvalidOperationException($"Could not create save game '{filename}'.");
 
-            game.Stream.WriteByte((byte)app.Clients.Count);
-            for (int i = 0; i < app.Clients.Count; i++)
-                game.Stream.WriteByte((byte)app.Clients[i].Player);
-            //app.Server.StateContainer.Save(game.Stream);
-            app.ActiveClient.StateContainer.Save(game.Stream);
-
-            game.Close();
+                game.Stream.WriteByte((byte)app.Clients.Count);
+                for (int i = 0; i < app.Clients.Count; i++)
+                    game.Stream.WriteByte((byte)app.Clients[i].Player);
+                //app.Server.StateContainer.Save(game.Stream);
+                app.ActiveClient.StateContainer.Save(game.Stream);
+            }
+            finally
+            {
+                game.Close();
+            }
         }
 
         public bool LoadGame(string filename)
@@ -588,6 +603,7 @@ namespace Burntime.Remaster.Logic.Generation
             app.GameServer.Create(container.Root, container);
 
             ClassicGame classic = container.Root as ClassicGame;
+            classic.InitAfterLoad();
 
             _ = new LogicFactory();
             LogicFactory.SetParameter("mainmap", classic.World.Map);
@@ -632,6 +648,8 @@ namespace Burntime.Remaster.Logic.Generation
             }
 
             app.Server.Run();
+
+            app.Autosaves.OnGameLoaded(filename);
 
             return true;
         }

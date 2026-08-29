@@ -1,0 +1,93 @@
+[players]
+' One entry per player slot. Use game, easy, normal, or hard.
+difficulties = game game game game
+
+[0] ' easy
+camp_max_advance = 2
+travel_group_size = 2
+attack_group_size = 2
+minimum_attack_ratio = 1.35
+neutral_target_score = 690
+hostile_target_score = 430
+expansion_economy_score = 850
+max_human_camp_defenders = 0
+treat_lone_knife_guard_as_undefended = true
+critical_garrison_target = 1
+attack_cooldown_turns = 4
+retaliation_turns = 20
+contested_camp_memory_turns = 16
+failed_attack_memory_turns = 20
+progressing_attack_retry_turns = 100
+attack_plan_turns = 40
+attack_plan_retry_delay = 10
+strategic_hostile_target_bonus = 0
+proactive_conflict_day = -1
+proactive_conflict_bonus = 0
+use_detailed_combat_estimate = false
+allow_generated_recruit_payment_in_cities = true
+recruit_experience = 0 40
+threat_radius = 1
+pitchfork_limit = 0
+trade_benefit = 1.0
+slump_material_grants = 2
+die_when_trapped = false
+
+[1] ' normal
+camp_max_advance = 5
+travel_group_size = 2
+attack_group_size = 3
+minimum_attack_ratio = 1.05
+neutral_target_score = 770
+hostile_target_score = 560
+expansion_economy_score = 900
+max_human_camp_defenders = 1
+treat_lone_knife_guard_as_undefended = false
+critical_garrison_target = 2
+attack_cooldown_turns = 2
+retaliation_turns = 20
+contested_camp_memory_turns = 16
+failed_attack_memory_turns = 20
+progressing_attack_retry_turns = 3
+attack_plan_turns = 40
+attack_plan_retry_delay = 10
+strategic_hostile_target_bonus = 35
+proactive_conflict_day = -1
+proactive_conflict_bonus = 0
+use_detailed_combat_estimate = false
+allow_generated_recruit_payment_in_cities = true
+recruit_experience = 20 60
+threat_radius = 2
+pitchfork_limit = 1
+trade_benefit = 1.2
+slump_material_grants = 4
+die_when_trapped = false
+
+[2] ' hard
+camp_max_advance = 99999
+travel_group_size = 2
+attack_group_size = 4
+minimum_attack_ratio = 0.75
+neutral_target_score = 860
+hostile_target_score = 680
+expansion_economy_score = 950
+max_human_camp_defenders = -1
+treat_lone_knife_guard_as_undefended = false
+critical_garrison_target = 3
+attack_cooldown_turns = 0
+retaliation_turns = 20
+contested_camp_memory_turns = 16
+failed_attack_memory_turns = 20
+progressing_attack_retry_turns = 3
+attack_plan_turns = 40
+attack_plan_retry_delay = 10
+strategic_hostile_target_bonus = 100
+proactive_conflict_day = 35
+proactive_conflict_bonus = 1200
+use_detailed_combat_estimate = true
+allow_generated_recruit_payment_in_cities = true
+recruit_experience = 40 -1
+threat_radius = 2
+pitchfork_limit = 1
+trade_benefit = 1.5
+slump_material_grants = 8
+die_when_trapped = false
