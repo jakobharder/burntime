@@ -727,15 +727,23 @@ namespace Burntime.Remaster
                 else
                 {
                     charOverlay.SelectedCharacter.JoinCamp();
+                    SelectBossAfterKeyboardGarrison();
                 }
             }
             else
             {
                 charOverlay.SelectedCharacter.JoinCamp();
+                SelectBossAfterKeyboardGarrison();
 
                 view.Location.Player = view.Player;
                 BurntimeClassic.Instance.Engine.Music.PlayOnce("sounds/camp.ogg");
             }
+        }
+
+        void SelectBossAfterKeyboardGarrison()
+        {
+            if (app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad)
+                view.Player.SelectGroup(view.Player.Group);
         }
 
         public void OnMenuLeaveCamp()
