@@ -4,12 +4,14 @@
 
 ### Changes
 
-- First MacOS/Linux support
 - Reworked AI player behavior
   - They play more closely by the rules now, with trade and inventory boosts
   - They attack, plan attacks and retreat in danger
   - Camp takeover now leaves storage intact
   - Enclosed AIs immediately die on easy; on medium/hard they attack or die trying
+- First MacOS/Linux support
+- First keyboard and gamepad support
+- Auto saves
 - Disabled dog/mutant spawning in original mode
 - Reduced dog/mutant spawning in extended mode
 - Dogs/mutants don't attack in cities anymore
@@ -19,6 +21,7 @@
 ### Fixes
 
 - Fixed first encounter dialog
+- Fixed English spelling and wording issues
 - Camp NPCs now always roam around after turn
 - Following NPCs walk less on the same spot
 - Fixed dogs/mutants spawning all at the same spot

@@ -16,14 +16,26 @@ namespace Burntime.Remaster
         public String Name
         {
             get { return name; }
-            set 
-            { 
+            set
+            {
                 name = value;
-                Text = "[ " + name + " ]";
+                RefreshText();
             }
         }
 
         public int MaxNameLength = 10;
+        bool textInputActive;
+        public bool IsTextInputActive
+        {
+            get => textInputActive;
+            set
+            {
+                textInputActive = value;
+                HasFocus = value;
+                RefreshText();
+            }
+        }
+        public override bool WantsTextInput => textInputActive;
 
         public ConfigFile Table
         {
@@ -39,14 +51,20 @@ namespace Burntime.Remaster
 
         public override void OnSwitchDown()
         {
-            HasFocus = true;
+            IsTextInputActive = true;
             base.OnSwitchDown();
         }
 
         public override void OnSwitchUp()
         {
-            HasFocus = false;
+            IsTextInputActive = false;
             base.OnSwitchUp();
+        }
+
+        void RefreshText()
+        {
+            string value = name + (textInputActive ? "{_" : "");
+            Text = "[ " + value + " ]";
         }
 
         public override bool OnKeyPress(char Key)

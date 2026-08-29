@@ -5,7 +5,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Burntime.Platform</RootNamespace>
     <AssemblyName>Burntime.Platform</AssemblyName>
-    <LangVersion>10.0</LangVersion>
+    <LangVersion>14.0</LangVersion>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <ImplicitUsings>enable</ImplicitUsings>

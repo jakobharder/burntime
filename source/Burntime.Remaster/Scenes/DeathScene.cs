@@ -97,18 +97,24 @@ namespace Burntime.Remaster.Scenes
 
         public override bool OnMouseClick(Vector2 position, MouseButton button)
         {
-            app.ActiveClient.Finish();
-            app.SceneManager.PreviousScene();
+            Dismiss();
 
             return base.OnMouseClick(position, button);
         }
 
-        public override bool OnVKeyPress(SystemKey key)
+        public override bool OnInputAction(InputAction action)
+        {
+            if (action != InputAction.Primary && action != InputAction.Back)
+                return false;
+
+            Dismiss();
+            return true;
+        }
+
+        void Dismiss()
         {
             app.ActiveClient.Finish();
             app.SceneManager.PreviousScene();
-
-            return true;
         }
 
         protected override void OnInactivateScene()

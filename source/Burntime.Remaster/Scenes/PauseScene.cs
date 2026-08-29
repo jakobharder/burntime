@@ -48,24 +48,22 @@ namespace Burntime.Remaster.Scenes
             return true;
         }
 
-        public override bool OnKeyPress(char Key)
+        public override bool OnInputAction(InputAction action)
         {
-            if (!handled)
-            {
-                app.SceneManager.PreviousScene();
-                handled = true;
-            }
+            if (action != InputAction.Primary && action != InputAction.Back)
+                return false;
+
+            ContinueGame();
             return true;
         }
 
-        public override bool OnVKeyPress(SystemKey Key)
+        void ContinueGame()
         {
-            if (!handled)
-            {
-                app.SceneManager.PreviousScene();
-                handled = true;
-            }
-            return true;
+            if (handled)
+                return;
+
+            app.SceneManager.PreviousScene();
+            handled = true;
         }
 
         protected override void OnActivateScene(object parameter)

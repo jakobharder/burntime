@@ -1,12 +1,11 @@
-﻿using System;
-using Burntime.Platform.IO;
+﻿using Burntime.Platform.IO;
 using Burntime.Platform.Graphics;
 using Burntime.MonoGame;
 using Burntime.MonoGame.Graphics;
 
 namespace Burntime.Platform.Resource
 {
-    public class ResourceManager : ResourceManagerBase, IResourceManager, IDisposable
+    public class ResourceManager : ResourceManagerBase, IDisposable
     {
         readonly BurntimeGame _engine;
 
@@ -17,12 +16,12 @@ namespace Burntime.Platform.Resource
         }
 
         #region Font
-        public Font? GetFont(string filePath, PixelColor color)
+        public override Font? GetFont(string filePath, PixelColor color)
         {
             return GetFont(filePath, color, PixelColor.Black);
         }
 
-        public Font? GetFont(string filePath, PixelColor color, PixelColor backColor)
+        public override Font? GetFont(string filePath, PixelColor color, PixelColor backColor)
         {
             ResourceInfoFont info;
             info.Name = filePath;
@@ -61,17 +60,16 @@ namespace Burntime.Platform.Resource
 
             lock (fonts)
             {
-                if (fonts.ContainsKey(info))
-                {
-                    font.charInfo = fonts[info].charInfo;
-                    font.sprite = fonts[info].sprite;
-                    font.offset = fonts[info].offset;
-                    font.height = fonts[info].height;
-                    font.IsLoaded = true;
-                    return font;
-                }
+                bool isNewResource = !fonts.TryGetValue(info, out FontResource? resource);
+                resource ??= new FontResource();
 
-                FilePath path = font.Info.Font;
+                font.Resource = resource;
+                if (resource.IsLoaded)
+                    return font;
+
+                ResourceID id = font.Info.Font;
+                var replaced = GetReplacement(id);
+                FilePath path = new FilePath(replaced?.Id?.ToString() ?? (string)id);
                 if (!fontProcessors.ContainsKey(path.Extension))
                     return null;
 
@@ -89,27 +87,25 @@ namespace Burntime.Platform.Resource
                 lock (sprites)
                     MemoryUsage += frame.LoadFromProcessor(processor, keepSystemCopy: true);
 
-                font.sprite = new Sprite(this, "", frame)
+                Sprite sprite = new Sprite(this, "", frame)
                 {
-                    Resolution = processor.Factor
+                    Resolution = processor.Factor,
+                    // Font filtering is selected later from the final physical scale.
+                    LinearFiltering = true
                 };
 
-                font.charInfo = processor.CharInfo;
-                font.offset = processor.Offset;
-                font.height = processor.Size.y;
+                resource.Load(sprite, processor.CharInfo, processor.Kerning, processor.Offset, processor.Size.y);
+                if (isNewResource)
+                    fonts.Add(info, resource);
 
                 _engine.DecreaseLoadingCount();
-
-                fonts.Add(info, font);
             }
-
-            font.IsLoaded = true;
             return font;
         }
         #endregion
 
         #region Sprites
-        public ISprite GetImage(ResourceID id, ResourceLoadType loadType = ResourceLoadType.Delayed)
+        public override ISprite GetImage(ResourceID id, ResourceLoadType loadType = ResourceLoadType.Delayed)
         {
             return GetSprite(id, loadType);
         }
@@ -143,7 +139,7 @@ namespace Burntime.Platform.Resource
             {
                 Sprite s;
 
-                String format = id.Format;
+                string format = id.Format;
 
                 if (Log.DebugOut)
                 {
@@ -200,7 +196,7 @@ namespace Burntime.Platform.Resource
             }
         }
 
-        internal void Reload(Sprite Sprite, ResourceLoadType LoadType)
+        private void Reload(Sprite Sprite, ResourceLoadType LoadType)
         {
             Sprite.internalFrames[0].IsLoading = true;
 
@@ -209,15 +205,6 @@ namespace Burntime.Platform.Resource
                 delayLoader.Enqueue(Sprite);
                 return;
             }
-
-            // System copied sprites like fonts
-            //for (int i = 0; i < Sprite.internalFrames.Length; i++)
-            //{
-            //    if (Sprite.internalFrames[i].HasSystemCopy)
-            //    {
-            //        // nothing to do
-            //    }
-            //}
 
             ResourceID id = Sprite.ID;
             if (id.File == "" || !spriteProcessors.ContainsKey(id.Format))
@@ -293,9 +280,13 @@ namespace Burntime.Platform.Resource
 
             _engine.DecreaseLoadingCount();
         }
+
+        public override void Reload(ISprite sprite, ResourceLoadType loadType = ResourceLoadType.Delayed)
+        {
+            if (sprite is Sprite s)
+                Reload(s, loadType);
+        }
         #endregion
 
-        ISprite IResourceManager.GetImage(ResourceID id, ResourceLoadType loadType) => GetImage(id, loadType);
-        void IResourceManager.Reload(ISprite sprite, ResourceLoadType loadType) => Reload(sprite as Sprite, loadType);
     }
 }

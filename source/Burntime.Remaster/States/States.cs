@@ -77,9 +77,55 @@ namespace Burntime.Remaster
             UpdateSaveHint();
         }
 
+        protected override void AfterDeserialization()
+        {
+            base.AfterDeserialization();
+            persistentTelemetry = null;
+        }
+
+        [System.Runtime.Serialization.OptionalField]
+        byte[]? persistentTelemetryData;
+
+        [NonSerialized]
+        PersistentTelemetry? persistentTelemetry;
+
+        public byte[]? PersistentTelemetryData => persistentTelemetryData;
+
+        internal void InitPersistentTelemetry(string reason)
+        {
+            persistentTelemetry = new PersistentTelemetry(this, persistentTelemetryData);
+            persistentTelemetry.RecordSession(reason);
+        }
+
+        internal void SetPersistentTelemetryData(byte[] data)
+        {
+            persistentTelemetryData = data;
+        }
+
+        internal void NotifyCampOwnershipChanged(Location location, Player? previous, Player? current)
+        {
+            persistentTelemetry?.RecordCampOwnershipChange(location, previous, current);
+        }
+
+        /// <summary>
+        /// Applies runtime initialization and compatibility cleanup after a
+        /// save has been fully deserialized and its state links resolved.
+        /// </summary>
+        public void InitAfterLoad()
+        {
+            foreach (Player player in World.Players)
+            {
+                if (player.AiState is AI.ClassicAiState ai)
+                    ai.InitAfterLoad();
+            }
+            InitPersistentTelemetry("load");
+        }
+
         public override void Turn()
         {
             World.Turn();
+
+            persistentTelemetry?.RecordCompletedTurn();
 
             base.Turn();
             UpdateSaveHint();
@@ -93,7 +139,10 @@ namespace Burntime.Remaster
             foreach (PlayerState player in Player)
             {
                 if (World.VictoryCondition.Object.Process((Player)player))
+                {
+                    persistentTelemetry?.RecordVictory((Player)player);
                     return player;
+                }
             }
 
             return null;
@@ -101,6 +150,15 @@ namespace Burntime.Remaster
 
         int saveHintDays;
         int saveHintLocations;
+
+        // OptionalField keeps saves written before 1.1 loadable. Their default
+        // values are handled by GetSaveHint and the options menu's legacy path.
+        [System.Runtime.Serialization.OptionalField]
+        int saveHintDifficulty;
+        [System.Runtime.Serialization.OptionalField]
+        string? saveHintPlayer;
+        [System.Runtime.Serialization.OptionalField]
+        long saveHintDateTimeUtcTicks;
 
         public override bool HasValidSaveHint => saveHintDays != 0;
 
@@ -110,21 +168,42 @@ namespace Burntime.Remaster
             {
                 saveHintDays = 1;
                 saveHintLocations = 0;
+                saveHintDifficulty = 0;
+                saveHintPlayer = null;
             }
             else
             {
                 saveHintDays = World.Day;
-                saveHintLocations = World.Players.OfType<Player>().FirstOrDefault(x => x.Type == PlayerType.Human)?.GetOwnedLocationCount(World) ?? 0;
+                Player? player = World.Players.OfType<Player>()
+                    .FirstOrDefault(x => x.Type == PlayerType.Human);
+                saveHintLocations = player?.GetOwnedLocationCount(World) ?? 0;
+                saveHintDifficulty = World.Difficulty;
+                saveHintPlayer = player?.Name;
             }
+            saveHintDateTimeUtcTicks = DateTime.UtcNow.Ticks;
         }
 
         public override Dictionary<string, string> GetSaveHint()
         {
-            return new Dictionary<string, string>()
+            var hint = new Dictionary<string, string>()
             {
                 { "days", saveHintDays.ToString() },
-                { "camps", saveHintLocations.ToString() }
+                { "camps", saveHintLocations.ToString() },
+                { "difficulty", saveHintDifficulty.ToString() }
             };
+            if (!string.IsNullOrWhiteSpace(saveHintPlayer))
+                hint["player"] = saveHintPlayer;
+            if (saveHintDateTimeUtcTicks > 0)
+                hint["datetime"] = new DateTime(saveHintDateTimeUtcTicks, DateTimeKind.Utc)
+                    .ToString("O", System.Globalization.CultureInfo.InvariantCulture);
+            return hint;
+        }
+
+        public override Dictionary<string, string> GetSaveDetails()
+        {
+            Dictionary<string, string> details = GetSaveHint();
+            details["difficulty"] = World?.Difficulty.ToString() ?? saveHintDifficulty.ToString();
+            return details;
         }
 
         public bool CheatsEnabled { get; set; }

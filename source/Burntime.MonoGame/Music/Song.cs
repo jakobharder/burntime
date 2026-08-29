@@ -34,7 +34,7 @@ internal class LoopableSong : IDisposable
     SoundEffect? _effect;
     SoundEffectInstance? _music;
 
-    public LoopableSong(File loop, File? intro = null, bool repeat = false)
+    public LoopableSong(Burntime.Platform.IO.File loop, Burntime.Platform.IO.File? intro = null, bool repeat = false)
     {
         if (intro is not null)
         {

@@ -17,6 +17,8 @@ namespace Burntime.MonoGame
 {
     public class BurntimeGame : Game, IEngine, ILoadingCounter
     {
+        const int TargetFramesPerSecond = 60;
+
         public Resolution Resolution { get; } = new();
         public DeviceManager DeviceManager { get; set; }
         public ResourceManager ResourceManager { get; set; }
@@ -69,6 +71,9 @@ namespace Burntime.MonoGame
         public BurntimeGame()
         {
             _graphics = new GraphicsDeviceManager(this);
+            IsFixedTimeStep = true;
+            TargetElapsedTime = TimeSpan.FromSeconds(1.0 / TargetFramesPerSecond);
+            _graphics.SynchronizeWithVerticalRetrace = true;
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
         }
@@ -199,20 +204,46 @@ namespace Burntime.MonoGame
             {
                 _burntimeApp.Process(gameTime.Elapsed);
                 MainTarget.Elapsed = gameTime.Elapsed;
+                MainTarget.TotalElapsed += gameTime.Elapsed;
 
                 RenderDevice.Begin();
                 _burntimeApp.Render(MainTarget);
                 RenderDevice.End();
-            });
+            }, framesPerSecond: TargetFramesPerSecond);
         }
 
         bool _leftClicked = false;
         bool _rightClicked = false;
+        Point? _previousMousePosition;
+        int? _previousScrollWheelValue;
+        InputAction _leftStickDirection;
+        bool _leftStickNavigationLatched;
 
         private void HandleMouseInput()
         {
             var mouseState = Mouse.GetState();
-            if (mouseState.X < 0 || mouseState.Y < 0 || mouseState.X >= Resolution.Native.x || mouseState.Y >= Resolution.Native.y)
+            var nativeMousePosition = new Point(mouseState.X, mouseState.Y);
+            bool mouseInside = mouseState.X >= 0 && mouseState.Y >= 0 &&
+                mouseState.X < Resolution.Native.x && mouseState.Y < Resolution.Native.y;
+
+            // Keep the native cursor available outside an inactive/windowed game,
+            // and hide it again when it enters the active game surface. In
+            // particular, Cocoa can reveal the cursor when it leaves an SDL
+            // window; changing this state on re-entry makes SDL hide it again.
+            IsMouseVisible = !IsActive || !mouseInside;
+
+            if (_previousMousePosition.HasValue)
+            {
+                int deltaX = nativeMousePosition.X - _previousMousePosition.Value.X;
+                int deltaY = nativeMousePosition.Y - _previousMousePosition.Value.Y;
+                if (deltaX * deltaX + deltaY * deltaY > 1)
+                {
+                    _burntimeApp.LastInputMode = InputMode.Mouse;
+                }
+            }
+            _previousMousePosition = nativeMousePosition;
+
+            if (!mouseInside)
             {
                 _leftClicked = false;
                 _rightClicked = false;
@@ -225,19 +256,36 @@ namespace Burntime.MonoGame
                 var mousePosition = new Vector2f(mouseState.X, mouseState.Y) * (Vector2f)Resolution.Game / (Vector2f)Resolution.Native;
                 DeviceManager.MouseMove(mousePosition);
 
+                if (_previousScrollWheelValue.HasValue && mouseInside)
+                {
+                    int wheelDelta = mouseState.ScrollWheelValue - _previousScrollWheelValue.Value;
+                    if (wheelDelta != 0)
+                    {
+                        _burntimeApp.LastInputMode = InputMode.Mouse;
+                        DeviceManager.MouseWheel(mousePosition, wheelDelta);
+                    }
+                }
+                _previousScrollWheelValue = mouseState.ScrollWheelValue;
+
                 // ignore clicks when not shown and active
                 if (!IsActive) return;
 
                 if (mouseState.LeftButton == ButtonState.Pressed)
                 {
                     if (!_leftClicked)
+                    {
+                        _burntimeApp.LastInputMode = InputMode.Mouse;
                         DeviceManager.MouseDown(mousePosition, MouseButton.Left);
+                    }
                     _leftClicked = true;
                 }
                 if (mouseState.RightButton == ButtonState.Pressed)
                 {
                     if (!_rightClicked)
+                    {
+                        _burntimeApp.LastInputMode = InputMode.Mouse;
                         DeviceManager.MouseDown(mousePosition, MouseButton.Right);
+                    }
                     _rightClicked = true;
                 }
 
@@ -255,6 +303,8 @@ namespace Burntime.MonoGame
         }
 
         Microsoft.Xna.Framework.Input.KeyboardState _previousKeyboardState;
+        GamePadState _previousGamePadState;
+        bool _gamePadWasConnected;
         static char ConvertKeyToChar(Microsoft.Xna.Framework.Input.Keys key, Microsoft.Xna.Framework.Input.KeyboardState state)
         {
             bool shift = state.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.LeftShift) || state.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.LeftShift);
@@ -275,32 +325,62 @@ namespace Burntime.MonoGame
 
         private void Window_TextInput(object sender, TextInputEventArgs e)
         {
-            if (e.Key == Keys.Escape || e.Key == Keys.Pause || e.Key == Keys.Enter
+            if (e.Key == Keys.Escape || e.Key == Keys.Pause || e.Key == Keys.Enter || e.Key == Keys.Tab
                 || e.Key == Keys.F1 || e.Key == Keys.F2 || e.Key == Keys.F3 || e.Key == Keys.F4 || e.Key == Keys.F8 || e.Key == Keys.F9)
             {
                 // handled in Update
             }
             else
             {
-                DeviceManager?.KeyPress(e.Character);
+                _burntimeApp.LastInputMode = InputMode.Keyboard;
+                var keyboard = Microsoft.Xna.Framework.Input.Keyboard.GetState();
+                DeviceManager?.KeyPress(e.Character, GetModifiers(keyboard));
             }
+        }
+
+        static ModifierKeys GetModifiers(Microsoft.Xna.Framework.Input.KeyboardState keyboard)
+        {
+            ModifierKeys modifier = ModifierKeys.None;
+            if (keyboard.IsKeyDown(Keys.LeftAlt) || keyboard.IsKeyDown(Keys.RightAlt))
+                modifier |= ModifierKeys.LeftAlt;
+            if (keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift))
+                modifier |= ModifierKeys.Shift;
+            return modifier;
         }
 
         private void HandleKeyboardInput()
         {
-            if (!IsActive) return;
+            if (!IsActive)
+            {
+                _burntimeApp?.InputManager.ClearDown(InputSource.Keyboard);
+                return;
+            }
 
             var keyboard = Microsoft.Xna.Framework.Input.Keyboard.GetState();
             var keys = keyboard.GetPressedKeys();
 
-            ModifierKeys modifier = ModifierKeys.None;
-            if (keyboard.IsKeyDown(Keys.LeftAlt))
-                modifier |= ModifierKeys.LeftAlt;
+            _burntimeApp.InputManager.ClearDown(InputSource.Keyboard);
+            foreach (var key in keys)
+            {
+                Key? bindingKey = ConvertToBindingKey(key);
+                if (bindingKey.HasValue)
+                {
+                    InputAction action = _burntimeApp.KeyboardActionBindings.GetAction(bindingKey.Value);
+                    if (action != InputAction.None)
+                        _burntimeApp.InputManager.SetDown(InputSource.Keyboard, action, true);
+                }
+            }
+
+            ModifierKeys modifier = GetModifiers(keyboard);
             
             foreach (var key in keys)
             {
                 if (_previousKeyboardState.IsKeyUp(key))
                 {
+                    if (key is not (Keys.LeftAlt or Keys.RightAlt or Keys.LeftControl or Keys.RightControl or
+                        Keys.LeftShift or Keys.RightShift))
+                        _burntimeApp.LastInputMode = InputMode.Keyboard;
+
                     if (key == Keys.F11
                         || (key == Keys.Enter && (modifier & ModifierKeys.LeftAlt) == ModifierKeys.LeftAlt))
                     {
@@ -310,6 +390,8 @@ namespace Burntime.MonoGame
                     }
 
                     if (key == Keys.Escape || key == Keys.Pause || key == Keys.Enter
+                        || key == Keys.Up || key == Keys.Down || key == Keys.Left || key == Keys.Right
+                        || key == Keys.Tab
                         || key == Keys.F1 || key == Keys.F2 || key == Keys.F3 || key == Keys.F4 || key == Keys.F8 || key == Keys.F9)
                     {
                         DeviceManager?.VKeyPress(key switch
@@ -317,6 +399,11 @@ namespace Burntime.MonoGame
                             Keys.Escape => SystemKey.Escape,
                             Keys.Pause => SystemKey.Pause,
                             Keys.Enter => SystemKey.Enter,
+                            Keys.Up => SystemKey.Up,
+                            Keys.Down => SystemKey.Down,
+                            Keys.Left => SystemKey.Left,
+                            Keys.Right => SystemKey.Right,
+                            Keys.Tab => SystemKey.Tab,
                             Keys.F1 => SystemKey.F1,
                             Keys.F2 => SystemKey.F2,
                             Keys.F3 => SystemKey.F3,
@@ -324,7 +411,7 @@ namespace Burntime.MonoGame
                             Keys.F8 => SystemKey.F8,
                             Keys.F9 => SystemKey.F9,
                             _ => SystemKey.Other
-                        });
+                        }, modifier);
                     }
                 }
             }
@@ -332,10 +419,209 @@ namespace Burntime.MonoGame
             _previousKeyboardState = keyboard;
         }
 
+        static Key? ConvertToBindingKey(Keys key)
+        {
+            if (key >= Keys.A && key <= Keys.Z)
+                return new Key(char.ToLowerInvariant(key.ToString()[0]));
+            if (key >= Keys.D0 && key <= Keys.D9)
+                return new Key(key.ToString()[1]);
+
+            return key switch
+            {
+                Keys.Space => new Key(' '),
+                Keys.Back => new Key('\b'),
+                Keys.Enter => new Key(SystemKey.Enter),
+                Keys.Escape => new Key(SystemKey.Escape),
+                Keys.Tab => new Key(SystemKey.Tab),
+                Keys.Up => new Key(SystemKey.Up),
+                Keys.Down => new Key(SystemKey.Down),
+                Keys.Left => new Key(SystemKey.Left),
+                Keys.Right => new Key(SystemKey.Right),
+                _ => null
+            };
+        }
+
+        private void HandleGamePadInput()
+        {
+            GamePadState gamePad = GamePad.GetState(PlayerIndex.One, GamePadDeadZone.Circular);
+            if (!IsActive || !gamePad.IsConnected)
+            {
+                _burntimeApp?.InputManager.ClearDown(InputSource.GamepadOne);
+                DeviceManager?.ClearGamepadControlsDown();
+                _gamePadWasConnected = false;
+                _leftStickDirection = InputAction.None;
+                _leftStickNavigationLatched = false;
+                return;
+            }
+
+            GamePadState previous = _gamePadWasConnected ? _previousGamePadState : default;
+
+            const float stickThreshold = 0.4f;
+            InputAction previousLeftStickDirection = _leftStickDirection;
+            bool useCardinalMovement = _burntimeApp.SceneManager.UseCardinalGamepadMovement;
+            _leftStickDirection = useCardinalMovement
+                ? GetCardinalStickDirection(gamePad.ThumbSticks.Left.X,
+                    gamePad.ThumbSticks.Left.Y, stickThreshold, previousLeftStickDirection)
+                : InputAction.None;
+            bool up = useCardinalMovement
+                ? _leftStickDirection == InputAction.MoveUp
+                : gamePad.ThumbSticks.Left.Y >= stickThreshold;
+            bool down = useCardinalMovement
+                ? _leftStickDirection == InputAction.MoveDown
+                : gamePad.ThumbSticks.Left.Y <= -stickThreshold;
+            bool left = useCardinalMovement
+                ? _leftStickDirection == InputAction.MoveLeft
+                : gamePad.ThumbSticks.Left.X <= -stickThreshold;
+            bool right = useCardinalMovement
+                ? _leftStickDirection == InputAction.MoveRight
+                : gamePad.ThumbSticks.Left.X >= stickThreshold;
+            bool previousUp = useCardinalMovement
+                ? previousLeftStickDirection == InputAction.MoveUp
+                : previous.ThumbSticks.Left.Y >= stickThreshold;
+            bool previousDown = useCardinalMovement
+                ? previousLeftStickDirection == InputAction.MoveDown
+                : previous.ThumbSticks.Left.Y <= -stickThreshold;
+            bool previousLeft = useCardinalMovement
+                ? previousLeftStickDirection == InputAction.MoveLeft
+                : previous.ThumbSticks.Left.X <= -stickThreshold;
+            bool previousRight = useCardinalMovement
+                ? previousLeftStickDirection == InputAction.MoveRight
+                : previous.ThumbSticks.Left.X >= stickThreshold;
+
+            bool panUp = gamePad.ThumbSticks.Right.Y >= stickThreshold;
+            bool panDown = gamePad.ThumbSticks.Right.Y <= -stickThreshold;
+            bool panLeft = gamePad.ThumbSticks.Right.X <= -stickThreshold;
+            bool panRight = gamePad.ThumbSticks.Right.X >= stickThreshold;
+            bool previousPanUp = previous.ThumbSticks.Right.Y >= stickThreshold;
+            bool previousPanDown = previous.ThumbSticks.Right.Y <= -stickThreshold;
+            bool previousPanLeft = previous.ThumbSticks.Right.X <= -stickThreshold;
+            bool previousPanRight = previous.ThumbSticks.Right.X >= stickThreshold;
+            bool confirmOperation = gamePad.Buttons.Y == ButtonState.Pressed;
+
+            bool gamePadActivated = up && !previousUp || down && !previousDown ||
+                left && !previousLeft || right && !previousRight ||
+                panUp && !previousPanUp || panDown && !previousPanDown ||
+                panLeft && !previousPanLeft || panRight && !previousPanRight;
+
+            if (gamePadActivated)
+                _burntimeApp.LastInputMode = InputMode.Gamepad;
+
+            _burntimeApp.InputManager.SetDown(InputSource.GamepadOne, InputAction.MoveUp, up);
+            _burntimeApp.InputManager.SetDown(InputSource.GamepadOne, InputAction.MoveDown, down);
+            _burntimeApp.InputManager.SetDown(InputSource.GamepadOne, InputAction.MoveLeft, left);
+            _burntimeApp.InputManager.SetDown(InputSource.GamepadOne, InputAction.MoveRight, right);
+            _burntimeApp.InputManager.SetDown(InputSource.GamepadOne, InputAction.PanCameraUp, panUp);
+            _burntimeApp.InputManager.SetDown(InputSource.GamepadOne, InputAction.PanCameraDown, panDown);
+            _burntimeApp.InputManager.SetDown(InputSource.GamepadOne, InputAction.PanCameraLeft, panLeft);
+            _burntimeApp.InputManager.SetDown(InputSource.GamepadOne, InputAction.PanCameraRight, panRight);
+
+            foreach (GamepadControl control in Enum.GetValues<GamepadControl>())
+            {
+                if (control == GamepadControl.None)
+                    continue;
+
+                bool isDown = IsControlDown(gamePad, control);
+                bool wasDown = IsControlDown(previous, control);
+                DeviceManager.SetGamepadControlDown(control, isDown);
+                if (isDown && !wasDown)
+                {
+                    _burntimeApp.LastInputMode = InputMode.Gamepad;
+                    DeviceManager.GamepadControlPress(control);
+                }
+            }
+
+            bool stickNavigationActive = up || down || left || right;
+            if (!stickNavigationActive)
+                _leftStickNavigationLatched = false;
+            else if (!_leftStickNavigationLatched)
+            {
+                _leftStickNavigationLatched = true;
+                InputAction navigationAction = _burntimeApp.SceneManager.UseDiagonalGamepadNavigation &&
+                    (up || down) && (left || right)
+                    ? (up, left) switch
+                    {
+                        (true, true) => InputAction.MoveUpLeft,
+                        (true, false) => InputAction.MoveUpRight,
+                        (false, true) => InputAction.MoveDownLeft,
+                        _ => InputAction.MoveDownRight
+                    }
+                    : GetCardinalStickDirection(gamePad.ThumbSticks.Left.X,
+                        gamePad.ThumbSticks.Left.Y, stickThreshold, InputAction.None);
+                _burntimeApp.InputManager.Press(navigationAction);
+            }
+            PressOnRising(panUp, previousPanUp, InputAction.PanCameraUp);
+            PressOnRising(panDown, previousPanDown, InputAction.PanCameraDown);
+            PressOnRising(panLeft, previousPanLeft, InputAction.PanCameraLeft);
+            PressOnRising(panRight, previousPanRight, InputAction.PanCameraRight);
+            _previousGamePadState = gamePad;
+            _gamePadWasConnected = true;
+        }
+
+        static InputAction GetCardinalStickDirection(float x, float y, float threshold,
+            InputAction previousDirection)
+        {
+            float absoluteX = System.Math.Abs(x);
+            float absoluteY = System.Math.Abs(y);
+            bool horizontal = absoluteX >= threshold;
+            bool vertical = absoluteY >= threshold;
+
+            if (!horizontal && !vertical)
+                return InputAction.None;
+            if (!vertical)
+                return x < 0 ? InputAction.MoveLeft : InputAction.MoveRight;
+            if (!horizontal)
+                return y < 0 ? InputAction.MoveDown : InputAction.MoveUp;
+
+            // Keep the selected axis stable around a diagonal. The other axis
+            // must become clearly stronger before navigation changes direction.
+            const float axisSwitchMargin = 0.1f;
+            if ((previousDirection is InputAction.MoveLeft or InputAction.MoveRight) &&
+                absoluteY <= absoluteX + axisSwitchMargin)
+                return x < 0 ? InputAction.MoveLeft : InputAction.MoveRight;
+            if ((previousDirection is InputAction.MoveUp or InputAction.MoveDown) &&
+                absoluteX <= absoluteY + axisSwitchMargin)
+                return y < 0 ? InputAction.MoveDown : InputAction.MoveUp;
+
+            return absoluteX > absoluteY
+                ? x < 0 ? InputAction.MoveLeft : InputAction.MoveRight
+                : y < 0 ? InputAction.MoveDown : InputAction.MoveUp;
+        }
+
+        static bool IsControlDown(GamePadState state, GamepadControl control) => control switch
+        {
+            GamepadControl.A => state.Buttons.A == ButtonState.Pressed,
+            GamepadControl.B => state.Buttons.B == ButtonState.Pressed,
+            GamepadControl.X => state.Buttons.X == ButtonState.Pressed,
+            GamepadControl.Y => state.Buttons.Y == ButtonState.Pressed,
+            GamepadControl.Menu => state.Buttons.Start == ButtonState.Pressed,
+            GamepadControl.View => state.Buttons.Back == ButtonState.Pressed,
+            GamepadControl.LeftShoulder => state.Buttons.LeftShoulder == ButtonState.Pressed,
+            GamepadControl.RightShoulder => state.Buttons.RightShoulder == ButtonState.Pressed,
+            GamepadControl.LeftStick => state.Buttons.LeftStick == ButtonState.Pressed,
+            GamepadControl.RightStick => state.Buttons.RightStick == ButtonState.Pressed,
+            GamepadControl.LeftTrigger => state.Triggers.Left >= 0.5f,
+            GamepadControl.RightTrigger => state.Triggers.Right >= 0.5f,
+            GamepadControl.DPadUp => state.DPad.Up == ButtonState.Pressed,
+            GamepadControl.DPadDown => state.DPad.Down == ButtonState.Pressed,
+            GamepadControl.DPadLeft => state.DPad.Left == ButtonState.Pressed,
+            GamepadControl.DPadRight => state.DPad.Right == ButtonState.Pressed,
+            _ => false
+        };
+
+        void PressOnRising(bool isDown, bool wasDown, params InputAction[] actions)
+        {
+            if (!isDown || wasDown)
+                return;
+
+            foreach (InputAction action in actions)
+                _burntimeApp.InputManager.Press(action);
+        }
+
         protected override void Update(Microsoft.Xna.Framework.GameTime gameTime)
         {
             HandleMouseInput();
             HandleKeyboardInput();
+            HandleGamePadInput();
             
             if (_requestFullscreen != _isFullscreen)
             {
@@ -359,10 +645,11 @@ namespace Burntime.MonoGame
 
         void IEngine.CenterMouse()
         {
-            if (_burntimeApp.RenderMouse && IsActive)
+            if (_burntimeApp.RenderMouse && _burntimeApp.MouseInputVisible && IsActive)
             {
                 var center = Resolution.Native / 2;
                 Mouse.SetPosition(center.x, center.y);
+                _previousMousePosition = new Point(center.x, center.y);
             }
         }
 
@@ -371,6 +658,7 @@ namespace Burntime.MonoGame
             base.OnExiting(sender, args);
 
             Music.StopThread();
+            _gameThread.Stop();
             _burntimeApp.Close();
         }
 
@@ -428,7 +716,8 @@ namespace Burntime.MonoGame
             {
                 Rectangle = new Rectangle(0, 0, nativeSprite.OriginalSize.x, nativeSprite.OriginalSize.y),
                 Color = new Color(alpha, alpha, alpha, alpha),
-                Factor = nativeSprite.Frame.Resolution
+                Factor = nativeSprite.Frame.Resolution,
+                LinearFiltering = nativeSprite.LinearFiltering
             };
 
             if (sprite.Animation != null && sprite.Animation.Progressive && nativeSprite.Frames != null)
@@ -444,12 +733,18 @@ namespace Burntime.MonoGame
                 Color = entity.Color,
                 SpriteFrame = nativeSprite.Frame,
                 Position = new Vector3(pos.x, pos.y, CalcZ(Layer)),
-                Factor = nativeSprite.Frame.Resolution
+                Factor = nativeSprite.Frame.Resolution,
+                LinearFiltering = nativeSprite.LinearFiltering
             };
             RenderDevice.AddEntity(entity2);
         }
 
         public void RenderSprite(ISprite sprite, Platform.Vector2 pos, Platform.Vector2 srcPos, int srcWidth, int srcHeight, PixelColor color)
+        {
+            RenderSpriteF(sprite, (Platform.Vector2f)pos, srcPos, srcWidth, srcHeight, color);
+        }
+
+        public void RenderSpriteF(ISprite sprite, Platform.Vector2f pos, Platform.Vector2 srcPos, int srcWidth, int srcHeight, PixelColor color)
         {
             if (sprite is not MonoGame.Graphics.Sprite nativeSprite || !nativeSprite.Touch()) return;
 
@@ -457,7 +752,8 @@ namespace Burntime.MonoGame
             {
                 Rectangle = new Rectangle(srcPos.x, srcPos.y, srcWidth, srcHeight),
                 Color = new Color(color.r, color.g, color.b, color.a),
-                Factor = nativeSprite.Frame.Resolution
+                Factor = nativeSprite.Frame.Resolution,
+                LinearFiltering = nativeSprite.LinearFiltering
             };
 
             long now = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -482,7 +778,8 @@ namespace Burntime.MonoGame
                 Color = entity.Color,
                 SpriteFrame = nativeSprite.Frame,
                 Position = new Vector3(pos.x, pos.y, CalcZ(Layer)),
-                Factor = nativeSprite.Frame.Resolution
+                Factor = nativeSprite.Frame.Resolution,
+                LinearFiltering = nativeSprite.LinearFiltering
             };
             RenderDevice.AddEntity(entity2);
         }

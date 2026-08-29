@@ -16,7 +16,7 @@ for help?}
 I really can do anything.}
 }
 }#
-Allright, but let's first}
+All right, but let's first}
 take care of business.}
 For |C I'll do it.}
 }
@@ -36,7 +36,6 @@ for you.}
 }#
 }#
 }}
-
 
 
 

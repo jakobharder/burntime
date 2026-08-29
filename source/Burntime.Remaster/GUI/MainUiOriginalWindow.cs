@@ -28,9 +28,12 @@ namespace Burntime.Remaster
     {
         readonly GuiFont _standardFont;
         readonly GuiFont _warningFont;
+        readonly GuiFont _promptFont;
         GuiFont _playerFont;
         readonly FaceWindow _playerFace;
         string _playerName;
+
+        public string PromptText { get; set; } = "";
 
         readonly Image _uiElement1;
         readonly Image _uiElement2;
@@ -45,6 +48,7 @@ namespace Burntime.Remaster
             _standardFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(92, 92, 148));
             _playerFont = new GuiFont(BurntimeClassic.FontName, PixelColor.White);
             _warningFont = _standardFont;//new GuiFont(BurntimeClassic.FontName, new PixelColor(252, 180, 56));
+            _promptFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray);
 
             Windows += _uiElement1 = new Image(App)
             {
@@ -151,6 +155,12 @@ namespace Burntime.Remaster
             txt = new TextHelper(app, "burn");
             txt.AddArgument("|A", game.World.Day);
             _standardFont.DrawText(Target, day, txt[404], TextAlignment.Center, VerticalTextAlignment.Top);
+
+            if (!string.IsNullOrEmpty(PromptText))
+            {
+                var prompt = new Vector2(4, Size.y - 38);
+                _promptFont.DrawText(Target, prompt, PromptText, TextAlignment.Left, VerticalTextAlignment.Top);
+            }
         }
 
         public override void UpdatePlayer()

@@ -23,6 +23,7 @@ namespace Burntime.Framework.States
         public abstract PlayerState CheckWinner();
 
         public abstract Dictionary<string, string> GetSaveHint();
+        public virtual Dictionary<string, string> GetSaveDetails() => GetSaveHint();
         public abstract bool HasValidSaveHint { get; }
         public abstract void UpdateSaveHint();
     }

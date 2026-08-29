@@ -57,8 +57,11 @@ namespace Burntime.Remaster.Scenes
             return base.OnMouseClick(position, button);
         }
 
-        public override bool OnVKeyPress(SystemKey key)
+        public override bool OnInputAction(InputAction action)
         {
+            if (action != InputAction.Primary && action != InputAction.Back)
+                return false;
+
             app.SceneManager.PreviousScene();
 
             return true;

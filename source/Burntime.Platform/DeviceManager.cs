@@ -1,5 +1,4 @@
 ﻿using Burntime.Platform.Utils;
-using System.Net;
 
 namespace Burntime.Platform;
 
@@ -17,6 +16,12 @@ public struct MouseClickInfo
     public MouseButton Button;
 }
 
+public readonly struct MouseWheelInfo
+{
+    public Vector2 Position { get; init; }
+    public int Delta { get; init; }
+}
+
 public interface IMouseDevice
 {
     Vector2 Position { get; }
@@ -27,6 +32,7 @@ public interface IMouseDevice
     /// thread-safe
     /// </summary>
     IEnumerable<MouseClickInfo> Clicks { get; }
+    IEnumerable<MouseWheelInfo> WheelEvents { get; }
 }
 
 sealed class MouseDevice : IMouseDevice
@@ -36,6 +42,7 @@ sealed class MouseDevice : IMouseDevice
     private Vector2 current = Vector2.Zero;
     private Nullable<Vector2> previous;
     private List<MouseClickInfo> clicks = new List<MouseClickInfo>();
+    private List<MouseWheelInfo> wheelEvents = new List<MouseWheelInfo>();
 
     public bool IsRightDown { get; set; }
     public Rect? Boundings { get; set; }
@@ -91,6 +98,15 @@ sealed class MouseDevice : IMouseDevice
         }
     }
 
+    public IEnumerable<MouseWheelInfo> WheelEvents
+    {
+        get
+        {
+            lock (this)
+                return wheelEvents.ToArray();
+        }
+    }
+
     /// <summary>
     /// thread-safe
     /// </summary>
@@ -109,28 +125,46 @@ sealed class MouseDevice : IMouseDevice
         lock (this)
             clicks.Clear();
     }
+
+    public void AddWheel(MouseWheelInfo wheel)
+    {
+        lock (this)
+            wheelEvents.Add(wheel);
+    }
+
+    public void ClearWheelEvents()
+    {
+        lock (this)
+            wheelEvents.Clear();
+    }
 }
 
 public enum SystemKey
 {
-    None = 0,//,System.Windows.Forms.Keys.None,
-    F1 = 1,//System.Windows.Forms.Keys.F1,
-    F2 = 2,//System.Windows.Forms.Keys.F2,
-    F3 = 3,//System.Windows.Forms.Keys.F3,
-    F4 = 4,//System.Windows.Forms.Keys.F4,
-    F8 = 8,
-    F9 = 9,
-    Escape = 5,//System.Windows.Forms.Keys.Escape,
-    Pause = 6,//System.Windows.Forms.Keys.Pause
+    None = 0,
+    F1,
+    F2,
+    F3,
+    F4,
+    F8,
+    F9,
+    Escape,
+    Pause,
     Enter,
-    Other
+    Other,
+    Up,
+    Down,
+    Left,
+    Right,
+    Tab
 }
 
 [Flags]
 public enum ModifierKeys
 {
     None = 0,
-    LeftAlt
+    LeftAlt,
+    Shift
 }
 
 public readonly struct Key
@@ -195,7 +229,29 @@ public class Keyboard
 public class DeviceManager
 {
     private readonly MouseDevice _mouse;
+    private readonly List<GamepadControl> _gamepadControls = new();
+    private readonly HashSet<GamepadControl> _gamepadControlsDown = new();
     public IMouseDevice Mouse => _mouse;
+
+    public GamepadControl[] GamepadControls
+    {
+        get { lock (_gamepadControls) return _gamepadControls.ToArray(); }
+    }
+
+    public GamepadControl[] ConsumeGamepadControls()
+    {
+        lock (_gamepadControls)
+        {
+            GamepadControl[] controls = _gamepadControls.ToArray();
+            _gamepadControls.Clear();
+            return controls;
+        }
+    }
+
+    public GamepadControl[] GamepadControlsDown
+    {
+        get { lock (_gamepadControlsDown) return _gamepadControlsDown.ToArray(); }
+    }
 
 #warning TODO implement proper mouse state
     public bool IsRightDown
@@ -240,6 +296,12 @@ public class DeviceManager
         });
     }
 
+    public void MouseWheel(Vector2 position, int delta)
+    {
+        if (delta != 0)
+            _mouse.AddWheel(new() { Position = new Vector2(position), Delta = delta });
+    }
+
     public void MouseLeave()
     {
         if (_mouse.LastDirection == Vector2.Zero) return;
@@ -265,9 +327,37 @@ public class DeviceManager
         Keyboard.AddKey(new Key(key, modifier));
     }
 
+    public void GamepadControlPress(GamepadControl control)
+    {
+        if (control == GamepadControl.None)
+            return;
+        lock (_gamepadControls)
+            _gamepadControls.Add(control);
+    }
+
+    public void SetGamepadControlDown(GamepadControl control, bool isDown)
+    {
+        if (control == GamepadControl.None)
+            return;
+        lock (_gamepadControlsDown)
+        {
+            if (isDown)
+                _gamepadControlsDown.Add(control);
+            else
+                _gamepadControlsDown.Remove(control);
+        }
+    }
+
+    public void ClearGamepadControlsDown()
+    {
+        lock (_gamepadControlsDown)
+            _gamepadControlsDown.Clear();
+    }
+
     public void Clear()
     {
         _mouse.ClearClicks();
+        _mouse.ClearWheelEvents();
         Keyboard.ClearKeys();
     }
 }

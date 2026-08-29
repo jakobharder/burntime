@@ -103,7 +103,6 @@ class GameSettings
     ConfigFile config;
     string difficulty;
     RespawnTimes respawn;
-    AI.AiSettings ai;
     ClassStatInfos stats;
 
     public string[] StartItems => config[difficulty].GetStrings("start_items");
@@ -127,8 +126,6 @@ class GameSettings
     public int StartFood => 9;
     public int StartWater => 5;
 
-    public AI.AiSettings AiSettings => ai;
-
     public GameSettings(string file)
     {
         config = new ConfigFile();
@@ -151,9 +148,6 @@ class GameSettings
         stats.MutantAttack = config[this.difficulty].GetInt("mutant_attack");
         stats.DogAttack = config[this.difficulty].GetInt("dog_attack");
 
-        ai.MinInterval = config[this.difficulty].GetInts("ai_camp_interval")[0];
-        ai.MaxInterval = config[this.difficulty].GetInts("ai_camp_interval")[1];
-        ai.MaxAdvance = config[this.difficulty].GetInt("ai_camp_max_advance");
     }
 
     public ItemGeneration GetItemGeneration(string name)

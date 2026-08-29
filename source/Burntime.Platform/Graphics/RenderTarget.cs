@@ -17,6 +17,7 @@ public class RenderTarget
 
 #warning move set to engine/renderdevice
     public float Elapsed { get; set; }
+    public float TotalElapsed { get; set; }
 
     public RenderTarget(IEngine engine, Rect rc)
     {
@@ -69,6 +70,13 @@ public class RenderTarget
 
         _engine.RenderSprite(_selectedSprite, pos + _rc.Position + Offset, srcRect.Position, srcRect.Width, srcRect.Height, color);
     }
+
+    public void DrawSelectedSpriteF(Vector2f pos, Rect srcRect, PixelColor color)
+    {
+        if (_selectedSprite is null) return;
+
+        _engine.RenderSpriteF(_selectedSprite, pos + _rc.Position + Offset, srcRect.Position, srcRect.Width, srcRect.Height, color);
+    }
     #endregion
 
     public void RenderRect(Vector2 pos, Vector2 size, PixelColor color)
@@ -86,9 +94,23 @@ public class RenderTarget
         RenderTarget target = new(_engine, new Rect(_rc.Position + rc.Position, rc.Size))
         {
             Elapsed = Elapsed,
+            TotalElapsed = TotalElapsed,
             Offset = Offset
         };
         return target;
+    }
+
+    public Vector2f SnapToPhysicalPixels(Vector2f pos)
+    {
+        Vector2f scale = _engine.Resolution.Scale;
+        Vector2f absolute = pos + _rc.Position + Offset;
+
+        if (scale.x != 0)
+            absolute.x = (float)System.Math.Round(absolute.x * scale.x) / scale.x;
+        if (scale.y != 0)
+            absolute.y = (float)System.Math.Round(absolute.y * scale.y) / scale.y;
+
+        return absolute - _rc.Position - Offset;
     }
 
     readonly IEngine _engine;

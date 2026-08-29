@@ -1,30 +1,28 @@
 ﻿using Burntime.Platform.IO;
-using System.Collections.Generic;
-using System;
-using System.Text;
-using System.Runtime.InteropServices.ComTypes;
 using Burntime.Platform.Graphics;
 using System.Diagnostics;
+using System.Text;
+using System.Runtime.InteropServices.ComTypes;
 
 namespace Burntime.Platform.Resource;
 
 public struct Replacement
 {
-    public String Argument;
-    public String Value;
+    public string Argument;
+    public string Value;
 }
 
 public struct ResourceInfoFont
 {
-    public String Name;
+    public string Name;
     public PixelColor Fore;
     public PixelColor Back;
 }
 
-public class ResourceManagerBase
+public abstract class ResourceManagerBase : IResourceManager
 {
-    protected readonly Dictionary<string, ISprite> sprites = new();
-    protected readonly Dictionary<ResourceInfoFont, Font> fonts = new();
+    protected readonly Dictionary<string, ISprite> sprites = [];
+    protected readonly Dictionary<ResourceInfoFont, FontResource> fonts = [];
     protected readonly DelayLoader delayLoader;
     public bool IsLoading => delayLoader.IsLoading;
 
@@ -32,7 +30,7 @@ public class ResourceManagerBase
 
     public ResourceManagerBase(ILoadingCounter loadingCounter)
     {
-        _loadingCounter= loadingCounter;
+        _loadingCounter = loadingCounter;
 
         AddSpriteProcessor("png", new SpriteProcessorPng());
         AddDataProcessor("png", typeof(SpriteProcessorPng));
@@ -42,7 +40,7 @@ public class ResourceManagerBase
         AddDataProcessor("pngsheet", typeof(PngSpriteSheetProcessor));
         AddFontProcessor("txt", new FontProcessorTxt());
 
-        delayLoader = new DelayLoader(this as IResourceManager);
+        delayLoader = new DelayLoader(this);
 
 #warning TODO SlimDX/Mono debug info
         //Debug.SetInfoMB("sprite memory usage", MemoryUsage);
@@ -82,13 +80,15 @@ public class ResourceManagerBase
 
         lock (fonts)
         {
-            foreach (Font font in fonts.Values)
+            foreach (FontResource font in fonts.Values)
             {
-                MemoryUsage -= font.sprite.Unload();
-                font.IsLoaded = false;
-                Log.Debug("unload \"" + font.sprite.ID + "\"");
+                if (!font.IsLoaded)
+                    continue;
+
+                string id = font.Sprite.ID;
+                MemoryUsage -= font.Unload();
+                Log.Debug("unload \"" + id + "\"");
             }
-            fonts.Clear();
         }
     }
 
@@ -98,13 +98,18 @@ public class ResourceManagerBase
 
     public virtual Font? LoadFont(Font font) { return font; }
 
+    public abstract ISprite GetImage(ResourceID id, ResourceLoadType loadType = ResourceLoadType.Delayed);
+    public abstract Font? GetFont(string file, PixelColor color);
+    public abstract Font? GetFont(string file, PixelColor color, PixelColor backColor);
+    public abstract void Reload(ISprite sprite, ResourceLoadType loadType = ResourceLoadType.Delayed);
+
     #region Text
-    public Encoding? Encoding { get; set; }
+    public Encoding Encoding { get; set; } = Encoding.UTF8;
 
     // from textDB
 
-    Dictionary<String, TextResourceFile> txtDB = new Dictionary<string, TextResourceFile>();
-    List<Replacement> listArguments = new List<Replacement>();
+    readonly Dictionary<string, TextResourceFile> txtDB = [];
+    readonly List<Replacement> listArguments = [];
 
     public void AddDB(string filename)
     {
@@ -114,16 +119,18 @@ public class ResourceManagerBase
         txtDB.Add(filename, db);
     }
 
-    public void AddArgument(String Argument, int Value)
+    public void AddArgument(string Argument, int Value)
     {
         AddArgument(Argument, Value.ToString());
     }
 
-    public void AddArgument(String Argument, String Value)
+    public void AddArgument(string Argument, string Value)
     {
-        Replacement repl = new Replacement();
-        repl.Argument = Argument;
-        repl.Value = Value;
+        Replacement repl = new()
+        {
+            Argument = Argument,
+            Value = Value
+        };
         listArguments.Add(repl);
     }
 
@@ -132,15 +139,15 @@ public class ResourceManagerBase
         listArguments.Clear();
     }
 
-    public String ShiftID(String id, int shift)
+    public string ShiftID(string id, int shift)
     {
-        String fileName;
+        string fileName;
         int pos = shift;
         int atmark = id.LastIndexOf('?');
         if (atmark > 0)
         {
-            fileName = id.Substring(0, atmark);
-            pos += int.Parse(id.Substring(atmark + 1));
+            fileName = id[..atmark];
+            pos += int.Parse(id[(atmark + 1)..]);
         }
         else
             fileName = id;
@@ -203,7 +210,7 @@ public class ResourceManagerBase
         int sectionEnd = GetSectionEnd(file, startIndex);
 
         int count = sectionEnd - startIndex;
-        String[] strs = new String[count];
+        string[] strs = new string[count];
         for (int i = 0; i < count; i++)
         {
             strs[i] = txtDB[file].Data[i + startIndex].Replace("}", "");
@@ -215,10 +222,10 @@ public class ResourceManagerBase
     public string GetString(string id)
     {
         if (id.StartsWith("@"))
-            id = id.Substring(1);
+            id = id[1..];
 
         int atmark = id.LastIndexOf('?');
-        return GetString(id.Substring(0, atmark), int.Parse(id.Substring(atmark + 1)));
+        return GetString(id[..atmark], int.Parse(id[(atmark + 1)..]));
     }
 
     public string GetString(string file, int index)
@@ -228,7 +235,7 @@ public class ResourceManagerBase
         string res = txtDB[file].Data[index];
 
         if (res.EndsWith("}"))
-            return res.Substring(0, res.Length - 1);
+            return res[..^1];
         return res;
     }
 
@@ -239,25 +246,25 @@ public class ResourceManagerBase
     #endregion
 
     #region DataProcessor
-    protected Dictionary<String, IFontProcessor> fontProcessors = new Dictionary<string, IFontProcessor>();
-    protected Dictionary<String, Type> dataProcessors = new Dictionary<string, Type>();
+    protected Dictionary<string, IFontProcessor> fontProcessors = [];
+    protected Dictionary<string, Type> dataProcessors = [];
 
-    public void AddSpriteProcessor(String Extension, ISpriteProcessor Processor)
+    public void AddSpriteProcessor(string Extension, ISpriteProcessor Processor)
     {
         spriteProcessors.Add(Extension, Processor);
     }
 
-    public void AddFontProcessor(String Extension, IFontProcessor Processor)
+    public void AddFontProcessor(string Extension, IFontProcessor Processor)
     {
         fontProcessors.Add(Extension, Processor);
     }
 
-    public void AddDataProcessor(String format, Type dataProcessor)
+    public void AddDataProcessor(string format, Type dataProcessor)
     {
         dataProcessors.Add(format, dataProcessor);
     }
 
-    public IDataProcessor GetDataProcessor(String Format)
+    public IDataProcessor GetDataProcessor(string Format)
     {
         return (IDataProcessor)Activator.CreateInstance(dataProcessors[Format]);
     }
@@ -367,8 +374,7 @@ public class ResourceManagerBase
                 ISpriteProcessor loader = spriteProcessors[format];
                 //loader.IsAvailable(newid);
 
-                // TODO
-                // for the moment just check the newid.file file existance
+                #warning TODO for the moment just check the newid.file file existance
                 return FileSystem.ExistsFile(string.Format(id.File, id.Index));
             }
         }
@@ -378,7 +384,7 @@ public class ResourceManagerBase
     #endregion
 
     #region DataObject access
-    Dictionary<string, DataObject> dataObjects = new Dictionary<string, DataObject>();
+    readonly Dictionary<string, DataObject> dataObjects = [];
 
     public DataObject GetData(ResourceID id, ResourceLoadType loadType = ResourceLoadType.Now)
     {
@@ -392,9 +398,9 @@ public class ResourceManagerBase
             IDataProcessor processor = GetDataProcessor(id.Format);
 
             _loadingCounter.IncreaseLoadingCount();
-            obj = processor.Process(id, this as IResourceManager);
+            obj = processor.Process(id, this);
             Log.Debug("load \"" + id + "\"");
-            obj.ResourceManager = this as IResourceManager;
+            obj.ResourceManager = this;
             obj.DataName = id;
             obj.PostProcess();
             _loadingCounter.DecreaseLoadingCount();
@@ -403,7 +409,7 @@ public class ResourceManagerBase
         }
         else
         {
-            obj = new NullDataObject(id, this as IResourceManager);
+            obj = new NullDataObject(id, this);
         }
 
         return obj;
@@ -412,7 +418,7 @@ public class ResourceManagerBase
     public void RegisterDataObject(ResourceID id, DataObject obj)
     {
         obj.DataName = id;
-        obj.ResourceManager = this as IResourceManager;
+        obj.ResourceManager = this;
 
         if (dataObjects.ContainsKey(id))
         {
@@ -447,7 +453,7 @@ public class ResourceManagerBase
         return 1 << i;
     }
 
-    protected Dictionary<String, ISpriteProcessor> spriteProcessors = new Dictionary<string, ISpriteProcessor>();
+    protected Dictionary<string, ISpriteProcessor> spriteProcessors = [];
     protected ISpriteProcessor GetSpriteProcessor(ResourceID id, bool ownInstance)
     {
 

@@ -38,13 +38,24 @@ dotnet publish "$project" \
   -p:DebugSymbols=false \
   -p:PublishSingleFile=true
 
+for license_name in \
+  THIRD-PARTY-NOTICES.txt \
+  DOTNET-THIRD-PARTY-NOTICES.txt \
+  OPENAL-SOFT-LICENSE.txt; do
+  license_path="$publish_dir/licenses/$license_name"
+  if [[ ! -f "$license_path" ]]; then
+    echo "Missing packaged third-party license: $license_path" >&2
+    exit 1
+  fi
+done
+
 dotnet build "$repo_root/source/PakConverter/PakConverter.csproj" \
   ${restore_args[@]+"${restore_args[@]}"} \
   --configuration "$configuration" \
   -p:DebugSymbols=false
 
 pushd "$publish_dir/game" >/dev/null
-for package_name in classic classic_de classic_newgfx amiga music; do
+for package_name in classic classic_de classic_es classic_newgfx amiga music; do
   dotnet "$repo_root/bin/tools/$configuration/PakConverter.dll" "$package_name"
 done
 popd >/dev/null

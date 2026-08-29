@@ -15,7 +15,7 @@ namespace Burntime.Remaster
         FaceWindow face;
         GuiFont fontText;
         GuiFont fontOptions;
-        GuiFont fontChoice;
+        GuiFont fontFocusedChoice;
 
         Character character;
         Character self;
@@ -23,7 +23,10 @@ namespace Burntime.Remaster
         bool ready = false;
         int dlgoffset = 0;
         int dialogmode;
-        int hover = -1;
+        int focusChoiceIndex = -1;
+        Vector2 lastMousePosition;
+        bool hasLastMousePosition;
+        bool mouseHasLeft;
 
         public ConversationType Type { get; private set; }
         public bool PlayMusic { get; set; } = true;
@@ -48,14 +51,18 @@ namespace Burntime.Remaster
 
             fontText = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 164, 56));
             fontOptions = new GuiFont(BurntimeClassic.FontName, new PixelColor(108, 116, 168));
-            fontChoice = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
+            fontFocusedChoice = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
 
             CaptureAllMouseMove = true;
         }
 
         public override void OnShow()
         {
-            hover = -1;
+            HasFocus = true;
+            lastMousePosition = app.DeviceManager.Mouse.Position - PositionOnScreen;
+            hasLastMousePosition = true;
+            mouseHasLeft = false;
+            ResetFocus();
             base.OnShow();
 
             if (PlayMusic)
@@ -64,6 +71,7 @@ namespace Burntime.Remaster
 
         public override void OnHide()
         {
+            HasFocus = false;
             base.OnHide();
 
             if (PlayMusic)
@@ -72,6 +80,7 @@ namespace Burntime.Remaster
 
         public void SetCharacter(Character character, Conversation conversation, bool showFace = false)
         {
+            result = ConversationActionType.None;
             self = null;
             this.character = character;
             this.conversation = conversation;
@@ -82,6 +91,7 @@ namespace Burntime.Remaster
 
             dialogmode = (conversation.Text.Length < 3) ? 1 : 0;
             dlgoffset = 0;
+            focusChoiceIndex = FirstVisibleChoice();
 
             ready = true;
         }
@@ -93,6 +103,7 @@ namespace Burntime.Remaster
 
         public void SetCharacter(Character self, Character character, ConversationType type)
         {
+            result = ConversationActionType.None;
             this.self = self;
             this.character = character;
             Type = type;
@@ -102,77 +113,183 @@ namespace Burntime.Remaster
 
             dialogmode = (conversation.Text.Length < 3) ? 1 : 0;
             dlgoffset = 0;
+            focusChoiceIndex = FirstVisibleChoice();
 
             ready = true;
         }
 
         public override bool OnMouseClick(Vector2 position, MouseButton button)
         {
-            if (hover == 0 && dialogmode == 0)
+            int clickedChoice = ChoiceAt(position);
+            if (clickedChoice == 0 && dialogmode == 0)
             {
-                dlgoffset += 2;
-                if (dlgoffset + 2 >= conversation.Text.Length)
-                {
-                    dialogmode = 1;
-                }
+                AdvanceText();
             }
-            else if (hover != -1)
-            {
-                BurntimeClassic classic = app as BurntimeClassic;
-                result = conversation.Choices[hover].Action.Type;
-
-                dialogmode = 0;
-                dlgoffset = 0;
-                switch (conversation.Choices[hover].Action.Type)
-                {
-                    case ConversationActionType.Talk:
-                        conversation = character.Dialog.GetConversation(self, ConversationType.Talk);
-                        break;
-                    case ConversationActionType.Trade:
-                        Hide();
-                        classic.Game.World.ActiveTraderObj = character as Trader;
-                        app.SceneManager.SetScene("TraderScene");
-                        break;
-                    case ConversationActionType.Yes:
-                    case ConversationActionType.No:
-                    case ConversationActionType.Exit:
-                        Hide();
-                        break;
-                    case ConversationActionType.HireRequirements:
-                        conversation = character.Dialog.GetConversation(self, ConversationType.Hire);
-                        break;
-                    case ConversationActionType.Profession:
-                        conversation = character.Dialog.GetConversation(self, ConversationType.Profession);
-                        break;
-                    case ConversationActionType.Hire:
-                        Hire();
-                        Hide();
-                        break;
-                }
-
-                dialogmode = (conversation.Text.Length <= 3) ? 1 : 0;
-            }
+            else if (clickedChoice != -1)
+                SelectChoice(clickedChoice);
 
             return true;
         }
 
+        public override bool OnInputAction(InputAction action)
+        {
+            if (action == InputAction.Back)
+            {
+                result = ConversationActionType.Exit;
+                Hide();
+                return true;
+            }
+
+            if (dialogmode == 0)
+            {
+                if (action != InputAction.Primary)
+                    return false;
+
+                AdvanceText();
+                return true;
+            }
+
+            if (dialogmode != 1)
+                return false;
+
+            if (action.IsUp())
+            {
+                MoveFocus(-1);
+                return true;
+            }
+
+            if (action.IsDown())
+            {
+                MoveFocus(1);
+                return true;
+            }
+
+            if (action != InputAction.Primary)
+                return false;
+
+            if (focusChoiceIndex == -1)
+            {
+                focusChoiceIndex = FirstVisibleChoice();
+                return true;
+            }
+
+            SelectChoice(focusChoiceIndex);
+            return true;
+        }
+
+        void AdvanceText()
+        {
+            dlgoffset += 2;
+            if (dlgoffset + 2 >= conversation.Text.Length)
+                dialogmode = 1;
+            ResetFocus();
+        }
+
+        int FirstVisibleChoice()
+        {
+            for (int i = 0; i < conversation.Choices.Length; i++)
+                if (!string.IsNullOrEmpty(conversation.Choices[i].Text))
+                    return i;
+
+            return -1;
+        }
+
+        void MoveFocus(int direction)
+        {
+            if (focusChoiceIndex == -1)
+                focusChoiceIndex = FirstVisibleChoice();
+            if (focusChoiceIndex == -1)
+                return;
+
+            for (int offset = 1; offset < conversation.Choices.Length; offset++)
+            {
+                int candidate = (focusChoiceIndex + direction * offset + conversation.Choices.Length) % conversation.Choices.Length;
+                if (!string.IsNullOrEmpty(conversation.Choices[candidate].Text))
+                {
+                    focusChoiceIndex = candidate;
+                    return;
+                }
+            }
+        }
+
+        void SelectChoice(int choice)
+        {
+            BurntimeClassic classic = app as BurntimeClassic;
+            result = conversation.Choices[choice].Action.Type;
+
+            dialogmode = 0;
+            dlgoffset = 0;
+            switch (conversation.Choices[choice].Action.Type)
+            {
+                case ConversationActionType.Talk:
+                    conversation = character.Dialog.GetConversation(self, ConversationType.Talk);
+                    break;
+                case ConversationActionType.Trade:
+                    Hide();
+                    classic.Game.World.ActiveTraderObj = character as Trader;
+                    app.SceneManager.SetScene("TraderScene");
+                    break;
+                case ConversationActionType.Yes:
+                case ConversationActionType.No:
+                case ConversationActionType.Exit:
+                    Hide();
+                    break;
+                case ConversationActionType.HireRequirements:
+                    conversation = character.Dialog.GetConversation(self, ConversationType.Hire);
+                    break;
+                case ConversationActionType.Profession:
+                    conversation = character.Dialog.GetConversation(self, ConversationType.Profession);
+                    break;
+                case ConversationActionType.Hire:
+                    Hire();
+                    Hide();
+                    break;
+            }
+
+            dialogmode = (conversation.Text.Length < 3) ? 1 : 0;
+            ResetFocus();
+        }
+
         public override bool OnMouseMove(Vector2 position)
+        {
+            if (app.LastInputMode != InputMode.Mouse)
+                return base.OnMouseMove(position);
+
+            if (!mouseHasLeft && hasLastMousePosition && (position - lastMousePosition).Length <= 1)
+                return base.OnMouseMove(position);
+
+            lastMousePosition = position;
+            hasLastMousePosition = true;
+            mouseHasLeft = false;
+
+            if (position.x >= 0 && position.y >= 0 && position.x < Size.x && position.y < Size.y)
+            {
+                focusChoiceIndex = ChoiceAt(position);
+            }
+
+            return base.OnMouseMove(position);
+        }
+
+        public override void OnMouseLeave()
+        {
+            focusChoiceIndex = -1;
+            mouseHasLeft = true;
+            base.OnMouseLeave();
+        }
+
+        int ChoiceAt(Vector2 position)
         {
             Vector2 Pos = position;
 
             TextHelper txt = new TextHelper(app, "burn");
             int textx = 55;
 
-            hover = -1;
-
             if (dialogmode == 0)
             {
                 int texty = 85;
                 String line = txt[499];
                 if (Pos.x >= textx && Pos.y >= texty && Pos.x < textx + fontText.GetWidth(line) && Pos.y < texty + 10)
-                {
-                    hover = 0;
-                }
+                    return 0;
             }
             else if (dialogmode == 1)
             {
@@ -182,14 +299,19 @@ namespace Burntime.Remaster
                     String line = conversation.Choices[i].Text;
 
                     if (Pos.x >= textx && Pos.y >= texty && Pos.x < textx + fontText.GetWidth(line) && Pos.y < texty + 10)
-                    {
-                        hover = i;
-                    }
+                        return i;
                     texty += 11;
                 }
             }
 
-            return base.OnMouseMove(Position);
+            return -1;
+        }
+
+        void ResetFocus()
+        {
+            focusChoiceIndex = app.LastInputMode == InputMode.Mouse
+                ? ChoiceAt(lastMousePosition)
+                : dialogmode == 0 ? 0 : FirstVisibleChoice();
         }
 
         public override void OnRender(RenderTarget target)
@@ -223,8 +345,8 @@ namespace Burntime.Remaster
             {
                 textPos.y = 85;
 
-                if (hover == 0)
-                    fontChoice.DrawText(target, textPos, txt[499], TextAlignment.Left, VerticalTextAlignment.Top);
+                if (focusChoiceIndex == 0)
+                    fontFocusedChoice.DrawText(target, textPos, txt[499], TextAlignment.Left, VerticalTextAlignment.Top);
                 else
                     fontOptions.DrawText(target, textPos, txt[499], TextAlignment.Left, VerticalTextAlignment.Top);
             }
@@ -236,8 +358,8 @@ namespace Burntime.Remaster
                 {
                     String line = conversation.Choices[i].Text;
 
-                    if (hover == i)
-                        fontChoice.DrawText(target, textPos, line, TextAlignment.Left, VerticalTextAlignment.Top);
+                    if (focusChoiceIndex == i)
+                        fontFocusedChoice.DrawText(target, textPos, line, TextAlignment.Left, VerticalTextAlignment.Top);
                     else
                         fontOptions.DrawText(target, textPos, line, TextAlignment.Left, VerticalTextAlignment.Top);
                     textPos.y += 11;

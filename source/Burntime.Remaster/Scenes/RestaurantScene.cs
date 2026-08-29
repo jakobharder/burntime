@@ -13,12 +13,15 @@ namespace Burntime.Remaster.Scenes
 {
     class RestaurantScene : Scene
     {
+        public override bool UseDiagonalGamepadNavigation => true;
+
         InventoryWindow inventory;
         ItemGridWindow grid;
         GuiFont font;
         String[] restaurantText = null;
         int eatLastAmount = 0;
         Image ani;
+        InventoryKeyboardNavigation keyboardNavigation;
 
         public RestaurantScene(Module app)
             : base(app)
@@ -59,6 +62,7 @@ namespace Burntime.Remaster.Scenes
             Windows += grid;
 
             font = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray);
+            keyboardNavigation = new InventoryKeyboardNavigation(inventory, grid, OnButtonEat, OnButtonExit);
         }
 
         public override void OnResizeScreen()
@@ -90,7 +94,10 @@ namespace Burntime.Remaster.Scenes
 
             eatLastAmount = -1;
             grid.Clear();
+            keyboardNavigation.Reset();
         }
+
+        public override bool OnInputAction(InputAction action) => keyboardNavigation.Handle(action);
 
         public override void OnRender(RenderTarget target)
         {
@@ -124,6 +131,7 @@ namespace Burntime.Remaster.Scenes
 
             classic.SelectedCharacter.GetGroup().Eat(classic.SelectedCharacter, (int)grid.GetEatValue());
             grid.Clear();
+            keyboardNavigation.ItemsChanged();
         }
 
         void OnLeftClickItemInventory(Framework.States.StateObject state)
@@ -138,6 +146,7 @@ namespace Burntime.Remaster.Scenes
             inventory.ActiveCharacter.Items.Remove(state as Item);
 
             UpdateText();
+            keyboardNavigation.ItemsChanged();
         }
 
         void OnLeftClickItemGrid(Framework.States.StateObject state)
@@ -150,6 +159,7 @@ namespace Burntime.Remaster.Scenes
 
             grid.Remove(state as Item);
             UpdateText();
+            keyboardNavigation.ItemsChanged();
         }
 
         void UpdateText()

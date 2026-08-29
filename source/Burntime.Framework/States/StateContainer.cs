@@ -414,6 +414,8 @@ namespace Burntime.Framework.States
                 else if (fieldtype.IsArray)
                 {
                     Array array = (Array)fields[i].GetValue(obj);
+                    if (array == null)
+                        continue;
                     for (int j = 0; j < array.Length; j++)
                     {
                         IDataID item = array.GetValue(j) as IDataID;

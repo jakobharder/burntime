@@ -35,6 +35,16 @@ namespace Burntime.Remaster.Logic
         protected Platform.Graphics.SpriteAnimation ani;
         [NonSerialized]
         protected FadingHelper aniDelay;
+        [NonSerialized]
+        float proximityPauseRemaining;
+        [NonSerialized]
+        bool wasInTalkingDistance;
+        [NonSerialized]
+        float movementElapsed;
+
+        const float WALK_SPEED = 35;
+        const float TALKING_DISTANCE = 30;
+        const float PROXIMITY_PAUSE_TIME = 10;
 
         // some helper attributes
         public bool IsWithBoss
@@ -155,10 +165,7 @@ namespace Burntime.Remaster.Logic
         public int Food;
         public int Water;
 
-        public int MaxFood
-        {
-            get { return 9; }
-        }
+        public virtual int MaxFood => 9;
 
         public int MaxWater
         {
@@ -344,7 +351,7 @@ namespace Burntime.Remaster.Logic
             Path.MoveTo = Position;
         }
 
-        public void Hire(Player boss)
+        public void Hire(Player boss, bool waivePayment = false)
         {
             Location = null;
             boss.Group.Add(this);
@@ -356,12 +363,13 @@ namespace Burntime.Remaster.Logic
             }
 
             Item hireItem = null;
-            for (int i = 0; hireItem == null && i < HireItems.Count; i++)
+            for (int i = 0; !waivePayment && hireItem == null && i < HireItems.Count; i++)
             {
                 hireItem = boss.Character.Items.Find(HireItems[i]);
             }
 
-            boss.Character.Items.Remove(hireItem);
+            if (!waivePayment && hireItem != null)
+                boss.Character.Items.Remove(hireItem);
 
             Mind = container.Create<AI.FellowerMind>(new object[] { this, boss.Character });
             Path = container.Create<PathFinding.ComplexPath>();
@@ -687,7 +695,37 @@ namespace Burntime.Remaster.Logic
                 return;
             }
 
-            Path.Speed = 35;
+            Player activePlayer = container.Root.CurrentPlayer as Player;
+            bool isActiveGroup = activePlayer?.Group.Contains(this) == true;
+            bool isPlayerControlled = activePlayer?.SelectedCharacter == this || Mind is AI.PlayerControlledMind;
+            Path.Speed = isActiveGroup || isPlayerControlled || Mind is not AI.SimpleMind
+                ? WALK_SPEED
+                : Class == CharClass.Dog
+                    ? WALK_SPEED
+                    : Class == CharClass.Mutant
+                        ? WALK_SPEED / 2
+                        : WALK_SPEED * 0.66f;
+
+            bool isHovered = Location?.HoverCharacter == this;
+            bool isInTalkingDistance = IsHuman && !isActiveGroup && !isPlayerControlled &&
+                activePlayer?.SelectedCharacter != null &&
+                activePlayer.Location == Location &&
+                (activePlayer.SelectedCharacter.Position - Position).Length < TALKING_DISTANCE;
+
+            if (isInTalkingDistance && !wasInTalkingDistance)
+                proximityPauseRemaining = PROXIMITY_PAUSE_TIME;
+            else if (!isInTalkingDistance)
+                proximityPauseRemaining = 0;
+            wasInTalkingDistance = isInTalkingDistance;
+
+            if (proximityPauseRemaining > 0)
+            {
+                proximityPauseRemaining = System.Math.Max(0, proximityPauseRemaining - elapsed);
+                Path.Speed = 0;
+            }
+            if (isHovered)
+                Path.Speed = 0;
+
             Vector2 old = new Vector2(position);
 
             // process dangers (only if hired)
@@ -714,10 +752,34 @@ namespace Burntime.Remaster.Logic
             if (loc == null)
                 loc = Player.Location;
 
-            position = Path.Process(loc.Map.Mask, Position, elapsed);
+            float pathElapsed = elapsed;
+            if (Path.Speed <= 0)
+            {
+                movementElapsed = 0;
+                pathElapsed = 0;
+            }
+            else if (Path.Speed < WALK_SPEED)
+            {
+                movementElapsed += elapsed;
+                if (Path.Speed * movementElapsed < 1)
+                    pathElapsed = 0;
+                else
+                {
+                    pathElapsed = movementElapsed;
+                    movementElapsed = 0;
+                }
+            }
+            else
+                movementElapsed = 0;
+
+            position = pathElapsed > 0
+                ? Path.Process(loc.Map.Mask, Position, pathElapsed)
+                : Position;
 
             Vector2 dir = position - old;
-            if (dir.x != 0 || dir.y != 0)
+            if (dir == Vector2.Zero && pathElapsed == 0 && movementElapsed > 0 && Path.MoveTo != Position)
+                dir = Path.MoveTo - Position;
+            if (System.Math.Abs(dir.x) > 0.01f || System.Math.Abs(dir.y) > 0.01f)
             {
                 if (dir.y < 0 /*&& System.Math.Abs(dir.y) > System.Math.Abs(dir.x)*/) // up
                 {

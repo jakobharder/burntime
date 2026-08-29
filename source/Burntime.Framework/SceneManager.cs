@@ -112,6 +112,8 @@ namespace Burntime.Framework
         }
 
         public string? LastScene => sceneQueue.LastOrDefault();
+        public bool UseCardinalGamepadMovement => activeScene?.UseCardinalGamepadMovement ?? false;
+        public bool UseDiagonalGamepadNavigation => activeScene?.UseDiagonalGamepadNavigation ?? false;
 
         internal void Render(RenderTarget Target) => activeScene?.Render(Target);
 
@@ -140,14 +142,41 @@ namespace Burntime.Framework
                         handle.MouseClick(click.Position - parentPos, click.Button);
                 }
 
+                foreach (MouseWheelInfo wheel in app.DeviceManager.Mouse.WheelEvents)
+                    handle.MouseWheel(wheel.Position - parentPos, wheel.Delta);
+
+                foreach (InputAction rawAction in app.InputManager.ConsumeActions())
+                {
+                    InputAction action = handle.ResolveInputAction(rawAction);
+                    if (action != InputAction.None)
+                        handle.InputAction(action);
+                }
+
+                foreach (InputAction rawAction in app.InputManager.ActionsDown)
+                {
+                    InputAction action = handle.ResolveInputAction(rawAction);
+                    if (action != InputAction.None)
+                        handle.HeldInputAction(action, Elapsed);
+                }
+
+                foreach (GamepadControl control in app.DeviceManager.ConsumeGamepadControls())
+                    handle.InputGamepadControl(control);
+
+                foreach (GamepadControl control in app.DeviceManager.GamepadControlsDown)
+                    handle.HeldGamepadControl(control, Elapsed);
+
                 // handle keys
                 Key[] keys = app.DeviceManager.Keyboard.Keys;
                 foreach (Key key in keys)
                 {
                     if (key.IsVirtual && key.VirtualKey == SystemKey.F8)
                         app.IsNewGfx = !app.IsNewGfx;
+                    else if (!key.IsVirtual && handle.AcceptsTextInput)
+                        handle.KeyPress(key.Character);
+                    else if (handle.TryGetInputAction(key, out InputAction action) && handle.InputAction(action))
+                        continue;
                     else if (key.IsVirtual)
-                        handle.VKeyPress(key.VirtualKey);
+                        handle.VKeyPress(key.VirtualKey, key.Modifier);
                     else
                         handle.KeyPress(key.Character);
                 }

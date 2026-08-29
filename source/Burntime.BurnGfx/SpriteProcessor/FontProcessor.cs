@@ -10,9 +10,10 @@ namespace Burntime.Data.BurnGfx
     {
         public Vector2 Size { get { return new Vector2(512, 10); } }
         public int Offset { get { return 0; } }
-        public float Factor { get { return 1; } }
+        public Vector2f Factor { get { return Vector2f.One; } }
 
         public Dictionary<char, CharInfo> CharInfo { get { return charInfo; } }
+        public Dictionary<string, int> Kerning { get; } = [];
 
         CharInfo[] chars;
         Burntime.Platform.IO.File reader;
@@ -32,6 +33,7 @@ namespace Burntime.Data.BurnGfx
             {
                 chars[i].pos = reader.ReadUShort();
                 chars[i].width = reader.ReadUShort();
+                chars[i].renderWidth = chars[i].width;
 
                 charInfo.Add((char)(' ' + i), chars[i]);
             }

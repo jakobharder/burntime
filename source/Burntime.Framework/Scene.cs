@@ -4,7 +4,11 @@ namespace Burntime.Framework;
 
 public abstract class Scene : Container
 {
+    public virtual bool UseCardinalGamepadMovement => false;
+    public virtual bool UseDiagonalGamepadNavigation => false;
+
     public string? Music { get; set; }
+    public bool MusicLoop { get; set; } = true;
     public bool KeepMusic { get; set; } = false;
 
     public Scene(Module app)
@@ -25,7 +29,12 @@ public abstract class Scene : Container
         if (!KeepMusic)
             app.Engine.Music.Stop();
         if (!string.IsNullOrEmpty(Music))
-            app.Engine.Music.Play(Music);
+        {
+            if (MusicLoop)
+                app.Engine.Music.Play(Music);
+            else 
+                app.Engine.Music.PlayOnce(Music);
+        }
     }
 
     internal void InactivateScene() => OnInactivateScene();

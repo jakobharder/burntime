@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -14,13 +15,15 @@ public sealed class HeadlessSimulationOptions
 {
     public int Turns { get; init; } = 100;
     public int Difficulty { get; init; } = 2;
+    public int[]? AiDifficulties { get; init; }
     public int Seed { get; init; } = 1;
     public bool ExtendedGame { get; init; }
+    public string? LoadGamePath { get; init; }
+    public string? SaveGamePath { get; init; }
 }
 
 /// <summary>
 /// Runs a complete game synchronously without starting the server, AI, or render threads.
-/// No fields are added to serialized game-state types.
 /// </summary>
 public static class HeadlessSimulation
 {
@@ -30,24 +33,37 @@ public static class HeadlessSimulation
             throw new ArgumentOutOfRangeException(nameof(options.Turns), "Turn count must be positive.");
         if (options.Difficulty is < 0 or > 2)
             throw new ArgumentOutOfRangeException(nameof(options.Difficulty), "Difficulty must be easy, normal, or hard.");
+        if (options.AiDifficulties != null &&
+            (options.AiDifficulties.Length != 4 ||
+                options.AiDifficulties.Any(difficulty => difficulty is < 0 or > 2)))
+            throw new ArgumentOutOfRangeException(nameof(options.AiDifficulties),
+                "AI difficulties must contain four easy, normal, or hard values.");
 
         Platform.Math.SetRandomSeed(options.Seed);
 
         GameCreation creation = new(app);
-        NewGameInfo info = new()
+        if (options.LoadGamePath is null)
         {
-            NameOne = null,
-            NameTwo = null,
-            FaceOne = -1,
-            FaceTwo = -1,
-            Difficulty = options.Difficulty,
-            ColorOne = BurntimePlayerColor.Green,
-            ColorTwo = BurntimePlayerColor.Red,
-            DisableAI = false,
-            ExtendedGame = options.ExtendedGame
-        };
+            NewGameInfo info = new()
+            {
+                NameOne = null,
+                NameTwo = null,
+                FaceOne = -1,
+                FaceTwo = -1,
+                Difficulty = options.Difficulty,
+                AiDifficulties = options.AiDifficulties,
+                ColorOne = BurntimePlayerColor.Green,
+                ColorTwo = BurntimePlayerColor.Red,
+                DisableAI = false,
+                ExtendedGame = options.ExtendedGame
+            };
+            creation.CreateNewGame(info, startServer: false);
+        }
+        else if (!creation.LoadGame(options.LoadGamePath, startServer: false))
+        {
+            throw new InvalidDataException($"Could not load save game '{options.LoadGamePath}'.");
+        }
 
-        creation.CreateNewGame(info, startServer: false);
         ClassicGame game = (ClassicGame)app.Server.World;
         List<string> events = new();
         Dictionary<int, int?> ownership = CaptureOwnership(game);
@@ -99,6 +115,9 @@ public static class HeadlessSimulation
                 economy.RecordCappedCampTurn();
                 game.Turn();
 
+                // Advance every player, including human-controlled slots from
+                // loaded games. This makes the simulation a save compatibility
+                // smoke test rather than only an AI decision test.
                 foreach (Player player in game.World.Players)
                     player.Turn();
                 long worldMilliseconds = turnTimer.ElapsedMilliseconds - aiMilliseconds;
@@ -113,12 +132,23 @@ public static class HeadlessSimulation
                 winner = game.CheckWinner() as Player;
                 if (winner is not null)
                     break;
+
+                Player[] survivors = game.World.Players
+                    .Where(player => !player.IsDead)
+                    .ToArray();
+                if (survivors.Length == 1)
+                    winner = survivors[0];
+                if (survivors.Length <= 1)
+                    break;
             }
         }
         finally
         {
             AiTelemetry.Sink = null;
         }
+
+        if (options.SaveGamePath is not null)
+            creation.SaveGame(options.SaveGamePath);
 
         return BuildReport(game, options, completedTurns, winner, events, economy, timings);
     }
@@ -171,7 +201,7 @@ public static class HeadlessSimulation
 
             events.Add($"{prefix} found at {LocationLabel(before.Location)}: {FormatItems(before.GroundItems)}.");
             if (collected.Count > 0)
-                events.Add($"{prefix} moved to AI item pool: {FormatItems(collected)}.");
+                events.Add($"{prefix} moved to strategic reserve: {FormatItems(collected)}.");
             if (retained.Count > 0)
                 events.Add($"{prefix} retained for inventory or camp storage: {FormatItems(retained)}.");
             if (leftBehind.Count > 0)
@@ -236,9 +266,15 @@ public static class HeadlessSimulation
             long TotalMilliseconds, string PlayerMilliseconds)> timings)
     {
         StringBuilder report = new();
-        report.AppendLine("Burntime headless all-AI simulation");
+        report.AppendLine("Burntime headless simulation");
         report.AppendLine($"Seed: {options.Seed}");
-        report.AppendLine($"Difficulty: {DifficultyLabel(options.Difficulty)}");
+        report.AppendLine($"Source: {(options.LoadGamePath is null ? "new game" : "save game")}");
+        report.AppendLine($"Difficulty: {DifficultyLabel(game.World.Difficulty)}");
+        report.AppendLine("AI difficulties: " + string.Join(", ",
+            game.World.Players.Select(player =>
+                player.AiState is ClassicAiState ai
+                    ? $"P{player.Index + 1} {DifficultyLabel(ai.Difficulty)}"
+                    : $"P{player.Index + 1} human")));
         report.AppendLine($"Requested turns: {options.Turns}");
         report.AppendLine($"Completed turns: {completedTurns}");
         report.AppendLine($"Final world day: {game.World.Day}");
@@ -328,8 +364,10 @@ public static class HeadlessSimulation
             foreach (Character defender in defenders)
             {
                 string weapon = defender.Weapon?.Type.ID ?? "none";
+                string protection = defender.Protection?.Type.ID ?? "none";
                 report.AppendLine($"  - {defender.Name}: {defender.Class}, health {defender.Health}, " +
-                    $"food {defender.Food}, water {defender.Water}, weapon {weapon}");
+                    $"food {defender.Food}, water {defender.Water}, weapon {weapon}, " +
+                    $"protection {protection}, inventory {FormatItems(defender.Items)}");
             }
         }
 
@@ -350,13 +388,15 @@ public static class HeadlessSimulation
         }
 
         report.AppendLine();
-        report.AppendLine("AI item pools (shared, slotless inventory)");
+        report.AppendLine("Strategic reserves (shared, slotless inventory)");
         foreach (Player player in game.World.Players)
         {
-            var contents = (player.AiState as ClassicAiState)?.Pool.GetContents().ToArray() ??
+            var contents = (player.AiState as ClassicAiState)?.Reserve.GetContents().ToArray() ??
                 Array.Empty<(ItemType Type, int Count)>();
             float tradeValue = contents.Sum(entry => entry.Type.TradeValue * entry.Count);
-            Dictionary<string, int> counts = contents.ToDictionary(entry => entry.Type.ID, entry => entry.Count);
+            Dictionary<string, int> counts = contents
+                .GroupBy(entry => entry.Type.ID)
+                .ToDictionary(group => group.Key, group => group.Sum(entry => entry.Count));
             report.AppendLine($"- {PlayerLabel(player)}: {counts.Values.Sum()} items, " +
                 $"trade value {tradeValue:0}; {FormatItems(counts)}");
         }
@@ -404,8 +444,8 @@ public static class HeadlessSimulation
                     .SelectMany(npc => npc.Items))
                 .Count(item => AiItemPool.IsWaterContainer(item.Type)));
             int pumps = camps.Count(camp => camp.Rooms.SelectMany(room => room.Items)
-                .Any(TradeTask.IsPump));
-            int unmetPumpNeeds = camps.Count(TradeTask.NeedsPump);
+                .Any(Trading.IsPump));
+            int unmetPumpNeeds = camps.Count(Trading.NeedsPump);
             string campsAt30 = result.CampsAtTurn30?.ToString() ?? "n/a";
             float advancedCoverage = camps.Length == 0 ? 0 : advancedCamps * 100f / camps.Length;
             float containersPerCamp = camps.Length == 0 ? 0 : containers / (float)camps.Length;

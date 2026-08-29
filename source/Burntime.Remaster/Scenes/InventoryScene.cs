@@ -11,6 +11,8 @@ namespace Burntime.Remaster.Scenes
 {
     class InventoryScene : Scene
     {
+        public override bool UseDiagonalGamepadNavigation => true;
+
         InventoryWindow inventory;
         ItemGridWindow grid;
         GuiFont waterSourceFont;
@@ -19,6 +21,7 @@ namespace Burntime.Remaster.Scenes
         Item item;
         ICharacterCollection group;
         Character leader;
+        bool roomAreaActive;
 
         public InventoryScene(Module app)
             : base(app)
@@ -31,6 +34,8 @@ namespace Burntime.Remaster.Scenes
             inventory.Position = new Vector2(2, 5);
             inventory.LeftClickItemEvent += OnLeftClickItemInventory;
             inventory.RightClickItemEvent += OnRightClickItemInventory;
+            inventory.Grid.MouseSelectionChanged += OnMouseSelectionChanged;
+            inventory.Grid.SelectionEmptied += OnSelectionEmptied;
             Windows += inventory;
 
             Button button = new Button(app);
@@ -78,6 +83,8 @@ namespace Burntime.Remaster.Scenes
                     grid.Clear();
                     grid.Add(right);
                 }
+
+                EnsureNonEmptyArea();
             }
         }
 
@@ -135,6 +142,7 @@ namespace Burntime.Remaster.Scenes
                 Music = classic.InventoryRoom.IsWaterSource ? "water" : "room";
 
                 grid = new ItemGridWindow(app);
+                grid.UnifiedSelection = true;
                 grid.LockPositions = true;
                 grid.DoubleLayered = !classic.InventoryRoom.IsWaterSource;
                 grid.Position = new Vector2(160, classic.InventoryRoom.IsWaterSource ? 128 : 20);
@@ -143,6 +151,8 @@ namespace Burntime.Remaster.Scenes
                 grid.Layer++;
                 grid.LeftClickItemEvent += OnLeftClickItemRoom;
                 grid.RightClickItemEvent += OnRightClickItemRoom;
+                grid.MouseSelectionChanged += OnMouseSelectionChanged;
+                grid.SelectionEmptied += OnSelectionEmptied;
                 Windows += grid;
 
                 grid.Add(classic.InventoryRoom.Items);
@@ -159,23 +169,179 @@ namespace Burntime.Remaster.Scenes
                 Music = "room";
                 
                 grid = new ItemGridWindow(app);
+                grid.UnifiedSelection = true;
                 grid.Position = new Vector2(170, 10);
                 grid.Spacing = new Vector2(2, 2);
                 grid.Grid = new Vector2(4, 5);
                 grid.Layer++;
                 grid.LeftClickItemEvent += OnLeftClickItemRoom;
                 grid.RightClickItemEvent += OnRightClickItemRoom;
+                grid.MouseSelectionChanged += OnMouseSelectionChanged;
+                grid.SelectionEmptied += OnSelectionEmptied;
                 Windows += grid;
 
                 grid.Add(classic.PickItems);
             }
             else
                 Music = "room";
+
+            roomAreaActive = grid != null && grid.HasKeyboardItems;
+            inventory.Grid.ResetKeyboardSelection();
+            grid?.ResetKeyboardSelection();
+            UpdateActiveArea();
+        }
+
+        void OnMouseSelectionChanged(ItemGridWindow selectedGrid)
+        {
+            roomAreaActive = grid != null && selectedGrid == grid;
+            UpdateActiveArea();
+        }
+
+        void OnSelectionEmptied(ItemGridWindow emptiedGrid, Vector2 previousPosition)
+        {
+            ItemGridWindow targetGrid = emptiedGrid == inventory.Grid ? grid : inventory.Grid;
+            Vector2 direction = emptiedGrid == inventory.Grid ? new Vector2(1, 0) : new Vector2(-1, 0);
+            if (targetGrid?.SelectKeyboardEdge(direction, previousPosition) != true)
+                return;
+
+            roomAreaActive = targetGrid == grid;
+            UpdateActiveArea();
         }
 
         void OnButtonExit()
         {
             app.SceneManager.PreviousScene();
+        }
+
+        public override bool OnVKeyPress(SystemKey key)
+        {
+            if (key != SystemKey.Escape)
+                return false;
+
+            OnButtonExit();
+            return true;
+        }
+
+        public override bool OnInputAction(InputAction action)
+        {
+            if (action == InputAction.Back)
+            {
+                OnButtonExit();
+                return true;
+            }
+
+            if (action == InputAction.LeftArea)
+            {
+                inventory.SelectNextCharacter();
+                UpdateActiveArea();
+                return true;
+            }
+
+            if (action == InputAction.RightArea)
+            {
+                UpdateActiveArea();
+                return true;
+            }
+
+            ItemGridWindow activeGrid = roomAreaActive && grid != null ? grid : inventory.Grid;
+            Vector2 direction = action switch
+            {
+                InputAction.MoveUp => new Vector2(0, -1),
+                InputAction.MoveDown => new Vector2(0, 1),
+                InputAction.MoveLeft => new Vector2(-1, 0),
+                InputAction.MoveRight => new Vector2(1, 0),
+                InputAction.MoveUpLeft => new Vector2(-1, -1),
+                InputAction.MoveUpRight => new Vector2(1, -1),
+                InputAction.MoveDownLeft => new Vector2(-1, 1),
+                InputAction.MoveDownRight => new Vector2(1, 1),
+                _ => Vector2.Zero
+            };
+            if (direction != Vector2.Zero)
+            {
+                Vector2? sourcePosition = activeGrid.KeyboardSelectionPosition;
+                if (!activeGrid.MoveKeyboardSelection(direction) && direction.x != 0)
+                {
+                    ItemGridWindow targetGrid = roomAreaActive ? inventory.Grid : grid;
+                    bool selectedTarget = sourcePosition.HasValue
+                        ? targetGrid?.SelectKeyboardEdge(direction, sourcePosition.Value) == true
+                        : targetGrid?.EnsureKeyboardSelection() == true;
+                    if (selectedTarget)
+                    {
+                        roomAreaActive = !roomAreaActive;
+                        UpdateActiveArea();
+                    }
+                }
+                return true;
+            }
+
+            if (action == InputAction.Primary || action == InputAction.Secondary)
+            {
+                activeGrid.ActivateKeyboardItem(action == InputAction.Secondary);
+                EnsureNonEmptyArea();
+                return true;
+            }
+
+            return false;
+        }
+
+        void UpdateActiveArea()
+        {
+            inventory.Grid.KeyboardSelectionVisible = !roomAreaActive || grid == null;
+            if (grid != null)
+                grid.KeyboardSelectionVisible = roomAreaActive;
+        }
+
+        void EnsureNonEmptyArea()
+        {
+            ItemGridWindow activeGrid = roomAreaActive && grid != null ? grid : inventory.Grid;
+            if (activeGrid.HasKeyboardItems)
+                return;
+
+            ItemGridWindow otherGrid = roomAreaActive ? inventory.Grid : grid;
+            if (otherGrid != null && otherGrid.HasKeyboardItems)
+                roomAreaActive = !roomAreaActive;
+
+            UpdateActiveArea();
+        }
+
+        public override bool OnKeyPress(char key)
+        {
+            key = char.ToLowerInvariant(key);
+            if (key is '1' or '2' && app.GameState is ClassicGame game && game.CheatsEnabled)
+            {
+                AddCheatItemsToRoom(key);
+                return true;
+            }
+
+            return false;
+        }
+
+        void AddCheatItemsToRoom(char key)
+        {
+            if (grid == null)
+                return;
+
+            BurntimeClassic classic = app as BurntimeClassic;
+            IItemCollection roomItems = classic.InventoryRoom == null
+                ? classic.PickItems
+                : classic.InventoryRoom.Items;
+            if (roomItems == null)
+                return;
+
+            string[] itemIds = app.Settings["debug"].GetStrings(key == '1' ? "insert_items_1" : "insert_items_2");
+            foreach (string id in itemIds)
+            {
+                if (grid.Count >= grid.MaxCount)
+                    break;
+
+                Item item = classic.Game.ItemTypes.Generate(id);
+                if (!roomItems.Add(item))
+                    break;
+
+                grid.Add(item);
+            }
+
+            EnsureNonEmptyArea();
         }
 
         void OnLeftClickItemInventory(Framework.States.StateObject state)
@@ -209,6 +375,8 @@ namespace Burntime.Remaster.Scenes
                 grid.Add(state as Item);
                 inventory.Grid.Remove(state as Item);
             }
+
+            EnsureNonEmptyArea();
         }
 
         void OnRightClickItemInventory(Framework.States.StateObject state)
@@ -294,6 +462,8 @@ namespace Burntime.Remaster.Scenes
                 dialog.SetCharacter(inventory.ActiveCharacter, construction.Dialog);
                 dialog.Show();
             }
+
+            EnsureNonEmptyArea();
         }
 
         void OnLeftClickItemRoom(Framework.States.StateObject state)
@@ -326,6 +496,8 @@ namespace Burntime.Remaster.Scenes
                 inventory.Grid.Selection.Add(inventory.ActiveCharacter.Weapon);
             if (inventory.ActiveCharacter.Protection != null)
                 inventory.Grid.Selection.Add(inventory.ActiveCharacter.Protection);
+
+            EnsureNonEmptyArea();
         }
 
         void OnRightClickItemRoom(Framework.States.StateObject state)
@@ -381,6 +553,8 @@ namespace Burntime.Remaster.Scenes
                 dialog.SetCharacter(inventory.ActiveCharacter, construction.Dialog);
                 dialog.Show();
             }
+
+            EnsureNonEmptyArea();
         }
     }
 }

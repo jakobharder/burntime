@@ -44,7 +44,7 @@ film_02.pac=gfx/backgrounds/film2.png
 film_03.pac=gfx/backgrounds/film3.png
 film_04.pac=gfx/backgrounds/film4.png
 film_05.pac=gfx/backgrounds/film5.png
-film_09.pac=gfx/backgrounds/film9.png
+film_09.pac=gfx/backgrounds/film9_large.png
 film_10.pac=gfx/backgrounds/film10.png
 info.pac=gfx/backgrounds/info.png
 gfx/trader_background.png=gfx/backgrounds/trader.png
@@ -84,7 +84,16 @@ burngfxani@syst.raw?4-7=pngsheet@gfx/objects/flags.png?12-23?30x36
 burngfxani@syst.raw?8-11=pngsheet@gfx/objects/flags.png?24-35?30x36
 burngfxani@syst.raw?12-15=pngsheet@gfx/objects/flags.png?36-47?30x36
 
-raum_8.pac=gfx/backgrounds/room8.png
+raum_0.pac=gfx/backgrounds/room0_large.png
+raum_1.pac=gfx/backgrounds/room1_large.png
+raum_2.pac=gfx/backgrounds/room2_large.png
+raum_3.pac=gfx/backgrounds/room3_large.png
+raum_4.pac=gfx/backgrounds/room4_large.png
+raum_5.pac=gfx/backgrounds/room5_large.png
+raum_6.pac=gfx/backgrounds/room6_large.png
+raum_7.pac=gfx/backgrounds/room7_large.png
+raum_8.pac=gfx/backgrounds/room8_large.png
+
 opti.pac=gfx/radio_background.png
 sta.pac=gfx/start.png
 gfx/start_maxdesign.png=gfx/start_maxdesign.png
@@ -193,3 +202,4 @@ maps/mat_000_tiles.png=pngsheet@maps/mat_000_tiles_2x.png?{0}?64x76
 
 [noscale]
 sprite_scale=1x1
+font.txt=highres-font.txt

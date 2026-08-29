@@ -1,0 +1,446 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using Burntime.Remaster.Logic;
+
+namespace Burntime.Remaster.AI;
+
+internal static partial class Trading
+{
+    const int StandingFoodDays = 9;
+    const int MinimumTradeValue = 25;
+    const int MinimumTradeItems = 4;
+    const int MaximumCaravanPeople = 2;
+    internal const int DailyTradeFoodMargin = 2;
+
+    internal static readonly ConditionalWeakTable<Player, TradeFailureState>
+        LastReportedTradeFailure = new();
+
+    internal static readonly HashSet<string> ConstructionMaterials =
+        AiItemPool.ConstructionMaterialIds.ToHashSet();
+
+    public static bool ShouldVisitTrader(ClassicAiState state) =>
+        ShouldVisitTrader(state, FindBestTradeCity(state));
+
+    internal static bool ShouldVisitTrader(
+        ClassicAiState state,
+        Location? bestTradeCity)
+    {
+        // Every local trader was already checked at the start of this turn. Do not
+        // shuttle directly between cities when today's stock cannot complete a
+        // useful trade. A substantial one-camp pickup may still take the group out
+        // of an otherwise idle city and prepare the next attempt.
+        if (state.Current.IsCity)
+            return HasPreparedTradeCargo(state)
+                ? bestTradeCity != null
+                : RouteOpportunities.FindCityTradePickupCamp(state, bestTradeCity) != null;
+        if (bestTradeCity == null)
+            return false;
+
+        // Do not abandon an active territorial journey just because a remote
+        // trader's random assortment might contain a useful improvement. Trading
+        // with someone at the current location is still handled normally, and
+        // explicit attack-supply preparation can opt in separately.
+        if (state.HasSettlementPlan || state.HasAttackPlan)
+            return false;
+
+        // Trader stock is random and may change before arrival. Commit once the
+        // group has a substantial export lot, then fill the attainable caravan
+        // capacity at the departure camp.
+        if (HasPreparedTradeCargo(state))
+            return true;
+
+        // A stocked owned camp on the route may initiate the trip even when the
+        // travelling group is empty. This is the same single pickup used by an
+        // already loaded caravan, not a chain of collection errands.
+        return RouteOpportunities.FindCityTradePickupCamp(state, bestTradeCity) != null;
+    }
+
+    public static Location FindBestTradeCity(ClassicAiState state)
+    {
+        Stopwatch timer = Stopwatch.StartNew();
+        var reachableCities = state.RootGame.World.Locations
+            .Where(location => location.IsCity && location != state.Current && location.LocalTrader != null)
+            .Select(location => new
+            {
+                Location = location,
+                Route = RouteFinder.FindSupportedTradeRoute(
+                    state.Player, state.Current, location)
+            })
+            .Where(candidate => candidate.Route != null)
+            .ToArray();
+        int bestRouteCost = reachableCities
+            .Select(candidate => candidate.Route!.EffectiveCost)
+            .DefaultIfEmpty(int.MaxValue)
+            .Min();
+        var safestCities = reachableCities
+            .Where(candidate => candidate.Route!.EffectiveCost == bestRouteCost)
+            .ToArray();
+        Location? result = safestCities.Length <= 1
+            ? safestCities.Select(candidate => candidate.Location).FirstOrDefault()
+            : safestCities
+                .OrderByDescending(candidate =>
+                    TraderAssortmentOpportunityScore(state, candidate.Location.LocalTrader) +
+                    EconomicSupport.TraderNoveltyScore(state, candidate.Location.LocalTrader))
+                .ThenBy(candidate => candidate.Route!.Days)
+                .Select(candidate => candidate.Location)
+                .FirstOrDefault();
+        if (timer.ElapsedMilliseconds >= 10)
+            AiTelemetry.Report(state.Player,
+                $"FindBestTradeCity took {timer.ElapsedMilliseconds} ms");
+        return result;
+    }
+
+    internal static Location FindBestRegionalTradeStop(
+        ClassicAiState state,
+        Location? nearestCity)
+    {
+        if (state.Current.Player != state.Player || !HasPreparedTradeCargo(state))
+            return null;
+
+        int cityDays = nearestCity == null
+            ? int.MaxValue
+            : RouteFinder.Find(state.Player, state.Current, nearestCity)?.Days ?? int.MaxValue;
+        return state.RootGame.World.Locations
+            .Where(location => !location.IsCity && location != state.Current &&
+                (location.Player == null || location.Player == state.Player))
+            .Select(location => new
+            {
+                Location = location,
+                Route = RouteFinder.Find(state.Player, state.Current, location),
+                Traders = location.Characters.OfType<Trader>()
+                    .Where(trader => !trader.IsDead)
+                    .ToArray()
+            })
+            .Where(candidate => candidate.Route != null && candidate.Traders.Length > 0 &&
+                candidate.Route.Days <= Math.Min(4, cityDays))
+            .Select(candidate => new
+            {
+                candidate.Location,
+                candidate.Route,
+                Score = candidate.Traders.Max(trader =>
+                    TraderAssortmentOpportunityScore(state, trader) +
+                    EconomicSupport.TraderNoveltyScore(state, trader))
+            })
+            .Where(candidate => candidate.Score > 0)
+            .OrderByDescending(candidate => candidate.Score - candidate.Route.Days * 25)
+            .ThenBy(candidate => candidate.Route.Days)
+            .Select(candidate => candidate.Location)
+            .FirstOrDefault();
+    }
+
+    internal static float TraderOpportunityScore(ClassicAiState state, Trader trader)
+    {
+        float[] opportunities = trader.Items
+            .GroupBy(item => item.ID)
+            .Select(group => group.Max(item => Trading.ShoppingPriority(state, item)))
+            .Where(priority => priority > 0)
+            .OrderByDescending(priority => priority)
+            .Take(3)
+            .ToArray();
+        if (opportunities.Length == 0)
+            return 0;
+        return opportunities[0] + opportunities.Skip(1).Sum() * 0.35f;
+    }
+
+    internal static float TraderAssortmentOpportunityScore(ClassicAiState state, Trader trader)
+    {
+        ItemType[] assortment = trader.GetAssortment()
+            .GroupBy(type => type.ID)
+            .Select(group => group.First())
+            .ToArray();
+        AssortmentShoppingPriorityState priorityState = new(state);
+        float firstOpportunity = 0;
+        float secondOpportunity = 0;
+        float thirdOpportunity = 0;
+        foreach (ItemType type in assortment)
+        {
+            float priority = Trading.AssortmentShoppingPriority(priorityState, type);
+            if (priority > firstOpportunity)
+            {
+                thirdOpportunity = secondOpportunity;
+                secondOpportunity = firstOpportunity;
+                firstOpportunity = priority;
+            }
+            else if (priority > secondOpportunity)
+            {
+                thirdOpportunity = secondOpportunity;
+                secondOpportunity = priority;
+            }
+            else if (priority > thirdOpportunity)
+            {
+                thirdOpportunity = priority;
+            }
+        }
+        if (firstOpportunity <= 0)
+            return 0;
+
+        // Stock is random, so this is an assortment-probability preference rather
+        // than a search for a known item. Smaller assortments containing several
+        // currently useful trap inputs are more likely to advance the recipe.
+        string[] meatInputs = { "item_spring", "item_tin", "item_wire" };
+        int usefulMeatInputs = assortment.Count(type => meatInputs.Contains(type.ID) &&
+            ConstructionMaterialPriority(state, type.ID) > 0);
+        float materialLikelihood = usefulMeatInputs * 600f / Math.Max(1, assortment.Length);
+        float snakeLikelihood = assortment.Any(type => type.ID == "item_snake_trap") &&
+            HasStrategicSnakeTrapNeed(state)
+                ? 1000f / Math.Max(1, assortment.Length)
+                : 0;
+        return firstOpportunity + (secondOpportunity + thirdOpportunity) * 0.25f +
+            materialLikelihood + snakeLikelihood;
+    }
+
+    public static bool ShouldContinueTrading(ClassicAiState state)
+    {
+        return state.Current.IsCity && EncounteredTraders(state).Any(trader => Trading.CanPlanTrade(state, trader));
+    }
+
+    internal static IEnumerable<Trader> EncounteredTraders(ClassicAiState state)
+    {
+        List<Trader> traders = new();
+        if (state.Current.IsCity && state.Current.LocalTrader != null)
+            traders.Add(state.Current.LocalTrader);
+
+        traders.AddRange(state.Current.Characters
+            .OfType<Trader>()
+            .Where(trader => !trader.IsDead && trader.Items.Count > 0));
+
+        // Inspect every trader's current stock before executing the first trade.
+        // This prevents a routine local purchase from consuming the capital needed
+        // for a rarer, higher-return item carried by a roaming trader at the same
+        // location.
+        return traders
+            .Distinct()
+            .OrderByDescending(trader => TraderOpportunityScore(state, trader));
+    }
+
+    internal static int CargoSpaceReserve(ClassicAiState state) => 0;
+
+    internal static bool IsTradeCaravanReady(ClassicAiState state) =>
+        HasAffordableHighReturnTradeCargo(state) ||
+        HasSubstantialTradeCargo(state) &&
+        OccupiedCargoSlots(state) >= DesiredCaravanSlots(state);
+
+    internal static int DesiredPortableFood(ClassicAiState state) =>
+        state.Player.Group.Count * StandingFoodDays;
+
+    internal static int DesiredWaterContainerCapacity(ClassicAiState state) =>
+        DesiredWaterContainerCapacity(state.Player.Group.Count);
+
+    internal static int DesiredWaterContainerCapacity(int people)
+    {
+        // A canteen (capacity 3) is one traveller's standing reserve. A wineskin
+        // (capacity 5) is efficient enough to be shared by two travellers.
+        int pairs = people / 2;
+        int singles = people % 2;
+        return pairs * 5 + singles * 3;
+    }
+
+    internal static int DesiredPortableWaterCapacity(ClassicAiState state) =>
+        state.Player.Group.Sum(character => character.MaxWater) +
+        DesiredWaterContainerCapacity(state);
+
+    internal static int DesiredCaravanSlots(ClassicAiState state) => state.Player.Group
+        .Take(MaximumCaravanPeople)
+        .Sum(character => character.Items.MaxCount);
+
+    internal static int OccupiedCargoSlots(ClassicAiState state) => state.Player.Group
+        .Sum(character => character.Items.Count);
+
+    internal static int PortableWaterCapacity(ClassicAiState state) => state.Player.Group
+        .SelectMany(character => character.Items)
+        .Where(item => AiItemPool.IsWaterContainer(item.Type))
+        .Sum(item => AiItemPool.WaterContainerCapacity(item.Type));
+
+    internal static int PortableFoodSupply(ClassicAiState state) =>
+        state.Player.Group.GetFoodReserve() + state.Player.Group.GetFoodInInventory();
+
+    internal static int PortableWaterSupply(ClassicAiState state) =>
+        state.Player.Group.GetWaterReserve() + PortableWaterCapacity(state);
+
+    internal static Item[] TradeCapital(ClassicAiState state)
+    {
+        bool mayLiquidateReserves = state.RootGame.World.Locations.Any(city =>
+            city.IsCity && city.LocalTrader != null && CityHasHighReturnReservePurchase(state, city));
+        return state.Player.Group.SelectMany(character => character.Items)
+            .Where(item => Trading.CanSell(state, item) ||
+                (mayLiquidateReserves && Trading.IsHighReturnLiquidReserve(item)))
+            .ToArray();
+    }
+
+    internal static bool HasSubstantialTradeCargo(ClassicAiState state)
+    {
+        Item[] capital = TradeCapital(state);
+        return capital.Length >= MinimumTradeItems ||
+            capital.Sum(item => item.TradeValue) >= MinimumTradeValue;
+    }
+
+    internal static bool HasPreparedTradeCargo(ClassicAiState state)
+    {
+        bool upgradeCampaign = ReachableHighReturnPurchaseTypes(state).Any();
+        return upgradeCampaign
+            ? HasAffordableHighReturnTradeCargo(state)
+            : HasSubstantialTradeCargo(state);
+    }
+
+    internal static bool HasAffordableHighReturnTradeCargo(ClassicAiState state)
+    {
+        float buyingPower = SurvivalSafeEconomicCapital(state) * Trading.TradeBenefit(state);
+        if (buyingPower <= 0)
+            return false;
+        return ReachableHighReturnPurchaseTypes(state).Any(type => type.TradeValue <= buyingPower);
+    }
+
+    static IEnumerable<ItemType> ReachableHighReturnPurchaseTypes(ClassicAiState state) =>
+        state.RootGame.World.Locations
+            .Where(city => city.IsCity && city != state.Current && city.LocalTrader != null &&
+                RouteFinder.Find(state.Player, state.Current, city) != null)
+            .SelectMany(city =>
+            {
+                Trader trader = city.LocalTrader;
+                return trader.GetAssortment();
+            })
+            .Where(type => IsHighReturnReservePurchase(state, type))
+            .GroupBy(type => type.ID)
+            .Select(group => group.First());
+
+    static float SurvivalSafeEconomicCapital(ClassicAiState state)
+    {
+        Item[] inventory = state.Player.Group.SelectMany(character => character.Items).ToArray();
+        HashSet<Item> spendable = inventory.Where(item => CanSell(state, item)).ToHashSet();
+        int food = PortableFoodSupply(state);
+        int foodFloor = state.Player.Group.Count * 3;
+        foreach (Item item in inventory.Where(item => item.FoodValue > 0 && !spendable.Contains(item))
+            .OrderBy(item => item.TradeValue))
+        {
+            if (food - item.FoodValue < foodFloor)
+                continue;
+            spendable.Add(item);
+            food -= item.FoodValue;
+        }
+
+        int water = PortableWaterSupply(state);
+        int waterFloor = state.Player.Group.Count * 3;
+        foreach (Item item in inventory.Where(item => AiItemPool.IsWaterContainer(item.Type) &&
+            !spendable.Contains(item)).OrderBy(item => item.TradeValue))
+        {
+            int capacity = AiItemPool.WaterContainerCapacity(item.Type);
+            if (water - capacity < waterFloor)
+                continue;
+            spendable.Add(item);
+            water -= capacity;
+        }
+
+        foreach (Item item in inventory.Where(item => ConstructionMaterials.Contains(item.ID)))
+            spendable.Add(item);
+
+        Item[] protectedMelee = inventory.Where(item => item.DamageValue > 0 && !AiItemPool.IsFirearm(item.Type) &&
+                !spendable.Contains(item))
+            .OrderBy(item => item.TradeValue)
+            .ToArray();
+        foreach (Item item in protectedMelee.Take(Math.Max(0, protectedMelee.Length - 1)))
+            spendable.Add(item);
+        return spendable.Sum(item => item.TradeValue);
+    }
+
+    internal static bool CityHasHighReturnReservePurchase(ClassicAiState state, Location city)
+    {
+        Trader trader = city.LocalTrader;
+        return trader != null && trader.GetAssortment().Any(type =>
+            IsHighReturnReservePurchase(state, type));
+    }
+
+    internal static bool IsHighReturnReservePurchase(ClassicAiState state, ItemType type)
+    {
+        StrategicNeeds needs = AiTurnContext.For(state).Needs;
+        return needs.ProductionShortfall(type) > 0 ||
+            type.Production != null && needs.PortableProductionReserveNeeded ||
+            needs.NeedsMaterial(type.ID);
+    }
+
+    public static Location FindBestCampForCityPreparation(ClassicAiState state)
+    {
+        // Maintaining the current camp already collected everything useful. Always
+        // continue to the city from there instead of cycling through another camp.
+        // A valuable caravan may still use a near-route pickup while it has space;
+        // value readiness alone should not discard that existing opportunity.
+        if (state.Current.Player == state.Player || state.Player.Group.GetFreeSlotCount() == 0)
+            return null;
+
+        RouteFinder.Route directCityRoute = state.RootGame.World.Locations
+            .Where(location => location.IsCity && location != state.Current)
+            .Select(location => RouteFinder.Find(state.Player, state.Current, location))
+            .Where(route => route != null)
+            .OrderBy(route => route.Days)
+            .FirstOrDefault();
+        if (directCityRoute == null)
+            return null;
+
+        // At most one pickup stop, and only when it adds no more than two travel
+        // days compared with going directly to the nearest city.
+        Item[] carriedCapital = TradeCapital(state);
+        return state.RootGame.World.Locations
+            .Where(location => location.Player == state.Player && location != state.Current)
+            .Select(location => new
+            {
+                Location = location,
+                ToCamp = RouteFinder.Find(state.Player, state.Current, location),
+                ToCity = state.RootGame.World.Locations
+                    .Where(city => city.IsCity && city != location)
+                    .Select(city => RouteFinder.Find(state.Player, location, city))
+                    .Where(route => route != null)
+                    .OrderBy(route => route.Days)
+                    .FirstOrDefault()
+            })
+            .Where(candidate => candidate.ToCamp != null && candidate.ToCity != null &&
+                candidate.ToCamp.Days + candidate.ToCity.Days <= directCityRoute.Days + 2)
+            .Select(candidate => new
+            {
+                candidate.Location,
+                Detour = candidate.ToCamp.Days + candidate.ToCity.Days - directCityRoute.Days,
+                TravelDays = candidate.ToCamp.Days,
+                Value = CargoManagement.ProjectedCampCollectibleValue(state, candidate.Location, candidate.ToCamp.Days)
+            })
+            .Where(candidate => IsSubstantialTradeLot(
+                carriedCapital.Length + CargoManagement.ProjectedCampCollectibleCount(
+                    state, candidate.Location, candidate.TravelDays),
+                carriedCapital.Sum(item => item.TradeValue) + candidate.Value))
+            .OrderByDescending(candidate => EconomicReturn.TripValuePerDay(
+                candidate.Value, candidate.TravelDays + candidate.Detour))
+            .Select(candidate => candidate.Location)
+            .FirstOrDefault();
+    }
+
+    public static bool ShouldFillCityCaravanBeforeDeparture(
+        ClassicAiState state,
+        Location? tradeCity)
+    {
+        if (state.Current.Player != state.Player || state.Player.Group.GetFreeSlotCount() == 0)
+            return false;
+        if (tradeCity == null)
+            return false;
+
+        if (IsTradeCaravanReady(state))
+            return false;
+
+        Production.Rate rate = state.Current.GetFoodProductionRate();
+        int guards = CampEconomy.LivingGuardCount(state.Current, state.Player);
+        int localDailyExport = System.Math.Max(0, rate.FoodPerDay - guards);
+        return rate.ItemDropInterval > 0 && localDailyExport > state.Player.Group.Count;
+    }
+
+    public static bool ShouldReduceTradeCaravan(ClassicAiState state)
+    {
+        if (state.Current.Player != state.Player || state.Player.Group.Count <= MaximumCaravanPeople ||
+            !CampManagement.ShouldPreferProductionAtCamp(state, state.Current))
+            return false;
+        int guards = CampEconomy.LivingGuardCount(state.Current, state.Player);
+        return ReinforcementPlanning.CanSupportAdditionalGuard(state, state.Current, guards);
+    }
+
+    internal static bool IsSubstantialTradeLot(int items, float value) =>
+        items >= MinimumTradeItems || value >= MinimumTradeValue;
+
+}

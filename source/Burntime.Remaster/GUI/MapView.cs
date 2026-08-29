@@ -248,8 +248,7 @@ public class MapView : Window
         if (_rightClickMove.HasValue)
         {
             _position += (Vector2f)(position - _rightClickMove.Value);
-            _position.Max(0);
-            _position.Min(Boundings.Size - map.TileSize * map.Size);
+            ConstrainPosition();
 
             _moveTotal += (position - _rightClickMove.Value).Length;
             _rightClickMove = position;
@@ -264,6 +263,12 @@ public class MapView : Window
             _rightClickMove = null;
 
         base.OnMouseEnter();
+    }
+
+    public override void OnMouseLeave()
+    {
+        border = Vector2f.Zero;
+        base.OnMouseLeave();
     }
 
     public override void OnActivate()
@@ -333,24 +338,34 @@ public class MapView : Window
 
     public override void OnUpdate(float Elapsed)
     {
-        if (!_rightClickMove.HasValue && border != Vector2f.Zero)
+        bool positionChanged = false;
+        bool cameraPanInputDown = false;
+        foreach (InputAction action in app.InputManager.ActionsDown)
         {
-            _position += border * Elapsed * scrollSpeed;
-            _position.Max(0);
-            _position.Min(Boundings.Size - map.TileSize * map.Size);
-            Scroll?.Invoke(this, new MapScrollArgs(_position));
+            if (action is InputAction.PanCameraUp or InputAction.PanCameraDown or
+                InputAction.PanCameraLeft or InputAction.PanCameraRight)
+            {
+                cameraPanInputDown = true;
+                break;
+            }
         }
 
-        // map is smaller than screen, center it
-        if (map.TileSize.x * map.Size.x < Boundings.Size.x)
-            _position.x = (Boundings.Size.x - map.TileSize.x * map.Size.x) / 2;
-        if (map.TileSize.y * map.Size.y < Boundings.Size.y)
-            _position.y = (Boundings.Size.y - map.TileSize.y * map.Size.y) / 2;
+        if (app.MouseInputVisible && !cameraPanInputDown &&
+            !_rightClickMove.HasValue && border != Vector2f.Zero)
+        {
+            _position += border * Elapsed * scrollSpeed;
+            positionChanged = true;
+        }
+
+        positionChanged |= ConstrainPosition();
+        if (positionChanged)
+            Scroll?.Invoke(this, new MapScrollArgs(_position));
 
         if (handler != null)
         {
             ClassicGame game = app.GameState as ClassicGame;
             game.World.ActiveLocationObj.Hover = null;
+            game.World.ActiveLocationObj.HoverCharacter = null;
 
             foreach (Maps.IMapViewOverlay overlay in overlays)
             {
@@ -367,7 +382,10 @@ public class MapView : Window
                 }
                 else if (entrance < game.World.ActiveLocationObj.Rooms.Count)
                 {
-                    game.World.ActiveLocationObj.Hover = new MapViewHoverInfo(game.World.ActiveLocationObj.Rooms[entrance], app.ResourceManager, BurntimeClassic.LightGray);
+                    Location location = game.World.ActiveLocationObj;
+                    game.World.ActiveLocationObj.Hover = location.AreEntrancesBlockedFor(game.World.ActivePlayerObj)
+                        ? new MapViewHoverInfo(app.ResourceManager.GetString("newburn?103"), location.Map.Entrances[entrance].Area.Center, BurntimeClassic.LightGray)
+                        : new MapViewHoverInfo(location.Rooms[entrance], app.ResourceManager, BurntimeClassic.LightGray);
                 }
             }
         }
@@ -378,8 +396,83 @@ public class MapView : Window
     public void CenterTo(Vector2 centerTo)
     {
         _position = -centerTo + (Boundings.Size / 2);
-        _position.Max(0);
-        _position.Min(Boundings.Size - map.TileSize * map.Size);
+        ConstrainPosition();
         Scroll?.Invoke(this, new MapScrollArgs(_position));
+    }
+
+    public bool FollowWithinMiddleThird(Vector2 mapPosition, float elapsed)
+    {
+        if (map is null)
+            return true;
+
+        Vector2f oldPosition = _position;
+        Vector2f screenPosition = (Vector2f)mapPosition + _position;
+        Vector2f minimum = (Vector2f)Boundings.Size / 3;
+        Vector2f maximum = (Vector2f)Boundings.Size * (2f / 3f);
+        Vector2f desiredPosition = _position;
+
+        if (screenPosition.x < minimum.x)
+            desiredPosition.x += minimum.x - screenPosition.x;
+        else if (screenPosition.x > maximum.x)
+            desiredPosition.x -= screenPosition.x - maximum.x;
+
+        if (screenPosition.y < minimum.y)
+            desiredPosition.y += minimum.y - screenPosition.y;
+        else if (screenPosition.y > maximum.y)
+            desiredPosition.y -= screenPosition.y - maximum.y;
+
+        ConstrainPosition(ref desiredPosition);
+
+        Vector2f correction = desiredPosition - _position;
+        float maximumDistance = scrollSpeed * 2 * elapsed;
+        bool reachedPosition = correction.Length <= maximumDistance;
+        if (correction.Length > maximumDistance)
+        {
+            correction.Normalize();
+            correction *= maximumDistance;
+        }
+
+        _position += correction;
+
+        ConstrainPosition();
+        if (_position != oldPosition)
+            Scroll?.Invoke(this, new MapScrollArgs(_position));
+
+        return reachedPosition;
+    }
+
+    public void Pan(Vector2 direction, float elapsed)
+    {
+        if (map is null)
+            return;
+
+        _position -= (Vector2f)direction * elapsed * scrollSpeed;
+        ConstrainPosition();
+        Scroll?.Invoke(this, new MapScrollArgs(_position));
+    }
+
+    bool ConstrainPosition()
+    {
+        if (map is null)
+            return false;
+
+        Vector2f oldPosition = _position;
+        ConstrainPosition(ref _position);
+        return _position != oldPosition;
+    }
+
+    void ConstrainPosition(ref Vector2f position)
+    {
+        Vector2 mapSize = map.TileSize * map.Size;
+
+        if (mapSize.x <= Boundings.Size.x)
+            position.x = (Boundings.Size.x - mapSize.x) / 2;
+        else
+            position.x = System.Math.Clamp(position.x, Boundings.Size.x - mapSize.x, 0);
+
+        if (mapSize.y <= Boundings.Size.y)
+            position.y = (Boundings.Size.y - mapSize.y) / 2;
+        else
+            position.y = System.Math.Clamp(position.y, Boundings.Size.y - mapSize.y, 0);
     }
 }

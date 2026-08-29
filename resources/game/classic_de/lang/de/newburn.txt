@@ -51,8 +51,8 @@ Ich benötige |F,}
 um dort reinzukommen.}
 }#
 - Cheats aktiv -
-
-
+[NEUER SPIELSTAND]
+|D - Tag |J - |C
 
 
 
@@ -101,3 +101,4 @@ Angriff {attack}}
 Vert. {defense}}
 % Gas 
 % Rad. 
+Blockiert}

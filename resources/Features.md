@@ -4,6 +4,18 @@ The game is a complete remake and expansion of the original DOS version for Wind
 
 Some improvements were also taken from the Amiga version that has been released later.
 
+## Game Settings
+
+The game rules, difficulty and opponents can be configured independently:
+
+- game mode
+  - Classic preserves the rules and content of the original 1993 release
+  - Extended adds new items and gameplay features
+- difficulty
+  - Easy, Normal or Hard; this affects item availability, respawn times and enemy strength and behavior
+- opponents
+  - AI players can be enabled or disabled
+
 ## Non-Gameplay Changes
 
 - support for wide-screen resolutions; some locations and interfaces are enlarged accordingly
@@ -12,19 +24,17 @@ Some improvements were also taken from the Amiga version that has been released 
 - technicians have their own skin; all skins are true to the character class without exceptions
 - music can be toggled between DOS, Amiga and off
 - Amiga hit, bark and death sounds
+- keyboard and gamepad support
 
 ## Gameplay Changes
 
-- game adjustments
-  - attacks are always followed by counter attacks to avoid attack spamming
-  - toggle to switch between original 1993 and extended game rules
-  - toggle to disable AI players
 - quality of life
   - attack, defense and protection values displayed in inventory
-  - auto equip weapons and protection
+  - auto equip weapons, protection and food production
   - gas, radiation and insufficient travel supply warnings displayed in the main UI
   - save games display day and camp numbers
-  - maps can be scrolled with the right mouse button
+  - auto saves
+  - map can be scrolled with the right mouse button or WASD
 - minor location adjustments
   - some locations are larger to fill wide screens
   - Monastery got another gap in the wall to go through
@@ -33,7 +43,7 @@ Some improvements were also taken from the Amiga version that has been released 
 ## Extended Game
 
 The extended game mode adds new items and gameplay features.
-You can disable these changes in the start menu by selecting the original 1993 mode.
+You can disable these changes in the start menu by selecting Classic mode.
 
 - additional items
   - pistol
@@ -54,8 +64,8 @@ Traders and mutants are tougher, while AI players expand more aggressively and m
 - respawns
   - trader after 20 days
   - NPCs after 10 days
-  - dogs after 20 days in extended mode; no respawn in 1993 mode
-  - mutants after 100 days in extended mode; no respawn in 1993 mode
+  - dogs after 20 days in Extended mode; no respawn in Classic mode
+  - mutants after 200 days in Extended mode; no respawn in Classic mode
 - dropped items and in rooms
   - food, water, weapons and building materials can be found
 - enemies
@@ -69,8 +79,8 @@ Traders and mutants are tougher, while AI players expand more aggressively and m
 - respawns
   - trader after 50 days
   - NPCs after 20 days
-  - dogs after 40 days in extended mode; no respawn in 1993 mode
-  - mutants after 80 days in extended mode; no respawn in 1993 mode
+  - dogs after 40 days in Extended mode; no respawn in Classic mode
+  - mutants after 150 days in Extended mode; no respawn in Classic mode
 - dropped items and in rooms
   - no weapons
   - less food
@@ -82,12 +92,12 @@ Traders and mutants are tougher, while AI players expand more aggressively and m
 
 - start items
   - maggots and a knife
-  - an additional advice note in extended mode
+  - an additional advice note in Extended mode
 - respawns
   - trader after 150 days
   - NPCs after 30 days
-  - dogs after 80 days in extended mode; no respawn in 1993 mode
-  - mutants after 60 days in extended mode; no respawn in 1993 mode
+  - dogs do not respawn
+  - mutants after 100 days in Extended mode; no respawn in Classic mode
 - dropped items and in rooms
   - no weapons or food on the ground
   - less food and fewer materials in rooms

@@ -275,6 +275,55 @@ namespace Burntime.Remaster.Scenes
             app.SceneManager.PreviousScene();
         }
 
+        public override bool OnVKeyPress(SystemKey key)
+        {
+            if (key != SystemKey.Escape)
+                return false;
+
+            OnButtonBack();
+            return true;
+        }
+
+        public override bool OnInputAction(InputAction action)
+        {
+            if (action == InputAction.Back)
+            {
+                OnButtonBack();
+                return true;
+            }
+
+            if (action.IsUp())
+            {
+                OnButtonListUp();
+                return true;
+            }
+
+            if (action.IsDown())
+            {
+                OnButtonListDown();
+                return true;
+            }
+
+            if (action.IsLeft())
+            {
+                OnProductionRight();
+                return true;
+            }
+
+            if (action.IsRight())
+            {
+                OnProductionLeft();
+                return true;
+            }
+
+            return false;
+        }
+
+        public override bool OnKeyPress(char key)
+        {
+            return false;
+        }
+
         void OnButtonListUp()
         {
             if (items.Count <= 1)
@@ -306,7 +355,8 @@ namespace Burntime.Remaster.Scenes
             int city = classic.InfoCity;
 
             Location loc = classic.Game.World.Locations[city];
-            if (productionID < 3 && loc.AvailableProducts[productionID + 1] >= 0)
+            if (productionID >= 0 && productionID + 1 < loc.AvailableProducts.Length &&
+                loc.AvailableProducts[productionID + 1] >= 0)
             {
                 productionID++;
                 loc.Production = classic.Game.Productions[loc.AvailableProducts[productionID]];
@@ -321,7 +371,7 @@ namespace Burntime.Remaster.Scenes
             int city = classic.InfoCity;
 
             Location loc = classic.Game.World.Locations[city];
-            if (productionID > 0)
+            if (productionID > 0 && productionID < loc.AvailableProducts.Length)
             {
                 productionID--;
                 loc.Production = classic.Game.Productions[loc.AvailableProducts[productionID]];

@@ -13,10 +13,13 @@ namespace Burntime.Remaster.Scenes
 {
     class DoctorScene : Scene
     {
+        public override bool UseDiagonalGamepadNavigation => true;
+
         InventoryWindow inventory;
         ItemGridWindow grid;
         GuiFont font;
         String[] doctorText = null;
+        InventoryKeyboardNavigation keyboardNavigation;
 
         public DoctorScene(Module app)
             : base(app)
@@ -64,6 +67,7 @@ namespace Burntime.Remaster.Scenes
             Windows += grid;
 
             font = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray);
+            keyboardNavigation = new InventoryKeyboardNavigation(inventory, grid, OnButtonHeal, OnButtonExit);
         }
 
         public override void OnResizeScreen()
@@ -77,7 +81,11 @@ namespace Burntime.Remaster.Scenes
         {
             inventory.SetGroup(BurntimeClassic.Instance.SelectedCharacter);
             doctorText = null;
+            grid.Clear();
+            keyboardNavigation.Reset();
         }
+
+        public override bool OnInputAction(InputAction action) => keyboardNavigation.Handle(action);
 
         public override void OnRender(RenderTarget target)
         {
@@ -112,6 +120,7 @@ namespace Burntime.Remaster.Scenes
 
             classic.Game.World.ActivePlayerObj.Character.Items.Remove(grid);
             grid.Clear();
+            keyboardNavigation.ItemsChanged();
         }
 
         void OnLeftClickItemInventory(Framework.States.StateObject state)
@@ -125,6 +134,7 @@ namespace Burntime.Remaster.Scenes
             // remove item from group
             inventory.Grid.Remove(state as Item);
             inventory.ActiveCharacter.Items.Remove(state as Item);
+            keyboardNavigation.ItemsChanged();
 
             //UpdateText();
         }
@@ -137,6 +147,7 @@ namespace Burntime.Remaster.Scenes
             inventory.ActiveCharacter.Items.Add(state as Item);
 
             grid.Remove(state as Item);
+            keyboardNavigation.ItemsChanged();
             //UpdateText();
         }
 

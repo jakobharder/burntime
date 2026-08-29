@@ -19,12 +19,18 @@ namespace Burntime.Remaster
 
     public class BurntimeClassic : Module
     {
+        public GamepadBindings GamepadBindings { get; } = new();
+        public KeyboardBindings KeyboardBindings { get; } = new();
+        internal AutosaveManager Autosaves { get; }
         public static new BurntimeClassic Instance
         {
             get { return (BurntimeClassic)instance; }
         }
 
-        public static string SavegameVersion = "0.1.2";
+        public const string SavegameVersion = "1.1";
+        public const string PreviousSavegameVersion = "0.1.2";
+        public static bool IsSupportedSavegameVersion(string? version) =>
+            version == SavegameVersion || version == PreviousSavegameVersion;
         public static string FontName = "font.txt";
 
         public static readonly PixelColor LightGray = new(212, 212, 212);
@@ -73,6 +79,9 @@ namespace Burntime.Remaster
 
         public BurntimeClassic()
         {
+            Autosaves = new AutosaveManager(this);
+            KeyboardActionBindings = KeyboardBindings;
+            GamepadActionBindings = GamepadBindings;
             FindClassesFromAssembly(typeof(BurntimeClassic).Assembly);
         }
 
@@ -99,6 +108,8 @@ namespace Burntime.Remaster
             // read user settings
             UserSettings = new ConfigFile();
             UserSettings.Open("user.txt");
+            KeyboardBindings.Load(Settings, UserSettings);
+            GamepadBindings.Load(Settings, UserSettings);
             FileSystem.LocalizationCode = UserSettings[""].GetString("language");
             Engine.IsFullscreen = UserSettings[""].GetBool("fullscreen", false);
             base.IsNewGfx = UserSettings[""].GetBool("newgfx", true);
@@ -120,8 +131,6 @@ namespace Burntime.Remaster
 
             SetMusicMode(UserSettings[""].GetString("music"));
 
-            bool useHighResFont = Settings["system"].GetBool("highres_font");
-
             // add newgfx package
             if (IsNewGfx)
             {
@@ -130,8 +139,6 @@ namespace Burntime.Remaster
                 {
                     ResourceManager.SetResourceReplacement("newgfx.txt");
 
-                    // use highres font anyway
-                    useHighResFont = true;
                 }
             }
             else
@@ -146,12 +153,7 @@ namespace Burntime.Remaster
             //    ResourceManager.SetResourceReplacement("santa.txt");
             //}
 
-            // set highres font
-            if (useHighResFont)
-            {
-                if (FileSystem.ExistsFile("highres-font.txt"))
-                    FontName = "highres-font.txt";
-            }
+            FontName = "font.txt";
         }
 
         public void InitializeHeadless()
@@ -190,6 +192,8 @@ namespace Burntime.Remaster
             UserSettings[""].Set("fullscreen", Engine.IsFullscreen);
             UserSettings[""].Set("newgfx", IsNewGfx);
             UserSettings[""].Set("language", FileSystem.LocalizationCode);
+            KeyboardBindings.Save(UserSettings);
+            GamepadBindings.Save(UserSettings);
             UserSettings.Save("user.txt");
         }
 
@@ -324,6 +328,8 @@ namespace Burntime.Remaster
 
         void RefreshNewGfx()
         {
+            FontName = "font.txt";
+
             if (IsNewGfx)
             {
                 FileSystem.AddPackage("newgfx", "game/classic_newgfx");
@@ -331,13 +337,10 @@ namespace Burntime.Remaster
                 {
                     ResourceManager.SetResourceReplacement("newgfx.txt");
 
-                    // use highres font anyway
-                    if (FileSystem.ExistsFile("highres-font.txt"))
-                        FontName = "highres-font.txt";
                 }
                 else
                 {
-                    ResourceManager.SetResourceReplacement(null);
+                    ResourceManager.SetResourceReplacement(string.Empty);
                 }
             }
             else
@@ -346,7 +349,7 @@ namespace Burntime.Remaster
                 if (FileSystem.ExistsFile("newgfx.txt"))
                     ResourceManager.SetResourceReplacement("newgfx.txt");
                 else
-                    ResourceManager.SetResourceReplacement(null);
+                    ResourceManager.SetResourceReplacement(string.Empty);
             }
 
             Engine.ReloadGraphics();

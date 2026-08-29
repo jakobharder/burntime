@@ -1,6 +1,7 @@
 ﻿# Burntime
 
-Burntime is a remaster and expansion of Max Design's PC strategy game 'Burntime' from 1993.
+Burntime is a remaster and expansion of Max Design's 1993 strategy game 'Burntime'.
+It recreates the original game with remastered graphics and modern platform support, while also adding new and expanded gameplay.
 
 - [Project on GitHub](https://github.com/jakobharder/burntime)
 - [Burntime.org Forum](http://www.burntime.org)
@@ -23,20 +24,44 @@ Key | Scene | Effect
 
 ## Credits
 
-This project is not affiliated in any way with Max Design and/or the original creators.
-The original game, graphics and other assets are the property of Max Design and their original creators.
+Burntime is a community project and is not affiliated with Max Design or the original developers of Burntime.
+The original game, graphics, music, and other assets were created by Max Design and the original development team.
 
-A big thanks to Martin Lasser and Hannes Seifert for allowing this community remake effort to use the original graphics and music!
+Special thanks to to Martin Lasser, Wilfried Reiter and Hannes Seifert for allowing
+this remaster to use the original graphics and music.
 
-### Additional Contributors
+### Remaster
 
-The following people helped Jakob Harder to create this remake.
+Role | Names
+--- | ---
+Development & remaster | Jakob Harder
+Spanish translation | Germán Jakob
+Additional contributions | Krystian Rabe, Felix Stolle, Chris1982, graysonwall, Shadow, Maschine, Memento
 
-- Krystian Rabe: additional graphics
-- Felix Stolle: balancing, testing
-- Germán Jakob: Spanish translation
-- Additional testers: Chris1982, graysonwall, Shadow, Maschine, Memento
+### Max Design
+
+Credits for the original *Burntime* game:
+
+Role | Names
+--- | ---
+Idea and concept | Wilfried Reiter, Albert Lasser, Martin Lasser
+Programming | Albert Lasser, Wilfried Reiter
+Graphics | Martin Lasser, Wilfried Reiter
+Music and sound effects | Hannes Seifert
+Handbook | Johann Schilcher, John WooD (JoWooD)
+Cover and package design | Robert Pils
+Testing | Michael Schütter, Manfred Bertl, Dieter Bernauer
+Coffee and customer care | Elisabeth “Lisi, Coffeeee!!” Lasser
+Translation | Patricia Spella
+Special thanks | Greenpeace
 
 ### Libraries
 
-- [MonoGame](https://www.monogame.net/)
+Role | Library
+--- | ---
+Game framework | [MonoGame](https://www.monogame.net/)
+Ogg Vorbis decoding | [NVorbis](https://github.com/NVorbis/NVorbis)
+Image decoding | [StbImageSharp](https://github.com/StbSharp/StbImageSharp)
+
+See [third-party notices](./licenses/THIRD-PARTY-NOTICES.txt) for licenses of direct and
+bundled dependencies.

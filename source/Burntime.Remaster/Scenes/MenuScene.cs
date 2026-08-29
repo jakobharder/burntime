@@ -5,13 +5,25 @@ using Burntime.Framework.GUI;
 using Burntime.Remaster.Logic.Generation;
 using System;
 using System.Diagnostics;
+using System.Linq;
 
 namespace Burntime.Remaster;
 
 public class MenuScene : Scene
 {
+    enum SetupSelection
+    {
+        Player,
+        Load,
+        Start,
+        Difficulty,
+        GameMode,
+        AiPlayers,
+        Exit
+    }
+
     public const int MAX_FACE_ID = 5;
-    private const int MAX_SETUP_FACE_ID = 29;
+    private const int MAX_SETUP_FACE_ID = 5;
 
     SpriteAnimation PlayerOneSlide;
     SpriteAnimation PlayerTwoSlide;
@@ -25,7 +37,14 @@ public class MenuScene : Scene
     Toggle GameMode;
     Toggle AiPlayers;
     Radio Color;
+    readonly Radio _otherColor;
+    int _currentPlayer;
+    SetupSelection _setupSelection;
+    readonly Button _loadButton;
+    readonly Button _startButton;
+    readonly Button _exitButton;
     Burntime.Platform.IO.ConfigFile conversionTable;
+    readonly string[] _playerNames;
 
     readonly ISprite _copyright;
     readonly GuiFont _playerFont;
@@ -53,12 +72,20 @@ public class MenuScene : Scene
         Position = (base.app.Engine.Resolution.Game - base.Size) / 2;
 
         GuiFont buttonFont = new GuiFont("gfx/ui/start_font.txt", PixelColor.Transparent);
+        GuiFont selectedNameFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(144, 160, 212));
         _playerFont = new GuiFont("gfx/ui/start_font_player.txt", PixelColor.Transparent);
         _copyrightFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.Gray) { Borders = TextBorders.None };
         _infoFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.Gray/*new PixelColor(135, 140, 145)*/) { Borders = TextBorders.None };
 
         _playerOne = "@newburn?43";
         _playerTwo = "@newburn?44";
+
+        _playerNames = new TextResourceFile(Burntime.Platform.IO.FileSystem.GetFile("names.txt"))
+            .Data
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Select(name => name.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 
         _crack1 = app.ResourceManager.GetImage("gfx/start_crack1.png");
         _crack2 = app.ResourceManager.GetImage("gfx/start_crack2.png");
@@ -107,7 +134,7 @@ public class MenuScene : Scene
         PlayerTwoSlide.Stop();
         PlayerTwoSlide.GoLastFrame();
 
-        Windows += new Button(app, OnButtonStart)
+        Windows += _startButton = new Button(app, OnButtonStart)
         {
             Position = new Vector2(131, 42),
             Image = "pngsheet@gfx/ui/start_buttons.png?2?64x24",
@@ -117,7 +144,7 @@ public class MenuScene : Scene
             TextHorizontalAlign = TextAlignment.Center,
             TextVerticalAlign = VerticalTextAlignment.Center
         };
-        Windows += new Button(app, OnButtonLoad)
+        Windows += _loadButton = new Button(app, OnButtonLoad)
         {
             Position = new Vector2(131, 15),
             Image = "pngsheet@gfx/ui/start_buttons.png?2?64x24",
@@ -129,12 +156,13 @@ public class MenuScene : Scene
         };
 
         // exit button
-        Button button = new Button(app);
-        button.Image = "gfx/menu_exit.png";
-        button.HoverImage = "gfx/menu_exit_hover.png";
-        button.Position = new Vector2(276, 163);
-        button.Command += OnButtonExit;
-        Windows += button;
+        _exitButton = new Button(app, OnButtonExit)
+        {
+            Image = "gfx/menu_exit.png",
+            HoverImage = "gfx/menu_exit_hover.png",
+            Position = new Vector2(276, 163)
+        };
+        Windows += _exitButton;
 
         // player names
         PlayerOneSwitch = new NameWindow(app)
@@ -144,11 +172,10 @@ public class MenuScene : Scene
             DownImage = "pngsheet@gfx/ui/start_buttons.png?1?112x24",
             Size = new Vector2(104, 24),
             Font = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.Gray),
+            HoverFont = selectedNameFont,
             TextHorizontalAlign = TextAlignment.Center,
             TextVerticalAlign = VerticalTextAlignment.Center
         };
-        PlayerOneSwitch.DownCommand += OnPlayerOneDown;
-        PlayerOneSwitch.UpCommand += OnPlayerOneUp;
         PlayerOneSwitch.Command += OnPlayerOneClick;
         Windows += PlayerOneSwitch;
         PlayerTwoSwitch = new NameWindow(app)
@@ -158,11 +185,10 @@ public class MenuScene : Scene
             DownImage = "pngsheet@gfx/ui/start_buttons.png?1?112x24",
             Size = new Vector2(104, 24),
             Font = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.Gray),
+            HoverFont = selectedNameFont,
             TextHorizontalAlign = TextAlignment.Center,
             TextVerticalAlign = VerticalTextAlignment.Center
         };
-        PlayerTwoSwitch.DownCommand += OnPlayerTwoDown;
-        PlayerTwoSwitch.UpCommand += OnPlayerTwoUp;
         PlayerTwoSwitch.Command += OnPlayerTwoClick;
         Windows += PlayerTwoSwitch;
 
@@ -175,14 +201,16 @@ public class MenuScene : Scene
         radio.Group = 2;
         Color = radio;
         Windows += radio;
-        radio = new Radio(app);
-        radio.IsDown = true;
-        radio.Position = new Vector2(237, 121);
-        radio.Image = "sta.ani?8";
-        radio.DownImage = "sta.ani?9";
-        radio.Mode = RadioMode.Round;
-        radio.Group = 2;
-        Windows += radio;
+        _otherColor = new Radio(app)
+        {
+            IsDown = true,
+            Position = new Vector2(237, 121),
+            Image = "sta.ani?8",
+            DownImage = "sta.ani?9",
+            Mode = RadioMode.Round,
+            Group = 2
+        };
+        Windows += _otherColor;
 
         // difficulty
         Difficulty = new(app);
@@ -295,50 +323,62 @@ public class MenuScene : Scene
 
     }
 
-    void OnPlayerOneDown()
-    {
-        if (PlayerTwoSwitch.IsDown)
-            PlayerTwoSwitch.IsDown = false;
-    }
-
-    void OnPlayerOneUp()
-    {
-        if (UsePlayerTwo)
-            PlayerTwoSwitch.IsDown = true;
-    }
-
     void OnPlayerOneClick()
     {
+        bool wasSelected = _setupSelection == SetupSelection.Player && _currentPlayer == 0;
+        if (!wasSelected)
+        {
+            PlayerOneSwitch.IsDown = UsePlayerOne;
+            SelectPlayer(0, activateName: true);
+            return;
+        }
+
+        _currentPlayer = 0;
+        _setupSelection = SetupSelection.Player;
+        if (!PlayerOneSwitch.IsDown && !UsePlayerTwo)
+        {
+            PlayerOneSwitch.IsDown = true;
+            UpdateSetupSelection();
+            return;
+        }
+
         PlayerOneSlide.ReverseAnimation = PlayerOneSwitch.IsDown;
         PlayerOneSlide.Start();
 
         UsePlayerOne = PlayerOneSwitch.IsDown;
         PlayerOneFace.FaceID = UsePlayerOne ? 0 : -1;
-        if (!UsePlayerOne)
-            PlayerOneSwitch.Name = "";
-    }
-
-    void OnPlayerTwoDown()
-    {
-        if (PlayerOneSwitch.IsDown)
-            PlayerOneSwitch.IsDown = false;
-    }
-
-    void OnPlayerTwoUp()
-    {
-        if (UsePlayerOne)
-            PlayerOneSwitch.IsDown = true;
+        PlayerOneSwitch.Name = UsePlayerOne ? GetRandomName(PlayerTwoSwitch.Name) : "";
+        SelectRemainingPlayerAfterToggle();
+        UpdateSetupSelection();
     }
 
     void OnPlayerTwoClick()
     {
+        bool wasSelected = _setupSelection == SetupSelection.Player && _currentPlayer == 1;
+        if (!wasSelected)
+        {
+            PlayerTwoSwitch.IsDown = UsePlayerTwo;
+            SelectPlayer(1, activateName: true);
+            return;
+        }
+
+        _currentPlayer = 1;
+        _setupSelection = SetupSelection.Player;
+        if (!PlayerTwoSwitch.IsDown && !UsePlayerOne)
+        {
+            PlayerTwoSwitch.IsDown = true;
+            UpdateSetupSelection();
+            return;
+        }
+
         PlayerTwoSlide.ReverseAnimation = PlayerTwoSwitch.IsDown;
         PlayerTwoSlide.Start();
 
         UsePlayerTwo = PlayerTwoSwitch.IsDown;
         PlayerTwoFace.FaceID = UsePlayerTwo ? 0 : -1;
-        if (!UsePlayerTwo)
-            PlayerTwoSwitch.Name = "";
+        PlayerTwoSwitch.Name = UsePlayerTwo ? GetRandomName(PlayerOneSwitch.Name) : "";
+        SelectRemainingPlayerAfterToggle();
+        UpdateSetupSelection();
     }
 
     void OnButtonLoad()
@@ -346,9 +386,322 @@ public class MenuScene : Scene
         app.SceneManager.SetScene("OptionsScene");
     }
 
-    private string GetRandomName()
+    public override bool OnInputAction(InputAction action)
     {
-        return "Max";
+        switch (action)
+        {
+            case InputAction.LeftArea:
+                SelectPlayer(0, activateName: true);
+                return true;
+            case InputAction.RightArea:
+                SelectPlayer(1, activateName: true);
+                return true;
+            case InputAction.Primary:
+                ActivateSetupSelection();
+                return true;
+            case InputAction.MoveUp:
+                MoveSetupSelectionUp();
+                return true;
+            case InputAction.MoveDown:
+                MoveSetupSelectionDown();
+                return true;
+            case InputAction.MoveLeft:
+                MoveSetupSelectionHorizontal(-1);
+                return true;
+            case InputAction.MoveRight:
+                MoveSetupSelectionHorizontal(1);
+                return true;
+            case InputAction.Options:
+                OnButtonLoad();
+                return true;
+            case InputAction.GlobalAction:
+                OnButtonStart();
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    public override InputAction ResolveInputAction(InputAction action) =>
+        action == InputAction.Options ? action : base.ResolveInputAction(action);
+
+    public override bool TryGetInputAction(Key key, out InputAction action)
+    {
+        if (key.IsVirtual && key.VirtualKey == SystemKey.Escape)
+        {
+            action = InputAction.Options;
+            return true;
+        }
+
+        if (!key.IsVirtual)
+        {
+            action = InputAction.None;
+            return false;
+        }
+
+        return base.TryGetInputAction(key, out action);
+    }
+
+    public override bool OnVKeyPress(SystemKey key, ModifierKeys modifier)
+    {
+        if (key != SystemKey.Tab)
+            return false;
+
+        int direction = (modifier & ModifierKeys.Shift) != 0 ? -1 : 1;
+        if (_setupSelection == SetupSelection.Player)
+            SelectPlayer((_currentPlayer + direction + 2) % 2, activateName: true);
+        else
+            SelectPlayer(direction > 0
+                ? (UsePlayerOne ? 0 : 1)
+                : (UsePlayerTwo ? 1 : 0), activateName: true);
+        return true;
+    }
+
+    public override bool WantsTextInput => _setupSelection == SetupSelection.Player && !CurrentPlayerEnabled;
+
+    public override bool OnKeyPress(char key)
+    {
+        if (_setupSelection != SetupSelection.Player || CurrentPlayerEnabled)
+            return false;
+
+        NameWindow selectedPlayer = _currentPlayer == 0 ? PlayerOneSwitch : PlayerTwoSwitch;
+        if (key == 8 || !selectedPlayer.Font.IsSupportetCharacter(key))
+            return true;
+
+        SetCurrentPlayerEnabled(true);
+        selectedPlayer.Name = "";
+        return selectedPlayer.OnKeyPress(key);
+    }
+
+    bool IsNameInputActive => PlayerOneSwitch.IsTextInputActive || PlayerTwoSwitch.IsTextInputActive;
+
+    void SelectPlayer(int player, bool activateName)
+    {
+        _currentPlayer = player;
+        _setupSelection = SetupSelection.Player;
+
+        PlayerOneSwitch.IsTextInputActive = activateName && _currentPlayer == 0 && UsePlayerOne;
+        PlayerTwoSwitch.IsTextInputActive = activateName && _currentPlayer == 1 && UsePlayerTwo;
+        UpdateSetupSelection();
+    }
+
+    void SetCurrentPlayerEnabled(bool enabled)
+    {
+        NameWindow playerSwitch = _currentPlayer == 0 ? PlayerOneSwitch : PlayerTwoSwitch;
+        bool isEnabled = _currentPlayer == 0 ? UsePlayerOne : UsePlayerTwo;
+        if (isEnabled == enabled)
+            return;
+
+        if (!enabled && !OtherPlayerEnabled)
+            return;
+
+        playerSwitch.IsDown = enabled;
+        if (_currentPlayer == 0)
+            OnPlayerOneClick();
+        else
+            OnPlayerTwoClick();
+
+        if (enabled)
+            ActivateCurrentPlayerName();
+        else
+            UpdateSetupSelection();
+    }
+
+    bool OtherPlayerEnabled => _currentPlayer == 0 ? UsePlayerTwo : UsePlayerOne;
+    bool CurrentPlayerEnabled => _currentPlayer == 0 ? UsePlayerOne : UsePlayerTwo;
+
+    void ActivateCurrentPlayerName()
+    {
+        _setupSelection = SetupSelection.Player;
+        PlayerOneSwitch.IsTextInputActive = _currentPlayer == 0 && UsePlayerOne;
+        PlayerTwoSwitch.IsTextInputActive = _currentPlayer == 1 && UsePlayerTwo;
+        UpdateSetupSelection();
+    }
+
+    void SelectStart()
+    {
+        PlayerOneSwitch.IsTextInputActive = false;
+        PlayerTwoSwitch.IsTextInputActive = false;
+        _setupSelection = SetupSelection.Start;
+        UpdateSetupSelection();
+    }
+
+    void UpdateSetupSelection()
+    {
+        PlayerOneSwitch.IsKeyboardSelected = _setupSelection == SetupSelection.Player && _currentPlayer == 0;
+        PlayerTwoSwitch.IsKeyboardSelected = _setupSelection == SetupSelection.Player && _currentPlayer == 1;
+        _loadButton.IsKeyboardSelected = _setupSelection == SetupSelection.Load;
+        _startButton.IsKeyboardSelected = _setupSelection == SetupSelection.Start;
+        Difficulty.IsKeyboardSelected = _setupSelection == SetupSelection.Difficulty;
+        GameMode.IsKeyboardSelected = _setupSelection == SetupSelection.GameMode;
+        AiPlayers.IsKeyboardSelected = _setupSelection == SetupSelection.AiPlayers;
+        _exitButton.IsKeyboardSelected = _setupSelection == SetupSelection.Exit;
+    }
+
+    void ActivateSetupSelection()
+    {
+        switch (_setupSelection)
+        {
+            case SetupSelection.Player:
+                SetCurrentPlayerEnabled(!CurrentPlayerEnabled);
+                break;
+            case SetupSelection.Load:
+                OnButtonLoad();
+                break;
+            case SetupSelection.Start:
+                OnButtonStart();
+                break;
+            case SetupSelection.Difficulty:
+                Difficulty.NextState();
+                break;
+            case SetupSelection.GameMode:
+                GameMode.NextState();
+                break;
+            case SetupSelection.AiPlayers:
+                AiPlayers.NextState();
+                break;
+            case SetupSelection.Exit:
+                OnButtonExit();
+                break;
+        }
+    }
+
+    void MoveSetupSelectionUp()
+    {
+        switch (_setupSelection)
+        {
+            case SetupSelection.Player:
+                if (!CurrentPlayerEnabled)
+                    SetCurrentPlayerEnabled(true);
+                else
+                    MoveCurrentPlayerFace(1);
+                return;
+            case SetupSelection.Start:
+                _setupSelection = SetupSelection.Load;
+                break;
+            case SetupSelection.Difficulty:
+            case SetupSelection.GameMode:
+            case SetupSelection.AiPlayers:
+            case SetupSelection.Exit:
+                _setupSelection = SetupSelection.Start;
+                break;
+            default:
+                return;
+        }
+
+        UpdateSetupSelection();
+    }
+
+    void MoveSetupSelectionDown()
+    {
+        switch (_setupSelection)
+        {
+            case SetupSelection.Player:
+                TogglePlayerColors();
+                return;
+            case SetupSelection.Load:
+                _setupSelection = SetupSelection.Start;
+                break;
+            case SetupSelection.Start:
+                _setupSelection = SetupSelection.GameMode;
+                break;
+            default:
+                return;
+        }
+
+        UpdateSetupSelection();
+    }
+
+    void TogglePlayerColors()
+    {
+        if (Color.IsDown)
+            _otherColor.IsDown = true;
+        else
+            Color.IsDown = true;
+    }
+
+    void MoveSetupSelectionHorizontal(int direction)
+    {
+        if (_setupSelection == SetupSelection.Player)
+        {
+            bool movesInward = _currentPlayer == 0 ? direction > 0 : direction < 0;
+            if (movesInward)
+                SelectStart();
+            return;
+        }
+
+        if (_setupSelection is SetupSelection.Load or SetupSelection.Start)
+        {
+            SelectPlayer(direction < 0 ? 0 : 1, activateName: true);
+            return;
+        }
+
+        if (_setupSelection is not (SetupSelection.Difficulty or SetupSelection.GameMode or
+            SetupSelection.AiPlayers or SetupSelection.Exit))
+            return;
+
+        int index = _setupSelection switch
+        {
+            SetupSelection.Difficulty => 0,
+            SetupSelection.GameMode => 1,
+            SetupSelection.AiPlayers => 2,
+            _ => 3
+        };
+        index = System.Math.Clamp(index + direction, 0, 3);
+        _setupSelection = index switch
+        {
+            0 => SetupSelection.Difficulty,
+            1 => SetupSelection.GameMode,
+            2 => SetupSelection.AiPlayers,
+            _ => SetupSelection.Exit
+        };
+        UpdateSetupSelection();
+    }
+
+    void SelectRemainingPlayerAfterToggle()
+    {
+        if (!UsePlayerOne && UsePlayerTwo)
+            _currentPlayer = 1;
+        else if (!UsePlayerTwo && UsePlayerOne)
+            _currentPlayer = 0;
+
+        PlayerOneSwitch.IsTextInputActive = _currentPlayer == 0 && UsePlayerOne;
+        PlayerTwoSwitch.IsTextInputActive = _currentPlayer == 1 && UsePlayerTwo;
+    }
+
+    void MoveCurrentPlayerFace(int direction)
+    {
+        bool isEnabled = _currentPlayer == 0 ? UsePlayerOne : UsePlayerTwo;
+        if (!isEnabled)
+            return;
+
+        FaceWindow face = _currentPlayer == 0 ? PlayerOneFace : PlayerTwoFace;
+        FaceWindow otherFace = _currentPlayer == 0 ? PlayerTwoFace : PlayerOneFace;
+        int candidate = face.FaceID;
+
+        do
+        {
+            candidate = (candidate + direction + MAX_SETUP_FACE_ID + 1) % (MAX_SETUP_FACE_ID + 1);
+        }
+        while (candidate == otherFace.FaceID);
+
+        face.FaceID = candidate;
+    }
+
+    private string GetRandomName(string? excludedName = null)
+    {
+        if (_playerNames.Length == 0)
+            return "Max";
+
+        int start = Burntime.Platform.Math.Random.Next(0, _playerNames.Length);
+        for (int offset = 0; offset < _playerNames.Length; offset++)
+        {
+            string candidate = _playerNames[(start + offset) % _playerNames.Length];
+            if (!candidate.Equals(excludedName, StringComparison.OrdinalIgnoreCase))
+                return candidate;
+        }
+
+        return _playerNames[start];
     }
 
     void OnButtonStart()
@@ -362,8 +715,8 @@ public class MenuScene : Scene
 
         NewGameInfo Info = new()
         {
-            NameOne = (string.IsNullOrEmpty(PlayerOneSwitch.Name) && PlayerOneFace.FaceID >= 0) ? GetRandomName() : PlayerOneSwitch.Name,
-            NameTwo = (string.IsNullOrEmpty(PlayerTwoSwitch.Name) && PlayerTwoFace.FaceID >= 0) ? GetRandomName() : PlayerTwoSwitch.Name,
+            NameOne = (string.IsNullOrEmpty(PlayerOneSwitch.Name) && PlayerOneFace.FaceID >= 0) ? GetRandomName(PlayerTwoSwitch.Name) : PlayerOneSwitch.Name,
+            NameTwo = (string.IsNullOrEmpty(PlayerTwoSwitch.Name) && PlayerTwoFace.FaceID >= 0) ? GetRandomName(PlayerOneSwitch.Name) : PlayerTwoSwitch.Name,
             FaceOne = PlayerOneFace.FaceID,
             FaceTwo = PlayerTwoFace.FaceID,
             Difficulty = Difficulty.State,
@@ -380,6 +733,8 @@ public class MenuScene : Scene
 
     protected override void OnActivateScene(object parameter)
     {
+        _currentPlayer = 0;
+        _setupSelection = SetupSelection.Player;
         PlayerOneSlide.Stop();
         PlayerOneSlide.GoLastFrame();
         PlayerTwoSlide.Stop();
@@ -395,6 +750,8 @@ public class MenuScene : Scene
         Difficulty.State = 0;
         GameMode.State = 0;
         AiPlayers.State = 0;
+        SetCurrentPlayerEnabled(true);
+        UpdateSetupSelection();
     }
 
     void OnButtonExit()

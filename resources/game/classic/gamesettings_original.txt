@@ -30,8 +30,6 @@ dog_health            = 31
 trader_attack         = 60
 mutant_attack         = 40
 dog_attack            = 30
-ai_camp_interval      = 3 6 ' creates every 3 - 6 turns
-ai_camp_max_advance   = 2 ' creates at most 2 camps more than the leading human player
 
 [1] ' difficulty normal
 start_locations_1   = 1 8 7
@@ -65,8 +63,6 @@ dog_health            = 31
 trader_attack         = 60
 mutant_attack         = 40
 dog_attack            = 30
-ai_camp_interval      = 1 5 ' creates every 3 - 5 turns
-ai_camp_max_advance   = 5 ' creates at most 5 camps more than the leading human player
 
 [2] ' difficulty hard
 start_locations_1   = 5 8
@@ -100,8 +96,6 @@ dog_health            = 31
 trader_attack         = 60
 mutant_attack         = 40
 dog_attack            = 30
-ai_camp_interval      = 0 3 ' creates every 0 - 3 turns
-ai_camp_max_advance   = 99999 ' creates camps as fast as possible
 
 [region_item_0]
 items     = item_rat_trap

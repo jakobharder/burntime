@@ -21,6 +21,7 @@ public class File
 
     public virtual String FullPath { get { return null; } }
     public virtual bool HasFullPath { get { return false; } }
+    public virtual DateTime? LastWriteTimeUtc { get { return null; } }
 
     public bool CanWrite { get { return stream.CanWrite; } }
 

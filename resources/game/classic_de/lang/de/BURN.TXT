@@ -667,7 +667,7 @@ Hütte mit Wasser}
 Brunnen}
 Höhle mit Wasser}
 Wasserstelle}
-Höhle}
+Hohe Höhle}
 Eingang}
 Ruine}
 Eingang}

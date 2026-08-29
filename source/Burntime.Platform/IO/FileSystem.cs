@@ -183,6 +183,22 @@ public class FileSystem
         return vfs.ExistsFile(path);
     }
 
+    static public DateTime? GetLastWriteTimeUtc(FilePath path)
+    {
+        File? file = GetFile(path);
+        if (file is null)
+            return null;
+
+        try
+        {
+            return file.LastWriteTimeUtc;
+        }
+        finally
+        {
+            file.Close();
+        }
+    }
+
     //// check file existance
     //static public bool ExistsFile(FilePath path, bool allowLocalization)
     //{

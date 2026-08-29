@@ -1,8 +1,20 @@
 # Burntime
 
-Burntime is a remaster and expansion of Max Design's PC strategy game 'Burntime' from 1993. It includes improvements like doubled resolution and wide screen support.
+Burntime is a remaster and expansion of Max Design's 1993 strategy game 'Burntime'.
+It recreates the original game with remastered graphics and modern platform support, while also adding new and expanded gameplay.
 
 ![](./doc/screens.jpg)
+
+## Features
+
+- Faithful 1993 mode alongside expanded gameplay
+- Remastered graphics, widescreen and modern resolutions
+- New locations, items and gameplay mechanics
+- Reworked AI and difficulty levels
+- Mouse, keyboard and gamepad controls
+- Native Windows, macOS and Linux support
+
+[Full feature overview](./resources/Features.md)
 
 ## How to get
 
@@ -13,7 +25,6 @@ Burntime is a remaster and expansion of Max Design's PC strategy game 'Burntime'
 
 - Recent changes: [Changelog.md](./resources/Changelog.md)
 - Issues &amp; requests: [GitHub issues](https://github.com/jakobharder/burntime/issues) or [Burntime.org (German forum)](https://www.burntime.org/forum/viewtopic.php?t=323)
-- [Feature Overview](./resources/Features.md)
 
 ## Development
 
@@ -49,8 +60,28 @@ scripts/ai-simulate.sh --turns 100 --difficulty hard --seed 123 --report ai-run.
 - `--seed`: random seed for reproducible runs; default `1`.
 - `--report`: optional output file; without it, the report is printed to the terminal.
 - `--extended`: optionally use the extended-game item set instead of 1993 rules.
+- `--load-save`: start the simulation from an existing `.sav` instead of a new game.
+- `--save-at-end`: save the resulting game after the requested turns complete.
 
 The report summarizes player condition, travel, camps, stationed NPCs, and major timeline events.
+
+For example, continue a player save for 25 turns and write a new save:
+
+```sh
+scripts/ai-simulate.sh --load-save old.sav --turns 25 --save-at-end continued.sav
+```
+
+### Save-game compatibility tests
+
+Place historical save fixtures below `tests/savegames`, grouped by release, and run:
+
+```sh
+scripts/savegame-test.sh
+```
+
+Every `.sav` is loaded recursively and advanced through at least one complete
+turn, including human-controlled player slots. See
+[`tests/savegames/README.md`](tests/savegames/README.md) for the fixture layout.
 
 Check that the standard AI baseline has not changed:
 
@@ -71,9 +102,12 @@ Visual Studio users: open `source/Burntime.sln` and select `Burntime.MonoGame` a
 
 ## Credits
 
-This project is not affiliated in any way with Max Design and/or the original creators.
-The original game, graphics and other assets are the property of Max Design and their original creators.
+Burntime is developed and maintained by Jakob Harder, with contributions from the community.
 
-A big thanks to Martin Lasser, Wilfried Reiter and Hannes Seifert for allowing this community remake effort to use the original graphics and music!
+Burntime is a community project and is not affiliated with Max Design or the original developers of Burntime.
+The original game, graphics, music, and other assets were created by Max Design and the original development team.
 
-See full [list of contributors](./resources/README.md#notes)
+Special thanks to to Martin Lasser, Wilfried Reiter and Hannes Seifert for allowing
+this remaster to use the original graphics and music.
+
+See the full [list of contributors](./resources/README.md#credits).
