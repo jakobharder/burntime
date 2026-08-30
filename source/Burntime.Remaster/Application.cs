@@ -221,7 +221,7 @@ namespace Burntime.Remaster
         public bool DisableMusic => !HasAmigaMusic && !HasDosMusic;
         public bool HasAmigaMusic { get; private set; }
         public bool HasDosMusic { get; private set; }
-        private string _lastPlayingSong;
+        private string? _lastPlayingSong;
 
         public enum MusicModes
         {
@@ -296,7 +296,7 @@ namespace Burntime.Remaster
                 MusicMode = MusicModes.Remaster;
                 Engine.Music.Enabled = true;
                 Engine.Music.LoadSonglist("songs_dos.txt");
-                Engine.Music.Play(_lastPlayingSong ?? "radio");
+                Engine.Music.Play(ResumeSongOrRadio());
             }
             else if ((MusicMode == MusicModes.Off && HasAmigaMusic)
                 || (MusicMode == MusicModes.Remaster && HasAmigaMusic))
@@ -305,7 +305,7 @@ namespace Burntime.Remaster
                 Engine.Music.Enabled = true;
                 Engine.Music.LoadSonglist("songs_amiga.txt");
                 if (Engine.Music.Playing is null)
-                    Engine.Music.Play(_lastPlayingSong ?? "radio");
+                    Engine.Music.Play(ResumeSongOrRadio());
             }
             else if (MusicMode == MusicModes.Amiga
                 || (MusicMode == MusicModes.Remaster && !HasAmigaMusic))
@@ -317,6 +317,10 @@ namespace Burntime.Remaster
                 Engine.Music.Stop();
             }
         }
+
+        string ResumeSongOrRadio() => _lastPlayingSong is not null && Engine.Music.CanPlay(_lastPlayingSong)
+            ? _lastPlayingSong
+            : "radio";
         #endregion
 
         public override string Language

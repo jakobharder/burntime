@@ -64,7 +64,11 @@ public sealed class MusicPlayback : IMusic
 
         if (_music is not null && Playing is not null)
         {
-            _playlist.Insert(0, Playing);
+            string? nextSong = CanPlay(Playing)
+                ? Playing
+                : CanPlay("radio") ? "radio" : null;
+            if (nextSong is not null)
+                _playlist.Insert(0, nextSong);
             _music.Stop();
         }
     }
@@ -78,6 +82,16 @@ public sealed class MusicPlayback : IMusic
             return FileSystem.ExistsFile(songFilePath);
 
         return false;
+    }
+
+    public string? ResolveSong(string songName)
+    {
+        if (FileSystem.ExistsFile(songName))
+            return songName;
+
+        return _songMapping.TryGetValue(songName, out string? songFilePath)
+            ? songFilePath
+            : null;
     }
 
     public void Play(string fileName, bool loop = true)

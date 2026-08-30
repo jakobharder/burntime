@@ -1,20 +1,21 @@
 diner=amiga_pub.ogg        ' diner and pub are same on Amiga
-texaco=song_kampf.ogg     ' scene did not exist on Amiga
-doctor=amiga_doctor.ogg    ' ok
-room=amiga_room.ogg
-room_water=amiga_room.ogg
+texaco=amiga_kampf.ogg     ' scene did not exist on Amiga
+doctor=amiga_bunker4.ogg    ' ok
+room=amiga_bunker1.ogg
+room_water=amiga_bunker1.ogg
+room2=amiga_bunker4.ogg
 cave=amiga_room.ogg
 cave_water=amiga_room.ogg
 open_water=amiga_water.ogg
-building=song_ende.ogg    ' scene did not exist on Amiga
-ruin=song_namen.ogg       ' scene did not exist on Amiga
+building=amiga_bunker2.ogg    ' scene did not exist on Amiga
+ruin=amiga_namen.ogg       ' scene did not exist on Amiga
 death=amiga_death.ogg      ' ok
 trader=amiga_trader.ogg    ' ok
 victory=amiga_radio.ogg    ' victory and radio are same on Amiga
-hidden=song_fabrik.ogg    ' scene did not exist on Amiga
-info=amiga_victory.ogg     ' ok, but Amiga uses fabrik for toxic places and bunker3 for radioactive places
-info_toxic=song_fabrik.ogg
-info_irradiated=song_bunker3.ogg
+hidden=amiga_fabrik.ogg    ' scene did not exist on Amiga
+info=amiga_victory.ogg
+info_toxic=amiga_fabrik.ogg
+info_irradiated=amiga_bunker3.ogg
 church=amiga_church.ogg    ' ok
 start=amiga_start.ogg      ' ok
 radio=amiga_radio.ogg      ' ok
@@ -23,19 +24,3 @@ talking=amiga_talking.ogg  ' ok
 pub=amiga_pub.ogg          ' ok
 intro=amiga_intro.ogg      ' ok
 water=amiga_water.ogg
-
-' Unused songs:
-' namen (??? use for ruin?)
-' fabrik -> info in toxic places
-' bunker1 -> building room (room is only for caves)
-' bunker2 -> well (water is only for open water sources)
-' bunker3 -> info in radioactive places (??? use for building?)
-' copy -> copy protection scene (??? use for scene?)
-' kampf -> ? (use for scene?)
-' namen -> ? (use for scene?)
-' ende -> ?
-
-' Other notes:
-' Inventory is silent on Amiga
-' Texaco and other image scenes don't exist, except the church
-' Amiga radio sounds similar to PC diner

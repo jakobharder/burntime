@@ -141,7 +141,8 @@ namespace Burntime.Remaster.Scenes
             {
                 Music = classic.InventoryBackground switch
                 {
-                    >= 0 and <= 2 => "room",
+                    0 => "room2",
+                    1 or 2 => "room",
                     3 => "cave",
                     4 or 5 => "room_water",
                     6 or 8 => "open_water",
