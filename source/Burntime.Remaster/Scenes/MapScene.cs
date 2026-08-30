@@ -564,7 +564,7 @@ namespace Burntime.Remaster
 
         static float GetDirectionalScore(Vector2 difference, Vector2 direction, float distance)
         {
-            const float AngularWeight = 0.5f;
+            const float AngularWeight = 0.75f;
             double alignment = System.Math.Clamp(GetAlignment(difference, direction, distance), -1f, 1f);
             double normalizedAngle = System.Math.Acos(alignment) / (System.Math.PI / 4.0);
             return distance * (1f + AngularWeight * (float)(normalizedAngle * normalizedAngle));
