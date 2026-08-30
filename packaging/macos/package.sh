@@ -71,10 +71,11 @@ rm -rf \
 
 find "$publish_dir" -name '*.pdb' -delete
 cp -R "$publish_dir"/. "$app_path/Contents/MacOS/"
-# Keep data in the bundle's resource area. The link preserves the existing
-# AppContext.BaseDirectory/game lookup without putting non-code in MacOS.
+# Keep non-code data in the bundle's resource area. The game link preserves the
+# existing AppContext.BaseDirectory/game lookup without putting data in MacOS.
 mv "$app_path/Contents/MacOS/game" "$app_path/Contents/Resources/game"
 ln -s ../Resources/game "$app_path/Contents/MacOS/game"
+mv "$app_path/Contents/MacOS/licenses" "$app_path/Contents/Resources/licenses"
 sed -e "s/@VERSION@/$version/g" -e "s/@BUILD_VERSION@/$build_version/g" \
   "$repo_root/packaging/macos/Info.plist.in" > "$app_path/Contents/Info.plist"
 mkdir -p "$artifacts_dir/swift-cache"
