@@ -47,7 +47,7 @@ namespace Burntime.Remaster.Scenes
             button.SetTextOnly();
             Windows += button;
 
-            waterSourceFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(72, 72, 76));
+            waterSourceFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.Gray);
 
             Windows += dialog = new DialogWindow(app)
             {
