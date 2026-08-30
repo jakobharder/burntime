@@ -1,0 +1,10 @@
+Gesicht
+Farbe
+Starten
+Laden
+Ende
+Okay
+Deaktivieren
+Name ändern
+Aktivieren
+Umschalten

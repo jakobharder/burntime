@@ -1,0 +1,10 @@
+Cara
+Color
+Empezar
+Cargar
+Salir
+Vale
+Desactivar
+Cambiar nombre
+Activar
+Alternar

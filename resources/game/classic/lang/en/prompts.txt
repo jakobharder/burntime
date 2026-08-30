@@ -1,0 +1,10 @@
+Face
+Color
+Start
+Load
+Exit
+Okay
+Disable
+Change name
+Enable
+Toggle

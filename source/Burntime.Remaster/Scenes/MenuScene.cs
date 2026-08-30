@@ -43,6 +43,7 @@ public class MenuScene : Scene
     readonly Button _loadButton;
     readonly Button _startButton;
     readonly Button _exitButton;
+    readonly InputPromptOverlay _promptOverlay;
     Burntime.Platform.IO.ConfigFile conversionTable;
     readonly string[] _playerNames;
 
@@ -164,6 +165,15 @@ public class MenuScene : Scene
         };
         Windows += _exitButton;
 
+        // Input prompts are scene-owned: place the reusable overlay once, then
+        // replace its contents from UpdateSetupSelection as focus changes.
+        Windows += _promptOverlay = new InputPromptOverlay(app)
+        {
+            HorizontalAlignment = PositionAlignment.Right,
+            VerticalAlignment = PositionAlignment.Right
+        };
+        UpdatePromptOverlayPosition();
+
         // player names
         PlayerOneSwitch = new NameWindow(app)
         {
@@ -252,6 +262,14 @@ public class MenuScene : Scene
         base.OnResizeScreen();
 
         Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+        UpdatePromptOverlayPosition();
+    }
+
+    void UpdatePromptOverlayPosition()
+    {
+        // Same bottom-right screen anchor as the version label. As a child
+        // window, the overlay position is expressed relative to this scene.
+        _promptOverlay.Position = app.Engine.Resolution.Game - Position - 6;
     }
 
     public override void OnRender(RenderTarget target)
@@ -556,6 +574,41 @@ public class MenuScene : Scene
         GameMode.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.GameMode;
         AiPlayers.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.AiPlayers;
         _exitButton.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.Exit;
+        UpdatePromptOverlay();
+    }
+
+    void UpdatePromptOverlay()
+    {
+        InputPrompt primary = _setupSelection switch
+        {
+            SetupSelection.Load => new("A", "@prompts?3"),
+            SetupSelection.Start => new("A", "@prompts?2"),
+            SetupSelection.Exit => new("A", "@prompts?4"),
+            SetupSelection.Player when !CurrentPlayerEnabled => new("A", "@prompts?8"),
+            SetupSelection.Player when OtherPlayerEnabled => new("A", "@prompts?6"),
+            SetupSelection.Player => new("A", "@prompts?7"),
+            _ => new("A", "@prompts?9")
+        };
+
+        if (_setupSelection == SetupSelection.Player && CurrentPlayerEnabled)
+        {
+            _promptOverlay.SetGamepadPrompts(
+                new("LB/RB", "@prompts?0"),
+                new("X", "@prompts?1"),
+                primary,
+                new("Y", "@prompts?2"));
+            _promptOverlay.SetKeyboardPrompts(
+                new("Shift+Left/Right", "@prompts?0"),
+                new("Shift+Up/Down", "@prompts?1"),
+                new("Enter", primary.Label),
+                new("X", "@prompts?2"));
+            return;
+        }
+
+        _promptOverlay.SetGamepadPrompts(primary, new("Y", "@prompts?2"));
+        _promptOverlay.SetKeyboardPrompts(
+            new("Enter", primary.Label),
+            new("X", "@prompts?2"));
     }
 
     public override void OnUpdate(float elapsed)
