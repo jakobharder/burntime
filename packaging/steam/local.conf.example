@@ -1,0 +1,15 @@
+# Copy this file to local.conf and fill in the values for your machine/app.
+# local.conf is ignored by Git. Do not add passwords, Steam Guard codes, or
+# SteamCMD login-token files here.
+
+# Depot IDs are public Steamworks configuration.
+: "${STEAM_WINDOWS_DEPOT_ID:=3269081}"
+: "${STEAM_MACOS_DEPOT_ID:=3269083}"
+: "${STEAM_LINUX_DEPOT_ID:=3269082}"
+: "${STEAM_ACCOUNT:=}"
+: "${STEAM_CONTENT_BUILDER:=}"
+
+: "${STEAM_APP_ID:=3269080}"
+: "${STEAM_BRANCH:=test}"
+: "${STEAM_BUILD_DESC:=Burntime multiplatform test}"
+: "${STEAM_GITHUB_REPOSITORY:=jakobharder/burntime}"

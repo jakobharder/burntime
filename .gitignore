@@ -10,3 +10,4 @@ bindebug
 *~lock~
 __pycache__
 .cache
+/packaging/steam/local.conf
