@@ -256,20 +256,6 @@ namespace Burntime.Remaster
                 return true;
             }
 
-            if (action == InputAction.LeftArea)
-            {
-                if (!view.Location.IsCity)
-                    OnMenuSpeak();
-                return true;
-            }
-
-            if (action == InputAction.RightArea)
-            {
-                if (!view.Location.IsCity)
-                    OnMenuFight();
-                return true;
-            }
-
             if (action == InputAction.ToggleInteractionMode)
             {
                 if (!view.Location.IsCity)

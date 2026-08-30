@@ -43,6 +43,7 @@ namespace Burntime.Remaster.Logic
         float movementElapsed;
 
         const float WALK_SPEED = 35;
+        const float CONTROLLED_WALK_SPEED = 50;
         const float TALKING_DISTANCE = 30;
         const float PROXIMITY_PAUSE_TIME = 10;
 
@@ -698,13 +699,15 @@ namespace Burntime.Remaster.Logic
             Player activePlayer = container.Root.CurrentPlayer as Player;
             bool isActiveGroup = activePlayer?.Group.Contains(this) == true;
             bool isPlayerControlled = activePlayer?.SelectedCharacter == this || Mind is AI.PlayerControlledMind;
-            Path.Speed = isActiveGroup || isPlayerControlled || Mind is not AI.SimpleMind
-                ? WALK_SPEED
-                : Class == CharClass.Dog
+            Path.Speed = isActiveGroup || isPlayerControlled
+                ? CONTROLLED_WALK_SPEED
+                : Mind is not AI.SimpleMind
                     ? WALK_SPEED
-                    : Class == CharClass.Mutant
-                        ? WALK_SPEED / 2
-                        : WALK_SPEED * 0.66f;
+                    : Class == CharClass.Dog
+                        ? WALK_SPEED
+                        : Class == CharClass.Mutant
+                            ? WALK_SPEED / 2
+                            : WALK_SPEED * 0.66f;
 
             bool isHovered = Location?.HoverCharacter == this;
             bool isInTalkingDistance = IsHuman && !isActiveGroup && !isPlayerControlled &&
@@ -776,9 +779,11 @@ namespace Burntime.Remaster.Logic
                 ? Path.Process(loc.Map.Mask, Position, pathElapsed)
                 : Position;
 
-            Vector2 dir = position - old;
-            if (dir == Vector2.Zero && pathElapsed == 0 && movementElapsed > 0 && Path.MoveTo != Position)
+            Vector2f dir = position - old;
+            if (dir == Vector2f.Zero && pathElapsed == 0 && movementElapsed > 0 && Path.MoveTo != Position)
                 dir = Path.MoveTo - Position;
+            if (Path.Speed > 0 && Path.MovementDirection != Vector2f.Zero)
+                dir = Path.MovementDirection;
             if (System.Math.Abs(dir.x) > 0.01f || System.Math.Abs(dir.y) > 0.01f)
             {
                 if (dir.y < 0 /*&& System.Math.Abs(dir.y) > System.Math.Abs(dir.x)*/) // up

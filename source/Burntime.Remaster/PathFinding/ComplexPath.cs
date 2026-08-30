@@ -533,7 +533,7 @@ namespace Burntime.Remaster.PathFinding
 
         public override Vector2 Process(PathMask mask, Vector2 position, float elapsed)
         {
-            this.position = position;
+            this.position = BeginMovement(position);
             Vector2f dif = move - this.position;
 
             float elapsedSpeed =  speed* elapsed;
@@ -542,7 +542,7 @@ namespace Burntime.Remaster.PathFinding
             if (dif.Length < 0.1f)
             {
                 path.Clear();
-                return position;
+                return CommitMovement(this.position);
             }
 
             // moveto position differs from active path goal, recalculate path
@@ -580,7 +580,7 @@ namespace Burntime.Remaster.PathFinding
                 }
             }
 
-            return this.position;
+            return CommitMovement(this.position);
         }
 
         public override void DebugRender(Burntime.Platform.Graphics.RenderTarget target)
