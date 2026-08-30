@@ -94,7 +94,7 @@ namespace Burntime.Platform.Resource
                     LinearFiltering = true
                 };
 
-                resource.Load(sprite, processor.CharInfo, processor.Kerning, processor.Offset, processor.Size.y);
+                resource.Load(sprite, processor.CharInfo, processor.Kerning, processor.Offset, processor.GlyphHeight);
                 if (isNewResource)
                     fonts.Add(info, resource);
 
