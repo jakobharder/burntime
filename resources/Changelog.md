@@ -1,6 +1,6 @@
 ﻿# Burntime Changelog
 
-## [Unreleased]
+## [1.1-rc1] (2026-08-29)
 
 ### Changes
 

@@ -5,6 +5,7 @@ on:
     branches: [ main ]
     paths:
       - "source/**"
+      - "scripts/savegame-test.sh"
       - "tests/savegames/**"
       - "resources/licenses/**"
       - ".github/workflows/linux.yml"
@@ -34,8 +35,8 @@ jobs:
     - name: Test historical save games
       shell: bash
       run: |
-        if find tests/savegames -type f -iname '*.sav' | grep -q .; then
-          bin/Release/linux-x64/publish/Burntime --savegame-test tests/savegames
+        if find tests/savegames -type f \( -iname '*.sav' -o -iname '*.sav.zip' \) | grep -q .; then
+          bash scripts/savegame-test.sh
         else
           echo "No historical save-game fixtures checked in yet."
         fi
