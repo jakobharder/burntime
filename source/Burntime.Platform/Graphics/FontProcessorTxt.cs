@@ -11,10 +11,12 @@ namespace Burntime.Platform.Graphics
     {
         Vector2 size;
         int offset;
+        int glyphHeight;
         Vector2f factor;
 
         public Vector2 Size { get { return size; } }
         public int Offset { get { return offset; } }
+        public int GlyphHeight { get { return glyphHeight; } }
         public Vector2f Factor { get { return factor; } }
 
         public Dictionary<char, CharInfo> CharInfo { get { return charInfo; } }
@@ -53,6 +55,7 @@ namespace Burntime.Platform.Graphics
             // Round at the base export scale first. Higher-resolution atlases are
             // exact integer multiples of that rasterization.
             height = (int)System.Math.Round(height * scale.y) * multiplier;
+            glyphHeight = height;
 
             charInfo = new Dictionary<char, CharInfo>();
             kerning = new Dictionary<string, int>();

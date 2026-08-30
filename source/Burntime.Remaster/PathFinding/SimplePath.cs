@@ -18,7 +18,7 @@ namespace Burntime.Remaster.PathFinding
 
         public override Vector2 Process(PathMask mask, Vector2 position, float elapsed)
         {
-            this.position = position;
+            this.position = BeginMovement(position);
             Vector2f walkVector = moveTo - this.position;
 
             // forecast position, half a mask tile ahead
@@ -28,7 +28,7 @@ namespace Burntime.Remaster.PathFinding
 
             // quit if goal is reached
             if (walkVector.Length < 0.1f)
-                return position;
+                return CommitMovement(this.position);
 
             if (walkVector.Length > speedElapsed)
             {
@@ -49,7 +49,7 @@ namespace Burntime.Remaster.PathFinding
             else // otherwise just cancel walking
                 moveTo = this.position;
 
-            return this.position;
+            return CommitMovement(this.position);
         }
 
         public override void DebugRender(Burntime.Platform.Graphics.RenderTarget target)

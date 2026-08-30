@@ -168,15 +168,21 @@ namespace Burntime.Remaster.Scenes
         {
             BurntimeClassic classic = app as BurntimeClassic;
             int city = classic.InfoCity;
+            Location loc = classic.Game.World.Locations[city];
 
-            if (classic.Game.World.Locations[city].Danger == null)
+            Music = loc.Danger?.Type switch
+            {
+                "gas" => "info_toxic",
+                "radiation" => "info_irradiated",
+                _ => "info"
+            };
+
+            if (loc.Danger == null)
                 danger.Background = null;
             else
             {
-                danger.Background = classic.Game.World.Locations[city].Danger.InfoIcon.ID;
+                danger.Background = loc.Danger.InfoIcon.ID;
             }
-
-            Location loc = classic.Game.World.Locations[city];
 
             if (loc.Production != null)
             {

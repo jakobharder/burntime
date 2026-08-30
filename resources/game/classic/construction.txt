@@ -31,7 +31,7 @@ main_items=item_defective_two_way_radio
 class=technician
 
 [item_protective_suit]
-items=item_gas_mask item_gloves item_protective_overall item_boots
+items=item_protective_overall item_gas_mask item_gloves item_boots
 dialog=506
 main_items=item_protective_overall
 class=technician

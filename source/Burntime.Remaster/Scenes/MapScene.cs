@@ -19,6 +19,14 @@ namespace Burntime.Remaster
 
         public override bool TryGetInputAction(Key key, out InputAction action)
         {
+            if (_cheatCommand.Length > 0)
+            {
+                if (key.IsVirtual && key.VirtualKey == SystemKey.Escape)
+                    _cheatCommand = string.Empty;
+                action = InputAction.None;
+                return false;
+            }
+
             if (key.IsVirtual && key.VirtualKey == SystemKey.Escape)
             {
                 action = InputAction.Options;
@@ -41,6 +49,8 @@ namespace Burntime.Remaster
         bool _followPlayerAfterPan;
         float _nextTurnHoldTime;
         bool _nextTurnTriggered;
+        string _cheatCommand = string.Empty;
+        bool _cheatDialogActive;
 
         private bool _infoMode
         {
@@ -115,6 +125,29 @@ namespace Burntime.Remaster
         {
             _cursorAni.Show();
             _keyboardSelection.IsVisible = true;
+
+            if (!_cheatDialogActive)
+                return;
+
+            _cheatDialogActive = false;
+            if (_dialog.ResultChoice < 0)
+                return;
+
+            ClassicGame game = BurntimeClassic.Instance.Game;
+            game.CheatsEnabled = true;
+
+            switch (_dialog.ResultChoice)
+            {
+                case 0:
+                    OnFastTravel();
+                    break;
+                case 1:
+                    RefillPlayer();
+                    break;
+                case 2:
+                    SpawnCheatItems();
+                    break;
+            }
         }
 
         public override void OnResizeScreen()
@@ -132,45 +165,81 @@ namespace Burntime.Remaster
             game.World.ActivePlayerObj.MapScrollPosition = e.Offset;
         }
 
-        private string enteredText = string.Empty;
         public override bool OnKeyPress(char key)
         {
-            if (app.GameState is not ClassicGame game)
+            if (app.GameState is not ClassicGame)
                 return false;
 
             key = char.ToLowerInvariant(key);
 
-            if (!game.CheatsEnabled)
+            if (key == '/')
             {
-                enteredText += key;
-                if (enteredText.ToLower().EndsWith("petko", StringComparison.OrdinalIgnoreCase))
-                {
-                    game.CheatsEnabled = true;
-
-                    var cheatMessage = Conversation.Simple(game.ResourceManager, "newburn?46");
-                    _dialog.SetCharacter(view.Player.Character, cheatMessage);
-                    _dialog.Show();
-                }
-                if (enteredText.Length > 30)
-                    enteredText = enteredText[5..];
+                _cheatCommand = "/";
+                return true;
             }
-            else
+
+            if (_cheatCommand.Length > 0)
             {
-                if (key == '9')
+                if (key == '\b')
                 {
-                    view.Player.Character.Food = 9;
-                    view.Player.Character.Water = 5;
-                    view.Player.Character.Health = 100;
+                    _cheatCommand = _cheatCommand.Length > 1
+                        ? _cheatCommand[..^1]
+                        : string.Empty;
                     return true;
                 }
-                else if (key == 'p')
+
+                _cheatCommand += key;
+                if (_cheatCommand == "/petko")
                 {
-                    ToggleFastTravel();
+                    _cheatCommand = string.Empty;
+                    ShowCheatDialog();
                     return true;
                 }
+
+                if (!"/petko".StartsWith(_cheatCommand, StringComparison.OrdinalIgnoreCase))
+                    _cheatCommand = string.Empty;
+                return true;
             }
 
             return base.OnKeyPress(key);
+        }
+
+        void ShowCheatDialog()
+        {
+            Conversation conversation = new()
+            {
+                Text = new[] { "Cheats", "" },
+                Choices = new[]
+                {
+                    new ConversationChoice { Text = "Travel", Action = new ConversationAction(ConversationActionType.Exit) },
+                    new ConversationChoice { Text = "Refill", Action = new ConversationAction(ConversationActionType.Exit) },
+                    new ConversationChoice { Text = "Items", Action = new ConversationAction(ConversationActionType.Exit) }
+                }
+            };
+
+            _cheatDialogActive = true;
+            _dialog.SetCharacter(view.Player.Character, conversation);
+            _dialog.Show();
+        }
+
+        void RefillPlayer()
+        {
+            view.Player.Character.Food = 9;
+            view.Player.Character.Water = 5;
+            view.Player.Character.Health = 100;
+        }
+
+        void SpawnCheatItems()
+        {
+            ClassicGame game = BurntimeClassic.Instance.Game;
+            foreach (string setting in new[] { "insert_items_1", "insert_items_2", "insert_items_3" })
+            {
+                foreach (string id in app.Settings["debug"].GetStrings(setting))
+                {
+                    Item item = game.ItemTypes.Generate(id);
+                    game.World.ActiveLocationObj.Items.DropAt(item, view.Player.Character.Position);
+                }
+            }
         }
 
         private void ToggleFastTravel()
@@ -215,7 +284,9 @@ namespace Burntime.Remaster
                 app.SceneManager.SetScene("WaitScene");
             }
 
-            if (_followPlayerAfterPan)
+            if (app.MouseInputVisible)
+                _followPlayerAfterPan = false;
+            else if (_followPlayerAfterPan)
             {
                 Vector2 position = view.Map.Entrances[game.World.ActivePlayerObj.Location.Id].Area.Center;
                 _followPlayerAfterPan = !view.FollowWithinMiddleThird(position, Elapsed);
@@ -564,7 +635,7 @@ namespace Burntime.Remaster
 
         static float GetDirectionalScore(Vector2 difference, Vector2 direction, float distance)
         {
-            const float AngularWeight = 0.5f;
+            const float AngularWeight = 0.75f;
             double alignment = System.Math.Clamp(GetAlignment(difference, direction, distance), -1f, 1f);
             double normalizedAngle = System.Math.Acos(alignment) / (System.Math.PI / 4.0);
             return distance * (1f + AngularWeight * (float)(normalizedAngle * normalizedAngle));
@@ -572,8 +643,7 @@ namespace Burntime.Remaster
 
         bool CanShowInfo(Logic.Player player, Logic.Location location)
         {
-            ClassicGame game = BurntimeClassic.Instance.Game;
-            return game.CheatsEnabled || location.Player == player ||
+            return location.Player == player ||
                 !location.IsCity && location == player.Location && location.Player == null;
         }
 
@@ -655,7 +725,7 @@ namespace Burntime.Remaster
                 if (_cameraPanActive)
                 {
                     _cameraPanActive = false;
-                    _followPlayerAfterPan = true;
+                    _followPlayerAfterPan = !app.MouseInputVisible;
                     _followKeyboardSelection = false;
                 }
                 return;
@@ -742,8 +812,7 @@ namespace Burntime.Remaster
                 if (_infoMode)
                 {
                     // only show if current location or owned by player
-                    if (BurntimeClassic.Instance.Game.CheatsEnabled ||
-                        clickedLocation.Player == player ||
+                    if (clickedLocation.Player == player ||
                         (!clickedLocation.IsCity && Number == player.Location.Id && clickedLocation.Player == null))
                     {
                         BurntimeClassic.Instance.InfoCity = Number;

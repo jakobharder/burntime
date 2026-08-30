@@ -57,6 +57,12 @@ internal class OptionsSettingsPage : Container
             Position = new Vector2(38, 98),
             IsTextOnly = true
         };
+        if (!app.Engine.SupportsFullscreenToggle)
+        {
+            _fullscreenToggle.IsEnabled = false;
+            _fullscreenToggle.Hide();
+            _languageToggle.Position = new Vector2(38, 78);
+        }
         Windows += _hintText = new Button(app)
         {
             Font = _fonts.Blue,

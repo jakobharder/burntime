@@ -60,11 +60,22 @@ namespace Burntime.MonoGame
 
         bool _isFullscreen = false;
         bool _requestFullscreen = false;
+        public bool SupportsFullscreenToggle { get; } = !IsGamescopeSession() && !IsSteamDeck();
         public bool IsFullscreen 
         {
             get => _isFullscreen;
-            set => _requestFullscreen = value; // value will be handled in render thread
+            set
+            {
+                if (SupportsFullscreenToggle)
+                    _requestFullscreen = value; // value will be handled in render thread
+            }
         }
+
+        static bool IsGamescopeSession() =>
+            !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GAMESCOPE_WAYLAND_DISPLAY"));
+
+        static bool IsSteamDeck() =>
+            Environment.GetEnvironmentVariable("SteamDeck") == "1";
 
         bool _initialized = false;
 
@@ -332,7 +343,6 @@ namespace Burntime.MonoGame
             }
             else
             {
-                _burntimeApp.LastInputMode = InputMode.Keyboard;
                 var keyboard = Microsoft.Xna.Framework.Input.Keyboard.GetState();
                 DeviceManager?.KeyPress(e.Character, GetModifiers(keyboard));
             }
@@ -358,11 +368,12 @@ namespace Burntime.MonoGame
 
             var keyboard = Microsoft.Xna.Framework.Input.Keyboard.GetState();
             var keys = keyboard.GetPressedKeys();
+            ModifierKeys modifier = GetModifiers(keyboard);
 
             _burntimeApp.InputManager.ClearDown(InputSource.Keyboard);
             foreach (var key in keys)
             {
-                Key? bindingKey = ConvertToBindingKey(key);
+                Key? bindingKey = ConvertToBindingKey(key, modifier);
                 if (bindingKey.HasValue)
                 {
                     InputAction action = _burntimeApp.KeyboardActionBindings.GetAction(bindingKey.Value);
@@ -371,18 +382,16 @@ namespace Burntime.MonoGame
                 }
             }
 
-            ModifierKeys modifier = GetModifiers(keyboard);
-            
             foreach (var key in keys)
             {
                 if (_previousKeyboardState.IsKeyUp(key))
                 {
-                    if (key is not (Keys.LeftAlt or Keys.RightAlt or Keys.LeftControl or Keys.RightControl or
-                        Keys.LeftShift or Keys.RightShift))
+                    if (key is Keys.Up or Keys.Down or Keys.Left or Keys.Right)
                         _burntimeApp.LastInputMode = InputMode.Keyboard;
 
-                    if (key == Keys.F11
+                    if (SupportsFullscreenToggle && (key == Keys.F11
                         || (key == Keys.Enter && (modifier & ModifierKeys.LeftAlt) == ModifierKeys.LeftAlt))
+                    )
                     {
                         IsFullscreen = !IsFullscreen;
                         DeviceManager.Clear();
@@ -419,24 +428,24 @@ namespace Burntime.MonoGame
             _previousKeyboardState = keyboard;
         }
 
-        static Key? ConvertToBindingKey(Keys key)
+        static Key? ConvertToBindingKey(Keys key, ModifierKeys modifier)
         {
             if (key >= Keys.A && key <= Keys.Z)
-                return new Key(char.ToLowerInvariant(key.ToString()[0]));
+                return new Key(char.ToLowerInvariant(key.ToString()[0]), modifier);
             if (key >= Keys.D0 && key <= Keys.D9)
-                return new Key(key.ToString()[1]);
+                return new Key(key.ToString()[1], modifier);
 
             return key switch
             {
-                Keys.Space => new Key(' '),
-                Keys.Back => new Key('\b'),
-                Keys.Enter => new Key(SystemKey.Enter),
-                Keys.Escape => new Key(SystemKey.Escape),
-                Keys.Tab => new Key(SystemKey.Tab),
-                Keys.Up => new Key(SystemKey.Up),
-                Keys.Down => new Key(SystemKey.Down),
-                Keys.Left => new Key(SystemKey.Left),
-                Keys.Right => new Key(SystemKey.Right),
+                Keys.Space => new Key(' ', modifier),
+                Keys.Back => new Key('\b', modifier),
+                Keys.Enter => new Key(SystemKey.Enter, modifier),
+                Keys.Escape => new Key(SystemKey.Escape, modifier),
+                Keys.Tab => new Key(SystemKey.Tab, modifier),
+                Keys.Up => new Key(SystemKey.Up, modifier),
+                Keys.Down => new Key(SystemKey.Down, modifier),
+                Keys.Left => new Key(SystemKey.Left, modifier),
+                Keys.Right => new Key(SystemKey.Right, modifier),
                 _ => null
             };
         }

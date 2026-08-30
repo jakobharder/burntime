@@ -11,6 +11,7 @@ namespace Burntime.Platform.Resource
         Dictionary<char, CharInfo> CharInfo { get; }
         Dictionary<string, int> Kerning { get; }
         int Offset { get; }
+        int GlyphHeight { get; }
         Vector2f Factor { get; }
 
         PixelColor Color { get; set; }

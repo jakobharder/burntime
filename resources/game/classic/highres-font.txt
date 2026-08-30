@@ -2,7 +2,7 @@
 scale=1.875x2.25
 offset=-2
 kerning1=Fa Fä Fc Fd Fe Fg Fj Fm Fn Fo Fö Fp Fq Fr Fs Fu Fü Fv Fw Fx Fy Fz
-kerning1=Sf St
+'kerning1=Sf St
 kerning2=Ta Tc Td Te Tg Tj Tm Tn To Tp Tq Tr Ts Tu Tv Tw Tx Ty Tz
 kerning1=Y, V, T, P, F, f, v, y,
 kerning2=r,
@@ -13,10 +13,22 @@ kerning1=af äf cf ef kf lf of öf pf sf zf
 kerning1=fJ vJ yJ Pj Vj Yj VJ
 kerning2=rJ FJ PJ TJ
 kerning1=at ät ct et kt lt ot öt pt st zt
-lines=1
+lines=3
 height=13
-char0=" !""#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyzüäÄöÖÜß"
-//             ! " # $ % & ' ( ) * + , - . / 0 1 2 3 4 5 6 7 8 9 : ; < = > ? @ A B C D E F G H I J K L M N O P Q R S T U V W X Y Z [ \ ] ^ _ ` a b c d e f g h i j k l m n o p q r s t u v w x y z ü ä Ä ö Ö Ü ß"
-width0      =7 3 5 5 7 7 5 4 5 5 7 5 4 6 3 7 6 4 6 6 6 6 6 6 6 6 3 5 6 6 6 6 3 6 6 6 6 6 6 6 6 3 6 6 5 7 6 6 6 6 6 6 6 6 6 7 6 6 6 4 7 4 7 6 4 7 6 7 6 6 5 6 6 3 6 6 4 7 6 6 6 6 6 6 5 6 6 7 7 6 6 7 7 6 7 7 7 6
-renderwidth0=3 2 4 4 6 6 4 3 4 4 6 4 3 5 2 6 5 3 5 5 5 5 5 5 5 5 2 4 5 5 5 5 2 5 5 5 5 5 5 5 5 2 5 5 4 6 5 5 5 5 5 5 5 5 5 6 5 5 5 3 6 3 6 5 3 5 5 5 5 5 4 5 5 2 3 5 3 6 5 5 5 5 3 5 4 5 5 6 5 5 5 5 5 5 5 5 5 5
+char0=" !""#$%&'()*+,-./0123456789:;<=>?@[\]^_`"
+//             ! " # $ % & ' ( ) * + , - . / 0 1 2 3 4 5 6 7 8 9 : ; < = > ? @ [ \ ] ^ _ `
+width0      =7 3 5 5 7 7 5 4 5 5 7 5 4 6 3 7 6 4 6 6 6 6 6 6 6 6 3 5 6 6 6 6 3 4 7 4 7 6 4
+renderwidth0=3 2 4 4 6 6 4 3 4 4 6 4 3 5 2 6 5 3 5 5 5 5 5 5 5 5 2 4 5 5 5 5 2 3 6 3 6 5 3
 y0=0
+
+char1="ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+//           A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+width1      =6 6 6 6 6 6 6 6 3 6 6 5 7 6 6 6 6 6 6 6 6 6 7 6 6 6
+renderwidth1=5 5 5 5 5 5 5 5 2 5 5 4 6 5 5 5 5 5 5 5 5 5 6 5 5 5
+y1=13
+
+char2="abcdefghijklmnopqrstuvwxyzüäÄöÖÜß"
+//           a b c d e f g h i j k l m n o p q r s t u v w x y z ü ä Ä ö Ö Ü ß
+width2      =7 6 7 6 6 5 6 6 3 6 6 4 7 6 6 6 6 6 6 5 6 6 7 7 6 8 7 7 6 7 7 7 6
+renderwidth2=5 5 5 5 5 4 5 5 2 3 5 3 6 5 5 5 5 4 5 4 5 5 6 5 5 5 5 5 5 5 5 5 5
+y2=26

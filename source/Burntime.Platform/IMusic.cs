@@ -8,6 +8,7 @@ public interface IMusic
     string Playing { get; }
 
     bool CanPlay(string songName);
+    string? ResolveSong(string songName);
     void Play(string song, bool loop = true);
     void PlayOnce(string sound);
     void Stop();

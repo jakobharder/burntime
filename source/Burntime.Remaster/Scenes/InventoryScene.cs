@@ -47,7 +47,7 @@ namespace Burntime.Remaster.Scenes
             button.SetTextOnly();
             Windows += button;
 
-            waterSourceFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(72, 72, 76));
+            waterSourceFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.Gray);
 
             Windows += dialog = new DialogWindow(app)
             {
@@ -139,7 +139,16 @@ namespace Burntime.Remaster.Scenes
 
             if (classic.InventoryRoom != null)
             {
-                Music = classic.InventoryRoom.IsWaterSource ? "water" : "room";
+                Music = classic.InventoryBackground switch
+                {
+                    0 => "room2",
+                    1 or 2 => "room",
+                    3 => "cave",
+                    4 or 5 => "room_water",
+                    6 or 8 => "open_water",
+                    7 => "cave_water",
+                    _ => classic.InventoryRoom.IsWaterSource ? "open_water" : "room"
+                };
 
                 grid = new ItemGridWindow(app);
                 grid.UnifiedSelection = true;
@@ -302,46 +311,6 @@ namespace Burntime.Remaster.Scenes
                 roomAreaActive = !roomAreaActive;
 
             UpdateActiveArea();
-        }
-
-        public override bool OnKeyPress(char key)
-        {
-            key = char.ToLowerInvariant(key);
-            if (key is '1' or '2' && app.GameState is ClassicGame game && game.CheatsEnabled)
-            {
-                AddCheatItemsToRoom(key);
-                return true;
-            }
-
-            return false;
-        }
-
-        void AddCheatItemsToRoom(char key)
-        {
-            if (grid == null)
-                return;
-
-            BurntimeClassic classic = app as BurntimeClassic;
-            IItemCollection roomItems = classic.InventoryRoom == null
-                ? classic.PickItems
-                : classic.InventoryRoom.Items;
-            if (roomItems == null)
-                return;
-
-            string[] itemIds = app.Settings["debug"].GetStrings(key == '1' ? "insert_items_1" : "insert_items_2");
-            foreach (string id in itemIds)
-            {
-                if (grid.Count >= grid.MaxCount)
-                    break;
-
-                Item item = classic.Game.ItemTypes.Generate(id);
-                if (!roomItems.Add(item))
-                    break;
-
-                grid.Add(item);
-            }
-
-            EnsureNonEmptyArea();
         }
 
         void OnLeftClickItemInventory(Framework.States.StateObject state)

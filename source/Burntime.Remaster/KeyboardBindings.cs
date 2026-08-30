@@ -90,8 +90,18 @@ public sealed class KeyboardBindings : IKeyboardBindings
         }
     }
 
-    public InputAction GetAction(Key key) =>
-        actions.TryGetValue(Normalize(key), out InputAction action) ? action : InputAction.None;
+    public InputAction GetAction(Key key)
+    {
+        if (key.IsVirtual && (key.Modifier & ModifierKeys.Shift) != 0)
+        {
+            if (key.VirtualKey == SystemKey.Left)
+                return InputAction.Statistics;
+            if (key.VirtualKey == SystemKey.Right)
+                return InputAction.LocationInfo;
+        }
+
+        return actions.TryGetValue(Normalize(key), out InputAction action) ? action : InputAction.None;
+    }
 
     public void Save(ConfigFile config)
     {

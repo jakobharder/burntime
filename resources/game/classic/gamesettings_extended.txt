@@ -29,6 +29,8 @@ mutant_health         = 31
 dog_health            = 31
 trader_attack         = 60
 mutant_attack         = 40
+mutant_drop_chance    = 0.20
+mutant_drop_type      = useless
 dog_attack            = 30
 
 [1] ' difficulty normal
@@ -62,6 +64,8 @@ mutant_health         = 40
 dog_health            = 31
 trader_attack         = 60
 mutant_attack         = 40
+mutant_drop_chance    = 0.20
+mutant_drop_type      = useless
 dog_attack            = 30
 
 [2] ' difficulty hard
@@ -72,7 +76,7 @@ start_locations_4   = 3 15
 start_locations_5   = 23
 start_regions       = 5
 ' start_locations       = 2 6 14 16 19 34 ' original start locations
-start_items           = item_maggots item_knife item_advice
+start_items           = item_maggots item_knife
 start_experience      = 27
 
 random_items_start        = material -nodrop -rare -special -food
@@ -95,6 +99,8 @@ mutant_health         = 60
 dog_health            = 31
 trader_attack         = 60
 mutant_attack         = 40
+mutant_drop_chance    = 0.20
+mutant_drop_type      = useless
 dog_attack            = 30
 
 [region_item_0]

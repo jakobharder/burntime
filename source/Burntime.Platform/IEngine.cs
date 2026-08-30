@@ -21,6 +21,7 @@ public interface IEngine
 
     bool MusicBlend { get; set; }
     bool IsLoading { get; set; }
+    bool SupportsFullscreenToggle { get; }
     bool IsFullscreen { get; set; }
 
     void CenterMouse();

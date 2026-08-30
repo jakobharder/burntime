@@ -93,6 +93,9 @@ internal class LanguageScene : Scene
     {
         base.OnRender(target);
 
+        if (!app.Engine.SupportsFullscreenToggle)
+            return;
+
         var center = app.Engine.Resolution.Game / 2;
 
         bool showGermanHint = _german.IsHover || (!_english.IsHover && _selectedLanguage == 0);

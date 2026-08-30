@@ -256,20 +256,6 @@ namespace Burntime.Remaster
                 return true;
             }
 
-            if (action == InputAction.LeftArea)
-            {
-                if (!view.Location.IsCity)
-                    OnMenuSpeak();
-                return true;
-            }
-
-            if (action == InputAction.RightArea)
-            {
-                if (!view.Location.IsCity)
-                    OnMenuFight();
-                return true;
-            }
-
             if (action == InputAction.ToggleInteractionMode)
             {
                 if (!view.Location.IsCity)
@@ -356,43 +342,6 @@ namespace Burntime.Remaster
             return true;
         }
 
-        public override bool OnKeyPress(char key)
-        {
-            if (app.GameState is not ClassicGame game)
-                return false;
-
-            key = char.ToLowerInvariant(key);
-
-            if (game.CheatsEnabled)
-            {
-                string[] items = null;
-
-                switch (key)
-                {
-                    case '1':
-                        items = app.Settings["debug"].GetStrings("insert_items_1");
-                        break;
-                    case '2':
-                        items = app.Settings["debug"].GetStrings("insert_items_2");
-                        break;
-                    case '3':
-                        items = app.Settings["debug"].GetStrings("insert_items_3");
-                        break;
-                }
-
-                if (items != null)
-                {
-                    foreach (string id in items)
-                    {
-                        Item item = game.ItemTypes.Generate(id);
-                        game.World.ActiveLocationObj.Items.DropAt(item, game.World.ActivePlayerObj.Character.Position);
-                    }
-                }
-            }
-
-            return false;
-        }
-
         public override void OnRender(RenderTarget Target)
         {
             bool showInteractionMode = app.MouseInputVisible && !dialog.IsVisible;
@@ -424,6 +373,9 @@ namespace Burntime.Remaster
 
             game.World.ActiveLocationObj.Update(Elapsed);
             game.World.ActivePlayerObj.Update(Elapsed);
+
+            if (app.MouseInputVisible)
+                followCharacterAfterPan = false;
 
             if (followCharacterAfterPan && charOverlay.SelectedCharacter != null)
                 followCharacterAfterPan = !view.FollowWithinMiddleThird(
@@ -486,7 +438,7 @@ namespace Burntime.Remaster
                 if (cameraPanActive)
                 {
                     cameraPanActive = false;
-                    followCharacterAfterPan = true;
+                    followCharacterAfterPan = !app.MouseInputVisible;
                 }
                 return;
             }

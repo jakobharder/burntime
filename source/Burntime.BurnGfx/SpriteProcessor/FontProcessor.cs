@@ -10,6 +10,7 @@ namespace Burntime.Data.BurnGfx
     {
         public Vector2 Size { get { return new Vector2(512, 10); } }
         public int Offset { get { return 0; } }
+        public int GlyphHeight { get { return Size.y; } }
         public Vector2f Factor { get { return Vector2f.One; } }
 
         public Dictionary<char, CharInfo> CharInfo { get { return charInfo; } }

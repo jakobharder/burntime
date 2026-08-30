@@ -33,7 +33,7 @@ namespace Burntime.Remaster.PathFinding
         public override Vector2 Process(PathMask mask, Vector2 position, float elapsed)
         {
             this.position = position;
-            Vector2f manualPosition = position;
+            Vector2f manualPosition = BeginMovement(position);
             float distance = speed * elapsed;
 
             // Keep movement on the same per-update integer raster as ComplexPath,
@@ -73,7 +73,7 @@ namespace Burntime.Remaster.PathFinding
                 distance -= stepDistance;
             }
 
-            this.position = manualPosition;
+            this.position = CommitMovement(manualPosition);
             moveTo = this.position;
             return this.position;
         }

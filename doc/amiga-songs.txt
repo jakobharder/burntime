@@ -1,0 +1,68 @@
+
+' Unused songs:
+' namen (??? use for ruin?)
+' fabrik -> info in toxic places
+' bunker1 -> building room (room is only for caves)
+' bunker2 -> well (water is only for open water sources)
+' copy -> copy protection scene (??? use for scene?)
+' kampf -> ? (use for scene?)
+' namen -> ? (use for scene?)
+
+' Other notes:
+' Inventory is silent on Amiga
+' Texaco and other image scenes don't exist, except the church
+' Amiga radio sounds similar to PC diner
+
+
+
+' Wooden hut, tent, room with water
+' https://youtu.be/H8alh5-NH4o?si=ER7MwKKmg0BSnP23&t=332
+' https://youtu.be/H8alh5-NH4o?si=HnubIg1uloCgU8ke&t=859
+' bunker1, not fabrik, not room
+
+' Room
+' https://youtu.be/H8alh5-NH4o?si=IxPfic6d4bUNO6-k&t=949
+' bunker4, not bunker1, not fabrik, not room
+
+' Open water
+' https://youtu.be/H8alh5-NH4o?si=QSJ3lA1QmVH8WBdk&t=543
+' water
+
+' Cave
+' https://youtu.be/H8alh5-NH4o?si=lk-xUHt20etmxz-a&t=790
+' Cave with water
+' https://youtu.be/H8alh5-NH4o?si=w_H1zw_eRNsfzDmu&t=806
+' room
+
+' Info
+' https://youtu.be/UNG0c22Rw3U?si=O4nBuunicHr0BfcH&t=536
+' victory
+' Info irradiated
+' https://youtu.be/4I5zDMdp1cw?si=HjfejSDRmNwoTMKY&t=1378
+' bunker3
+
+' bunker2
+
+' sometimes tracks just start playing
+
+' start @ start on world map
+' https://youtu.be/4I5zDMdp1cw?si=YWkHsycYWDP7wBLT&t=1100
+' room @ context menu open
+' start
+' bunker1
+' pub
+' room
+' bunker2 in city
+' score
+' bunker4
+' https://youtu.be/UNG0c22Rw3U?si=ZVtMWazrKpquYdA0&t=353
+' bunker3
+' https://youtu.be/UNG0c22Rw3U?si=m0QpbNKvZdLefMdE&t=690
+' bunker1
+' https://youtu.be/H8alh5-NH4o?si=3IxMRso9d2AGmChV&t=718
+' kampf
+' https://youtu.be/H8alh5-NH4o?si=Kwg06bm02x6eRfGh&t=1185
+' score
+' https://youtu.be/H8alh5-NH4o?si=JEcn15VPqA9yzvp-&t=1307
+' fabrik
+

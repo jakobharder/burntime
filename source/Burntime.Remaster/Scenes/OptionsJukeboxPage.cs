@@ -1,6 +1,7 @@
 ﻿using Burntime.Framework;
 using Burntime.Framework.GUI;
 using Burntime.Platform;
+using Burntime.Platform.IO;
 using Burntime.Remaster;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,6 +15,7 @@ internal class OptionsJukeboxPage : Container
     Button? _lastPlayingButton;
     Button[] _buttons = [];
     int _focusIndex;
+    BurntimeClassic.MusicModes _displayedMode = (BurntimeClassic.MusicModes)(-1);
 
     public OptionsJukeboxPage(Module app, OptionFonts fonts) : base(app)
     {
@@ -30,11 +32,23 @@ internal class OptionsJukeboxPage : Container
     public override void OnUpdate(float elapsed)
     {
         base.OnUpdate(elapsed);
+
+        if (_displayedMode != BurntimeClassic.Instance.MusicMode)
+            CreateSongButtons();
+
         UpdateFocus();
 
         Button? playingButton = null;
         if (app.Engine.Music.Playing is not null && BurntimeClassic.Instance.MusicMode != BurntimeClassic.MusicModes.Off)
-            _songButtons.TryGetValue(app.Engine.Music.Playing, out playingButton);
+        {
+            string? playingSong = app.Engine.Music.ResolveSong(app.Engine.Music.Playing);
+            if (playingSong is not null)
+            {
+                playingButton = _songButtons
+                    .FirstOrDefault(entry => app.Engine.Music.ResolveSong(entry.Key) == playingSong)
+                    .Value;
+            }
+        }
         if (playingButton is not null)
         {
             playingButton.Font = _fonts.Blue;
@@ -141,23 +155,31 @@ internal class OptionsJukeboxPage : Container
         return false;
     }
 
-    static string Capitalize(string str)
-    {
-        var letters = str.ToCharArray();
-        letters[0] = char.ToUpper(str[0]);
-        return new string(letters);
-    }
-
     void CreateSongButtons()
     {
         foreach (var button in _songButtons.Values)
             Windows -= button;
         _songButtons.Clear();
 
+        BurntimeClassic classic = BurntimeClassic.Instance;
+        _displayedMode = classic.MusicMode;
+        string jukeboxFile = classic.MusicMode == BurntimeClassic.MusicModes.Amiga
+            ? "jukebox_amiga.txt"
+            : "jukebox_dos.txt";
+
+        ConfigFile jukebox = new();
+        if (!jukebox.Open(jukeboxFile) || jukebox.GetSection("") is not ConfigSection section)
+        {
+            _buttons = [];
+            UpdateFocus();
+            return;
+        }
+
         int counter = 0;
 
-        foreach (var song in app.Engine.Music.Songlist)
+        foreach (var entry in section.Values)
         {
+            string song = entry.Key;
             int y = counter % 8;
             int x = (counter - counter % 8) / 8;
 
@@ -167,7 +189,7 @@ internal class OptionsJukeboxPage : Container
             Windows += _songButtons[song] = new Button(app, () => PlaySong(song))
             {
                 Position = new Vector2(x, y),
-                Text = Capitalize(song),
+                Text = entry.Value,
                 Font = _fonts.Green,
                 HoverFont = _fonts.Orange,
                 IsTextOnly = true

@@ -105,6 +105,8 @@ namespace Burntime.Remaster.Logic.Generation
             game.World.Respawn.Object.TraderAttack = settings.ClassStats.TraderAttack;
             game.World.Respawn.Object.MutantAttack = settings.ClassStats.MutantAttack;
             game.World.Respawn.Object.DogAttack = settings.ClassStats.DogAttack;
+            game.World.Respawn.Object.MutantDropChance = settings.MutantDropChance;
+            game.World.Respawn.Object.MutantDropType = settings.MutantDropType;
 
             // create locations
             creator = new OriginalLocationCreator();
