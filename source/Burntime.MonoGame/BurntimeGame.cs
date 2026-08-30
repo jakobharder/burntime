@@ -60,11 +60,22 @@ namespace Burntime.MonoGame
 
         bool _isFullscreen = false;
         bool _requestFullscreen = false;
+        public bool SupportsFullscreenToggle { get; } = !IsGamescopeSession() && !IsSteamDeck();
         public bool IsFullscreen 
         {
             get => _isFullscreen;
-            set => _requestFullscreen = value; // value will be handled in render thread
+            set
+            {
+                if (SupportsFullscreenToggle)
+                    _requestFullscreen = value; // value will be handled in render thread
+            }
         }
+
+        static bool IsGamescopeSession() =>
+            !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("GAMESCOPE_WAYLAND_DISPLAY"));
+
+        static bool IsSteamDeck() =>
+            Environment.GetEnvironmentVariable("SteamDeck") == "1";
 
         bool _initialized = false;
 
@@ -381,8 +392,9 @@ namespace Burntime.MonoGame
                         Keys.LeftShift or Keys.RightShift))
                         _burntimeApp.LastInputMode = InputMode.Keyboard;
 
-                    if (key == Keys.F11
+                    if (SupportsFullscreenToggle && (key == Keys.F11
                         || (key == Keys.Enter && (modifier & ModifierKeys.LeftAlt) == ModifierKeys.LeftAlt))
+                    )
                     {
                         IsFullscreen = !IsFullscreen;
                         DeviceManager.Clear();
