@@ -328,14 +328,7 @@ public class MenuScene : Scene
 
     void OnPlayerOneClick()
     {
-        bool wasSelected = _setupSelection == SetupSelection.Player && _currentPlayer == 0;
-        if (!wasSelected)
-        {
-            PlayerOneSwitch.IsDown = UsePlayerOne;
-            SelectPlayer(0, activateName: true);
-            return;
-        }
-
+        PlayerTwoSwitch.IsTextInputActive = false;
         _currentPlayer = 0;
         _setupSelection = SetupSelection.Player;
         if (!PlayerOneSwitch.IsDown && !UsePlayerTwo)
@@ -358,14 +351,7 @@ public class MenuScene : Scene
 
     void OnPlayerTwoClick()
     {
-        bool wasSelected = _setupSelection == SetupSelection.Player && _currentPlayer == 1;
-        if (!wasSelected)
-        {
-            PlayerTwoSwitch.IsDown = UsePlayerTwo;
-            SelectPlayer(1, activateName: true);
-            return;
-        }
-
+        PlayerOneSwitch.IsTextInputActive = false;
         _currentPlayer = 1;
         _setupSelection = SetupSelection.Player;
         if (!PlayerTwoSwitch.IsDown && !UsePlayerOne)
@@ -561,14 +547,20 @@ public class MenuScene : Scene
 
     void UpdateSetupSelection()
     {
-        PlayerOneSwitch.IsKeyboardSelected = _setupSelection == SetupSelection.Player && _currentPlayer == 0;
-        PlayerTwoSwitch.IsKeyboardSelected = _setupSelection == SetupSelection.Player && _currentPlayer == 1;
-        _loadButton.IsKeyboardSelected = _setupSelection == SetupSelection.Load;
-        _startButton.IsKeyboardSelected = _setupSelection == SetupSelection.Start;
-        Difficulty.IsKeyboardSelected = _setupSelection == SetupSelection.Difficulty;
-        GameMode.IsKeyboardSelected = _setupSelection == SetupSelection.GameMode;
-        AiPlayers.IsKeyboardSelected = _setupSelection == SetupSelection.AiPlayers;
-        _exitButton.IsKeyboardSelected = _setupSelection == SetupSelection.Exit;
+        bool showSelection = app.LastInputMode != InputMode.Mouse;
+        PlayerOneSwitch.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.Player && _currentPlayer == 0;
+        PlayerTwoSwitch.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.Player && _currentPlayer == 1;
+        _loadButton.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.Load;
+        _startButton.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.Start;
+        Difficulty.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.Difficulty;
+        GameMode.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.GameMode;
+        AiPlayers.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.AiPlayers;
+        _exitButton.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.Exit;
+    }
+
+    public override void OnUpdate(float elapsed)
+    {
+        UpdateSetupSelection();
     }
 
     void ActivateSetupSelection()
