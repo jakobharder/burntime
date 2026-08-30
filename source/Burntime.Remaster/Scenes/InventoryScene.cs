@@ -312,46 +312,6 @@ namespace Burntime.Remaster.Scenes
             UpdateActiveArea();
         }
 
-        public override bool OnKeyPress(char key)
-        {
-            key = char.ToLowerInvariant(key);
-            if (key is '1' or '2' && app.GameState is ClassicGame game && game.CheatsEnabled)
-            {
-                AddCheatItemsToRoom(key);
-                return true;
-            }
-
-            return false;
-        }
-
-        void AddCheatItemsToRoom(char key)
-        {
-            if (grid == null)
-                return;
-
-            BurntimeClassic classic = app as BurntimeClassic;
-            IItemCollection roomItems = classic.InventoryRoom == null
-                ? classic.PickItems
-                : classic.InventoryRoom.Items;
-            if (roomItems == null)
-                return;
-
-            string[] itemIds = app.Settings["debug"].GetStrings(key == '1' ? "insert_items_1" : "insert_items_2");
-            foreach (string id in itemIds)
-            {
-                if (grid.Count >= grid.MaxCount)
-                    break;
-
-                Item item = classic.Game.ItemTypes.Generate(id);
-                if (!roomItems.Add(item))
-                    break;
-
-                grid.Add(item);
-            }
-
-            EnsureNonEmptyArea();
-        }
-
         void OnLeftClickItemInventory(Framework.States.StateObject state)
         {
             BurntimeClassic classic = app as BurntimeClassic;

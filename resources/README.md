@@ -12,15 +12,10 @@ You can check for the latest version on [GitHub Releases](https://github.com/jak
 
 ## Cheats
 
-Type `petko` on the world map to enable cheats for the current save game.
-Beware, cheats cannot be disabled again.
-
-Key | Scene | Effect
---- | --- | ---
-`q` | map | instant travel
-`9` | map | refresh food, water and health
-`1` | camp | spawn items: meat + full canteen
-`2` | camp | spawn items: rope + gas mask
+Type `/petko` on the world map to choose one cheat action: instant travel,
+refill food, water and health, or spawn useful items at the current location.
+Each invocation grants one action. Using an action permanently marks the save
+as having used cheats.
 
 ## Credits
 

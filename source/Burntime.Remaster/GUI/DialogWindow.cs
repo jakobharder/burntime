@@ -38,6 +38,7 @@ namespace Burntime.Remaster
         {
             get { return result; }
         }
+        public int ResultChoice { get; private set; } = -1;
 
         public DialogWindow(Module app) 
             : base(app)
@@ -81,6 +82,7 @@ namespace Burntime.Remaster
         public void SetCharacter(Character character, Conversation conversation, bool showFace = false)
         {
             result = ConversationActionType.None;
+            ResultChoice = -1;
             self = null;
             this.character = character;
             this.conversation = conversation;
@@ -104,6 +106,7 @@ namespace Burntime.Remaster
         public void SetCharacter(Character self, Character character, ConversationType type)
         {
             result = ConversationActionType.None;
+            ResultChoice = -1;
             this.self = self;
             this.character = character;
             Type = type;
@@ -215,6 +218,7 @@ namespace Burntime.Remaster
         void SelectChoice(int choice)
         {
             BurntimeClassic classic = app as BurntimeClassic;
+            ResultChoice = choice;
             result = conversation.Choices[choice].Action.Type;
 
             dialogmode = 0;
