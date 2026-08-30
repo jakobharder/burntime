@@ -24,18 +24,35 @@ namespace Burntime.Remaster
         }
 
         public int MaxNameLength = 10;
+        public bool HasManualName { get; private set; }
+        public event Action? TextInputDeactivated;
+
+        public void SetAutomaticName(string value)
+        {
+            HasManualName = false;
+            Name = value;
+        }
+
         bool textInputActive;
         public bool IsTextInputActive
         {
             get => textInputActive;
             set
             {
+                bool wasActive = textInputActive;
                 textInputActive = value;
                 HasFocus = value;
                 RefreshText();
+
+                if (wasActive && !value)
+                    TextInputDeactivated?.Invoke();
             }
         }
         public override bool WantsTextInput => textInputActive;
+
+        bool caretVisible;
+        bool ShouldShowCaret => textInputActive &&
+            app.LastInputMode is InputMode.Mouse or InputMode.Keyboard;
 
         public ConfigFile Table
         {
@@ -63,8 +80,17 @@ namespace Burntime.Remaster
 
         void RefreshText()
         {
-            string value = name + (textInputActive ? "{_" : "");
+            caretVisible = ShouldShowCaret;
+            string value = name + (caretVisible ? "{_" : "");
             Text = "[ " + value + " ]";
+        }
+
+        public override void OnUpdate(float elapsed)
+        {
+            if (caretVisible != ShouldShowCaret)
+                RefreshText();
+
+            base.OnUpdate(elapsed);
         }
 
         public override bool OnKeyPress(char Key)
@@ -74,22 +100,29 @@ namespace Burntime.Remaster
                 if (Key == 8)
                 {
                     if (name.Length > 0)
+                    {
                         Name = name.Substring(0, name.Length - 1);
+                        HasManualName = name.Length > 0;
+                    }
                 }
                 else
                 {
                     if (name.Length < MaxNameLength)
+                    {
                         Name += Key;
 
-                    // convert last characters (3, 2, 1)
+                        // convert last characters (3, 2, 1)
 
-                    for (int i = 3; i > 0; i--)
-                    {
-                        if (Name.Length >= i)
+                        for (int i = 3; i > 0; i--)
                         {
-                            if (table[""].ContainsKey(Name.Substring(Name.Length - i)))
-                                Name = Name.Substring(0, Name.Length - i) + table[""].Get(Name.Substring(Name.Length - i));
+                            if (Name.Length >= i)
+                            {
+                                if (table[""].ContainsKey(Name.Substring(Name.Length - i)))
+                                    Name = Name.Substring(0, Name.Length - i) + table[""].Get(Name.Substring(Name.Length - i));
+                            }
                         }
+
+                        HasManualName = true;
                     }
                 }
             }

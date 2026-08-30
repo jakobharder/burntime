@@ -192,6 +192,9 @@ public class MenuScene : Scene
         PlayerTwoSwitch.Command += OnPlayerTwoClick;
         Windows += PlayerTwoSwitch;
 
+        PlayerOneSwitch.TextInputDeactivated += () => FillEmptyName(PlayerOneSwitch, PlayerTwoSwitch);
+        PlayerTwoSwitch.TextInputDeactivated += () => FillEmptyName(PlayerTwoSwitch, PlayerOneSwitch);
+
         // color
         Radio radio = new Radio(app);
         radio.Position = new Vector2(45, 121);
@@ -338,6 +341,7 @@ public class MenuScene : Scene
         if (!PlayerOneSwitch.IsDown && !UsePlayerTwo)
         {
             PlayerOneSwitch.IsDown = true;
+            RefreshAutomaticName(PlayerOneSwitch, PlayerTwoSwitch);
             UpdateSetupSelection();
             return;
         }
@@ -347,8 +351,8 @@ public class MenuScene : Scene
 
         UsePlayerOne = PlayerOneSwitch.IsDown;
         PlayerOneFace.FaceID = UsePlayerOne ? 0 : -1;
-        PlayerOneSwitch.Name = UsePlayerOne ? GetRandomName(PlayerTwoSwitch.Name) : "";
-        SelectRemainingPlayerAfterToggle();
+        if (!PlayerOneSwitch.HasManualName)
+            PlayerOneSwitch.SetAutomaticName(UsePlayerOne ? GetRandomName(PlayerTwoSwitch.Name) : "");
         UpdateSetupSelection();
     }
 
@@ -367,6 +371,7 @@ public class MenuScene : Scene
         if (!PlayerTwoSwitch.IsDown && !UsePlayerOne)
         {
             PlayerTwoSwitch.IsDown = true;
+            RefreshAutomaticName(PlayerTwoSwitch, PlayerOneSwitch);
             UpdateSetupSelection();
             return;
         }
@@ -376,8 +381,8 @@ public class MenuScene : Scene
 
         UsePlayerTwo = PlayerTwoSwitch.IsDown;
         PlayerTwoFace.FaceID = UsePlayerTwo ? 0 : -1;
-        PlayerTwoSwitch.Name = UsePlayerTwo ? GetRandomName(PlayerOneSwitch.Name) : "";
-        SelectRemainingPlayerAfterToggle();
+        if (!PlayerTwoSwitch.HasManualName)
+            PlayerTwoSwitch.SetAutomaticName(UsePlayerTwo ? GetRandomName(PlayerOneSwitch.Name) : "");
         UpdateSetupSelection();
     }
 
@@ -420,6 +425,16 @@ public class MenuScene : Scene
             default:
                 return false;
         }
+    }
+
+    public override bool OnMouseDown(Vector2 position, MouseButton button)
+    {
+        if (PlayerOneSwitch.IsTextInputActive && !PlayerOneSwitch.Boundings.PointInside(position))
+            PlayerOneSwitch.IsTextInputActive = false;
+        if (PlayerTwoSwitch.IsTextInputActive && !PlayerTwoSwitch.Boundings.PointInside(position))
+            PlayerTwoSwitch.IsTextInputActive = false;
+
+        return base.OnMouseDown(position, button);
     }
 
     public override InputAction ResolveInputAction(InputAction action) =>
@@ -469,7 +484,7 @@ public class MenuScene : Scene
             return true;
 
         SetCurrentPlayerEnabled(true);
-        selectedPlayer.Name = "";
+        selectedPlayer.SetAutomaticName("");
         return selectedPlayer.OnKeyPress(key);
     }
 
@@ -493,7 +508,11 @@ public class MenuScene : Scene
             return;
 
         if (!enabled && !OtherPlayerEnabled)
+        {
+            NameWindow otherPlayerSwitch = _currentPlayer == 0 ? PlayerTwoSwitch : PlayerOneSwitch;
+            RefreshAutomaticName(playerSwitch, otherPlayerSwitch);
             return;
+        }
 
         playerSwitch.IsDown = enabled;
         if (_currentPlayer == 0)
@@ -658,15 +677,16 @@ public class MenuScene : Scene
         UpdateSetupSelection();
     }
 
-    void SelectRemainingPlayerAfterToggle()
+    void RefreshAutomaticName(NameWindow player, NameWindow otherPlayer)
     {
-        if (!UsePlayerOne && UsePlayerTwo)
-            _currentPlayer = 1;
-        else if (!UsePlayerTwo && UsePlayerOne)
-            _currentPlayer = 0;
+        if (!player.HasManualName)
+            player.SetAutomaticName(GetRandomName(otherPlayer.Name, player.Name));
+    }
 
-        PlayerOneSwitch.IsTextInputActive = _currentPlayer == 0 && UsePlayerOne;
-        PlayerTwoSwitch.IsTextInputActive = _currentPlayer == 1 && UsePlayerTwo;
+    void FillEmptyName(NameWindow player, NameWindow otherPlayer)
+    {
+        if (player.IsDown && string.IsNullOrEmpty(player.Name))
+            player.SetAutomaticName(GetRandomName(otherPlayer.Name));
     }
 
     void MoveCurrentPlayerFace(int direction)
@@ -688,7 +708,7 @@ public class MenuScene : Scene
         face.FaceID = candidate;
     }
 
-    private string GetRandomName(string? excludedName = null)
+    private string GetRandomName(params string?[] excludedNames)
     {
         if (_playerNames.Length == 0)
             return "Max";
@@ -697,7 +717,8 @@ public class MenuScene : Scene
         for (int offset = 0; offset < _playerNames.Length; offset++)
         {
             string candidate = _playerNames[(start + offset) % _playerNames.Length];
-            if (!candidate.Equals(excludedName, StringComparison.OrdinalIgnoreCase))
+            if (!excludedNames.Any(excludedName =>
+                candidate.Equals(excludedName, StringComparison.OrdinalIgnoreCase)))
                 return candidate;
         }
 
@@ -744,14 +765,14 @@ public class MenuScene : Scene
         UsePlayerOne = false;
         UsePlayerTwo = false;
         PlayerOneSwitch.IsDown = false;
-        PlayerOneSwitch.Name = "";
+        PlayerOneSwitch.SetAutomaticName("");
         PlayerTwoSwitch.IsDown = false;
-        PlayerTwoSwitch.Name = "";
+        PlayerTwoSwitch.SetAutomaticName("");
         Difficulty.State = 0;
         GameMode.State = 0;
         AiPlayers.State = 0;
         SetCurrentPlayerEnabled(true);
-        UpdateSetupSelection();
+        SelectStart();
     }
 
     void OnButtonExit()

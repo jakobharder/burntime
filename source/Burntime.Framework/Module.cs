@@ -117,7 +117,7 @@ namespace Burntime.Framework
 
         public ISprite MouseImage = null;
         public bool RenderMouse = true;
-        public volatile InputMode LastInputMode = InputMode.Mouse;
+        public volatile InputMode LastInputMode = InputMode.None;
         public bool MouseInputVisible => LastInputMode == InputMode.Mouse;
         public Nullable<Rect> MouseBoundings
         {
