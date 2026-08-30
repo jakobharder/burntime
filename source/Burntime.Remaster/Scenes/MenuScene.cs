@@ -396,13 +396,19 @@ public class MenuScene : Scene
         switch (action)
         {
             case InputAction.LeftArea:
-                SelectPlayer(0, activateName: true);
+                if (_setupSelection == SetupSelection.Player && CurrentPlayerEnabled)
+                    MoveCurrentPlayerFace(-1);
                 return true;
             case InputAction.RightArea:
-                SelectPlayer(1, activateName: true);
+                if (_setupSelection == SetupSelection.Player && CurrentPlayerEnabled)
+                    MoveCurrentPlayerFace(1);
                 return true;
             case InputAction.Primary:
                 ActivateSetupSelection();
+                return true;
+            case InputAction.Secondary:
+                if (_setupSelection == SetupSelection.Player && CurrentPlayerEnabled)
+                    TogglePlayerColors();
                 return true;
             case InputAction.MoveUp:
                 MoveSetupSelectionUp();
@@ -442,6 +448,14 @@ public class MenuScene : Scene
 
     public override bool TryGetInputAction(Key key, out InputAction action)
     {
+        if (_setupSelection == SetupSelection.Player && key.IsVirtual &&
+            key.VirtualKey is SystemKey.Up or SystemKey.Down &&
+            (key.Modifier & ModifierKeys.Shift) != 0)
+        {
+            action = InputAction.Secondary;
+            return true;
+        }
+
         if (key.IsVirtual && key.VirtualKey == SystemKey.Escape)
         {
             action = InputAction.Options;
@@ -590,20 +604,19 @@ public class MenuScene : Scene
         switch (_setupSelection)
         {
             case SetupSelection.Player:
-                if (!CurrentPlayerEnabled)
-                    SetCurrentPlayerEnabled(true);
-                else
-                    MoveCurrentPlayerFace(1);
+                SelectStart();
                 return;
             case SetupSelection.Start:
                 _setupSelection = SetupSelection.Load;
                 break;
             case SetupSelection.Difficulty:
             case SetupSelection.GameMode:
+                SelectPlayer(0, activateName: true);
+                return;
             case SetupSelection.AiPlayers:
             case SetupSelection.Exit:
-                _setupSelection = SetupSelection.Start;
-                break;
+                SelectPlayer(1, activateName: true);
+                return;
             default:
                 return;
         }
@@ -616,14 +629,18 @@ public class MenuScene : Scene
         switch (_setupSelection)
         {
             case SetupSelection.Player:
-                TogglePlayerColors();
-                return;
+                PlayerOneSwitch.IsTextInputActive = false;
+                PlayerTwoSwitch.IsTextInputActive = false;
+                _setupSelection = _currentPlayer == 0
+                    ? SetupSelection.Difficulty
+                    : SetupSelection.AiPlayers;
+                break;
             case SetupSelection.Load:
                 _setupSelection = SetupSelection.Start;
                 break;
             case SetupSelection.Start:
-                _setupSelection = SetupSelection.GameMode;
-                break;
+                SelectPlayer(0, activateName: true);
+                return;
             default:
                 return;
         }
@@ -645,7 +662,7 @@ public class MenuScene : Scene
         {
             bool movesInward = _currentPlayer == 0 ? direction > 0 : direction < 0;
             if (movesInward)
-                SelectStart();
+                SelectPlayer(_currentPlayer == 0 ? 1 : 0, activateName: true);
             return;
         }
 

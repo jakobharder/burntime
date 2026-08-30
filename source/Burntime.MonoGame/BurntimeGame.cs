@@ -369,11 +369,12 @@ namespace Burntime.MonoGame
 
             var keyboard = Microsoft.Xna.Framework.Input.Keyboard.GetState();
             var keys = keyboard.GetPressedKeys();
+            ModifierKeys modifier = GetModifiers(keyboard);
 
             _burntimeApp.InputManager.ClearDown(InputSource.Keyboard);
             foreach (var key in keys)
             {
-                Key? bindingKey = ConvertToBindingKey(key);
+                Key? bindingKey = ConvertToBindingKey(key, modifier);
                 if (bindingKey.HasValue)
                 {
                     InputAction action = _burntimeApp.KeyboardActionBindings.GetAction(bindingKey.Value);
@@ -382,8 +383,6 @@ namespace Burntime.MonoGame
                 }
             }
 
-            ModifierKeys modifier = GetModifiers(keyboard);
-            
             foreach (var key in keys)
             {
                 if (_previousKeyboardState.IsKeyUp(key))
@@ -431,24 +430,24 @@ namespace Burntime.MonoGame
             _previousKeyboardState = keyboard;
         }
 
-        static Key? ConvertToBindingKey(Keys key)
+        static Key? ConvertToBindingKey(Keys key, ModifierKeys modifier)
         {
             if (key >= Keys.A && key <= Keys.Z)
-                return new Key(char.ToLowerInvariant(key.ToString()[0]));
+                return new Key(char.ToLowerInvariant(key.ToString()[0]), modifier);
             if (key >= Keys.D0 && key <= Keys.D9)
-                return new Key(key.ToString()[1]);
+                return new Key(key.ToString()[1], modifier);
 
             return key switch
             {
-                Keys.Space => new Key(' '),
-                Keys.Back => new Key('\b'),
-                Keys.Enter => new Key(SystemKey.Enter),
-                Keys.Escape => new Key(SystemKey.Escape),
-                Keys.Tab => new Key(SystemKey.Tab),
-                Keys.Up => new Key(SystemKey.Up),
-                Keys.Down => new Key(SystemKey.Down),
-                Keys.Left => new Key(SystemKey.Left),
-                Keys.Right => new Key(SystemKey.Right),
+                Keys.Space => new Key(' ', modifier),
+                Keys.Back => new Key('\b', modifier),
+                Keys.Enter => new Key(SystemKey.Enter, modifier),
+                Keys.Escape => new Key(SystemKey.Escape, modifier),
+                Keys.Tab => new Key(SystemKey.Tab, modifier),
+                Keys.Up => new Key(SystemKey.Up, modifier),
+                Keys.Down => new Key(SystemKey.Down, modifier),
+                Keys.Left => new Key(SystemKey.Left, modifier),
+                Keys.Right => new Key(SystemKey.Right, modifier),
                 _ => null
             };
         }

@@ -21,18 +21,18 @@
 | `Move*` - primary direction | Arrow keys | Left stick | all
 | `PanCamera*` - secondary direction | W/A/S/D | Right stick | all
 | `Primary` | Space / Enter | A | all
-| `Secondary` | F | X | all except setup, options
+| `Secondary` | F | X | all except options; setup uses X and Shift+Up/Down
 | `GlobalAction` | X | Y | all except options
 | `Back` | Backspace / Escape* | B | all except setup
 | `Options` | O / Escape* | Menu | both maps, setup
-| `Statistics` | Q | D-pad left | both maps
+| `Statistics` | Q / Shift+Left | D-pad left / Left shoulder | both maps
 | `Inventory` | R / I | D-pad up | both maps
 | `WorldMap` | V / M | View | location map
-| `LocationInfo` | E | D-pad right | both maps
+| `LocationInfo` | E / Shift+Right | D-pad right / Right shoulder | both maps
 | `NextTurn` | Hold Tab | Hold D-pad down | both maps
 | `ToggleInteractionMode` | C | — | both maps
-| `LeftArea` | Q | Left shoulder | all but maps
-| `RightArea` | E | Right shoulder | all but maps
+| `LeftArea` | Q / Shift+Left | Left shoulder | all but maps
+| `RightArea` | E / Shift+Right | Right shoulder | all but maps
 
 The default keyboard and gamepad mappings are configured in the `[keyboard]` and `[gamepad]` sections of `settings.txt`.
 
@@ -55,15 +55,16 @@ Gamepad actions remain available; names are selected or generated without gamepa
 
 ### Game setup
 
-- Player 1 starts enabled with its name input active.
-- Arrow keys / D-pad / Left stick is used for navigation.
+- Player 1 starts enabled with a generated name, while Start has focus.
+- Arrow keys, D-pad and the left stick navigate.
 - `Tab` switches between Player 1 and Player 2. `Shift+Tab` switches in reverse. From the button group, Tab prefers Player 1 and Shift+Tab prefers Player 2 when both are enabled.
-- On gamepad, D-pad and either stick provide arrow-key behavior; the shoulder buttons switch players through `LeftArea` and `RightArea`. Menu opens Options.
+- While an enabled player is selected, `Shift+Left/Right` or Gamepad LB/RB selects the previous/next face. `Shift+Left/Right` is the general keyboard equivalent of LB/RB throughout the game.
+- While an enabled player is selected, `Shift+Up/Down` or Gamepad X swaps the two player colors.
+- Menu opens Options.
 - `Enter` or Gamepad `A` toggles the selected player on/off. At least one player remains enabled.
 - A mouse click on another player selects it without changing whether it is enabled. Clicking the selected player toggles it.
-- `Up` enables a disabled selected player or advances an enabled player's face.
-- `Down` swaps the two player colors shown below the name inputs.
 - Typing while a disabled player is selected enables them and starts a new name with the typed character.
+- Manual names survive disabling and re-enabling a player. Backspacing a name to empty returns it to automatic-name behavior; leaving an enabled empty name field generates a new random name.
 
 ### Save and load
 
@@ -98,7 +99,7 @@ Outside map scenes, primary and secondary directions behave identically. They re
 
 ## Context-sensitive shortcuts
 
-| Context | Q / Left shoulder | E / Right shoulder |
+| Context | Q / Shift+Left / Left shoulder | E / Shift+Right / Right shoulder |
 | --- | --- | --- |
 | World and location maps | `Statistics` | `LocationInfo` |
 | Inventory, Trader | `LeftArea` | `RightArea` |
