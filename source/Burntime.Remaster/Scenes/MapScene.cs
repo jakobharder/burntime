@@ -215,7 +215,9 @@ namespace Burntime.Remaster
                 app.SceneManager.SetScene("WaitScene");
             }
 
-            if (_followPlayerAfterPan)
+            if (app.MouseInputVisible)
+                _followPlayerAfterPan = false;
+            else if (_followPlayerAfterPan)
             {
                 Vector2 position = view.Map.Entrances[game.World.ActivePlayerObj.Location.Id].Area.Center;
                 _followPlayerAfterPan = !view.FollowWithinMiddleThird(position, Elapsed);
@@ -655,7 +657,7 @@ namespace Burntime.Remaster
                 if (_cameraPanActive)
                 {
                     _cameraPanActive = false;
-                    _followPlayerAfterPan = true;
+                    _followPlayerAfterPan = !app.MouseInputVisible;
                     _followKeyboardSelection = false;
                 }
                 return;

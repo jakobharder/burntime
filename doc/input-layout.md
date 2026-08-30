@@ -36,6 +36,8 @@
 
 The default keyboard and gamepad mappings are configured in the `[keyboard]` and `[gamepad]` sections of `settings.txt`.
 
+Only an arrow-key press changes the active input mode to keyboard. Other keys are treated as shortcuts shared with mouse control and do not hide the mouse cursor or replace mouse mode.
+
 On the location map, `V`, `M`, or Gamepad View opens the world map. `Escape` also returns to the world map through its general Back action; pressing `Escape` again opens Options. Use `O` to open Options directly. On the world map and game setup, `Escape` opens Options.
 
 `GlobalAction` is a scene-level command: e.g. start game, accept trade, open context menu
@@ -92,8 +94,7 @@ Gamepad actions remain available; names are selected or generated without gamepa
 | World map | Move location selection | Pan camera |
 | Location map | Move the character | Pan camera |
 
-On map scenes, releasing the secondary direction returns the camera to the
-controlled character or the player's current world-map location.
+On map scenes in keyboard or gamepad mode, releasing the secondary direction returns the camera to the controlled character or the player's current world-map location. In mouse mode, WASD panning leaves the camera at its new position.
 
 Outside map scenes, primary and secondary directions behave identically. They remain separate actions to allow future differences.
 

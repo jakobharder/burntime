@@ -343,7 +343,6 @@ namespace Burntime.MonoGame
             }
             else
             {
-                _burntimeApp.LastInputMode = InputMode.Keyboard;
                 var keyboard = Microsoft.Xna.Framework.Input.Keyboard.GetState();
                 DeviceManager?.KeyPress(e.Character, GetModifiers(keyboard));
             }
@@ -387,8 +386,7 @@ namespace Burntime.MonoGame
             {
                 if (_previousKeyboardState.IsKeyUp(key))
                 {
-                    if (key is not (Keys.LeftAlt or Keys.RightAlt or Keys.LeftControl or Keys.RightControl or
-                        Keys.LeftShift or Keys.RightShift))
+                    if (key is Keys.Up or Keys.Down or Keys.Left or Keys.Right)
                         _burntimeApp.LastInputMode = InputMode.Keyboard;
 
                     if (SupportsFullscreenToggle && (key == Keys.F11

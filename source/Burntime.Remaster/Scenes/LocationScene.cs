@@ -411,6 +411,9 @@ namespace Burntime.Remaster
             game.World.ActiveLocationObj.Update(Elapsed);
             game.World.ActivePlayerObj.Update(Elapsed);
 
+            if (app.MouseInputVisible)
+                followCharacterAfterPan = false;
+
             if (followCharacterAfterPan && charOverlay.SelectedCharacter != null)
                 followCharacterAfterPan = !view.FollowWithinMiddleThird(
                     charOverlay.SelectedCharacter.Position, Elapsed);
@@ -472,7 +475,7 @@ namespace Burntime.Remaster
                 if (cameraPanActive)
                 {
                     cameraPanActive = false;
-                    followCharacterAfterPan = true;
+                    followCharacterAfterPan = !app.MouseInputVisible;
                 }
                 return;
             }
