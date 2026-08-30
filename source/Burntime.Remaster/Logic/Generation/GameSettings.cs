@@ -118,6 +118,8 @@ class GameSettings
     public string[] RandomItems => config[difficulty].GetStrings("random_items");
     public int RandomItemsMin => config[difficulty].GetInt("random_items_rate_min");
     public int RandomItemsMax => config[difficulty].GetInt("random_items_rate_max");
+    public float MutantDropChance => Math.Clamp(config[difficulty].GetFloat("mutant_drop_chance"), 0.0f, 1.0f);
+    public string[] MutantDropType => config[difficulty].GetStrings("mutant_drop_type");
 
     public RespawnTimes Respawn => respawn;
     public ClassStatInfos ClassStats => stats;

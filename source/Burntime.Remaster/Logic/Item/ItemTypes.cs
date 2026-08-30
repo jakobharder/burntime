@@ -57,10 +57,10 @@ namespace Burntime.Remaster.Logic
         public Item? GenerateClass(string[] include, string[] exclude, float chance = 1.0f)
         {
             var types = GetTypesWithClass(include, exclude);
-            if (types.Length == 0)
+            if (types.Length == 0 || chance <= 0.0f)
                 return null;
 
-            bool win = Platform.Math.Random.NextSingle() <= chance;
+            bool win = chance >= 1.0f || Platform.Math.Random.NextSingle() < chance;
             if (!win)
                 return null;
 

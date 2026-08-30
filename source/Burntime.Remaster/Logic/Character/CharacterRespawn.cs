@@ -34,6 +34,11 @@ public sealed class CharacterRespawn : StateObject
     int mutantRespawn;
     int dogRespawn;
 
+    [System.Runtime.Serialization.OptionalField]
+    float mutantDropChance;
+    [System.Runtime.Serialization.OptionalField]
+    string[] mutantDropType;
+
     public int TraderHealth { get; set; }
     public int MutantHealth { get; set; }
     public int DogHealth { get; set; }
@@ -41,6 +46,18 @@ public sealed class CharacterRespawn : StateObject
     public int TraderAttack { get; set; }
     public int MutantAttack { get; set; }
     public int DogAttack { get; set; }
+
+    public float MutantDropChance
+    {
+        get => mutantDropChance;
+        set => mutantDropChance = Math.Clamp(value, 0.0f, 1.0f);
+    }
+
+    public string[] MutantDropType
+    {
+        get => mutantDropType ?? Array.Empty<string>();
+        set => mutantDropType = value ?? Array.Empty<string>();
+    }
 
     public CharacterRespawn()
     {
@@ -51,6 +68,9 @@ public sealed class CharacterRespawn : StateObject
         TraderAttack = 60;
         MutantAttack = 40;
         DogAttack = 30;
+
+        mutantDropChance = 0.0f;
+        mutantDropType = Array.Empty<string>();
     }
 
     protected override void InitInstance(object[] parameter)
@@ -83,6 +103,9 @@ public sealed class CharacterRespawn : StateObject
             MutantAttack = 40;
         if (DogAttack == 0)
             DogAttack = 40;
+
+        mutantDropChance = Math.Clamp(mutantDropChance, 0.0f, 1.0f);
+        mutantDropType ??= Array.Empty<string>();
     }
 
     public void Respawn(Character character)
