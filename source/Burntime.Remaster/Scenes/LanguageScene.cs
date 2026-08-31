@@ -22,7 +22,7 @@ internal class LanguageScene : Scene
         _font = new GuiFont(BurntimeClassic.FontName, PixelColor.White) { Borders = Platform.Graphics.TextBorders.None };
         _selectedFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56)) { Borders = Platform.Graphics.TextBorders.None };
 
-        _hintFont = new GuiFont("highres-font_de.txt", new PixelColor(128, 128, 128)) { Borders = Platform.Graphics.TextBorders.None };
+        _hintFont = new GuiFont("highres-font.txt", new PixelColor(128, 128, 128)) { Borders = Platform.Graphics.TextBorders.None };
 
         Windows += _german = new Button(app, () => SelectLanguage("de"))
         {
