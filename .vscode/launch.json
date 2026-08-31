@@ -24,6 +24,17 @@
             "console": "internalConsole"
         },
         {
+            "name": "Linear Filtered",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build Burntime (Debug)",
+            "program": "${workspaceFolder}/bin/Debug/Burntime.dll",
+            "args": ["--linear"],
+            "cwd": "${workspaceFolder}/bin/Debug",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        },
+        {
             "name": "Steam Machine",
             "type": "coreclr",
             "request": "launch",
@@ -40,7 +51,7 @@
             "request": "launch",
             "preLaunchTask": "build Burntime (Debug)",
             "program": "${workspaceFolder}/bin/Debug/Burntime.dll",
-            "args": ["--steam-deck"],
+            "args": ["--steam-deck", "--linear"],
             "cwd": "${workspaceFolder}/bin/Debug",
             "stopAtEntry": false,
             "console": "internalConsole"

@@ -35,6 +35,7 @@ namespace Burntime.MonoGame
         readonly bool _emulateSteamMachine;
         readonly bool _emulateSteamDeck;
         readonly bool _chooseLanguage;
+        internal bool LinearOutputFiltering { get; }
 
         public MusicPlayback Music { get; } = new MusicPlayback();
         IMusic IEngine.Music => Music;
@@ -85,11 +86,12 @@ namespace Burntime.MonoGame
         bool _initialized = false;
 
         public BurntimeGame(bool emulateSteamMachine = false, bool emulateSteamDeck = false,
-            bool chooseLanguage = false)
+            bool chooseLanguage = false, bool linearOutputFiltering = false)
         {
             _emulateSteamMachine = emulateSteamMachine;
             _emulateSteamDeck = emulateSteamDeck;
             _chooseLanguage = chooseLanguage;
+            LinearOutputFiltering = linearOutputFiltering;
             _graphics = new GraphicsDeviceManager(this);
             IsFixedTimeStep = true;
             TargetElapsedTime = TimeSpan.FromSeconds(1.0 / TargetFramesPerSecond);
@@ -139,6 +141,8 @@ namespace Burntime.MonoGame
             Resolution.RatioCorrection = _burntimeApp.RatioCorrection;
             Resolution.MinResolution = _burntimeApp.MinResolution;
             Resolution.MaxResolution = _burntimeApp.MaxResolution;
+            if (_emulateSteamDeck || IsSteamDeck())
+                Resolution.OutputScaleOverride = 1.5f;
 
             _burntimeApp.Engine = this;
             _burntimeApp.SceneManager = new SceneManager(_burntimeApp);

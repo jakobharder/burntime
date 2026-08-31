@@ -54,14 +54,17 @@ For windowed Steam feature and resolution testing, pass one of these options aft
 dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- --steam-machine
 dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- --steam-deck
 dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- --choose-language
+dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- --linear
 ```
 
 - `--steam-machine` uses the normal half-display window size, defaults to gamepad
   prompts, and disables the fullscreen toggle.
-- `--steam-deck` uses a 1280x800 window, defaults to gamepad prompts, and disables
-  the fullscreen toggle.
+- `--steam-deck` uses a 1280x800 window with 1.5× output scaling, defaults to
+  gamepad prompts, and disables the fullscreen toggle.
 - `--choose-language` opens the language selection scene even when a language was
   saved previously. It can be combined with either Steam emulation option.
+- `--linear` uses linear filtering when scaling the intermediate render buffer to
+  the window. The default is nearest-neighbor filtering.
 
 ### Headless AI simulation
 

@@ -18,6 +18,7 @@ if (Burntime.MonoGame.HeadlessSimulationCommand.IsRequested(args) ||
 bool emulateSteamMachine = args.Contains("--steam-machine", StringComparer.OrdinalIgnoreCase);
 bool emulateSteamDeck = args.Contains("--steam-deck", StringComparer.OrdinalIgnoreCase);
 bool chooseLanguage = args.Contains("--choose-language", StringComparer.OrdinalIgnoreCase);
+bool linearFiltering = args.Contains("--linear", StringComparer.OrdinalIgnoreCase);
 
 if (emulateSteamMachine && emulateSteamDeck)
 {
@@ -27,5 +28,5 @@ if (emulateSteamMachine && emulateSteamDeck)
 }
 
 using var game = new Burntime.MonoGame.BurntimeGame(
-    emulateSteamMachine, emulateSteamDeck, chooseLanguage);
+    emulateSteamMachine, emulateSteamDeck, chooseLanguage, linearFiltering);
 game.Run();

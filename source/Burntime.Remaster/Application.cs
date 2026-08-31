@@ -91,7 +91,7 @@ namespace Burntime.Remaster
         {
             Engine.Music.Enabled = (!DisableMusic) && (MusicMode != MusicModes.Off);
 
-            MouseImage = ResourceManager.GetImage("munt.raw");
+            MouseImage = ResourceManager.GetImage("munt.raw?0");
 
             SceneManager.SetScene(ChooseLanguageOnStart || string.IsNullOrEmpty(FileSystem.LocalizationCode)
                 ? "LanguageScene"
