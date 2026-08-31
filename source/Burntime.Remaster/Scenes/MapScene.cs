@@ -460,7 +460,8 @@ namespace Burntime.Remaster
 
             if (action == InputAction.Back)
             {
-                ShowContextMenu(view.Boundings.Center, false);
+                ShowContextMenu(view.Boundings.Center,
+                    app.LastInputMode == InputMode.Mouse);
                 return true;
             }
 

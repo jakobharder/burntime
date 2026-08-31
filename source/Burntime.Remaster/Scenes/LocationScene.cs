@@ -230,7 +230,8 @@ namespace Burntime.Remaster
 
             if (action == InputAction.Back)
             {
-                ShowActionsMenu(view.Boundings.Center, false);
+                ShowActionsMenu(view.Boundings.Center,
+                    app.LastInputMode == InputMode.Mouse);
                 return true;
             }
 

@@ -278,7 +278,8 @@ public class OptionsScene : Scene
         target.Layer--;
 
         target.Layer += 10;
-        red.DrawText(target, target.ScreenSize - target.ScreenOffset - 6, BurntimeClassic.Version, TextAlignment.Right, VerticalTextAlignment.Bottom);
+        red.DrawText(target, new Vector2(6, target.ScreenSize.y - 6) - target.ScreenOffset,
+            BurntimeClassic.Version, TextAlignment.Left, VerticalTextAlignment.Bottom);
         target.Layer -= 10;
 
         base.OnRender(target);

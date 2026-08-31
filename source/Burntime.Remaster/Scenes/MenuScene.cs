@@ -264,8 +264,8 @@ public class MenuScene : Scene
 
     void UpdatePromptOverlayPosition()
     {
-        // Same bottom-right screen anchor as the version label. As a child
-        // window, the overlay position is expressed relative to this scene.
+        // As a child window, the screen-relative anchor is expressed relative
+        // to this scene.
         _promptOverlay.AnchorToScreenBottomRight();
     }
 
@@ -275,11 +275,16 @@ public class MenuScene : Scene
         if (Background?.IsLoaded != true)
             return;
 
-        target.Layer += 10;
-        _infoFont.DrawText(target, target.ScreenSize - target.ScreenOffset - 6, BurntimeClassic.Version, TextAlignment.Right, VerticalTextAlignment.Bottom);
-        _copyrightFont.DrawText(target, new Vector2(6, target.ScreenSize.y - 6) - target.ScreenOffset,
-            app.IsNewGfx ? "(c) 1993 Max Design. Remastered by Jakob Harder" : "Remastered by Jakob Harder", TextAlignment.Left, VerticalTextAlignment.Bottom);
-        target.Layer -= 10;
+        // Keep these labels available in case the start screen uses them again.
+        // target.Layer += 10;
+        // _infoFont.DrawText(target, target.ScreenSize - target.ScreenOffset - 6,
+        //     BurntimeClassic.Version, TextAlignment.Right, VerticalTextAlignment.Bottom);
+        // _copyrightFont.DrawText(target,
+        //     new Vector2(6, target.ScreenSize.y - 6) - target.ScreenOffset,
+        //     app.IsNewGfx ? "(c) 1993 Max Design. Remastered by Jakob Harder"
+        //         : "Remastered by Jakob Harder",
+        //     TextAlignment.Left, VerticalTextAlignment.Bottom);
+        // target.Layer -= 10;
 
         if (!app.IsNewGfx)
         {
