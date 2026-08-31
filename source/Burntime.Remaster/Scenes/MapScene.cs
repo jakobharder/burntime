@@ -43,6 +43,8 @@ namespace Burntime.Remaster
         MenuWindow menu;
         Image _cursorAni;
         readonly DialogWindow _dialog;
+        readonly InputPromptOverlay _promptOverlay;
+        readonly InputShortcutColumn _menuShortcutColumn;
         readonly Maps.MapViewOverlaySelectedLocation _keyboardSelection;
         bool _followKeyboardSelection;
         bool _cameraPanActive;
@@ -108,6 +110,13 @@ namespace Burntime.Remaster
             _dialog.WindowHide += new EventHandler(OnDialogHidden);
             _dialog.WindowShow += new EventHandler(OnDialogShown);
             Windows += _dialog;
+
+            Windows += _promptOverlay = new InputPromptOverlay(app);
+            _promptOverlay.AnchorToScreenBottomRight();
+            Windows += _menuShortcutColumn = new InputShortcutColumn(app);
+            _menuShortcutColumn.Hide();
+            menu.WindowShow += (_, _) => _menuShortcutColumn.Show();
+            menu.WindowHide += (_, _) => _menuShortcutColumn.Hide();
         }
 
         private void View_OnContextMenu(Vector2 position, MouseButton button)
@@ -157,6 +166,7 @@ namespace Burntime.Remaster
             Size = app.Engine.Resolution.Game;
             gui.SetMapRenderArea(view, Size);
             app.MouseBoundings = view.Boundings;
+            _promptOverlay.AnchorToScreenBottomRight();
         }
 
         void view_Scroll(object sender, MapScrollArgs e)
@@ -272,6 +282,8 @@ namespace Burntime.Remaster
 
         public override void OnUpdate(float Elapsed)
         {
+            UpdatePromptOverlay();
+            UpdateMenuShortcutColumn();
             ResetHeldActionsIfReleased();
             UpdateCameraPan(Elapsed);
 
@@ -306,6 +318,57 @@ namespace Burntime.Remaster
             var hoverLocation = selectedLocation >= 0 ? BurntimeClassic.Instance.Game.World.Locations[selectedLocation] : null;
             var player = BurntimeClassic.Instance.Game.World.ActivePlayerObj;
             gui.ExpectedTravelDays = hoverLocation is null ? 0 : player.GetTravelDays(player.Location, hoverLocation);
+        }
+
+        void UpdatePromptOverlay()
+        {
+            if (_dialog.IsVisible || menu.IsVisible)
+            {
+                _promptOverlay.SetGamepadPrompts();
+                _promptOverlay.SetKeyboardPrompts();
+                return;
+            }
+
+            ClassicGame game = app.GameState as ClassicGame;
+            int locationNumber = _keyboardSelection.LocationNumber;
+            bool canEnter = locationNumber == game.World.ActivePlayerObj.Location.Id;
+            bool canTravel = locationNumber >= 0 && !canEnter &&
+                game.World.ActivePlayerObj.CanTravel(game.World.ActivePlayerObj.Location,
+                    game.World.Locations[locationNumber]);
+            bool canShowInfo = locationNumber >= 0 &&
+                CanShowInfo(game.World.ActivePlayerObj, game.World.Locations[locationNumber]);
+
+            List<InputPrompt> gamepad = [];
+            List<InputPrompt> keyboard = [];
+            if (canEnter || canTravel)
+            {
+                GuiString label = canEnter ? "@prompts?26" : "@prompts?25";
+                gamepad.Add(new("A", label));
+                keyboard.Add(new("Enter", label));
+            }
+            else
+            {
+                gamepad.Add(new("Y", "@prompts?11"));
+                keyboard.Add(new("X", "@prompts?11"));
+            }
+            if (canShowInfo)
+            {
+                gamepad.Add(new("X", "@prompts?27"));
+                keyboard.Add(new("F", "@prompts?27"));
+            }
+            _promptOverlay.SetGamepadPrompts(gamepad.ToArray());
+            _promptOverlay.SetKeyboardPrompts(keyboard.ToArray());
+        }
+
+        void UpdateMenuShortcutColumn()
+        {
+            if (!menu.IsVisible)
+                return;
+
+            _menuShortcutColumn.SetShortcuts(
+                [_infoMode ? "" : "D-pad Right", "D-pad Up", "D-pad Left", "Menu", "Hold D-pad Down"],
+                [_infoMode ? "" : "E", "I", "Q", "O", "Hold Tab"]);
+            _menuShortcutColumn.PlaceBeside(menu, view.Boundings);
         }
 
         protected override void OnActivateScene(object parameter)

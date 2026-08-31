@@ -386,7 +386,8 @@ namespace Burntime.MonoGame
             {
                 if (_previousKeyboardState.IsKeyUp(key))
                 {
-                    if (key is Keys.Up or Keys.Down or Keys.Left or Keys.Right)
+                    bool isArrowKey = key is Keys.Up or Keys.Down or Keys.Left or Keys.Right;
+                    if (_burntimeApp.LastInputMode != InputMode.Mouse || isArrowKey)
                         _burntimeApp.LastInputMode = InputMode.Keyboard;
 
                     if (SupportsFullscreenToggle && (key == Keys.F11

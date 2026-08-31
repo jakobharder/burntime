@@ -167,11 +167,7 @@ public class MenuScene : Scene
 
         // Input prompts are scene-owned: place the reusable overlay once, then
         // replace its contents from UpdateSetupSelection as focus changes.
-        Windows += _promptOverlay = new InputPromptOverlay(app)
-        {
-            HorizontalAlignment = PositionAlignment.Right,
-            VerticalAlignment = PositionAlignment.Right
-        };
+        Windows += _promptOverlay = new InputPromptOverlay(app);
         UpdatePromptOverlayPosition();
 
         // player names
@@ -269,7 +265,7 @@ public class MenuScene : Scene
     {
         // Same bottom-right screen anchor as the version label. As a child
         // window, the overlay position is expressed relative to this scene.
-        _promptOverlay.Position = app.Engine.Resolution.Game - Position - 6;
+        _promptOverlay.AnchorToScreenBottomRight();
     }
 
     public override void OnRender(RenderTarget target)
@@ -597,11 +593,21 @@ public class MenuScene : Scene
                 new("X", "@prompts?1"),
                 primary,
                 new("Y", "@prompts?2"));
-            _promptOverlay.SetKeyboardPrompts(
-                new("Shift+Left/Right", "@prompts?0"),
-                new("Shift+Up/Down", "@prompts?1"),
-                new("Enter", primary.Label),
-                new("X", "@prompts?2"));
+            if (IsNameInputActive)
+            {
+                _promptOverlay.SetKeyboardPrompts(
+                    new("Shift+Left/Right", "@prompts?0"),
+                    new("Shift+Up/Down", "@prompts?1"),
+                    new("Enter", primary.Label));
+            }
+            else
+            {
+                _promptOverlay.SetKeyboardPrompts(
+                    new("Shift+Left/Right", "@prompts?0"),
+                    new("Shift+Up/Down", "@prompts?1"),
+                    new("Enter", primary.Label),
+                    new("X", "@prompts?2"));
+            }
             return;
         }
 

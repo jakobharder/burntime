@@ -8,3 +8,26 @@ Desactivar
 Cambiar nombre
 Activar
 Alternar
+Interactuar
+Acciones
+Mapa mundial
+Siguiente turno
+Mover
+Usar
+Personaje
+Volver
+Comer
+Beber
+Construir
+Equipar
+Desequipar
+Examinar
+Rellenar
+Viajar
+Entrar
+Información
+Comerciar
+Curar
+Página
+Elegir
+Producción

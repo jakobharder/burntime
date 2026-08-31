@@ -36,7 +36,7 @@
 
 The default keyboard and gamepad mappings are configured in the `[keyboard]` and `[gamepad]` sections of `settings.txt`.
 
-Only an arrow-key press changes the active input mode to keyboard. Other keys are treated as shortcuts shared with mouse control and do not hide the mouse cursor or replace mouse mode.
+When no input mode has been established yet, any keyboard press activates keyboard mode. The same applies when switching from gamepad to keyboard. While mouse mode is active, only an arrow-key press switches to keyboard mode; other keys remain shortcuts shared with mouse control and do not hide the mouse cursor or replace mouse mode.
 
 On the location map, `V`, `M`, or Gamepad View opens the world map. `Escape` also returns to the world map through its general Back action; pressing `Escape` again opens Options. Use `O` to open Options directly. On the world map and game setup, `Escape` opens Options.
 

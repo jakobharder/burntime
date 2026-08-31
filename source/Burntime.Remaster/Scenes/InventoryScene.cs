@@ -6,6 +6,7 @@ using Burntime.Remaster.GUI;
 using Burntime.Remaster.Logic;
 using Burntime.Remaster.Logic.Interaction;
 using System;
+using System.Collections.Generic;
 
 namespace Burntime.Remaster.Scenes
 {
@@ -17,6 +18,9 @@ namespace Burntime.Remaster.Scenes
         ItemGridWindow grid;
         GuiFont waterSourceFont;
         DialogWindow dialog;
+        InputPromptOverlay promptOverlay;
+        InputPromptOverlay exitPromptOverlay;
+        Button exitButton;
         Construction construction;
         Item item;
         ICharacterCollection group;
@@ -38,14 +42,14 @@ namespace Burntime.Remaster.Scenes
             inventory.Grid.SelectionEmptied += OnSelectionEmptied;
             Windows += inventory;
 
-            Button button = new Button(app);
-            button.Position = new Vector2(25, 183);
-            button.Text = app.ResourceManager.GetString("burn?354");
-            button.Font = new GuiFont(BurntimeClassic.FontName, new PixelColor(92, 92, 148));
-            button.HoverFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(144, 160, 212));
-            button.Command += OnButtonExit;
-            button.SetTextOnly();
-            Windows += button;
+            exitButton = new Button(app);
+            exitButton.Position = new Vector2(25, 183);
+            exitButton.Text = app.ResourceManager.GetString("burn?354");
+            exitButton.Font = new GuiFont(BurntimeClassic.FontName, new PixelColor(92, 92, 148));
+            exitButton.HoverFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(144, 160, 212));
+            exitButton.Command += OnButtonExit;
+            exitButton.SetTextOnly();
+            Windows += exitButton;
 
             waterSourceFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.Gray);
 
@@ -57,6 +61,18 @@ namespace Burntime.Remaster.Scenes
             dialog.Hide();
             dialog.Layer += 55;
             dialog.WindowHide += new EventHandler(dialog_WindowHide);
+
+            Windows += promptOverlay = new InputPromptOverlay(app);
+            promptOverlay.AnchorToScreenBottomRight();
+
+            Windows += exitPromptOverlay = new InputPromptOverlay(app)
+            {
+                HorizontalAlignment = PositionAlignment.Left,
+                VerticalAlignment = PositionAlignment.Left
+            };
+            exitPromptOverlay.SetGamepadPrompts(new InputPrompt("B", ""));
+            exitPromptOverlay.SetKeyboardPrompts(new InputPrompt("Escape", ""));
+            UpdateExitPromptPosition();
         }
 
         public override void OnResizeScreen()
@@ -64,6 +80,8 @@ namespace Burntime.Remaster.Scenes
             base.OnResizeScreen();
 
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+            promptOverlay.AnchorToScreenBottomRight();
+            UpdateExitPromptPosition();
         }
 
         void dialog_WindowHide(object? sender, EventArgs e)
@@ -112,8 +130,85 @@ namespace Burntime.Remaster.Scenes
 
         public override void OnUpdate(float elapsed)
         {
+            UpdatePromptOverlay();
+            UpdateExitPromptPosition();
             ClassicGame game = app.GameState as ClassicGame;
             game.World.Update(elapsed);
+        }
+
+        void UpdateExitPromptPosition()
+        {
+            exitPromptOverlay.Position = new Vector2(exitButton.Boundings.Right + 2, 181);
+        }
+
+        void UpdatePromptOverlay()
+        {
+            if (dialog.IsVisible)
+            {
+                promptOverlay.SetGamepadPrompts();
+                promptOverlay.SetKeyboardPrompts();
+                exitPromptOverlay.SetGamepadPrompts();
+                exitPromptOverlay.SetKeyboardPrompts();
+                return;
+            }
+
+            exitPromptOverlay.SetGamepadPrompts(new InputPrompt("B", ""));
+            exitPromptOverlay.SetKeyboardPrompts(new InputPrompt("Escape", ""));
+
+            ItemGridWindow activeGrid = roomAreaActive && grid != null ? grid : inventory.Grid;
+            Item? selectedItem = activeGrid.KeyboardSelectedItem;
+            GuiString? secondaryAction = GetSecondaryPrompt(selectedItem, activeGrid == inventory.Grid);
+
+            List<InputPrompt> gamepadPrompts = [];
+            List<InputPrompt> keyboardPrompts = [];
+            if (secondaryAction != null)
+            {
+                gamepadPrompts.Add(new("X", secondaryAction));
+                keyboardPrompts.Add(new("F", secondaryAction));
+            }
+            if (selectedItem != null)
+            {
+                gamepadPrompts.Add(new("A", "@prompts?14"));
+                keyboardPrompts.Add(new("Enter", "@prompts?14"));
+            }
+            gamepadPrompts.Add(new("LB", "@prompts?16"));
+            keyboardPrompts.Add(new("Shift+Left", "@prompts?16"));
+
+            promptOverlay.SetGamepadPrompts(gamepadPrompts.ToArray());
+            promptOverlay.SetKeyboardPrompts(keyboardPrompts.ToArray());
+        }
+
+        GuiString? GetSecondaryPrompt(Item? selectedItem, bool isInInventory)
+        {
+            if (selectedItem == null)
+                return null;
+            BurntimeClassic classic = app as BurntimeClassic;
+            if (selectedItem.FoodValue != 0)
+                return "@prompts?18";
+            if (selectedItem.WaterValue != 0)
+                return "@prompts?19";
+            if (selectedItem.Type.Full != null && selectedItem.Type.Full.WaterValue != 0)
+            {
+                if (isInInventory && classic.InventoryRoom?.IsWaterSource == true)
+                    return "@prompts?24";
+                return null;
+            }
+
+            if (isInInventory && selectedItem.IsSelectable)
+            {
+                bool isEquipped = inventory.ActiveCharacter.Weapon == selectedItem ||
+                    inventory.ActiveCharacter.Protection == selectedItem;
+                return isEquipped ? "@prompts?22" : "@prompts?21";
+            }
+
+            IItemCollection? roomItems = classic.InventoryRoom != null
+                ? classic.InventoryRoom.Items
+                : classic.PickItems;
+            if (roomItems != null && classic.Game.Constructions.HasConstruction(
+                inventory.ActiveCharacter, roomItems, selectedItem))
+                return "@prompts?20";
+
+            return "@prompts?23";
         }
 
         protected override void OnActivateScene(object parameter)

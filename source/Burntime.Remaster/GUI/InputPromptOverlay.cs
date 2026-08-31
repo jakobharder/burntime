@@ -36,10 +36,18 @@ public sealed class InputPromptOverlay : Window
         {
             Borders = TextBorders.None
         };
+        HorizontalAlignment = PositionAlignment.Right;
+        VerticalAlignment = PositionAlignment.Right;
         // MonoGame maps layers 0..255 into clip-space depth. Keep this well
         // above normal scene UI (currently <= 60), but inside that range.
         Layer = 200;
         RefreshText();
+    }
+
+    public void AnchorToScreenBottomRight(int margin = 6)
+    {
+        Vector2 parentPosition = Parent?.PositionOnScreen ?? Vector2.Zero;
+        Position = app.Engine.Resolution.Game - parentPosition - margin;
     }
 
     public void SetGamepadPrompts(params InputPrompt[] prompts) =>
@@ -109,7 +117,10 @@ public sealed class InputPromptOverlay : Window
         int width = 0;
         for (int i = 0; i < prompts.Count; i++)
         {
-            _text[i] = $"[{prompts[i].Control}] {(string)prompts[i].Label}";
+            string label = prompts[i].Label;
+            _text[i] = label.Length == 0
+                ? $"[{prompts[i].Control}]"
+                : $"[{prompts[i].Control}] {label}";
             _textWidths[i] = _font.GetWidth(_text[i]);
             width += _textWidths[i];
         }

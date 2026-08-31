@@ -15,6 +15,7 @@ internal class LanguageScene : Scene
     readonly GuiFont _font;
     readonly GuiFont _selectedFont;
     int _selectedLanguage;
+    readonly InputPromptOverlay _promptOverlay;
 
     public LanguageScene(Module app) : base(app)
     {
@@ -45,7 +46,17 @@ internal class LanguageScene : Scene
         };
 
         _selectedLanguage = app.Language == "de" ? 0 : 1;
+        Windows += _promptOverlay = new InputPromptOverlay(app);
+        _promptOverlay.SetGamepadPrompts(new InputPrompt("A", "@prompts?31"));
+        _promptOverlay.SetKeyboardPrompts(new InputPrompt("Enter", "@prompts?31"));
+        _promptOverlay.AnchorToScreenBottomRight();
         UpdateSelection();
+    }
+
+    public override void OnResizeScreen()
+    {
+        base.OnResizeScreen();
+        _promptOverlay.AnchorToScreenBottomRight();
     }
 
     void UpdateSelection()

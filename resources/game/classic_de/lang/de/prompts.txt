@@ -8,3 +8,26 @@ Deaktivieren
 Name ändern
 Aktivieren
 Umschalten
+Interagieren
+Aktionen
+Weltkarte
+Nächste Runde
+Verschieben
+Benutzen
+Figur
+Zurück
+Essen
+Trinken
+Bauen
+Anlegen
+Ablegen
+Ansehen
+Auffüllen
+Reisen
+Betreten
+Info
+Handeln
+Heilen
+Seite
+Auswählen
+Produktion

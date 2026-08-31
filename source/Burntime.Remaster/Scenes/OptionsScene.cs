@@ -22,6 +22,7 @@ public class OptionsScene : Scene
     readonly OptionsGiveUpPage _giveUpPage;
     readonly OptionsJukeboxPage _jukeboxPage;
     readonly Container _emptyPage;
+    readonly InputPromptOverlay _promptOverlay;
 
     readonly GuiImage _optionsBulb;
     readonly Image _backgroundAni;
@@ -135,6 +136,12 @@ public class OptionsScene : Scene
         Windows += _giveUpPage = new OptionsGiveUpPage(app, fonts) { IsVisible = false };
         Windows += _jukeboxPage = new OptionsJukeboxPage(app, fonts) { IsVisible = false };
         Windows += _emptyPage = new Container(app) { IsVisible = false };
+        Windows += _promptOverlay = new InputPromptOverlay(app);
+        _promptOverlay.SetGamepadPrompts(new("A", "@prompts?31"), new("LB/RB", "@prompts?30"),
+            new("B", "@prompts?17"));
+        _promptOverlay.SetKeyboardPrompts(new("Enter", "@prompts?31"), new("Tab", "@prompts?30"),
+            new("Escape", "@prompts?17"));
+        _promptOverlay.AnchorToScreenBottomRight();
         ActivePage = _savesPage;
         UpdatePageFocus();
     }
@@ -234,6 +241,7 @@ public class OptionsScene : Scene
         base.OnResizeScreen();
         Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
         _backgroundAni.IsVisible = !app.IsNewGfx;
+        _promptOverlay.AnchorToScreenBottomRight();
     }
 
     protected override void OnActivateScene(object parameter)

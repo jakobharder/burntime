@@ -29,6 +29,7 @@ namespace Burntime.Remaster
         MenuWindow menu;
         Image cursorAni;
         DialogWindow dialog;
+        InputPromptOverlay promptOverlay;
         Maps.MapViewOverlayHoverText hoverInfo;
         Maps.MapViewOverlayNearbyAction nearbyAction;
         Maps.MapViewOverlayCharacters charOverlay;
@@ -87,6 +88,9 @@ namespace Burntime.Remaster
             dialog.WindowHide += new EventHandler(dialog_WindowHide);
             dialog.WindowShow += new EventHandler(dialog_WindowShow);
             Windows += dialog;
+
+            Windows += promptOverlay = new InputPromptOverlay(app);
+            promptOverlay.AnchorToScreenBottomRight();
         }
 
         private void View_ContextMenu(Vector2 position, MouseButton button)
@@ -103,6 +107,7 @@ namespace Burntime.Remaster
             dialog.Position = view.Position + (view.Size - dialog.Size) / 2 - new Vector2(0, 10);
             gui.SetMapRenderArea(view, Size);
             app.MouseBoundings = view.Boundings;
+            promptOverlay.AnchorToScreenBottomRight();
         }
 
         void dialog_WindowShow(object sender, EventArgs e)
@@ -364,6 +369,7 @@ namespace Burntime.Remaster
 
         public override void OnUpdate(float Elapsed)
         {
+            UpdatePromptOverlay();
             ResetNextTurnHoldIfReleased();
             UpdateCameraPan(Elapsed);
 
@@ -393,6 +399,33 @@ namespace Burntime.Remaster
 
             if (charOverlay.SelectedCharacter.IsDead)
                 view.Player.SelectGroup(view.Player.Group);
+        }
+
+        void UpdatePromptOverlay()
+        {
+            if (dialog.IsVisible || menu.IsVisible)
+            {
+                promptOverlay.SetGamepadPrompts();
+                promptOverlay.SetKeyboardPrompts();
+                return;
+            }
+
+            bool canInteract = nearbyAction.EntranceNumber != -1 || nearbyAction.Object != null;
+            InputPrompt gamepadAction = canInteract
+                ? new("A", "@prompts?10")
+                : new("Y", "@prompts?11");
+            InputPrompt keyboardAction = canInteract
+                ? new("Enter", "@prompts?10")
+                : new("X", "@prompts?11");
+
+            promptOverlay.SetGamepadPrompts(
+                gamepadAction,
+                new("B", "@prompts?12"),
+                new("Hold D-pad Down", "@prompts?13"));
+            promptOverlay.SetKeyboardPrompts(
+                keyboardAction,
+                new("Escape", "@prompts?12"),
+                new("Hold Tab", "@prompts?13"));
         }
 
         void SyncGamepadCursor()

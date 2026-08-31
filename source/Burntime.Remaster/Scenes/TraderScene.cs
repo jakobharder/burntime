@@ -31,6 +31,7 @@ class TraderScene : Scene
     ItemGridWindow temporarySpace;
     KeyboardArea keyboardArea;
     Vector2? keyboardMousePosition;
+    readonly InputPromptOverlay promptOverlay;
 
     public TraderScene(Module App)
         : base(App)
@@ -93,7 +94,10 @@ class TraderScene : Scene
         temporarySpace.SelectionEmptied += OnSelectionEmptied;
         Windows += temporarySpace;
 
+        Windows += promptOverlay = new InputPromptOverlay(app);
+
         PositionElements();
+        promptOverlay.AnchorToScreenBottomRight();
     }
 
     Vector2 _lastPosition = Vector2.Zero;
@@ -165,6 +169,7 @@ class TraderScene : Scene
         base.OnResizeScreen();
 
         PositionElements();
+        promptOverlay.AnchorToScreenBottomRight();
     }
 
     public override void OnRender(RenderTarget Target)
@@ -451,6 +456,27 @@ class TraderScene : Scene
         PositionElements(requestedSide: keyboardArea == KeyboardArea.Trader
             ? InventorySide.Right
             : InventorySide.Left);
+        UpdatePromptOverlay();
+    }
+
+    void UpdatePromptOverlay()
+    {
+        GuiString primaryLabel = keyboardArea == KeyboardArea.Temporary
+            ? "@prompts?14"
+            : "@prompts?31";
+        List<InputPrompt> gamepad = [new("A", primaryLabel)];
+        List<InputPrompt> keyboard = [new("Enter", primaryLabel)];
+        if (keyboardArea == KeyboardArea.Player)
+        {
+            gamepad.Add(new("X", "@prompts?14"));
+            keyboard.Add(new("F", "@prompts?14"));
+        }
+        gamepad.Add(new("Y", "@prompts?28"));
+        gamepad.Add(new("B", "@prompts?17"));
+        keyboard.Add(new("X", "@prompts?28"));
+        keyboard.Add(new("Escape", "@prompts?17"));
+        promptOverlay.SetGamepadPrompts(gamepad.ToArray());
+        promptOverlay.SetKeyboardPrompts(keyboard.ToArray());
     }
 
     void OnLeftClickItemInventory(Framework.States.StateObject State)

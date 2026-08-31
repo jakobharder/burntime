@@ -21,6 +21,7 @@ namespace Burntime.Remaster.Scenes
         String[] restaurantText = null;
         int drinkLastAmount = 0;
         InventoryKeyboardNavigation keyboardNavigation;
+        readonly InputPromptOverlay promptOverlay;
 
         public PubScene(Module app)
             : base(app)
@@ -95,6 +96,9 @@ namespace Burntime.Remaster.Scenes
 
             font = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray);
             keyboardNavigation = new InventoryKeyboardNavigation(inventory, grid, OnButtonDrink, OnButtonExit);
+            Windows += promptOverlay = new InputPromptOverlay(app);
+            SetPrompts();
+            promptOverlay.AnchorToScreenBottomRight();
         }
 
         public override void OnResizeScreen()
@@ -102,6 +106,15 @@ namespace Burntime.Remaster.Scenes
             base.OnResizeScreen();
 
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+            promptOverlay.AnchorToScreenBottomRight();
+        }
+
+        void SetPrompts()
+        {
+            promptOverlay.SetGamepadPrompts(new("A", "@prompts?14"), new("Y", "@prompts?19"),
+                new("LB", "@prompts?16"), new("B", "@prompts?17"));
+            promptOverlay.SetKeyboardPrompts(new("Enter", "@prompts?14"), new("X", "@prompts?19"),
+                new("Shift+Left", "@prompts?16"), new("Escape", "@prompts?17"));
         }
 
         protected override void OnActivateScene(object parameter)

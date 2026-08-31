@@ -91,7 +91,8 @@ namespace Burntime.Remaster
 
             MouseImage = ResourceManager.GetImage("munt.raw");
 
-            SceneManager.SetScene(string.IsNullOrEmpty(FileSystem.LocalizationCode) ? "LanguageScene" : "IntroScene");
+            //SceneManager.SetScene(string.IsNullOrEmpty(FileSystem.LocalizationCode) ? "LanguageScene" : "IntroScene");
+            SceneManager.SetScene("LanguageScene");
         }
 
         protected override void OnRun()

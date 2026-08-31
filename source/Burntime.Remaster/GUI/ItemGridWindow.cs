@@ -287,6 +287,10 @@ namespace Burntime.Remaster.GUI
             }
         }
 
+        public Item? KeyboardSelectedItem => IsValidKeyboardIndex(keyboardIndex)
+            ? items[gridPositions[keyboardIndex]]
+            : null;
+
         public bool ActivateKeyboardItem(bool secondary)
         {
             if (!IsValidKeyboardIndex(keyboardIndex))

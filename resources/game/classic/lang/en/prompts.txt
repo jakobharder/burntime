@@ -8,3 +8,26 @@ Disable
 Change name
 Enable
 Toggle
+Interact
+Actions
+World map
+Next turn
+Move
+Use
+Character
+Back
+Eat
+Drink
+Build
+Equip
+Unequip
+Inspect
+Refill
+Travel
+Enter
+Info
+Trade
+Heal
+Page
+Select
+Production
