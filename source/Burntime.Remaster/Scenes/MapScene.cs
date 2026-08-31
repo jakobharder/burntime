@@ -27,12 +27,6 @@ namespace Burntime.Remaster
                 return false;
             }
 
-            if (key.IsVirtual && key.VirtualKey == SystemKey.Escape)
-            {
-                action = InputAction.GlobalAction;
-                return true;
-            }
-
             return base.TryGetInputAction(key, out action);
         }
 
@@ -370,9 +364,10 @@ namespace Burntime.Remaster
             }
             if (canShowInfo)
                 prompts.Add(new(InputAction.Secondary, "@prompts?27"));
-            prompts.Add(new(InputAction.GlobalAction, "@prompts?11")
+            prompts.Add(new(InputAction.Back, "@prompts?11")
             {
-                KeyboardOverride = "Esc"
+                PreferredKeyboardControl = new Key(SystemKey.Escape),
+                PreferredGamepadControl = GamepadControl.B
             });
             _promptOverlay.SetPrompts(prompts.ToArray());
         }
@@ -465,8 +460,7 @@ namespace Burntime.Remaster
 
             if (action == InputAction.Back)
             {
-                SetKeyboardSelection(game.World.ActivePlayerObj.Location.Id);
-                _followKeyboardSelection = true;
+                ShowContextMenu(view.Boundings.Center, false);
                 return true;
             }
 
@@ -495,12 +489,6 @@ namespace Burntime.Remaster
                     (app as BurntimeClassic).InfoCity = game.World.ActivePlayerObj.Location;
                     app.SceneManager.SetScene("InfoScene");
                 }
-                return true;
-            }
-
-            if (action == InputAction.GlobalAction)
-            {
-                ShowContextMenu(view.Boundings.Center, false);
                 return true;
             }
 

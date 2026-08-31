@@ -32,6 +32,8 @@ class TraderScene : Scene
     KeyboardArea keyboardArea;
     Vector2? keyboardMousePosition;
     readonly InputPromptOverlay promptOverlay;
+    readonly InputPromptOverlay exitPromptOverlay;
+    readonly InputPromptOverlay actionPromptOverlay;
 
     public TraderScene(Module App)
         : base(App)
@@ -95,9 +97,38 @@ class TraderScene : Scene
         Windows += temporarySpace;
 
         Windows += promptOverlay = new InputPromptOverlay(app);
+        Windows += exitPromptOverlay = CreateInlinePrompt(InputAction.Back);
+        Windows += actionPromptOverlay = CreateInlinePrompt(InputAction.SceneAction);
 
         PositionElements();
         promptOverlay.AnchorToScreenBottomRight();
+    }
+
+    InputPromptOverlay CreateInlinePrompt(InputAction action)
+    {
+        InputPromptOverlay prompt = new(app)
+        {
+            HorizontalAlignment = PositionAlignment.Left,
+            VerticalAlignment = PositionAlignment.Left
+        };
+        prompt.SetPrompts(new InputPrompt(action, ""));
+        return prompt;
+    }
+
+    void UpdateInlinePromptPositions()
+    {
+        exitPromptOverlay.Position = new Vector2(exitButton.Boundings.Right + 2, 181);
+        actionPromptOverlay.Position = new Vector2(acceptButton.Boundings.Right + 2, 181);
+        if (exitPromptOverlay.IsVisible != exitButton.IsVisible)
+            exitPromptOverlay.IsVisible = exitButton.IsVisible;
+        if (actionPromptOverlay.IsVisible != acceptButton.IsVisible)
+            actionPromptOverlay.IsVisible = acceptButton.IsVisible;
+    }
+
+    public override void OnUpdate(float elapsed)
+    {
+        base.OnUpdate(elapsed);
+        UpdateInlinePromptPositions();
     }
 
     Vector2 _lastPosition = Vector2.Zero;
@@ -162,6 +193,8 @@ class TraderScene : Scene
 
         if (mousePosition.HasValue)
             _lastPosition = mousePosition.Value;
+
+        UpdateInlinePromptPositions();
     }
 
     public override void OnResizeScreen()
@@ -312,7 +345,7 @@ class TraderScene : Scene
             return true;
         }
 
-        if (action == InputAction.GlobalAction)
+        if (action == InputAction.SceneAction)
         {
             OnButtonAccept();
             EnsureKeyboardArea();
@@ -465,6 +498,9 @@ class TraderScene : Scene
             ? "@prompts?14"
             : "@prompts?31";
         List<InputPrompt> prompts = [];
+        prompts.Add(new(InputAction.Primary, primaryLabel));
+        if (keyboardArea == KeyboardArea.Player)
+            prompts.Add(new(InputAction.Secondary, "@prompts?14"));
         if (inventory.ActiveCharacter.GetGroup().Count > 1)
         {
             prompts.Add(new(InputAction.Statistics, "@prompts?16")
@@ -478,11 +514,6 @@ class TraderScene : Scene
             PreferredKeyboardControl = new Key(SystemKey.Right, ModifierKeys.Shift),
             PreferredGamepadControl = GamepadControl.RightShoulder
         });
-        prompts.Add(new(InputAction.Primary, primaryLabel));
-        if (keyboardArea == KeyboardArea.Player)
-            prompts.Add(new(InputAction.Secondary, "@prompts?14"));
-        prompts.Add(new(InputAction.GlobalAction, "@prompts?28"));
-        prompts.Add(new(InputAction.Back, "@prompts?17"));
         promptOverlay.SetPrompts(prompts.ToArray());
     }
 

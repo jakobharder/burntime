@@ -22,8 +22,8 @@
 | `PanCamera*` - secondary direction | W/A/S/D | Right stick | all
 | `Primary` | Space / Enter | A | all
 | `Secondary` | F | X | all except options; setup uses X and Shift+Up/Down
-| `GlobalAction` | X | Y | all except options
-| `Back` | Backspace / Escape* | B | all except setup
+| `SceneAction` | X | Y | scene-specific actions
+| `Back` | Escape | B | all
 | `Options` | O | Menu | both maps, setup
 | `Statistics` | Q / Shift+Left | D-pad left / Left shoulder | both maps
 | `Inventory` | R / I | D-pad up | both maps
@@ -35,15 +35,15 @@
 | `RightArea` | E / Shift+Right | Right shoulder | all but maps
 
 The default keyboard and gamepad mappings are configured in the `[keyboard]` and `[gamepad]` sections of `settings.txt`.
-Prompt rows and map-menu shortcut columns resolve their controls from the active mappings and omit unbound actions. Composite navigation hints and scene-specific controls such as map `Escape` are explicit exceptions.
+Prompt rows and map-menu shortcut columns resolve their controls from the active mappings and omit unbound actions. Composite navigation hints remain explicit exceptions.
 
 When no input mode has been established yet, any keyboard press activates keyboard mode. The same applies when switching from gamepad to keyboard. While mouse mode is active, only an arrow-key press switches to keyboard mode; other keys remain shortcuts shared with mouse control and do not hide the mouse cursor or replace mouse mode.
 
-On both maps, `Escape` opens the context menu and `O` opens Options directly. On the location map, `Backspace`, Gamepad B, `V`, `M`, or Gamepad View opens the world map. Contextual map actions advertise `Space`; `Enter` remains an equivalent `Primary` binding but is not shown in the prompt overlay.
+On both maps, `Escape` or Gamepad B opens the actions menu and `O` opens Options directly. On the location map, `V`, `M`, or Gamepad View opens the world map. Contextual map actions advertise `Space`; `Enter` remains an equivalent `Primary` binding but is not shown in the prompt overlay.
 
-Map context menus show available direct shortcuts beside their matching entries. Those shortcuts remain active while the menu is open. Entries without a direct binding leave the shortcut column blank. The world map omits its Travel/Info-mode entry when the menu is opened with keyboard or gamepad; a mouse-opened menu retains it and shows `C` as its toggle shortcut.
+Map actions menus show available direct shortcuts beside their matching entries. Those shortcuts remain active while the menu is open. Entries without a direct binding leave the shortcut column blank. The world map omits its Travel/Info-mode entry when the menu is opened with keyboard or gamepad; a mouse-opened menu retains it and shows `C` as its toggle shortcut.
 
-`GlobalAction` is a scene-level command: e.g. start game, accept trade, or open a context menu. The maps additionally map `Escape` to this action for their prompt overlays; the configured `X` binding remains functional.
+`SceneAction` is the scene-specific extra command: e.g. accept a trade, eat, drink or heal. On the location map it opens a separate group menu containing the available Single/All, Dismiss and Make/Leave Camp commands. The prompt is omitted when no group command is available. The keyboard/gamepad actions menu keeps Info, World Map, Inventory, Statistics, Options and Next Turn. For mouse play, right-click retains the original combined menu with interaction, group and global commands. Prompt overlays and context-menu shortcut columns remain hidden in mouse mode. `SceneAction` is unused on the world map and during game setup.
 
 On map scenes, tap `Tab` or `D-pad down` has no effect.
 The logic for holding is to prevent a single tap to initiate a turn.
@@ -58,6 +58,15 @@ When no text input is active, typing may activate the input associated with the 
 Text changes take effect immediately; leaving the input does not commit or cancel them. Active, selected and normal text inputs need distinct visual states.
 Gamepad actions remain available; names are selected or generated without gamepad text entry.
 
+### Language selection
+
+- Before the first input, Steam Deck and GameScope sessions present gamepad controls; other platforms start in mouse mode. The first actual input replaces that initial assumption normally.
+- The first-time language scene ignores saved language settings. A German system UI culture defaults to German and every other culture defaults to English.
+- Mouse hover and keyboard/gamepad focus share one language selection instead of producing separate highlights.
+- The selected language uses an orange highlight; the other language uses muted blue.
+- Changing the selection immediately previews hardcoded German/English text in the fullscreen hint and prompt overlay, without reloading language resources or fading the scene. Left/right changes the preview and Primary applies the language and confirms it.
+- The fullscreen hint shows `Alt+Enter` on macOS and `F11` on other supported desktop platforms.
+
 ### Game setup
 
 - Player 1 starts enabled with a generated name, while Start has focus.
@@ -65,8 +74,9 @@ Gamepad actions remain available; names are selected or generated without gamepa
 - `Tab` switches between Player 1 and Player 2. `Shift+Tab` switches in reverse. From the button group, Tab prefers Player 1 and Shift+Tab prefers Player 2 when both are enabled.
 - While an enabled player is selected, `Shift+Left/Right` or Gamepad LB/RB selects the previous/next face. `Shift+Left/Right` is the general keyboard equivalent of LB/RB throughout the game.
 - While an enabled player is selected, `Shift+Up/Down` or Gamepad X swaps the two player colors.
-- Menu opens Options.
+- Menu, `Escape`, or Gamepad B opens Options.
 - `Enter` or Gamepad `A` toggles the selected player on/off. At least one player remains enabled.
+- `Enter` or Gamepad `A` starts the game when Start is selected; X/Y is not a second Start shortcut.
 - A mouse click on another player selects it without changing whether it is enabled. Clicking the selected player toggles it.
 - Typing while a disabled player is selected enables them and starts a new name with the typed character.
 - Manual names survive disabling and re-enabling a player. Backspacing a name to empty returns it to automatic-name behavior; leaving an enabled empty name field generates a new random name.

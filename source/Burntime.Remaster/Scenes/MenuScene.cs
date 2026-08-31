@@ -432,8 +432,8 @@ public class MenuScene : Scene
             case InputAction.Options:
                 OnButtonLoad();
                 return true;
-            case InputAction.GlobalAction:
-                OnButtonStart();
+            case InputAction.Back:
+                OnButtonLoad();
                 return true;
             default:
                 return false;
@@ -460,12 +460,6 @@ public class MenuScene : Scene
             (key.Modifier & ModifierKeys.Shift) != 0)
         {
             action = InputAction.Secondary;
-            return true;
-        }
-
-        if (key.IsVirtual && key.VirtualKey == SystemKey.Escape)
-        {
-            action = InputAction.Options;
             return true;
         }
 
@@ -508,8 +502,6 @@ public class MenuScene : Scene
         selectedPlayer.SetAutomaticName("");
         return selectedPlayer.OnKeyPress(key);
     }
-
-    bool IsNameInputActive => PlayerOneSwitch.IsTextInputActive || PlayerTwoSwitch.IsTextInputActive;
 
     void SelectPlayer(int player, bool activateName)
     {
@@ -626,13 +618,11 @@ public class MenuScene : Scene
                 },
                 primary
             ];
-            if (!IsNameInputActive)
-                prompts.Add(new(InputAction.GlobalAction, "@prompts?2"));
             _promptOverlay.SetPrompts(prompts.ToArray());
             return;
         }
 
-        _promptOverlay.SetPrompts(primary, new(InputAction.GlobalAction, "@prompts?2"));
+        _promptOverlay.SetPrompts(primary);
     }
 
     public override void OnUpdate(float elapsed)

@@ -33,3 +33,8 @@ Select
 Production
 Goods
 Talk
+Group
+Offer
+Take
+Fight
+Store

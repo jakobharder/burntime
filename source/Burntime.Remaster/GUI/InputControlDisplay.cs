@@ -40,7 +40,7 @@ static class InputControlDisplay
             IReadOnlyList<Key> controls = app.KeyboardActionBindings.GetControls(action);
             if (controls.Count == 0)
                 return string.Empty;
-            Key control = FindPreferred(controls, preferredKeyboardControl ?? DefaultKeyboardControl(action));
+            Key control = FindPreferred(controls, preferredKeyboardControl);
             return Format(control);
         }
 
@@ -59,21 +59,6 @@ static class InputControlDisplay
 
         return string.Empty;
     }
-
-    static Key? DefaultKeyboardControl(InputAction action) => action switch
-    {
-        InputAction.Primary => new Key(SystemKey.Enter),
-        InputAction.Back => new Key(SystemKey.Escape),
-        InputAction.Secondary => new Key('f'),
-        InputAction.GlobalAction => new Key('x'),
-        InputAction.Options => new Key('o'),
-        InputAction.Statistics => new Key('q'),
-        InputAction.NextTurn => new Key(SystemKey.Tab),
-        InputAction.Inventory => new Key('i'),
-        InputAction.LocationInfo => new Key('e'),
-        InputAction.WorldMap => new Key('v'),
-        _ => null
-    };
 
     static GamepadControl? DefaultGamepadControl(InputAction action) => action switch
     {

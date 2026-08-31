@@ -3,7 +3,8 @@ using Burntime.Framework.GUI;
 using Burntime.Platform;
 using Burntime.Platform.Graphics;
 using Burntime.Remaster;
-using Microsoft.VisualBasic;
+using System;
+using System.Globalization;
 
 namespace Burntime.Classic.Scenes;
 
@@ -19,9 +20,16 @@ internal class LanguageScene : Scene
 
     public LanguageScene(Module app) : base(app)
     {
+        Size = app.Engine.Resolution.Game;
         var center = app.Engine.Resolution.Game / 2;
-        _font = new GuiFont(BurntimeClassic.FontName, PixelColor.White) { Borders = Platform.Graphics.TextBorders.None };
-        _selectedFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56)) { Borders = Platform.Graphics.TextBorders.None };
+        _font = new GuiFont(BurntimeClassic.FontName, new PixelColor(108, 116, 168))
+        {
+            Borders = TextBorders.None
+        };
+        _selectedFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 164, 56))
+        {
+            Borders = TextBorders.None
+        };
 
         _hintFont = new GuiFont("highres-font.txt", new PixelColor(128, 128, 128)) { Borders = Platform.Graphics.TextBorders.None };
 
@@ -45,9 +53,8 @@ internal class LanguageScene : Scene
             IsTextOnly = true
         };
 
-        _selectedLanguage = app.Language == "de" ? 0 : 1;
+        _selectedLanguage = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "de" ? 0 : 1;
         Windows += _promptOverlay = new InputPromptOverlay(app);
-        _promptOverlay.SetPrompts(new InputPrompt(InputAction.Primary, "@prompts?31"));
         _promptOverlay.AnchorToScreenBottomRight();
         UpdateSelection();
     }
@@ -55,13 +62,22 @@ internal class LanguageScene : Scene
     public override void OnResizeScreen()
     {
         base.OnResizeScreen();
+        Size = app.Engine.Resolution.Game;
         _promptOverlay.AnchorToScreenBottomRight();
     }
 
     void UpdateSelection()
     {
-        _german.Font = _selectedLanguage == 0 ? _selectedFont : _font;
-        _english.Font = _selectedLanguage == 1 ? _selectedFont : _font;
+        _german.IsKeyboardSelected = _selectedLanguage == 0;
+        _english.IsKeyboardSelected = _selectedLanguage == 1;
+        bool german = _selectedLanguage == 0;
+        _promptOverlay.SetPrompts(
+            new InputPrompt(InputAction.MoveLeft, german ? "Sprache" : "Language")
+            {
+                AlternateAction = InputAction.MoveRight,
+                GamepadOverride = "D-pad/Stick Left/Right"
+            },
+            new InputPrompt(InputAction.Primary, german ? "Auswählen" : "Select"));
     }
 
     public override bool OnInputAction(InputAction action)
@@ -108,10 +124,10 @@ internal class LanguageScene : Scene
 
         var center = app.Engine.Resolution.Game / 2;
 
-        bool showGermanHint = _german.IsHover || (!_english.IsHover && _selectedLanguage == 0);
-        _hintFont.DrawText(target, center + new Vector2(0, 20), showGermanHint
-            ? "Tipp: drücke F11 für Vollbild"
-            : "Hint: use F11 for fullscreen",
+        string shortcut = OperatingSystem.IsMacOS() ? "Alt+Enter" : "F11";
+        _hintFont.DrawText(target, center + new Vector2(0, 20), _selectedLanguage == 0
+            ? $"Tipp: drücke {shortcut} für Vollbild"
+            : $"Hint: use {shortcut} for fullscreen",
             TextAlignment.Center);
     }
 }

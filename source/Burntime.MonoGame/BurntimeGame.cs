@@ -32,6 +32,9 @@ namespace Burntime.MonoGame
         BurntimeClassic _burntimeApp;
         readonly GraphicsDeviceManager _graphics;
         readonly GameThread _gameThread = new();
+        readonly bool _emulateSteamMachine;
+        readonly bool _emulateSteamDeck;
+        readonly bool _chooseLanguage;
 
         public MusicPlayback Music { get; } = new MusicPlayback();
         IMusic IEngine.Music => Music;
@@ -60,7 +63,9 @@ namespace Burntime.MonoGame
 
         bool _isFullscreen = false;
         bool _requestFullscreen = false;
-        public bool SupportsFullscreenToggle { get; } = !IsGamescopeSession() && !IsSteamDeck();
+        bool IsSteamSession => _emulateSteamMachine || _emulateSteamDeck ||
+            IsGamescopeSession() || IsSteamDeck();
+        public bool SupportsFullscreenToggle => !IsSteamSession;
         public bool IsFullscreen 
         {
             get => _isFullscreen;
@@ -79,8 +84,12 @@ namespace Burntime.MonoGame
 
         bool _initialized = false;
 
-        public BurntimeGame()
+        public BurntimeGame(bool emulateSteamMachine = false, bool emulateSteamDeck = false,
+            bool chooseLanguage = false)
         {
+            _emulateSteamMachine = emulateSteamMachine;
+            _emulateSteamDeck = emulateSteamDeck;
+            _chooseLanguage = chooseLanguage;
             _graphics = new GraphicsDeviceManager(this);
             IsFixedTimeStep = true;
             TargetElapsedTime = TimeSpan.FromSeconds(1.0 / TargetFramesPerSecond);
@@ -104,6 +113,10 @@ namespace Burntime.MonoGame
             Log.Initialize(logPath);
             Log.Info(System.DateTime.Now.ToLocalTime().ToString());
             Log.Info("Burntime version " + BurntimeClassic.Version);
+            if (_emulateSteamDeck)
+                Log.Info("Steam Deck test mode: 1280x800 windowed");
+            else if (_emulateSteamMachine)
+                Log.Info("Steam Machine test mode: gamescope features, windowed");
 
             Window.Title = "Burntime " + BurntimeClassic.Version;
 
@@ -118,6 +131,10 @@ namespace Burntime.MonoGame
             Log.DebugOut = cfg["engine"].GetBool("debug");
 
             _burntimeApp = new();
+            _burntimeApp.ChooseLanguageOnStart = _chooseLanguage;
+            _burntimeApp.LastInputMode = IsSteamSession
+                ? InputMode.Gamepad
+                : InputMode.Mouse;
 
             Resolution.RatioCorrection = _burntimeApp.RatioCorrection;
             Resolution.MinResolution = _burntimeApp.MinResolution;
@@ -174,8 +191,10 @@ namespace Burntime.MonoGame
             {
                 if (resetWindowSize || initialize)
                 {
-                    Resolution.Native = new Platform.Vector2(GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
-                        GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height) / 2;
+                    Resolution.Native = _emulateSteamDeck
+                        ? new Platform.Vector2(1280, 800)
+                        : new Platform.Vector2(GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
+                            GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height) / 2;
                     //Resolution.Native = new Platform.Vector2(2560, 1440);
                 }
                 else
@@ -190,6 +209,14 @@ namespace Burntime.MonoGame
                 _graphics.IsFullScreen = false;
             }
             _graphics.ApplyChanges();
+
+            // PreferredBackBufferWidth/Height resize the client area. Read it back
+            // after the platform has applied window decorations and DPI handling.
+            if (!IsFullscreen)
+            {
+                Resolution.Native = new Platform.Vector2(Window.ClientBounds.Width,
+                    Window.ClientBounds.Height);
+            }
             if (!initialize)
                 _burntimeApp.SceneManager.ResizeScene();
             MainTarget = new RenderTarget(this, new Rect(Platform.Vector2.Zero, Resolution.Game));

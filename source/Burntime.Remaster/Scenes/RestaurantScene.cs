@@ -23,6 +23,10 @@ namespace Burntime.Remaster.Scenes
         Image ani;
         InventoryKeyboardNavigation keyboardNavigation;
         readonly InputPromptOverlay promptOverlay;
+        readonly InputPromptOverlay exitPromptOverlay;
+        readonly InputPromptOverlay actionPromptOverlay;
+        readonly Button exitButton;
+        readonly Button actionButton;
 
         public RestaurantScene(Module app)
             : base(app)
@@ -37,23 +41,23 @@ namespace Burntime.Remaster.Scenes
             inventory.LeftClickItemEvent += OnLeftClickItemInventory;
             Windows += inventory;
 
-            Button button = new Button(app);
-            button.Position = new Vector2(25, 183);
-            button.Text = app.ResourceManager.GetString("burn?354");
-            button.Font = new GuiFont(BurntimeClassic.FontName, new PixelColor(92, 92, 148));
-            button.HoverFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(144, 160, 212));
-            button.Command += OnButtonExit;
-            button.SetTextOnly();
-            Windows += button;
+            exitButton = new Button(app);
+            exitButton.Position = new Vector2(25, 183);
+            exitButton.Text = app.ResourceManager.GetString("burn?354");
+            exitButton.Font = new GuiFont(BurntimeClassic.FontName, new PixelColor(92, 92, 148));
+            exitButton.HoverFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(144, 160, 212));
+            exitButton.Command += OnButtonExit;
+            exitButton.SetTextOnly();
+            Windows += exitButton;
 
-            button = new Button(app);
-            button.Position = new Vector2(116, 183);
-            button.Text = app.ResourceManager.GetString("burn?415");
-            button.Font = new GuiFont(BurntimeClassic.FontName, new PixelColor(92, 92, 148));
-            button.HoverFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(144, 160, 212));
-            button.Command += OnButtonEat;
-            button.SetTextOnly();
-            Windows += button;
+            actionButton = new Button(app);
+            actionButton.Position = new Vector2(116, 183);
+            actionButton.Text = app.ResourceManager.GetString("burn?415");
+            actionButton.Font = new GuiFont(BurntimeClassic.FontName, new PixelColor(92, 92, 148));
+            actionButton.HoverFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(144, 160, 212));
+            actionButton.Command += OnButtonEat;
+            actionButton.SetTextOnly();
+            Windows += actionButton;
 
             grid = new ItemGridWindow(app);
             grid.Position = new Vector2(160, 165);
@@ -65,8 +69,10 @@ namespace Burntime.Remaster.Scenes
             font = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray);
             keyboardNavigation = new InventoryKeyboardNavigation(inventory, grid, OnButtonEat, OnButtonExit);
             Windows += promptOverlay = new InputPromptOverlay(app);
-            SetPrompts();
             promptOverlay.AnchorToScreenBottomRight();
+            Windows += exitPromptOverlay = CreateInlinePrompt(InputAction.Back);
+            Windows += actionPromptOverlay = CreateInlinePrompt(InputAction.SceneAction);
+            UpdateInlinePromptPositions();
         }
 
         public override void OnResizeScreen()
@@ -75,19 +81,48 @@ namespace Burntime.Remaster.Scenes
 
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
             promptOverlay.AnchorToScreenBottomRight();
+            UpdateInlinePromptPositions();
         }
 
-        void SetPrompts()
+        InputPromptOverlay CreateInlinePrompt(InputAction action)
         {
-            promptOverlay.SetPrompts(
-                new(InputAction.Primary, "@prompts?14"),
-                new(InputAction.GlobalAction, "@prompts?18"),
-                new(InputAction.Statistics, "@prompts?16")
+            InputPromptOverlay prompt = new(app)
+            {
+                HorizontalAlignment = PositionAlignment.Left,
+                VerticalAlignment = PositionAlignment.Left
+            };
+            prompt.SetPrompts(new InputPrompt(action, ""));
+            return prompt;
+        }
+
+        void UpdateInlinePromptPositions()
+        {
+            exitPromptOverlay.Position = new Vector2(exitButton.Boundings.Right + 2, 181);
+            actionPromptOverlay.Position = new Vector2(actionButton.Boundings.Right + 2, 181);
+        }
+
+        public override void OnUpdate(float elapsed)
+        {
+            base.OnUpdate(elapsed);
+            UpdateInlinePromptPositions();
+            UpdatePromptOverlay();
+        }
+
+        void UpdatePromptOverlay()
+        {
+            List<InputPrompt> prompts = [];
+            if (keyboardNavigation.CanMoveSelectedItem())
+                prompts.Add(new(InputAction.Primary,
+                    keyboardNavigation.ActiveGrid == grid ? "@prompts?37" : "@prompts?36"));
+            if (inventory.ActiveCharacter.GetGroup().Count > 1)
+            {
+                prompts.Add(new(InputAction.Statistics, "@prompts?16")
                 {
                     PreferredKeyboardControl = new Key(SystemKey.Left, ModifierKeys.Shift),
                     PreferredGamepadControl = GamepadControl.LeftShoulder
-                },
-                new(InputAction.Back, "@prompts?17"));
+                });
+            }
+            promptOverlay.SetPrompts(prompts.ToArray());
         }
 
         protected override void OnActivateScene(object parameter)
@@ -113,6 +148,7 @@ namespace Burntime.Remaster.Scenes
             eatLastAmount = -1;
             grid.Clear();
             keyboardNavigation.Reset();
+            UpdatePromptOverlay();
         }
 
         public override bool OnInputAction(InputAction action) => keyboardNavigation.Handle(action);
@@ -172,7 +208,8 @@ namespace Burntime.Remaster.Scenes
             eatLastAmount = -1;
 
             // return item to group
-            inventory.Grid.Add(state as Item);
+            if (!inventory.Grid.Add(state as Item))
+                return;
             inventory.ActiveCharacter.Items.Add(state as Item);
 
             grid.Remove(state as Item);

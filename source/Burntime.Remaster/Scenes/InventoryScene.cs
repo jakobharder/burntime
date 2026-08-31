@@ -158,8 +158,15 @@ namespace Burntime.Remaster.Scenes
             List<InputPrompt> prompts = [];
             if (secondaryAction != null)
                 prompts.Add(new(InputAction.Secondary, secondaryAction));
-            if (selectedItem != null)
-                prompts.Add(new(InputAction.Primary, "@prompts?14"));
+            bool canTransfer = selectedItem != null && grid != null &&
+                (activeGrid == inventory.Grid
+                    ? grid.Count < grid.MaxCount
+                    : inventory.Grid.Count < inventory.Grid.MaxCount);
+            if (canTransfer)
+            {
+                prompts.Add(new(InputAction.Primary,
+                    activeGrid == inventory.Grid ? "@prompts?39" : "@prompts?37"));
+            }
             if (group.Count > 1)
             {
                 prompts.Add(new(InputAction.Statistics, "@prompts?16")

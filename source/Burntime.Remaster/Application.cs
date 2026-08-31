@@ -85,14 +85,17 @@ namespace Burntime.Remaster
             FindClassesFromAssembly(typeof(BurntimeClassic).Assembly);
         }
 
+        public bool ChooseLanguageOnStart { get; set; }
+
         public override void Start()
         {
             Engine.Music.Enabled = (!DisableMusic) && (MusicMode != MusicModes.Off);
 
             MouseImage = ResourceManager.GetImage("munt.raw");
 
-            //SceneManager.SetScene(string.IsNullOrEmpty(FileSystem.LocalizationCode) ? "LanguageScene" : "IntroScene");
-            SceneManager.SetScene("LanguageScene");
+            SceneManager.SetScene(ChooseLanguageOnStart || string.IsNullOrEmpty(FileSystem.LocalizationCode)
+                ? "LanguageScene"
+                : "IntroScene");
         }
 
         protected override void OnRun()

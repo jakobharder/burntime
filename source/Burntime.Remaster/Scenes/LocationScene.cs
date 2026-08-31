@@ -21,17 +21,6 @@ namespace Burntime.Remaster
 
         public override InputAction ResolveInputAction(InputAction action) => action;
 
-        public override bool TryGetInputAction(Key key, out InputAction action)
-        {
-            if (key.IsVirtual && key.VirtualKey == SystemKey.Escape)
-            {
-                action = InputAction.GlobalAction;
-                return true;
-            }
-
-            return base.TryGetInputAction(key, out action);
-        }
-
         const int PICKUP_DISTANCE = 20;
         const float NEXT_TURN_HOLD_TIME = 0.6f;
 
@@ -50,6 +39,7 @@ namespace Burntime.Remaster
         bool nextTurnTriggered;
         bool cameraPanActive;
         bool followCharacterAfterPan;
+        bool groupMenuOpen;
 
         private bool fightMode
         {
@@ -114,7 +104,7 @@ namespace Burntime.Remaster
 
         private void View_ContextMenu(Vector2 position, MouseButton button)
         {
-            ShowMenu(position, true);
+            ShowActionsMenu(position, true);
         }
 
         public override void OnResizeScreen()
@@ -161,7 +151,7 @@ namespace Burntime.Remaster
         {
             if (e.Button == MouseButton.Right)
             {
-                ShowMenu(e.Position, true);
+                ShowActionsMenu(e.Position, true);
                 return;
             }
 
@@ -240,7 +230,7 @@ namespace Burntime.Remaster
 
             if (action == InputAction.Back)
             {
-                OnMenuMap();
+                ShowActionsMenu(view.Boundings.Center, false);
                 return true;
             }
 
@@ -274,9 +264,9 @@ namespace Burntime.Remaster
                 return true;
             }
 
-            if (action == InputAction.GlobalAction)
+            if (action == InputAction.SceneAction)
             {
-                ShowMenu(view.Boundings.Center, false);
+                ShowGroupMenu(view.Boundings.Center, false);
                 return true;
             }
 
@@ -450,14 +440,15 @@ namespace Burntime.Remaster
                 });
             }
             if (nearbyAction.Object is Character target && target.Player != view.Player)
-                prompts.Add(new(InputAction.Secondary, "@burn?352"));
-            prompts.Add(new(InputAction.GlobalAction, "@prompts?11")
+                prompts.Add(new(InputAction.Secondary, "@prompts?38"));
+            if (HasGroupMenuCommands())
             {
-                KeyboardOverride = "Esc"
-            });
-            prompts.Add(new(InputAction.Back, "@prompts?12")
+                prompts.Add(new(InputAction.SceneAction, "@prompts?35"));
+            }
+            prompts.Add(new(InputAction.Back, "@prompts?11")
             {
-                PreferredKeyboardControl = new Key('\b')
+                PreferredKeyboardControl = new Key(SystemKey.Escape),
+                PreferredGamepadControl = GamepadControl.B
             });
 
             promptOverlay.SetPrompts(prompts.ToArray());
@@ -626,8 +617,9 @@ namespace Burntime.Remaster
             app.GameState.Container.RemoveNotifycationHandler(this);
         }
 
-        void ShowMenu(Vector2 position, bool openedByMouse)
+        void ShowActionsMenu(Vector2 position, bool openedByMouse)
         {
+            groupMenuOpen = false;
             menu.Clear();
             List<InputShortcut> shortcuts = [];
 
@@ -653,33 +645,16 @@ namespace Burntime.Remaster
                 }
             }
 
-            if (view.Player.Group.Count > 1)
-            {
-                if (!view.Player.SingleMode)
-                {
-                    AddLine("@burn?358", OnMenuSingle);
-                }
-                else
-                {
-                    AddLine("@burn?356", OnMenuAll);
-                }
-            }
-
-            if (charOverlay.SelectedCharacter != view.Player.Character)
-            {
-                AddLine("@burn?363", OnMenuDismiss);
-                if (view.Player.Group.Contains(charOverlay.SelectedCharacter))
-                {
-                    AddLine("@burn?364", OnMenuMakeCamp);
-                }
-                else if (view.Player.Group.Count < Logic.Group.MAX_PEOPLE)
-                {
-                    AddLine("@burn?365", OnMenuLeaveCamp);
-                }
-            }
+            if (openedByMouse)
+                AddGroupMenuLines((text, command) => AddLine(text, command));
 
             AddLine("@burn?362", OnMenuMap, new(InputAction.WorldMap));
             AddLine("@burn?367", OnMenuInventory, new(InputAction.Inventory));
+            if (!openedByMouse)
+            {
+                AddLine("@burn?359", () => app.SceneManager.SetScene("StatisticsScene"),
+                    new(InputAction.Statistics));
+            }
             AddLine("@burn?361", () => app.SceneManager.SetScene("OptionsScene"),
                 new(InputAction.Options));
             AddLine("@burn?357", OnMenuTurn, new(InputAction.NextTurn) { Hold = true });
@@ -689,10 +664,58 @@ namespace Burntime.Remaster
             menuShortcutColumn.PlaceBeside(menu, view.Boundings);
         }
 
+        bool HasGroupMenuCommands() =>
+            charOverlay.SelectedCharacter != null &&
+            (view.Player.Group.Count > 1 || charOverlay.SelectedCharacter != view.Player.Character);
+
+        void AddGroupMenuLines(Action<GuiString, Action> addLine)
+        {
+            if (view.Player.Group.Count > 1)
+            {
+                if (!view.Player.SingleMode)
+                    addLine("@burn?358", OnMenuSingle);
+                else
+                    addLine("@burn?356", OnMenuAll);
+            }
+
+            if (charOverlay.SelectedCharacter != view.Player.Character)
+            {
+                addLine("@burn?363", OnMenuDismiss);
+                if (view.Player.Group.Contains(charOverlay.SelectedCharacter))
+                    addLine("@burn?364", OnMenuMakeCamp);
+                else if (view.Player.Group.Count < Logic.Group.MAX_PEOPLE)
+                    addLine("@burn?365", OnMenuLeaveCamp);
+            }
+        }
+
+        void ShowGroupMenu(Vector2 position, bool openedByMouse)
+        {
+            if (!HasGroupMenuCommands())
+                return;
+
+            groupMenuOpen = true;
+            menu.Clear();
+            AddGroupMenuLines((text, command) =>
+                menu.AddLine(text, new CommandHandler(command)));
+
+            menu.Show(position, view.Boundings, openedByMouse);
+            menuShortcutColumn.SetShortcuts();
+            menuShortcutColumn.PlaceBeside(menu, view.Boundings);
+        }
+
         bool OnMenuShortcut(InputAction action)
         {
+            if (groupMenuOpen)
+                return false;
+
             switch (action)
             {
+                case InputAction.SceneAction:
+                    if (!HasGroupMenuCommands())
+                        return true;
+                    menu.Hide();
+                    ShowGroupMenu(view.Boundings.Center, false);
+                    return true;
                 case InputAction.Inventory:
                     menu.Hide();
                     OnMenuInventory();
@@ -734,6 +757,9 @@ namespace Burntime.Remaster
 
         bool OnMenuHeldShortcut(InputAction action, float elapsed)
         {
+            if (groupMenuOpen)
+                return false;
+
             bool handled = action == InputAction.NextTurn && OnHeldInputAction(action, elapsed);
             if (nextTurnTriggered)
                 menu.Hide();
