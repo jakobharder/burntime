@@ -7,7 +7,16 @@ using System.Collections.Generic;
 
 namespace Burntime.Remaster;
 
-public readonly record struct InputPrompt(string Control, GuiString Label);
+public readonly record struct InputPrompt(InputAction Action, GuiString Label)
+{
+    public InputAction AlternateAction { get; init; }
+    public Key? PreferredKeyboardControl { get; init; }
+    public Key? PreferredAlternateKeyboardControl { get; init; }
+    public GamepadControl? PreferredGamepadControl { get; init; }
+    public GamepadControl? PreferredAlternateGamepadControl { get; init; }
+    public string? KeyboardOverride { get; init; }
+    public string? GamepadOverride { get; init; }
+}
 
 /// <summary>
 /// A scene-owned, non-interactive row of contextual input prompts.
@@ -20,8 +29,7 @@ public sealed class InputPromptOverlay : Window
     const string Separator = "   ";
 
     readonly GuiFont _font;
-    readonly List<InputPrompt> _gamepadPrompts = [];
-    readonly List<InputPrompt> _keyboardPrompts = [];
+    readonly List<InputPrompt> _prompts = [];
     string[] _text = [];
     int[] _textWidths = [];
     string _language = string.Empty;
@@ -50,21 +58,14 @@ public sealed class InputPromptOverlay : Window
         Position = app.Engine.Resolution.Game - parentPosition - margin;
     }
 
-    public void SetGamepadPrompts(params InputPrompt[] prompts) =>
-        SetPrompts(_gamepadPrompts, InputMode.Gamepad, prompts);
-
-    public void SetKeyboardPrompts(params InputPrompt[] prompts) =>
-        SetPrompts(_keyboardPrompts, InputMode.Keyboard, prompts);
-
-    void SetPrompts(List<InputPrompt> target, InputMode inputMode, InputPrompt[] prompts)
+    public void SetPrompts(params InputPrompt[] prompts)
     {
-        if (PromptsEqual(target, prompts))
+        if (PromptsEqual(_prompts, prompts))
             return;
 
-        target.Clear();
-        target.AddRange(prompts);
-        if (_inputMode == inputMode)
-            RefreshText();
+        _prompts.Clear();
+        _prompts.AddRange(prompts);
+        RefreshText();
     }
 
     static bool PromptsEqual(List<InputPrompt> current, InputPrompt[] prompts)
@@ -73,8 +74,18 @@ public sealed class InputPromptOverlay : Window
             return false;
 
         for (int i = 0; i < prompts.Length; i++)
-            if (current[i].Control != prompts[i].Control ||
-                current[i].Label.ID != prompts[i].Label.ID)
+            if (current[i].Action != prompts[i].Action ||
+                current[i].AlternateAction != prompts[i].AlternateAction ||
+                current[i].Label.ID != prompts[i].Label.ID ||
+                !Nullable.Equals(current[i].PreferredKeyboardControl,
+                    prompts[i].PreferredKeyboardControl) ||
+                !Nullable.Equals(current[i].PreferredAlternateKeyboardControl,
+                    prompts[i].PreferredAlternateKeyboardControl) ||
+                current[i].PreferredGamepadControl != prompts[i].PreferredGamepadControl ||
+                current[i].PreferredAlternateGamepadControl !=
+                    prompts[i].PreferredAlternateGamepadControl ||
+                current[i].KeyboardOverride != prompts[i].KeyboardOverride ||
+                current[i].GamepadOverride != prompts[i].GamepadOverride)
                 return false;
 
         return true;
@@ -109,21 +120,33 @@ public sealed class InputPromptOverlay : Window
 
     void RefreshText()
     {
-        List<InputPrompt> prompts = _inputMode == InputMode.Keyboard
-            ? _keyboardPrompts
-            : _gamepadPrompts;
-        _text = new string[prompts.Count];
-        _textWidths = new int[prompts.Count];
+        List<string> text = [];
+        List<int> textWidths = [];
         int width = 0;
-        for (int i = 0; i < prompts.Count; i++)
+        foreach (InputPrompt prompt in _prompts)
         {
-            string label = prompts[i].Label;
-            _text[i] = label.Length == 0
-                ? $"[{prompts[i].Control}]"
-                : $"[{prompts[i].Control}] {label}";
-            _textWidths[i] = _font.GetWidth(_text[i]);
-            width += _textWidths[i];
+            string control = prompt.AlternateAction == InputAction.None
+                ? InputControlDisplay.Resolve(app, _inputMode, prompt.Action,
+                    prompt.PreferredKeyboardControl, prompt.PreferredGamepadControl,
+                    prompt.KeyboardOverride, prompt.GamepadOverride)
+                : InputControlDisplay.ResolvePair(app, _inputMode,
+                    prompt.Action, prompt.AlternateAction,
+                    prompt.PreferredKeyboardControl, prompt.PreferredAlternateKeyboardControl,
+                    prompt.PreferredGamepadControl, prompt.PreferredAlternateGamepadControl,
+                    prompt.KeyboardOverride, prompt.GamepadOverride);
+            if (control.Length == 0)
+                continue;
+
+            string label = prompt.Label;
+            string value = label.Length == 0 ? $"[{control}]" : $"[{control}] {label}";
+            text.Add(value);
+            int textWidth = _font.GetWidth(value);
+            textWidths.Add(textWidth);
+            width += textWidth;
         }
+
+        _text = text.ToArray();
+        _textWidths = textWidths.ToArray();
 
         if (_text.Length > 1)
             width += _font.GetWidth(Separator) * (_text.Length - 1);

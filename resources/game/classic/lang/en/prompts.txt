@@ -31,3 +31,5 @@ Heal
 Page
 Select
 Production
+Goods
+Talk

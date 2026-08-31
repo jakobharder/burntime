@@ -21,6 +21,17 @@ namespace Burntime.Remaster
 
         public override InputAction ResolveInputAction(InputAction action) => action;
 
+        public override bool TryGetInputAction(Key key, out InputAction action)
+        {
+            if (key.IsVirtual && key.VirtualKey == SystemKey.Escape)
+            {
+                action = InputAction.GlobalAction;
+                return true;
+            }
+
+            return base.TryGetInputAction(key, out action);
+        }
+
         const int PICKUP_DISTANCE = 20;
         const float NEXT_TURN_HOLD_TIME = 0.6f;
 
@@ -30,6 +41,7 @@ namespace Burntime.Remaster
         Image cursorAni;
         DialogWindow dialog;
         InputPromptOverlay promptOverlay;
+        InputShortcutColumn menuShortcutColumn;
         Maps.MapViewOverlayHoverText hoverInfo;
         Maps.MapViewOverlayNearbyAction nearbyAction;
         Maps.MapViewOverlayCharacters charOverlay;
@@ -67,8 +79,15 @@ namespace Burntime.Remaster
 
             menu = new MenuWindow(App);
             menu.Layer += 50;
+            menu.ShortcutAction = OnMenuShortcut;
+            menu.HeldShortcutAction = OnMenuHeldShortcut;
             menu.Hide();
             Windows += menu;
+
+            Windows += menuShortcutColumn = new InputShortcutColumn(app);
+            menuShortcutColumn.Hide();
+            menu.WindowShow += (_, _) => menuShortcutColumn.Show();
+            menu.WindowHide += (_, _) => menuShortcutColumn.Hide();
 
             cursorAni = new Image(App);
             cursorAni.Background = "burngfxani@munt.raw?10-13";
@@ -263,7 +282,7 @@ namespace Burntime.Remaster
 
             if (action == InputAction.ToggleInteractionMode)
             {
-                if (!view.Location.IsCity)
+                if (app.LastInputMode == InputMode.Mouse && !view.Location.IsCity)
                 {
                     if (fightMode)
                         OnMenuSpeak();
@@ -405,27 +424,43 @@ namespace Burntime.Remaster
         {
             if (dialog.IsVisible || menu.IsVisible)
             {
-                promptOverlay.SetGamepadPrompts();
-                promptOverlay.SetKeyboardPrompts();
+                promptOverlay.SetPrompts();
                 return;
             }
 
-            bool canInteract = nearbyAction.EntranceNumber != -1 || nearbyAction.Object != null;
-            InputPrompt gamepadAction = canInteract
-                ? new("A", "@prompts?10")
-                : new("Y", "@prompts?11");
-            InputPrompt keyboardAction = canInteract
-                ? new("Enter", "@prompts?10")
-                : new("X", "@prompts?11");
+            List<InputPrompt> prompts = [];
+            GuiString? primaryLabel = null;
+            if (nearbyAction.EntranceNumber != -1)
+                primaryLabel = "@prompts?26";
+            else if (nearbyAction.Object is DroppedItem)
+                primaryLabel = "@prompts?23";
+            else if (nearbyAction.Object is Character primaryTarget)
+            {
+                if (primaryTarget.Player == view.Player)
+                    primaryLabel = "@prompts?31";
+                else if (primaryTarget.Class != CharClass.Dog &&
+                    !view.Player.Group.Contains(primaryTarget))
+                    primaryLabel = "@prompts?34";
+            }
+            if (primaryLabel != null)
+            {
+                prompts.Add(new(InputAction.Primary, primaryLabel)
+                {
+                    PreferredKeyboardControl = new Key(' ')
+                });
+            }
+            if (nearbyAction.Object is Character target && target.Player != view.Player)
+                prompts.Add(new(InputAction.Secondary, "@burn?352"));
+            prompts.Add(new(InputAction.GlobalAction, "@prompts?11")
+            {
+                KeyboardOverride = "Esc"
+            });
+            prompts.Add(new(InputAction.Back, "@prompts?12")
+            {
+                PreferredKeyboardControl = new Key('\b')
+            });
 
-            promptOverlay.SetGamepadPrompts(
-                gamepadAction,
-                new("B", "@prompts?12"),
-                new("Hold D-pad Down", "@prompts?13"));
-            promptOverlay.SetKeyboardPrompts(
-                keyboardAction,
-                new("Escape", "@prompts?12"),
-                new("Hold Tab", "@prompts?13"));
+            promptOverlay.SetPrompts(prompts.ToArray());
         }
 
         void SyncGamepadCursor()
@@ -594,46 +629,115 @@ namespace Burntime.Remaster
         void ShowMenu(Vector2 position, bool openedByMouse)
         {
             menu.Clear();
+            List<InputShortcut> shortcuts = [];
+
+            void AddLine(GuiString text, Action command,
+                InputShortcut shortcut = default)
+            {
+                menu.AddLine(text, new CommandHandler(command));
+                shortcuts.Add(shortcut);
+            }
 
             if (!view.Location.IsCity)
             {
-                menu.AddLine("@burn?351", (CommandHandler)OnMenuInfo);
-                if (fightMode)
-                    menu.AddLine("@burn?350", (CommandHandler)OnMenuSpeak);
-                else
-                    menu.AddLine("@burn?352", (CommandHandler)OnMenuFight);
+                AddLine("@burn?351", OnMenuInfo, new(InputAction.LocationInfo)
+                {
+                    PreferredGamepadControl = GamepadControl.DPadRight
+                });
+                if (openedByMouse)
+                {
+                    if (fightMode)
+                        AddLine("@burn?350", OnMenuSpeak, new(InputAction.ToggleInteractionMode));
+                    else
+                        AddLine("@burn?352", OnMenuFight, new(InputAction.ToggleInteractionMode));
+                }
             }
 
             if (view.Player.Group.Count > 1)
             {
                 if (!view.Player.SingleMode)
                 {
-                    menu.AddLine("@burn?358", (CommandHandler)OnMenuSingle);
+                    AddLine("@burn?358", OnMenuSingle);
                 }
                 else
                 {
-                    menu.AddLine("@burn?356", (CommandHandler)OnMenuAll);
+                    AddLine("@burn?356", OnMenuAll);
                 }
             }
 
             if (charOverlay.SelectedCharacter != view.Player.Character)
             {
-                menu.AddLine("@burn?363", (CommandHandler)OnMenuDismiss);
+                AddLine("@burn?363", OnMenuDismiss);
                 if (view.Player.Group.Contains(charOverlay.SelectedCharacter))
                 {
-                    menu.AddLine("@burn?364", (CommandHandler)OnMenuMakeCamp);
+                    AddLine("@burn?364", OnMenuMakeCamp);
                 }
                 else if (view.Player.Group.Count < Logic.Group.MAX_PEOPLE)
                 {
-                    menu.AddLine("@burn?365", (CommandHandler)OnMenuLeaveCamp);
+                    AddLine("@burn?365", OnMenuLeaveCamp);
                 }
             }
 
-            menu.AddLine("@burn?362", (CommandHandler)OnMenuMap);
-            menu.AddLine("@burn?367", (CommandHandler)OnMenuInventory);
-            menu.AddLine("@burn?357", (CommandHandler)OnMenuTurn);
+            AddLine("@burn?362", OnMenuMap, new(InputAction.WorldMap));
+            AddLine("@burn?367", OnMenuInventory, new(InputAction.Inventory));
+            AddLine("@burn?361", () => app.SceneManager.SetScene("OptionsScene"),
+                new(InputAction.Options));
+            AddLine("@burn?357", OnMenuTurn, new(InputAction.NextTurn) { Hold = true });
 
             menu.Show(position, view.Boundings, openedByMouse);
+            menuShortcutColumn.SetShortcuts(shortcuts.ToArray());
+            menuShortcutColumn.PlaceBeside(menu, view.Boundings);
+        }
+
+        bool OnMenuShortcut(InputAction action)
+        {
+            switch (action)
+            {
+                case InputAction.Inventory:
+                    menu.Hide();
+                    OnMenuInventory();
+                    return true;
+                case InputAction.Statistics:
+                    menu.Hide();
+                    app.SceneManager.SetScene("StatisticsScene");
+                    return true;
+                case InputAction.Options:
+                    menu.Hide();
+                    app.SceneManager.SetScene("OptionsScene");
+                    return true;
+                case InputAction.WorldMap:
+                    menu.Hide();
+                    OnMenuMap();
+                    return true;
+                case InputAction.LocationInfo:
+                    menu.Hide();
+                    OnMenuInfo();
+                    return true;
+                case InputAction.ToggleInteractionMode:
+                    if (app.LastInputMode != InputMode.Mouse)
+                        return false;
+                    menu.Hide();
+                    if (!view.Location.IsCity)
+                    {
+                        if (fightMode)
+                            OnMenuSpeak();
+                        else
+                            OnMenuFight();
+                    }
+                    return true;
+                case InputAction.NextTurn:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        bool OnMenuHeldShortcut(InputAction action, float elapsed)
+        {
+            bool handled = action == InputAction.NextTurn && OnHeldInputAction(action, elapsed);
+            if (nextTurnTriggered)
+                menu.Hide();
+            return handled;
         }
 
         public void OnMenuInfo()

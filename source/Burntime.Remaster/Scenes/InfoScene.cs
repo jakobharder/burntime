@@ -210,14 +210,16 @@ namespace Burntime.Remaster.Scenes
 
             if (productionID >= 0)
             {
-                promptOverlay.SetGamepadPrompts(new("D-pad Left/Right", "@prompts?32"), new("B", "@prompts?17"));
-                promptOverlay.SetKeyboardPrompts(new("Left/Right", "@prompts?32"), new("Escape", "@prompts?17"));
+                promptOverlay.SetPrompts(
+                    new(InputAction.MoveLeft, "@prompts?32")
+                    {
+                        AlternateAction = InputAction.MoveRight,
+                        GamepadOverride = "D-pad Left/Right"
+                    },
+                    new(InputAction.Back, "@prompts?17"));
             }
             else
-            {
-                promptOverlay.SetGamepadPrompts();
-                promptOverlay.SetKeyboardPrompts();
-            }
+                promptOverlay.SetPrompts();
 
             items.Clear();
             foreach (Room room in loc.Rooms)

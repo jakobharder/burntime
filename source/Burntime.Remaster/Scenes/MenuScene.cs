@@ -4,6 +4,7 @@ using Burntime.Framework;
 using Burntime.Framework.GUI;
 using Burntime.Remaster.Logic.Generation;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
@@ -404,6 +405,12 @@ public class MenuScene : Scene
                     MoveCurrentPlayerFace(1);
                 return true;
             case InputAction.Primary:
+                if (!HasVisibleSetupSelection())
+                {
+                    app.LastInputMode = InputMode.Keyboard;
+                    UpdateSetupSelection();
+                    return true;
+                }
                 ActivateSetupSelection();
                 return true;
             case InputAction.Secondary:
@@ -573,48 +580,59 @@ public class MenuScene : Scene
         UpdatePromptOverlay();
     }
 
+    bool HasVisibleSetupSelection() => _setupSelection switch
+    {
+        SetupSelection.Player => _currentPlayer == 0
+            ? PlayerOneSwitch.IsKeyboardSelected
+            : PlayerTwoSwitch.IsKeyboardSelected,
+        SetupSelection.Load => _loadButton.IsKeyboardSelected,
+        SetupSelection.Start => _startButton.IsKeyboardSelected,
+        SetupSelection.Difficulty => Difficulty.IsKeyboardSelected,
+        SetupSelection.GameMode => GameMode.IsKeyboardSelected,
+        SetupSelection.AiPlayers => AiPlayers.IsKeyboardSelected,
+        SetupSelection.Exit => _exitButton.IsKeyboardSelected,
+        _ => false
+    };
+
     void UpdatePromptOverlay()
     {
-        InputPrompt primary = _setupSelection switch
+        GuiString primaryLabel = _setupSelection switch
         {
-            SetupSelection.Load => new("A", "@prompts?3"),
-            SetupSelection.Start => new("A", "@prompts?2"),
-            SetupSelection.Exit => new("A", "@prompts?4"),
-            SetupSelection.Player when !CurrentPlayerEnabled => new("A", "@prompts?8"),
-            SetupSelection.Player when OtherPlayerEnabled => new("A", "@prompts?6"),
-            SetupSelection.Player => new("A", "@prompts?7"),
-            _ => new("A", "@prompts?9")
+            SetupSelection.Load => "@prompts?3",
+            SetupSelection.Start => "@prompts?2",
+            SetupSelection.Exit => "@prompts?4",
+            SetupSelection.Player when !CurrentPlayerEnabled => "@prompts?8",
+            SetupSelection.Player when OtherPlayerEnabled => "@prompts?6",
+            SetupSelection.Player => "@prompts?7",
+            _ => "@prompts?9"
         };
+        InputPrompt primary = new(InputAction.Primary, primaryLabel);
 
         if (_setupSelection == SetupSelection.Player && CurrentPlayerEnabled)
         {
-            _promptOverlay.SetGamepadPrompts(
-                new("LB/RB", "@prompts?0"),
-                new("X", "@prompts?1"),
-                primary,
-                new("Y", "@prompts?2"));
-            if (IsNameInputActive)
-            {
-                _promptOverlay.SetKeyboardPrompts(
-                    new("Shift+Left/Right", "@prompts?0"),
-                    new("Shift+Up/Down", "@prompts?1"),
-                    new("Enter", primary.Label));
-            }
-            else
-            {
-                _promptOverlay.SetKeyboardPrompts(
-                    new("Shift+Left/Right", "@prompts?0"),
-                    new("Shift+Up/Down", "@prompts?1"),
-                    new("Enter", primary.Label),
-                    new("X", "@prompts?2"));
-            }
+            List<InputPrompt> prompts =
+            [
+                new(InputAction.LeftArea, "@prompts?0")
+                {
+                    AlternateAction = InputAction.RightArea,
+                    PreferredKeyboardControl = new Key(SystemKey.Left, ModifierKeys.Shift),
+                    PreferredAlternateKeyboardControl = new Key(SystemKey.Right, ModifierKeys.Shift),
+                    PreferredGamepadControl = GamepadControl.LeftShoulder,
+                    PreferredAlternateGamepadControl = GamepadControl.RightShoulder
+                },
+                new(InputAction.Secondary, "@prompts?1")
+                {
+                    KeyboardOverride = "Shift+Up/Down"
+                },
+                primary
+            ];
+            if (!IsNameInputActive)
+                prompts.Add(new(InputAction.GlobalAction, "@prompts?2"));
+            _promptOverlay.SetPrompts(prompts.ToArray());
             return;
         }
 
-        _promptOverlay.SetGamepadPrompts(primary, new("Y", "@prompts?2"));
-        _promptOverlay.SetKeyboardPrompts(
-            new("Enter", primary.Label),
-            new("X", "@prompts?2"));
+        _promptOverlay.SetPrompts(primary, new(InputAction.GlobalAction, "@prompts?2"));
     }
 
     public override void OnUpdate(float elapsed)

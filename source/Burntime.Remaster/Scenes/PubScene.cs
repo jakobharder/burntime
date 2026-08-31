@@ -111,10 +111,15 @@ namespace Burntime.Remaster.Scenes
 
         void SetPrompts()
         {
-            promptOverlay.SetGamepadPrompts(new("A", "@prompts?14"), new("Y", "@prompts?19"),
-                new("LB", "@prompts?16"), new("B", "@prompts?17"));
-            promptOverlay.SetKeyboardPrompts(new("Enter", "@prompts?14"), new("X", "@prompts?19"),
-                new("Shift+Left", "@prompts?16"), new("Escape", "@prompts?17"));
+            promptOverlay.SetPrompts(
+                new(InputAction.Primary, "@prompts?14"),
+                new(InputAction.GlobalAction, "@prompts?19"),
+                new(InputAction.Statistics, "@prompts?16")
+                {
+                    PreferredKeyboardControl = new Key(SystemKey.Left, ModifierKeys.Shift),
+                    PreferredGamepadControl = GamepadControl.LeftShoulder
+                },
+                new(InputAction.Back, "@prompts?17"));
         }
 
         protected override void OnActivateScene(object parameter)

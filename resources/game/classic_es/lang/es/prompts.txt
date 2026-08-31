@@ -31,3 +31,5 @@ Curar
 Página
 Elegir
 Producción
+Mercancías
+Hablar

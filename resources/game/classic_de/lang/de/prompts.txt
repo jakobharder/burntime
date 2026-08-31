@@ -7,14 +7,14 @@ Okay
 Deaktivieren
 Name ändern
 Aktivieren
-Umschalten
+Ändern
 Interagieren
 Aktionen
 Weltkarte
 Nächste Runde
 Verschieben
 Benutzen
-Figur
+Charakter
 Zurück
 Essen
 Trinken
@@ -31,3 +31,5 @@ Heilen
 Seite
 Auswählen
 Produktion
+Waren
+Reden

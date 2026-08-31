@@ -24,7 +24,7 @@
 | `Secondary` | F | X | all except options; setup uses X and Shift+Up/Down
 | `GlobalAction` | X | Y | all except options
 | `Back` | Backspace / Escape* | B | all except setup
-| `Options` | O / Escape* | Menu | both maps, setup
+| `Options` | O | Menu | both maps, setup
 | `Statistics` | Q / Shift+Left | D-pad left / Left shoulder | both maps
 | `Inventory` | R / I | D-pad up | both maps
 | `WorldMap` | V / M | View | location map
@@ -35,12 +35,15 @@
 | `RightArea` | E / Shift+Right | Right shoulder | all but maps
 
 The default keyboard and gamepad mappings are configured in the `[keyboard]` and `[gamepad]` sections of `settings.txt`.
+Prompt rows and map-menu shortcut columns resolve their controls from the active mappings and omit unbound actions. Composite navigation hints and scene-specific controls such as map `Escape` are explicit exceptions.
 
 When no input mode has been established yet, any keyboard press activates keyboard mode. The same applies when switching from gamepad to keyboard. While mouse mode is active, only an arrow-key press switches to keyboard mode; other keys remain shortcuts shared with mouse control and do not hide the mouse cursor or replace mouse mode.
 
-On the location map, `V`, `M`, or Gamepad View opens the world map. `Escape` also returns to the world map through its general Back action; pressing `Escape` again opens Options. Use `O` to open Options directly. On the world map and game setup, `Escape` opens Options.
+On both maps, `Escape` opens the context menu and `O` opens Options directly. On the location map, `Backspace`, Gamepad B, `V`, `M`, or Gamepad View opens the world map. Contextual map actions advertise `Space`; `Enter` remains an equivalent `Primary` binding but is not shown in the prompt overlay.
 
-`GlobalAction` is a scene-level command: e.g. start game, accept trade, open context menu
+Map context menus show available direct shortcuts beside their matching entries. Those shortcuts remain active while the menu is open. Entries without a direct binding leave the shortcut column blank. The world map omits its Travel/Info-mode entry when the menu is opened with keyboard or gamepad; a mouse-opened menu retains it and shows `C` as its toggle shortcut.
+
+`GlobalAction` is a scene-level command: e.g. start game, accept trade, or open a context menu. The maps additionally map `Escape` to this action for their prompt overlays; the configured `X` binding remains functional.
 
 On map scenes, tap `Tab` or `D-pad down` has no effect.
 The logic for holding is to prevent a single tap to initiate a turn.

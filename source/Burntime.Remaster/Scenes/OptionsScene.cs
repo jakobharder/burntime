@@ -137,10 +137,16 @@ public class OptionsScene : Scene
         Windows += _jukeboxPage = new OptionsJukeboxPage(app, fonts) { IsVisible = false };
         Windows += _emptyPage = new Container(app) { IsVisible = false };
         Windows += _promptOverlay = new InputPromptOverlay(app);
-        _promptOverlay.SetGamepadPrompts(new("A", "@prompts?31"), new("LB/RB", "@prompts?30"),
-            new("B", "@prompts?17"));
-        _promptOverlay.SetKeyboardPrompts(new("Enter", "@prompts?31"), new("Tab", "@prompts?30"),
-            new("Escape", "@prompts?17"));
+        _promptOverlay.SetPrompts(
+            new(InputAction.Primary, "@prompts?31"),
+            new(InputAction.LeftArea, "@prompts?30")
+            {
+                AlternateAction = InputAction.RightArea,
+                KeyboardOverride = "Tab",
+                PreferredGamepadControl = GamepadControl.LeftShoulder,
+                PreferredAlternateGamepadControl = GamepadControl.RightShoulder
+            },
+            new(InputAction.Back, "@prompts?17"));
         _promptOverlay.AnchorToScreenBottomRight();
         ActivePage = _savesPage;
         UpdatePageFocus();

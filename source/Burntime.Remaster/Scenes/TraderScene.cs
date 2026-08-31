@@ -464,19 +464,26 @@ class TraderScene : Scene
         GuiString primaryLabel = keyboardArea == KeyboardArea.Temporary
             ? "@prompts?14"
             : "@prompts?31";
-        List<InputPrompt> gamepad = [new("A", primaryLabel)];
-        List<InputPrompt> keyboard = [new("Enter", primaryLabel)];
-        if (keyboardArea == KeyboardArea.Player)
+        List<InputPrompt> prompts = [];
+        if (inventory.ActiveCharacter.GetGroup().Count > 1)
         {
-            gamepad.Add(new("X", "@prompts?14"));
-            keyboard.Add(new("F", "@prompts?14"));
+            prompts.Add(new(InputAction.Statistics, "@prompts?16")
+            {
+                PreferredKeyboardControl = new Key(SystemKey.Left, ModifierKeys.Shift),
+                PreferredGamepadControl = GamepadControl.LeftShoulder
+            });
         }
-        gamepad.Add(new("Y", "@prompts?28"));
-        gamepad.Add(new("B", "@prompts?17"));
-        keyboard.Add(new("X", "@prompts?28"));
-        keyboard.Add(new("Escape", "@prompts?17"));
-        promptOverlay.SetGamepadPrompts(gamepad.ToArray());
-        promptOverlay.SetKeyboardPrompts(keyboard.ToArray());
+        prompts.Add(new(InputAction.LocationInfo, "@prompts?33")
+        {
+            PreferredKeyboardControl = new Key(SystemKey.Right, ModifierKeys.Shift),
+            PreferredGamepadControl = GamepadControl.RightShoulder
+        });
+        prompts.Add(new(InputAction.Primary, primaryLabel));
+        if (keyboardArea == KeyboardArea.Player)
+            prompts.Add(new(InputAction.Secondary, "@prompts?14"));
+        prompts.Add(new(InputAction.GlobalAction, "@prompts?28"));
+        prompts.Add(new(InputAction.Back, "@prompts?17"));
+        promptOverlay.SetPrompts(prompts.ToArray());
     }
 
     void OnLeftClickItemInventory(Framework.States.StateObject State)

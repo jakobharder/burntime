@@ -70,8 +70,7 @@ namespace Burntime.Remaster.Scenes
                 HorizontalAlignment = PositionAlignment.Left,
                 VerticalAlignment = PositionAlignment.Left
             };
-            exitPromptOverlay.SetGamepadPrompts(new InputPrompt("B", ""));
-            exitPromptOverlay.SetKeyboardPrompts(new InputPrompt("Escape", ""));
+            exitPromptOverlay.SetPrompts(new InputPrompt(InputAction.Back, ""));
             UpdateExitPromptPosition();
         }
 
@@ -145,37 +144,32 @@ namespace Burntime.Remaster.Scenes
         {
             if (dialog.IsVisible)
             {
-                promptOverlay.SetGamepadPrompts();
-                promptOverlay.SetKeyboardPrompts();
-                exitPromptOverlay.SetGamepadPrompts();
-                exitPromptOverlay.SetKeyboardPrompts();
+                promptOverlay.SetPrompts();
+                exitPromptOverlay.SetPrompts();
                 return;
             }
 
-            exitPromptOverlay.SetGamepadPrompts(new InputPrompt("B", ""));
-            exitPromptOverlay.SetKeyboardPrompts(new InputPrompt("Escape", ""));
+            exitPromptOverlay.SetPrompts(new InputPrompt(InputAction.Back, ""));
 
             ItemGridWindow activeGrid = roomAreaActive && grid != null ? grid : inventory.Grid;
             Item? selectedItem = activeGrid.KeyboardSelectedItem;
             GuiString? secondaryAction = GetSecondaryPrompt(selectedItem, activeGrid == inventory.Grid);
 
-            List<InputPrompt> gamepadPrompts = [];
-            List<InputPrompt> keyboardPrompts = [];
+            List<InputPrompt> prompts = [];
             if (secondaryAction != null)
-            {
-                gamepadPrompts.Add(new("X", secondaryAction));
-                keyboardPrompts.Add(new("F", secondaryAction));
-            }
+                prompts.Add(new(InputAction.Secondary, secondaryAction));
             if (selectedItem != null)
+                prompts.Add(new(InputAction.Primary, "@prompts?14"));
+            if (group.Count > 1)
             {
-                gamepadPrompts.Add(new("A", "@prompts?14"));
-                keyboardPrompts.Add(new("Enter", "@prompts?14"));
+                prompts.Add(new(InputAction.Statistics, "@prompts?16")
+                {
+                    PreferredKeyboardControl = new Key(SystemKey.Left, ModifierKeys.Shift),
+                    PreferredGamepadControl = GamepadControl.LeftShoulder
+                });
             }
-            gamepadPrompts.Add(new("LB", "@prompts?16"));
-            keyboardPrompts.Add(new("Shift+Left", "@prompts?16"));
 
-            promptOverlay.SetGamepadPrompts(gamepadPrompts.ToArray());
-            promptOverlay.SetKeyboardPrompts(keyboardPrompts.ToArray());
+            promptOverlay.SetPrompts(prompts.ToArray());
         }
 
         GuiString? GetSecondaryPrompt(Item? selectedItem, bool isInInventory)
@@ -184,9 +178,17 @@ namespace Burntime.Remaster.Scenes
                 return null;
             BurntimeClassic classic = app as BurntimeClassic;
             if (selectedItem.FoodValue != 0)
+            {
+                if (!CanSupplyGroup(character => character.Food < character.MaxFood))
+                    return null;
                 return "@prompts?18";
+            }
             if (selectedItem.WaterValue != 0)
+            {
+                if (!CanSupplyGroup(character => character.Water < character.MaxWater))
+                    return null;
                 return "@prompts?19";
+            }
             if (selectedItem.Type.Full != null && selectedItem.Type.Full.WaterValue != 0)
             {
                 if (isInInventory && classic.InventoryRoom?.IsWaterSource == true)
@@ -209,6 +211,17 @@ namespace Burntime.Remaster.Scenes
                 return "@prompts?20";
 
             return "@prompts?23";
+        }
+
+        bool CanSupplyGroup(Func<Character, bool> needsSupply)
+        {
+            foreach (Character character in group)
+            {
+                if (group.IsInRange(leader, character) && needsSupply(character))
+                    return true;
+            }
+
+            return false;
         }
 
         protected override void OnActivateScene(object parameter)

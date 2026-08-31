@@ -103,6 +103,22 @@ public sealed class KeyboardBindings : IKeyboardBindings
         return actions.TryGetValue(Normalize(key), out InputAction action) ? action : InputAction.None;
     }
 
+    public IReadOnlyList<Key> GetControls(InputAction action)
+    {
+        List<Key> result = [];
+        foreach ((Key control, InputAction boundAction) in actions)
+            if (boundAction == action)
+                result.Add(control);
+
+        // These navigation chords are intentionally always available in addition
+        // to the configurable bindings.
+        if (action is InputAction.Statistics or InputAction.LeftArea)
+            result.Add(new Key(SystemKey.Left, ModifierKeys.Shift));
+        else if (action is InputAction.LocationInfo or InputAction.RightArea)
+            result.Add(new Key(SystemKey.Right, ModifierKeys.Shift));
+        return result;
+    }
+
     public void Save(ConfigFile config)
     {
         ConfigSection section = config.GetSection(SectionName, true);

@@ -47,8 +47,7 @@ internal class LanguageScene : Scene
 
         _selectedLanguage = app.Language == "de" ? 0 : 1;
         Windows += _promptOverlay = new InputPromptOverlay(app);
-        _promptOverlay.SetGamepadPrompts(new InputPrompt("A", "@prompts?31"));
-        _promptOverlay.SetKeyboardPrompts(new InputPrompt("Enter", "@prompts?31"));
+        _promptOverlay.SetPrompts(new InputPrompt(InputAction.Primary, "@prompts?31"));
         _promptOverlay.AnchorToScreenBottomRight();
         UpdateSelection();
     }

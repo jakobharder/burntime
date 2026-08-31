@@ -6,6 +6,15 @@ using System;
 
 namespace Burntime.Remaster;
 
+public readonly record struct InputShortcut(InputAction Action)
+{
+    public Key? PreferredKeyboardControl { get; init; }
+    public GamepadControl? PreferredGamepadControl { get; init; }
+    public string? KeyboardOverride { get; init; }
+    public string? GamepadOverride { get; init; }
+    public bool Hold { get; init; }
+}
+
 /// <summary>A non-interactive shortcut column placed beside an existing menu.</summary>
 public sealed class InputShortcutColumn : Window
 {
@@ -14,8 +23,7 @@ public sealed class InputShortcutColumn : Window
     const int RowHeight = 11;
 
     readonly GuiFont _font;
-    string[] _gamepadControls = [];
-    string[] _keyboardControls = [];
+    InputShortcut[] _shortcuts = [];
     string[] _text = [];
     InputMode _inputMode = InputMode.None;
 
@@ -31,10 +39,9 @@ public sealed class InputShortcutColumn : Window
         Layer = 200;
     }
 
-    public void SetShortcuts(string[] gamepadControls, string[] keyboardControls)
+    public void SetShortcuts(params InputShortcut[] shortcuts)
     {
-        _gamepadControls = gamepadControls;
-        _keyboardControls = keyboardControls;
+        _shortcuts = shortcuts;
         RefreshText();
     }
 
@@ -82,16 +89,21 @@ public sealed class InputShortcutColumn : Window
 
     void RefreshText()
     {
-        string[] controls = _inputMode == InputMode.Gamepad
-            ? _gamepadControls
-            : _keyboardControls;
-        _text = new string[controls.Length];
+        _text = new string[_shortcuts.Length];
         int width = 0;
-        for (int i = 0; i < controls.Length; i++)
+        for (int i = 0; i < _shortcuts.Length; i++)
         {
-            _text[i] = string.IsNullOrEmpty(controls[i]) ? string.Empty : $"[{controls[i]}]";
+            InputShortcut shortcut = _shortcuts[i];
+            string control = shortcut.Action == InputAction.None
+                ? string.Empty
+                : InputControlDisplay.Resolve(app, _inputMode, shortcut.Action,
+                    shortcut.PreferredKeyboardControl, shortcut.PreferredGamepadControl,
+                    shortcut.KeyboardOverride, shortcut.GamepadOverride);
+            if (shortcut.Hold && control.Length > 0)
+                control = "Hold " + control;
+            _text[i] = control.Length == 0 ? string.Empty : $"[{control}]";
             width = System.Math.Max(width, _font.GetWidth(_text[i]));
         }
-        Size = new Vector2(width + HorizontalPadding * 2, TopHeight + RowHeight * controls.Length + 6);
+        Size = new Vector2(width + HorizontalPadding * 2, TopHeight + RowHeight * _shortcuts.Length + 6);
     }
 }
