@@ -1,30 +1,42 @@
 ﻿# Burntime Changelog
 
-## [1.1-rc1] (2026-08-29)
+## [1.1-rc6] (2026-09-01)
 
 ### Changes
 
+- Platform Support
+  - Added macOS and Linux support
+  - Improved Steam Deck and gamescope support
+  - Added keyboard and gamepad support
+  - Added contextual keyboard and gamepad prompts
+  - Updated dependencies (.NET 10, MonoGame 3.8.5)
 - Reworked AI player behavior
   - They play more closely by the rules now, with trade and inventory boosts
   - They attack, plan attacks and retreat in danger
   - Camp takeover now leaves storage intact
   - Enclosed AIs immediately die on easy; on medium/hard they attack or die trying
-- First MacOS/Linux support
-- First keyboard and gamepad support
-- Auto saves
-- Disabled dog/mutant spawning in original mode
-- Reduced dog/mutant spawning in extended mode
-- Dogs/mutants don't attack in cities anymore
-- Updated dependencies (.NET 10, MonoGame 3.8.5)
-- Remastered all character portraits and item graphics
+- QoL
+  - Added auto saves
+  - Added sharp/smooth scaling to the settings
+- Balancing
+  - Disabled dog and mutant spawning in original mode
+  - Reduced dog and mutant spawning in extended mode
+  - Reduced mutant drops and removed dog droppings
+  - Prevented dogs and mutants from attacking in cities
+- Graphics
+  - Improved character portraits
+  - Improved item graphics
+  - Improved font
 
 ### Fixes
 
-- Fixed first encounter dialog
+- Fixed the first encounter dialog
 - Fixed English spelling and wording issues
-- Camp NPCs now always roam around after turn
-- Following NPCs walk less on the same spot
-- Fixed dogs/mutants spawning all at the same spot
+- Fixed camp NPCs not roaming after a turn
+- Reduced following NPCs walking on the same spot
+- Fixed dogs and mutants spawning at the same spot
+- Fixed incorrect Amiga music in caves, rooms, water sources and the info scene
+- Fixed the suit construction hint
 
 ## 1.0.4 (2024-12-03)
 
