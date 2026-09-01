@@ -4,6 +4,7 @@ using Burntime.Framework;
 using Burntime.Framework.GUI;
 using Burntime.Remaster.Logic.Generation;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 
@@ -43,6 +44,7 @@ public class MenuScene : Scene
     readonly Button _loadButton;
     readonly Button _startButton;
     readonly Button _exitButton;
+    readonly InputPromptOverlay _promptOverlay;
     Burntime.Platform.IO.ConfigFile conversionTable;
     readonly string[] _playerNames;
 
@@ -164,6 +166,11 @@ public class MenuScene : Scene
         };
         Windows += _exitButton;
 
+        // Input prompts are scene-owned: place the reusable overlay once, then
+        // replace its contents from UpdateSetupSelection as focus changes.
+        Windows += _promptOverlay = new InputPromptOverlay(app);
+        UpdatePromptOverlayPosition();
+
         // player names
         PlayerOneSwitch = new NameWindow(app)
         {
@@ -252,6 +259,14 @@ public class MenuScene : Scene
         base.OnResizeScreen();
 
         Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+        UpdatePromptOverlayPosition();
+    }
+
+    void UpdatePromptOverlayPosition()
+    {
+        // As a child window, the screen-relative anchor is expressed relative
+        // to this scene.
+        _promptOverlay.AnchorToScreenBottomRight();
     }
 
     public override void OnRender(RenderTarget target)
@@ -260,11 +275,16 @@ public class MenuScene : Scene
         if (Background?.IsLoaded != true)
             return;
 
-        target.Layer += 10;
-        _infoFont.DrawText(target, target.ScreenSize - target.ScreenOffset - 6, BurntimeClassic.Version, TextAlignment.Right, VerticalTextAlignment.Bottom);
-        _copyrightFont.DrawText(target, new Vector2(6, target.ScreenSize.y - 6) - target.ScreenOffset,
-            app.IsNewGfx ? "(c) 1993 Max Design. Remastered by Jakob Harder" : "Remastered by Jakob Harder", TextAlignment.Left, VerticalTextAlignment.Bottom);
-        target.Layer -= 10;
+        // Keep these labels available in case the start screen uses them again.
+        // target.Layer += 10;
+        // _infoFont.DrawText(target, target.ScreenSize - target.ScreenOffset - 6,
+        //     BurntimeClassic.Version, TextAlignment.Right, VerticalTextAlignment.Bottom);
+        // _copyrightFont.DrawText(target,
+        //     new Vector2(6, target.ScreenSize.y - 6) - target.ScreenOffset,
+        //     app.IsNewGfx ? "(c) 1993 Max Design. Remastered by Jakob Harder"
+        //         : "Remastered by Jakob Harder",
+        //     TextAlignment.Left, VerticalTextAlignment.Bottom);
+        // target.Layer -= 10;
 
         if (!app.IsNewGfx)
         {
@@ -390,6 +410,12 @@ public class MenuScene : Scene
                     MoveCurrentPlayerFace(1);
                 return true;
             case InputAction.Primary:
+                if (!HasVisibleSetupSelection())
+                {
+                    app.LastInputMode = InputMode.Keyboard;
+                    UpdateSetupSelection();
+                    return true;
+                }
                 ActivateSetupSelection();
                 return true;
             case InputAction.Secondary:
@@ -411,8 +437,8 @@ public class MenuScene : Scene
             case InputAction.Options:
                 OnButtonLoad();
                 return true;
-            case InputAction.GlobalAction:
-                OnButtonStart();
+            case InputAction.Back:
+                OnButtonLoad();
                 return true;
             default:
                 return false;
@@ -439,12 +465,6 @@ public class MenuScene : Scene
             (key.Modifier & ModifierKeys.Shift) != 0)
         {
             action = InputAction.Secondary;
-            return true;
-        }
-
-        if (key.IsVirtual && key.VirtualKey == SystemKey.Escape)
-        {
-            action = InputAction.Options;
             return true;
         }
 
@@ -487,8 +507,6 @@ public class MenuScene : Scene
         selectedPlayer.SetAutomaticName("");
         return selectedPlayer.OnKeyPress(key);
     }
-
-    bool IsNameInputActive => PlayerOneSwitch.IsTextInputActive || PlayerTwoSwitch.IsTextInputActive;
 
     void SelectPlayer(int player, bool activateName)
     {
@@ -556,6 +574,60 @@ public class MenuScene : Scene
         GameMode.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.GameMode;
         AiPlayers.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.AiPlayers;
         _exitButton.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.Exit;
+        UpdatePromptOverlay();
+    }
+
+    bool HasVisibleSetupSelection() => _setupSelection switch
+    {
+        SetupSelection.Player => _currentPlayer == 0
+            ? PlayerOneSwitch.IsKeyboardSelected
+            : PlayerTwoSwitch.IsKeyboardSelected,
+        SetupSelection.Load => _loadButton.IsKeyboardSelected,
+        SetupSelection.Start => _startButton.IsKeyboardSelected,
+        SetupSelection.Difficulty => Difficulty.IsKeyboardSelected,
+        SetupSelection.GameMode => GameMode.IsKeyboardSelected,
+        SetupSelection.AiPlayers => AiPlayers.IsKeyboardSelected,
+        SetupSelection.Exit => _exitButton.IsKeyboardSelected,
+        _ => false
+    };
+
+    void UpdatePromptOverlay()
+    {
+        GuiString primaryLabel = _setupSelection switch
+        {
+            SetupSelection.Load => "@prompts?3",
+            SetupSelection.Start => "@prompts?2",
+            SetupSelection.Exit => "@prompts?4",
+            SetupSelection.Player when !CurrentPlayerEnabled => "@prompts?8",
+            SetupSelection.Player when OtherPlayerEnabled => "@prompts?6",
+            SetupSelection.Player => "@prompts?7",
+            _ => "@prompts?9"
+        };
+        InputPrompt primary = new(InputAction.Primary, primaryLabel);
+
+        if (_setupSelection == SetupSelection.Player && CurrentPlayerEnabled)
+        {
+            List<InputPrompt> prompts =
+            [
+                new(InputAction.LeftArea, "@prompts?0")
+                {
+                    AlternateAction = InputAction.RightArea,
+                    PreferredKeyboardControl = new Key(SystemKey.Left, ModifierKeys.Shift),
+                    PreferredAlternateKeyboardControl = new Key(SystemKey.Right, ModifierKeys.Shift),
+                    PreferredGamepadControl = GamepadControl.LeftShoulder,
+                    PreferredAlternateGamepadControl = GamepadControl.RightShoulder
+                },
+                new(InputAction.Secondary, "@prompts?1")
+                {
+                    KeyboardOverride = "Shift+Up/Down"
+                },
+                primary
+            ];
+            _promptOverlay.SetPrompts(prompts.ToArray());
+            return;
+        }
+
+        _promptOverlay.SetPrompts(primary);
     }
 
     public override void OnUpdate(float elapsed)

@@ -17,6 +17,9 @@ namespace Burntime.Remaster.GUI
 
     public class MenuWindow : Window
     {
+        public Func<InputAction, bool>? ShortcutAction { get; set; }
+        public Func<InputAction, float, bool>? HeldShortcutAction { get; set; }
+
         readonly List<MenuItem> _menuEntries;
         readonly GuiImage _topElement;
         readonly GuiImage _middleElement;
@@ -205,8 +208,16 @@ namespace Burntime.Remaster.GUI
                 return true;
             }
 
-            return false;
+            return ShortcutAction?.Invoke(action) == true;
         }
+
+        public override bool OnHeldInputAction(InputAction action, float elapsed) =>
+            HeldShortcutAction?.Invoke(action, elapsed) == true;
+
+        protected override bool UseGamepadDPadNavigation => ShortcutAction == null;
+
+        public override InputAction ResolveInputAction(InputAction action) =>
+            ShortcutAction == null ? base.ResolveInputAction(action) : action;
 
         void Execute(int index)
         {

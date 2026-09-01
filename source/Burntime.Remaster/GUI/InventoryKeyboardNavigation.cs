@@ -1,6 +1,7 @@
 using System;
 using Burntime.Framework;
 using Burntime.Platform;
+using Burntime.Remaster.Logic;
 
 namespace Burntime.Remaster.GUI;
 
@@ -85,7 +86,7 @@ class InventoryKeyboardNavigation
             return true;
         }
 
-        if (action == InputAction.GlobalAction)
+        if (action == InputAction.SceneAction)
         {
             globalAction();
             EnsureNonEmptyArea();
@@ -100,7 +101,20 @@ class InventoryKeyboardNavigation
         EnsureNonEmptyArea();
     }
 
-    ItemGridWindow ActiveGrid => roomAreaActive ? roomGrid : inventory.Grid;
+    public ItemGridWindow ActiveGrid => roomAreaActive ? roomGrid : inventory.Grid;
+
+    public bool CanMoveSelectedItem(Func<Item, bool>? canMoveToRoom = null)
+    {
+        Item? item = ActiveGrid.KeyboardSelectedItem;
+        if (item == null)
+            return false;
+
+        if (roomAreaActive)
+            return inventory.Grid.Count < inventory.Grid.MaxCount;
+
+        return roomGrid.Count < roomGrid.MaxCount &&
+            (canMoveToRoom == null || canMoveToRoom(item));
+    }
 
     void EnsureNonEmptyArea()
     {

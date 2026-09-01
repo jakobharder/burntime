@@ -55,6 +55,7 @@ film_10.ani=pngsheet@gfx/backgrounds/film10_ani.png?0-12?60x72
 
 syssze.raw=pngsheet@gfx/syssze.png?{0}?30x36
 
+munt.raw?0=gfx/munt_0.png
 munt.raw?3=pngsheet@gfx/objects/munt.png?0?15x18
 munt.raw?4=pngsheet@gfx/objects/munt.png?1?15x18
 munt.raw?22=gfx/munt_daytime.png

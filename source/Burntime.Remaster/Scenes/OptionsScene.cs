@@ -22,11 +22,14 @@ public class OptionsScene : Scene
     readonly OptionsGiveUpPage _giveUpPage;
     readonly OptionsJukeboxPage _jukeboxPage;
     readonly Container _emptyPage;
+    readonly InputPromptOverlay _promptOverlay;
 
     readonly GuiImage _optionsBulb;
     readonly Image _backgroundAni;
     readonly Button[] _menuButtons;
     int _menuIndex = 1;
+    int _tabFocusIndex = 1;
+    bool _tabsFocused;
 
     Container _activePage;
     Container ActivePage
@@ -135,6 +138,18 @@ public class OptionsScene : Scene
         Windows += _giveUpPage = new OptionsGiveUpPage(app, fonts) { IsVisible = false };
         Windows += _jukeboxPage = new OptionsJukeboxPage(app, fonts) { IsVisible = false };
         Windows += _emptyPage = new Container(app) { IsVisible = false };
+        Windows += _promptOverlay = new InputPromptOverlay(app);
+        _promptOverlay.SetPrompts(
+            new(InputAction.Primary, "@prompts?31"),
+            new(InputAction.LeftArea, "@prompts?30")
+            {
+                AlternateAction = InputAction.RightArea,
+                KeyboardOverride = "Shift+Up/Down",
+                PreferredGamepadControl = GamepadControl.LeftShoulder,
+                PreferredAlternateGamepadControl = GamepadControl.RightShoulder
+            },
+            new(InputAction.Back, "@prompts?17"));
+        _promptOverlay.AnchorToScreenBottomRight();
         ActivePage = _savesPage;
         UpdatePageFocus();
     }
@@ -142,7 +157,9 @@ public class OptionsScene : Scene
     void SelectPage(int index)
     {
         _menuIndex = index;
-        ActivePage = index switch
+        if (index == 0)
+            _tabsFocused = true;
+        Container page = index switch
         {
             0 => _emptyPage,
             2 => _jukeboxPage,
@@ -150,42 +167,121 @@ public class OptionsScene : Scene
             4 => _giveUpPage,
             _ => _savesPage
         };
+        bool pageChanged = page != _activePage;
+        ActivePage = page;
+        UpdatePageFocus(pageChanged);
+    }
+
+    void UpdatePageFocus(bool resetActivePageFocus = false)
+    {
+        bool contentFocused = !_tabsFocused;
+        _savesPage.SetKeyboardActive(contentFocused && _activePage == _savesPage,
+            resetActivePageFocus && _activePage == _savesPage);
+        _settingsPage.SetKeyboardActive(contentFocused && _activePage == _settingsPage,
+            resetActivePageFocus && _activePage == _settingsPage);
+        _giveUpPage.SetKeyboardActive(contentFocused && _activePage == _giveUpPage,
+            resetActivePageFocus && _activePage == _giveUpPage);
+        _jukeboxPage.SetKeyboardActive(contentFocused && _activePage == _jukeboxPage,
+            resetActivePageFocus && _activePage == _jukeboxPage);
+
+        UpdateTabFocus();
+    }
+
+    void UpdateTabFocus()
+    {
+        bool showKeyboardFocus = _tabsFocused &&
+            app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad;
+        for (int i = 0; i < _menuButtons.Length; i++)
+            _menuButtons[i].IsKeyboardSelected = showKeyboardFocus && i == _tabFocusIndex;
+    }
+
+    int MoveIndex(int index, int direction, bool wrap)
+    {
+        do
+        {
+            int candidate = index + direction;
+            if (wrap)
+                candidate = (candidate + _menuButtons.Length) % _menuButtons.Length;
+            else if (candidate < 0 || candidate >= _menuButtons.Length)
+                return index;
+
+            index = candidate;
+        }
+        while (!_menuButtons[index].IsEnabled);
+
+        return index;
+    }
+
+    void MovePage(int direction, bool wrap)
+    {
+        int index = MoveIndex(_menuIndex, direction, wrap);
+        _tabFocusIndex = index;
+        SelectPage(index);
+    }
+
+    void MoveTabFocus(int direction)
+    {
+        int index = MoveIndex(_tabFocusIndex, direction, wrap: false);
+        _tabFocusIndex = index;
+        SelectPage(index);
+    }
+
+    void FocusTabs()
+    {
+        _tabFocusIndex = _menuIndex;
+        _tabsFocused = true;
         UpdatePageFocus();
     }
 
-    void UpdatePageFocus()
+    void FocusPage()
     {
-        _savesPage.SetKeyboardActive(_activePage == _savesPage);
-        _settingsPage.SetKeyboardActive(_activePage == _settingsPage);
-        _giveUpPage.SetKeyboardActive(_activePage == _giveUpPage);
-        _jukeboxPage.SetKeyboardActive(_activePage == _jukeboxPage);
+        if (_menuIndex == 0)
+            return;
 
-        // The red bulb identifies the active radio entry. Blue is reserved for
-        // mouse hover and must not also represent keyboard selection.
-        foreach (Button button in _menuButtons)
-            button.IsKeyboardSelected = false;
-    }
-
-    void MovePage(int direction)
-    {
-        do
-            _menuIndex = (_menuIndex + direction + _menuButtons.Length) % _menuButtons.Length;
-        while (!_menuButtons[_menuIndex].IsEnabled);
-
-        SelectPage(_menuIndex);
+        _tabsFocused = false;
+        UpdatePageFocus();
     }
 
     public override bool OnInputAction(InputAction action)
     {
         if (action == InputAction.LeftArea || action == InputAction.RightArea)
         {
-            MovePage(action == InputAction.LeftArea ? -1 : 1);
+            MovePage(action == InputAction.LeftArea ? -1 : 1, wrap: true);
             return true;
         }
 
-        if (_menuIndex == 0 && action == InputAction.Primary)
+        if (_tabsFocused)
         {
-            app.SceneManager.PreviousScene();
+            if (action.IsUp() || action.IsDown())
+            {
+                MoveTabFocus(action.IsUp() ? -1 : 1);
+                return true;
+            }
+
+            if (action.IsLeft())
+            {
+                SelectPage(_tabFocusIndex);
+                FocusPage();
+                return true;
+            }
+
+            if (action == InputAction.Primary)
+            {
+                if (_tabFocusIndex == 0)
+                    app.SceneManager.PreviousScene();
+                else
+                {
+                    SelectPage(_tabFocusIndex);
+                    FocusPage();
+                }
+                return true;
+            }
+        }
+        else if (action.IsRight())
+        {
+            // Page controls consume Right while they can move farther right.
+            // Reaching the scene therefore means that the true page edge was hit.
+            FocusTabs();
             return true;
         }
 
@@ -200,7 +296,16 @@ public class OptionsScene : Scene
 
     public override bool TryGetInputAction(Key key, out InputAction action)
     {
-        if (_activePage == _savesPage && !key.IsVirtual)
+        if (key.IsVirtual && (key.Modifier & ModifierKeys.Shift) != 0 &&
+            key.VirtualKey is SystemKey.Up or SystemKey.Down)
+        {
+            // Let OnVKeyPress handle the scene-local page shortcut before the
+            // configurable unmodified arrow binding can consume it.
+            action = InputAction.None;
+            return false;
+        }
+
+        if (!_tabsFocused && _activePage == _savesPage && !key.IsVirtual)
         {
             action = InputAction.None;
             return false;
@@ -222,11 +327,34 @@ public class OptionsScene : Scene
 
     public override bool OnVKeyPress(SystemKey key, ModifierKeys modifier)
     {
-        if (key != SystemKey.Tab)
-            return false;
+        if (key == SystemKey.Tab)
+        {
+            FocusTabs();
+            return true;
+        }
 
-        MovePage((modifier & ModifierKeys.Shift) != 0 ? -1 : 1);
-        return true;
+        if ((modifier & ModifierKeys.Shift) != 0 && key is SystemKey.Up or SystemKey.Down)
+        {
+            MovePage(key == SystemKey.Up ? -1 : 1, wrap: true);
+            return true;
+        }
+
+        return false;
+    }
+
+    public override void OnUpdate(float elapsed)
+    {
+        if (app.LastInputMode == InputMode.Mouse)
+        {
+            int hoveredIndex = Array.FindIndex(_menuButtons,
+                button => button.IsEnabled && button.IsHover);
+            if (hoveredIndex >= 0)
+                _tabFocusIndex = hoveredIndex;
+        }
+
+        UpdateTabFocus();
+
+        base.OnUpdate(elapsed);
     }
 
     public override void OnResizeScreen()
@@ -234,14 +362,17 @@ public class OptionsScene : Scene
         base.OnResizeScreen();
         Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
         _backgroundAni.IsVisible = !app.IsNewGfx;
+        _promptOverlay.AnchorToScreenBottomRight();
     }
 
     protected override void OnActivateScene(object parameter)
     {
         _menuIndex = 1;
+        _tabFocusIndex = 1;
+        _tabsFocused = false;
         ActivePage = _savesPage;
         _savesPage.RefreshSaveGames(resetSelection: true);
-        UpdatePageFocus();
+        UpdatePageFocus(resetActivePageFocus: true);
     }
 
     public override void OnRender(RenderTarget target)
@@ -264,7 +395,8 @@ public class OptionsScene : Scene
         target.Layer--;
 
         target.Layer += 10;
-        red.DrawText(target, target.ScreenSize - target.ScreenOffset - 6, BurntimeClassic.Version, TextAlignment.Right, VerticalTextAlignment.Bottom);
+        red.DrawText(target, new Vector2(6, target.ScreenSize.y - 6) - target.ScreenOffset,
+            BurntimeClassic.Version, TextAlignment.Left, VerticalTextAlignment.Bottom);
         target.Layer -= 10;
 
         base.OnRender(target);

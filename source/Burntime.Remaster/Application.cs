@@ -85,13 +85,17 @@ namespace Burntime.Remaster
             FindClassesFromAssembly(typeof(BurntimeClassic).Assembly);
         }
 
+        public bool ChooseLanguageOnStart { get; set; }
+
         public override void Start()
         {
             Engine.Music.Enabled = (!DisableMusic) && (MusicMode != MusicModes.Off);
 
-            MouseImage = ResourceManager.GetImage("munt.raw");
+            MouseImage = ResourceManager.GetImage("munt.raw?0");
 
-            SceneManager.SetScene(string.IsNullOrEmpty(FileSystem.LocalizationCode) ? "LanguageScene" : "IntroScene");
+            SceneManager.SetScene(ChooseLanguageOnStart || string.IsNullOrEmpty(FileSystem.LocalizationCode)
+                ? "LanguageScene"
+                : "IntroScene");
         }
 
         protected override void OnRun()
@@ -113,6 +117,8 @@ namespace Burntime.Remaster
             FileSystem.LocalizationCode = UserSettings[""].GetString("language");
             if (Engine.SupportsFullscreenToggle)
                 Engine.IsFullscreen = UserSettings[""].GetBool("fullscreen", false);
+            Engine.LinearOutputFiltering = Engine.ForceLinearOutputFiltering ||
+                UserSettings[""].GetBool("linear_filtering", Engine.LinearOutputFiltering);
             base.IsNewGfx = UserSettings[""].GetBool("newgfx", true);
 
             // set language code
@@ -192,6 +198,7 @@ namespace Burntime.Remaster
             UserSettings[""].Set("music", GetMusicMode());
             if (Engine.SupportsFullscreenToggle)
                 UserSettings[""].Set("fullscreen", Engine.IsFullscreen);
+            UserSettings[""].Set("linear_filtering", Engine.LinearOutputFiltering);
             UserSettings[""].Set("newgfx", IsNewGfx);
             UserSettings[""].Set("language", FileSystem.LocalizationCode);
             KeyboardBindings.Save(UserSettings);

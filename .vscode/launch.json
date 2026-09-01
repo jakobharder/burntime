@@ -7,7 +7,40 @@
             "request": "launch",
             "preLaunchTask": "build Burntime (Debug)",
             "program": "${workspaceFolder}/bin/Debug/Burntime.dll",
-            "args": [],
+            "args": [""],
+            "cwd": "${workspaceFolder}/bin/Debug",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        },
+        {
+            "name": "Choose Language",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build Burntime (Debug)",
+            "program": "${workspaceFolder}/bin/Debug/Burntime.dll",
+            "args": ["--choose-language"],
+            "cwd": "${workspaceFolder}/bin/Debug",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        },
+        {
+            "name": "Steam Machine",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build Burntime (Debug)",
+            "program": "${workspaceFolder}/bin/Debug/Burntime.dll",
+            "args": ["--steam-machine"],
+            "cwd": "${workspaceFolder}/bin/Debug",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        },
+        {
+            "name": "Steam Deck",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build Burntime (Debug)",
+            "program": "${workspaceFolder}/bin/Debug/Burntime.dll",
+            "args": ["--steam-deck"],
             "cwd": "${workspaceFolder}/bin/Debug",
             "stopAtEntry": false,
             "console": "internalConsole"

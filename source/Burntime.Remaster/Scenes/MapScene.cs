@@ -27,12 +27,6 @@ namespace Burntime.Remaster
                 return false;
             }
 
-            if (key.IsVirtual && key.VirtualKey == SystemKey.Escape)
-            {
-                action = InputAction.Options;
-                return true;
-            }
-
             return base.TryGetInputAction(key, out action);
         }
 
@@ -43,6 +37,8 @@ namespace Burntime.Remaster
         MenuWindow menu;
         Image _cursorAni;
         readonly DialogWindow _dialog;
+        readonly InputPromptOverlay _promptOverlay;
+        readonly InputShortcutColumn _menuShortcutColumn;
         readonly Maps.MapViewOverlaySelectedLocation _keyboardSelection;
         bool _followKeyboardSelection;
         bool _cameraPanActive;
@@ -51,6 +47,7 @@ namespace Burntime.Remaster
         bool _nextTurnTriggered;
         string _cheatCommand = string.Empty;
         bool _cheatDialogActive;
+        bool _menuOpenedByMouse;
 
         private bool _infoMode
         {
@@ -81,11 +78,9 @@ namespace Burntime.Remaster
 
             menu = new MenuWindow(App);
             menu.Layer += 50;
-            menu.AddLine("@burn?351", (CommandHandler)OnMenuInfo);
-            menu.AddLine("@burn?367", (CommandHandler)OnMenuInventory);
-            menu.AddLine("@burn?359", (CommandHandler)OnMenuStatistics);
-            menu.AddLine("@burn?361", (CommandHandler)OnMenuOptions);
-            menu.AddLine("@burn?357", (CommandHandler)OnMenuTurn);
+            menu.ShortcutAction = OnMenuShortcut;
+            menu.HeldShortcutAction = OnMenuHeldShortcut;
+            ConfigureMenu(true);
             menu.Hide();
             Windows += menu;
 
@@ -108,11 +103,41 @@ namespace Burntime.Remaster
             _dialog.WindowHide += new EventHandler(OnDialogHidden);
             _dialog.WindowShow += new EventHandler(OnDialogShown);
             Windows += _dialog;
+
+            Windows += _promptOverlay = new InputPromptOverlay(app);
+            _promptOverlay.AnchorToScreenBottomRight();
+            Windows += _menuShortcutColumn = new InputShortcutColumn(app);
+            _menuShortcutColumn.Hide();
+            menu.WindowShow += (_, _) => _menuShortcutColumn.Show();
+            menu.WindowHide += (_, _) => _menuShortcutColumn.Hide();
         }
 
         private void View_OnContextMenu(Vector2 position, MouseButton button)
         {
-            menu.Show(position, view.Boundings, true);
+            ShowContextMenu(position, true);
+        }
+
+        void ShowContextMenu(Vector2 position, bool openedByMouse)
+        {
+            _menuOpenedByMouse = openedByMouse;
+            ConfigureMenu(openedByMouse);
+            menu.Show(position, view.Boundings, openedByMouse);
+        }
+
+        void ConfigureMenu(bool includeInteractionMode)
+        {
+            menu.Clear();
+            if (includeInteractionMode)
+            {
+                if (_infoMode)
+                    menu.AddLine("@burn?360", (CommandHandler)OnMenuTravel);
+                else
+                    menu.AddLine("@burn?351", (CommandHandler)OnMenuInfo);
+            }
+            menu.AddLine("@burn?367", (CommandHandler)OnMenuInventory);
+            menu.AddLine("@burn?359", (CommandHandler)OnMenuStatistics);
+            menu.AddLine("@burn?361", (CommandHandler)OnMenuOptions);
+            menu.AddLine("@burn?357", (CommandHandler)OnMenuTurn);
         }
 
         void OnDialogShown(object? sender, EventArgs e)
@@ -157,6 +182,7 @@ namespace Burntime.Remaster
             Size = app.Engine.Resolution.Game;
             gui.SetMapRenderArea(view, Size);
             app.MouseBoundings = view.Boundings;
+            _promptOverlay.AnchorToScreenBottomRight();
         }
 
         void view_Scroll(object sender, MapScrollArgs e)
@@ -272,6 +298,8 @@ namespace Burntime.Remaster
 
         public override void OnUpdate(float Elapsed)
         {
+            UpdatePromptOverlay();
+            UpdateMenuShortcutColumn();
             ResetHeldActionsIfReleased();
             UpdateCameraPan(Elapsed);
 
@@ -306,6 +334,67 @@ namespace Burntime.Remaster
             var hoverLocation = selectedLocation >= 0 ? BurntimeClassic.Instance.Game.World.Locations[selectedLocation] : null;
             var player = BurntimeClassic.Instance.Game.World.ActivePlayerObj;
             gui.ExpectedTravelDays = hoverLocation is null ? 0 : player.GetTravelDays(player.Location, hoverLocation);
+        }
+
+        void UpdatePromptOverlay()
+        {
+            if (_dialog.IsVisible || menu.IsVisible)
+            {
+                _promptOverlay.SetPrompts();
+                return;
+            }
+
+            ClassicGame game = app.GameState as ClassicGame;
+            int locationNumber = _keyboardSelection.LocationNumber;
+            bool canEnter = locationNumber == game.World.ActivePlayerObj.Location.Id;
+            bool canTravel = locationNumber >= 0 && !canEnter &&
+                game.World.ActivePlayerObj.CanTravel(game.World.ActivePlayerObj.Location,
+                    game.World.Locations[locationNumber]);
+            bool canShowInfo = locationNumber >= 0 &&
+                CanShowInfo(game.World.ActivePlayerObj, game.World.Locations[locationNumber]);
+
+            List<InputPrompt> prompts = [];
+            if (canEnter || canTravel)
+            {
+                GuiString label = canEnter ? "@prompts?26" : "@prompts?25";
+                prompts.Add(new(InputAction.Primary, label)
+                {
+                    PreferredKeyboardControl = new Key(' ')
+                });
+            }
+            if (canShowInfo)
+                prompts.Add(new(InputAction.Secondary, "@prompts?27"));
+            prompts.Add(new(InputAction.Back, "@prompts?11")
+            {
+                PreferredKeyboardControl = new Key(SystemKey.Escape),
+                PreferredGamepadControl = GamepadControl.B
+            });
+            _promptOverlay.SetPrompts(prompts.ToArray());
+        }
+
+        void UpdateMenuShortcutColumn()
+        {
+            if (!menu.IsVisible)
+                return;
+
+            if (_menuOpenedByMouse)
+            {
+                _menuShortcutColumn.SetShortcuts(
+                    new(InputAction.ToggleInteractionMode),
+                    new(InputAction.Inventory),
+                    new(InputAction.Statistics),
+                    new(InputAction.Options),
+                    new(InputAction.NextTurn) { Hold = true });
+            }
+            else
+            {
+                _menuShortcutColumn.SetShortcuts(
+                    new(InputAction.Inventory),
+                    new(InputAction.Statistics),
+                    new(InputAction.Options),
+                    new(InputAction.NextTurn) { Hold = true });
+            }
+            _menuShortcutColumn.PlaceBeside(menu, view.Boundings);
         }
 
         protected override void OnActivateScene(object parameter)
@@ -371,8 +460,8 @@ namespace Burntime.Remaster
 
             if (action == InputAction.Back)
             {
-                SetKeyboardSelection(game.World.ActivePlayerObj.Location.Id);
-                _followKeyboardSelection = true;
+                ShowContextMenu(view.Boundings.Center,
+                    app.LastInputMode == InputMode.Mouse);
                 return true;
             }
 
@@ -401,12 +490,6 @@ namespace Burntime.Remaster
                     (app as BurntimeClassic).InfoCity = game.World.ActivePlayerObj.Location;
                     app.SceneManager.SetScene("InfoScene");
                 }
-                return true;
-            }
-
-            if (action == InputAction.GlobalAction)
-            {
-                menu.Show(view.Boundings.Center, view.Boundings, false);
                 return true;
             }
 
@@ -488,6 +571,44 @@ namespace Burntime.Remaster
                 return true;
 
             return false;
+        }
+
+        bool OnMenuShortcut(InputAction action)
+        {
+            switch (action)
+            {
+                case InputAction.Inventory:
+                    menu.Hide();
+                    OnMenuInventory();
+                    return true;
+                case InputAction.Statistics:
+                    menu.Hide();
+                    OnMenuStatistics();
+                    return true;
+                case InputAction.Options:
+                    menu.Hide();
+                    OnMenuOptions();
+                    return true;
+                case InputAction.ToggleInteractionMode:
+                    menu.Hide();
+                    if (_infoMode)
+                        OnMenuTravel();
+                    else
+                        OnMenuInfo();
+                    return true;
+                case InputAction.NextTurn:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        bool OnMenuHeldShortcut(InputAction action, float elapsed)
+        {
+            bool handled = action == InputAction.NextTurn && OnHeldInputAction(action, elapsed);
+            if (_nextTurnTriggered)
+                menu.Hide();
+            return handled;
         }
 
         void SelectLocation(Vector2 direction)
@@ -744,8 +865,7 @@ namespace Burntime.Remaster
             _cursorAni.Background = "burngfxani@syst.raw?20-23";
             _cursorAni.Background.Animation.Progressive = false;
 
-            menu.RemoveLine(0);
-            menu.AddLine(0, "@burn?360", (CommandHandler)OnMenuTravel);
+            ConfigureMenu(_menuOpenedByMouse);
         }
 
         public void OnMenuTravel()
@@ -755,8 +875,7 @@ namespace Burntime.Remaster
             _cursorAni.Background = "burngfxani@syst.raw?24-27";
             _cursorAni.Background.Animation.Progressive = false;
 
-            menu.RemoveLine(0);
-            menu.AddLine(0, "@burn?351", (CommandHandler)OnMenuInfo);
+            ConfigureMenu(_menuOpenedByMouse);
         }
 
         public void OnFastTravel()
@@ -766,8 +885,7 @@ namespace Burntime.Remaster
             _cursorAni.Background = "burngfxani@syst.raw?4-7";
             _cursorAni.Background.Animation.Progressive = false;
 
-            menu.RemoveLine(0);
-            menu.AddLine(0, "@burn?360", (CommandHandler)OnMenuTravel);
+            ConfigureMenu(_menuOpenedByMouse);
         }
 
         public void OnMenuInventory()

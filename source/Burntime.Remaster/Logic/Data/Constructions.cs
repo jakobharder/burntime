@@ -131,6 +131,12 @@ namespace Burntime.Remaster.Logic.Interaction
             return best;
         }
 
+        public bool HasConstruction(Character technician, IItemCollection roomItems, Item mainItem)
+        {
+            return FindConstruction(technician.Items, roomItems, mainItem.Type,
+                technician.Class, out _) != null;
+        }
+
         public void Construct(Construction construction, Character technician, IItemCollection roomItems, Item mainItem, ClassicGame world)
         {
             IItemCollection insert = technician.Items;

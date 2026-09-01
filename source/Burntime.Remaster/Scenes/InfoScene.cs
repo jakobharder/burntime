@@ -31,6 +31,7 @@ namespace Burntime.Remaster.Scenes
         GuiImage fighterImage;
         GuiImage technicianImage;
         GuiImage doctorImage;
+        readonly InputPromptOverlay promptOverlay;
 
         public InfoScene(Module App)
             : base(App)
@@ -94,6 +95,9 @@ namespace Burntime.Remaster.Scenes
 
             items = new SortedList<string, int>();
 
+            Windows += promptOverlay = new InputPromptOverlay(app);
+            promptOverlay.AnchorToScreenBottomRight();
+
             fighterImage = "syssze.raw?32";
             doctorImage = "syssze.raw?16";
             technicianImage = "syssze.raw?48";
@@ -104,6 +108,7 @@ namespace Burntime.Remaster.Scenes
             base.OnResizeScreen();
 
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+            promptOverlay.AnchorToScreenBottomRight();
         }
 
         public override void OnRender(RenderTarget target)
@@ -202,6 +207,19 @@ namespace Burntime.Remaster.Scenes
                 productionID = -1;
                 production.ItemID = "";
             }
+
+            if (productionID >= 0)
+            {
+                promptOverlay.SetPrompts(
+                    new(InputAction.MoveLeft, "@prompts?32")
+                    {
+                        AlternateAction = InputAction.MoveRight,
+                        GamepadOverride = "D-pad Left/Right"
+                    },
+                    new(InputAction.Back, "@prompts?17"));
+            }
+            else
+                promptOverlay.SetPrompts();
 
             items.Clear();
             foreach (Room room in loc.Rooms)

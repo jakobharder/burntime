@@ -47,6 +47,27 @@ dotnet build source/Burntime.MonoGame/Burntime.MonoGame.csproj -c Debug
 dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj
 ```
 
+For windowed Steam feature and resolution testing, pass one of these options after
+`--`:
+
+```sh
+dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- --steam-machine
+dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- --steam-deck
+dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- --choose-language
+dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- --linear
+dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- --fps
+```
+
+- `--steam-machine` uses the normal half-display window size, defaults to gamepad
+  prompts, and disables the fullscreen toggle.
+- `--steam-deck` uses a 1280x800 window with 1.5× output scaling, defaults to
+  gamepad prompts, and disables the fullscreen toggle.
+- `--choose-language` opens the language selection scene even when a language was
+  saved previously. It can be combined with either Steam emulation option.
+- `--linear` uses linear filtering when scaling the intermediate render buffer to
+  the window. The default is nearest-neighbor filtering.
+- `--fps` shows a white FPS counter in the top-left corner.
+
 ### Headless AI simulation
 
 Run a deterministic four-AI game without opening a window:

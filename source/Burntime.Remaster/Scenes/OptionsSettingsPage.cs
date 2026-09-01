@@ -13,6 +13,7 @@ internal class OptionsSettingsPage : Container
     readonly Button _musicToggle;
     readonly Button _newgfxToggle;
     readonly Button _fullscreenToggle;
+    readonly Button _scalingToggle;
     readonly Button _languageToggle;
     readonly Button[] _buttons;
     int _focusIndex;
@@ -28,7 +29,7 @@ internal class OptionsSettingsPage : Container
             Font = _fonts.Green,
             HoverFont = _fonts.Orange,
             DisabledFont = _fonts.Disabled,
-            Position = new Vector2(38, 68),
+            Position = new Vector2(38, 88),
             IsTextOnly = true,
             IsEnabled = !BurntimeClassic.Instance.DisableMusic
         };
@@ -48,20 +49,28 @@ internal class OptionsSettingsPage : Container
             Position = new Vector2(38, 78),
             IsTextOnly = true
         };
+        Windows += _scalingToggle = new Button(app, () =>
+            app.Engine.LinearOutputFiltering = !app.Engine.LinearOutputFiltering)
+        {
+            Font = _fonts.Green,
+            HoverFont = _fonts.Orange,
+            DisabledFont = _fonts.Disabled,
+            Position = new Vector2(38, 68),
+            IsTextOnly = true
+        };
         Windows += _languageToggle = new Button(app, () => app.Language = app.Language == "de" ? "en" : "de")
         {
             Font = _fonts.Green,
             HoverFont = _fonts.Orange,
             DisabledFont = _fonts.Disabled,
             Text = "@newburn?26",
-            Position = new Vector2(38, 98),
+            Position = new Vector2(38, 108),
             IsTextOnly = true
         };
         if (!app.Engine.SupportsFullscreenToggle)
         {
             _fullscreenToggle.IsEnabled = false;
             _fullscreenToggle.Hide();
-            _languageToggle.Position = new Vector2(38, 78);
         }
         Windows += _hintText = new Button(app)
         {
@@ -71,13 +80,13 @@ internal class OptionsSettingsPage : Container
             TextHorizontalAlign = Platform.Graphics.TextAlignment.Center
         };
 
-        _buttons = new[] { _newgfxToggle, _musicToggle, _fullscreenToggle, _languageToggle };
+        _buttons = new[] { _newgfxToggle, _scalingToggle, _fullscreenToggle, _musicToggle, _languageToggle };
     }
 
-    public void SetKeyboardActive(bool active)
+    public void SetKeyboardActive(bool active, bool resetFocus = false)
     {
         HasFocus = active;
-        if (active && app.LastInputMode != InputMode.Mouse)
+        if (resetFocus)
             _focusIndex = Array.FindIndex(_buttons, button => button.IsEnabled);
         UpdateFocus();
     }
@@ -152,6 +161,7 @@ internal class OptionsSettingsPage : Container
             _ => "@burn?424",
         };
         _fullscreenToggle.Text = app.Engine.IsFullscreen ? "@newburn?19" : "@newburn?20";
+        _scalingToggle.Text = app.Engine.LinearOutputFiltering ? "@newburn?56" : "@newburn?55";
 
         if (_fullscreenToggle.IsHover || _fullscreenToggle.IsKeyboardSelected)
         {

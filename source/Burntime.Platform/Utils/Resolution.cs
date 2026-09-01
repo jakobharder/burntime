@@ -1,6 +1,4 @@
-﻿using static System.Formats.Asn1.AsnWriter;
-
-namespace Burntime.Platform.Utils;
+﻿namespace Burntime.Platform.Utils;
 
 public class Resolution
 {
@@ -49,8 +47,20 @@ public class Resolution
     }
 
     public Vector2f Scale { get; private set; } = new(1, 1);
+    public float OutputScale { get; private set; } = 1;
     public Vector2 Game { get; private set; } = new(960, 640);
     public Vector2 BackBuffer { get; private set; } = new(960, 540);
+
+    public float? OutputScaleOverride
+    {
+        get => _outputScaleOverride;
+        set
+        {
+            _outputScaleOverride = value;
+            SelectBestGameResolution();
+        }
+    }
+    float? _outputScaleOverride;
 
     void SelectBestGameResolution()
     {
@@ -66,14 +76,12 @@ public class Resolution
         int verticalFactor = Math.Max(1, maxFactor.y, minFactor.y);
         int horizontalFactor = Math.Max(1, maxFactor.x, minFactor.x);
 
-        int factor = Math.Min(verticalFactor, horizontalFactor);
+        int automaticFactor = Math.Min(verticalFactor, horizontalFactor);
+        OutputScale = _outputScaleOverride ?? automaticFactor;
 
-        BackBuffer = _native / factor;
+        BackBuffer = (Vector2f)_native / OutputScale;
 
         Scale = DOUBLED_RESOLUTION * _ratioCorrection;
         Game = (Vector2f)BackBuffer / Scale;
-
-#warning use render to texture instead and strech that by verticalfactor?
-        Scale *= factor;
     }
 }

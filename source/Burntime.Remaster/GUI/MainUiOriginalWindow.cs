@@ -119,42 +119,52 @@ namespace Burntime.Remaster
             var currentLocation = game.World.ActiveLocationObj;
             int totalWaterReserve = playerGroup.GetLowestWaterWithInventory();
             int totalFoodReserve = playerGroup.GetLowestFoodWithInventory();
+            bool statusDisplayed = false;
 
             if (totalWaterReserve < ExpectedTravelDays)
             {
                 _warningFont.DrawText(Target, nutrition, txt[38],
                     TextAlignment.Center, VerticalTextAlignment.Top);
+                statusDisplayed = true;
             }
             else if (totalFoodReserve < ExpectedTravelDays)
             {
                 _warningFont.DrawText(Target, nutrition, txt[39],
                     TextAlignment.Center, VerticalTextAlignment.Top);
+                statusDisplayed = true;
             }
             else if (playerGroup.IsInDanger())
             {
                 _warningFont.DrawText(Target, nutrition, currentLocation.Danger.InfoString,
                     TextAlignment.Center, VerticalTextAlignment.Top);
+                statusDisplayed = true;
             }
             else if (totalWaterReserve == 0)
             {
                 _warningFont.DrawText(Target, nutrition, txt[38],
                     TextAlignment.Center, VerticalTextAlignment.Top);
+                statusDisplayed = true;
             }
             else if (totalFoodReserve == 0)
             {
                 _warningFont.DrawText(Target, nutrition, txt[39],
                     TextAlignment.Center, VerticalTextAlignment.Top);
+                statusDisplayed = true;
             }
             else if (currentLocation.Danger is not null)
             {
                 _standardFont.DrawText(Target, nutrition, currentLocation.Danger.InfoString,
                     TextAlignment.Center, VerticalTextAlignment.Top);
+                statusDisplayed = true;
             }
 
-            var day = new Vector2(Size.x / 2 + 100, Size.y - 16);
-            txt = new TextHelper(app, "burn");
-            txt.AddArgument("|A", game.World.Day);
-            _standardFont.DrawText(Target, day, txt[404], TextAlignment.Center, VerticalTextAlignment.Top);
+            if (!statusDisplayed)
+            {
+                txt = new TextHelper(app, "burn");
+                txt.AddArgument("|A", game.World.Day);
+                _standardFont.DrawText(Target, nutrition, txt[404],
+                    TextAlignment.Center, VerticalTextAlignment.Top);
+            }
 
             if (!string.IsNullOrEmpty(PromptText))
             {

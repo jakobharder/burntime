@@ -16,7 +16,7 @@ public sealed class GamepadBindings : IGamepadBindings
         ("accept", "a", InputAction.Primary),
         ("back", "b", InputAction.Back),
         ("secondary", "x", InputAction.Secondary),
-        ("global_action", "y", InputAction.GlobalAction),
+        ("action", "y", InputAction.SceneAction),
         ("options", "menu", InputAction.Options),
         ("world_map", "view", InputAction.WorldMap),
         ("left_area", "left_shoulder", InputAction.Statistics),
@@ -59,12 +59,18 @@ public sealed class GamepadBindings : IGamepadBindings
 
         foreach (var definition in definitions)
         {
-            string value = defaults.ContainsKey(definition.Setting)
-                ? defaults.GetString(definition.Setting).Trim()
-                : definition.DefaultControl;
+            string value;
+            if (defaults.ContainsKey(definition.Setting))
+                value = defaults.GetString(definition.Setting).Trim();
+            else if (definition.Setting == "action" && defaults.ContainsKey("global_action"))
+                value = defaults.GetString("global_action").Trim();
+            else
+                value = definition.DefaultControl;
 
             if (overrides.ContainsKey(definition.Setting))
                 value = overrides.GetString(definition.Setting).Trim();
+            else if (definition.Setting == "action" && overrides.ContainsKey("global_action"))
+                value = overrides.GetString("global_action").Trim();
 
             values[definition.Setting] = value;
 
@@ -76,6 +82,35 @@ public sealed class GamepadBindings : IGamepadBindings
 
     public InputAction GetAction(GamepadControl control) =>
         actions.TryGetValue(control, out InputAction action) ? action : InputAction.None;
+
+    public IReadOnlyList<GamepadControl> GetControls(InputAction action)
+    {
+        List<GamepadControl> result = [];
+        if (action == InputAction.LeftArea)
+        {
+            AddConfiguredControl(result, "left_area", InputAction.Statistics);
+            return result;
+        }
+        if (action == InputAction.RightArea)
+        {
+            AddConfiguredControl(result, "right_area", InputAction.LocationInfo);
+            return result;
+        }
+
+        foreach ((GamepadControl control, InputAction boundAction) in actions)
+            if (boundAction == action)
+                result.Add(control);
+        return result;
+    }
+
+    void AddConfiguredControl(List<GamepadControl> result, string setting,
+        InputAction forwardedAction)
+    {
+        if (values.TryGetValue(setting, out string? value) &&
+            controls.TryGetValue(value, out GamepadControl control) &&
+            actions.TryGetValue(control, out InputAction action) && action == forwardedAction)
+            result.Add(control);
+    }
 
     public void Save(ConfigFile config)
     {

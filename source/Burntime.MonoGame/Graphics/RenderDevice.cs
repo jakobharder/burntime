@@ -32,8 +32,8 @@ public class RenderDevice : IDisposable
     //RenderToSurface renderToSurface;
     //Texture renderToTexture;
 
-    int renderScale = 2;
     SpriteBatch _spriteBatch;
+    RenderTarget2D _intermediateTarget;
 
     public RenderDevice(BurntimeGame Engine)
     {
@@ -68,6 +68,8 @@ public class RenderDevice : IDisposable
         Log.Info("Game resolution: " + _engine.Resolution.Game.x + "x" + _engine.Resolution.Game.y);
         Log.Info("Backbuffer resolution: " + _engine.Resolution.Native.x + "x" + _engine.Resolution.Native.y);
         Log.Info("Scale factor: " + _engine.Resolution.Scale.x.ToString("0.00") + "x" + _engine.Resolution.Scale.y.ToString("0.00"));
+        Log.Info("Output scale: " + _engine.Resolution.OutputScale.ToString("0.00") +
+            "x (" + (_engine.LinearOutputFiltering ? "linear" : "nearest") + ")");
 
         //renderToSurface = new RenderToSurface(device, engine.Resolution.Game.x * renderScale, engine.Resolution.Game.y * renderScale, Format.X8R8G8B8);
         //renderToTexture = new Texture(device, engine.Resolution.Game.x * renderScale, engine.Resolution.Game.y * renderScale, 1, Usage.RenderTarget, Format.X8R8G8B8, Pool.Default);
@@ -164,6 +166,8 @@ public class RenderDevice : IDisposable
         //resourceManager.ReleaseAll();
 
         SpriteFrame.EmptyTexture.Dispose();
+        _intermediateTarget?.Dispose();
+        _intermediateTarget = null;
 
         //spriteRenderer.Dispose();
         //lineRenderer.Dispose();
@@ -238,7 +242,11 @@ public class RenderDevice : IDisposable
     {
         lock (_renderQueue)
         {
-            if (_renderQueue.Count > 0)
+            // Render queues are complete snapshots. Graphics device changes (for
+            // example toggling fullscreen) can stall this consumer while the game
+            // thread keeps producing them. Replaying that backlog adds permanent
+            // input latency, so discard stale snapshots and render the newest one.
+            while (_renderQueue.Count > 0)
                 _renderEntities = _renderQueue.Dequeue();
         }
 
@@ -262,6 +270,10 @@ public class RenderDevice : IDisposable
     public void Render(float elapsedSeconds)
     {
         const float PIXEL_CORRECTION = 0.0001f;
+
+        EnsureIntermediateTarget();
+        _engine.GraphicsDevice.SetRenderTarget(_intermediateTarget);
+        _engine.GraphicsDevice.Clear(Color.Black);
 
         var transformMatrix = Matrix.CreateScale(new Vector3(_engine.Resolution.Scale.x + PIXEL_CORRECTION, _engine.Resolution.Scale.y + PIXEL_CORRECTION, 1));
 
@@ -334,6 +346,30 @@ public class RenderDevice : IDisposable
         loadingOverlay.Render(elapsedSeconds, _spriteBatch);
 
         _spriteBatch.End();
+
+        _engine.GraphicsDevice.SetRenderTarget(null);
+        _engine.GraphicsDevice.Clear(Color.Black);
+        _spriteBatch.Begin(SpriteSortMode.Deferred,
+            Microsoft.Xna.Framework.Graphics.BlendState.Opaque,
+            _engine.LinearOutputFiltering ? SamplerState.LinearClamp : SamplerState.PointClamp,
+            null, null);
+        _spriteBatch.Draw(_intermediateTarget,
+            new Rectangle(0, 0, _engine.Resolution.Native.x, _engine.Resolution.Native.y),
+            Color.White);
+        _spriteBatch.End();
+    }
+
+    void EnsureIntermediateTarget()
+    {
+        int width = _engine.Resolution.BackBuffer.x;
+        int height = _engine.Resolution.BackBuffer.y;
+        if (_intermediateTarget is not null &&
+            _intermediateTarget.Width == width && _intermediateTarget.Height == height)
+            return;
+
+        _intermediateTarget?.Dispose();
+        _intermediateTarget = new RenderTarget2D(_engine.GraphicsDevice, width, height,
+            false, SurfaceFormat.Color, DepthFormat.None);
     }
 
     public void DrawLineBetween(Microsoft.Xna.Framework.Vector3 startPos, Microsoft.Xna.Framework.Vector3 endPos, int thickness, Color color)
