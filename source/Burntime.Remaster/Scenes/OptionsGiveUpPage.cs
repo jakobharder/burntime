@@ -42,10 +42,10 @@ internal class OptionsGiveUpPage : Container
         _buttons = new[] { _buttonRestart, _buttonQuit };
     }
 
-    public void SetKeyboardActive(bool active)
+    public void SetKeyboardActive(bool active, bool resetFocus = false)
     {
         HasFocus = active;
-        if (active && app.LastInputMode != InputMode.Mouse)
+        if (resetFocus)
             _focusIndex = Array.FindIndex(_buttons, button => button.IsEnabled);
         UpdateFocus();
     }

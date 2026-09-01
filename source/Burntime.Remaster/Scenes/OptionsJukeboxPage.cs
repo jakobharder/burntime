@@ -64,12 +64,28 @@ internal class OptionsJukeboxPage : Container
         _lastPlayingButton = playingButton;
     }
 
-    public void SetKeyboardActive(bool active)
+    public void SetKeyboardActive(bool active, bool resetFocus = false)
     {
         HasFocus = active;
-        if (active && app.LastInputMode != InputMode.Mouse && _buttons.Length > 0)
-            _focusIndex = 0;
+        if (resetFocus && _buttons.Length > 0)
+            _focusIndex = PlayingButtonIndex() is int playingIndex ? playingIndex : 0;
         UpdateFocus();
+    }
+
+    int? PlayingButtonIndex()
+    {
+        if (app.Engine.Music.Playing is null ||
+            BurntimeClassic.Instance.MusicMode == BurntimeClassic.MusicModes.Off)
+            return null;
+
+        string? playingSong = app.Engine.Music.ResolveSong(app.Engine.Music.Playing);
+        if (playingSong is null)
+            return null;
+
+        Button? playingButton = _songButtons.FirstOrDefault(entry =>
+            app.Engine.Music.ResolveSong(entry.Key) == playingSong).Value;
+        int index = System.Array.IndexOf(_buttons, playingButton);
+        return index >= 0 ? index : null;
     }
 
     void UpdateFocus()
@@ -114,11 +130,13 @@ internal class OptionsJukeboxPage : Container
         int row = _focusIndex % 8;
         int column = _focusIndex / 8;
         int candidateColumn = column + direction;
-        int candidate = candidateColumn * 8 + row;
-        if (candidateColumn < 0 || candidate >= _buttons.Length)
+        int lastColumn = (_buttons.Length - 1) / 8;
+        if (candidateColumn < 0 || candidateColumn > lastColumn)
             return false;
 
-        _focusIndex = candidate;
+        int candidateStart = candidateColumn * 8;
+        int candidateCount = Math.Min(8, _buttons.Length - candidateStart);
+        _focusIndex = candidateStart + Math.Min(row, candidateCount - 1);
         UpdateFocus();
         return true;
     }

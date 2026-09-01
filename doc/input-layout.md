@@ -95,10 +95,12 @@ Gamepad actions remain available; names are selected or generated without gamepa
 
 ### Options radio
 
-- `Tab` cycles forward through Back, Saves, Jukebox, Settings and Give Up; `Shift+Tab` cycles backward.
-- Gamepad LB/RB cycles backward/forward through the same entries. The Back entry shows an empty left panel; confirm it to leave Options.
-- Arrow keys, D-pad and sticks navigate only inside the active page and never change the radio entry.
-- The red bulb marks the active radio entry. Blue text is used only for mouse hover.
+- Options opens with the left page focused. While a page has focus, arrows navigate its controls and confirm activates the focused control. Right or `Tab` moves focus to the active radio entry.
+- The radio entries form a vertical tab rail on the right. While it has focus, up/down moves without wrapping and immediately displays the focused page. Left or confirm returns to that page.
+- `Shift+Up/Down` and Gamepad LB/RB cycle backward/forward through the radio entries. When invoked from a page, focus remains in the newly displayed page unless Back is reached.
+- Changing pages initializes focus to the first item; Jukebox prefers the currently playing track when one is available. Moving to the tab rail and returning to the same page preserves its previous focus. Page controls still require confirm to activate.
+- The Back entry shows an empty left panel and remains on the tab rail; click or confirm it to leave Options.
+- The red bulb marks the active radio entry. A separate focus index uses the blue hover color while the tab rail has keyboard or gamepad focus. Mouse hover shares that focus index but does not switch pages; clicking selects the hovered entry.
 
 ## Direction behavior
 

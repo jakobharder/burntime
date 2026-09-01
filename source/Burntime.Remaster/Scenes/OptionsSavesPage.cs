@@ -211,17 +211,15 @@ internal class OptionsSavesPage : Container
         return true;
     }
 
-    public void SetKeyboardActive(bool active)
+    public void SetKeyboardActive(bool active, bool resetFocus = false)
     {
         HasFocus = active;
-        if (active)
+        if (resetFocus)
         {
             _keyboardArea = KeyboardArea.Slots;
-            if (app.LastInputMode != InputMode.Mouse && (_saveFocusIndex < 0 || _saveFocusIndex >= EntryCount))
-            {
-                _saveFocusIndex = EntryCount > 0 ? 0 : -1;
-                EnsureFocusVisible();
-            }
+            _saveFocusIndex = EntryCount > 0 ? 0 : -1;
+            EnsureFocusVisible();
+            RefreshVisibleRows();
         }
 
         UpdateKeyboardFocus();

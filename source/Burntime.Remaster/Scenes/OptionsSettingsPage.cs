@@ -83,10 +83,10 @@ internal class OptionsSettingsPage : Container
         _buttons = new[] { _newgfxToggle, _scalingToggle, _fullscreenToggle, _musicToggle, _languageToggle };
     }
 
-    public void SetKeyboardActive(bool active)
+    public void SetKeyboardActive(bool active, bool resetFocus = false)
     {
         HasFocus = active;
-        if (active && app.LastInputMode != InputMode.Mouse)
+        if (resetFocus)
             _focusIndex = Array.FindIndex(_buttons, button => button.IsEnabled);
         UpdateFocus();
     }
