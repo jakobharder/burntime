@@ -117,6 +117,8 @@ namespace Burntime.Remaster
             FileSystem.LocalizationCode = UserSettings[""].GetString("language");
             if (Engine.SupportsFullscreenToggle)
                 Engine.IsFullscreen = UserSettings[""].GetBool("fullscreen", false);
+            Engine.LinearOutputFiltering = Engine.ForceLinearOutputFiltering ||
+                UserSettings[""].GetBool("linear_filtering", Engine.LinearOutputFiltering);
             base.IsNewGfx = UserSettings[""].GetBool("newgfx", true);
 
             // set language code
@@ -196,6 +198,7 @@ namespace Burntime.Remaster
             UserSettings[""].Set("music", GetMusicMode());
             if (Engine.SupportsFullscreenToggle)
                 UserSettings[""].Set("fullscreen", Engine.IsFullscreen);
+            UserSettings[""].Set("linear_filtering", Engine.LinearOutputFiltering);
             UserSettings[""].Set("newgfx", IsNewGfx);
             UserSettings[""].Set("language", FileSystem.LocalizationCode);
             KeyboardBindings.Save(UserSettings);

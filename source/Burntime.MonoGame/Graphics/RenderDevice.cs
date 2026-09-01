@@ -242,7 +242,11 @@ public class RenderDevice : IDisposable
     {
         lock (_renderQueue)
         {
-            if (_renderQueue.Count > 0)
+            // Render queues are complete snapshots. Graphics device changes (for
+            // example toggling fullscreen) can stall this consumer while the game
+            // thread keeps producing them. Replaying that backlog adds permanent
+            // input latency, so discard stale snapshots and render the newest one.
+            while (_renderQueue.Count > 0)
                 _renderEntities = _renderQueue.Dequeue();
         }
 

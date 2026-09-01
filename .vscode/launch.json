@@ -7,7 +7,7 @@
             "request": "launch",
             "preLaunchTask": "build Burntime (Debug)",
             "program": "${workspaceFolder}/bin/Debug/Burntime.dll",
-            "args": ["--fps"],
+            "args": [""],
             "cwd": "${workspaceFolder}/bin/Debug",
             "stopAtEntry": false,
             "console": "internalConsole"
@@ -19,17 +19,6 @@
             "preLaunchTask": "build Burntime (Debug)",
             "program": "${workspaceFolder}/bin/Debug/Burntime.dll",
             "args": ["--choose-language"],
-            "cwd": "${workspaceFolder}/bin/Debug",
-            "stopAtEntry": false,
-            "console": "internalConsole"
-        },
-        {
-            "name": "Linear Filtered",
-            "type": "coreclr",
-            "request": "launch",
-            "preLaunchTask": "build Burntime (Debug)",
-            "program": "${workspaceFolder}/bin/Debug/Burntime.dll",
-            "args": ["--linear"],
             "cwd": "${workspaceFolder}/bin/Debug",
             "stopAtEntry": false,
             "console": "internalConsole"
@@ -51,7 +40,7 @@
             "request": "launch",
             "preLaunchTask": "build Burntime (Debug)",
             "program": "${workspaceFolder}/bin/Debug/Burntime.dll",
-            "args": ["--steam-deck", "--linear", "--fps"],
+            "args": ["--steam-deck"],
             "cwd": "${workspaceFolder}/bin/Debug",
             "stopAtEntry": false,
             "console": "internalConsole"

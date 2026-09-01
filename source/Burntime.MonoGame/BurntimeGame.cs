@@ -35,7 +35,8 @@ namespace Burntime.MonoGame
         readonly bool _emulateSteamMachine;
         readonly bool _emulateSteamDeck;
         readonly bool _chooseLanguage;
-        internal bool LinearOutputFiltering { get; }
+        public bool LinearOutputFiltering { get; set; }
+        public bool ForceLinearOutputFiltering { get; }
         internal bool ShowFps { get; }
         Platform.Graphics.Font? _fpsFont;
         long _fpsSampleStart = Stopwatch.GetTimestamp();
@@ -96,7 +97,8 @@ namespace Burntime.MonoGame
             _emulateSteamMachine = emulateSteamMachine;
             _emulateSteamDeck = emulateSteamDeck;
             _chooseLanguage = chooseLanguage;
-            LinearOutputFiltering = linearOutputFiltering;
+            ForceLinearOutputFiltering = linearOutputFiltering;
+            LinearOutputFiltering = linearOutputFiltering || emulateSteamDeck || IsSteamDeck();
             ShowFps = showFps;
             _graphics = new GraphicsDeviceManager(this);
             IsFixedTimeStep = true;

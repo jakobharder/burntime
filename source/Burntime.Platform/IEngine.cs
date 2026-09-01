@@ -23,6 +23,8 @@ public interface IEngine
     bool IsLoading { get; set; }
     bool SupportsFullscreenToggle { get; }
     bool IsFullscreen { get; set; }
+    bool LinearOutputFiltering { get; set; }
+    bool ForceLinearOutputFiltering { get; }
 
     void CenterMouse();
     void ExitApplication();
