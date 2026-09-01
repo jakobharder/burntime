@@ -203,10 +203,14 @@ namespace Burntime.MonoGame
             {
                 if (resetWindowSize || initialize)
                 {
+                    var displayResolution = new Platform.Vector2(
+                        GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
+                        GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height);
                     Resolution.Native = _emulateSteamDeck
                         ? new Platform.Vector2(1280, 800)
-                        : new Platform.Vector2(GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
-                            GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height) / 2;
+                        : IsGamescopeSession() || IsSteamDeck()
+                            ? displayResolution
+                            : displayResolution / 2;
                     //Resolution.Native = new Platform.Vector2(2560, 1440);
                 }
                 else
