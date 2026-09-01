@@ -23,9 +23,14 @@ public sealed class InputShortcutColumn : Window
     const int RowHeight = 11;
 
     readonly GuiFont _font;
+    readonly InputControlRenderer _controlRenderer;
     InputShortcut[] _shortcuts = [];
-    string[] _text = [];
+    ShortcutDisplay[] _display = [];
     InputMode _inputMode = InputMode.None;
+    string _language = string.Empty;
+    int _glyphRevision = -1;
+
+    readonly record struct ShortcutDisplay(InputControlLabel Control, string Prefix, int Width);
 
     public PixelColor BackgroundColor { get; set; } = new(128, 0, 0, 0);
 
@@ -36,6 +41,7 @@ public sealed class InputShortcutColumn : Window
         {
             Borders = TextBorders.None
         };
+        _controlRenderer = new InputControlRenderer(app, _font);
         Layer = 200;
     }
 
@@ -68,14 +74,15 @@ public sealed class InputShortcutColumn : Window
             return;
 
         RefreshInputMode();
-        if (_text.Length == 0)
+        if (_display.Length == 0)
             return;
 
         target.RenderRect(Vector2.Zero, Size, BackgroundColor);
-        for (int i = 0; i < _text.Length; i++)
-            if (_text[i].Length > 0)
-                _font.DrawText(target, new Vector2(HorizontalPadding, TopHeight + RowHeight * i + 2),
-                    _text[i], TextAlignment.Left, VerticalTextAlignment.Top);
+        for (int i = 0; i < _display.Length; i++)
+            if (!_display[i].Control.IsEmpty)
+                _controlRenderer.Draw(target,
+                    new Vector2(HorizontalPadding, TopHeight + RowHeight * i + 2),
+                    _display[i].Control, prefix: _display[i].Prefix);
     }
 
     void RefreshInputMode()
@@ -83,7 +90,8 @@ public sealed class InputShortcutColumn : Window
         InputMode inputMode = app.LastInputMode == InputMode.Gamepad
             ? InputMode.Gamepad
             : InputMode.Keyboard;
-        if (_inputMode == inputMode)
+        if (_inputMode == inputMode && _language == app.Language &&
+            _glyphRevision == app.Engine.InputGlyphs.Revision)
             return;
 
         _inputMode = inputMode;
@@ -92,21 +100,25 @@ public sealed class InputShortcutColumn : Window
 
     void RefreshText()
     {
-        _text = new string[_shortcuts.Length];
+        _display = new ShortcutDisplay[_shortcuts.Length];
         int width = 0;
         for (int i = 0; i < _shortcuts.Length; i++)
         {
             InputShortcut shortcut = _shortcuts[i];
-            string control = shortcut.Action == InputAction.None
-                ? string.Empty
+            InputControlLabel control = shortcut.Action == InputAction.None
+                ? InputControlLabel.Empty
                 : InputControlDisplay.Resolve(app, _inputMode, shortcut.Action,
                     shortcut.PreferredKeyboardControl, shortcut.PreferredGamepadControl,
                     shortcut.KeyboardOverride, shortcut.GamepadOverride);
-            if (shortcut.Hold && control.Length > 0)
-                control = "Hold " + control;
-            _text[i] = control.Length == 0 ? string.Empty : $"[{control}]";
-            width = System.Math.Max(width, _font.GetWidth(_text[i]));
+            string prefix = shortcut.Hold && !control.IsEmpty
+                ? InputControlDisplay.Localized(app, InputControlDisplay.Hold) + " "
+                : string.Empty;
+            int displayWidth = control.IsEmpty ? 0 : _controlRenderer.Measure(control, prefix: prefix);
+            _display[i] = new ShortcutDisplay(control, prefix, displayWidth);
+            width = System.Math.Max(width, displayWidth);
         }
+        _language = app.Language;
+        _glyphRevision = app.Engine.InputGlyphs.Revision;
         Size = new Vector2(width + HorizontalPadding * 2, TopHeight + RowHeight * _shortcuts.Length + 6);
     }
 }

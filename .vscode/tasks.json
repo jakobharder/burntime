@@ -16,6 +16,25 @@
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            "label": "build Burntime with shaders (Debug)",
+            "type": "process",
+            "command": "dotnet",
+            "args": [
+                "build",
+                "${workspaceFolder}/source/Burntime.MonoGame/Burntime.MonoGame.csproj",
+                "--configuration",
+                "Debug",
+                "-p:BuildShaders=true"
+            ],
+            "options": {
+                "env": {
+                    "MGFXC_WINE_PATH": "${env:HOME}/.winemonogame"
+                }
+            },
+            "problemMatcher": "$msCompile",
+            "group": "build"
         }
     ]
 }

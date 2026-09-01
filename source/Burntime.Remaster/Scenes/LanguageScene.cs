@@ -4,7 +4,6 @@ using Burntime.Platform;
 using Burntime.Platform.Graphics;
 using Burntime.Remaster;
 using System;
-using System.Globalization;
 
 namespace Burntime.Classic.Scenes;
 
@@ -53,7 +52,7 @@ internal class LanguageScene : Scene
             IsTextOnly = true
         };
 
-        _selectedLanguage = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "de" ? 0 : 1;
+        _selectedLanguage = app.Language == "de" ? 0 : 1;
         Windows += _promptOverlay = new InputPromptOverlay(app);
         _promptOverlay.AnchorToScreenBottomRight();
         UpdateSelection();
@@ -111,7 +110,7 @@ internal class LanguageScene : Scene
 
     void SelectLanguage(string language)
     {
-        app.Language = language;
+        BurntimeClassic.Instance.SelectLanguage(language);
         app.SceneManager.SetScene("IntroScene");
     }
 

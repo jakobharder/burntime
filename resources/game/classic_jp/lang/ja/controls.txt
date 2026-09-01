@@ -1,0 +1,26 @@
+Esc
+Enter
+Tab
+上
+下
+左
+右
+Space
+Back
+Shift
+Alt
+長押し
+LB
+RB
+左スティック
+右スティック
+LT
+RT
+方向キー 上
+方向キー 下
+方向キー 左
+方向キー 右
+Menu
+View
+方向キー
+スティック

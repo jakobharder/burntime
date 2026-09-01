@@ -1,0 +1,5 @@
+Controller AUTO
+Controller XBOX
+Controller PLAYSTATION
+Controller STEAM
+Controller SWITCH

@@ -12,6 +12,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace Burntime.MonoGame
 {
@@ -30,13 +31,21 @@ namespace Burntime.MonoGame
         BlendOverlayBase IEngine.BlendOverlay => RenderDevice?.BlendOverlay;
 
         BurntimeClassic _burntimeApp;
+        internal bool UseRemasteredGraphics => _burntimeApp?.IsNewGfx ?? true;
         readonly GraphicsDeviceManager _graphics;
         readonly GameThread _gameThread = new();
         readonly bool _emulateSteamMachine;
         readonly bool _emulateSteamDeck;
         readonly bool _chooseLanguage;
-        public bool LinearOutputFiltering { get; set; }
+        public OutputFiltering OutputFiltering { get; set; }
+        internal OutputFiltering DefaultOutputFiltering { get; }
         public bool ForceLinearOutputFiltering { get; }
+        public bool ForceNearestPointOutputFiltering { get; }
+        public bool DisableShaders { get; }
+        public bool SupportsSharpBilinearShader =>
+            RenderDevice?.SharpBilinearAvailable ?? false;
+        public bool SupportsXbr2Shader =>
+            RenderDevice?.Xbr2Available ?? false;
         internal bool ShowFps { get; }
         Platform.Graphics.Font? _fpsFont;
         long _fpsSampleStart = Stopwatch.GetTimestamp();
@@ -45,6 +54,28 @@ namespace Burntime.MonoGame
 
         public MusicPlayback Music { get; } = new MusicPlayback();
         IMusic IEngine.Music => Music;
+        readonly object _inputGlyphSync = new();
+        SteamInputGlyphProvider? _steamInputGlyphs;
+        volatile IInputGlyphProvider _inputGlyphs = TextInputGlyphProvider.Instance;
+        public IInputGlyphProvider InputGlyphs => _inputGlyphs;
+        string? _automaticLanguage;
+        public string AutomaticLanguage => _automaticLanguage ??= DetectAutomaticLanguage();
+        ControllerGlyphMode _controllerGlyphMode = ControllerGlyphMode.Auto;
+        bool _inputGlyphsConfigured;
+        public ControllerGlyphMode ControllerGlyphMode
+        {
+            get { lock (_inputGlyphSync) return _controllerGlyphMode; }
+            set
+            {
+                lock (_inputGlyphSync)
+                {
+                    if (_inputGlyphsConfigured && _controllerGlyphMode == value)
+                        return;
+                    _controllerGlyphMode = value;
+                    ConfigureInputGlyphs();
+                }
+            }
+        }
         public bool MusicBlend { get; set; } = false;
 
         internal int loadingStack = 0;
@@ -92,13 +123,24 @@ namespace Burntime.MonoGame
         bool _initialized = false;
 
         public BurntimeGame(bool emulateSteamMachine = false, bool emulateSteamDeck = false,
-            bool chooseLanguage = false, bool linearOutputFiltering = false, bool showFps = false)
+            bool chooseLanguage = false, bool linearOutputFiltering = false,
+            bool nearestPointOutputFiltering = false, bool disableShaders = false,
+            bool showFps = false)
         {
             _emulateSteamMachine = emulateSteamMachine;
             _emulateSteamDeck = emulateSteamDeck;
             _chooseLanguage = chooseLanguage;
             ForceLinearOutputFiltering = linearOutputFiltering;
-            LinearOutputFiltering = linearOutputFiltering || emulateSteamDeck || IsSteamDeck();
+            ForceNearestPointOutputFiltering = nearestPointOutputFiltering;
+            DisableShaders = disableShaders;
+            DefaultOutputFiltering = linearOutputFiltering
+                ? OutputFiltering.Linear
+                : nearestPointOutputFiltering
+                    ? OutputFiltering.NearestPoint
+                    : disableShaders
+                    ? OutputFiltering.SharpBilinear
+                    : OutputFiltering.SharpBilinearShader;
+            OutputFiltering = DefaultOutputFiltering;
             ShowFps = showFps;
             _graphics = new GraphicsDeviceManager(this);
             IsFixedTimeStep = true;
@@ -107,6 +149,83 @@ namespace Burntime.MonoGame
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
         }
+
+        void ConfigureInputGlyphs()
+        {
+            lock (_inputGlyphSync)
+            {
+                _steamInputGlyphs?.Dispose();
+                _steamInputGlyphs = null;
+
+                if (_controllerGlyphMode == ControllerGlyphMode.Auto)
+                {
+                    try
+                    {
+                        _steamInputGlyphs = new SteamInputGlyphProvider();
+                        _inputGlyphs = _steamInputGlyphs;
+                    }
+                    catch (Exception exception) when (exception is System.IO.FileNotFoundException or
+                        System.IO.FileLoadException or BadImageFormatException or TypeInitializationException)
+                    {
+                        // Auto uses Steam Input when available and Xbox conventions otherwise.
+                        _inputGlyphs = new ForcedInputGlyphProvider(GamepadLabelStyle.Xbox);
+                        Log.Info($"Steamworks.NET unavailable ({exception.GetType().Name}); " +
+                            "using Xbox controller glyphs");
+                    }
+                }
+                else
+                {
+                    GamepadLabelStyle labelStyle = _controllerGlyphMode switch
+                    {
+                        ControllerGlyphMode.PlayStation => GamepadLabelStyle.PlayStation,
+                        ControllerGlyphMode.Steam => GamepadLabelStyle.Steam,
+                        ControllerGlyphMode.Switch => GamepadLabelStyle.Switch,
+                        _ => GamepadLabelStyle.Xbox
+                    };
+                    _inputGlyphs = new ForcedInputGlyphProvider(labelStyle);
+                    Log.Info($"Controller glyph family selected: {labelStyle}");
+                }
+
+                _inputGlyphsConfigured = true;
+            }
+        }
+
+        string DetectAutomaticLanguage()
+        {
+            string? steamLanguage;
+            lock (_inputGlyphSync)
+                steamLanguage = _steamInputGlyphs?.CurrentGameLanguage;
+
+            // A manual controller family must not disable Steam language detection.
+            if (string.IsNullOrWhiteSpace(steamLanguage))
+            {
+                try
+                {
+                    steamLanguage = SteamInputGlyphProvider.DetectCurrentGameLanguage();
+                }
+                catch (Exception exception) when (exception is System.IO.FileNotFoundException or
+                    System.IO.FileLoadException or BadImageFormatException or TypeInitializationException)
+                {
+                    Log.Info($"Steam language unavailable ({exception.GetType().Name})");
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(steamLanguage))
+            {
+                Log.Info($"Steam language: {steamLanguage}");
+                return IsGermanLanguage(steamLanguage) ? "de" : "en";
+            }
+
+            string systemLanguage = CultureInfo.CurrentUICulture.Name;
+            Log.Info($"System UI language: {systemLanguage}");
+            return IsGermanLanguage(systemLanguage) ? "de" : "en";
+        }
+
+        static bool IsGermanLanguage(string language) =>
+            language.Equals("german", StringComparison.OrdinalIgnoreCase) ||
+            language.Equals("de", StringComparison.OrdinalIgnoreCase) ||
+            language.StartsWith("de-", StringComparison.OrdinalIgnoreCase) ||
+            language.StartsWith("de_", StringComparison.OrdinalIgnoreCase);
 
         protected override void Initialize()
         {
@@ -142,9 +261,7 @@ namespace Burntime.MonoGame
 
             _burntimeApp = new();
             _burntimeApp.ChooseLanguageOnStart = _chooseLanguage;
-            _burntimeApp.LastInputMode = IsSteamSession
-                ? InputMode.Gamepad
-                : InputMode.Mouse;
+            _burntimeApp.LastInputMode = IsSteamSession ? InputMode.Gamepad : InputMode.Mouse;
 
             Resolution.RatioCorrection = _burntimeApp.RatioCorrection;
             Resolution.MinResolution = _burntimeApp.MinResolution;
@@ -676,6 +793,8 @@ namespace Burntime.MonoGame
 
         protected override void Update(Microsoft.Xna.Framework.GameTime gameTime)
         {
+            lock (_inputGlyphSync)
+                _steamInputGlyphs?.RunFrame();
             HandleMouseInput();
             HandleKeyboardInput();
             HandleGamePadInput();
@@ -726,6 +845,8 @@ namespace Burntime.MonoGame
 
         protected override void OnExiting(object sender, ExitingEventArgs args)
         {
+            lock (_inputGlyphSync)
+                _steamInputGlyphs?.Dispose();
             base.OnExiting(sender, args);
 
             Music.StopThread();
@@ -779,6 +900,10 @@ namespace Burntime.MonoGame
         {
             if (sprite is not MonoGame.Graphics.Sprite nativeSprite || !nativeSprite.Touch()) return;
 
+            // Module.Render draws the software mouse cursor at the reserved top
+            // layer. Keep it out of XBR together with post-filtered text for now.
+            bool postFilter = Layer >= MAX_LAYERS - 1;
+
             long now = System.Diagnostics.Stopwatch.GetTimestamp();
             if (now - nativeSprite.Frame.TimeStamp < (long)(Stopwatch.Frequency / popInSpeed) && popInSpeed != 0)
                 alpha *= (now - nativeSprite.Frame.TimeStamp) / (float)Stopwatch.Frequency * popInSpeed;
@@ -788,7 +913,8 @@ namespace Burntime.MonoGame
                 Rectangle = new Rectangle(0, 0, nativeSprite.OriginalSize.x, nativeSprite.OriginalSize.y),
                 Color = new Color(alpha, alpha, alpha, alpha),
                 Factor = nativeSprite.Frame.Resolution,
-                LinearFiltering = nativeSprite.LinearFiltering
+                LinearFiltering = nativeSprite.LinearFiltering,
+                PostFilter = postFilter
             };
 
             if (sprite.Animation != null && sprite.Animation.Progressive && nativeSprite.Frames != null)
@@ -805,7 +931,8 @@ namespace Burntime.MonoGame
                 SpriteFrame = nativeSprite.Frame,
                 Position = new Vector3(pos.x, pos.y, CalcZ(Layer)),
                 Factor = nativeSprite.Frame.Resolution,
-                LinearFiltering = nativeSprite.LinearFiltering
+                LinearFiltering = nativeSprite.LinearFiltering,
+                PostFilter = postFilter
             };
             RenderDevice.AddEntity(entity2);
         }
@@ -815,7 +942,9 @@ namespace Burntime.MonoGame
             RenderSpriteF(sprite, (Platform.Vector2f)pos, srcPos, srcWidth, srcHeight, color);
         }
 
-        public void RenderSpriteF(ISprite sprite, Platform.Vector2f pos, Platform.Vector2 srcPos, int srcWidth, int srcHeight, PixelColor color)
+        public void RenderSpriteF(ISprite sprite, Platform.Vector2f pos,
+            Platform.Vector2 srcPos, int srcWidth, int srcHeight, PixelColor color,
+            bool postFilter = false)
         {
             if (sprite is not MonoGame.Graphics.Sprite nativeSprite || !nativeSprite.Touch()) return;
 
@@ -824,7 +953,8 @@ namespace Burntime.MonoGame
                 Rectangle = new Rectangle(srcPos.x, srcPos.y, srcWidth, srcHeight),
                 Color = new Color(color.r, color.g, color.b, color.a),
                 Factor = nativeSprite.Frame.Resolution,
-                LinearFiltering = nativeSprite.LinearFiltering
+                LinearFiltering = nativeSprite.LinearFiltering,
+                PostFilter = postFilter
             };
 
             long now = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -850,7 +980,8 @@ namespace Burntime.MonoGame
                 SpriteFrame = nativeSprite.Frame,
                 Position = new Vector3(pos.x, pos.y, CalcZ(Layer)),
                 Factor = nativeSprite.Frame.Resolution,
-                LinearFiltering = nativeSprite.LinearFiltering
+                LinearFiltering = nativeSprite.LinearFiltering,
+                PostFilter = postFilter
             };
             RenderDevice.AddEntity(entity2);
         }

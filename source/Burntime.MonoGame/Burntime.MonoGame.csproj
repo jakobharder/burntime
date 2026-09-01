@@ -12,7 +12,18 @@
     <AssemblyName>Burntime</AssemblyName>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <ImplicitUsings>enable</ImplicitUsings>
+    <EnableMGCBItems>false</EnableMGCBItems>
+    <SteamworksTargetRid Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</SteamworksTargetRid>
+    <SteamworksTargetRid Condition="'$(RuntimeIdentifier)' == ''">$(NETCoreSdkRuntimeIdentifier)</SteamworksTargetRid>
+    <SteamworksManagedPath Condition="'$(SteamworksTargetRid)' == 'osx-arm64'">..\..\third_party\steamworks\managed\osx-linux-arm64\Steamworks.NET.dll</SteamworksManagedPath>
+    <SteamworksManagedPath Condition="'$(SteamworksTargetRid)' == 'osx-x64' Or '$(SteamworksTargetRid)' == 'linux-x64'">..\..\third_party\steamworks\managed\osx-linux-x64\Steamworks.NET.dll</SteamworksManagedPath>
+    <SteamworksManagedPath Condition="'$(SteamworksTargetRid)' == 'win-x64'">..\..\third_party\steamworks\managed\windows-x64\Steamworks.NET.dll</SteamworksManagedPath>
   </PropertyGroup>
+  <ItemGroup>
+    <MonoGameContentReference Include="Content/Content.mgcb" OutputFolder="Content" />
+    <MonoGameContentReference Include="Content/Shaders.mgcb" OutputFolder="Content"
+      Condition="'$(BuildShaders)' == 'true'" />
+  </ItemGroup>
   <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('Windows'))">
     <GetProductVersionCommand>&quot;$(MSBuildProjectDirectory)\get-product-version.bat&quot;</GetProductVersionCommand>
     <GetFileVersionCommand>&quot;$(MSBuildProjectDirectory)\get-file-version.bat&quot;</GetFileVersionCommand>
@@ -68,6 +79,12 @@
     <PackageReference Include="System.Runtime.Serialization.Formatters" Version="10.0.10" />
   </ItemGroup>
   <ItemGroup>
+    <Reference Include="Steamworks.NET">
+      <HintPath>$(SteamworksManagedPath)</HintPath>
+      <Private>true</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Burntime.BurnGfx\Burntime.BurnGfx.csproj" />
     <ProjectReference Include="..\Burntime.Remaster\Burntime.Remaster.csproj" />
     <ProjectReference Include="..\Burntime.Framework\Burntime.Framework.csproj" />
@@ -98,9 +115,44 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+  <ItemGroup Condition="'$(SteamworksTargetRid)' == 'win-x64'">
+    <Content Include="..\..\third_party\steamworks\win-x64\steam_api64.dll">
+      <Link>steam_api64.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup Condition="'$(SteamworksTargetRid)' == 'osx-arm64' Or '$(SteamworksTargetRid)' == 'osx-x64'">
+    <Content Include="..\..\third_party\steamworks\osx\libsteam_api.dylib">
+      <Link>libsteam_api.dylib</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup Condition="'$(SteamworksTargetRid)' == 'linux-x64'">
+    <Content Include="..\..\third_party\steamworks\linux-x64\libsteam_api.so">
+      <Link>libsteam_api.so</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
   <Target Name="RestoreDotnetTools" BeforeTargets="Restore">
     <Message Text="Restoring dotnet tools" Importance="High" />
     <Exec Command="dotnet tool restore" />
+  </Target>
+  <Target Name="ValidateSteamworksManagedTarget" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="'$(SteamworksManagedPath)' == ''"
+      Text="Steamworks.NET has no managed build configured for runtime '$(SteamworksTargetRid)'." />
+  </Target>
+  <Target Name="DeployCompiledShaders" AfterTargets="Build"
+    Condition="'$(BuildShaders)' == 'true'">
+    <MakeDir Directories="$(MSBuildProjectDirectory)\..\..\resources\game\classic\shaders" />
+    <Copy SourceFiles="$(OutputPath)Content\SharpBilinear.xnb"
+      DestinationFiles="$(MSBuildProjectDirectory)\..\..\resources\game\classic\shaders\SharpBilinear.xnb"
+      SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(OutputPath)Content\Xbr2.xnb"
+      DestinationFiles="$(MSBuildProjectDirectory)\..\..\resources\game\classic\shaders\Xbr2.xnb"
+      SkipUnchangedFiles="true" />
   </Target>
   <!--<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <PostBuildEvent>

@@ -1,0 +1,5 @@
+Control AUTO
+Control XBOX
+Control PLAYSTATION
+Control STEAM
+Control SWITCH

@@ -53,8 +53,13 @@ namespace Burntime.Platform.Resource
 
         public override Font? LoadFont(Font font)
         {
+            string fontFile = font.Info.Font == "font.txt" &&
+                !_engine.UseRemasteredGraphics &&
+                _engine.OutputFiltering == OutputFiltering.Xbr2
+                    ? "font2x.txt"
+                    : font.Info.Font;
             ResourceInfoFont info;
-            info.Name = font.Info.Font;
+            info.Name = fontFile;
             info.Fore = font.Info.ForeColor;
             info.Back = font.Info.BackColor;
 
@@ -67,7 +72,7 @@ namespace Burntime.Platform.Resource
                 if (resource.IsLoaded)
                     return font;
 
-                ResourceID id = font.Info.Font;
+                ResourceID id = fontFile;
                 var replaced = GetReplacement(id);
                 FilePath path = new FilePath(replaced?.Id?.ToString() ?? (string)id);
                 if (!fontProcessors.ContainsKey(path.Extension))

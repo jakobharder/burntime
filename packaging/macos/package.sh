@@ -49,6 +49,11 @@ for license_name in \
   fi
 done
 
+if [[ ! -f "$publish_dir/libsteam_api.dylib" ]]; then
+  echo "Missing packaged Steam API runtime: $publish_dir/libsteam_api.dylib" >&2
+  exit 1
+fi
+
 dotnet build "$repo_root/source/PakConverter/PakConverter.csproj" \
   ${restore_args[@]+"${restore_args[@]}"} \
   --configuration "$configuration" \

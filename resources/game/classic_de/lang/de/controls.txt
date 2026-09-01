@@ -1,0 +1,26 @@
+Esc
+Enter
+Tab
+Hoch
+Runter
+Links
+Rechts
+Leer
+Rück
+Shift
+Alt
+Halten
+LB
+RB
+L-Stick
+R-Stick
+LT
+RT
+D-Pad Hoch
+D-Pad Runter
+D-Pad Links
+D-Pad Rechts
+Menü
+Ansicht
+D-Pad
+Stick

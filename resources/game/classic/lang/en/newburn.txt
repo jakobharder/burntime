@@ -55,7 +55,7 @@ to get in there.}
 |D - day |J - |C
 Scaling SHARP
 Scaling SMOOTH
-
+toggle in-game with Alt+Enter
 
 
 
