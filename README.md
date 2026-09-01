@@ -55,6 +55,7 @@ dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- --stea
 dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- --steam-deck
 dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- --choose-language
 dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- --linear
+dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- --fps
 ```
 
 - `--steam-machine` uses the normal half-display window size, defaults to gamepad
@@ -65,6 +66,7 @@ dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- --line
   saved previously. It can be combined with either Steam emulation option.
 - `--linear` uses linear filtering when scaling the intermediate render buffer to
   the window. The default is nearest-neighbor filtering.
+- `--fps` shows a white FPS counter in the top-left corner.
 
 ### Headless AI simulation
 

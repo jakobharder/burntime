@@ -36,6 +36,11 @@ namespace Burntime.MonoGame
         readonly bool _emulateSteamDeck;
         readonly bool _chooseLanguage;
         internal bool LinearOutputFiltering { get; }
+        internal bool ShowFps { get; }
+        Platform.Graphics.Font? _fpsFont;
+        long _fpsSampleStart = Stopwatch.GetTimestamp();
+        int _fpsSampleFrames;
+        volatile int _framesPerSecond;
 
         public MusicPlayback Music { get; } = new MusicPlayback();
         IMusic IEngine.Music => Music;
@@ -86,12 +91,13 @@ namespace Burntime.MonoGame
         bool _initialized = false;
 
         public BurntimeGame(bool emulateSteamMachine = false, bool emulateSteamDeck = false,
-            bool chooseLanguage = false, bool linearOutputFiltering = false)
+            bool chooseLanguage = false, bool linearOutputFiltering = false, bool showFps = false)
         {
             _emulateSteamMachine = emulateSteamMachine;
             _emulateSteamDeck = emulateSteamDeck;
             _chooseLanguage = chooseLanguage;
             LinearOutputFiltering = linearOutputFiltering;
+            ShowFps = showFps;
             _graphics = new GraphicsDeviceManager(this);
             IsFixedTimeStep = true;
             TargetElapsedTime = TimeSpan.FromSeconds(1.0 / TargetFramesPerSecond);
@@ -237,6 +243,8 @@ namespace Burntime.MonoGame
             RenderDevice = new RenderDevice(this);
             RenderDevice.Initialize();
             BlendOverlay.Speed = cfg["engine"].GetFloat("scene_blend");
+            if (ShowFps)
+                _fpsFont = ResourceManager.GetFont(BurntimeClassic.FontName, new PixelColor(204, 204, 204));
 
             Log.Info("Start resource manager thread...");
             ResourceManager.Run();
@@ -250,6 +258,8 @@ namespace Burntime.MonoGame
 
                 RenderDevice.Begin();
                 _burntimeApp.Render(MainTarget);
+                _fpsFont?.DrawText(MainTarget, new Platform.Vector2(2, 2),
+                    _framesPerSecond.ToString(), TextAlignment.Left, VerticalTextAlignment.Top);
                 RenderDevice.End();
             }, framesPerSecond: TargetFramesPerSecond);
         }
@@ -679,9 +689,23 @@ namespace Burntime.MonoGame
         {
             GraphicsDevice.Clear(Color.Black);
 
+            UpdateFpsCounter();
             RenderDevice.Render((float)gameTime.ElapsedGameTime.TotalSeconds);
 
             base.Draw(gameTime);
+        }
+
+        void UpdateFpsCounter()
+        {
+            _fpsSampleFrames++;
+            long now = Stopwatch.GetTimestamp();
+            double sampleSeconds = (now - _fpsSampleStart) / (double)Stopwatch.Frequency;
+            if (sampleSeconds < 0.5)
+                return;
+
+            _framesPerSecond = (int)System.Math.Round(_fpsSampleFrames / sampleSeconds);
+            _fpsSampleFrames = 0;
+            _fpsSampleStart = now;
         }
 
         void IEngine.CenterMouse()

@@ -7,7 +7,7 @@
             "request": "launch",
             "preLaunchTask": "build Burntime (Debug)",
             "program": "${workspaceFolder}/bin/Debug/Burntime.dll",
-            "args": [],
+            "args": ["--fps"],
             "cwd": "${workspaceFolder}/bin/Debug",
             "stopAtEntry": false,
             "console": "internalConsole"
@@ -51,7 +51,7 @@
             "request": "launch",
             "preLaunchTask": "build Burntime (Debug)",
             "program": "${workspaceFolder}/bin/Debug/Burntime.dll",
-            "args": ["--steam-deck", "--linear"],
+            "args": ["--steam-deck", "--linear", "--fps"],
             "cwd": "${workspaceFolder}/bin/Debug",
             "stopAtEntry": false,
             "console": "internalConsole"
