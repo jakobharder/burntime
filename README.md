@@ -83,7 +83,7 @@ dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- --fps
   saved previously. It can be combined with either Steam emulation option.
 - `--linear` uses linear filtering when scaling the intermediate render buffer to
   the window. The default is nearest-neighbor filtering.
-- `--fps` shows a white FPS counter in the top-left corner.
+- `--fps` shows the FPS and used texture memory in the top-left corner.
 
 ### Headless AI simulation
 

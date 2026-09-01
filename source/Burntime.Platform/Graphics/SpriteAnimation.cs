@@ -6,6 +6,19 @@ namespace Burntime.Platform.Graphics;
 [Serializable]
 public class SpriteAnimation
 {
+    [Serializable]
+    sealed class SharedState
+    {
+        // The available frames belong to the sprite resource, not to one clone's
+        // playback position.
+        public int FrameCount;
+
+        public SharedState(int frameCount)
+        {
+            FrameCount = frameCount;
+        }
+    }
+
     float frame;
 #warning slimdx todo
     float intervalMargin = 0;
@@ -19,7 +32,12 @@ public class SpriteAnimation
         set { frame = value; }
     }
 
-    public int FrameCount { get; set; }
+    readonly SharedState sharedState;
+    public int FrameCount
+    {
+        get => sharedState.FrameCount;
+        set => sharedState.FrameCount = value;
+    }
 
     public float IntervalMargin
     {
@@ -86,7 +104,15 @@ public class SpriteAnimation
 
     public SpriteAnimation(int frameCount)
     {
-        FrameCount = frameCount;
+        sharedState = new(frameCount);
+        frame = 0;
+        endless = true;
+        running = true;
+    }
+
+    SpriteAnimation(SharedState sharedState)
+    {
+        this.sharedState = sharedState;
         frame = 0;
         endless = true;
         running = true;
@@ -94,7 +120,7 @@ public class SpriteAnimation
 
     public SpriteAnimation Clone()
     {
-        return new SpriteAnimation(FrameCount) { Speed = Speed };
+        return new SpriteAnimation(sharedState) { Speed = Speed };
     }
 
     bool ended;
@@ -161,4 +187,3 @@ public class SpriteAnimation
         }
     }
 }
-

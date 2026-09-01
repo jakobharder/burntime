@@ -102,7 +102,7 @@ namespace Burntime.Remaster
 
             MouseImage = ResourceManager.GetImage("munt.raw?0");
 
-            SceneManager.SetScene(ChooseLanguageOnStart || string.IsNullOrEmpty(FileSystem.LocalizationCode)
+            SceneManager.SetScene(ChooseLanguageOnStart
                 ? "LanguageScene"
                 : "IntroScene");
         }

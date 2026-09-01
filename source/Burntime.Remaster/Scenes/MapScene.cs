@@ -36,9 +36,11 @@ namespace Burntime.Remaster
         IMapGuiWindow gui;
         MenuWindow menu;
         Image _cursorAni;
+        readonly int _cursorLayer;
         readonly DialogWindow _dialog;
         readonly InputPromptOverlay _promptOverlay;
         readonly InputShortcutColumn _menuShortcutColumn;
+        readonly Maps.MapViewOverlayHoverText _hoverInfo;
         readonly Maps.MapViewOverlaySelectedLocation _keyboardSelection;
         bool _followKeyboardSelection;
         bool _cameraPanActive;
@@ -70,7 +72,7 @@ namespace Burntime.Remaster
 
             view.Overlays.Add(new Maps.MapViewOverlayFlags(app));
             view.Overlays.Add(new Maps.MapViewOverlayPlayer(app));
-            view.Overlays.Add(new Maps.MapViewOverlayHoverText(app));
+            view.Overlays.Add(_hoverInfo = new Maps.MapViewOverlayHoverText(app));
             view.Overlays.Add(_keyboardSelection = new Maps.MapViewOverlaySelectedLocation(app));
             view.Scroll += new EventHandler<MapScrollArgs>(view_Scroll);
             view.ContextMenu += View_OnContextMenu;
@@ -89,6 +91,7 @@ namespace Burntime.Remaster
             _cursorAni.Background.Animation.Progressive = false;
             _cursorAni.Layer += 59;
             Windows += _cursorAni;
+            _cursorLayer = _cursorAni.Layer;
 
             gui.Layer += classic.NewGui ? 40 : 60;
             Windows += gui;
@@ -108,8 +111,16 @@ namespace Burntime.Remaster
             _promptOverlay.AnchorToScreenBottomRight();
             Windows += _menuShortcutColumn = new InputShortcutColumn(app);
             _menuShortcutColumn.Hide();
-            menu.WindowShow += (_, _) => _menuShortcutColumn.Show();
-            menu.WindowHide += (_, _) => _menuShortcutColumn.Hide();
+            menu.WindowShow += (_, _) =>
+            {
+                _menuShortcutColumn.Show();
+                UpdateMapOverlayTextVisibility();
+            };
+            menu.WindowHide += (_, _) =>
+            {
+                _menuShortcutColumn.Hide();
+                UpdateMapOverlayTextVisibility();
+            };
         }
 
         private void View_OnContextMenu(Vector2 position, MouseButton button)
@@ -143,13 +154,13 @@ namespace Burntime.Remaster
         void OnDialogShown(object? sender, EventArgs e)
         {
             _cursorAni.Hide();
-            _keyboardSelection.IsVisible = false;
+            UpdateMapOverlayTextVisibility();
         }
 
         void OnDialogHidden(object? sender, EventArgs e)
         {
             _cursorAni.Show();
-            _keyboardSelection.IsVisible = true;
+            UpdateMapOverlayTextVisibility();
 
             if (!_cheatDialogActive)
                 return;
@@ -174,6 +185,18 @@ namespace Burntime.Remaster
                     break;
             }
         }
+
+        void UpdateMapOverlayTextVisibility()
+        {
+            bool isVisible = !_dialog.IsVisible && !menu.IsVisible;
+            _hoverInfo.IsVisible = isVisible;
+            _keyboardSelection.IsVisible = isVisible;
+        }
+
+        bool UseDeferredTextRendering =>
+            !app.IsNewGfx &&
+            app.Engine.OutputFiltering == OutputFiltering.Xbr2 &&
+            app.Engine.SupportsXbr2Shader;
 
         public override void OnResizeScreen()
         {
@@ -278,6 +301,9 @@ namespace Burntime.Remaster
 
         public override void OnRender(RenderTarget Target)
         {
+            bool useDeferredTextRendering = UseDeferredTextRendering;
+            _cursorAni.Layer = useDeferredTextRendering ? 255 : _cursorLayer;
+
             bool showInteractionMode = app.MouseInputVisible && !_dialog.IsVisible;
             if (_cursorAni.IsVisible != showInteractionMode)
                 _cursorAni.IsVisible = showInteractionMode;
@@ -289,7 +315,7 @@ namespace Burntime.Remaster
                 if (!BurntimeClassic.Instance.NewGui && app.MouseInputVisible)
                 {
                     var layer = Target.Layer;
-                    Target.Layer = gui.Layer - 1;
+                    Target.Layer = useDeferredTextRendering ? 255 : gui.Layer - 1;
                     Target.DrawSprite(app.DeviceManager.Mouse.Position, app.MouseImage);
                     Target.Layer = layer;
                 }

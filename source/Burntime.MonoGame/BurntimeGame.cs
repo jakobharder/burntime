@@ -382,7 +382,9 @@ namespace Burntime.MonoGame
                 RenderDevice.Begin();
                 _burntimeApp.Render(MainTarget);
                 _fpsFont?.DrawText(MainTarget, new Platform.Vector2(2, 2),
-                    _framesPerSecond.ToString(), TextAlignment.Left, VerticalTextAlignment.Top);
+                    string.Create(CultureInfo.InvariantCulture,
+                        $"{_framesPerSecond} FPS\n{ResourceManager.TextureMemoryUsage / (1024.0 * 1024.0):0.0} MB"),
+                    TextAlignment.Left, VerticalTextAlignment.Top);
                 RenderDevice.End();
             }, framesPerSecond: TargetFramesPerSecond);
         }

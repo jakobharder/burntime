@@ -432,6 +432,12 @@ public abstract class ResourceManagerBase : IResourceManager
 
     protected int _memoryPeek;
     int _memoryUsage;
+
+    /// <summary>
+    /// Estimated memory used by loaded textures, in bytes.
+    /// </summary>
+    public int TextureMemoryUsage => Volatile.Read(ref _memoryUsage);
+
     protected int MemoryUsage
     {
         get { return _memoryUsage; }

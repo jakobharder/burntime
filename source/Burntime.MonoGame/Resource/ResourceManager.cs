@@ -251,7 +251,7 @@ namespace Burntime.Platform.Resource
             if (loader is ISpriteAnimationProcessor loaderAni)
             {
                 if (Sprite.internalFrames.Length != loaderAni.FrameCount)
-                    Array.Resize(ref Sprite.internalFrames, loaderAni.FrameCount);
+                    Sprite.ResizeFrames(loaderAni.FrameCount);
                 Sprite.Animation ??= new SpriteAnimation(loaderAni.FrameCount);
                 Sprite.Animation.Frame = System.Math.Min(loaderAni.FrameCount - 1, Sprite.Animation.Frame);
                 Sprite.Animation.FrameCount = loaderAni.FrameCount;
@@ -260,7 +260,7 @@ namespace Burntime.Platform.Resource
                 {
                     if (!loaderAni.SetFrame(i))
                     {
-                        Array.Resize(ref Sprite.internalFrames, loaderAni.FrameCount);
+                        Sprite.ResizeFrames(i);
                         Sprite.Animation.FrameCount = i;
                         break;
                     }

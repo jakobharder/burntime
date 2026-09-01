@@ -78,6 +78,8 @@ public class SpriteFrame : Platform.Graphics.GenericSpriteFrame<Texture2D>
 
     public override int Unload()
     {
+        bool wasLoaded = IsLoaded;
+
         if (_keepSystemCopy)
         {
             // system copied sprites don't unload actually
@@ -89,11 +91,10 @@ public class SpriteFrame : Platform.Graphics.GenericSpriteFrame<Texture2D>
             _systemCopy = null;
         }
 
-        if (_texture is null || _texture.IsDisposed) return 0;
-
-        _texture.Dispose();
+        if (_texture is not null && !_texture.IsDisposed)
+            _texture.Dispose();
         _texture = null;
 
-        return _keepSystemCopy ? 0 : _usedMemory;
+        return !_keepSystemCopy && wasLoaded ? _usedMemory : 0;
     }
 }

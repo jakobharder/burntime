@@ -185,10 +185,10 @@ internal class OptionsSettingsPage : Container
         _fullscreenToggle.Text = app.Engine.IsFullscreen ? "@newburn?19" : "@newburn?20";
         _scalingToggle.Text = app.Engine.OutputFiltering switch
         {
-            OutputFiltering.NearestPoint => "POINT",
-            OutputFiltering.Linear => "LINEAR",
-            OutputFiltering.Xbr2 => "SMOOTH",
-            _ => "SHARP"
+            OutputFiltering.NearestPoint => "Scaling POINT",
+            OutputFiltering.Linear => "Scaling LINEAR",
+            OutputFiltering.Xbr2 => "@newburn?56",
+            _ => "@newburn?55"
         };
         _controllerToggle.Text = app.Engine.ControllerGlyphMode switch
         {

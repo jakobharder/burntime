@@ -36,9 +36,8 @@ class MapViewOverlayHoverText : IMapViewOverlay
 {
     Location mapState;
     IResourceManager resMan;
-    bool isVisible = true;
 
-    public bool IsVisible { get; set; }
+    public bool IsVisible { get; set; } = true;
 
     public MapViewOverlayHoverText(Module App)
     {
@@ -56,7 +55,7 @@ class MapViewOverlayHoverText : IMapViewOverlay
 
     public void RenderOverlay(RenderTarget Target, Vector2 Offset, Vector2 Size)
     {
-        if (!isVisible)
+        if (!IsVisible)
             return;
 
         const int topMargin = 8;
