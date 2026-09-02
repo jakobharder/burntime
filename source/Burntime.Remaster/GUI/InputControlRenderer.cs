@@ -45,7 +45,7 @@ sealed class InputControlRenderer
         foreach (InputControlPart part in control.Parts)
             width += part.Glyph == InputGlyph.None ? _font.GetWidth(part.Text) : GlyphWidth;
         if (label.Length > 0)
-            width += _font.GetWidth(" " + label);
+            width += GetLabelGap(control, brackets) + _font.GetWidth(label);
         return width;
     }
 
@@ -65,15 +65,26 @@ sealed class InputControlRenderer
             }
 
             int index = (int)part.Glyph - 1;
-            ISprite glyph = _glyphs[(int)_app.Engine.InputGlyphs.LabelStyle][index];
+            int family = (int)_app.Engine.InputGlyphs.LabelStyle;
+            ISprite glyph = _glyphs[family][index];
             if (glyph.Touch())
                 glyph.Resolution = GlyphResolution;
-            target.DrawSprite(new Vector2(x, position.y + (_font.GetHeight() - GlyphHeight) / 2), glyph);
+            target.SelectSprite(glyph);
+            target.DrawSelectedSpriteF(
+                new Vector2f(x, position.y + (_font.GetHeight() - GlyphHeight) / 2 +
+                    (_app.IsNewGfx ? 0.5f : 0)),
+                new Rect(Vector2.Zero, new Vector2(GlyphSourceSize, GlyphSourceSize)),
+                PixelColor.White,
+                postFilter: true, directToFramebuffer: !_app.IsNewGfx);
             x += GlyphWidth;
         }
         string suffix = brackets ? "]" : "";
-        DrawText(target, ref x, position.y,
-            label.Length == 0 ? suffix : suffix + " " + label);
+        DrawText(target, ref x, position.y, suffix);
+        if (label.Length > 0)
+        {
+            x += GetLabelGap(control, brackets);
+            DrawText(target, ref x, position.y, label);
+        }
     }
 
     bool UsesBrackets(InputControlLabel control)
@@ -84,6 +95,14 @@ sealed class InputControlRenderer
             if (part.Glyph != InputGlyph.None)
                 return false;
         return true;
+    }
+
+    int GetLabelGap(InputControlLabel control, bool brackets)
+    {
+        bool endsWithGlyph = !brackets && control.Parts.Count > 0 &&
+            control.Parts[^1].Glyph != InputGlyph.None;
+        int spaceWidth = _font.GetWidth(" ");
+        return endsWithGlyph ? System.Math.Max(1, spaceWidth / 2) : spaceWidth;
     }
 
     void DrawText(RenderTarget target, ref int x, int y, string text)

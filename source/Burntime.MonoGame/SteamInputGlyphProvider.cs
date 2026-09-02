@@ -238,7 +238,7 @@ sealed class SteamInputGlyphProvider : IInputGlyphProvider, IDisposable
             origin.EndsWith("_Capture", StringComparison.Ordinal))
             return InputGlyph.View;
         if (origin.EndsWith("_LeftStick_Click", StringComparison.Ordinal))
-            return InputGlyph.LeftStick;
+            return InputGlyph.None;
         if (origin.EndsWith("_RightStick_Click", StringComparison.Ordinal))
             return InputGlyph.RightStick;
         if (origin.EndsWith("_LeftBumper", StringComparison.Ordinal))

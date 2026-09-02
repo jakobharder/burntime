@@ -72,12 +72,13 @@ public class RenderTarget
     }
 
     public void DrawSelectedSpriteF(Vector2f pos, Rect srcRect, PixelColor color,
-        bool postFilter = false)
+        bool postFilter = false, bool directToFramebuffer = false)
     {
         if (_selectedSprite is null) return;
 
         _engine.RenderSpriteF(_selectedSprite, pos + _rc.Position + Offset,
-            srcRect.Position, srcRect.Width, srcRect.Height, color, postFilter);
+            srcRect.Position, srcRect.Width, srcRect.Height, color, postFilter,
+            directToFramebuffer);
     }
     #endregion
 

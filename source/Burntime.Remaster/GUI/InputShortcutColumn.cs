@@ -41,7 +41,7 @@ public sealed class InputShortcutColumn : Window
         {
             Borders = TextBorders.None
         };
-        _controlRenderer = new InputControlRenderer(app, _font);
+        _controlRenderer = new InputControlRenderer(app, _font, brackets: false);
         Layer = 200;
     }
 

@@ -62,7 +62,11 @@ static class InputControlDisplay
             ? keyboardOverride
             : inputMode == InputMode.Gamepad ? gamepadOverride : null;
         if (controlOverride != null)
+        {
+            if (inputMode == InputMode.Gamepad && controlOverride == "D-pad Left/Right")
+                return new InputControlLabel(new InputControlPart(InputGlyph.DPadHorizontal));
             return FromText(TranslateOverride(app, controlOverride));
+        }
 
         InputControlLabel first = Resolve(app, inputMode, firstAction,
             preferredFirstKeyboardControl, preferredFirstGamepadControl);
@@ -71,10 +75,15 @@ static class InputControlDisplay
         if (first.IsEmpty || second.IsEmpty)
             return InputControlLabel.Empty;
 
+        if (IsHorizontalDPadPair(first, second))
+            return new InputControlLabel(new InputControlPart(InputGlyph.DPadHorizontal));
+
         if (TryGetText(first, out string firstText) && TryGetText(second, out string secondText))
             return FromText(Combine(firstText, secondText));
 
-        List<InputControlPart> parts = [.. first.Parts, new("/"), .. second.Parts];
+        List<InputControlPart> parts = HasGlyph(first) && HasGlyph(second)
+            ? [.. first.Parts, .. second.Parts]
+            : [.. first.Parts, new(" / "), .. second.Parts];
         return new(parts.ToArray());
     }
 
@@ -129,6 +138,25 @@ static class InputControlDisplay
         return false;
     }
 
+    static bool HasGlyph(InputControlLabel label)
+    {
+        foreach (InputControlPart part in label.Parts)
+            if (part.Glyph != InputGlyph.None)
+                return true;
+        return false;
+    }
+
+    static bool IsHorizontalDPadPair(InputControlLabel first, InputControlLabel second)
+    {
+        if (first.Parts.Count != 1 || second.Parts.Count != 1)
+            return false;
+
+        InputGlyph firstGlyph = first.Parts[0].Glyph;
+        InputGlyph secondGlyph = second.Parts[0].Glyph;
+        return firstGlyph == InputGlyph.DPadLeft && secondGlyph == InputGlyph.DPadRight ||
+            firstGlyph == InputGlyph.DPadRight && secondGlyph == InputGlyph.DPadLeft;
+    }
+
     static GamepadControl? DefaultGamepadControl(InputAction action) => action switch
     {
         InputAction.Statistics => GamepadControl.DPadLeft,
@@ -159,19 +187,7 @@ static class InputControlDisplay
         left.Character == right.Character && left.VirtualKey == right.VirtualKey &&
         left.Modifier == right.Modifier;
 
-    static string Combine(string first, string second)
-    {
-        int commonLength = 0;
-        int maximum = System.Math.Min(first.Length, second.Length);
-        while (commonLength < maximum && first[commonLength] == second[commonLength])
-            commonLength++;
-
-        while (commonLength > 0 && first[commonLength - 1] is not ('+' or ' '))
-            commonLength--;
-        return commonLength == 0
-            ? first + "/" + second
-            : first + "/" + second[commonLength..];
-    }
+    static string Combine(string first, string second) => first + " / " + second;
 
     static string Format(Module app, Key key)
     {

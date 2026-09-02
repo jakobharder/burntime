@@ -25,7 +25,6 @@ sealed class ForcedInputGlyphProvider(GamepadLabelStyle labelStyle) : IInputGlyp
             GamepadControl.View => LabelStyle == GamepadLabelStyle.Switch
                 ? InputGlyph.Minus
                 : InputGlyph.View,
-            GamepadControl.LeftStick => InputGlyph.LeftStick,
             GamepadControl.RightStick => InputGlyph.RightStick,
             GamepadControl.LeftShoulder => InputGlyph.LeftShoulder,
             GamepadControl.RightShoulder => InputGlyph.RightShoulder,

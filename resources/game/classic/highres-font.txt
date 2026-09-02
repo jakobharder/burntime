@@ -13,6 +13,7 @@ kerning1=af äf cf ef kf lf of öf pf sf zf
 kerning1=fJ vJ yJ Pj Vj Yj VJ
 kerning2=rJ FJ PJ TJ
 kerning1=at ät ct et kt lt ot öt pt st zt
+kerning1=Pa
 lines=3
 height=13
 char0=" !""#$%&'()*+,-./0123456789:;<=>?@[\]^_`"

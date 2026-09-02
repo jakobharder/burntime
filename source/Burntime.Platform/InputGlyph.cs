@@ -14,7 +14,7 @@ public enum InputGlyph
     DPadRight,
     Menu,
     View,
-    LeftStick,
+    DPadHorizontal,
     RightStick,
     Plus,
     Minus,

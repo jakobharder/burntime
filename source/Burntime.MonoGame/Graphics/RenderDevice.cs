@@ -376,7 +376,8 @@ public class RenderDevice : IDisposable
             bool? linearFiltering = null;
             foreach (var sprite in (_renderEntities ?? new RenderEntityQueue())
                 .OfType<SpriteEntity>()
-                .Where(sprite => !renderTextAfterXbr || !sprite.PostFilter)
+                .Where(sprite => (!renderTextAfterXbr || !sprite.PostFilter) &&
+                    (useRemasteredGraphics || !sprite.DirectToFramebuffer))
                 .OrderBy(sprite => sprite.Position.Z))
             {
                 // diposed texture links may remain in queue after direct3d reset, just skip them
@@ -420,8 +421,9 @@ public class RenderDevice : IDisposable
         _spriteBatch.Begin(SpriteSortMode.FrontToBack, Microsoft.Xna.Framework.Graphics.BlendState.NonPremultiplied, SamplerState.PointClamp, null, null, null, transformMatrix);
 
         BlendOverlay.BlockFadeOut = _engine.IsLoading || BlendOverlay.Block;
+        BlendOverlay.Update(elapsedSeconds);
         if (!renderTextAfterXbr)
-            BlendOverlay.Render(elapsedSeconds, _spriteBatch);
+            BlendOverlay.Render(_spriteBatch);
         if (_engine.MusicBlend)
             _engine.Music.Volume = 1 - BlendOverlay.BlendState;
         else
@@ -491,7 +493,7 @@ public class RenderDevice : IDisposable
                     SamplerState.PointClamp, null, null, null, postFilterTransform);
                 foreach (var sprite in (_renderEntities ?? new RenderEntityQueue())
                     .OfType<SpriteEntity>()
-                    .Where(sprite => sprite.PostFilter)
+                    .Where(sprite => sprite.PostFilter && !sprite.DirectToFramebuffer)
                     .OrderBy(sprite => sprite.Position.Z))
                 {
                     Texture2D texture = sprite.Texture ?? sprite.SpriteFrame.Texture;
@@ -509,7 +511,7 @@ public class RenderDevice : IDisposable
                 _spriteBatch.Begin(SpriteSortMode.FrontToBack,
                     Microsoft.Xna.Framework.Graphics.BlendState.NonPremultiplied,
                     SamplerState.PointClamp, null, null, null, postFilterTransform);
-                BlendOverlay.Render(elapsedSeconds, _spriteBatch);
+                BlendOverlay.Render(_spriteBatch);
                 _spriteBatch.End();
             }
             _engine.GraphicsDevice.SetRenderTarget(null);
@@ -554,6 +556,39 @@ public class RenderDevice : IDisposable
             new Rectangle(0, 0, _engine.Resolution.Native.x, _engine.Resolution.Native.y),
             Color.White);
         _spriteBatch.End();
+
+        if (!useRemasteredGraphics)
+        {
+            var framebufferTransform = Matrix.CreateScale(new Vector3(
+                _engine.Resolution.Native.x / (float)_engine.Resolution.Game.x + PIXEL_CORRECTION,
+                _engine.Resolution.Native.y / (float)_engine.Resolution.Game.y + PIXEL_CORRECTION,
+                1));
+            _spriteBatch.Begin(SpriteSortMode.Deferred,
+                Microsoft.Xna.Framework.Graphics.BlendState.NonPremultiplied,
+                SamplerState.PointClamp, null, null, null, framebufferTransform);
+            float visibility = 1 - BlendOverlay.BlendState;
+            foreach (var sprite in (_renderEntities ?? new RenderEntityQueue())
+                .OfType<SpriteEntity>()
+                .Where(sprite => sprite.DirectToFramebuffer)
+                .OrderBy(sprite => sprite.Position.Z))
+            {
+                Texture2D texture = sprite.Texture ?? sprite.SpriteFrame.Texture;
+                if (texture.IsDisposed)
+                    continue;
+                Color color = new(
+                    (byte)(sprite.Color.R * visibility),
+                    (byte)(sprite.Color.G * visibility),
+                    (byte)(sprite.Color.B * visibility),
+                    sprite.Color.A);
+                _spriteBatch.Draw(texture,
+                    new Microsoft.Xna.Framework.Vector2(sprite.Position.X,
+                        sprite.Position.Y),
+                    sprite.Rectangle, color, 0,
+                    Microsoft.Xna.Framework.Vector2.Zero, sprite.Factor.ToXna(),
+                    SpriteEffects.None, sprite.Position.Z);
+            }
+            _spriteBatch.End();
+        }
     }
 
     void EnsureIntermediateTarget(bool useRemasteredGraphics)
