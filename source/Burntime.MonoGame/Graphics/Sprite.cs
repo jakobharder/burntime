@@ -6,6 +6,10 @@ namespace Burntime.MonoGame.Graphics;
 
 public class Sprite : GenericSprite<SpriteFrame, Texture2D>
 {
+    Sprite(Sprite source) : base(source)
+    {
+    }
+
     public Sprite(IResourceManager resourceManager, string id, SpriteFrame frame) : base(resourceManager, id, frame)
     {
     }
@@ -16,6 +20,6 @@ public class Sprite : GenericSprite<SpriteFrame, Texture2D>
 
     public override Sprite Clone()
     {
-        return new(resMan, id, internalFrames, Animation is null ? null : Animation.Clone());
+        return new(this);
     }
 }

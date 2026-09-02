@@ -7,16 +7,44 @@ namespace Burntime.Platform.Graphics;
 [DebuggerDisplay("Sprite = {id.ToString()}")]
 public abstract class GenericSprite<TSpriteFrame, TTexture> : ISprite where TTexture : class where TSpriteFrame : GenericSpriteFrame<TTexture>
 {
+    sealed class FrameStorage
+    {
+        public TSpriteFrame[] Frames;
+
+        public FrameStorage(TSpriteFrame[] frames)
+        {
+            Frames = frames;
+        }
+    }
+
     public ResourceLoadType LoadType = ResourceLoadType.Now;
     protected IResourceManager resMan;
     protected bool colorKey = true;
+    // Clones have independent playback state, but a reload must replace the
+    // resource frames for every clone that refers to the sprite.
+    FrameStorage frameStorage = new([]);
 
 #warning TODO access levels
-    public TSpriteFrame[] internalFrames;
+    public TSpriteFrame[] internalFrames
+    {
+        get => frameStorage.Frames;
+        set => frameStorage.Frames = value;
+    }
     public ResourceID id;
 
     protected GenericSprite()
     {
+    }
+
+    protected GenericSprite(GenericSprite<TSpriteFrame, TTexture> source)
+    {
+        id = source.id;
+        frameStorage = source.frameStorage;
+        resMan = source.resMan;
+        LoadType = source.LoadType;
+        colorKey = source.colorKey;
+        IsNew = source.IsNew;
+        Animation = source.Animation?.Clone();
     }
 
     public bool IsNew { get; set; } = true;
@@ -91,17 +119,21 @@ public abstract class GenericSprite<TSpriteFrame, TTexture> : ISprite where TTex
     public GenericSprite(IResourceManager resMan, String ID, TSpriteFrame Frame)
     {
         id = ID;
-        internalFrames = new TSpriteFrame[1];
-        internalFrames[0] = Frame;
+        frameStorage = new([Frame]);
         this.resMan = resMan;
     }
 
     public GenericSprite(IResourceManager resMan, String id, TSpriteFrame[] frames, SpriteAnimation animation)
     {
         this.id = id;
-        internalFrames = frames;
+        frameStorage = new(frames);
         this.resMan = resMan;
         Animation = animation;
+    }
+
+    public void ResizeFrames(int frameCount)
+    {
+        Array.Resize(ref frameStorage.Frames, frameCount);
     }
 
     public override int Unload()

@@ -13,6 +13,8 @@ class SpriteEntity : RenderEntity
     public Color Color;
     public Platform.Vector2f Factor = Platform.Vector2f.One;
     public bool LinearFiltering;
+    public bool PostFilter;
+    public bool DirectToFramebuffer;
 }
 
 class LineEntity : RenderEntity

@@ -47,6 +47,23 @@ dotnet build source/Burntime.MonoGame/Burntime.MonoGame.csproj -c Debug
 dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj
 ```
 
+The default build omits optional shaders and does not require Wine. To compile
+the sharp-bilinear shader as part of the build, use:
+
+```sh
+dotnet build source/Burntime.MonoGame/Burntime.MonoGame.csproj -c Debug -p:BuildShaders=true
+```
+
+This also deploys the compiled shader to `resources/game/classic/shaders`. Once
+generated, normal builds and publishes include it as part of the classic package
+without requiring Wine or the shader compiler. In
+VS Code, use the `build Burntime with shaders (Debug)` task or the
+`Debug Burntime (with shaders)` launch configuration to refresh it.
+
+MonoGame shader compilation on macOS and Linux requires Wine. Once compiled,
+the shader remains available to subsequent normal builds through the platform
+filesystem.
+
 For windowed Steam feature and resolution testing, pass one of these options after
 `--`:
 
@@ -66,7 +83,7 @@ dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- --fps
   saved previously. It can be combined with either Steam emulation option.
 - `--linear` uses linear filtering when scaling the intermediate render buffer to
   the window. The default is nearest-neighbor filtering.
-- `--fps` shows a white FPS counter in the top-left corner.
+- `--fps` shows the FPS and used texture memory in the top-left corner.
 
 ### Headless AI simulation
 

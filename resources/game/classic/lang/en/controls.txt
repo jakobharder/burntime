@@ -1,0 +1,26 @@
+Esc
+Enter
+Tab
+Up
+Down
+Left
+Right
+Space
+Back
+Shift
+Alt
+Hold
+LB
+RB
+Left stick
+Right stick
+LT
+RT
+D-pad Up
+D-pad Down
+D-pad Left
+D-pad Right
+Menu
+View
+D-pad
+Stick

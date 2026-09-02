@@ -29,11 +29,14 @@ public sealed class InputPromptOverlay : Window
     const string Separator = "   ";
 
     readonly GuiFont _font;
+    readonly InputControlRenderer _controlRenderer;
     readonly List<InputPrompt> _prompts = [];
-    string[] _text = [];
-    int[] _textWidths = [];
+    PromptDisplay[] _display = [];
     string _language = string.Empty;
     InputMode _inputMode = InputMode.None;
+    int _glyphRevision = -1;
+
+    readonly record struct PromptDisplay(InputControlLabel Control, string Label, int Width);
 
     public PixelColor BackgroundColor { get; set; } = new(128, 0, 0, 0);
 
@@ -44,6 +47,7 @@ public sealed class InputPromptOverlay : Window
         {
             Borders = TextBorders.None
         };
+        _controlRenderer = new InputControlRenderer(app, _font, brackets: false);
         HorizontalAlignment = PositionAlignment.Right;
         VerticalAlignment = PositionAlignment.Right;
         // MonoGame maps layers 0..255 into clip-space depth. Keep this well
@@ -96,12 +100,13 @@ public sealed class InputPromptOverlay : Window
         if (app.LastInputMode is not (InputMode.Keyboard or InputMode.Gamepad))
             return;
 
-        if (_inputMode != app.LastInputMode || _language != app.Language)
+        if (_inputMode != app.LastInputMode || _language != app.Language ||
+            _glyphRevision != app.Engine.InputGlyphs.Revision)
         {
             _inputMode = app.LastInputMode;
             RefreshText();
         }
-        if (_text.Length == 0)
+        if (_display.Length == 0)
             return;
 
         target.RenderRect(Vector2.Zero, Size, BackgroundColor);
@@ -110,22 +115,22 @@ public sealed class InputPromptOverlay : Window
         // exact same pixel when contextual prompts are inserted before them.
         int x = Size.x - HorizontalPadding;
         int separatorWidth = _font.GetWidth(Separator);
-        for (int i = _text.Length - 1; i >= 0; i--)
+        for (int i = _display.Length - 1; i >= 0; i--)
         {
-            _font.DrawText(target, new Vector2(x, VerticalPadding), _text[i],
-                TextAlignment.Right, VerticalTextAlignment.Top);
-            x -= _textWidths[i] + separatorWidth;
+            PromptDisplay display = _display[i];
+            _controlRenderer.Draw(target, new Vector2(x, VerticalPadding), display.Control,
+                display.Label, alignment: TextAlignment.Right);
+            x -= display.Width + separatorWidth;
         }
     }
 
     void RefreshText()
     {
-        List<string> text = [];
-        List<int> textWidths = [];
+        List<PromptDisplay> display = [];
         int width = 0;
         foreach (InputPrompt prompt in _prompts)
         {
-            string control = prompt.AlternateAction == InputAction.None
+            InputControlLabel control = prompt.AlternateAction == InputAction.None
                 ? InputControlDisplay.Resolve(app, _inputMode, prompt.Action,
                     prompt.PreferredKeyboardControl, prompt.PreferredGamepadControl,
                     prompt.KeyboardOverride, prompt.GamepadOverride)
@@ -134,23 +139,21 @@ public sealed class InputPromptOverlay : Window
                     prompt.PreferredKeyboardControl, prompt.PreferredAlternateKeyboardControl,
                     prompt.PreferredGamepadControl, prompt.PreferredAlternateGamepadControl,
                     prompt.KeyboardOverride, prompt.GamepadOverride);
-            if (control.Length == 0)
+            if (control.IsEmpty)
                 continue;
 
             string label = prompt.Label;
-            string value = label.Length == 0 ? $"[{control}]" : $"[{control}] {label}";
-            text.Add(value);
-            int textWidth = _font.GetWidth(value);
-            textWidths.Add(textWidth);
-            width += textWidth;
+            int displayWidth = _controlRenderer.Measure(control, label);
+            display.Add(new PromptDisplay(control, label, displayWidth));
+            width += displayWidth;
         }
 
-        _text = text.ToArray();
-        _textWidths = textWidths.ToArray();
+        _display = display.ToArray();
 
-        if (_text.Length > 1)
-            width += _font.GetWidth(Separator) * (_text.Length - 1);
+        if (_display.Length > 1)
+            width += _font.GetWidth(Separator) * (_display.Length - 1);
         _language = app.Language;
+        _glyphRevision = app.Engine.InputGlyphs.Revision;
         Size = new Vector2(
             width + HorizontalPadding * 2,
             _font.GetHeight() + VerticalPadding * 2);

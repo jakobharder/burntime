@@ -33,6 +33,9 @@ jobs:
               throw "Missing packaged third-party license: $licenses/$_"
             }
           }
+          if (-not (Test-Path "./bin/Release/win-x64/publish/steam_api64.dll" -PathType Leaf)) {
+            throw "Missing packaged Steam API runtime: steam_api64.dll"
+          }
 
       - name: Build tools
         run: dotnet build source/PakConverter -c Release /p:DebugSymbols=false
@@ -124,6 +127,7 @@ jobs:
           test -f bin/Release/linux-x64/publish/licenses/THIRD-PARTY-NOTICES.txt
           test -f bin/Release/linux-x64/publish/licenses/DOTNET-THIRD-PARTY-NOTICES.txt
           test -f bin/Release/linux-x64/publish/licenses/OPENAL-SOFT-LICENSE.txt
+          test -f bin/Release/linux-x64/publish/libsteam_api.so
 
       - name: Build tools
         run: dotnet build source/PakConverter -c Release -p:DebugSymbols=false

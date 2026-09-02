@@ -1,6 +1,7 @@
 ﻿using Burntime.Remaster.Logic;
 using Burntime.Framework;
 using Burntime.Platform;
+using Burntime.Platform.Graphics;
 using Burntime.Platform.IO;
 using System;
 using System.Text;
@@ -15,6 +16,13 @@ namespace Burntime.Remaster
         Doctor,
         Pub,
         Restaurant
+    }
+
+    public enum LanguageMode
+    {
+        Auto,
+        English,
+        German
     }
 
     public class BurntimeClassic : Module
@@ -86,6 +94,7 @@ namespace Burntime.Remaster
         }
 
         public bool ChooseLanguageOnStart { get; set; }
+        public LanguageMode LanguageSelection { get; private set; } = LanguageMode.Auto;
 
         public override void Start()
         {
@@ -93,7 +102,7 @@ namespace Burntime.Remaster
 
             MouseImage = ResourceManager.GetImage("munt.raw?0");
 
-            SceneManager.SetScene(ChooseLanguageOnStart || string.IsNullOrEmpty(FileSystem.LocalizationCode)
+            SceneManager.SetScene(ChooseLanguageOnStart
                 ? "LanguageScene"
                 : "IntroScene");
         }
@@ -112,13 +121,23 @@ namespace Burntime.Remaster
             // read user settings
             UserSettings = new ConfigFile();
             UserSettings.Open("user.txt");
+            Engine.ControllerGlyphMode = ParseControllerGlyphMode(
+                UserSettings[""].GetString("controller_glyphs"));
             KeyboardBindings.Load(Settings, UserSettings);
             GamepadBindings.Load(Settings, UserSettings);
-            FileSystem.LocalizationCode = UserSettings[""].GetString("language");
+            LanguageSelection = ParseLanguageMode(UserSettings[""].GetString("language"));
+            FileSystem.LocalizationCode = ResolveLanguage(LanguageSelection);
             if (Engine.SupportsFullscreenToggle)
                 Engine.IsFullscreen = UserSettings[""].GetBool("fullscreen", false);
-            Engine.LinearOutputFiltering = Engine.ForceLinearOutputFiltering ||
-                UserSettings[""].GetBool("linear_filtering", Engine.LinearOutputFiltering);
+            Engine.OutputFiltering = Engine.ForceLinearOutputFiltering
+                ? OutputFiltering.Linear
+                : Engine.ForceNearestPointOutputFiltering
+                    ? OutputFiltering.NearestPoint
+                    : Engine.DisableShaders
+                        ? OutputFiltering.SharpBilinear
+                        : ParseOutputFiltering(
+                            UserSettings[""].GetString("output_filtering"),
+                            UserSettings[""].GetBool("linear_filtering", false));
             base.IsNewGfx = UserSettings[""].GetBool("newgfx", true);
 
             // set language code
@@ -198,12 +217,113 @@ namespace Burntime.Remaster
             UserSettings[""].Set("music", GetMusicMode());
             if (Engine.SupportsFullscreenToggle)
                 UserSettings[""].Set("fullscreen", Engine.IsFullscreen);
-            UserSettings[""].Set("linear_filtering", Engine.LinearOutputFiltering);
+            UserSettings[""].Set("output_filtering", Engine.OutputFiltering switch
+            {
+                OutputFiltering.NearestPoint => "point",
+                OutputFiltering.Linear => "linear",
+                OutputFiltering.Xbr2 => "smooth",
+                _ => "sharp"
+            });
             UserSettings[""].Set("newgfx", IsNewGfx);
-            UserSettings[""].Set("language", FileSystem.LocalizationCode);
+            UserSettings[""].Set("language", FormatLanguageMode(LanguageSelection));
+            UserSettings[""].Set("controller_glyphs", FormatControllerGlyphMode(Engine.ControllerGlyphMode));
             KeyboardBindings.Save(UserSettings);
             GamepadBindings.Save(UserSettings);
             UserSettings.Save("user.txt");
+        }
+
+        public void CycleControllerGlyphMode()
+        {
+            Engine.ControllerGlyphMode = Engine.ControllerGlyphMode switch
+            {
+                ControllerGlyphMode.Auto => ControllerGlyphMode.Xbox,
+                ControllerGlyphMode.Xbox => ControllerGlyphMode.PlayStation,
+                ControllerGlyphMode.PlayStation => ControllerGlyphMode.Steam,
+                ControllerGlyphMode.Steam => ControllerGlyphMode.Switch,
+                _ => ControllerGlyphMode.Auto
+            };
+        }
+
+        static ControllerGlyphMode ParseControllerGlyphMode(string value) =>
+            value.Trim().ToLowerInvariant() switch
+            {
+                "xbox" => ControllerGlyphMode.Xbox,
+                "playstation" => ControllerGlyphMode.PlayStation,
+                "steam" => ControllerGlyphMode.Steam,
+                "switch" => ControllerGlyphMode.Switch,
+                _ => ControllerGlyphMode.Auto
+            };
+
+        static string FormatControllerGlyphMode(ControllerGlyphMode mode) => mode switch
+        {
+            ControllerGlyphMode.Xbox => "xbox",
+            ControllerGlyphMode.PlayStation => "playstation",
+            ControllerGlyphMode.Steam => "steam",
+            ControllerGlyphMode.Switch => "switch",
+            _ => "auto"
+        };
+
+        public void CycleLanguageMode()
+        {
+            LanguageSelection = LanguageSelection switch
+            {
+                LanguageMode.Auto => LanguageMode.English,
+                LanguageMode.English => LanguageMode.German,
+                _ => LanguageMode.Auto
+            };
+            Language = ResolveLanguage(LanguageSelection);
+        }
+
+        public void SelectLanguage(string language)
+        {
+            LanguageSelection = language.Equals("de", StringComparison.OrdinalIgnoreCase)
+                ? LanguageMode.German
+                : LanguageMode.English;
+            Language = ResolveLanguage(LanguageSelection);
+        }
+
+        static LanguageMode ParseLanguageMode(string value) => value.Trim().ToLowerInvariant() switch
+        {
+            "en" or "english" => LanguageMode.English,
+            "de" or "german" => LanguageMode.German,
+            _ => LanguageMode.Auto
+        };
+
+        static string FormatLanguageMode(LanguageMode mode) => mode switch
+        {
+            LanguageMode.English => "en",
+            LanguageMode.German => "de",
+            _ => "auto"
+        };
+
+        string ResolveLanguage(LanguageMode mode) => mode switch
+        {
+            LanguageMode.English => "en",
+            LanguageMode.German => "de",
+            _ => Engine.AutomaticLanguage
+        };
+
+        static OutputFiltering ParseOutputFiltering(string value, bool legacySmooth)
+        {
+            if (value.Equals("sharp", StringComparison.OrdinalIgnoreCase))
+                return OutputFiltering.SharpBilinearShader;
+            if (value.Equals("smooth", StringComparison.OrdinalIgnoreCase))
+                return OutputFiltering.Xbr2;
+            if (value.Equals("shader", StringComparison.OrdinalIgnoreCase))
+                return OutputFiltering.SharpBilinearShader;
+            if (value.Equals("xbr2", StringComparison.OrdinalIgnoreCase))
+                return OutputFiltering.Xbr2;
+            if (value.Equals("point", StringComparison.OrdinalIgnoreCase))
+                return OutputFiltering.NearestPoint;
+            if (value.Equals("linear", StringComparison.OrdinalIgnoreCase))
+                return OutputFiltering.Linear;
+            if (value.Equals("test", StringComparison.OrdinalIgnoreCase))
+                return OutputFiltering.SharpBilinearShader;
+            if (Enum.TryParse(value, ignoreCase: true, out OutputFiltering filtering))
+                return filtering;
+            return legacySmooth
+                ? OutputFiltering.Xbr2
+                : OutputFiltering.SharpBilinearShader;
         }
 
         // internal use

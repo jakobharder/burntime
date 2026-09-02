@@ -18,13 +18,20 @@ public interface IEngine
     Resolution Resolution { get; }
     RenderTarget MainTarget { get; }
     IMusic Music { get; }
+    IInputGlyphProvider InputGlyphs { get; }
+    ControllerGlyphMode ControllerGlyphMode { get; set; }
+    string AutomaticLanguage { get; }
 
     bool MusicBlend { get; set; }
     bool IsLoading { get; set; }
     bool SupportsFullscreenToggle { get; }
     bool IsFullscreen { get; set; }
-    bool LinearOutputFiltering { get; set; }
+    OutputFiltering OutputFiltering { get; set; }
     bool ForceLinearOutputFiltering { get; }
+    bool ForceNearestPointOutputFiltering { get; }
+    bool DisableShaders { get; }
+    bool SupportsSharpBilinearShader { get; }
+    bool SupportsXbr2Shader { get; }
 
     void CenterMouse();
     void ExitApplication();
@@ -36,5 +43,7 @@ public interface IEngine
 
     void RenderSprite(ISprite sprite, Vector2 pos, float alpha = 1);
     void RenderSprite(ISprite sprite, Vector2 pos, Vector2 srcPos, int srcWidth, int srcHeight, PixelColor color);
-    void RenderSpriteF(ISprite sprite, Vector2f pos, Vector2 srcPos, int srcWidth, int srcHeight, PixelColor color);
+    void RenderSpriteF(ISprite sprite, Vector2f pos, Vector2 srcPos, int srcWidth,
+        int srcHeight, PixelColor color, bool postFilter = false,
+        bool directToFramebuffer = false);
 }

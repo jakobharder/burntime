@@ -1,6 +1,7 @@
 ﻿using Burntime.Framework;
 using Burntime.Framework.GUI;
 using Burntime.Platform;
+using Burntime.Platform.Graphics;
 using Burntime.Remaster;
 using System;
 
@@ -14,6 +15,7 @@ internal class OptionsSettingsPage : Container
     readonly Button _newgfxToggle;
     readonly Button _fullscreenToggle;
     readonly Button _scalingToggle;
+    readonly Button _controllerToggle;
     readonly Button _languageToggle;
     readonly Button[] _buttons;
     int _focusIndex;
@@ -50,7 +52,14 @@ internal class OptionsSettingsPage : Container
             IsTextOnly = true
         };
         Windows += _scalingToggle = new Button(app, () =>
-            app.Engine.LinearOutputFiltering = !app.Engine.LinearOutputFiltering)
+        {
+            OutputFiltering previous = app.Engine.OutputFiltering;
+            app.Engine.OutputFiltering = NextOutputFiltering(app.Engine);
+            if (!app.IsNewGfx &&
+                (previous == OutputFiltering.Xbr2 ||
+                 app.Engine.OutputFiltering == OutputFiltering.Xbr2))
+                app.Engine.ReloadGraphics();
+        })
         {
             Font = _fonts.Green,
             HoverFont = _fonts.Orange,
@@ -58,13 +67,22 @@ internal class OptionsSettingsPage : Container
             Position = new Vector2(38, 68),
             IsTextOnly = true
         };
-        Windows += _languageToggle = new Button(app, () => app.Language = app.Language == "de" ? "en" : "de")
+        Windows += _languageToggle = new Button(app,
+            () => BurntimeClassic.Instance.CycleLanguageMode())
         {
             Font = _fonts.Green,
             HoverFont = _fonts.Orange,
             DisabledFont = _fonts.Disabled,
-            Text = "@newburn?26",
             Position = new Vector2(38, 108),
+            IsTextOnly = true
+        };
+        Windows += _controllerToggle = new Button(app,
+            () => BurntimeClassic.Instance.CycleControllerGlyphMode())
+        {
+            Font = _fonts.Green,
+            HoverFont = _fonts.Orange,
+            DisabledFont = _fonts.Disabled,
+            Position = new Vector2(38, 98),
             IsTextOnly = true
         };
         if (!app.Engine.SupportsFullscreenToggle)
@@ -80,7 +98,11 @@ internal class OptionsSettingsPage : Container
             TextHorizontalAlign = Platform.Graphics.TextAlignment.Center
         };
 
-        _buttons = new[] { _newgfxToggle, _scalingToggle, _fullscreenToggle, _musicToggle, _languageToggle };
+        _buttons = new[]
+        {
+            _newgfxToggle, _scalingToggle, _fullscreenToggle, _musicToggle,
+            _controllerToggle, _languageToggle
+        };
     }
 
     public void SetKeyboardActive(bool active, bool resetFocus = false)
@@ -161,11 +183,33 @@ internal class OptionsSettingsPage : Container
             _ => "@burn?424",
         };
         _fullscreenToggle.Text = app.Engine.IsFullscreen ? "@newburn?19" : "@newburn?20";
-        _scalingToggle.Text = app.Engine.LinearOutputFiltering ? "@newburn?56" : "@newburn?55";
+        _scalingToggle.Text = app.Engine.OutputFiltering switch
+        {
+            OutputFiltering.NearestPoint => "Scaling POINT",
+            OutputFiltering.Linear => "Scaling LINEAR",
+            OutputFiltering.Xbr2 => "@newburn?56",
+            _ => "@newburn?55"
+        };
+        _controllerToggle.Text = app.Engine.ControllerGlyphMode switch
+        {
+            ControllerGlyphMode.Xbox => "@controller?1",
+            ControllerGlyphMode.PlayStation => "@controller?2",
+            ControllerGlyphMode.Steam => "@controller?3",
+            ControllerGlyphMode.Switch => "@controller?4",
+            _ => "@controller?0"
+        };
+        _languageToggle.Text = BurntimeClassic.Instance.LanguageSelection switch
+        {
+            LanguageMode.English => "@language_mode?1",
+            LanguageMode.German => "@language_mode?2",
+            _ => "@language_mode?0"
+        };
 
         if (_fullscreenToggle.IsHover || _fullscreenToggle.IsKeyboardSelected)
         {
-            _hintText.Text = "@newburn?23";
+            _hintText.Text = OperatingSystem.IsMacOS()
+                ? "@newburn?57"
+                : "@newburn?23";
         }
         else if (_newgfxToggle.IsHover || _newgfxToggle.IsKeyboardSelected)
         {
@@ -181,5 +225,20 @@ internal class OptionsSettingsPage : Container
         }
 
         base.OnUpdate(elapsed);
+    }
+
+    static OutputFiltering NextOutputFiltering(IEngine engine)
+    {
+        if (engine.ForceNearestPointOutputFiltering)
+            return OutputFiltering.NearestPoint;
+        if (engine.ForceLinearOutputFiltering)
+            return OutputFiltering.Linear;
+        if (engine.DisableShaders || !engine.SupportsSharpBilinearShader)
+            return OutputFiltering.SharpBilinear;
+        if (!engine.SupportsXbr2Shader)
+            return OutputFiltering.SharpBilinearShader;
+        return engine.OutputFiltering == OutputFiltering.Xbr2
+            ? OutputFiltering.SharpBilinearShader
+            : OutputFiltering.Xbr2;
     }
 }

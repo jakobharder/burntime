@@ -2,9 +2,11 @@
 using Burntime.Platform.Graphics;
 using Burntime.Platform.Resource;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 
@@ -34,6 +36,33 @@ public class RenderDevice : IDisposable
 
     SpriteBatch _spriteBatch;
     RenderTarget2D _intermediateTarget;
+    RenderTarget2D _sharpIntermediateTarget;
+    Effect _sharpBilinearEffect;
+    Effect _xbr2Effect;
+    PlatformContentManager _shaderContentManager;
+    public bool SharpBilinearAvailable => _sharpBilinearEffect is not null;
+    public bool Xbr2Available => _xbr2Effect is not null && SharpBilinearAvailable;
+
+    sealed class PlatformContentManager : ContentManager
+    {
+        readonly string _package;
+
+        public PlatformContentManager(IServiceProvider services, string package)
+            : base(services)
+        {
+            _package = package;
+            RootDirectory = string.Empty;
+        }
+
+        protected override Stream OpenStream(string assetName)
+        {
+            Burntime.Platform.IO.File file =
+                Burntime.Platform.IO.FileSystem.GetFile($"{_package}:{assetName}.xnb");
+            if (file is null)
+                throw new ContentLoadException($"Content file not found: {assetName}.xnb");
+            return file.Stream;
+        }
+    }
 
     public RenderDevice(BurntimeGame Engine)
     {
@@ -69,7 +98,7 @@ public class RenderDevice : IDisposable
         Log.Info("Backbuffer resolution: " + _engine.Resolution.Native.x + "x" + _engine.Resolution.Native.y);
         Log.Info("Scale factor: " + _engine.Resolution.Scale.x.ToString("0.00") + "x" + _engine.Resolution.Scale.y.ToString("0.00"));
         Log.Info("Output scale: " + _engine.Resolution.OutputScale.ToString("0.00") +
-            "x (" + (_engine.LinearOutputFiltering ? "linear" : "nearest") + ")");
+            "x (" + _engine.OutputFiltering.ToString().ToLowerInvariant() + ")");
 
         //renderToSurface = new RenderToSurface(device, engine.Resolution.Game.x * renderScale, engine.Resolution.Game.y * renderScale, Format.X8R8G8B8);
         //renderToTexture = new Texture(device, engine.Resolution.Game.x * renderScale, engine.Resolution.Game.y * renderScale, 1, Usage.RenderTarget, Format.X8R8G8B8, Pool.Default);
@@ -148,6 +177,34 @@ public class RenderDevice : IDisposable
         SpriteFrame.EmptyTexture.SetData(new Color[] { Color.Black });
         WhiteTexture = new Texture2D(_engine.GraphicsDevice, 1, 1, false, SurfaceFormat.Color);
         WhiteTexture.SetData(new Color[] { Color.White });
+        if (!_engine.DisableShaders)
+        {
+            _shaderContentManager = new PlatformContentManager(_engine.Services, "classic");
+            _sharpBilinearEffect = LoadOptionalEffect("shaders/SharpBilinear");
+            _xbr2Effect = LoadOptionalEffect("shaders/Xbr2");
+        }
+
+        if (_sharpBilinearEffect is null)
+        {
+            if (_engine.OutputFiltering is OutputFiltering.SharpBilinearShader or
+                OutputFiltering.Xbr2)
+                _engine.OutputFiltering = OutputFiltering.SharpBilinear;
+            Log.Info(_engine.DisableShaders
+                ? "Shader loading is disabled"
+                : "Sharp bilinear shader is not installed; using software SHARP");
+        }
+        else if (_xbr2Effect is null)
+        {
+            if (_engine.OutputFiltering == OutputFiltering.Xbr2)
+                _engine.OutputFiltering = _engine.DefaultOutputFiltering;
+            Log.Info("XBR2 shader is not installed; XBR2 filtering is unavailable");
+        }
+
+        if (_sharpBilinearEffect is null && _xbr2Effect is null)
+        {
+            _shaderContentManager?.Dispose();
+            _shaderContentManager = null;
+        }
 
 
         //spriteRenderer = new SlimDX.Direct3D9.Sprite(device);
@@ -161,11 +218,32 @@ public class RenderDevice : IDisposable
         //renderToTexture = new Texture(device, engine.Resolution.Game.x * renderScale, engine.Resolution.Game.y * renderScale, 1, Usage.RenderTarget, Format.X8R8G8B8, Pool.Default);
     }
 
+    Effect LoadOptionalEffect(string assetName)
+    {
+        if (!Burntime.Platform.IO.FileSystem.ExistsFile($"classic:{assetName}.xnb"))
+            return null;
+        try
+        {
+            return _shaderContentManager.Load<Effect>(assetName);
+        }
+        catch (Exception exception)
+        {
+            Log.Warning($"Could not load {assetName} shader: {exception.Message}");
+            return null;
+        }
+    }
+
     void UnloadGraphicResources()
     {
         //resourceManager.ReleaseAll();
 
         SpriteFrame.EmptyTexture.Dispose();
+        _shaderContentManager?.Dispose();
+        _shaderContentManager = null;
+        _sharpBilinearEffect = null;
+        _xbr2Effect = null;
+        _sharpIntermediateTarget?.Dispose();
+        _sharpIntermediateTarget = null;
         _intermediateTarget?.Dispose();
         _intermediateTarget = null;
 
@@ -271,11 +349,21 @@ public class RenderDevice : IDisposable
     {
         const float PIXEL_CORRECTION = 0.0001f;
 
-        EnsureIntermediateTarget();
+        bool useRemasteredGraphics = _engine.UseRemasteredGraphics;
+        bool useXbr2 = _engine.OutputFiltering == OutputFiltering.Xbr2 &&
+            Xbr2Available;
+        bool renderTextAfterXbr = !useRemasteredGraphics && useXbr2;
+        EnsureIntermediateTarget(useRemasteredGraphics);
         _engine.GraphicsDevice.SetRenderTarget(_intermediateTarget);
         _engine.GraphicsDevice.Clear(Color.Black);
 
-        var transformMatrix = Matrix.CreateScale(new Vector3(_engine.Resolution.Scale.x + PIXEL_CORRECTION, _engine.Resolution.Scale.y + PIXEL_CORRECTION, 1));
+        Platform.Vector2f intermediateScale = useRemasteredGraphics
+            ? _engine.Resolution.Scale
+            : Platform.Vector2f.One;
+        var transformMatrix = useRemasteredGraphics
+            ? Matrix.CreateScale(new Vector3(intermediateScale.x + PIXEL_CORRECTION,
+                intermediateScale.y + PIXEL_CORRECTION, 1))
+            : Matrix.Identity;
 
         //SlimDX.Matrix lineMatrix = SlimDX.Matrix.AffineTransformation2D(1, new SlimDX.Vector2(), 0, new SlimDX.Vector2());
         //// TODO engine scale
@@ -286,15 +374,19 @@ public class RenderDevice : IDisposable
         if (_renderEntities != null)
         {
             bool? linearFiltering = null;
-            foreach (var sprite in _renderEntities.OfType<SpriteEntity>().OrderBy(sprite => sprite.Position.Z))
+            foreach (var sprite in (_renderEntities ?? new RenderEntityQueue())
+                .OfType<SpriteEntity>()
+                .Where(sprite => (!renderTextAfterXbr || !sprite.PostFilter) &&
+                    (useRemasteredGraphics || !sprite.DirectToFramebuffer))
+                .OrderBy(sprite => sprite.Position.Z))
             {
                 // diposed texture links may remain in queue after direct3d reset, just skip them
                 if ((sprite.Texture ?? sprite.SpriteFrame.Texture).IsDisposed)
                     continue;
 
                 bool useLinearFiltering = sprite.LinearFiltering &&
-                    (sprite.Factor.x * _engine.Resolution.Scale.x < 1 ||
-                     sprite.Factor.y * _engine.Resolution.Scale.y < 1);
+                    (sprite.Factor.x * intermediateScale.x < 1 ||
+                     sprite.Factor.y * intermediateScale.y < 1);
 
                 if (linearFiltering != useLinearFiltering)
                 {
@@ -329,7 +421,9 @@ public class RenderDevice : IDisposable
         _spriteBatch.Begin(SpriteSortMode.FrontToBack, Microsoft.Xna.Framework.Graphics.BlendState.NonPremultiplied, SamplerState.PointClamp, null, null, null, transformMatrix);
 
         BlendOverlay.BlockFadeOut = _engine.IsLoading || BlendOverlay.Block;
-        BlendOverlay.Render(elapsedSeconds, _spriteBatch);
+        BlendOverlay.Update(elapsedSeconds);
+        if (!renderTextAfterXbr)
+            BlendOverlay.Render(_spriteBatch);
         if (_engine.MusicBlend)
             _engine.Music.Volume = 1 - BlendOverlay.BlendState;
         else
@@ -348,27 +442,182 @@ public class RenderDevice : IDisposable
         _spriteBatch.End();
 
         _engine.GraphicsDevice.SetRenderTarget(null);
+        Texture2D presentationTexture = _intermediateTarget;
+        if (_engine.OutputFiltering == OutputFiltering.SharpBilinear)
+        {
+            int horizontalScale = (_engine.Resolution.Native.x +
+                _intermediateTarget.Width - 1) / _intermediateTarget.Width;
+            int verticalScale = (_engine.Resolution.Native.y +
+                _intermediateTarget.Height - 1) / _intermediateTarget.Height;
+            int integerScale = System.Math.Max(1,
+                System.Math.Min(horizontalScale, verticalScale));
+            if (integerScale > 1)
+            {
+                EnsureSharpIntermediateTarget(integerScale);
+                _engine.GraphicsDevice.SetRenderTarget(_sharpIntermediateTarget);
+                _engine.GraphicsDevice.Clear(Color.Black);
+                _spriteBatch.Begin(SpriteSortMode.Deferred,
+                    Microsoft.Xna.Framework.Graphics.BlendState.Opaque,
+                    SamplerState.PointClamp, null, null);
+                _spriteBatch.Draw(_intermediateTarget,
+                    new Rectangle(0, 0, _sharpIntermediateTarget.Width,
+                        _sharpIntermediateTarget.Height), Color.White);
+                _spriteBatch.End();
+                _engine.GraphicsDevice.SetRenderTarget(null);
+                presentationTexture = _sharpIntermediateTarget;
+            }
+        }
+        else if (useXbr2)
+        {
+            EnsureSharpIntermediateTarget(2);
+            _xbr2Effect.Parameters["TextureSize"].SetValue(
+                new Microsoft.Xna.Framework.Vector2(_intermediateTarget.Width,
+                    _intermediateTarget.Height));
+            _engine.GraphicsDevice.SetRenderTarget(_sharpIntermediateTarget);
+            _engine.GraphicsDevice.Clear(Color.Black);
+            _spriteBatch.Begin(SpriteSortMode.Deferred,
+                Microsoft.Xna.Framework.Graphics.BlendState.Opaque,
+                SamplerState.PointClamp, null, null, _xbr2Effect);
+            _spriteBatch.Draw(_intermediateTarget,
+                new Rectangle(0, 0, _sharpIntermediateTarget.Width,
+                    _sharpIntermediateTarget.Height), Color.White);
+            _spriteBatch.End();
+
+            if (renderTextAfterXbr)
+            {
+                var postFilterTransform = Matrix.CreateScale(new Vector3(
+                    intermediateScale.x * 2 + PIXEL_CORRECTION,
+                    intermediateScale.y * 2 + PIXEL_CORRECTION, 1));
+                _spriteBatch.Begin(SpriteSortMode.Deferred,
+                    Microsoft.Xna.Framework.Graphics.BlendState.NonPremultiplied,
+                    SamplerState.PointClamp, null, null, null, postFilterTransform);
+                foreach (var sprite in (_renderEntities ?? new RenderEntityQueue())
+                    .OfType<SpriteEntity>()
+                    .Where(sprite => sprite.PostFilter && !sprite.DirectToFramebuffer)
+                    .OrderBy(sprite => sprite.Position.Z))
+                {
+                    Texture2D texture = sprite.Texture ?? sprite.SpriteFrame.Texture;
+                    if (texture.IsDisposed)
+                        continue;
+                    _spriteBatch.Draw(texture,
+                        new Microsoft.Xna.Framework.Vector2(sprite.Position.X,
+                            sprite.Position.Y),
+                        sprite.Rectangle, sprite.Color, 0,
+                        Microsoft.Xna.Framework.Vector2.Zero, sprite.Factor.ToXna(),
+                        SpriteEffects.None, sprite.Position.Z);
+                }
+                _spriteBatch.End();
+
+                _spriteBatch.Begin(SpriteSortMode.FrontToBack,
+                    Microsoft.Xna.Framework.Graphics.BlendState.NonPremultiplied,
+                    SamplerState.PointClamp, null, null, null, postFilterTransform);
+                BlendOverlay.Render(_spriteBatch);
+                _spriteBatch.End();
+            }
+            _engine.GraphicsDevice.SetRenderTarget(null);
+            presentationTexture = _sharpIntermediateTarget;
+        }
+
         _engine.GraphicsDevice.Clear(Color.Black);
+        int horizontalPresentationScale = _engine.Resolution.Native.x /
+            presentationTexture.Width;
+        int verticalPresentationScale = _engine.Resolution.Native.y /
+            presentationTexture.Height;
+        bool cleanIntegerShaderScale =
+            _engine.OutputFiltering == OutputFiltering.SharpBilinearShader &&
+            horizontalPresentationScale >= 2 &&
+            horizontalPresentationScale == verticalPresentationScale &&
+            presentationTexture.Width * horizontalPresentationScale ==
+                _engine.Resolution.Native.x &&
+            presentationTexture.Height * verticalPresentationScale ==
+                _engine.Resolution.Native.y;
+        bool useSharpBilinearShader = SharpBilinearAvailable &&
+            (useXbr2 ||
+             _engine.OutputFiltering == OutputFiltering.SharpBilinearShader &&
+             !cleanIntegerShaderScale);
+        if (useSharpBilinearShader)
+        {
+            _sharpBilinearEffect.Parameters["TextureSize"].SetValue(
+                new Microsoft.Xna.Framework.Vector2(presentationTexture.Width,
+                    presentationTexture.Height));
+            _sharpBilinearEffect.Parameters["OutputSize"].SetValue(
+                new Microsoft.Xna.Framework.Vector2(_engine.Resolution.Native.x,
+                    _engine.Resolution.Native.y));
+        }
+
         _spriteBatch.Begin(SpriteSortMode.Deferred,
             Microsoft.Xna.Framework.Graphics.BlendState.Opaque,
-            _engine.LinearOutputFiltering ? SamplerState.LinearClamp : SamplerState.PointClamp,
-            null, null);
-        _spriteBatch.Draw(_intermediateTarget,
+            _engine.OutputFiltering == OutputFiltering.NearestPoint ||
+                cleanIntegerShaderScale
+                ? SamplerState.PointClamp
+                : SamplerState.LinearClamp,
+            null, null, useSharpBilinearShader ? _sharpBilinearEffect : null);
+        _spriteBatch.Draw(presentationTexture,
             new Rectangle(0, 0, _engine.Resolution.Native.x, _engine.Resolution.Native.y),
             Color.White);
         _spriteBatch.End();
+
+        if (!useRemasteredGraphics)
+        {
+            var framebufferTransform = Matrix.CreateScale(new Vector3(
+                _engine.Resolution.Native.x / (float)_engine.Resolution.Game.x + PIXEL_CORRECTION,
+                _engine.Resolution.Native.y / (float)_engine.Resolution.Game.y + PIXEL_CORRECTION,
+                1));
+            _spriteBatch.Begin(SpriteSortMode.Deferred,
+                Microsoft.Xna.Framework.Graphics.BlendState.NonPremultiplied,
+                SamplerState.PointClamp, null, null, null, framebufferTransform);
+            float visibility = 1 - BlendOverlay.BlendState;
+            foreach (var sprite in (_renderEntities ?? new RenderEntityQueue())
+                .OfType<SpriteEntity>()
+                .Where(sprite => sprite.DirectToFramebuffer)
+                .OrderBy(sprite => sprite.Position.Z))
+            {
+                Texture2D texture = sprite.Texture ?? sprite.SpriteFrame.Texture;
+                if (texture.IsDisposed)
+                    continue;
+                Color color = new(
+                    (byte)(sprite.Color.R * visibility),
+                    (byte)(sprite.Color.G * visibility),
+                    (byte)(sprite.Color.B * visibility),
+                    sprite.Color.A);
+                _spriteBatch.Draw(texture,
+                    new Microsoft.Xna.Framework.Vector2(sprite.Position.X,
+                        sprite.Position.Y),
+                    sprite.Rectangle, color, 0,
+                    Microsoft.Xna.Framework.Vector2.Zero, sprite.Factor.ToXna(),
+                    SpriteEffects.None, sprite.Position.Z);
+            }
+            _spriteBatch.End();
+        }
     }
 
-    void EnsureIntermediateTarget()
+    void EnsureIntermediateTarget(bool useRemasteredGraphics)
     {
-        int width = _engine.Resolution.BackBuffer.x;
-        int height = _engine.Resolution.BackBuffer.y;
+        Platform.Vector2 targetSize = useRemasteredGraphics
+            ? _engine.Resolution.BackBuffer
+            : _engine.Resolution.Game;
+        int width = targetSize.x;
+        int height = targetSize.y;
         if (_intermediateTarget is not null &&
             _intermediateTarget.Width == width && _intermediateTarget.Height == height)
             return;
 
         _intermediateTarget?.Dispose();
         _intermediateTarget = new RenderTarget2D(_engine.GraphicsDevice, width, height,
+            false, SurfaceFormat.Color, DepthFormat.None);
+    }
+
+    void EnsureSharpIntermediateTarget(int integerScale)
+    {
+        int width = _intermediateTarget.Width * integerScale;
+        int height = _intermediateTarget.Height * integerScale;
+        if (_sharpIntermediateTarget is not null &&
+            _sharpIntermediateTarget.Width == width &&
+            _sharpIntermediateTarget.Height == height)
+            return;
+
+        _sharpIntermediateTarget?.Dispose();
+        _sharpIntermediateTarget = new RenderTarget2D(_engine.GraphicsDevice, width, height,
             false, SurfaceFormat.Color, DepthFormat.None);
     }
 

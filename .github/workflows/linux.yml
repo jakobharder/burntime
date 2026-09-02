@@ -8,6 +8,8 @@ on:
       - "scripts/savegame-test.sh"
       - "tests/savegames/**"
       - "resources/licenses/**"
+      - "resources/game/**"
+      - "third_party/steamworks/**"
       - ".github/workflows/linux.yml"
 
 jobs:
@@ -46,6 +48,7 @@ jobs:
         test -f bin/Release/linux-x64/publish/licenses/THIRD-PARTY-NOTICES.txt
         test -f bin/Release/linux-x64/publish/licenses/DOTNET-THIRD-PARTY-NOTICES.txt
         test -f bin/Release/linux-x64/publish/licenses/OPENAL-SOFT-LICENSE.txt
+        test -f bin/Release/linux-x64/publish/libsteam_api.so
 
     - name: Package
       run: tar -czf burntime-linux-x64.tar.gz -C bin/Release/linux-x64/publish .

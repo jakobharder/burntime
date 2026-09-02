@@ -247,7 +247,9 @@ public class Font
     float DrawChar(RenderTarget target, char ch, Vector2f pos, PixelColor color)
     {
         CharInfo info = Resource.CharInfo[translateChar(ch)];
-        target.DrawSelectedSpriteF(pos + new Vector2f(0, Resource.Offset), new Rect(info.spritePos, new Vector2(info.imgWidth, info.imgHeight)), color);
+        target.DrawSelectedSpriteF(pos + new Vector2f(0, Resource.Offset),
+            new Rect(info.spritePos, new Vector2(info.imgWidth, info.imgHeight)),
+            color, postFilter: true);
         return info.renderWidth;
     }
 

@@ -7,7 +7,18 @@
             "request": "launch",
             "preLaunchTask": "build Burntime (Debug)",
             "program": "${workspaceFolder}/bin/Debug/Burntime.dll",
-            "args": [""],
+            "args": ["--fps"],
+            "cwd": "${workspaceFolder}/bin/Debug",
+            "stopAtEntry": false,
+            "console": "internalConsole"
+        },
+        {
+            "name": "Debug Burntime (with shaders)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build Burntime with shaders (Debug)",
+            "program": "${workspaceFolder}/bin/Debug/Burntime.dll",
+            "args": [],
             "cwd": "${workspaceFolder}/bin/Debug",
             "stopAtEntry": false,
             "console": "internalConsole"

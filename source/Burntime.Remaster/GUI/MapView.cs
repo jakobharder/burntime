@@ -268,6 +268,7 @@ public class MapView : Window
     public override void OnMouseLeave()
     {
         border = Vector2f.Zero;
+        entrance = -1;
         base.OnMouseLeave();
     }
 
@@ -338,6 +339,13 @@ public class MapView : Window
 
     public override void OnUpdate(float Elapsed)
     {
+        bool mouseInputVisible = app.MouseInputVisible;
+        if (!mouseInputVisible)
+        {
+            border = Vector2f.Zero;
+            entrance = -1;
+        }
+
         bool positionChanged = false;
         bool cameraPanInputDown = false;
         foreach (InputAction action in app.InputManager.ActionsDown)
@@ -350,7 +358,7 @@ public class MapView : Window
             }
         }
 
-        if (app.MouseInputVisible && !cameraPanInputDown &&
+        if (mouseInputVisible && !cameraPanInputDown &&
             !_rightClickMove.HasValue && border != Vector2f.Zero)
         {
             _position += border * Elapsed * scrollSpeed;
@@ -369,11 +377,12 @@ public class MapView : Window
 
             foreach (Maps.IMapViewOverlay overlay in overlays)
             {
-                overlay.MouseMoveOverlay(mousePosition);
+                if (mouseInputVisible)
+                    overlay.MouseMoveOverlay(mousePosition);
                 overlay.UpdateOverlay(game, Elapsed);
             }
 
-            if (entrance != -1)
+            if (mouseInputVisible && entrance != -1)
             {
                 if (game.MainMapView)
                 {

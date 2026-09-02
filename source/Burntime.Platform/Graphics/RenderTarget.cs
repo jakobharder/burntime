@@ -71,11 +71,14 @@ public class RenderTarget
         _engine.RenderSprite(_selectedSprite, pos + _rc.Position + Offset, srcRect.Position, srcRect.Width, srcRect.Height, color);
     }
 
-    public void DrawSelectedSpriteF(Vector2f pos, Rect srcRect, PixelColor color)
+    public void DrawSelectedSpriteF(Vector2f pos, Rect srcRect, PixelColor color,
+        bool postFilter = false, bool directToFramebuffer = false)
     {
         if (_selectedSprite is null) return;
 
-        _engine.RenderSpriteF(_selectedSprite, pos + _rc.Position + Offset, srcRect.Position, srcRect.Width, srcRect.Height, color);
+        _engine.RenderSpriteF(_selectedSprite, pos + _rc.Position + Offset,
+            srcRect.Position, srcRect.Width, srcRect.Height, color, postFilter,
+            directToFramebuffer);
     }
     #endregion
 

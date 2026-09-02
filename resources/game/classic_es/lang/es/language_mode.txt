@@ -1,0 +1,3 @@
+Idioma AUTO
+Idioma INGLES
+Idioma ALEMAN

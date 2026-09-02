@@ -1,0 +1,26 @@
+Esc
+Intro
+Tab
+Arriba
+Abajo
+Izq.
+Der.
+Espacio
+Retroceso
+Mayús
+Alt
+Mantén
+LB
+RB
+Stick izq.
+Stick der.
+LT
+RT
+Cruceta Arriba
+Cruceta Abajo
+Cruceta Izq.
+Cruceta Der.
+Menú
+Vista
+Cruceta
+Stick

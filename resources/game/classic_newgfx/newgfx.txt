@@ -77,6 +77,7 @@ syst.raw?16=pngsheet@gfx/objects/player_icon_colors.png?0?36x38
 syst.raw?17=pngsheet@gfx/objects/player_icon_colors.png?1?36x38
 syst.raw?18=pngsheet@gfx/objects/player_icon_colors.png?2?36x38
 syst.raw?19=pngsheet@gfx/objects/player_icon_colors.png?3?36x38
+syst.raw=gfx/ways/syst_{0}.png
 burngfxani@syst.raw?24-27=pngsheet@gfx/syssze.png?18-19?30x36
 burngfxani@syst.raw?20-23=pngsheet@gfx/munt_info.png?0-3?23x30
 burngfxani@munt.raw?14-17=pngsheet@gfx/munt_fight.png?0-3?30x54

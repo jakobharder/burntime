@@ -32,6 +32,7 @@ Role | Names
 Development & remaster | Jakob Harder
 Spanish translation | Germán Jakob
 Additional contributions | Krystian Rabe, Felix Stolle, Chris1982, graysonwall, Shadow, Maschine, Memento
+Controller input glyphs | Adapted from [Input Prompts](https://kenney.nl/assets/input-prompts) by [Kenney](https://kenney.nl/) (CC0)
 
 ### Max Design
 

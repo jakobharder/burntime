@@ -1,0 +1,3 @@
+Sprache AUTO
+Sprache ENGLISCH
+Sprache DEUTSCH
