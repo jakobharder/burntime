@@ -129,9 +129,8 @@ sealed class SteamInputGlyphProvider : IInputGlyphProvider, IDisposable
                 return;
             }
 
-            EInputActionOrigin familyOrigin = SteamInput.GetActionOriginFromXboxOrigin(handle,
-                EXboxOrigin.k_EXboxOrigin_A);
-            string family = GetFamily(familyOrigin);
+            ESteamInputType inputType = SteamInput.GetInputTypeForHandle(handle);
+            string family = GetFamily(inputType);
             bool changed = family != _controllerFamily;
 
             foreach (GamepadControl control in Enum.GetValues<GamepadControl>())
@@ -250,22 +249,21 @@ sealed class SteamInputGlyphProvider : IInputGlyphProvider, IDisposable
 
     static string? GetLabelForOrigin(EInputActionOrigin actionOrigin, string family) => null;
 
-    static string GetFamily(EInputActionOrigin origin)
+    static string GetFamily(ESteamInputType inputType) => inputType switch
     {
-        string name = origin.ToString();
-        if (name.Contains("_PS3_", StringComparison.Ordinal) ||
-            name.Contains("_PS4_", StringComparison.Ordinal) ||
-            name.Contains("_PS5_", StringComparison.Ordinal))
-            return "PlayStation";
-        if (name.Contains("_Switch_", StringComparison.Ordinal))
-            return "Switch";
-        if (name.Contains("_SteamDeck_", StringComparison.Ordinal) ||
-            name.Contains("_SteamController_", StringComparison.Ordinal))
-            return "Steam";
-        if (name.Contains("_XBox", StringComparison.Ordinal))
-            return "Xbox";
-        return string.Empty;
-    }
+        ESteamInputType.k_ESteamInputType_PS3Controller or
+        ESteamInputType.k_ESteamInputType_PS4Controller or
+        ESteamInputType.k_ESteamInputType_PS5Controller => "PlayStation",
+        ESteamInputType.k_ESteamInputType_SwitchJoyConPair or
+        ESteamInputType.k_ESteamInputType_SwitchJoyConSingle or
+        ESteamInputType.k_ESteamInputType_SwitchProController => "Switch",
+        ESteamInputType.k_ESteamInputType_SteamController or
+        ESteamInputType.k_ESteamInputType_SteamDeckController => "Steam",
+        ESteamInputType.k_ESteamInputType_XBox360Controller or
+        ESteamInputType.k_ESteamInputType_XBoxOneController or
+        ESteamInputType.k_ESteamInputType_GenericGamepad => "Xbox",
+        _ => string.Empty
+    };
 
     static EXboxOrigin ToXboxOrigin(GamepadControl control) => control switch
     {
