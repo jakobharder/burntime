@@ -17,7 +17,7 @@
   - Enclosed AIs immediately die on easy; on medium/hard they attack or die trying
 - QoL
   - Added auto saves
-  - Added sharp/smooth scaling to the settings
+  - Added sharp and smooth (xBR) scaling modes to the settings
 - Balancing
   - Disabled dog and mutant spawning in original mode
   - Reduced dog and mutant spawning in extended mode
@@ -27,6 +27,7 @@
   - Improved character portraits
   - Improved item graphics
   - Improved font
+  - Remastered travel paths
 
 ### Fixes
 
