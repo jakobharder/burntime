@@ -58,6 +58,7 @@ Role | Library
 Game framework | [MonoGame](https://www.monogame.net/)
 Ogg Vorbis decoding | [NVorbis](https://github.com/NVorbis/NVorbis)
 Image decoding | [StbImageSharp](https://github.com/StbSharp/StbImageSharp)
+Pixel-art scaling | [xBR-lv2](https://github.com/libretro/common-shaders/blob/master/xbr/shaders/xbr-lv2.cg) by Hyllian
 
 See [third-party notices](./licenses/THIRD-PARTY-NOTICES.txt) for licenses of direct and
 bundled dependencies.

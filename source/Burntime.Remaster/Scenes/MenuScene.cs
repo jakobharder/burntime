@@ -603,7 +603,14 @@ public class MenuScene : Scene
             SetupSelection.Player => "@prompts?7",
             _ => "@prompts?9"
         };
-        InputPrompt primary = new(InputAction.Primary, primaryLabel);
+        InputPrompt primary = new(InputAction.Primary, primaryLabel)
+        {
+            // The change-name action runs while the name field consumes printable
+            // input, including Space, so advertise the usable Primary control.
+            PreferredKeyboardControl = _setupSelection == SetupSelection.Player
+                ? new Key(SystemKey.Enter)
+                : null
+        };
 
         if (_setupSelection == SetupSelection.Player && CurrentPlayerEnabled)
         {
