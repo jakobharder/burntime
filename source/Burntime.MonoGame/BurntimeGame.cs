@@ -32,6 +32,8 @@ namespace Burntime.MonoGame
 
         BurntimeClassic _burntimeApp;
         internal bool UseRemasteredGraphics => _burntimeApp?.IsNewGfx ?? true;
+        internal void RefreshResourceReplacements() =>
+            _burntimeApp?.RefreshResourceReplacements();
         readonly GraphicsDeviceManager _graphics;
         readonly GameThread _gameThread = new();
         readonly bool _emulateSteamMachine;
@@ -875,14 +877,16 @@ namespace Burntime.MonoGame
         const float popInSpeed = 16.0f;
         static float CalcZ(float Layer) => 0.05f + (Layer / MAX_LAYERS) * 0.9f;
 
-        public void RenderRect(Platform.Vector2 pos, Platform.Vector2 size, PixelColor color)
+        public void RenderRect(Platform.Vector2 pos, Platform.Vector2 size, PixelColor color,
+            bool postFilter = false)
         {
             SpriteEntity entity = new()
             {
                 Rectangle = new Rectangle(0, 0, size.x, size.y),
                 Color = new Color(color.r, color.g, color.b, color.a),
                 Texture = RenderDevice.WhiteTexture,
-                Position = new Vector3(pos.x, pos.y, CalcZ(Layer))
+                Position = new Vector3(pos.x, pos.y, CalcZ(Layer)),
+                PostFilter = postFilter
             };
             RenderDevice.AddEntity(entity);
         }
@@ -902,10 +906,6 @@ namespace Burntime.MonoGame
         {
             if (sprite is not MonoGame.Graphics.Sprite nativeSprite || !nativeSprite.Touch()) return;
 
-            // Module.Render draws the software mouse cursor at the reserved top
-            // layer. Keep it out of XBR together with post-filtered text for now.
-            bool postFilter = Layer >= MAX_LAYERS - 1;
-
             long now = System.Diagnostics.Stopwatch.GetTimestamp();
             if (now - nativeSprite.Frame.TimeStamp < (long)(Stopwatch.Frequency / popInSpeed) && popInSpeed != 0)
                 alpha *= (now - nativeSprite.Frame.TimeStamp) / (float)Stopwatch.Frequency * popInSpeed;
@@ -915,8 +915,7 @@ namespace Burntime.MonoGame
                 Rectangle = new Rectangle(0, 0, nativeSprite.OriginalSize.x, nativeSprite.OriginalSize.y),
                 Color = new Color(alpha, alpha, alpha, alpha),
                 Factor = nativeSprite.Frame.Resolution,
-                LinearFiltering = nativeSprite.LinearFiltering,
-                PostFilter = postFilter
+                LinearFiltering = nativeSprite.LinearFiltering
             };
 
             if (sprite.Animation != null && sprite.Animation.Progressive && nativeSprite.Frames != null)
@@ -933,8 +932,7 @@ namespace Burntime.MonoGame
                 SpriteFrame = nativeSprite.Frame,
                 Position = new Vector3(pos.x, pos.y, CalcZ(Layer)),
                 Factor = nativeSprite.Frame.Resolution,
-                LinearFiltering = nativeSprite.LinearFiltering,
-                PostFilter = postFilter
+                LinearFiltering = nativeSprite.LinearFiltering
             };
             RenderDevice.AddEntity(entity2);
         }

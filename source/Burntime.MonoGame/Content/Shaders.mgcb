@@ -23,3 +23,9 @@
 /processor:EffectProcessor
 /processorParam:DebugMode=Auto
 /build:Xbr2.fx
+
+#begin Xbr2Alpha.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:Xbr2Alpha.fx

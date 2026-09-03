@@ -1,0 +1,4 @@
+[fonts]
+sprite_scale=1x1
+font.txt=highres-font2x.txt
+highres-font.txt=highres-font2x.txt

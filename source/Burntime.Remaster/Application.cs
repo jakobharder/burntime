@@ -6,6 +6,7 @@ using Burntime.Platform.IO;
 using System;
 using System.Text;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace Burntime.Remaster
 {
@@ -161,17 +162,8 @@ namespace Burntime.Remaster
             if (IsNewGfx)
             {
                 FileSystem.AddPackage("newgfx", "game/classic_newgfx");
-                if (FileSystem.ExistsFile("newgfx.txt"))
-                {
-                    ResourceManager.SetResourceReplacement("newgfx.txt");
-
-                }
             }
-            else
-            {
-                if (FileSystem.ExistsFile("newgfx.txt"))
-                    ResourceManager.SetResourceReplacement("newgfx.txt");
-            }
+            RefreshResourceReplacements();
 #warning TODO Santa for NewGfx (only)
             //else if (DateTime.Now.Month == 12 && 
             //    (DateTime.Now.Day >= 24 && DateTime.Now.Day <= 31 || DateTime.Now.Day == 6))
@@ -466,27 +458,28 @@ namespace Burntime.Remaster
             if (IsNewGfx)
             {
                 FileSystem.AddPackage("newgfx", "game/classic_newgfx");
-                if (FileSystem.ExistsFile("newgfx.txt"))
-                {
-                    ResourceManager.SetResourceReplacement("newgfx.txt");
-
-                }
-                else
-                {
-                    ResourceManager.SetResourceReplacement(string.Empty);
-                }
             }
             else
             {
                 FileSystem.RemovePackage("newgfx");
-                if (FileSystem.ExistsFile("newgfx.txt"))
-                    ResourceManager.SetResourceReplacement("newgfx.txt");
-                else
-                    ResourceManager.SetResourceReplacement(string.Empty);
             }
+            RefreshResourceReplacements();
 
             Engine.ReloadGraphics();
             SceneManager.ResizeScene();
+        }
+
+        public void RefreshResourceReplacements()
+        {
+            List<string> replacements = [];
+            // Both packages provide this profile. In classic it remaps virtual
+            // character-body ranges to frames that exist in the original RAW.
+            if (FileSystem.ExistsFile("newgfx.txt"))
+                replacements.Add("newgfx.txt");
+            if (Engine.OutputFiltering == OutputFiltering.Xbr2 &&
+                FileSystem.ExistsFile("xbr2.txt"))
+                replacements.Add("xbr2.txt");
+            ResourceManager.SetResourceReplacements(replacements.ToArray());
         }
     }
 }

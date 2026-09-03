@@ -1,5 +1,6 @@
 image=font2x.png
 scale=2x2
+post_filter=true
 offset=-2
 lines=1
 height=12

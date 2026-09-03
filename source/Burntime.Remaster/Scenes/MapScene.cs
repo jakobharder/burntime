@@ -36,7 +36,6 @@ namespace Burntime.Remaster
         IMapGuiWindow gui;
         MenuWindow menu;
         Image _cursorAni;
-        readonly int _cursorLayer;
         readonly DialogWindow _dialog;
         readonly InputPromptOverlay _promptOverlay;
         readonly InputShortcutColumn _menuShortcutColumn;
@@ -91,7 +90,6 @@ namespace Burntime.Remaster
             _cursorAni.Background.Animation.Progressive = false;
             _cursorAni.Layer += 59;
             Windows += _cursorAni;
-            _cursorLayer = _cursorAni.Layer;
 
             gui.Layer += classic.NewGui ? 40 : 60;
             Windows += gui;
@@ -114,12 +112,10 @@ namespace Burntime.Remaster
             menu.WindowShow += (_, _) =>
             {
                 _menuShortcutColumn.Show();
-                UpdateMapOverlayTextVisibility();
             };
             menu.WindowHide += (_, _) =>
             {
                 _menuShortcutColumn.Hide();
-                UpdateMapOverlayTextVisibility();
             };
         }
 
@@ -154,13 +150,11 @@ namespace Burntime.Remaster
         void OnDialogShown(object? sender, EventArgs e)
         {
             _cursorAni.Hide();
-            UpdateMapOverlayTextVisibility();
         }
 
         void OnDialogHidden(object? sender, EventArgs e)
         {
             _cursorAni.Show();
-            UpdateMapOverlayTextVisibility();
 
             if (!_cheatDialogActive)
                 return;
@@ -185,18 +179,6 @@ namespace Burntime.Remaster
                     break;
             }
         }
-
-        void UpdateMapOverlayTextVisibility()
-        {
-            bool isVisible = !_dialog.IsVisible && !menu.IsVisible;
-            _hoverInfo.IsVisible = isVisible;
-            _keyboardSelection.IsVisible = isVisible;
-        }
-
-        bool UseDeferredTextRendering =>
-            !app.IsNewGfx &&
-            app.Engine.OutputFiltering == OutputFiltering.Xbr2 &&
-            app.Engine.SupportsXbr2Shader;
 
         public override void OnResizeScreen()
         {
@@ -301,9 +283,6 @@ namespace Burntime.Remaster
 
         public override void OnRender(RenderTarget Target)
         {
-            bool useDeferredTextRendering = UseDeferredTextRendering;
-            _cursorAni.Layer = useDeferredTextRendering ? 255 : _cursorLayer;
-
             bool showInteractionMode = app.MouseInputVisible && !_dialog.IsVisible;
             if (_cursorAni.IsVisible != showInteractionMode)
                 _cursorAni.IsVisible = showInteractionMode;
@@ -315,7 +294,7 @@ namespace Burntime.Remaster
                 if (!BurntimeClassic.Instance.NewGui && app.MouseInputVisible)
                 {
                     var layer = Target.Layer;
-                    Target.Layer = useDeferredTextRendering ? 255 : gui.Layer - 1;
+                    Target.Layer = gui.Layer - 1;
                     Target.DrawSprite(app.DeviceManager.Mouse.Position, app.MouseImage);
                     Target.Layer = layer;
                 }

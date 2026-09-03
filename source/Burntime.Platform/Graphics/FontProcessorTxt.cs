@@ -18,6 +18,7 @@ namespace Burntime.Platform.Graphics
         public int Offset { get { return offset; } }
         public int GlyphHeight { get { return glyphHeight; } }
         public Vector2f Factor { get { return factor; } }
+        public bool PostFilter { get; private set; }
 
         public Dictionary<char, CharInfo> CharInfo { get { return charInfo; } }
         public Dictionary<string, int> Kerning { get { return kerning; } }
@@ -40,6 +41,7 @@ namespace Burntime.Platform.Graphics
             int height = config[""].GetInt("height");
             offset = config[""].GetInt("offset");
             Vector2f scale = config[""].GetVector2f("scale", Vector2f.One);
+            PostFilter = config[""].GetBool("post_filter", false);
             // Keep existing one-dimensional font descriptors working.
             if (scale.y == 0)
                 scale.y = scale.x;

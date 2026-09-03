@@ -55,10 +55,12 @@ internal class OptionsSettingsPage : Container
         {
             OutputFiltering previous = app.Engine.OutputFiltering;
             app.Engine.OutputFiltering = NextOutputFiltering(app.Engine);
-            if (!app.IsNewGfx &&
-                (previous == OutputFiltering.Xbr2 ||
-                 app.Engine.OutputFiltering == OutputFiltering.Xbr2))
+            if (previous == OutputFiltering.Xbr2 ||
+                app.Engine.OutputFiltering == OutputFiltering.Xbr2)
+            {
+                ((BurntimeClassic)app).RefreshResourceReplacements();
                 app.Engine.ReloadGraphics();
+            }
         })
         {
             Font = _fonts.Green,

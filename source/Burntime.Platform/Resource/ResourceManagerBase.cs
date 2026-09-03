@@ -271,19 +271,26 @@ public abstract class ResourceManagerBase : IResourceManager
     #endregion
 
     #region Replacement
-    protected ConfigFile? replacement;
+    ConfigFile[] replacements = [];
 
     public void SetResourceReplacement(string file)
     {
-        if (string.IsNullOrEmpty(file))
+        SetResourceReplacements(file);
+    }
+
+    public void SetResourceReplacements(params string[] files)
+    {
+        List<ConfigFile> replacementSnapshot = [];
+        foreach (string file in files)
         {
-            replacement = null;
-        }
-        else
-        {
-            replacement = new ConfigFile();
+            if (string.IsNullOrEmpty(file))
+                continue;
+
+            ConfigFile replacement = new();
             replacement.Open(FileSystem.GetFile(file));
+            replacementSnapshot.Add(replacement);
         }
+        System.Threading.Volatile.Write(ref replacements, replacementSnapshot.ToArray());
     }
 
     public class ScaledResourceId
@@ -300,16 +307,19 @@ public abstract class ResourceManagerBase : IResourceManager
 
     public ScaledResourceId? GetReplacement(ResourceID id)
     {
-        if (replacement is null) return null;
-
-        foreach (var section in replacement.GetAllSections())
+        ConfigFile[] replacementSnapshot = System.Threading.Volatile.Read(ref replacements);
+        for (int replacementIndex = replacementSnapshot.Length - 1;
+            replacementIndex >= 0; replacementIndex--)
         {
-            var replacedId = GetReplacementID(id, section);
-            if (replacedId is not null)
+            foreach (var section in replacementSnapshot[replacementIndex].GetAllSections())
             {
-                var scale = section.GetVector2f("sprite_scale", Vector2f.One);
-                var factor = (scale != Vector2f.Zero) ? Vector2f.One / scale : 1;
-                return new ScaledResourceId(replacedId, factor);
+                var replacedId = GetReplacementID(id, section);
+                if (replacedId is not null)
+                {
+                    var scale = section.GetVector2f("sprite_scale", Vector2f.One);
+                    var factor = (scale != Vector2f.Zero) ? Vector2f.One / scale : 1;
+                    return new ScaledResourceId(replacedId, factor);
+                }
             }
         }
 

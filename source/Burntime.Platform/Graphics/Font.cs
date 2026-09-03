@@ -53,16 +53,18 @@ public sealed class FontResource
     public IReadOnlyDictionary<string, int> Kerning { get; private set; } = new Dictionary<string, int>();
     public int Offset { get; private set; }
     public int Height { get; private set; }
+    public bool PostFilter { get; private set; }
     public bool IsLoaded { get; private set; }
 
     public void Load(ISprite sprite, Dictionary<char, CharInfo> charInfo, Dictionary<string, int> kerning,
-        int offset, int height)
+        int offset, int height, bool postFilter)
     {
         Sprite = sprite;
         CharInfo = charInfo;
         Kerning = kerning;
         Offset = offset;
         Height = height;
+        PostFilter = postFilter;
         IsLoaded = true;
     }
 
@@ -249,7 +251,7 @@ public class Font
         CharInfo info = Resource.CharInfo[translateChar(ch)];
         target.DrawSelectedSpriteF(pos + new Vector2f(0, Resource.Offset),
             new Rect(info.spritePos, new Vector2(info.imgWidth, info.imgHeight)),
-            color, postFilter: true);
+            color, postFilter: Resource.PostFilter);
         return info.renderWidth;
     }
 
