@@ -82,11 +82,9 @@ public abstract class ResourceManagerBase : IResourceManager
         {
             foreach (FontResource font in fonts.Values)
             {
-                if (!font.IsLoaded)
-                    continue;
-
                 string id = font.Sprite.ID;
-                MemoryUsage -= font.Unload();
+                lock (sprites)
+                    MemoryUsage -= font.Unload();
                 Log.Debug("unload \"" + id + "\"");
             }
         }

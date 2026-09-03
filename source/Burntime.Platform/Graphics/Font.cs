@@ -55,6 +55,16 @@ public sealed class FontResource
     public int Height { get; private set; }
     public bool PostFilter { get; private set; }
     public bool IsLoaded { get; private set; }
+    public bool HasSystemCopy => Sprite?.HasSystemCopy ?? false;
+
+    public bool RestoreSystemCopy()
+    {
+        if (!HasSystemCopy)
+            return false;
+
+        IsLoaded = true;
+        return true;
+    }
 
     public void Load(ISprite sprite, Dictionary<char, CharInfo> charInfo, Dictionary<string, int> kerning,
         int offset, int height, bool postFilter)
@@ -70,10 +80,7 @@ public sealed class FontResource
 
     public int Unload()
     {
-        if (!IsLoaded)
-            return 0;
-
-        int memory = Sprite.Unload();
+        int memory = Sprite is null ? 0 : Sprite.Unload();
         IsLoaded = false;
         return memory;
     }

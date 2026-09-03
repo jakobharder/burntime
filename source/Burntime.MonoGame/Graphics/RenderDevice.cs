@@ -342,8 +342,11 @@ public class RenderDevice : IDisposable
         {
             if (entity is SpriteEntity sprite)
             {
-                if (sprite.SpriteFrame is not null && sprite.SpriteFrame.IsLoaded)
-                    sprite.SpriteFrame.CreateTexture(this);
+                if (sprite.SpriteFrame is not null &&
+                    (sprite.SpriteFrame.IsLoaded || sprite.SpriteFrame.HasSystemCopy))
+                {
+                    _engine.ResourceManager.CreateTexture(sprite.SpriteFrame, this);
+                }
             }
         }
     }

@@ -67,7 +67,7 @@ namespace Burntime.Platform.Resource
                 resource ??= new FontResource();
 
                 font.Resource = resource;
-                if (resource.IsLoaded)
+                if (resource.IsLoaded || resource.RestoreSystemCopy())
                     return font;
 
                 ResourceID id = fontFile;
@@ -284,6 +284,12 @@ namespace Burntime.Platform.Resource
                 Reload(s, loadType);
         }
         #endregion
+
+        public void CreateTexture(SpriteFrame frame, RenderDevice renderDevice)
+        {
+            lock (sprites)
+                MemoryUsage += frame.CreateTexture(renderDevice);
+        }
 
     }
 }

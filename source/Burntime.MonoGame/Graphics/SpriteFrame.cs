@@ -14,6 +14,7 @@ public class SpriteFrame : Platform.Graphics.GenericSpriteFrame<Texture2D>
     int _usedMemory;
     Vector2 _textureSize;
     bool _keepSystemCopy = false;
+    bool _videoMemoryAccounted;
 
     public SpriteFrame()
     {
@@ -49,12 +50,16 @@ public class SpriteFrame : Platform.Graphics.GenericSpriteFrame<Texture2D>
         TimeStamp = Stopwatch.GetTimestamp();
         IsLoading = false;
         IsLoaded = true;
+        _videoMemoryAccounted = true;
         return _usedMemory;
     }
 
-    public void CreateTexture(RenderDevice renderDevice)
+    public int CreateTexture(RenderDevice renderDevice)
     {
-        if (_texture is not null) return;
+        if (_texture is not null && !_texture.IsDisposed)
+            return 0;
+        if (_systemCopy is null)
+            return 0;
 
         var tex = renderDevice.CreateTexture(_textureSize.x, _textureSize.y);
         tex.SetData(_systemCopy);
@@ -63,6 +68,12 @@ public class SpriteFrame : Platform.Graphics.GenericSpriteFrame<Texture2D>
         //    _systemCopy = null;
 
         _texture = tex;
+
+        if (_videoMemoryAccounted)
+            return 0;
+
+        _videoMemoryAccounted = true;
+        return _usedMemory;
     }
 
     protected static int MakePowerOfTwo(int nValue)
@@ -78,7 +89,8 @@ public class SpriteFrame : Platform.Graphics.GenericSpriteFrame<Texture2D>
 
     public override int Unload()
     {
-        bool wasLoaded = IsLoaded;
+        bool wasAccounted = _videoMemoryAccounted;
+
 
         if (_keepSystemCopy)
         {
@@ -94,7 +106,8 @@ public class SpriteFrame : Platform.Graphics.GenericSpriteFrame<Texture2D>
         if (_texture is not null && !_texture.IsDisposed)
             _texture.Dispose();
         _texture = null;
+        _videoMemoryAccounted = false;
 
-        return !_keepSystemCopy && wasLoaded ? _usedMemory : 0;
+        return wasAccounted ? _usedMemory : 0;
     }
 }
