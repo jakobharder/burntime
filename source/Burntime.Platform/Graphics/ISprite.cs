@@ -11,6 +11,7 @@ public abstract class ISprite : DataObject
     public abstract Vector2 Size { get; }
     public abstract SpriteAnimation Animation { get; set; }
     public abstract bool IsLoaded { get; }
+    public abstract bool HasSystemCopy { get; }
 
     public int Width => Size.x;
     public int Height => Size.y;

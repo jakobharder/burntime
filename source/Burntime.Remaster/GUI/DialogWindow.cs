@@ -86,6 +86,7 @@ namespace Burntime.Remaster
             self = null;
             this.character = character;
             this.conversation = conversation;
+            face.IsVisible = showFace;
             if (showFace)
             {
                 face.FaceID = character.FaceID;
@@ -110,6 +111,7 @@ namespace Burntime.Remaster
             this.self = self;
             this.character = character;
             Type = type;
+            face.IsVisible = true;
             face.FaceID = character.FaceID;
 
             conversation = character.Dialog.GetConversation(self, type);
@@ -320,7 +322,8 @@ namespace Burntime.Remaster
 
         public override void OnRender(RenderTarget target)
         {
-            target.RenderRect(FramePos, FrameSize, new PixelColor(128, 0, 0, 0));
+            target.RenderRect(FramePos, FrameSize, new PixelColor(128, 0, 0, 0),
+                postFilter: !face.IsVisible);
 
             base.OnRender(target);
 

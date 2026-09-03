@@ -50,6 +50,9 @@ public abstract class GenericSprite<TSpriteFrame, TTexture> : ISprite where TTex
     public bool IsNew { get; set; } = true;
 
     public override bool IsLoaded => (internalFrames != null && internalFrames[0].IsLoaded);
+    public override bool HasSystemCopy =>
+        internalFrames != null && internalFrames.Length > 0 &&
+        internalFrames[0].HasSystemCopy;
 
     public bool IsLoading
     {
@@ -93,7 +96,7 @@ public abstract class GenericSprite<TSpriteFrame, TTexture> : ISprite where TTex
 
     public override bool Touch()
     {
-        if (IsLoaded) return true;
+        if (IsLoaded || HasSystemCopy) return true;
         
         Load();
         return false;
@@ -148,7 +151,7 @@ public abstract class GenericSprite<TSpriteFrame, TTexture> : ISprite where TTex
 
     public void Load()
     {
-        if (IsLoaded || IsLoading)
+        if (IsLoaded || HasSystemCopy || IsLoading)
             return;
 
         resMan.Reload(this, ResourceLoadType.Delayed);

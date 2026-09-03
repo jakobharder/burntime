@@ -38,7 +38,7 @@ public interface IEngine
 
     void ReloadGraphics();
 
-    void RenderRect(Vector2 pos, Vector2 size, PixelColor color);
+    void RenderRect(Vector2 pos, Vector2 size, PixelColor color, bool postFilter = false);
     void RenderLine(Vector2 start, Vector2 end, PixelColor color);
 
     void RenderSprite(ISprite sprite, Vector2 pos, float alpha = 1);

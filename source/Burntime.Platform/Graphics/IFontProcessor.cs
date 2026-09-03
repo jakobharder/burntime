@@ -13,6 +13,7 @@ namespace Burntime.Platform.Resource
         int Offset { get; }
         int GlyphHeight { get; }
         Vector2f Factor { get; }
+        bool PostFilter { get; }
 
         PixelColor Color { get; set; }
         PixelColor Shadow { get; set; }

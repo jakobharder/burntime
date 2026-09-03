@@ -12,6 +12,7 @@ namespace Burntime.Data.BurnGfx
         public int Offset { get { return 0; } }
         public int GlyphHeight { get { return Size.y; } }
         public Vector2f Factor { get { return Vector2f.One; } }
+        public bool PostFilter => false;
 
         public Dictionary<char, CharInfo> CharInfo { get { return charInfo; } }
         public Dictionary<string, int> Kerning { get; } = [];

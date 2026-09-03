@@ -39,6 +39,7 @@ public class RenderDevice : IDisposable
     RenderTarget2D _sharpIntermediateTarget;
     Effect _sharpBilinearEffect;
     Effect _xbr2Effect;
+    Effect _xbr2AlphaEffect;
     PlatformContentManager _shaderContentManager;
     public bool SharpBilinearAvailable => _sharpBilinearEffect is not null;
     public bool Xbr2Available => _xbr2Effect is not null && SharpBilinearAvailable;
@@ -173,6 +174,7 @@ public class RenderDevice : IDisposable
 
     void ReloadGraphicResources()
     {
+        OutputFiltering requestedOutputFiltering = _engine.OutputFiltering;
         SpriteFrame.EmptyTexture = new Texture2D(_engine.GraphicsDevice, 1, 1, false, SurfaceFormat.Color);
         SpriteFrame.EmptyTexture.SetData(new Color[] { Color.Black });
         WhiteTexture = new Texture2D(_engine.GraphicsDevice, 1, 1, false, SurfaceFormat.Color);
@@ -182,6 +184,7 @@ public class RenderDevice : IDisposable
             _shaderContentManager = new PlatformContentManager(_engine.Services, "classic");
             _sharpBilinearEffect = LoadOptionalEffect("shaders/SharpBilinear");
             _xbr2Effect = LoadOptionalEffect("shaders/Xbr2");
+            _xbr2AlphaEffect = LoadOptionalEffect("shaders/Xbr2Alpha");
         }
 
         if (_sharpBilinearEffect is null)
@@ -199,6 +202,9 @@ public class RenderDevice : IDisposable
                 _engine.OutputFiltering = _engine.DefaultOutputFiltering;
             Log.Info("XBR2 shader is not installed; XBR2 filtering is unavailable");
         }
+
+        if (_engine.OutputFiltering != requestedOutputFiltering)
+            _engine.RefreshResourceReplacements();
 
         if (_sharpBilinearEffect is null && _xbr2Effect is null)
         {
@@ -242,6 +248,7 @@ public class RenderDevice : IDisposable
         _shaderContentManager = null;
         _sharpBilinearEffect = null;
         _xbr2Effect = null;
+        _xbr2AlphaEffect = null;
         _sharpIntermediateTarget?.Dispose();
         _sharpIntermediateTarget = null;
         _intermediateTarget?.Dispose();
@@ -335,8 +342,11 @@ public class RenderDevice : IDisposable
         {
             if (entity is SpriteEntity sprite)
             {
-                if (sprite.SpriteFrame is not null && sprite.SpriteFrame.IsLoaded)
-                    sprite.SpriteFrame.CreateTexture(this);
+                if (sprite.SpriteFrame is not null &&
+                    (sprite.SpriteFrame.IsLoaded || sprite.SpriteFrame.HasSystemCopy))
+                {
+                    _engine.ResourceManager.CreateTexture(sprite.SpriteFrame, this);
+                }
             }
         }
     }
@@ -352,7 +362,7 @@ public class RenderDevice : IDisposable
         bool useRemasteredGraphics = _engine.UseRemasteredGraphics;
         bool useXbr2 = _engine.OutputFiltering == OutputFiltering.Xbr2 &&
             Xbr2Available;
-        bool renderTextAfterXbr = !useRemasteredGraphics && useXbr2;
+        bool renderTextAfterXbr = useXbr2;
         EnsureIntermediateTarget(useRemasteredGraphics);
         _engine.GraphicsDevice.SetRenderTarget(_intermediateTarget);
         _engine.GraphicsDevice.Clear(Color.Black);
@@ -364,6 +374,16 @@ public class RenderDevice : IDisposable
             ? Matrix.CreateScale(new Vector3(intermediateScale.x + PIXEL_CORRECTION,
                 intermediateScale.y + PIXEL_CORRECTION, 1))
             : Matrix.Identity;
+        List<SpriteEntity> orderedSprites = (_renderEntities ?? new RenderEntityQueue())
+            .OfType<SpriteEntity>()
+            .Where(sprite => useRemasteredGraphics || !sprite.DirectToFramebuffer)
+            .OrderBy(sprite => sprite.Position.Z)
+            .ToList();
+        int deferredSpriteIndex = renderTextAfterXbr
+            ? orderedSprites.FindIndex(sprite => sprite.PostFilter)
+            : -1;
+        if (deferredSpriteIndex < 0)
+            deferredSpriteIndex = orderedSprites.Count;
 
         //SlimDX.Matrix lineMatrix = SlimDX.Matrix.AffineTransformation2D(1, new SlimDX.Vector2(), 0, new SlimDX.Vector2());
         //// TODO engine scale
@@ -371,14 +391,10 @@ public class RenderDevice : IDisposable
         //lineMatrix = SlimDX.Matrix.Transformation2D(new SlimDX.Vector2(), 0, new SlimDX.Vector2(renderScale, renderScale), new SlimDX.Vector2(), 0, new SlimDX.Vector2());
         //lineMatrix = spriteRenderer.Transform;
 
-        if (_renderEntities != null)
+        if (orderedSprites.Count != 0)
         {
             bool? linearFiltering = null;
-            foreach (var sprite in (_renderEntities ?? new RenderEntityQueue())
-                .OfType<SpriteEntity>()
-                .Where(sprite => (!renderTextAfterXbr || !sprite.PostFilter) &&
-                    (useRemasteredGraphics || !sprite.DirectToFramebuffer))
-                .OrderBy(sprite => sprite.Position.Z))
+            foreach (var sprite in orderedSprites.Take(deferredSpriteIndex))
             {
                 // diposed texture links may remain in queue after direct3d reset, just skip them
                 if ((sprite.Texture ?? sprite.SpriteFrame.Texture).IsDisposed)
@@ -488,25 +504,53 @@ public class RenderDevice : IDisposable
                 var postFilterTransform = Matrix.CreateScale(new Vector3(
                     intermediateScale.x * 2 + PIXEL_CORRECTION,
                     intermediateScale.y * 2 + PIXEL_CORRECTION, 1));
-                _spriteBatch.Begin(SpriteSortMode.Deferred,
-                    Microsoft.Xna.Framework.Graphics.BlendState.NonPremultiplied,
-                    SamplerState.PointClamp, null, null, null, postFilterTransform);
-                foreach (var sprite in (_renderEntities ?? new RenderEntityQueue())
-                    .OfType<SpriteEntity>()
-                    .Where(sprite => sprite.PostFilter && !sprite.DirectToFramebuffer)
-                    .OrderBy(sprite => sprite.Position.Z))
+                bool pointBatchActive = false;
+                foreach (var sprite in orderedSprites.Skip(deferredSpriteIndex))
                 {
                     Texture2D texture = sprite.Texture ?? sprite.SpriteFrame.Texture;
                     if (texture.IsDisposed)
                         continue;
+
+                    if (sprite.PostFilter || _xbr2AlphaEffect is null)
+                    {
+                        if (!pointBatchActive)
+                        {
+                            _spriteBatch.Begin(SpriteSortMode.Deferred,
+                                Microsoft.Xna.Framework.Graphics.BlendState.NonPremultiplied,
+                                SamplerState.PointClamp, null, null, null,
+                                postFilterTransform);
+                            pointBatchActive = true;
+                        }
+                        _spriteBatch.Draw(texture,
+                            new Microsoft.Xna.Framework.Vector2(sprite.Position.X,
+                                sprite.Position.Y),
+                            sprite.Rectangle, sprite.Color, 0,
+                            Microsoft.Xna.Framework.Vector2.Zero, sprite.Factor.ToXna(),
+                            SpriteEffects.None, sprite.Position.Z);
+                        continue;
+                    }
+
+                    if (pointBatchActive)
+                    {
+                        _spriteBatch.End();
+                        pointBatchActive = false;
+                    }
+                    _xbr2AlphaEffect.Parameters["TextureSize"].SetValue(
+                        new Microsoft.Xna.Framework.Vector2(texture.Width, texture.Height));
+                    _spriteBatch.Begin(SpriteSortMode.Immediate,
+                        Microsoft.Xna.Framework.Graphics.BlendState.NonPremultiplied,
+                        SamplerState.PointClamp, null, null, _xbr2AlphaEffect,
+                        postFilterTransform);
                     _spriteBatch.Draw(texture,
                         new Microsoft.Xna.Framework.Vector2(sprite.Position.X,
                             sprite.Position.Y),
                         sprite.Rectangle, sprite.Color, 0,
                         Microsoft.Xna.Framework.Vector2.Zero, sprite.Factor.ToXna(),
                         SpriteEffects.None, sprite.Position.Z);
+                    _spriteBatch.End();
                 }
-                _spriteBatch.End();
+                if (pointBatchActive)
+                    _spriteBatch.End();
 
                 _spriteBatch.Begin(SpriteSortMode.FrontToBack,
                     Microsoft.Xna.Framework.Graphics.BlendState.NonPremultiplied,

@@ -6,6 +6,7 @@ using Burntime.Platform.IO;
 using System;
 using System.Text;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace Burntime.Remaster
 {
@@ -129,16 +130,14 @@ namespace Burntime.Remaster
             FileSystem.LocalizationCode = ResolveLanguage(LanguageSelection);
             if (Engine.SupportsFullscreenToggle)
                 Engine.IsFullscreen = UserSettings[""].GetBool("fullscreen", false);
-            Engine.OutputFiltering = Engine.ForceLinearOutputFiltering
-                ? OutputFiltering.Linear
-                : Engine.ForceNearestPointOutputFiltering
-                    ? OutputFiltering.NearestPoint
-                    : Engine.DisableShaders
-                        ? OutputFiltering.SharpBilinear
-                        : ParseOutputFiltering(
-                            UserSettings[""].GetString("output_filtering"),
-                            UserSettings[""].GetBool("linear_filtering", false));
             base.IsNewGfx = UserSettings[""].GetBool("newgfx", true);
+            // The graphics profile owns output filtering. Shader capabilities are
+            // known only after RenderDevice initializes, which applies its own
+            // supported fallback if the requested shader cannot be loaded.
+            Engine.OutputFiltering = GetGraphicsModeFiltering(IsNewGfx,
+                requireAvailableShaders: false);
+            UserSettings[""].Set("output_filtering",
+                FormatOutputFiltering(Engine.OutputFiltering));
 
             // set language code
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -161,17 +160,8 @@ namespace Burntime.Remaster
             if (IsNewGfx)
             {
                 FileSystem.AddPackage("newgfx", "game/classic_newgfx");
-                if (FileSystem.ExistsFile("newgfx.txt"))
-                {
-                    ResourceManager.SetResourceReplacement("newgfx.txt");
-
-                }
             }
-            else
-            {
-                if (FileSystem.ExistsFile("newgfx.txt"))
-                    ResourceManager.SetResourceReplacement("newgfx.txt");
-            }
+            RefreshResourceReplacements();
 #warning TODO Santa for NewGfx (only)
             //else if (DateTime.Now.Month == 12 && 
             //    (DateTime.Now.Day >= 24 && DateTime.Now.Day <= 31 || DateTime.Now.Day == 6))
@@ -217,13 +207,7 @@ namespace Burntime.Remaster
             UserSettings[""].Set("music", GetMusicMode());
             if (Engine.SupportsFullscreenToggle)
                 UserSettings[""].Set("fullscreen", Engine.IsFullscreen);
-            UserSettings[""].Set("output_filtering", Engine.OutputFiltering switch
-            {
-                OutputFiltering.NearestPoint => "point",
-                OutputFiltering.Linear => "linear",
-                OutputFiltering.Xbr2 => "smooth",
-                _ => "sharp"
-            });
+            UserSettings[""].Set("output_filtering", FormatOutputFiltering(Engine.OutputFiltering));
             UserSettings[""].Set("newgfx", IsNewGfx);
             UserSettings[""].Set("language", FormatLanguageMode(LanguageSelection));
             UserSettings[""].Set("controller_glyphs", FormatControllerGlyphMode(Engine.ControllerGlyphMode));
@@ -303,27 +287,32 @@ namespace Burntime.Remaster
             _ => Engine.AutomaticLanguage
         };
 
-        static OutputFiltering ParseOutputFiltering(string value, bool legacySmooth)
+        static string FormatOutputFiltering(OutputFiltering filtering) => filtering switch
         {
-            if (value.Equals("sharp", StringComparison.OrdinalIgnoreCase))
-                return OutputFiltering.SharpBilinearShader;
-            if (value.Equals("smooth", StringComparison.OrdinalIgnoreCase))
-                return OutputFiltering.Xbr2;
-            if (value.Equals("shader", StringComparison.OrdinalIgnoreCase))
-                return OutputFiltering.SharpBilinearShader;
-            if (value.Equals("xbr2", StringComparison.OrdinalIgnoreCase))
-                return OutputFiltering.Xbr2;
-            if (value.Equals("point", StringComparison.OrdinalIgnoreCase))
-                return OutputFiltering.NearestPoint;
-            if (value.Equals("linear", StringComparison.OrdinalIgnoreCase))
+            OutputFiltering.NearestPoint => "point",
+            OutputFiltering.Linear => "linear",
+            OutputFiltering.Xbr2 => "smooth",
+            _ => "sharp"
+        };
+
+        OutputFiltering GetGraphicsModeFiltering(bool newGfx,
+            bool requireAvailableShaders = true)
+        {
+            if (Engine.ForceLinearOutputFiltering)
                 return OutputFiltering.Linear;
-            if (value.Equals("test", StringComparison.OrdinalIgnoreCase))
-                return OutputFiltering.SharpBilinearShader;
-            if (Enum.TryParse(value, ignoreCase: true, out OutputFiltering filtering))
-                return filtering;
-            return legacySmooth
-                ? OutputFiltering.Xbr2
-                : OutputFiltering.SharpBilinearShader;
+            if (Engine.ForceNearestPointOutputFiltering)
+                return OutputFiltering.NearestPoint;
+            if (Engine.DisableShaders)
+                return OutputFiltering.SharpBilinear;
+
+            if (newGfx)
+                return !requireAvailableShaders || Engine.SupportsXbr2Shader
+                    ? OutputFiltering.Xbr2
+                    : OutputFiltering.SharpBilinear;
+
+            return !requireAvailableShaders || Engine.SupportsSharpBilinearShader
+                ? OutputFiltering.SharpBilinearShader
+                : OutputFiltering.SharpBilinear;
         }
 
         // internal use
@@ -341,7 +330,16 @@ namespace Burntime.Remaster
         public override bool IsNewGfx
         {
             get => base.IsNewGfx;
-            set { base.IsNewGfx = value; RefreshNewGfx(); }
+            set
+            {
+                OutputFiltering filtering = GetGraphicsModeFiltering(value);
+                if (base.IsNewGfx == value && Engine.OutputFiltering == filtering)
+                    return;
+
+                Engine.OutputFiltering = filtering;
+                base.IsNewGfx = value;
+                RefreshNewGfx();
+            }
         }
 
         #region Music
@@ -466,27 +464,28 @@ namespace Burntime.Remaster
             if (IsNewGfx)
             {
                 FileSystem.AddPackage("newgfx", "game/classic_newgfx");
-                if (FileSystem.ExistsFile("newgfx.txt"))
-                {
-                    ResourceManager.SetResourceReplacement("newgfx.txt");
-
-                }
-                else
-                {
-                    ResourceManager.SetResourceReplacement(string.Empty);
-                }
             }
             else
             {
                 FileSystem.RemovePackage("newgfx");
-                if (FileSystem.ExistsFile("newgfx.txt"))
-                    ResourceManager.SetResourceReplacement("newgfx.txt");
-                else
-                    ResourceManager.SetResourceReplacement(string.Empty);
             }
+            RefreshResourceReplacements();
 
             Engine.ReloadGraphics();
             SceneManager.ResizeScene();
+        }
+
+        public void RefreshResourceReplacements()
+        {
+            List<string> replacements = [];
+            // Both packages provide this profile. In classic it remaps virtual
+            // character-body ranges to frames that exist in the original RAW.
+            if (FileSystem.ExistsFile("newgfx.txt"))
+                replacements.Add("newgfx.txt");
+            if (Engine.OutputFiltering == OutputFiltering.Xbr2 &&
+                FileSystem.ExistsFile("xbr2.txt"))
+                replacements.Add("xbr2.txt");
+            ResourceManager.SetResourceReplacements(replacements.ToArray());
         }
     }
 }

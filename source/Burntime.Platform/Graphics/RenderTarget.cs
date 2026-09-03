@@ -82,9 +82,9 @@ public class RenderTarget
     }
     #endregion
 
-    public void RenderRect(Vector2 pos, Vector2 size, PixelColor color)
+    public void RenderRect(Vector2 pos, Vector2 size, PixelColor color, bool postFilter = false)
     {
-        _engine.RenderRect(pos + _rc.Position + Offset, size, color);
+        _engine.RenderRect(pos + _rc.Position + Offset, size, color, postFilter);
     }
 
     public void RenderLine(Vector2 start, Vector2 end, PixelColor color)

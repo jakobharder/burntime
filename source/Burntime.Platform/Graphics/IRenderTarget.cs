@@ -20,7 +20,7 @@ public interface RenderTarget
     void DrawSprite(Vector2 pos, ISprite sprite, float alpha = 1);
     void DrawSprite(Vector2 pos, ISprite sprite, Rect srcRect);
 
-    void RenderRect(Vector2 pos, Vector2 size, PixelColor color);
+    void RenderRect(Vector2 pos, Vector2 size, PixelColor color, bool postFilter = false);
     void RenderLine(Vector2 start, Vector2 end, PixelColor color);
 
     RenderTarget GetSubBuffer(Rect rc);

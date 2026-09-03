@@ -53,11 +53,9 @@ namespace Burntime.Platform.Resource
 
         public override Font? LoadFont(Font font)
         {
-            string fontFile = font.Info.Font == "font.txt" &&
-                !_engine.UseRemasteredGraphics &&
-                _engine.OutputFiltering == OutputFiltering.Xbr2
-                    ? "font2x.txt"
-                    : font.Info.Font;
+            ResourceID fontId = font.Info.Font;
+            var replacedFont = GetReplacement(fontId);
+            string fontFile = replacedFont?.Id?.ToString() ?? font.Info.Font;
             ResourceInfoFont info;
             info.Name = fontFile;
             info.Fore = font.Info.ForeColor;
@@ -69,12 +67,11 @@ namespace Burntime.Platform.Resource
                 resource ??= new FontResource();
 
                 font.Resource = resource;
-                if (resource.IsLoaded)
+                if (resource.IsLoaded || resource.RestoreSystemCopy())
                     return font;
 
                 ResourceID id = fontFile;
-                var replaced = GetReplacement(id);
-                FilePath path = new FilePath(replaced?.Id?.ToString() ?? (string)id);
+                FilePath path = new FilePath((string)id);
                 if (!fontProcessors.ContainsKey(path.Extension))
                     return null;
 
@@ -99,7 +96,8 @@ namespace Burntime.Platform.Resource
                     LinearFiltering = true
                 };
 
-                resource.Load(sprite, processor.CharInfo, processor.Kerning, processor.Offset, processor.GlyphHeight);
+                resource.Load(sprite, processor.CharInfo, processor.Kerning,
+                    processor.Offset, processor.GlyphHeight, processor.PostFilter);
                 if (isNewResource)
                     fonts.Add(info, resource);
 
@@ -219,17 +217,11 @@ namespace Burntime.Platform.Resource
 
             // check replacements
             Sprite.internalFrames[0].Resolution = 1;
-            if (replacement != null)
+            var replaced = GetReplacement(id);
+            if (replaced is not null && CheckReplacementID(replaced.Id))
             {
-                var replaced = GetReplacement(id);
-                if (replaced is not null)
-                {
-                    if (CheckReplacementID(replaced.Id))
-                    {
-                        id = replaced.Id;
-                        Sprite.internalFrames[0].Resolution = replaced.Factor;
-                    }
-                }
+                id = replaced.Id;
+                Sprite.internalFrames[0].Resolution = replaced.Factor;
             }
 
             _engine.IncreaseLoadingCount();
@@ -292,6 +284,12 @@ namespace Burntime.Platform.Resource
                 Reload(s, loadType);
         }
         #endregion
+
+        public void CreateTexture(SpriteFrame frame, RenderDevice renderDevice)
+        {
+            lock (sprites)
+                MemoryUsage += frame.CreateTexture(renderDevice);
+        }
 
     }
 }

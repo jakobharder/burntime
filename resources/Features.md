@@ -21,10 +21,11 @@ The game rules, difficulty and opponents can be configured independently:
 - support for wide-screen resolutions; some locations and interfaces are enlarged accordingly
 - graphics with double resolution and corrected aspect ratio
 - toggle between original and remastered graphics
+- selectable sharp and smooth (xBR) scaling modes
 - technicians have their own skin; all skins are true to the character class without exceptions
 - music can be toggled between DOS, Amiga and off
 - Amiga hit, bark and death sounds
-- keyboard and gamepad support
+- full keyboard and gamepad support with contextual prompts
 
 ## Gameplay Changes
 

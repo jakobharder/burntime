@@ -153,6 +153,9 @@
     <Copy SourceFiles="$(OutputPath)Content\Xbr2.xnb"
       DestinationFiles="$(MSBuildProjectDirectory)\..\..\resources\game\classic\shaders\Xbr2.xnb"
       SkipUnchangedFiles="true" />
+    <Copy SourceFiles="$(OutputPath)Content\Xbr2Alpha.xnb"
+      DestinationFiles="$(MSBuildProjectDirectory)\..\..\resources\game\classic\shaders\Xbr2Alpha.xnb"
+      SkipUnchangedFiles="true" />
   </Target>
   <!--<PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <PostBuildEvent>
