@@ -13,14 +13,15 @@ branch="${STEAM_BRANCH:-test}"
 prepare_only=false
 dry_run=false
 include_macos=true
+public_build=false
 
 usage() {
   cat <<'EOF'
 Usage:
-  ./packaging/steam/upload.sh [--prepare-only | --dry-run] [--skip-macos] RELEASE_TAG
+  ./packaging/steam/upload.sh [--prepare-only | --dry-run] [--skip-macos] [--public] RELEASE_TAG
 
-  ./packaging/steam/upload.sh [--prepare-only | --dry-run] [--skip-macos] \
-    CONTENT_BUILDER WINDOWS_ZIP MACOS_DMG_OR_APP LINUX_TAR_GZ
+  ./packaging/steam/upload.sh [--prepare-only | --dry-run] [--skip-macos] [--public] \
+    CONTENT_BUILDER WINDOWS_ZIP MACOS_DMG LINUX_TAR_GZ
 
   ./packaging/steam/upload.sh --skip-macos \
     CONTENT_BUILDER WINDOWS_ZIP LINUX_TAR_GZ
@@ -35,6 +36,10 @@ override values from that file.
 
 The Steam account password and Steam Guard code are entered directly into
 SteamCMD; they are never accepted by or written by this script.
+
+Test uploads prefer Burntime-macOS-arm64-notarized.dmg and otherwise require
+Burntime-macOS-arm64-signed.dmg. --public requires the notarized DMG and uploads
+a build without SetLive; make it live on Steam's default branch manually.
 EOF
 }
 
@@ -43,6 +48,7 @@ while [[ "${1:-}" == --* ]]; do
     --prepare-only) prepare_only=true ;;
     --dry-run) dry_run=true ;;
     --skip-macos) include_macos=false ;;
+    --public) public_build=true ;;
     *) echo "Unknown option: $1" >&2; usage >&2; exit 2 ;;
   esac
   shift
@@ -65,7 +71,23 @@ if [[ $# -eq 1 ]]; then
   windows_archive="$release_root/burntime-$release_tag.zip"
   linux_archive="$release_root/burntime-$release_tag-linux-x64.tar.gz"
   if [[ "$include_macos" == true ]]; then
-    macos_source="$release_root/Burntime-macOS-arm64.dmg"
+    notarized_macos_source="$release_root/Burntime-macOS-arm64-notarized.dmg"
+    signed_macos_source="$release_root/Burntime-macOS-arm64-signed.dmg"
+    if [[ -f "$notarized_macos_source" ]]; then
+      macos_source="$notarized_macos_source"
+    elif [[ "$public_build" == true ]]; then
+      echo "Refusing to upload: --public requires $notarized_macos_source" >&2
+      echo "Use --skip-macos to intentionally omit the macOS depot." >&2
+      exit 1
+    elif [[ -f "$signed_macos_source" ]]; then
+      macos_source="$signed_macos_source"
+    else
+      echo "Refusing to upload: no signed or notarized macOS DMG was found." >&2
+      echo "Expected $signed_macos_source" >&2
+      echo "     or $notarized_macos_source" >&2
+      echo "The unsigned release DMG will never be uploaded." >&2
+      exit 1
+    fi
   fi
 elif [[ $# -eq 4 ]]; then
   content_builder="$1"
@@ -102,7 +124,7 @@ for depot_id in \
     exit 2
   fi
 done
-if [[ ! "$branch" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+if [[ "$public_build" == false && ! "$branch" =~ ^[a-zA-Z0-9_-]+$ ]]; then
   echo "STEAM_BRANCH may only contain letters, numbers, underscores, and hyphens." >&2
   exit 2
 fi
@@ -123,6 +145,30 @@ windows_archive="$(cd "$(dirname "$windows_archive")" && pwd)/$(basename "$windo
 linux_archive="$(cd "$(dirname "$linux_archive")" && pwd)/$(basename "$linux_archive")"
 if [[ "$include_macos" == true ]]; then
   macos_source="$(cd "$(dirname "$macos_source")" && pwd)/$(basename "$macos_source")"
+
+  macos_name="$(basename "$macos_source")"
+  if [[ "$public_build" == true ]]; then
+    if [[ "$macos_name" != "Burntime-macOS-arm64-notarized.dmg" ]]; then
+      echo "Refusing to upload: --public only accepts Burntime-macOS-arm64-notarized.dmg." >&2
+      echo "Use --skip-macos to intentionally omit the macOS depot." >&2
+      exit 1
+    fi
+  elif [[ "$macos_name" != "Burntime-macOS-arm64-notarized.dmg" && \
+          "$macos_name" != "Burntime-macOS-arm64-signed.dmg" ]]; then
+    echo "Refusing to upload: the test branch requires a signed or notarized macOS DMG." >&2
+    echo "The unsigned release DMG will never be uploaded." >&2
+    exit 1
+  fi
+
+  if ! command -v hdiutil >/dev/null 2>&1; then
+    echo "A macOS DMG can only be validated and staged on macOS." >&2
+    exit 1
+  fi
+  hdiutil verify "$macos_source" >/dev/null
+  codesign --verify --verbose=2 "$macos_source"
+  if [[ "$macos_name" == "Burntime-macOS-arm64-notarized.dmg" ]]; then
+    xcrun stapler validate "$macos_source"
+  fi
 fi
 
 staging_root="$content_builder/content/burntime-$app_id"
@@ -227,6 +273,8 @@ fi
 app_build_script="$scripts_root/app_build_$app_id.vdf"
 if [[ "$dry_run" == true ]]; then
   release_directive='    "Preview" "1"'
+elif [[ "$public_build" == true ]]; then
+  release_directive=""
 else
   release_directive="    \"SetLive\" \"$branch\""
 fi
@@ -274,6 +322,9 @@ fi
 
 if [[ "$dry_run" == true ]]; then
   echo "SteamPipe preview complete; no content was uploaded and no branch changed."
+elif [[ "$public_build" == true ]]; then
+  echo "Uploaded public candidate build without SetLive."
+  echo "Set it live on Steam's default branch manually when ready."
 else
   echo "Uploaded build and set it live on branch '$branch'."
 fi
