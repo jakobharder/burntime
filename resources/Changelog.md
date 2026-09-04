@@ -1,6 +1,6 @@
 ﻿# Burntime Changelog
 
-## [1.1-rc6] (2026-09-01)
+## 1.1 (2026-09-04)
 
 ### Changes
 
