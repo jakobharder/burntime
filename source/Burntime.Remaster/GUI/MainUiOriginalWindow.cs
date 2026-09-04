@@ -109,6 +109,8 @@ namespace Burntime.Remaster
             Target.RenderRect(timebar, new Vector2(dayTime, 3), new PixelColor(240, 64, 56));
             Target.Layer--;
 
+            Target.Layer += 10;
+
             var name = new Vector2(Size.x / 2 - 97, Size.y - 30);
             _playerFont.DrawText(Target, name, this._playerName, TextAlignment.Center, VerticalTextAlignment.Top);
 

@@ -32,6 +32,7 @@ public interface IEngine
     bool DisableShaders { get; }
     bool SupportsSharpBilinearShader { get; }
     bool SupportsXbr2Shader { get; }
+    float Xbr2IndividualLayer { set; }
 
     void CenterMouse();
     void ExitApplication();

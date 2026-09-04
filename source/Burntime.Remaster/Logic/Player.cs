@@ -205,7 +205,14 @@ namespace Burntime.Remaster.Logic
             foreach (Character member in targetGroup)
             {
                 if (member != Character)
+                {
                     member.Mind = container.Create<AI.FellowerMind>(new object[] { member, SelectedCharacter });
+                    if (member.Path is not PathFinding.ComplexPath)
+                    {
+                        member.Path = container.Create<PathFinding.ComplexPath>();
+                        member.Path.MoveTo = member.Position;
+                    }
+                }
             }
             singleMode = targetGroup.Count == 1;
         }

@@ -40,6 +40,7 @@ public class RenderDevice : IDisposable
     Effect _sharpBilinearEffect;
     Effect _xbr2Effect;
     Effect _xbr2AlphaEffect;
+    public float? Xbr2IndividualDepth { get; set; }
     PlatformContentManager _shaderContentManager;
     public bool SharpBilinearAvailable => _sharpBilinearEffect is not null;
     public bool Xbr2Available => _xbr2Effect is not null && SharpBilinearAvailable;
@@ -267,6 +268,7 @@ public class RenderDevice : IDisposable
 
     public void Begin()
     {
+        Xbr2IndividualDepth = null;
         current = new RenderEntityQueue();
     }
 
@@ -379,9 +381,20 @@ public class RenderDevice : IDisposable
             .Where(sprite => useRemasteredGraphics || !sprite.DirectToFramebuffer)
             .OrderBy(sprite => sprite.Position.Z)
             .ToList();
-        int deferredSpriteIndex = renderTextAfterXbr
-            ? orderedSprites.FindIndex(sprite => sprite.PostFilter)
-            : -1;
+        int deferredSpriteIndex = -1;
+        if (renderTextAfterXbr)
+        {
+            int firstPostFilterIndex = orderedSprites.FindIndex(sprite => sprite.PostFilter);
+            int configuredLayerIndex = Xbr2IndividualDepth is float depth
+                ? orderedSprites.FindIndex(sprite => sprite.Position.Z >= depth)
+                : -1;
+
+            deferredSpriteIndex = firstPostFilterIndex < 0
+                ? configuredLayerIndex
+                : configuredLayerIndex < 0
+                    ? firstPostFilterIndex
+                    : System.Math.Min(firstPostFilterIndex, configuredLayerIndex);
+        }
         if (deferredSpriteIndex < 0)
             deferredSpriteIndex = orderedSprites.Count;
 

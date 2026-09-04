@@ -283,6 +283,8 @@ namespace Burntime.Remaster
 
         public override void OnRender(RenderTarget Target)
         {
+            app.Engine.Xbr2IndividualLayer = gui.Layer;
+
             bool showInteractionMode = app.MouseInputVisible && !_dialog.IsVisible;
             if (_cursorAni.IsVisible != showInteractionMode)
                 _cursorAni.IsVisible = showInteractionMode;

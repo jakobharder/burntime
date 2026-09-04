@@ -39,12 +39,24 @@ Then run the upload script from the repository root:
 ./packaging/steam/upload.sh v1.1-preview2
 ```
 
+On macOS, sign the downloaded release before uploading it:
+
+```sh
+./packaging/macos/sign-release.sh --notarize v1.1-preview2
+```
+
+This preserves the downloaded DMG and creates
+`Burntime-macOS-arm64-notarized.dmg` beside it. For a test build, the upload
+script prefers the notarized DMG and falls back to
+`Burntime-macOS-arm64-signed.dmg`. It never uploads the unsigned DMG.
+
 The longer form accepting an explicit ContentBuilder path and three artifact
 paths remains available for one-off uploads.
 
-The macOS argument may instead point directly to `Burntime.app`. Credentials
-and Steam Guard codes are entered into SteamCMD and are not stored by the
-script.
+The explicit macOS argument must be named either
+`Burntime-macOS-arm64-signed.dmg` or
+`Burntime-macOS-arm64-notarized.dmg`. Credentials and Steam Guard codes are
+entered into SteamCMD and are not stored by the script.
 
 To inspect the staged files and generated VDF scripts without uploading, omit
 `STEAM_ACCOUNT` and pass `--prepare-only` before the four paths.
@@ -58,6 +70,17 @@ manifests without uploading content or changing a branch, use:
 
 The generated app build includes `SetLive` for the selected test branch. It
 does not modify Steam's `default` branch.
+
+To upload a public candidate, requiring a notarized DMG, use:
+
+```sh
+./packaging/steam/upload.sh --public v1.1-preview2
+```
+
+This omits `SetLive`, so the build is uploaded but not made live. Assign it to
+Steam's default branch manually after reviewing it. If the notarized DMG is
+missing, the script exits before SteamCMD runs. `--skip-macos` intentionally
+allows a Windows/Linux-only public candidate.
 
 For a Windows/Linux-only test build, skip downloading and uploading macOS with:
 

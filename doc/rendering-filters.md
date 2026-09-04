@@ -7,8 +7,8 @@ and the back buffer.
 
 ## Command-line modes
 
-Normal startup uses the packaged shaders when they are available. The settings
-menu then offers `SHARP` and `SMOOTH`.
+Normal startup couples filtering to the graphics profile: classic uses `SHARP`
+and new-gfx uses `SMOOTH`. The settings menu has no separate filtering control.
 
 The following mutually exclusive command-line switches restrict the renderer to
 one safety or diagnostic mode:
@@ -22,9 +22,9 @@ one safety or diagnostic mode:
 | `--linear` | `LINEAR` | `Linear` | enabled, but not used by the filter |
 
 If shader assets are unexpectedly unavailable during normal startup, the game
-falls back to the software `SHARP` (`SharpBilinear`) path. A saved filter that is
-not available under the active command-line mode is replaced by that mode's
-filter.
+falls back to a supported sharp path, ultimately software `SHARP`
+(`SharpBilinear`). The saved graphics-profile toggle overrides any older saved
+filter value.
 
 `--no-shader` is stronger than a filter selection: the renderer does not create
 a shader content manager, inspect shader files, or attempt to load either effect.
@@ -50,12 +50,18 @@ is then linearly resampled to the native back buffer.
 result is then presented with the sharp-bilinear shader.
 
 Classic graphics are the only special case. Font glyphs and the software cursor
-are excluded from XBR, then rendered onto the 2x XBR target before presentation.
-The standard `font.txt` request resolves to `font2x.txt` in this mode. This retains
-the 2x atlas detail without allowing XBR to reshape the glyphs.
+are excluded from the scene-wide XBR pass, then rendered onto the 2x XBR target
+before presentation. The standard `font.txt` request resolves to `font2x.txt` in
+this mode, retaining the 2x atlas detail without allowing XBR to reshape the
+glyphs. Sprite order is preserved: the first deferred glyph starts the deferred
+part of the queue. Explicitly deferred sprites use point sampling there, while
+all later ordinary sprites, including the cursor and interaction-mode animation,
+are individually processed by the alpha-aware XBR shader.
 
-New-gfx uses no font substitution or deferred text pass. Its complete scene,
-including text, is processed by XBR2.
+In new-gfx XBR2 mode, `font.txt` and `highres-font.txt` resolve to the 2x
+`highres-font2x.txt` resource. It carries the same deferred marker, so the
+layer-ordered cutoff and deferred rendering behavior is shared by both graphics
+modes.
 
 ### POINT and LINEAR
 
@@ -87,8 +93,8 @@ horizontal pixel.
 
 | Graphics mode | SHARP shader | SHARP `--no-shader` | SMOOTH shader | POINT / LINEAR |
 |---|---|---|---|---|
-| Classic | Sharp shader, or point at a clean integer factor | Integer point pre-scale, then linear | XBR2 at 2x, deferred `font2x` and cursor, then sharp shader | Direct presentation |
-| New-gfx | Sharp shader, or point at a clean integer factor | Integer point pre-scale, then linear | Complete scene through XBR2 at 2x, then sharp shader | Direct presentation |
+| Classic | Sharp shader, or point at a clean integer factor | Integer point pre-scale, then linear | XBR2 at 2x, deferred `font2x`, alpha-aware XBR cursor, then sharp shader | Direct presentation |
+| New-gfx | Sharp shader, or point at a clean integer factor | Integer point pre-scale, then linear | XBR2 at 2x, deferred `highres-font2x`, alpha-aware XBR suffix, then sharp shader | Direct presentation |
 
 Steam Deck uses the same pass matrix as other displays. Its only rendering-policy
 difference is the forced 1.5x output scale; it does not have a separate filter

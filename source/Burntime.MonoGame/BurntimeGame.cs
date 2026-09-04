@@ -877,6 +877,11 @@ namespace Burntime.MonoGame
         const float popInSpeed = 16.0f;
         static float CalcZ(float Layer) => 0.05f + (Layer / MAX_LAYERS) * 0.9f;
 
+        public float Xbr2IndividualLayer
+        {
+            set => RenderDevice.Xbr2IndividualDepth = CalcZ(value);
+        }
+
         public void RenderRect(Platform.Vector2 pos, Platform.Vector2 size, PixelColor color,
             bool postFilter = false)
         {
