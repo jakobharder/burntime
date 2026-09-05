@@ -650,6 +650,15 @@ namespace Burntime.Remaster
                 shortcuts.Add(shortcut);
             }
 
+            // 0: interaction mode
+            if (!view.Location.IsCity && openedByMouse)
+            {
+                if (fightMode)
+                    AddLine("@burn?350", OnMenuSpeak, new(InputAction.ToggleInteractionMode));
+                else
+                    AddLine("@burn?352", OnMenuFight, new(InputAction.ToggleInteractionMode));
+            }
+
             // 1: map -> quickest
             // 2: inventory -> muscle memory
             AddLine("@burn?362", OnMenuMap, new(InputAction.WorldMap));
@@ -662,13 +671,6 @@ namespace Burntime.Remaster
                 {
                     PreferredGamepadControl = GamepadControl.DPadRight
                 });
-                if (openedByMouse)
-                {
-                    if (fightMode)
-                        AddLine("@burn?350", OnMenuSpeak, new(InputAction.ToggleInteractionMode));
-                    else
-                        AddLine("@burn?352", OnMenuFight, new(InputAction.ToggleInteractionMode));
-                }
             }
 
             if (openedByMouse)
