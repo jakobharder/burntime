@@ -5,6 +5,7 @@
 ### 1.1.1
 
 - Automatically select all after hiring an NPC
+- Reordered entries in location action menu
 
 ### Changes
 

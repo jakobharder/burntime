@@ -635,6 +635,12 @@ namespace Burntime.Remaster
                 shortcuts.Add(shortcut);
             }
 
+            // 1: map -> quickest
+            // 2: inventory -> muscle memory
+            AddLine("@burn?362", OnMenuMap, new(InputAction.WorldMap));
+            AddLine("@burn?367", OnMenuInventory, new(InputAction.Inventory));
+
+            // 3: info screen
             if (!view.Location.IsCity)
             {
                 AddLine("@burn?351", OnMenuInfo, new(InputAction.LocationInfo)
@@ -653,13 +659,6 @@ namespace Burntime.Remaster
             if (openedByMouse)
                 AddGroupMenuLines((text, command) => AddLine(text, command));
 
-            AddLine("@burn?362", OnMenuMap, new(InputAction.WorldMap));
-            AddLine("@burn?367", OnMenuInventory, new(InputAction.Inventory));
-            if (!openedByMouse)
-            {
-                AddLine("@burn?359", () => app.SceneManager.SetScene("StatisticsScene"),
-                    new(InputAction.Statistics));
-            }
             AddLine("@burn?361", () => app.SceneManager.SetScene("OptionsScene"),
                 new(InputAction.Options));
             AddLine("@burn?357", OnMenuTurn, new(InputAction.NextTurn) { Hold = true });
