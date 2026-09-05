@@ -230,7 +230,12 @@ namespace Burntime.Remaster.GUI
                     continue;
 
                 int sideways = System.Math.Abs(difference.x * direction.y - difference.y * direction.x);
-                int score = sideways * 1000 + forward;
+                // In an interleaved room grid, vertical movement should enter
+                // the nearer offset layer instead of skipping over it to remain
+                // in the same column of the current layer.
+                int score = doubleLayered && direction.x == 0
+                    ? forward * 1000 + sideways
+                    : sideways * 1000 + forward;
                 if (score < selectedScore)
                 {
                     selected = i;
@@ -256,6 +261,11 @@ namespace Burntime.Remaster.GUI
                     continue;
 
                 Vector2 candidate = PositionOnScreen + itemWindows[i].Position + size / 2;
+                Vector2 difference = candidate - sourcePosition;
+                int forward = difference.x * direction.x + difference.y * direction.y;
+                if (forward <= 0)
+                    continue;
+
                 int edge = direction.x > 0 ? candidate.x : -candidate.x;
                 int rowDistance = System.Math.Abs(candidate.y - sourcePosition.y);
                 int score = edge * 1000 + rowDistance;
@@ -330,6 +340,7 @@ namespace Burntime.Remaster.GUI
         {
             keyboardIndex = -1;
             int nearestDistance = int.MaxValue;
+            bool nearestIsOnSameRow = false;
             for (int i = 0; itemWindows != null && i < itemWindows.Length; i++)
             {
                 if (!IsValidKeyboardIndex(i))
@@ -337,10 +348,14 @@ namespace Burntime.Remaster.GUI
 
                 Vector2 difference = itemWindows[i].Position - position;
                 int distance = System.Math.Abs(difference.x) + System.Math.Abs(difference.y);
-                if (distance < nearestDistance)
+                bool isOnSameRow = difference.y == 0;
+                if (keyboardIndex == -1 ||
+                    isOnSameRow && !nearestIsOnSameRow ||
+                    isOnSameRow == nearestIsOnSameRow && distance < nearestDistance)
                 {
                     keyboardIndex = i;
                     nearestDistance = distance;
+                    nearestIsOnSameRow = isOnSameRow;
                 }
             }
         }
