@@ -380,6 +380,7 @@ namespace Burntime.Remaster
             Player boss = classic.Game.World.ActivePlayerObj;
 
             character.Hire(boss);
+            boss.SelectGroup(boss.Group);
         }
     }
 }

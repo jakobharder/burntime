@@ -2,6 +2,10 @@
 
 ## 1.1 (2026-09-04)
 
+### 1.1.1
+
+- Automatically select all after hiring an NPC
+
 ### Changes
 
 - Platform Support
