@@ -9,6 +9,9 @@ namespace Burntime.Remaster.AI
     [Serializable]
     class FellowerMind : CharacterMind
     {
+        const float CatchUpDistance = 40;
+        const float CatchUpSpeedMultiplier = 1.2f;
+
         protected StateLink<Character> leader;
         [NonSerialized]
         protected double followAngle;
@@ -53,6 +56,13 @@ namespace Burntime.Remaster.AI
                 return;
 
             float distance = (Leader.Position - Owner.Position).Length;
+
+            // Matching the leader's speed is not enough to close a gap caused by
+            // pathing or formation changes. Give followers a small boost only
+            // while they are outside their normal formation range.
+            if (distance > CatchUpDistance)
+                Owner.Path.Speed = System.Math.Max(Owner.Path.Speed,
+                    Leader.Path.Speed * CatchUpSpeedMultiplier);
             
             // if too far from leader, then follow
             if (distance > 150)
@@ -64,7 +74,7 @@ namespace Burntime.Remaster.AI
                 if (distance > 120)
                     Owner.Path.MoveTo = followTarget;
             }
-            else if (distance > 40)
+            else if (distance > CatchUpDistance)
             {
                 Vector2 followTarget = GetFollowTarget(14);
                 distance = (followTarget - Owner.Path.MoveTo).Length;

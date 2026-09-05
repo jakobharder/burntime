@@ -928,12 +928,9 @@ namespace Burntime.Remaster
             MapEntrance entrance = loc.Map.Entrances[Number];
 
             EntranceObject entranceObject = new EntranceObject(entrance, Number);
-            if (!TryEnterRoom(entranceObject, charOverlay.SelectedCharacter))
-            {
-                EnsureAutomaticPath(charOverlay.SelectedCharacter);
-                charOverlay.SelectedCharacter.Mind.MoveToObject(new InteractionObject(entranceObject,
-                   classic.Game.World.ActiveLocationObj.Rooms[Number].EntryCondition, this));
-            }
+            EnsureAutomaticPath(charOverlay.SelectedCharacter);
+            charOverlay.SelectedCharacter.Mind.MoveToObject(new InteractionObject(entranceObject,
+                loc.Rooms[Number].EntryCondition, this));
 
             return true;
         }
