@@ -32,7 +32,6 @@ Role | Names
 Development & remaster | Jakob Harder
 Spanish translation | Germán Jakob
 Additional contributions | Krystian Rabe, Felix Stolle, Chris1982, graysonwall, Shadow, Maschine, Memento
-Controller input glyphs | Adapted from [Input Prompts](https://kenney.nl/assets/input-prompts) by [Kenney](https://kenney.nl/) (CC0)
 
 ### Max Design
 
@@ -55,6 +54,7 @@ Special thanks | Greenpeace
 
 Role | Library
 --- | ---
+Controller and keyboard input glyphs | Adapted from [Input Prompts](https://kenney.nl/assets/input-prompts) by [Kenney](https://kenney.nl/) (CC0)
 Game framework | [MonoGame](https://www.monogame.net/)
 Ogg Vorbis decoding | [NVorbis](https://github.com/NVorbis/NVorbis)
 Image decoding | [StbImageSharp](https://github.com/StbSharp/StbImageSharp)

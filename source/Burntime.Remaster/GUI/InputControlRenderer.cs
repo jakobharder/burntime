@@ -8,6 +8,7 @@ namespace Burntime.Remaster;
 sealed class InputControlRenderer
 {
     const int GlyphSourceSize = 22;
+    const int GlyphSourceSize2x = GlyphSourceSize * 2;
 
     // Keep controller glyphs in the same source-pixel coordinate system as
     // highres-font.txt. This cancels the game's non-square ratio correction,
@@ -20,6 +21,7 @@ sealed class InputControlRenderer
     readonly Module _app;
     readonly bool _brackets;
     readonly GuiImage[][] _glyphs = new GuiImage[4][];
+    readonly GuiImage[] _keyboardGlyphs = new GuiImage[(int)KeyboardGlyph.Count - 1];
 
     public InputControlRenderer(Module app, GuiFont font, bool brackets = true)
     {
@@ -34,6 +36,9 @@ sealed class InputControlRenderer
                 _glyphs[family][i] =
                     $"pngsheet@gfx/ui/input_glyphs_{families[family]}.png?{i}?{GlyphSourceSize}x{GlyphSourceSize}";
         }
+        for (int i = 0; i < _keyboardGlyphs.Length; i++)
+            _keyboardGlyphs[i] =
+                $"pngsheet@gfx/ui/input_glyphs_keyboard.png?{i}?{GlyphSourceSize}x{GlyphSourceSize}";
     }
 
     public int Measure(InputControlLabel control, string label = "", string prefix = "")
@@ -43,7 +48,7 @@ sealed class InputControlRenderer
         if (brackets)
             width += _font.GetWidth("[]");
         foreach (InputControlPart part in control.Parts)
-            width += part.Glyph == InputGlyph.None ? _font.GetWidth(part.Text) : GlyphWidth;
+            width += part.HasGlyph ? GlyphWidth : _font.GetWidth(part.Text);
         if (label.Length > 0)
             width += GetLabelGap(control, brackets) + _font.GetWidth(label);
         return width;
@@ -58,22 +63,33 @@ sealed class InputControlRenderer
         DrawText(target, ref x, position.y, prefix + (brackets ? "[" : ""));
         foreach (InputControlPart part in control.Parts)
         {
-            if (part.Glyph == InputGlyph.None)
+            if (!part.HasGlyph)
             {
                 DrawText(target, ref x, position.y, part.Text);
                 continue;
             }
 
-            int index = (int)part.Glyph - 1;
-            int family = (int)_app.Engine.InputGlyphs.LabelStyle;
-            ISprite glyph = _glyphs[family][index];
+            ISprite glyph;
+            int sourceSize = GlyphSourceSize;
+            if (part.Keyboard != KeyboardGlyph.None)
+            {
+                glyph = _keyboardGlyphs[(int)part.Keyboard - 1];
+                if (_app.Engine.OutputFiltering == OutputFiltering.Xbr2)
+                    sourceSize = GlyphSourceSize2x;
+            }
+            else
+            {
+                int index = (int)part.Glyph - 1;
+                int family = (int)_app.Engine.InputGlyphs.LabelStyle;
+                glyph = _glyphs[family][index];
+            }
             if (glyph.Touch())
-                glyph.Resolution = GlyphResolution;
+                glyph.Resolution = GlyphResolution * GlyphSourceSize / sourceSize;
             target.SelectSprite(glyph);
             target.DrawSelectedSpriteF(
                 new Vector2f(x, position.y + (_font.GetHeight() - GlyphHeight) / 2 +
                     (_app.IsNewGfx ? 0.5f : 0)),
-                new Rect(Vector2.Zero, new Vector2(GlyphSourceSize, GlyphSourceSize)),
+                new Rect(Vector2.Zero, new Vector2(sourceSize, sourceSize)),
                 PixelColor.White,
                 postFilter: true, directToFramebuffer: !_app.IsNewGfx);
             x += GlyphWidth;
@@ -92,7 +108,7 @@ sealed class InputControlRenderer
         if (_brackets)
             return true;
         foreach (InputControlPart part in control.Parts)
-            if (part.Glyph != InputGlyph.None)
+            if (part.HasGlyph)
                 return false;
         return true;
     }
@@ -100,7 +116,7 @@ sealed class InputControlRenderer
     int GetLabelGap(InputControlLabel control, bool brackets)
     {
         bool endsWithGlyph = !brackets && control.Parts.Count > 0 &&
-            control.Parts[^1].Glyph != InputGlyph.None;
+            control.Parts[^1].HasGlyph;
         int spaceWidth = _font.GetWidth(" ");
         return endsWithGlyph ? System.Math.Max(1, spaceWidth / 2) : spaceWidth;
     }

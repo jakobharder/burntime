@@ -126,6 +126,11 @@ public sealed class InputPromptOverlay : Window
 
     void RefreshText()
     {
+        // RefreshText can run before the first render (for example from
+        // SetPrompts). Use the current input mode here so Size/Boundings are
+        // already correct when Window.Render creates this window's target.
+        _inputMode = app.LastInputMode;
+
         List<PromptDisplay> display = [];
         int width = 0;
         foreach (InputPrompt prompt in _prompts)
