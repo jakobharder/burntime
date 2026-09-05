@@ -26,6 +26,8 @@ sealed class ForcedInputGlyphProvider(GamepadLabelStyle labelStyle) : IInputGlyp
                 ? InputGlyph.Minus
                 : InputGlyph.View,
             GamepadControl.RightStick => InputGlyph.RightStick,
+            GamepadControl.LeftTrigger => InputGlyph.LeftTrigger,
+            GamepadControl.RightTrigger => InputGlyph.RightTrigger,
             GamepadControl.LeftShoulder => InputGlyph.LeftShoulder,
             GamepadControl.RightShoulder => InputGlyph.RightShoulder,
             _ => InputGlyph.None

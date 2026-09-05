@@ -10,6 +10,7 @@
 - Alt/LT shortcut to show all entrances
 - Place produced food preferrably next to the trap
 - Show food/trap/water infos on entrances and locations
+- Gamepad: fix access to second item layer in rooms
 
 ### Changes
 
