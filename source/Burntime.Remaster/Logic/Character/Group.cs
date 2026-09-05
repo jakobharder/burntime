@@ -14,6 +14,8 @@ namespace Burntime.Remaster.Logic
 
         StateLinkList<Character> characterList;
         float rangeFilterValue;
+        [NonSerialized]
+        bool ignoreRangeFilter;
 
         public int Count
         {
@@ -29,7 +31,17 @@ namespace Burntime.Remaster.Logic
         // hide/show npcs out of range
         public bool IsRangeFiltered
         {
-            get { return rangeFilterValue > 0; }
+            get { return rangeFilterValue > 0 && !ignoreRangeFilter; }
+        }
+
+        /// <summary>
+        /// Includes the complete moving group in an interaction even if some
+        /// followers did not reach the leader before the wait timeout.
+        /// </summary>
+        public bool IgnoreRangeFilter
+        {
+            get { return ignoreRangeFilter; }
+            set { ignoreRangeFilter = value; }
         }
 
         public float RangeFilterValue

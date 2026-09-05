@@ -639,6 +639,7 @@ namespace Burntime.Remaster
             view.Map = (MapData)game.World.ActiveLocationObj.Map.MapData;
             view.Location = game.World.ActiveLocationObj;
             view.Player = game.World.ActivePlayerObj;
+            view.Player.Group.IgnoreRangeFilter = false;
             lastSelectedCharacter = view.Player.SelectedCharacter;
 
             if (view.Player.RefreshScrollPosition)
@@ -840,6 +841,7 @@ namespace Burntime.Remaster
             if (charOverlay.SelectedCharacter.IsDead)
                 return;
 
+            view.Player.Group.IgnoreRangeFilter = false;
             charOverlay.SelectedCharacter.CancelAction();
 
             BurntimeClassic classic = app as BurntimeClassic;
@@ -1056,6 +1058,7 @@ namespace Burntime.Remaster
             if (view.Location.AreEntrancesBlockedFor(view.Player))
                 return true;
 
+            view.Player.Group.IgnoreRangeFilter = !view.Player.SingleMode;
             charOverlay.SelectedCharacter.CancelAction();
 
             switch (entrance.RoomType)

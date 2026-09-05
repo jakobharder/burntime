@@ -15,6 +15,7 @@ internal class OptionsSettingsPage : Container
     readonly Button _newgfxToggle;
     readonly Button _fullscreenToggle;
     readonly Button _controllerToggle;
+    readonly Button _promptsToggle;
     readonly Button _languageToggle;
     readonly Button[] _buttons;
     int _focusIndex;
@@ -56,7 +57,7 @@ internal class OptionsSettingsPage : Container
             Font = _fonts.Green,
             HoverFont = _fonts.Orange,
             DisabledFont = _fonts.Disabled,
-            Position = new Vector2(38, 98),
+            Position = new Vector2(38, 108),
             IsTextOnly = true
         };
         Windows += _controllerToggle = new Button(app,
@@ -68,6 +69,15 @@ internal class OptionsSettingsPage : Container
             Position = new Vector2(38, 88),
             IsTextOnly = true
         };
+        Windows += _promptsToggle = new Button(app,
+            () => BurntimeClassic.Instance.CyclePromptVisibilityMode())
+        {
+            Font = _fonts.Green,
+            HoverFont = _fonts.Orange,
+            DisabledFont = _fonts.Disabled,
+            Position = new Vector2(38, 98),
+            IsTextOnly = true
+        };
         if (!app.Engine.SupportsFullscreenToggle)
         {
             _fullscreenToggle.IsEnabled = false;
@@ -76,7 +86,7 @@ internal class OptionsSettingsPage : Container
         Windows += _hintText = new Button(app)
         {
             Font = _fonts.Blue,
-            Position = new Vector2(40, 112),
+            Position = new Vector2(40, 122),
             Size = new Vector2(120, 10),
             TextHorizontalAlign = Platform.Graphics.TextAlignment.Center
         };
@@ -84,7 +94,7 @@ internal class OptionsSettingsPage : Container
         _buttons = new[]
         {
             _newgfxToggle, _fullscreenToggle, _musicToggle,
-            _controllerToggle, _languageToggle
+            _controllerToggle, _promptsToggle, _languageToggle
         };
     }
 
@@ -174,6 +184,8 @@ internal class OptionsSettingsPage : Container
             ControllerGlyphMode.Switch => "@controller?4",
             _ => "@controller?0"
         };
+        _promptsToggle.Text = BurntimeClassic.Instance.PromptVisibility ==
+            PromptVisibilityMode.Hide ? "@prompt_mode?1" : "@prompt_mode?0";
         _languageToggle.Text = BurntimeClassic.Instance.LanguageSelection switch
         {
             LanguageMode.English => "@language_mode?1",

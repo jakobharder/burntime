@@ -4,15 +4,21 @@
 
 ### 1.1.1
 
+Group Behavior:
 - Automatically select all after hiring an NPC
-- Reordered entries in location action menu
-- Gamepad: fixed situations where the camera doesn't move to the selected character automatically
-- Alt/LT shortcut to show all entrances
+- Improve group following into attacks, rooms and traders
 - Place produced food preferrably next to the trap
+
+Infos:
 - Show food/trap/water infos on entrances and locations
+- Alt/LT shortcut to show all entrances
+
+Input:
+- Reordered entries in location action menu
+- Added mouse input prompts
+- Prompts can be hidden in the options menu
+- Gamepad: fixed situations where the camera doesn't move to the selected character automatically
 - Gamepad: fix access to second item layer in rooms
-- Added keyboard and mouse input glyphs
-- Show shortcut prompts while using mouse input
 
 ### Changes
 

@@ -102,6 +102,9 @@ public sealed class InputPromptOverlay : Window
 
     public override void OnRender(RenderTarget target)
     {
+        if (app is BurntimeClassic classic && !classic.ShowInputPrompts)
+            return;
+
         if (app.LastInputMode is not (InputMode.Mouse or InputMode.Keyboard or InputMode.Gamepad))
             return;
 

@@ -70,6 +70,9 @@ public sealed class InputShortcutColumn : Window
 
     public override void OnRender(RenderTarget target)
     {
+        if (app is BurntimeClassic classic && !classic.ShowInputPrompts)
+            return;
+
         RefreshInputMode();
         if (_display.Length == 0)
             return;

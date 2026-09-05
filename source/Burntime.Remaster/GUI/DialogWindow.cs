@@ -233,6 +233,8 @@ namespace Burntime.Remaster
                 case ConversationActionType.Trade:
                     Hide();
                     classic.Game.World.ActiveTraderObj = character as Trader;
+                    classic.Game.World.ActivePlayerObj.Group.IgnoreRangeFilter =
+                        !classic.Game.World.ActivePlayerObj.SingleMode;
                     app.SceneManager.SetScene("TraderScene");
                     break;
                 case ConversationActionType.Yes:

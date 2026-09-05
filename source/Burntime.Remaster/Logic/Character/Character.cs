@@ -501,8 +501,8 @@ namespace Burntime.Remaster.Logic
             float difficultyFactor = (1 + Root.World.Difficulty * 0.1f);
             bool isPlayer = (Player == container.Root.CurrentPlayer);
 
-            var attackingGroup = (Player != null && Player.Character == this)
-                ? Player.Group.Where(ch => (ch.Position - Position).Length < 25).ToArray()
+            var attackingGroup = (Player != null && Player.Character == this && !Player.SingleMode)
+                ? Player.Group.ToArray()
                 : new Character[] { this };
 
             static void attack(Character attacker, Character defender, bool useAmmo, float factor)

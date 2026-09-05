@@ -26,6 +26,13 @@ namespace Burntime.Remaster
         German
     }
 
+    public enum PromptVisibilityMode
+    {
+        Full = 0,
+        Less = 1,
+        Hide = 2
+    }
+
     public class BurntimeClassic : Module
     {
         public GamepadBindings GamepadBindings { get; } = new();
@@ -96,6 +103,8 @@ namespace Burntime.Remaster
 
         public bool ChooseLanguageOnStart { get; set; }
         public LanguageMode LanguageSelection { get; private set; } = LanguageMode.Auto;
+        public PromptVisibilityMode PromptVisibility { get; private set; } = PromptVisibilityMode.Full;
+        public bool ShowInputPrompts => PromptVisibility != PromptVisibilityMode.Hide;
 
         public override void Start()
         {
@@ -124,6 +133,10 @@ namespace Burntime.Remaster
             UserSettings.Open("user.txt");
             Engine.ControllerGlyphMode = ParseControllerGlyphMode(
                 UserSettings[""].GetString("controller_glyphs"));
+            PromptVisibility = (PromptVisibilityMode)System.Math.Clamp(
+                UserSettings[""].GetInt("prompts"),
+                (int)PromptVisibilityMode.Full,
+                (int)PromptVisibilityMode.Hide);
             KeyboardBindings.Load(Settings, UserSettings);
             GamepadBindings.Load(Settings, UserSettings);
             LanguageSelection = ParseLanguageMode(UserSettings[""].GetString("language"));
@@ -211,6 +224,7 @@ namespace Burntime.Remaster
             UserSettings[""].Set("newgfx", IsNewGfx);
             UserSettings[""].Set("language", FormatLanguageMode(LanguageSelection));
             UserSettings[""].Set("controller_glyphs", FormatControllerGlyphMode(Engine.ControllerGlyphMode));
+            UserSettings[""].Set("prompts", (int)PromptVisibility);
             KeyboardBindings.Save(UserSettings);
             GamepadBindings.Save(UserSettings);
             UserSettings.Save("user.txt");
@@ -226,6 +240,13 @@ namespace Burntime.Remaster
                 ControllerGlyphMode.Steam => ControllerGlyphMode.Switch,
                 _ => ControllerGlyphMode.Auto
             };
+        }
+
+        public void CyclePromptVisibilityMode()
+        {
+            PromptVisibility = PromptVisibility == PromptVisibilityMode.Hide
+                ? PromptVisibilityMode.Full
+                : PromptVisibilityMode.Hide;
         }
 
         static ControllerGlyphMode ParseControllerGlyphMode(string value) =>
