@@ -156,7 +156,8 @@ public enum SystemKey
     Down,
     Left,
     Right,
-    Tab
+    Tab,
+    Alt
 }
 
 [Flags]

@@ -31,7 +31,8 @@ public enum InputAction
     NextTurn,
     Inventory,
     LocationInfo,
-    WorldMap
+    WorldMap,
+    ShowEntrances
 }
 
 public static class InputActionDirections

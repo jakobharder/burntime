@@ -35,9 +35,11 @@ public class MapViewHoverInfo
 class MapViewOverlayHoverText : IMapViewOverlay
 {
     Location mapState;
+    Player player;
     IResourceManager resMan;
 
     public bool IsVisible { get; set; } = true;
+    public bool ShowAllEntrances { get; set; }
 
     public MapViewOverlayHoverText(Module App)
     {
@@ -51,6 +53,7 @@ class MapViewOverlayHoverText : IMapViewOverlay
     public void UpdateOverlay(WorldState world, float elapsed)
     {
         mapState = world.CurrentLocation as Location;
+        player = world.CurrentPlayer as Player;
     }
 
     public void RenderOverlay(RenderTarget Target, Vector2 Offset, Vector2 Size)
@@ -66,6 +69,23 @@ class MapViewOverlayHoverText : IMapViewOverlay
         {
             Font font = resMan.GetFont(BurntimeClassic.FontName, mapState.Hover.Color);
             font.DrawText(textTarget, mapState.Hover.Position + Offset - new Vector2(0, topMargin), mapState.Hover.Title, TextAlignment.Center);
+        }
+
+        if (ShowAllEntrances && mapState != null)
+        {
+            int entranceCount = System.Math.Min(mapState.Map.Entrances.Length, mapState.Rooms.Count);
+            bool entrancesBlocked = player != null && mapState.AreEntrancesBlockedFor(player);
+            for (int i = 0; i < entranceCount; i++)
+            {
+                var entrance = mapState.Map.Entrances[i];
+                MapViewHoverInfo info = entrancesBlocked
+                    ? new MapViewHoverInfo(resMan.GetString("newburn?103"), entrance.Area.Center,
+                        BurntimeClassic.LightGray)
+                    : new MapViewHoverInfo(mapState.Rooms[i], resMan, BurntimeClassic.LightGray);
+                Font font = resMan.GetFont(BurntimeClassic.FontName, info.Color);
+                font.DrawText(textTarget, info.Position + Offset - new Vector2(0, topMargin),
+                    info.Title, TextAlignment.Center);
+            }
         }
     }
 

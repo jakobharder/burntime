@@ -32,6 +32,7 @@ public sealed class KeyboardBindings : IKeyboardBindings
         ("info", "e", InputAction.LocationInfo),
         ("next_turn", "tab", InputAction.NextTurn),
         ("toggle_interaction", "c", InputAction.ToggleInteractionMode),
+        ("show_entrances", "alt", InputAction.ShowEntrances),
     };
 
     static readonly Dictionary<string, Key> controls = CreateControls();
@@ -48,6 +49,7 @@ public sealed class KeyboardBindings : IKeyboardBindings
             ["enter"] = new Key(SystemKey.Enter),
             ["escape"] = new Key(SystemKey.Escape),
             ["tab"] = new Key(SystemKey.Tab),
+            ["alt"] = new Key(SystemKey.Alt),
             ["up"] = new Key(SystemKey.Up),
             ["down"] = new Key(SystemKey.Down),
             ["left"] = new Key(SystemKey.Left),

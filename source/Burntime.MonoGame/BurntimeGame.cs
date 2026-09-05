@@ -615,6 +615,7 @@ namespace Burntime.MonoGame
                 Keys.Down => new Key(SystemKey.Down, modifier),
                 Keys.Left => new Key(SystemKey.Left, modifier),
                 Keys.Right => new Key(SystemKey.Right, modifier),
+                Keys.LeftAlt or Keys.RightAlt => new Key(SystemKey.Alt, modifier),
                 _ => null
             };
         }

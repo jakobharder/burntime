@@ -387,6 +387,7 @@ namespace Burntime.Remaster
             UpdatePromptOverlay();
             ResetNextTurnHoldIfReleased();
             UpdateCameraPan(Elapsed);
+            hoverInfo.ShowAllEntrances = app.IsInputActionDown(InputAction.ShowEntrances);
 
             ClassicGame game = app.GameState as ClassicGame;
             Character selectedCharacter = game.World.ActivePlayerObj.SelectedCharacter;

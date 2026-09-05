@@ -38,6 +38,7 @@ statistics         = q
 info               = e
 next_turn          = tab t
 toggle_interaction = c
+show_entrances     = alt
 toggle_difficulty  = 1
 toggle_game_mode   = 2
 toggle_ai_players  = 3
@@ -55,6 +56,7 @@ inventory      = dpad_up
 statistics     = dpad_left
 info           = dpad_right
 next_turn      = dpad_down
+show_entrances = left_trigger
 
 [debug]
 enable_cheats   = no

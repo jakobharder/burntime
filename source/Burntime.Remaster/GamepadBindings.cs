@@ -24,7 +24,8 @@ public sealed class GamepadBindings : IGamepadBindings
         ("inventory", "dpad_up", InputAction.Inventory),
         ("statistics", "dpad_left", InputAction.Statistics),
         ("info", "dpad_right", InputAction.LocationInfo),
-        ("next_turn", "dpad_down", InputAction.NextTurn)
+        ("next_turn", "dpad_down", InputAction.NextTurn),
+        ("show_entrances", "left_trigger", InputAction.ShowEntrances)
     };
 
     static readonly Dictionary<string, GamepadControl> controls = new(StringComparer.OrdinalIgnoreCase)
