@@ -11,12 +11,18 @@ namespace Burntime.Remaster.AI
     {
         const float CatchUpDistance = 40;
         const float CatchUpSpeedMultiplier = 1.2f;
+        const float FollowStartStagger = 0.025f;
+        const int FollowStartJitterMilliseconds = 31;
 
         protected StateLink<Character> leader;
         [NonSerialized]
-        protected double followAngle;
+        int formationRadius;
         [NonSerialized]
-        protected bool hasFollowAngle;
+        Vector2 lastLeaderDestination;
+        [NonSerialized]
+        bool hasLeaderDestination;
+        [NonSerialized]
+        float followStartDelay;
 
         public Character Leader
         {
@@ -24,20 +30,54 @@ namespace Burntime.Remaster.AI
             set { leader = value; }
         }
 
-        private Vector2 GetFollowTarget(int radius)
+        private Vector2 GetFollowTarget(Vector2 center, int radius)
         {
-            // Keep the same formation direction between path refreshes. The flag
-            // also allows minds from older saves to initialize the angle lazily.
-            if (!hasFollowAngle)
+            int followerIndex = 0;
+            int followerCount = 0;
+            foreach (Character character in Leader.GetGroup())
             {
-                followAngle = (Burntime.Platform.Math.Random.Next() % 360) * System.Math.PI / 180;
-                hasFollowAngle = true;
+                if (character == Leader)
+                    continue;
+                if (character == Owner)
+                    followerIndex = followerCount;
+                followerCount++;
             }
 
+            // Distribute followers evenly, rotated by 45 degrees so a full
+            // group occupies the diagonal slots instead of the cardinal axes.
+            double followAngle = System.Math.PI / 4 + 2 * System.Math.PI *
+                followerIndex / System.Math.Max(1, followerCount);
             Vector2 offset;
             offset.x = (int)(System.Math.Sin(followAngle) * radius);
             offset.y = (int)(System.Math.Cos(followAngle) * radius);
-            return Leader.Position + offset;
+            return center + offset;
+        }
+
+        private Vector2 GetFollowTarget(int radius) =>
+            GetFollowTarget(Leader.Position, radius);
+
+        int FormationRadius
+        {
+            get
+            {
+                if (formationRadius == 0)
+                    formationRadius = Burntime.Platform.Math.Random.Next(14, 21);
+                return formationRadius;
+            }
+        }
+
+        int GetFollowerIndex()
+        {
+            int index = 0;
+            foreach (Character character in Leader.GetGroup())
+            {
+                if (character == Leader)
+                    continue;
+                if (character == Owner)
+                    return index;
+                index++;
+            }
+            return index;
         }
 
         protected override void InitInstance(object[] parameter)
@@ -63,6 +103,37 @@ namespace Burntime.Remaster.AI
             if (distance > CatchUpDistance)
                 Owner.Path.Speed = System.Math.Max(Owner.Path.Speed,
                     Leader.Path.Speed * CatchUpSpeedMultiplier);
+
+            // A clicked destination is stable, unlike the leader's moving
+            // position. Start toward the final formation immediately and avoid
+            // repeatedly restarting ComplexPath while the leader walks there.
+            // Very distant followers keep using the recovery behavior below.
+            if (distance <= 150 && Leader.Path is PathFinding.ComplexPath &&
+                Leader.Path.MoveTo != Leader.Position)
+            {
+                Vector2 leaderDestination = Leader.Path.MoveTo;
+                if (!hasLeaderDestination || leaderDestination != lastLeaderDestination)
+                {
+                    lastLeaderDestination = leaderDestination;
+                    hasLeaderDestination = true;
+                    followStartDelay = FollowStartStagger * (GetFollowerIndex() + 1) +
+                        Burntime.Platform.Math.Random.Next(0, FollowStartJitterMilliseconds) / 1000f;
+                }
+
+                if (followStartDelay > 0)
+                {
+                    followStartDelay = System.Math.Max(0, followStartDelay - elapsed);
+                    return;
+                }
+
+                Vector2 followTarget = GetFollowTarget(leaderDestination, FormationRadius);
+                if ((followTarget - Owner.Path.MoveTo).Length > 1)
+                    Owner.Path.MoveTo = followTarget;
+                return;
+            }
+
+            hasLeaderDestination = false;
+            followStartDelay = 0;
             
             // if too far from leader, then follow
             if (distance > 150)
@@ -76,7 +147,7 @@ namespace Burntime.Remaster.AI
             }
             else if (distance > CatchUpDistance)
             {
-                Vector2 followTarget = GetFollowTarget(14);
+                Vector2 followTarget = GetFollowTarget(FormationRadius);
                 distance = (followTarget - Owner.Path.MoveTo).Length;
 
                 // update path only if leader position and own destination are too far away
@@ -85,7 +156,7 @@ namespace Burntime.Remaster.AI
             }
             else if (distance < 15)
             {
-                Vector2 followTarget = GetFollowTarget(14);
+                Vector2 followTarget = GetFollowTarget(FormationRadius);
                 distance = (followTarget - Owner.Path.MoveTo).Length;
 
                 // settle into the follower's stable formation position
