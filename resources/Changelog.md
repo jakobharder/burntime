@@ -8,6 +8,7 @@
 - Reordered entries in location action menu
 - Gamepad: fixed situations where the camera doesn't move to the selected character automatically
 - Alt/LT shortcut to show all entrances
+- Place produced food preferrably next to the trap
 
 ### Changes
 

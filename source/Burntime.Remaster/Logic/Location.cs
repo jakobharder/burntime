@@ -282,7 +282,9 @@ namespace Burntime.Remaster.Logic
                     if (productionState >= production.ItemDropInterval)
                     {
                         productionState -= production.ItemDropInterval;
-                        StoreItem(Production.Produce.Generate());
+                        Room trapRoom = Rooms.FirstOrDefault(room => room.Items
+                            .Any(item => item.Type.Production == Production));
+                        StoreItem(Production.Produce.Generate(), preferredRoom: trapRoom);
                     }
                 }
             }
@@ -349,7 +351,7 @@ namespace Burntime.Remaster.Logic
         /// <summary>
         /// Insert item into room. If none is available drop it randomly.
         /// </summary>
-        public void StoreItem(Item item, bool randomRoom = false)
+        public void StoreItem(Item item, bool randomRoom = false, Room preferredRoom = null)
         {
             var rooms = Rooms.Where(x => !x.Items.IsFull).ToList();
             if (rooms.Count == 0)
@@ -358,8 +360,16 @@ namespace Burntime.Remaster.Logic
                 return;
             }
 
-            int index = randomRoom ? Platform.Math.Random.Next(0, rooms.Count - 1) : 0;
-            var room = rooms[index];
+            Room room;
+            if (preferredRoom != null && rooms.Contains(preferredRoom))
+            {
+                room = preferredRoom;
+            }
+            else
+            {
+                int index = randomRoom ? Platform.Math.Random.Next(0, rooms.Count - 1) : 0;
+                room = rooms[index];
+            }
 
             // fill up empty bottles
             if (room.IsWaterSource && item.Type.Full != null && Source.Reserve >= item.Type.Full.WaterValue)
