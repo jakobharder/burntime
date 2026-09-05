@@ -387,13 +387,16 @@ public class MapView : Window
                 if (game.MainMapView)
                 {
                     Burntime.Data.BurnGfx.MapEntrance e = game.World.Map.Entrances[entrance];
-                    game.World.ActiveLocationObj.Hover = new MapViewHoverInfo(app.ResourceManager.GetString(e.TitleId), e.Area.Center, BurntimeClassic.LightGray);
+                    game.World.ActiveLocationObj.Hover = new MapViewHoverInfo(app.ResourceManager.GetString(e.TitleId), e.Area.Center, BurntimeClassic.LightGray)
+                    {
+                        WorldLocation = game.World.Locations[entrance]
+                    };
                 }
                 else if (entrance < game.World.ActiveLocationObj.Rooms.Count)
                 {
                     Location location = game.World.ActiveLocationObj;
                     game.World.ActiveLocationObj.Hover = location.AreEntrancesBlockedFor(game.World.ActivePlayerObj)
-                        ? new MapViewHoverInfo(app.ResourceManager.GetString("newburn?103"), location.Map.Entrances[entrance].Area.Center, BurntimeClassic.LightGray)
+                        ? new MapViewHoverInfo(app.ResourceManager.GetString("newburn?103"), location.Map.Entrances[entrance].Area.Center, BurntimeClassic.LightGray, location.Rooms[entrance])
                         : new MapViewHoverInfo(location.Rooms[entrance], app.ResourceManager, BurntimeClassic.LightGray);
                 }
             }

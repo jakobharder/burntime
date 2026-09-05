@@ -72,7 +72,7 @@ namespace Burntime.Remaster
             view.Overlays.Add(new Maps.MapViewOverlayFlags(app));
             view.Overlays.Add(new Maps.MapViewOverlayPlayer(app));
             view.Overlays.Add(_hoverInfo = new Maps.MapViewOverlayHoverText(app));
-            view.Overlays.Add(_keyboardSelection = new Maps.MapViewOverlaySelectedLocation(app));
+            view.Overlays.Add(_keyboardSelection = new Maps.MapViewOverlaySelectedLocation(app, _hoverInfo));
             view.Scroll += new EventHandler<MapScrollArgs>(view_Scroll);
             view.ContextMenu += View_OnContextMenu;
             Windows += view;
@@ -309,6 +309,10 @@ namespace Burntime.Remaster
             UpdateMenuShortcutColumn();
             ResetHeldActionsIfReleased();
             UpdateCameraPan(Elapsed);
+            _hoverInfo.ShowAllEntrances = app.IsInputActionDown(InputAction.ShowEntrances);
+            _hoverInfo.HighlightedWorldLocation = app.MouseInputVisible
+                ? -1
+                : _keyboardSelection.LocationNumber;
 
             ClassicGame game = app.GameState as ClassicGame;
             game.World.Update(Elapsed);
@@ -544,11 +548,7 @@ namespace Burntime.Remaster
                 action == InputAction.Primary)
             {
                 int locationNumber = _keyboardSelection.LocationNumber;
-                if (locationNumber == game.World.ActivePlayerObj.Location.Id)
-                    app.SceneManager.SetScene("LocationScene");
-                else if (locationNumber >= 0 &&
-                    game.World.ActivePlayerObj.CanTravel(game.World.ActivePlayerObj.Location,
-                        game.World.Locations[locationNumber]))
+                if (locationNumber >= 0)
                     TravelToLocation(locationNumber);
                 return true;
             }
