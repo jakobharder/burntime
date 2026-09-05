@@ -38,7 +38,8 @@ namespace Burntime.Remaster
         float nextTurnHoldTime;
         bool nextTurnTriggered;
         bool cameraPanActive;
-        bool followCharacterAfterPan;
+        bool followSelectedCharacter;
+        Character lastSelectedCharacter;
         bool groupMenuOpen;
 
         private bool fightMode
@@ -388,6 +389,13 @@ namespace Burntime.Remaster
             UpdateCameraPan(Elapsed);
 
             ClassicGame game = app.GameState as ClassicGame;
+            Character selectedCharacter = game.World.ActivePlayerObj.SelectedCharacter;
+            if (selectedCharacter != lastSelectedCharacter)
+            {
+                lastSelectedCharacter = selectedCharacter;
+                followSelectedCharacter = !app.MouseInputVisible;
+            }
+
             bool manualMovementActive = UpdateManualCharacterMovement();
             game.World.Update(Elapsed);
 
@@ -395,11 +403,11 @@ namespace Burntime.Remaster
             game.World.ActivePlayerObj.Update(Elapsed);
 
             if (app.MouseInputVisible)
-                followCharacterAfterPan = false;
+                followSelectedCharacter = false;
 
-            if (followCharacterAfterPan && charOverlay.SelectedCharacter != null)
-                followCharacterAfterPan = !view.FollowWithinMiddleThird(
-                    charOverlay.SelectedCharacter.Position, Elapsed);
+            if (followSelectedCharacter && selectedCharacter != null)
+                followSelectedCharacter = !view.FollowWithinMiddleThird(
+                    selectedCharacter.Position, Elapsed);
             else if (manualMovementActive && charOverlay.SelectedCharacter != null)
                 view.FollowWithinMiddleThird(charOverlay.SelectedCharacter.Position, Elapsed);
 
@@ -502,13 +510,13 @@ namespace Burntime.Remaster
                 if (cameraPanActive)
                 {
                     cameraPanActive = false;
-                    followCharacterAfterPan = !app.MouseInputVisible;
+                    followSelectedCharacter = !app.MouseInputVisible;
                 }
                 return;
             }
 
             cameraPanActive = true;
-            followCharacterAfterPan = false;
+            followSelectedCharacter = false;
             view.Pan(direction, elapsed);
         }
 
@@ -574,7 +582,7 @@ namespace Burntime.Remaster
             nextTurnHoldTime = 0;
             nextTurnTriggered = false;
             cameraPanActive = false;
-            followCharacterAfterPan = false;
+            followSelectedCharacter = false;
 
             app.RenderMouse = false;
             app.MouseBoundings = view.Boundings;
@@ -592,11 +600,17 @@ namespace Burntime.Remaster
             view.Map = (MapData)game.World.ActiveLocationObj.Map.MapData;
             view.Location = game.World.ActiveLocationObj;
             view.Player = game.World.ActivePlayerObj;
+            lastSelectedCharacter = view.Player.SelectedCharacter;
 
-            //if (view.Player.RefreshScrollPosition)
-                view.CenterTo(view.Player.Character.Position);
-            //else
-            //    view.ScrollPosition = view.Player.LocationScrollPosition;
+            if (view.Player.RefreshScrollPosition)
+                view.CenterTo(view.Player.SelectedCharacter.Position);
+            else
+                view.ScrollPosition = view.Player.LocationScrollPosition;
+
+            // Returning from another scene may restore or otherwise reposition the
+            // camera without going through UpdateCameraPan. In directional input
+            // modes, resume the same automatic follow used after manual camera pan.
+            followSelectedCharacter = !app.MouseInputVisible;
             gui.UpdatePlayer();
 
             view.Player.OnMainMap = false;

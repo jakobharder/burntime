@@ -6,6 +6,7 @@
 
 - Automatically select all after hiring an NPC
 - Reordered entries in location action menu
+- Gamepad: fixed situations where the camera doesn't move to the selected character automatically
 
 ### Changes
 
