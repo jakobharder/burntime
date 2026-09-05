@@ -31,6 +31,7 @@
 | `LocationInfo` | E / Shift+Right | D-pad right / Right shoulder | both maps
 | `NextTurn` | Hold Tab | Hold D-pad down | both maps
 | `ToggleInteractionMode` | C | — | both maps
+| `ShowEntrances` | Hold Alt | Hold Left Trigger | both maps
 | `LeftArea` | Q / Shift+Left | Left shoulder | all but maps
 | `RightArea` | E / Shift+Right | Right shoulder | all but maps
 

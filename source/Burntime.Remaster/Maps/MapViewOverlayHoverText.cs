@@ -37,10 +37,17 @@ public class MapViewHoverInfo
 
 class MapViewOverlayHoverText : IMapViewOverlay
 {
+    const int CounterFrameCount = 15;
+    const int FoodTrapOverlap = 4;
+    const int TrapWaterOverlap = 5;
+    const int RedRowOffset = CounterFrameCount;
+    const int TrapRowOffset = CounterFrameCount * 2;
+
     ClassicGame game;
     Location mapState;
     Player player;
     IResourceManager resMan;
+    readonly ISprite[] counterSprites = new ISprite[CounterFrameCount * 3];
 
     public bool IsVisible { get; set; } = true;
     public bool ShowAllEntrances { get; set; }
@@ -49,6 +56,13 @@ class MapViewOverlayHoverText : IMapViewOverlay
     public MapViewOverlayHoverText(Module App)
     {
         resMan = App.ResourceManager;
+        for (int frame = 0; frame < counterSprites.Length; frame++)
+        {
+            ISprite sprite = resMan.GetImage(
+                $"pngsheet@gfx/ui/info_counter.png?{frame}?8x12");
+            sprite.Touch();
+            counterSprites[frame] = sprite;
+        }
     }
 
     public void MouseMoveOverlay(Vector2 Position)
@@ -137,30 +151,39 @@ class MapViewOverlayHoverText : IMapViewOverlay
             return;
         }
 
-        string prefix = " (";
-        string foodText = info.WorldLocation.GetFoodProductionRate().FoodPerDay.ToString();
-        string waterText = " " + info.WorldLocation.Source.Water;
-        const string closingBracket = ")";
-        Font foodFont = resMan.GetFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
-        Font waterFont = resMan.GetFont(BurntimeClassic.FontName, new PixelColor(128, 136, 192));
-
+        string prefix = " ";
+        int foodPerDay = info.WorldLocation.GetFoodProductionRate().FoodPerDay;
+        ISprite? trapIcon = GetTrapIcon(info.WorldLocation);
+        ISprite foodCounter = GetCounterSprite(foodPerDay, red: true);
+        ISprite waterCounter = GetCounterSprite(info.WorldLocation.Source.Water, red: false);
+        bool showFoodCounter = foodPerDay > 0;
+        int counterWidth = (showFoodCounter ? foodCounter.Width : 0) +
+            (trapIcon?.Width ?? 0) + waterCounter.Width -
+            (showFoodCounter && trapIcon != null ? FoodTrapOverlap : 0) -
+            (trapIcon != null ? TrapWaterOverlap : 0);
         int titleWidth = titleFont.GetWidth(info.Title + prefix);
-        int totalWidth = titleWidth + foodFont.GetWidth(foodText) +
-            waterFont.GetWidth(waterText) + titleFont.GetWidth(closingBracket);
+        int totalWidth = titleWidth + counterWidth;
         Vector2 position = info.Position + offset - new Vector2(totalWidth / 2, 0);
         position.x = System.Math.Clamp(position.x, 0,
             System.Math.Max(0, target.Size.x - totalWidth));
         titleFont.DrawText(target, position, info.Title + prefix, TextAlignment.Left,
             VerticalTextAlignment.Center, alpha);
         position.x += titleWidth;
-        foodFont.DrawText(target, position, foodText, TextAlignment.Left,
-            VerticalTextAlignment.Center, alpha);
-        position.x += foodFont.GetWidth(foodText);
-        waterFont.DrawText(target, position, waterText, TextAlignment.Left,
-            VerticalTextAlignment.Center, alpha);
-        position.x += waterFont.GetWidth(waterText);
-        titleFont.DrawText(target, position, closingBracket, TextAlignment.Left,
-            VerticalTextAlignment.Center, alpha);
+        if (showFoodCounter)
+        {
+            target.DrawSprite(new Vector2(position.x, position.y - foodCounter.Height / 2),
+                foodCounter, alpha);
+            position.x += foodCounter.Width - (trapIcon != null ? FoodTrapOverlap : 0);
+        }
+        if (trapIcon != null)
+        {
+            target.DrawSprite(new Vector2(position.x, position.y - trapIcon.Height / 2),
+                trapIcon, alpha);
+            position.x += trapIcon.Width - TrapWaterOverlap;
+        }
+        target.DrawSprite(new Vector2(position.x, position.y - waterCounter.Height / 2),
+            waterCounter, alpha);
+        position.x += waterCounter.Width;
     }
 
     void DrawEntranceText(RenderTarget target, MapViewHoverInfo info, Vector2 offset, float alpha,
@@ -179,33 +202,97 @@ class MapViewOverlayHoverText : IMapViewOverlay
             if (item.FoodValue > 0)
                 foodValue += item.FoodValue;
 
-        string itemText = " (" + info.Room.Items.Count;
-        string foodText = foodValue > 0 ? " " + foodValue : "";
-        string waterText = info.Room.IsWaterSource ? " " + mapState.Source.Reserve : "";
-        const string closingBracket = ")";
-        Font itemFont = resMan.GetFont(BurntimeClassic.FontName, info.Color);
-        Font foodFont = resMan.GetFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
-        Font waterFont = resMan.GetFont(BurntimeClassic.FontName, new PixelColor(128, 136, 192));
-        int titleWidth = titleFont.GetWidth(info.Title);
-        int totalWidth = titleWidth + itemFont.GetWidth(itemText) + foodFont.GetWidth(foodText) +
-            waterFont.GetWidth(waterText) + itemFont.GetWidth(closingBracket);
+        int foodUnits = foodValue / 3;
+        ISprite foodCounter = GetCounterSprite(foodUnits, red: true);
+        ISprite? trapIcon = GetTrapIcon(mapState, info.Room);
+        ISprite waterCounter = GetCounterSprite(mapState.Source.Reserve, red: false);
+        bool showFoodCounter = foodUnits > 0;
+        bool showWaterCounter = info.Room.IsWaterSource;
+        int counterWidth = (showFoodCounter ? foodCounter.Width : 0) +
+            (trapIcon?.Width ?? 0) + (showWaterCounter ? waterCounter.Width : 0) -
+            (showFoodCounter && trapIcon != null ? FoodTrapOverlap : 0) -
+            (trapIcon != null && showWaterCounter ? TrapWaterOverlap : 0);
+        string title = info.Title + (counterWidth > 0 ? " " : "");
+        int titleWidth = titleFont.GetWidth(title);
+        int totalWidth = titleWidth + counterWidth;
         Vector2 position = info.Position + offset - new Vector2(totalWidth / 2, 0);
         position.x = System.Math.Clamp(position.x, 0,
             System.Math.Max(0, target.Size.x - totalWidth));
-        titleFont.DrawText(target, position, info.Title, TextAlignment.Left,
+        titleFont.DrawText(target, position, title, TextAlignment.Left,
             VerticalTextAlignment.Center, alpha);
         position.x += titleWidth;
-        itemFont.DrawText(target, position, itemText, TextAlignment.Left,
-            VerticalTextAlignment.Center, alpha);
-        position.x += itemFont.GetWidth(itemText);
-        foodFont.DrawText(target, position, foodText, TextAlignment.Left,
-            VerticalTextAlignment.Center, alpha);
-        position.x += foodFont.GetWidth(foodText);
-        waterFont.DrawText(target, position, waterText, TextAlignment.Left,
-            VerticalTextAlignment.Center, alpha);
-        position.x += waterFont.GetWidth(waterText);
-        itemFont.DrawText(target, position, closingBracket, TextAlignment.Left,
-            VerticalTextAlignment.Center, alpha);
+        if (showFoodCounter)
+        {
+            target.DrawSprite(new Vector2(position.x, position.y - foodCounter.Height / 2),
+                foodCounter, alpha);
+            position.x += foodCounter.Width - (trapIcon != null ? FoodTrapOverlap : 0);
+        }
+        if (trapIcon != null)
+        {
+            target.DrawSprite(new Vector2(position.x, position.y - trapIcon.Height / 2),
+                trapIcon, alpha);
+            position.x += trapIcon.Width - (showWaterCounter ? TrapWaterOverlap : 0);
+        }
+        if (showWaterCounter)
+        {
+            target.DrawSprite(new Vector2(position.x, position.y - waterCounter.Height / 2),
+                waterCounter, alpha);
+            position.x += waterCounter.Width;
+        }
+    }
+
+    ISprite GetCounterSprite(int value, bool red)
+    {
+        int frame = System.Math.Clamp(value, 0, CounterFrameCount - 1) +
+            (red ? RedRowOffset : 0);
+        return counterSprites[frame];
+    }
+
+    ISprite? GetTrapIcon(Location location, Room? room = null)
+    {
+        var production = location.Production;
+        if (production == null ||
+            (room != null && location.GetFoodProductionRate().FoodPerDay <= 0))
+            return null;
+
+        foreach (Room candidateRoom in location.Rooms)
+        {
+            foreach (Item item in candidateRoom.Items)
+            {
+                if (item.Type.Production != production)
+                    continue;
+
+                return room == null || candidateRoom == room
+                    ? GetTrapSprite(production)
+                    : null;
+            }
+        }
+
+        if (room == null)
+        {
+            foreach (Character npc in location.CampNPC)
+                foreach (Item item in npc.Items)
+                    if (item.Type.Production == production)
+                        return GetTrapSprite(production);
+        }
+
+        return null;
+    }
+
+    ISprite? GetTrapSprite(Production production)
+    {
+        int icon = production.Produce.ID switch
+        {
+            "item_maggots" => 1,
+            "item_rats" => 2,
+            "item_snake" => 3,
+            "item_meat" => 4,
+            _ => 0
+        };
+        if (icon == 0)
+            return null;
+
+        return counterSprites[TrapRowOffset + icon];
     }
 
     static bool IsInViewport(Rect area, Vector2 offset, Vector2 size)

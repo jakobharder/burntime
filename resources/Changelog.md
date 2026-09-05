@@ -9,6 +9,7 @@
 - Gamepad: fixed situations where the camera doesn't move to the selected character automatically
 - Alt/LT shortcut to show all entrances
 - Place produced food preferrably next to the trap
+- Show food/trap/water infos on entrances and locations
 
 ### Changes
 
