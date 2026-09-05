@@ -84,7 +84,7 @@ class MapViewOverlayHoverText : IMapViewOverlay
                     : new MapViewHoverInfo(mapState.Rooms[i], resMan, BurntimeClassic.LightGray);
                 Font font = resMan.GetFont(BurntimeClassic.FontName, info.Color);
                 font.DrawText(textTarget, info.Position + Offset - new Vector2(0, topMargin),
-                    info.Title, TextAlignment.Center);
+                    info.Title, TextAlignment.Center, VerticalTextAlignment.Center, 0.7f);
             }
         }
     }
