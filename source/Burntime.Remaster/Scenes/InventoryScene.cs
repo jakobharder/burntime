@@ -149,15 +149,24 @@ namespace Burntime.Remaster.Scenes
                 return;
             }
 
-            exitPromptOverlay.SetPrompts(new InputPrompt(InputAction.Back, ""));
+            exitPromptOverlay.SetPrompts(app.LastInputMode == InputMode.Mouse
+                ? []
+                : [new InputPrompt(InputAction.Back, "")]);
 
             ItemGridWindow activeGrid = roomAreaActive && grid != null ? grid : inventory.Grid;
-            Item? selectedItem = activeGrid.KeyboardSelectedItem;
+            Item? selectedItem = app.LastInputMode == InputMode.Mouse
+                ? activeGrid.MouseHoveredItem
+                : activeGrid.KeyboardSelectedItem;
             GuiString? secondaryAction = GetSecondaryPrompt(selectedItem, activeGrid == inventory.Grid);
 
             List<InputPrompt> prompts = [];
             if (secondaryAction != null)
-                prompts.Add(new(InputAction.Secondary, secondaryAction));
+            {
+                prompts.Add(new(InputAction.Secondary, secondaryAction)
+                {
+                    PreferredMouseControl = MouseButton.Right
+                });
+            }
             bool canTransfer = selectedItem != null && grid != null &&
                 (activeGrid == inventory.Grid
                     ? grid.Count < grid.MaxCount
@@ -165,9 +174,12 @@ namespace Burntime.Remaster.Scenes
             if (canTransfer)
             {
                 prompts.Add(new(InputAction.Primary,
-                    activeGrid == inventory.Grid ? "@prompts?39" : "@prompts?37"));
+                    activeGrid == inventory.Grid ? "@prompts?39" : "@prompts?37")
+                {
+                    PreferredMouseControl = MouseButton.Left
+                });
             }
-            if (group.Count > 1)
+            if (app.LastInputMode != InputMode.Mouse && group.Count > 1)
             {
                 prompts.Add(new(InputAction.Statistics, "@prompts?16")
                 {

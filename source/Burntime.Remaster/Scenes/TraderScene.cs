@@ -30,6 +30,7 @@ class TraderScene : Scene
     ExchangeWindow exchangeBottom;
     ItemGridWindow temporarySpace;
     KeyboardArea keyboardArea;
+    ItemGridWindow? mouseHoverGrid;
     Vector2? keyboardMousePosition;
     readonly InputPromptOverlay promptOverlay;
     readonly InputPromptOverlay exitPromptOverlay;
@@ -78,11 +79,13 @@ class TraderScene : Scene
         exchangeTop = new ExchangeWindow(App);
         inventoryTrader.Grid.Mask = exchangeTop.Grid;
         exchangeTop.LeftClickItemEvent += OnLeftClickItemTrader;
+        exchangeTop.Grid.MouseSelectionChanged += OnMouseSelectionChanged;
         Windows += exchangeTop;
 
         exchangeBottom = new ExchangeWindow(App);
         inventory.Grid.Mask = exchangeBottom.Grid;
         exchangeBottom.LeftClickItemEvent += OnLeftClickItemInventory;
+        exchangeBottom.Grid.MouseSelectionChanged += OnMouseSelectionChanged;
         Windows += exchangeBottom;
 
         temporarySpace = new ItemGridWindow(App);
@@ -129,6 +132,7 @@ class TraderScene : Scene
     {
         base.OnUpdate(elapsed);
         UpdateInlinePromptPositions();
+        UpdatePromptOverlay();
     }
 
     Vector2 _lastPosition = Vector2.Zero;
@@ -247,7 +251,8 @@ class TraderScene : Scene
 
     void OnMouseSelectionChanged(ItemGridWindow selectedGrid)
     {
-        keyboardArea = selectedGrid == inventoryTrader.Grid
+        mouseHoverGrid = selectedGrid;
+        keyboardArea = selectedGrid == inventoryTrader.Grid || selectedGrid == exchangeTop.Grid
             ? KeyboardArea.Trader
             : selectedGrid == temporarySpace
                 ? KeyboardArea.Temporary
@@ -494,9 +499,69 @@ class TraderScene : Scene
 
     void UpdatePromptOverlay()
     {
+        bool mouseInput = app.LastInputMode == InputMode.Mouse;
+        exitPromptOverlay.SetPrompts(mouseInput
+            ? []
+            : [new InputPrompt(InputAction.Back, "")]);
+        actionPromptOverlay.SetPrompts(mouseInput
+            ? []
+            : [new InputPrompt(InputAction.SceneAction, "")]);
+
+        if (mouseInput)
+        {
+            List<InputPrompt> mousePrompts = [];
+            Item? hoveredItem = mouseHoverGrid?.MouseHoveredItem;
+            if (hoveredItem != null)
+            {
+                if (keyboardArea == KeyboardArea.Temporary)
+                {
+                    mousePrompts.Add(new(InputAction.Primary, "@prompts?14")
+                    {
+                        PreferredMouseControl = MouseButton.Left
+                    });
+                }
+                else if (keyboardArea == KeyboardArea.Player)
+                {
+                    bool isOffered = exchangeBottom.Grid.Contains(hoveredItem);
+                    mousePrompts.Add(new(InputAction.Primary,
+                        isOffered ? "@prompts?40" : "@prompts?31")
+                    {
+                        PreferredMouseControl = MouseButton.Left
+                    });
+                    if (mouseHoverGrid == inventory.Grid && !isOffered &&
+                        temporarySpace.Count < temporarySpace.MaxCount)
+                    {
+                        mousePrompts.Add(new(InputAction.Secondary, "@prompts?14")
+                        {
+                            PreferredMouseControl = MouseButton.Right
+                        });
+                    }
+                }
+                else
+                {
+                    bool isTaken = exchangeTop.Grid.Contains(hoveredItem);
+                    mousePrompts.Add(new(InputAction.Primary,
+                        isTaken ? "@prompts?40" : "@prompts?31")
+                    {
+                        PreferredMouseControl = MouseButton.Left
+                    });
+                }
+            }
+            promptOverlay.SetPrompts(mousePrompts.ToArray());
+            return;
+        }
+
+        Item? selectedItem = ActiveKeyboardGrid.KeyboardSelectedItem;
+        bool isSelectedForTrade = selectedItem != null &&
+            (keyboardArea switch
+            {
+                KeyboardArea.Player => exchangeBottom.Grid.Contains(selectedItem),
+                KeyboardArea.Trader => exchangeTop.Grid.Contains(selectedItem),
+                _ => false
+            });
         GuiString primaryLabel = keyboardArea == KeyboardArea.Temporary
             ? "@prompts?14"
-            : "@prompts?31";
+            : isSelectedForTrade ? "@prompts?40" : "@prompts?31";
         List<InputPrompt> prompts = [];
         prompts.Add(new(InputAction.Primary, primaryLabel));
         if (keyboardArea == KeyboardArea.Player)

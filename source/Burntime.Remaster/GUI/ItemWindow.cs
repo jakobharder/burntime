@@ -131,5 +131,7 @@ namespace Burntime.Remaster.GUI
 
             return null;
         }
+
+        public bool IsMouseHovered => GetTopMostItem() == this;
     }
 }

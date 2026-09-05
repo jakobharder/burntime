@@ -38,3 +38,4 @@ Ofrecer
 Tomar
 Luchar
 Guardar
+Deseleccionar

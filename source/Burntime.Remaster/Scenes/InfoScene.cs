@@ -208,18 +208,7 @@ namespace Burntime.Remaster.Scenes
                 production.ItemID = "";
             }
 
-            if (productionID >= 0)
-            {
-                promptOverlay.SetPrompts(
-                    new(InputAction.MoveLeft, "@prompts?32")
-                    {
-                        AlternateAction = InputAction.MoveRight,
-                        GamepadOverride = "D-pad Left/Right"
-                    },
-                    new(InputAction.Back, "@prompts?17"));
-            }
-            else
-                promptOverlay.SetPrompts();
+            UpdatePromptOverlay();
 
             items.Clear();
             foreach (Room room in loc.Rooms)
@@ -237,6 +226,46 @@ namespace Burntime.Remaster.Scenes
             offset = 0;
             RefreshItems();
             UpdateCampNPCs();
+        }
+
+        public override void OnUpdate(float elapsed)
+        {
+            base.OnUpdate(elapsed);
+            UpdatePromptOverlay();
+        }
+
+        void UpdatePromptOverlay()
+        {
+            if (productionID < 0)
+            {
+                promptOverlay.SetPrompts();
+                return;
+            }
+
+            if (app.LastInputMode == InputMode.Mouse)
+            {
+                if (!production.IsMouseHovered)
+                {
+                    promptOverlay.SetPrompts();
+                    return;
+                }
+
+                promptOverlay.SetPrompts(new InputPrompt(InputAction.MoveRight, "@prompts?32")
+                {
+                    AlternateAction = InputAction.MoveLeft,
+                    PreferredMouseControl = MouseButton.Left,
+                    PreferredAlternateMouseControl = MouseButton.Right
+                });
+                return;
+            }
+
+            promptOverlay.SetPrompts(
+                new(InputAction.MoveLeft, "@prompts?32")
+                {
+                    AlternateAction = InputAction.MoveRight,
+                    GamepadOverride = "D-pad Left/Right"
+                },
+                new(InputAction.Back, "@prompts?17"));
         }
 
         int offset = 0;

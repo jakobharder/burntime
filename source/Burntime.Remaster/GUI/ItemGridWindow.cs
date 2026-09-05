@@ -46,6 +46,10 @@ namespace Burntime.Remaster.GUI
         bool hasLastMousePosition;
         bool mouseHasLeft;
         Vector2 lastMousePosition;
+        const float MousePromptHideDelay = 0.2f;
+        Item? mousePromptItem;
+        float mousePromptHideRemaining;
+        bool mousePromptHidePending;
 
         int[] gridPositions;
         bool lockPositions = false;
@@ -157,24 +161,56 @@ namespace Burntime.Remaster.GUI
             lastMousePosition = position;
             hasLastMousePosition = true;
             mouseHasLeft = false;
+            mouseHoverIndex = -1;
 
             for (int i = itemWindows?.Length - 1 ?? -1; i >= 0; i--)
             {
                 if (IsValidKeyboardIndex(i) && itemWindows[i].Boundings.PointInside(position))
                 {
+                    mouseHoverIndex = i;
+                    mousePromptItem = items[gridPositions[i]];
+                    mousePromptHidePending = false;
+                    mousePromptHideRemaining = 0;
                     keyboardIndex = i;
                     MouseSelectionChanged?.Invoke(this);
                     break;
                 }
             }
 
+            if (mouseHoverIndex < 0 && mousePromptItem != null && !mousePromptHidePending)
+            {
+                mousePromptHidePending = true;
+                mousePromptHideRemaining = MousePromptHideDelay;
+            }
+
             return base.OnMouseMove(position);
+        }
+
+        public override void OnUpdate(float elapsed)
+        {
+            if (mousePromptHidePending)
+            {
+                mousePromptHideRemaining -= elapsed;
+                if (mousePromptHideRemaining <= 0)
+                    ClearMousePromptItem();
+            }
+
+            base.OnUpdate(elapsed);
         }
 
         public override void OnMouseLeave()
         {
             mouseHasLeft = true;
+            mouseHoverIndex = -1;
+            ClearMousePromptItem();
             base.OnMouseLeave();
+        }
+
+        void ClearMousePromptItem()
+        {
+            mousePromptItem = null;
+            mousePromptHidePending = false;
+            mousePromptHideRemaining = 0;
         }
 
         internal void SelectFromMouseClick(int index)
@@ -182,6 +218,10 @@ namespace Burntime.Remaster.GUI
             if (!UnifiedSelection || !IsValidKeyboardIndex(index))
                 return;
 
+            mouseHoverIndex = index;
+            mousePromptItem = items[gridPositions[index]];
+            mousePromptHidePending = false;
+            mousePromptHideRemaining = 0;
             keyboardIndex = index;
             MouseSelectionChanged?.Invoke(this);
         }
@@ -300,6 +340,9 @@ namespace Burntime.Remaster.GUI
         public Item? KeyboardSelectedItem => IsValidKeyboardIndex(keyboardIndex)
             ? items[gridPositions[keyboardIndex]]
             : null;
+
+        int mouseHoverIndex = -1;
+        public Item? MouseHoveredItem => mousePromptItem;
 
         public bool ActivateKeyboardItem(bool secondary)
         {

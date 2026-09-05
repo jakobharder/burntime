@@ -11,8 +11,8 @@ enum KeyboardGlyph
     N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
     Digit0, Digit1, Digit2, Digit3, Digit4,
     Digit5, Digit6, Digit7, Digit8, Digit9,
-    Escape, Enter, Tab, Space, Backspace, Shift, Alt,
-    Up, Down, Left, Right,
+    Escape, Enter, Tab, Space, Ctrl, Alt, Shift,
+    Up, Down, Left, Right, MouseLeft, MouseRight,
     Count
 }
 
@@ -70,11 +70,21 @@ static class InputControlDisplay
         Key? preferredFirstKeyboardControl = null, Key? preferredSecondKeyboardControl = null,
         GamepadControl? preferredFirstGamepadControl = null,
         GamepadControl? preferredSecondGamepadControl = null,
-        string? keyboardOverride = null, string? gamepadOverride = null)
+        string? keyboardOverride = null, string? gamepadOverride = null,
+        MouseButton? preferredFirstMouseControl = null,
+        MouseButton? preferredSecondMouseControl = null)
     {
         string? controlOverride = inputMode == InputMode.Keyboard
             ? keyboardOverride
             : inputMode == InputMode.Gamepad ? gamepadOverride : null;
+        if (inputMode == InputMode.Mouse &&
+            !preferredFirstMouseControl.HasValue &&
+            !preferredSecondMouseControl.HasValue)
+        {
+            // Pair overrides describe a keyboard shortcut that remains usable
+            // while the mouse is active (for example Shift + Up/Down).
+            controlOverride = keyboardOverride;
+        }
         if (controlOverride != null)
         {
             if (inputMode == InputMode.Gamepad && controlOverride == "D-pad Left/Right")
@@ -85,9 +95,11 @@ static class InputControlDisplay
         }
 
         InputControlLabel first = Resolve(app, inputMode, firstAction,
-            preferredFirstKeyboardControl, preferredFirstGamepadControl);
+            preferredFirstKeyboardControl, preferredFirstGamepadControl,
+            mouseControl: preferredFirstMouseControl);
         InputControlLabel second = Resolve(app, inputMode, secondAction,
-            preferredSecondKeyboardControl, preferredSecondGamepadControl);
+            preferredSecondKeyboardControl, preferredSecondGamepadControl,
+            mouseControl: preferredSecondMouseControl);
         if (first.IsEmpty || second.IsEmpty)
             return InputControlLabel.Empty;
 
@@ -122,12 +134,33 @@ static class InputControlDisplay
     }
 
     static bool IsKeyboardModifier(InputControlPart part) =>
-        part.Keyboard is KeyboardGlyph.Shift or KeyboardGlyph.Alt;
+        part.Keyboard is KeyboardGlyph.Ctrl or KeyboardGlyph.Alt or KeyboardGlyph.Shift;
 
     public static InputControlLabel Resolve(Module app, InputMode inputMode, InputAction action,
         Key? preferredKeyboardControl = null, GamepadControl? preferredGamepadControl = null,
-        string? keyboardOverride = null, string? gamepadOverride = null)
+        string? keyboardOverride = null, string? gamepadOverride = null,
+        MouseButton? mouseControl = null)
     {
+        if (inputMode == InputMode.Mouse)
+        {
+            MouseButton? control = mouseControl ?? DefaultMouseControl(action);
+            if (control.HasValue)
+            {
+                KeyboardGlyph glyph = control.Value switch
+                {
+                    MouseButton.Left => KeyboardGlyph.MouseLeft,
+                    MouseButton.Right => KeyboardGlyph.MouseRight,
+                    _ => KeyboardGlyph.None
+                };
+                return glyph == KeyboardGlyph.None
+                    ? InputControlLabel.Empty
+                    : new InputControlLabel(new InputControlPart(glyph));
+            }
+
+            // Mouse users can still use the regular keyboard shortcuts.
+            inputMode = InputMode.Keyboard;
+        }
+
         if (inputMode == InputMode.Keyboard)
         {
             if (keyboardOverride != null)
@@ -201,6 +234,12 @@ static class InputControlDisplay
         _ => null
     };
 
+    static MouseButton? DefaultMouseControl(InputAction action) => action switch
+    {
+        InputAction.Primary => MouseButton.Left,
+        _ => null
+    };
+
     static Key FindPreferred(IReadOnlyList<Key> controls, Key? preferred)
     {
         if (preferred.HasValue)
@@ -253,7 +292,6 @@ static class InputControlDisplay
             return character switch
             {
                 ' ' => KeyboardGlyph.Space,
-                '\b' => KeyboardGlyph.Backspace,
                 _ => KeyboardGlyph.None
             };
         }

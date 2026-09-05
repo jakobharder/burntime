@@ -432,6 +432,44 @@ namespace Burntime.Remaster
                 return;
             }
 
+            if (app.LastInputMode == InputMode.Mouse)
+            {
+                List<InputPrompt> mousePrompts = [];
+                GuiString? mousePrimaryLabel = null;
+                if (view.ActiveEntrance >= 0 && !fightMode)
+                {
+                    mousePrimaryLabel = "@prompts?26";
+                }
+                else if (view.HoveredObject is DroppedItem)
+                {
+                    mousePrimaryLabel = "@prompts?23";
+                }
+                else if (view.HoveredObject is Character hoveredCharacter)
+                {
+                    if (fightMode && hoveredCharacter.Player != view.Player)
+                        mousePrimaryLabel = "@prompts?38";
+                    else if (!fightMode && hoveredCharacter.Player == view.Player)
+                        mousePrimaryLabel = "@prompts?31";
+                    else if (!fightMode && hoveredCharacter.Class != CharClass.Dog &&
+                        !view.Player.Group.Contains(hoveredCharacter))
+                        mousePrimaryLabel = "@prompts?34";
+                }
+
+                if (mousePrimaryLabel != null)
+                {
+                    mousePrompts.Add(new(InputAction.Primary, mousePrimaryLabel)
+                    {
+                        PreferredMouseControl = MouseButton.Left
+                    });
+                }
+                mousePrompts.Add(new(InputAction.Back, "@prompts?11")
+                {
+                    PreferredMouseControl = MouseButton.Right
+                });
+                promptOverlay.SetPrompts(mousePrompts.ToArray());
+                return;
+            }
+
             List<InputPrompt> prompts = [];
             GuiString? primaryLabel = null;
             if (nearbyAction.EntranceNumber != -1)

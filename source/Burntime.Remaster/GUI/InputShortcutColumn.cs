@@ -70,9 +70,6 @@ public sealed class InputShortcutColumn : Window
 
     public override void OnRender(RenderTarget target)
     {
-        if (app.LastInputMode == InputMode.Mouse)
-            return;
-
         RefreshInputMode();
         if (_display.Length == 0)
             return;

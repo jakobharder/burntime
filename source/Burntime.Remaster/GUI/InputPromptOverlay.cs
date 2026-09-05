@@ -14,6 +14,8 @@ public readonly record struct InputPrompt(InputAction Action, GuiString Label)
     public Key? PreferredAlternateKeyboardControl { get; init; }
     public GamepadControl? PreferredGamepadControl { get; init; }
     public GamepadControl? PreferredAlternateGamepadControl { get; init; }
+    public MouseButton? PreferredMouseControl { get; init; }
+    public MouseButton? PreferredAlternateMouseControl { get; init; }
     public string? KeyboardOverride { get; init; }
     public string? GamepadOverride { get; init; }
 }
@@ -88,6 +90,9 @@ public sealed class InputPromptOverlay : Window
                 current[i].PreferredGamepadControl != prompts[i].PreferredGamepadControl ||
                 current[i].PreferredAlternateGamepadControl !=
                     prompts[i].PreferredAlternateGamepadControl ||
+                current[i].PreferredMouseControl != prompts[i].PreferredMouseControl ||
+                current[i].PreferredAlternateMouseControl !=
+                    prompts[i].PreferredAlternateMouseControl ||
                 current[i].KeyboardOverride != prompts[i].KeyboardOverride ||
                 current[i].GamepadOverride != prompts[i].GamepadOverride)
                 return false;
@@ -97,7 +102,7 @@ public sealed class InputPromptOverlay : Window
 
     public override void OnRender(RenderTarget target)
     {
-        if (app.LastInputMode is not (InputMode.Keyboard or InputMode.Gamepad))
+        if (app.LastInputMode is not (InputMode.Mouse or InputMode.Keyboard or InputMode.Gamepad))
             return;
 
         if (_inputMode != app.LastInputMode || _language != app.Language ||
@@ -138,12 +143,14 @@ public sealed class InputPromptOverlay : Window
             InputControlLabel control = prompt.AlternateAction == InputAction.None
                 ? InputControlDisplay.Resolve(app, _inputMode, prompt.Action,
                     prompt.PreferredKeyboardControl, prompt.PreferredGamepadControl,
-                    prompt.KeyboardOverride, prompt.GamepadOverride)
+                    prompt.KeyboardOverride, prompt.GamepadOverride,
+                    prompt.PreferredMouseControl)
                 : InputControlDisplay.ResolvePair(app, _inputMode,
                     prompt.Action, prompt.AlternateAction,
                     prompt.PreferredKeyboardControl, prompt.PreferredAlternateKeyboardControl,
                     prompt.PreferredGamepadControl, prompt.PreferredAlternateGamepadControl,
-                    prompt.KeyboardOverride, prompt.GamepadOverride);
+                    prompt.KeyboardOverride, prompt.GamepadOverride,
+                    prompt.PreferredMouseControl, prompt.PreferredAlternateMouseControl);
             if (control.IsEmpty)
                 continue;
 

@@ -133,6 +133,8 @@ public class MapView : Window
         get { return entrance; }
     }
 
+    public IMapObject HoveredObject { get; private set; }
+
     public override void OnRender(RenderTarget Target)
     {
         base.OnRender(Target);
@@ -372,13 +374,19 @@ public class MapView : Window
         if (handler != null)
         {
             ClassicGame game = app.GameState as ClassicGame;
+            HoveredObject = null;
             game.World.ActiveLocationObj.Hover = null;
             game.World.ActiveLocationObj.HoverCharacter = null;
 
             foreach (Maps.IMapViewOverlay overlay in overlays)
             {
                 if (mouseInputVisible)
+                {
                     overlay.MouseMoveOverlay(mousePosition);
+                    IMapObject hoveredObject = overlay.GetObjectAt(mousePosition);
+                    if (hoveredObject != null)
+                        HoveredObject = hoveredObject;
+                }
                 overlay.UpdateOverlay(game, Elapsed);
             }
 

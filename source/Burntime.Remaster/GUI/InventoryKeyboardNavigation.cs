@@ -103,6 +103,12 @@ class InventoryKeyboardNavigation
 
     public ItemGridWindow ActiveGrid => roomAreaActive ? roomGrid : inventory.Grid;
 
+    public void SelectFromMouse(ItemGridWindow selectedGrid)
+    {
+        roomAreaActive = selectedGrid == roomGrid;
+        UpdateActiveArea();
+    }
+
     public bool CanMoveSelectedItem(Func<Item, bool>? canMoveToRoom = null)
     {
         Item? item = ActiveGrid.KeyboardSelectedItem;

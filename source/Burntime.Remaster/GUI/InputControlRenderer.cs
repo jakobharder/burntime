@@ -9,6 +9,8 @@ sealed class InputControlRenderer
 {
     const int GlyphSourceSize = 22;
     const int GlyphSourceSize2x = GlyphSourceSize * 2;
+    const int KeyboardAtlasColumns = 10;
+    const int KeyboardAtlasRows = 5;
 
     // Keep controller glyphs in the same source-pixel coordinate system as
     // highres-font.txt. This cancels the game's non-square ratio correction,
@@ -21,7 +23,8 @@ sealed class InputControlRenderer
     readonly Module _app;
     readonly bool _brackets;
     readonly GuiImage[][] _glyphs = new GuiImage[4][];
-    readonly GuiImage[] _keyboardGlyphs = new GuiImage[(int)KeyboardGlyph.Count - 1];
+    readonly GuiImage[] _keyboardGlyphs =
+        new GuiImage[KeyboardAtlasColumns * KeyboardAtlasRows];
 
     public InputControlRenderer(Module app, GuiFont font, bool brackets = true)
     {
@@ -73,7 +76,7 @@ sealed class InputControlRenderer
             int sourceSize = GlyphSourceSize;
             if (part.Keyboard != KeyboardGlyph.None)
             {
-                glyph = _keyboardGlyphs[(int)part.Keyboard - 1];
+                glyph = _keyboardGlyphs[GetKeyboardAtlasIndex(part.Keyboard)];
                 if (_app.Engine.OutputFiltering == OutputFiltering.Xbr2)
                     sourceSize = GlyphSourceSize2x;
             }
@@ -101,6 +104,27 @@ sealed class InputControlRenderer
             x += GetLabelGap(control, brackets);
             DrawText(target, ref x, position.y, label);
         }
+    }
+
+    static int GetKeyboardAtlasIndex(KeyboardGlyph glyph)
+    {
+        int sequentialIndex = (int)glyph - 1;
+        if (glyph is >= KeyboardGlyph.A and <= KeyboardGlyph.Space)
+            return sequentialIndex / 8 * KeyboardAtlasColumns + sequentialIndex % 8;
+
+        return glyph switch
+        {
+            KeyboardGlyph.Ctrl => 8,
+            KeyboardGlyph.Left => 9,
+            KeyboardGlyph.Shift => 18,
+            KeyboardGlyph.Right => 19,
+            KeyboardGlyph.Alt => 28,
+            KeyboardGlyph.MouseLeft => 29,
+            KeyboardGlyph.Up => 38,
+            KeyboardGlyph.MouseRight => 39,
+            KeyboardGlyph.Down => 48,
+            _ => 0
+        };
     }
 
     bool UsesBrackets(InputControlLabel control)

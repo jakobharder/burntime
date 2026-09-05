@@ -108,6 +108,7 @@ namespace Burntime.Remaster
             Windows += _promptOverlay = new InputPromptOverlay(app);
             _promptOverlay.AnchorToScreenBottomRight();
             Windows += _menuShortcutColumn = new InputShortcutColumn(app);
+            _menuShortcutColumn.Layer = _cursorAni.Layer - 1;
             _menuShortcutColumn.Hide();
             menu.WindowShow += (_, _) =>
             {
@@ -356,6 +357,48 @@ namespace Burntime.Remaster
             }
 
             ClassicGame game = app.GameState as ClassicGame;
+            if (app.LastInputMode == InputMode.Mouse)
+            {
+                List<InputPrompt> mousePrompts = [];
+                int hoveredLocationNumber = view.ActiveEntrance;
+                if (hoveredLocationNumber >= 0)
+                {
+                    Logic.Player player = game.World.ActivePlayerObj;
+                    Logic.Location hoveredLocation =
+                        game.World.Locations[hoveredLocationNumber];
+                    GuiString? primaryLabel = null;
+                    if (_infoMode)
+                    {
+                        if (CanShowInfo(player, hoveredLocation))
+                            primaryLabel = "@prompts?27";
+                    }
+                    else if (hoveredLocationNumber == player.Location.Id)
+                    {
+                        primaryLabel = "@prompts?26";
+                    }
+                    else if (player.Location.Neighbors.Contains(hoveredLocation) &&
+                        player.CanTravel(player.Location, hoveredLocation))
+                    {
+                        primaryLabel = "@prompts?25";
+                    }
+
+                    if (primaryLabel != null)
+                    {
+                        mousePrompts.Add(new(InputAction.Primary, primaryLabel)
+                        {
+                            PreferredMouseControl = MouseButton.Left
+                        });
+                    }
+                }
+
+                mousePrompts.Add(new(InputAction.Back, "@prompts?11")
+                {
+                    PreferredMouseControl = MouseButton.Right
+                });
+                _promptOverlay.SetPrompts(mousePrompts.ToArray());
+                return;
+            }
+
             int locationNumber = _keyboardSelection.LocationNumber;
             bool canEnter = locationNumber == game.World.ActivePlayerObj.Location.Id;
             bool canTravel = locationNumber >= 0 && !canEnter &&

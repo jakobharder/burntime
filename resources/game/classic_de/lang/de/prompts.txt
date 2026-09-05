@@ -38,3 +38,4 @@ Anbieten
 Nehmen
 Kämpfen
 Lagern
+Abwählen
