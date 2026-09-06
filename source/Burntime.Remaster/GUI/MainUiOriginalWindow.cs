@@ -103,7 +103,9 @@ namespace Burntime.Remaster
 
             Vector2 health = new Vector2(Size.x / 2 + 64, Size.y - 30);
             int fullBar = 75;
-            int healthBar = fullBar * game.World.ActivePlayerObj.Character.Health / 100;
+            Character healthCharacter = game.World.ActivePlayerObj.SelectedCharacter ??
+                game.World.ActivePlayerObj.Character;
+            int healthBar = fullBar * System.Math.Clamp(healthCharacter.Health, 0, 100) / 100;
             Target.RenderRect(health, new Vector2(healthBar, 6), new PixelColor(240, 64, 56));
 
             Vector2 timebar = new Vector2(Target.Width / 2 - 30, 2);

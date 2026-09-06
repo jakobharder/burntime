@@ -17,6 +17,7 @@ public class MapViewHoverInfo
     public PixelColor Color { get; init; }
     public Room Room { get; init; }
     public Location WorldLocation { get; init; }
+    public Character? Character { get; init; }
 
     public MapViewHoverInfo(String title, Vector2 position, PixelColor color, Room room = null)
     {
@@ -32,6 +33,7 @@ public class MapViewHoverInfo
         Position = new Vector2(obj.MapArea.Left + obj.MapArea.Width / 2, obj.MapArea.Top - 10);
         Color = color;
         Room = obj as Room;
+        Character = obj as Character;
     }
 }
 
@@ -39,6 +41,7 @@ class MapViewOverlayHoverText : IMapViewOverlay
 {
     const int CounterFrameCount = 15;
     const int FoodTrapOverlap = 4;
+    const int CharacterCounterOverlap = FoodTrapOverlap + 2;
     const int TrapWaterOverlap = 5;
     const int RedRowOffset = CounterFrameCount;
     const int TrapRowOffset = CounterFrameCount * 2;
@@ -90,6 +93,9 @@ class MapViewOverlayHoverText : IMapViewOverlay
             if (mapState.Hover.WorldLocation != null)
                 DrawWorldLocationText(textTarget, mapState.Hover,
                     Offset - new Vector2(0, topMargin), 1);
+            else if (mapState.Hover.Character != null)
+                DrawCharacterText(textTarget, mapState.Hover,
+                    Offset - new Vector2(0, topMargin), 1);
             else
                 DrawEntranceText(textTarget, mapState.Hover, Offset - new Vector2(0, topMargin), 1,
                     showInventoryHint: mapState.Player == player);
@@ -140,6 +146,59 @@ class MapViewOverlayHoverText : IMapViewOverlay
         }
     }
 
+    internal void DrawCharacterText(RenderTarget target, MapViewHoverInfo info, Vector2 offset,
+        float alpha)
+    {
+        Font titleFont = resMan.GetFont(BurntimeClassic.FontName, info.Color);
+        Character? character = info.Character;
+        bool showHealth = player != null && character?.Player == player;
+        bool showExperience = player != null && character != null &&
+            (character.Player == null || character.Player == player);
+        if (!showHealth && !showExperience)
+        {
+            titleFont.DrawText(target, info.Position + offset, info.Title, TextAlignment.Center,
+                VerticalTextAlignment.Center, alpha);
+            return;
+        }
+
+        ISprite? healthCounter = showHealth
+            ? GetCounterSprite(GetLevel(character!.Health, 7), red: true)
+            : null;
+        ISprite? experienceCounter = showExperience
+            ? counterSprites[TrapRowOffset + GetLevel(character!.Experience, 4)]
+            : null;
+        int counterWidth = (healthCounter?.Width ?? 0) + (experienceCounter?.Width ?? 0) -
+            (healthCounter != null && experienceCounter != null ? CharacterCounterOverlap : 0);
+        string title = info.Title + " ";
+        int titleWidth = titleFont.GetWidth(title);
+        int totalWidth = titleWidth + counterWidth;
+        Vector2 position = info.Position + offset - new Vector2(totalWidth / 2, 0);
+        position.x = System.Math.Clamp(position.x, 0,
+            System.Math.Max(0, target.Size.x - totalWidth));
+
+        titleFont.DrawText(target, position, title, TextAlignment.Left,
+            VerticalTextAlignment.Center, alpha);
+        position.x += titleWidth;
+        if (experienceCounter != null)
+        {
+            target.DrawSprite(new Vector2(position.x, position.y - experienceCounter.Height / 2),
+                experienceCounter, alpha);
+            position.x += experienceCounter.Width -
+                (healthCounter != null ? CharacterCounterOverlap : 0);
+        }
+        if (healthCounter != null)
+        {
+            target.DrawSprite(new Vector2(position.x, position.y - healthCounter.Height / 2),
+                healthCounter, alpha);
+        }
+    }
+
+    static int GetLevel(int value, int levels)
+    {
+        int percentage = System.Math.Clamp(value, 1, 100);
+        return System.Math.Clamp((percentage * levels + 99) / 100, 1, levels);
+    }
+
     internal void DrawWorldLocationText(RenderTarget target, MapViewHoverInfo info, Vector2 offset,
         float alpha)
     {
@@ -186,7 +245,7 @@ class MapViewOverlayHoverText : IMapViewOverlay
         position.x += waterCounter.Width;
     }
 
-    void DrawEntranceText(RenderTarget target, MapViewHoverInfo info, Vector2 offset, float alpha,
+    internal void DrawEntranceText(RenderTarget target, MapViewHoverInfo info, Vector2 offset, float alpha,
         bool showInventoryHint)
     {
         Font titleFont = resMan.GetFont(BurntimeClassic.FontName, info.Color);

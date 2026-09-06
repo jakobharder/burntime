@@ -67,7 +67,7 @@ namespace Burntime.Remaster
             view.Overlays.Add(new Maps.MapViewOverlayDroppedItems(App));
             view.Overlays.Add(charOverlay = new Maps.MapViewOverlayCharacters(App));
             view.Overlays.Add(hoverInfo = new Maps.MapViewOverlayHoverText(App));
-            view.Overlays.Add(nearbyAction = new Maps.MapViewOverlayNearbyAction(App));
+            view.Overlays.Add(nearbyAction = new Maps.MapViewOverlayNearbyAction(App, hoverInfo));
             view.ClickObject += new EventHandler<ObjectArgs>(view_ClickObject);
             view.Scroll += new EventHandler<MapScrollArgs>(view_Scroll);
             view.ContextMenu += View_ContextMenu;

@@ -14,7 +14,10 @@ class MapViewOverlayNearbyAction : IMapViewOverlay
     const int CharacterRange = 30;
 
     readonly Module app;
+    readonly MapViewOverlayHoverText hoverText;
     MapViewHoverInfo info;
+    Player? player;
+    Location? location;
     Character? announcedCharacter;
     MapViewHoverInfo? announcedInfo;
     float announcementRemaining;
@@ -26,9 +29,10 @@ class MapViewOverlayNearbyAction : IMapViewOverlay
     public Vector2? Position { get; private set; }
     public bool IsVisible { get; set; } = true;
 
-    public MapViewOverlayNearbyAction(Module app)
+    public MapViewOverlayNearbyAction(Module app, MapViewOverlayHoverText hoverText)
     {
         this.app = app;
+        this.hoverText = hoverText;
     }
 
     public void MouseMoveOverlay(Vector2 position)
@@ -45,6 +49,8 @@ class MapViewOverlayNearbyAction : IMapViewOverlay
 
     public void UpdateOverlay(WorldState world, float elapsed)
     {
+        player = world.CurrentPlayer as Player;
+        location = world.CurrentLocation as Location;
         EntranceNumber = -1;
         Object = null;
         Position = null;
@@ -68,9 +74,8 @@ class MapViewOverlayNearbyAction : IMapViewOverlay
         if (app.LastInputMode == InputMode.Mouse)
             return;
 
-        if (world.CurrentLocation is not Location location ||
-            world.CurrentPlayer is not Player player ||
-            player.SelectedCharacter == null)
+        if (location == null ||
+            player == null || player.SelectedCharacter == null)
             return;
 
         Character selectedCharacter = player.SelectedCharacter;
@@ -157,6 +162,18 @@ class MapViewOverlayNearbyAction : IMapViewOverlay
 
     void DrawInfo(RenderTarget target, MapViewHoverInfo drawInfo, Vector2 offset, float alpha)
     {
+        if (drawInfo.Character != null)
+        {
+            hoverText.DrawCharacterText(target, drawInfo, offset, alpha);
+            return;
+        }
+        if (drawInfo.Room != null)
+        {
+            hoverText.DrawEntranceText(target, drawInfo, offset, alpha,
+                showInventoryHint: location?.Player == player);
+            return;
+        }
+
         Font font = app.ResourceManager.GetFont(BurntimeClassic.FontName, drawInfo.Color);
         font.DrawText(target, drawInfo.Position + offset, drawInfo.Title,
             TextAlignment.Center, VerticalTextAlignment.Center, alpha);
