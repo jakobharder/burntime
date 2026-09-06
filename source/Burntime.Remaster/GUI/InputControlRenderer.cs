@@ -25,12 +25,16 @@ sealed class InputControlRenderer
     readonly GuiImage[][] _glyphs = new GuiImage[4][];
     readonly GuiImage[] _keyboardGlyphs =
         new GuiImage[KeyboardAtlasColumns * KeyboardAtlasRows];
+    readonly GuiImage _holdGlyph;
+
+    public int HoldGlyphWidth => GlyphWidth;
 
     public InputControlRenderer(Module app, GuiFont font, bool brackets = true)
     {
         _app = app;
         _font = font;
         _brackets = brackets;
+        _holdGlyph = "gfx/ui/input_glyphs_hold.png";
         string[] families = ["xbox", "playstation", "steam", "switch"];
         for (int family = 0; family < families.Length; family++)
         {
@@ -73,12 +77,12 @@ sealed class InputControlRenderer
             }
 
             ISprite glyph;
-            int sourceSize = GlyphSourceSize;
+            int sourceSize = _app.Engine.OutputFiltering == OutputFiltering.Xbr2
+                ? GlyphSourceSize2x
+                : GlyphSourceSize;
             if (part.Keyboard != KeyboardGlyph.None)
             {
                 glyph = _keyboardGlyphs[GetKeyboardAtlasIndex(part.Keyboard)];
-                if (_app.Engine.OutputFiltering == OutputFiltering.Xbr2)
-                    sourceSize = GlyphSourceSize2x;
             }
             else
             {
@@ -86,15 +90,7 @@ sealed class InputControlRenderer
                 int family = (int)_app.Engine.InputGlyphs.LabelStyle;
                 glyph = _glyphs[family][index];
             }
-            if (glyph.Touch())
-                glyph.Resolution = GlyphResolution * GlyphSourceSize / sourceSize;
-            target.SelectSprite(glyph);
-            target.DrawSelectedSpriteF(
-                new Vector2f(x, position.y + (_font.GetHeight() - GlyphHeight) / 2 +
-                    (_app.IsNewGfx ? 0.5f : 0)),
-                new Rect(Vector2.Zero, new Vector2(sourceSize, sourceSize)),
-                PixelColor.White,
-                postFilter: true, directToFramebuffer: !_app.IsNewGfx);
+            DrawGlyph(target, new Vector2(x, position.y), glyph, sourceSize);
             x += GlyphWidth;
         }
         string suffix = brackets ? "]" : "";
@@ -104,6 +100,28 @@ sealed class InputControlRenderer
             x += GetLabelGap(control, brackets);
             DrawText(target, ref x, position.y, label);
         }
+    }
+
+    public void DrawHoldGlyph(RenderTarget target, Vector2 position)
+    {
+        int sourceSize = _app.Engine.OutputFiltering == OutputFiltering.Xbr2
+            ? GlyphSourceSize2x
+            : GlyphSourceSize;
+        DrawGlyph(target, position, _holdGlyph, sourceSize);
+    }
+
+    void DrawGlyph(RenderTarget target, Vector2 position, ISprite glyph, int sourceSize)
+    {
+        if (glyph.Touch())
+            glyph.Resolution = GlyphResolution * GlyphSourceSize / sourceSize;
+        target.SelectSprite(glyph);
+        target.DrawSelectedSpriteF(
+            new Vector2f(position.x,
+                position.y + (_font.GetHeight() - GlyphHeight) / 2 +
+                (_app.IsNewGfx ? 0.5f : 0)),
+            new Rect(Vector2.Zero, new Vector2(sourceSize, sourceSize)),
+            PixelColor.White,
+            postFilter: true, directToFramebuffer: !_app.IsNewGfx);
     }
 
     static int GetKeyboardAtlasIndex(KeyboardGlyph glyph)

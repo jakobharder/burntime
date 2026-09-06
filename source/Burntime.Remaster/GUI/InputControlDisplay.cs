@@ -178,10 +178,12 @@ static class InputControlDisplay
                 return FromText(TranslateOverride(app, gamepadOverride));
 
             IReadOnlyList<GamepadControl> controls = app.GamepadActionBindings.GetControls(action);
-            if (controls.Count == 0)
+            if (controls.Count == 0 && !preferredGamepadControl.HasValue)
                 return InputControlLabel.Empty;
-            GamepadControl control = FindPreferred(controls,
-                preferredGamepadControl ?? DefaultGamepadControl(action));
+            GamepadControl control = controls.Count == 0
+                ? preferredGamepadControl!.Value
+                : FindPreferred(controls,
+                    preferredGamepadControl ?? DefaultGamepadControl(action));
             IInputGlyphProvider glyphProvider = app.Engine.InputGlyphs;
             InputGlyph glyph = glyphProvider.GetGlyph(control);
             string? labelOverride = glyphProvider.GetLabelOverride(control);

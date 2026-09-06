@@ -30,7 +30,7 @@ public sealed class InputShortcutColumn : Window
     string _language = string.Empty;
     int _glyphRevision = -1;
 
-    readonly record struct ShortcutDisplay(InputControlLabel Control, string Prefix, int Width);
+    readonly record struct ShortcutDisplay(InputControlLabel Control, bool Hold, int Width);
 
     public PixelColor BackgroundColor { get; set; } = new(128, 0, 0, 0);
 
@@ -79,10 +79,20 @@ public sealed class InputShortcutColumn : Window
 
         target.RenderRect(Vector2.Zero, Size, BackgroundColor);
         for (int i = 0; i < _display.Length; i++)
+        {
             if (!_display[i].Control.IsEmpty)
+            {
+                Vector2 position = new(HorizontalPadding, TopHeight + RowHeight * i + 2);
+                if (_display[i].Hold)
+                {
+                    _controlRenderer.DrawHoldGlyph(target,
+                        position);
+                    position.x += _controlRenderer.HoldGlyphWidth;
+                }
                 _controlRenderer.Draw(target,
-                    new Vector2(HorizontalPadding, TopHeight + RowHeight * i + 2),
-                    _display[i].Control, prefix: _display[i].Prefix);
+                    position, _display[i].Control);
+            }
+        }
     }
 
     void RefreshInputMode()
@@ -110,11 +120,12 @@ public sealed class InputShortcutColumn : Window
                 : InputControlDisplay.Resolve(app, _inputMode, shortcut.Action,
                     shortcut.PreferredKeyboardControl, shortcut.PreferredGamepadControl,
                     shortcut.KeyboardOverride, shortcut.GamepadOverride);
-            string prefix = shortcut.Hold && !control.IsEmpty
-                ? InputControlDisplay.Localized(app, InputControlDisplay.Hold) + " "
-                : string.Empty;
-            int displayWidth = control.IsEmpty ? 0 : _controlRenderer.Measure(control, prefix: prefix);
-            _display[i] = new ShortcutDisplay(control, prefix, displayWidth);
+            bool hold = shortcut.Hold && !control.IsEmpty;
+            int displayWidth = control.IsEmpty
+                ? 0
+                : _controlRenderer.Measure(control) +
+                    (hold ? _controlRenderer.HoldGlyphWidth : 0);
+            _display[i] = new ShortcutDisplay(control, hold, displayWidth);
             width = System.Math.Max(width, displayWidth);
         }
         _language = app.Language;

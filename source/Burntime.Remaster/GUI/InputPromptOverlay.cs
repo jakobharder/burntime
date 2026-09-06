@@ -26,7 +26,6 @@ public readonly record struct InputPrompt(InputAction Action, GuiString Label)
 /// </summary>
 public sealed class InputPromptOverlay : Window
 {
-    const int HorizontalPadding = 4;
     const int VerticalPadding = 2;
     string _separator = "   ";
 
@@ -41,6 +40,8 @@ public sealed class InputPromptOverlay : Window
     readonly record struct PromptDisplay(InputControlLabel Control, string Label, int Width);
 
     public PixelColor BackgroundColor { get; set; } = new(128, 0, 0, 0);
+    public bool ShowBackground { get; set; } = true;
+    public int HorizontalPadding { get; set; } = 4;
     public string Separator
     {
         get => _separator;
@@ -126,7 +127,8 @@ public sealed class InputPromptOverlay : Window
         if (_display.Length == 0)
             return;
 
-        target.RenderRect(Vector2.Zero, Size, BackgroundColor);
+        if (ShowBackground)
+            target.RenderRect(Vector2.Zero, Size, BackgroundColor);
 
         // Lay out from right to left. This keeps trailing/global prompts at the
         // exact same pixel when contextual prompts are inserted before them.

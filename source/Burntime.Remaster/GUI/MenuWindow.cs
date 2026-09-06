@@ -27,12 +27,13 @@ namespace Burntime.Remaster.GUI
         readonly GuiImage _bottomElement;
         readonly GuiFont _defaultFont;
         readonly GuiFont _focusFont;
-        readonly GuiFont _promptFont;
         readonly InputControlRenderer _defaultControlRenderer;
         readonly InputControlRenderer _focusControlRenderer;
 
         const int TOP_HEIGHT = 4;
         const int MIDDLE_HEIGHT = 11;
+        const int MENU_CONTENT_WIDTH = 68;
+        const int MENU_WIDTH = MENU_CONTENT_WIDTH;
 
         public MenuWindow(Module App)
             : base(App)
@@ -47,10 +48,6 @@ namespace Burntime.Remaster.GUI
             _defaultFont.Borders = TextBorders.Screen;
             _focusFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
             _focusFont.Borders = TextBorders.Screen;
-            _promptFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray)
-            {
-                Borders = TextBorders.None
-            };
             _defaultControlRenderer = new InputControlRenderer(app, _defaultFont, brackets: false);
             _focusControlRenderer = new InputControlRenderer(app, _focusFont, brackets: false);
 
@@ -93,8 +90,8 @@ namespace Burntime.Remaster.GUI
         public void Show(Vector2 Position, Nullable<Rect> Boundings, bool openedByMouse = false)
         {
             this.Position = Position;
-            Size = new Vector2(68, 10 + 11 * _menuEntries.Count);
-            this.Position -= this.Boundings.Size / 2;
+            Size = new Vector2(MENU_WIDTH, 10 + MIDDLE_HEIGHT * _menuEntries.Count);
+            this.Position -= new Vector2(MENU_CONTENT_WIDTH, Size.y) / 2;
 
             if (Boundings.HasValue)
                 MoveInside(Boundings.Value);
@@ -133,12 +130,32 @@ namespace Burntime.Remaster.GUI
             bool showShortcuts = app is not BurntimeClassic promptOwner ||
                 promptOwner.ShowInputPrompts;
 
+            if (showShortcuts && _menuEntries.Exists(
+                entry => entry.Shortcut.Action != InputAction.None))
+            {
+                float menuLayer = target.Layer;
+                if (ExternalPromptLayer.HasValue)
+                    target.Layer = ExternalPromptLayer.Value;
+                else
+                    target.Layer++;
+
+                int promptRight = MENU_WIDTH + 2 +
+                    _defaultControlRenderer.HoldGlyphWidth;
+                int backgroundX = MENU_WIDTH - 1;
+                target.RenderRect(
+                    new Vector2(backgroundX, TOP_HEIGHT),
+                    new Vector2(promptRight - backgroundX + 1,
+                        MIDDLE_HEIGHT * _menuEntries.Count + 2),
+                    new PixelColor(128, 0, 0, 0));
+                target.Layer = menuLayer;
+            }
+
             for (int i = 0; i < _menuEntries.Count; i++)
             {
                 int itemx = 0;
                 int itemy = 4 + 11 * i;
                 int textWidth = _defaultFont.GetWidth(_menuEntries[i].Text);
-                int textx = 34 - textWidth / 2;
+                int textx = MENU_CONTENT_WIDTH / 2 - textWidth / 2;
                 int texty = itemy + 2;
 
                 target.DrawSprite(new Vector2(itemx, itemy), _middleElement);
@@ -171,29 +188,17 @@ namespace Burntime.Remaster.GUI
                         if (ExternalPromptLayer.HasValue)
                             target.Layer = ExternalPromptLayer.Value;
 
-                        const int backgroundRightPadding = 2;
-                        int shortcutX = Size.x + 2;
-                        string holdText = shortcut.Hold
-                            ? InputControlDisplay.Localized(app,
-                                InputControlDisplay.Hold) + " "
-                            : string.Empty;
-                        int holdWidth = _promptFont.GetWidth(holdText);
-                        int shortcutWidth = renderer.Measure(shortcutControl);
-                        int backgroundX = Size.x - 1;
-                        target.RenderRect(
-                            new Vector2(backgroundX, itemy),
-                            new Vector2(shortcutX - backgroundX + holdWidth +
-                                shortcutWidth + backgroundRightPadding, MIDDLE_HEIGHT),
-                            new PixelColor(128, 0, 0, 0));
+                        int promptRight = MENU_WIDTH + 2 + renderer.HoldGlyphWidth;
                         if (shortcut.Hold)
                         {
-                            _promptFont.DrawText(target,
-                                new Vector2(shortcutX, texty), holdText,
-                                TextAlignment.Left, VerticalTextAlignment.Top);
-                            shortcutX += holdWidth;
+                            int holdX = promptRight -
+                                renderer.Measure(shortcutControl) -
+                                renderer.HoldGlyphWidth;
+                            renderer.DrawHoldGlyph(target,
+                                new Vector2(holdX, texty));
                         }
-                        renderer.Draw(target, new Vector2(shortcutX, texty),
-                            shortcutControl);
+                        renderer.Draw(target, new Vector2(promptRight, texty),
+                            shortcutControl, alignment: TextAlignment.Right);
 
                         target.Layer = rowLayer;
                     }
@@ -239,7 +244,8 @@ namespace Burntime.Remaster.GUI
                 {
                     int w = _defaultFont.GetWidth(_menuEntries[item].Text);
 
-                    if ((itemleft >= _middleElement.Width / 2 - w / 2) && (itemleft < _middleElement.Width / 2 + w / 2))
+                    if (itemleft >= MENU_CONTENT_WIDTH / 2 - w / 2 &&
+                        itemleft < MENU_CONTENT_WIDTH / 2 + w / 2)
                         return item;
                 }
             }
