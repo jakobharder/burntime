@@ -4,6 +4,9 @@ namespace Burntime.Framework;
 
 public interface IMapMusicContinuationScene { }
 
+// Temporarily replaces map music, then restores it when returning to a map.
+public interface IMapMusicInterruptionScene { }
+
 // A directly navigable map screen. Unlike WaitScene, transitions between these
 // scenes should not fade music when map music is enabled.
 public interface IMapNavigationScene : IMapMusicContinuationScene { }

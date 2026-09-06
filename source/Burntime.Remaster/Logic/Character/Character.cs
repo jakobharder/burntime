@@ -53,6 +53,9 @@ namespace Burntime.Remaster.Logic
         const float FLEE_DISTANCE = 70;
         const float TALKING_DISTANCE = 30;
         const float PROXIMITY_PAUSE_TIME = 10;
+        // Vertical facing covers 65 degrees to either side of the vertical axis,
+        // leaving a 25-degree cone around each horizontal direction.
+        const float VERTICAL_FACING_MIN_SLOPE = 0.46630767f; // tan(25 degrees)
 
         // some helper attributes
         public bool IsWithBoss
@@ -512,17 +515,12 @@ namespace Burntime.Remaster.Logic
                 ? Player.Group.ToArray()
                 : new Character[] { this };
 
-            static void attack(Character attacker, Character defender, bool useAmmo, float factor)
-            {
-                int attackValue = attacker.UseBestEquipment(useAmmo);
-                int damage = (int)System.Math.Max(1, (attackValue - defender.DefenseValue) * factor);
-                defender.Health -= damage;
-            };
-
             foreach (var attacker in attackingGroup)
             {
-                attack(attacker, defender, useAmmo: true, isPlayer ? 1 : difficultyFactor);
-                attack(defender, attacker, defendWithAmmo, isPlayer ? difficultyFactor : 1);
+                DealAttackDamage(attacker, defender, useAmmo: true,
+                    isPlayer ? 1 : difficultyFactor);
+                DealAttackDamage(defender, attacker, defendWithAmmo,
+                    isPlayer ? difficultyFactor : 1);
 
                 if (attacker.IsHuman && !defender.IsDead)
                     defender.FleeFrom(attacker);
@@ -533,6 +531,26 @@ namespace Burntime.Remaster.Logic
                 if (defender.IsDead || attacker.IsDead)
                     break;
             }
+        }
+
+        internal void AttackWithoutRetaliation(Character defender)
+        {
+            float difficultyFactor = 1 + Root.World.Difficulty * 0.1f;
+            DealAttackDamage(this, defender, useAmmo: true, difficultyFactor);
+            FleeFrom(defender);
+
+            container.Notify(new AttackEvent(this, defender));
+            if (defender.Player?.AiState is AI.ClassicAiState strategicAi)
+                strategicAi.RecordAttack(this, defender);
+        }
+
+        static void DealAttackDamage(Character attacker, Character defender,
+            bool useAmmo, float factor)
+        {
+            int attackValue = attacker.UseBestEquipment(useAmmo);
+            int damage = (int)System.Math.Max(1,
+                (attackValue - defender.DefenseValue) * factor);
+            defender.Health -= damage;
         }
 
         void FleeFrom(Character attacker)
@@ -786,7 +804,7 @@ namespace Burntime.Remaster.Logic
                 if (!isFleeing)
                     Path.Speed = 0;
             }
-            if (isHovered && !isFleeing)
+            if (isHovered && !isFleeing && !isActiveGroup && !isPlayerControlled)
                 Path.Speed = 0;
 
             Vector2 old = new Vector2(position);
@@ -855,11 +873,13 @@ namespace Burntime.Remaster.Logic
                 dir = Path.MovementDirection;
             if (System.Math.Abs(dir.x) > 0.01f || System.Math.Abs(dir.y) > 0.01f)
             {
-                if (dir.y < 0 /*&& System.Math.Abs(dir.y) > System.Math.Abs(dir.x)*/) // up
+                bool faceVertical = System.Math.Abs(dir.y) >=
+                    System.Math.Abs(dir.x) * VERTICAL_FACING_MIN_SLOPE;
+                if (faceVertical && dir.y < 0) // up
                 {
                     Animation = 8 + ani.Frame;
                 }
-                else if (dir.y > 0 /*&& System.Math.Abs(dir.y) > System.Math.Abs(dir.x)*/) // down
+                else if (faceVertical && dir.y > 0) // down
                 {
                     Animation = 6 + ani.Frame;
                 }

@@ -140,6 +140,7 @@ class MapViewOverlayHoverText : IMapViewOverlay
         Character? character = info.Character;
         bool showHealth = player != null && character?.Player == player;
         bool showExperience = player != null && character != null &&
+            character.Class is not (CharClass.Dog or CharClass.Mutant or CharClass.Trader) &&
             (character.Player == null || character.Player == player);
         List<GuiTextBar> bars = new(2);
         if (showExperience)

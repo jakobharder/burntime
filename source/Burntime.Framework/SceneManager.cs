@@ -59,6 +59,10 @@ namespace Burntime.Framework
                 .IsAssignableFrom(sceneTypes[Scene]);
             var musicTransition = ConfigureMusicTransition(sceneTypes[Scene]);
             app.Engine.BlendOverlay.FadeOut(wait: true);
+            if (musicTransition.discardRememberedSong)
+                app.Engine.Music.DiscardRememberedSong();
+            if (musicTransition.rememberSong)
+                app.Engine.Music.RememberCurrentSong();
             if (musicTransition.rememberPlaylist)
                 app.Engine.Music.RememberPlaylistSong();
             if (activeScene != null)
@@ -84,6 +88,8 @@ namespace Burntime.Framework
             if (musicTransition.targetIsMap)
                 activeScene.KeepMusic = musicTransition.keepMusic;
             activeScene.ActivateScene(parameter);
+            if (musicTransition.resumeRememberedSong)
+                app.Engine.Music.ResumeRememberedSong();
             if (musicTransition.playPlaylist)
                 app.Engine.Music.PlayPlaylist();
             else
@@ -107,6 +113,10 @@ namespace Burntime.Framework
                 bool targetIsTransitionBridge = previousScene is ISceneTransitionBridge;
                 var musicTransition = ConfigureMusicTransition(previousScene.GetType());
                 app.Engine.BlendOverlay.FadeOut(wait: true);
+                if (musicTransition.discardRememberedSong)
+                    app.Engine.Music.DiscardRememberedSong();
+                if (musicTransition.rememberSong)
+                    app.Engine.Music.RememberCurrentSong();
                 if (musicTransition.rememberPlaylist)
                     app.Engine.Music.RememberPlaylistSong();
                 activeScene.InactivateScene();
@@ -115,6 +125,8 @@ namespace Burntime.Framework
                 if (musicTransition.targetIsMap)
                     activeScene.KeepMusic = musicTransition.keepMusic;
                 activeScene.ActivateScene();
+                if (musicTransition.resumeRememberedSong)
+                    app.Engine.Music.ResumeRememberedSong();
                 if (musicTransition.playPlaylist)
                     app.Engine.Music.PlayPlaylist();
                 else
@@ -130,7 +142,8 @@ namespace Burntime.Framework
         }
 
         (bool targetIsMap, bool keepMusic, bool playPlaylist,
-            bool rememberPlaylist, bool continuePlaylist)
+            bool rememberPlaylist, bool continuePlaylist, bool rememberSong,
+            bool resumeRememberedSong, bool discardRememberedSong)
             ConfigureMusicTransition(Type nextSceneType)
         {
             bool sourceIsMap = activeScene is IMapMusicContinuationScene;
@@ -139,11 +152,21 @@ namespace Burntime.Framework
             bool sourceIsMapNavigation = activeScene is IMapNavigationScene;
             bool targetIsMapNavigation = typeof(IMapNavigationScene)
                 .IsAssignableFrom(nextSceneType);
+            bool sourceIsMusicInterruption = activeScene is IMapMusicInterruptionScene;
+            bool targetIsMusicInterruption = typeof(IMapMusicInterruptionScene)
+                .IsAssignableFrom(nextSceneType);
             bool keepMusic = false;
             bool playPlaylist = false;
             bool rememberPlaylist = false;
             bool continuePlaylist = targetIsMap &&
                 app.Engine.MapMusicMode != MapMusicMode.None;
+            bool rememberSong = app.Engine.MapMusicMode == MapMusicMode.Keep &&
+                sourceIsMap && targetIsMusicInterruption;
+            bool resumeRememberedSong = app.Engine.MapMusicMode == MapMusicMode.Keep &&
+                sourceIsMusicInterruption && targetIsMap;
+            bool discardRememberedSong =
+                (targetIsMusicInterruption && !rememberSong) ||
+                (sourceIsMusicInterruption && !resumeRememberedSong);
 
             if (!targetIsMap)
                 app.Engine.Music.SetPlaylistContinuation(false);
@@ -161,7 +184,7 @@ namespace Burntime.Framework
             {
                 if (app.Engine.MapMusicMode == MapMusicMode.Keep)
                 {
-                    keepMusic = true;
+                    keepMusic = !sourceIsMusicInterruption;
                 }
                 else if (app.Engine.MapMusicMode == MapMusicMode.List)
                 {
@@ -183,7 +206,8 @@ namespace Burntime.Framework
                 !continuingAfterScene && !navigatingBetweenMaps;
 
             return (targetIsMap, keepMusic, playPlaylist, rememberPlaylist,
-                continuePlaylist);
+                continuePlaylist, rememberSong, resumeRememberedSong,
+                discardRememberedSong);
         }
 
         public void BlockBlendIn()

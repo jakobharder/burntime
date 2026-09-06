@@ -16,6 +16,9 @@ public interface IMusic
 
     void LoadSonglist(string filePath);
     void LoadPlaylist(string filePath);
+    void RememberCurrentSong();
+    void ResumeRememberedSong();
+    void DiscardRememberedSong();
     void RememberPlaylistSong();
     void DiscardRememberedPlaylistSong();
     void SetPlaylistContinuation(bool enabled);

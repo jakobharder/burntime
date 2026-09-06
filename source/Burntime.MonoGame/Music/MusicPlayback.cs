@@ -16,8 +16,12 @@ public sealed class MusicPlayback : IMusic
     public bool IsPlayingFromPlaylist => _isMapPlaylistPlayback;
 
     Music.LoopableSong? _music;
+    Music.LoopableSong? _rememberedMusic;
     Music.LoopableSong? _rememberedPlaylistMusic;
     bool _repeat = false;
+    bool _rememberedMusicRepeat;
+    bool _rememberedMusicWasMapPlaylist;
+    string? _rememberedSong;
     string? _rememberedPlaylistSong;
     string? _lastPlaylistSong;
     bool _isMapPlaylistPlayback;
@@ -108,6 +112,88 @@ public sealed class MusicPlayback : IMusic
             // it belongs to the previous soundtrack profile.
             _rememberedPlaylistMusic?.Dispose();
             _rememberedPlaylistMusic = null;
+            _rememberedMusic?.Dispose();
+            _rememberedMusic = null;
+        }
+    }
+
+    public void RememberCurrentSong()
+    {
+        lock (this)
+        {
+            _rememberedMusic?.Dispose();
+            _rememberedMusic = null;
+            _rememberedSong = null;
+
+            _rememberedMusicRepeat = _repeat;
+            _rememberedMusicWasMapPlaylist = _isMapPlaylistPlayback;
+            if (_music is not null && Playing is not null)
+            {
+                _music.Pause();
+                _rememberedMusic = _music;
+                _rememberedSong = Playing;
+                _music = null;
+                Playing = null;
+            }
+            else if (_playlist.Count > 0)
+            {
+                // Preserve a song that has been queued but not started yet.
+                _rememberedSong = _playlist[0];
+            }
+
+            _playlist.Clear();
+            _isMapPlaylistPlayback = false;
+        }
+    }
+
+    public void ResumeRememberedSong()
+    {
+        lock (this)
+        {
+            if (!Enabled)
+            {
+                _rememberedMusic?.Dispose();
+                _rememberedMusic = null;
+                _rememberedSong = null;
+                return;
+            }
+
+            if (_rememberedMusic is not null && _rememberedSong is not null &&
+                CanPlay(_rememberedSong))
+            {
+                _playlist.Clear();
+                _music?.Dispose();
+                _music = _rememberedMusic;
+                Playing = _rememberedSong;
+                _repeat = _rememberedMusicRepeat;
+                _isMapPlaylistPlayback = _rememberedMusicWasMapPlaylist;
+                _rememberedMusic = null;
+                _rememberedSong = null;
+                _music.Volume = isMuted ? 0 : _volume;
+                _music.Resume();
+                return;
+            }
+
+            _rememberedMusic?.Dispose();
+            _rememberedMusic = null;
+            if (_rememberedSong is not null && CanPlay(_rememberedSong))
+            {
+                _playlist.Clear();
+                _playlist.Add(_rememberedSong);
+                _repeat = _rememberedMusicRepeat;
+                _isMapPlaylistPlayback = _rememberedMusicWasMapPlaylist;
+            }
+            _rememberedSong = null;
+        }
+    }
+
+    public void DiscardRememberedSong()
+    {
+        lock (this)
+        {
+            _rememberedSong = null;
+            _rememberedMusic?.Dispose();
+            _rememberedMusic = null;
         }
     }
 
@@ -425,6 +511,9 @@ public sealed class MusicPlayback : IMusic
         lock (this)
         {
             _music?.Dispose();
+            _rememberedMusic?.Dispose();
+            _rememberedMusic = null;
+            _rememberedSong = null;
             _rememberedPlaylistMusic?.Dispose();
             _rememberedPlaylistMusic = null;
             _rememberedPlaylistSong = null;

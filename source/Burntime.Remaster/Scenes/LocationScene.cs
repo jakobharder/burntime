@@ -229,7 +229,7 @@ namespace Burntime.Remaster
             else
             {
                 // otherwise try to talk
-                if (clickedCharacter.Class != CharClass.Dog && !view.Player.Group.Contains(clickedCharacter))
+                if (CanTalkToCharacter(clickedCharacter))
                 {
                     if (30 > (charOverlay.SelectedCharacter.Position - clickedCharacter.Position).Length)
                     {
@@ -404,7 +404,8 @@ namespace Burntime.Remaster
         {
             app.Engine.Xbr2IndividualLayer = gui.Layer;
 
-            bool showInteractionMode = app.MouseInputVisible && !dialog.IsVisible;
+            bool showInteractionMode = app.MouseInputVisible && !dialog.IsVisible &&
+                ShouldShowMouseInteractionCursor();
             if (cursorAni.IsVisible != showInteractionMode)
                 cursorAni.IsVisible = showInteractionMode;
 
@@ -421,6 +422,24 @@ namespace Burntime.Remaster
                 }
             }
         }
+
+        bool ShouldShowMouseInteractionCursor()
+        {
+            if (fightMode)
+            {
+                if (view.ActiveEntrance >= 0 || view.HoveredObject is DroppedItem)
+                    return false;
+
+                return view.HoveredObject is not Character character ||
+                    character.Player != view.Player;
+            }
+
+            return view.HoveredObject is Character talkTarget &&
+                CanTalkToCharacter(talkTarget);
+        }
+
+        bool CanTalkToCharacter(Character character) =>
+            character.Player != view.Player && character.Class != CharClass.Dog;
 
         public override void OnUpdate(float Elapsed)
         {
@@ -1070,23 +1089,22 @@ namespace Burntime.Remaster
                 else
                 {
                     charOverlay.SelectedCharacter.JoinCamp();
-                    SelectBossAfterKeyboardGarrison();
+                    SelectBossAfterGarrison();
                 }
             }
             else
             {
                 charOverlay.SelectedCharacter.JoinCamp();
-                SelectBossAfterKeyboardGarrison();
+                SelectBossAfterGarrison();
 
                 view.Location.Player = view.Player;
                 BurntimeClassic.Instance.Engine.Music.PlaySound("sounds/camp.ogg");
             }
         }
 
-        void SelectBossAfterKeyboardGarrison()
+        void SelectBossAfterGarrison()
         {
-            if (app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad)
-                view.Player.SelectGroup(view.Player.Group);
+            view.Player.SelectGroup(view.Player.Group);
         }
 
         public void OnMenuLeaveCamp()

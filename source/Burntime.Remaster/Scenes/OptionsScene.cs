@@ -9,7 +9,7 @@ using System;
 
 namespace Burntime.Remaster;
 
-public class OptionsScene : Scene
+public class OptionsScene : Scene, IMapMusicInterruptionScene
 {
     GuiFont disabled;
     GuiFont red;
