@@ -9,6 +9,7 @@ Behavior:
 - Improve group following into attacks, rooms and traders
 - Place produced food preferrably next to the trap
 - Make attacked people flee a bit
+- Apply previous dog/mutant changes to existing saves
 
 Infos:
 - Show food/trap/water infos on entrances and locations
