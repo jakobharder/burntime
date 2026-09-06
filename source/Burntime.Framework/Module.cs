@@ -206,7 +206,9 @@ namespace Burntime.Framework
                 // process frame
                 SceneManager.Process(elapsed);
 
-                DeviceManager.Clear();
+                // Mouse clicks are consumed atomically by SceneManager. Preserve
+                // clicks queued concurrently for the next frame.
+                DeviceManager.Clear(preserveQueuedMouseClicks: true);
             }
         }
 

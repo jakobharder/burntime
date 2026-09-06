@@ -31,7 +31,7 @@ public interface IMouseDevice
     /// <summary>
     /// thread-safe
     /// </summary>
-    IEnumerable<MouseClickInfo> Clicks { get; }
+    IEnumerable<MouseClickInfo> ConsumeClicks();
     IEnumerable<MouseWheelInfo> WheelEvents { get; }
 }
 
@@ -85,16 +85,15 @@ sealed class MouseDevice : IMouseDevice
     }
 
     /// <summary>
-    /// returns a copy, thread-safe
+    /// Returns and removes all queued clicks atomically.
     /// </summary>
-    public IEnumerable<MouseClickInfo> Clicks
+    public IEnumerable<MouseClickInfo> ConsumeClicks()
     {
-        get 
+        lock (this)
         {
-            IEnumerable<MouseClickInfo> copy;
-            lock (this)
-                copy = clicks.ToArray();
-            return copy; 
+            MouseClickInfo[] copy = clicks.ToArray();
+            clicks.Clear();
+            return copy;
         }
     }
 
@@ -355,9 +354,10 @@ public class DeviceManager
             _gamepadControlsDown.Clear();
     }
 
-    public void Clear()
+    public void Clear(bool preserveQueuedMouseClicks = false)
     {
-        _mouse.ClearClicks();
+        if (!preserveQueuedMouseClicks)
+            _mouse.ClearClicks();
         _mouse.ClearWheelEvents();
         Keyboard.ClearKeys();
     }

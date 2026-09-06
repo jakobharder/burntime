@@ -136,7 +136,8 @@ namespace Burntime.Framework
                 handle.MouseMove(app.DeviceManager.Mouse.Position - parentPos);
 
                 // handle clicks
-                foreach (MouseClickInfo click in app.DeviceManager.Mouse.Clicks)
+                var clicks = app.DeviceManager.Mouse.ConsumeClicks();
+                foreach (MouseClickInfo click in clicks)
                 {
                     if (click.Down)
                         handle.MouseDown(click.Position - parentPos, click.Button);
