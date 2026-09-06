@@ -345,13 +345,28 @@ public sealed class MusicPlayback : IMusic
 
     public bool CanPlay(string songName)
     {
-        if (FileSystem.ExistsFile(songName))
+        if (SongFilesExist(songName))
             return true;
 
         if (_songMapping.TryGetValue(songName, out string? songFilePath))
-            return FileSystem.ExistsFile(songFilePath);
+            return SongFilesExist(songFilePath);
 
         return false;
+    }
+
+    static bool SongFilesExist(string fileName)
+    {
+        string[] files = fileName.Split(':');
+        if (files.Length > 2)
+            return false;
+
+        foreach (string file in files)
+        {
+            if (string.IsNullOrWhiteSpace(file) || !FileSystem.ExistsFile(file))
+                return false;
+        }
+
+        return true;
     }
 
     public string? ResolveSong(string songName)
