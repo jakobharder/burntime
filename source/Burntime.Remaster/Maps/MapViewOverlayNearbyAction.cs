@@ -15,6 +15,11 @@ class MapViewOverlayNearbyAction : IMapViewOverlay
 
     readonly Module app;
     MapViewHoverInfo info;
+    Character? announcedCharacter;
+    MapViewHoverInfo? announcedInfo;
+    float announcementRemaining;
+
+    const float AnnouncementFadeDuration = 0.35f;
 
     public int EntranceNumber { get; private set; } = -1;
     public IMapObject Object { get; private set; }
@@ -30,12 +35,35 @@ class MapViewOverlayNearbyAction : IMapViewOverlay
     {
     }
 
+    public void AnnounceCharacter(Character character, float duration)
+    {
+        announcedCharacter = character;
+        announcedInfo = new MapViewHoverInfo(character, app.ResourceManager,
+            GetCharacterColor(character));
+        announcementRemaining = duration;
+    }
+
     public void UpdateOverlay(WorldState world, float elapsed)
     {
         EntranceNumber = -1;
         Object = null;
         Position = null;
         info = null;
+
+        if (announcementRemaining > 0 && announcedCharacter != null && announcedInfo != null &&
+            !announcedCharacter.IsDead)
+        {
+            announcementRemaining = System.Math.Max(0, announcementRemaining - elapsed);
+            announcedInfo.Position = new Vector2(
+                announcedCharacter.MapArea.Left + announcedCharacter.MapArea.Width / 2,
+                announcedCharacter.MapArea.Top - 10);
+        }
+        else
+        {
+            announcedCharacter = null;
+            announcedInfo = null;
+            announcementRemaining = 0;
+        }
 
         if (app.LastInputMode == InputMode.Mouse)
             return;
@@ -92,42 +120,58 @@ class MapViewOverlayNearbyAction : IMapViewOverlay
         foreach (Character character in characters)
         {
             if (character == selectedCharacter || character.IsDead ||
-                character.IsPlayerCharacter && character.Player.IsDead)
+                character.IsPlayerCharacter && character.Player.IsDead ||
+                app.LastInputMode is (InputMode.Keyboard or InputMode.Gamepad) &&
+                player.Group.Contains(character))
                 continue;
 
             float distance = (character.Position - selectedCharacter.Position).Length;
             if (distance >= CharacterRange || distance >= closestDistance)
                 continue;
 
-            PixelColor color;
-            if (character.Player != null)
-            {
-                color = character.Player.Group.Contains(character)
-                    ? character.Player.Color
-                    : character.Player.ColorDark;
-            }
-            else
-            {
-                color = new PixelColor(252, 220, 0);
-            }
-
             closestDistance = distance;
             EntranceNumber = -1;
             Object = character;
             Position = character.Position;
-            info = new MapViewHoverInfo(character, app.ResourceManager, color);
+            info = new MapViewHoverInfo(character, app.ResourceManager,
+                GetCharacterColor(character));
         }
     }
 
     public void RenderOverlay(RenderTarget target, Vector2 offset, Vector2 size)
     {
-        if (!IsVisible || info == null)
+        if (!IsVisible)
             return;
 
         const int topMargin = 8;
         var textTarget = target.GetSubBuffer(new Rect(0, topMargin, target.Width, target.Height - topMargin));
-        Font font = app.ResourceManager.GetFont(BurntimeClassic.FontName, info.Color);
-        font.DrawText(textTarget, info.Position + offset - new Vector2(0, topMargin), info.Title, TextAlignment.Center);
+        if (info != null)
+            DrawInfo(textTarget, info, offset - new Vector2(0, topMargin), 1);
+        if (announcedInfo != null)
+        {
+            float alpha = System.Math.Min(1,
+                announcementRemaining / AnnouncementFadeDuration);
+            DrawInfo(textTarget, announcedInfo, offset - new Vector2(0, topMargin), alpha);
+        }
+    }
+
+    void DrawInfo(RenderTarget target, MapViewHoverInfo drawInfo, Vector2 offset, float alpha)
+    {
+        Font font = app.ResourceManager.GetFont(BurntimeClassic.FontName, drawInfo.Color);
+        font.DrawText(target, drawInfo.Position + offset, drawInfo.Title,
+            TextAlignment.Center, VerticalTextAlignment.Center, alpha);
+    }
+
+    static PixelColor GetCharacterColor(Character character)
+    {
+        if (character.Player != null)
+        {
+            return character.Player.Group.Contains(character)
+                ? character.Player.Color
+                : character.Player.ColorDark;
+        }
+
+        return new PixelColor(252, 220, 0);
     }
 
     public IMapObject GetObjectAt(Vector2 position)

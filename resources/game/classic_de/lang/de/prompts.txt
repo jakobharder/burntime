@@ -39,3 +39,4 @@ Nehmen
 Kämpfen
 Lagern
 Abwählen
+Inventar

@@ -39,3 +39,4 @@ Tomar
 Luchar
 Guardar
 Deseleccionar
+Inventario

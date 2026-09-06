@@ -168,6 +168,8 @@ namespace Burntime.Remaster.Maps
             {
                 if (chr.IsDead || chr.IsPlayerCharacter && chr.Player.IsDead)
                     continue;
+                if (ShouldIgnoreInFightMode(chr))
+                    continue;
 
                 Vector2 distance = chr.Position - position;
                 // align to bottom center
@@ -181,6 +183,9 @@ namespace Burntime.Remaster.Maps
             {
                 for (int i = 0; i < _currentPlayer.Group.Count; i++)
                 {
+                    if (ShouldIgnoreInFightMode(_currentPlayer.Group[i]))
+                        continue;
+
                     Vector2 distance = _currentPlayer.Group[i].Position - position;
                     // align to bottom center
                     distance.y -= _currentPlayer.Group[i].Body.Object.Height / 2;
@@ -192,5 +197,8 @@ namespace Burntime.Remaster.Maps
 
             return obj;
         }
+
+        bool ShouldIgnoreInFightMode(Character character) =>
+            _currentPlayer?.FightMode == true && _currentPlayer.Group.Contains(character);
     }
 }

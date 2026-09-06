@@ -179,12 +179,16 @@ namespace Burntime.Remaster.Scenes
                     PreferredMouseControl = MouseButton.Left
                 });
             }
-            if (app.LastInputMode != InputMode.Mouse && group.Count > 1)
+            if (app.LastInputMode != InputMode.Mouse && inventory.PageCount > 1)
             {
-                prompts.Add(new(InputAction.Statistics, "@prompts?16")
+                prompts.Add(new(InputAction.LeftArea, "@prompts?16")
                 {
+                    AlternateAction = InputAction.RightArea,
                     PreferredKeyboardControl = new Key(SystemKey.Left, ModifierKeys.Shift),
-                    PreferredGamepadControl = GamepadControl.LeftShoulder
+                    PreferredAlternateKeyboardControl = new Key(SystemKey.Right,
+                        ModifierKeys.Shift),
+                    PreferredGamepadControl = GamepadControl.LeftShoulder,
+                    PreferredAlternateGamepadControl = GamepadControl.RightShoulder
                 });
             }
 
@@ -368,13 +372,14 @@ namespace Burntime.Remaster.Scenes
 
             if (action == InputAction.LeftArea)
             {
-                inventory.SelectNextCharacter();
+                inventory.SelectAdjacentPage(-1);
                 UpdateActiveArea();
                 return true;
             }
 
             if (action == InputAction.RightArea)
             {
+                inventory.SelectAdjacentPage(1);
                 UpdateActiveArea();
                 return true;
             }
@@ -395,7 +400,16 @@ namespace Burntime.Remaster.Scenes
             if (direction != Vector2.Zero)
             {
                 Vector2? sourcePosition = activeGrid.KeyboardSelectionPosition;
-                if (!activeGrid.MoveKeyboardSelection(direction) && direction.x != 0)
+                bool moved = activeGrid.MoveKeyboardSelection(direction);
+                if (!moved && direction.x == 0 && direction.y != 0 &&
+                    activeGrid == inventory.Grid &&
+                    inventory.SelectAdjacentPage(direction.y > 0 ? 1 : -1))
+                {
+                    if (sourcePosition.HasValue)
+                        inventory.Grid.SelectKeyboardPageEdge(direction, sourcePosition.Value);
+                    UpdateActiveArea();
+                }
+                else if (!moved && direction.x != 0)
                 {
                     ItemGridWindow targetGrid = roomAreaActive ? inventory.Grid : grid;
                     bool selectedTarget = sourcePosition.HasValue

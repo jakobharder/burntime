@@ -169,12 +169,16 @@ namespace Burntime.Remaster.Scenes
                     PreferredMouseControl = MouseButton.Left
                 });
             }
-            if (!mouseInput && inventory.ActiveCharacter.GetGroup().Count > 1)
+            if (!mouseInput && inventory.PageCount > 1)
             {
-                prompts.Add(new(InputAction.Statistics, "@prompts?16")
+                prompts.Add(new(InputAction.LeftArea, "@prompts?16")
                 {
+                    AlternateAction = InputAction.RightArea,
                     PreferredKeyboardControl = new Key(SystemKey.Left, ModifierKeys.Shift),
-                    PreferredGamepadControl = GamepadControl.LeftShoulder
+                    PreferredAlternateKeyboardControl = new Key(SystemKey.Right,
+                        ModifierKeys.Shift),
+                    PreferredGamepadControl = GamepadControl.LeftShoulder,
+                    PreferredAlternateGamepadControl = GamepadControl.RightShoulder
                 });
             }
             promptOverlay.SetPrompts(prompts.ToArray());

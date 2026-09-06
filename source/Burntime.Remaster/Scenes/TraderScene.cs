@@ -357,19 +357,10 @@ class TraderScene : Scene
             return true;
         }
 
-        if (action == InputAction.LeftArea)
-        {
-            inventory.SelectNextCharacter();
-            UpdateKeyboardArea();
+        // Trader pages are changed by moving beyond the vertical grid edges.
+        // Shoulder-button page changes are reserved for the single inventory UI.
+        if (action is InputAction.LeftArea or InputAction.RightArea)
             return true;
-        }
-
-        if (action == InputAction.RightArea)
-        {
-            inventoryTrader.SelectNextCharacter();
-            UpdateKeyboardArea();
-            return true;
-        }
 
         Vector2 direction = action switch
         {
@@ -387,7 +378,21 @@ class TraderScene : Scene
         {
             ItemGridWindow activeGrid = ActiveKeyboardGrid;
             Vector2? sourcePosition = activeGrid.KeyboardSelectionPosition;
-            if (!activeGrid.MoveKeyboardSelection(direction) && direction.x != 0)
+            bool moved = activeGrid.MoveKeyboardSelection(direction);
+            InventoryWindow? activeInventory = keyboardArea switch
+            {
+                KeyboardArea.Player => inventory,
+                KeyboardArea.Trader => inventoryTrader,
+                _ => null
+            };
+            if (!moved && direction.x == 0 && direction.y != 0 && activeInventory != null &&
+                activeInventory.SelectAdjacentPage(direction.y > 0 ? 1 : -1))
+            {
+                if (sourcePosition.HasValue)
+                    activeInventory.Grid.SelectKeyboardPageEdge(direction, sourcePosition.Value);
+                UpdateKeyboardArea();
+            }
+            else if (!moved && direction.x != 0)
             {
                 ItemGridWindow targetGrid = null;
                 KeyboardArea targetArea = keyboardArea;
@@ -425,7 +430,9 @@ class TraderScene : Scene
                 bool selectedTarget = sourcePosition.HasValue
                     ? targetGrid?.SelectKeyboardEdge(direction, sourcePosition.Value) == true
                     : targetGrid?.EnsureKeyboardSelection() == true;
-                if (selectedTarget)
+                bool canEnterEmptyInventory = targetArea != keyboardArea &&
+                    targetArea is KeyboardArea.Player or KeyboardArea.Trader;
+                if (selectedTarget || canEnterEmptyInventory)
                 {
                     keyboardArea = targetArea;
                     UpdateKeyboardArea();
@@ -559,26 +566,16 @@ class TraderScene : Scene
                 KeyboardArea.Trader => exchangeTop.Grid.Contains(selectedItem),
                 _ => false
             });
-        GuiString primaryLabel = keyboardArea == KeyboardArea.Temporary
-            ? "@prompts?14"
-            : isSelectedForTrade ? "@prompts?40" : "@prompts?31";
         List<InputPrompt> prompts = [];
-        prompts.Add(new(InputAction.Primary, primaryLabel));
-        if (keyboardArea == KeyboardArea.Player)
-            prompts.Add(new(InputAction.Secondary, "@prompts?14"));
-        if (inventory.ActiveCharacter.GetGroup().Count > 1)
+        if (selectedItem != null)
         {
-            prompts.Add(new(InputAction.Statistics, "@prompts?16")
-            {
-                PreferredKeyboardControl = new Key(SystemKey.Left, ModifierKeys.Shift),
-                PreferredGamepadControl = GamepadControl.LeftShoulder
-            });
+            GuiString primaryLabel = keyboardArea == KeyboardArea.Temporary
+                ? "@prompts?14"
+                : isSelectedForTrade ? "@prompts?40" : "@prompts?31";
+            prompts.Add(new(InputAction.Primary, primaryLabel));
+            if (keyboardArea == KeyboardArea.Player)
+                prompts.Add(new(InputAction.Secondary, "@prompts?14"));
         }
-        prompts.Add(new(InputAction.LocationInfo, "@prompts?33")
-        {
-            PreferredKeyboardControl = new Key(SystemKey.Right, ModifierKeys.Shift),
-            PreferredGamepadControl = GamepadControl.RightShoulder
-        });
         promptOverlay.SetPrompts(prompts.ToArray());
     }
 

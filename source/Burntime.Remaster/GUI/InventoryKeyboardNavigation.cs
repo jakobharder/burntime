@@ -40,13 +40,14 @@ class InventoryKeyboardNavigation
 
         if (action == InputAction.LeftArea)
         {
-            inventory.SelectNextCharacter();
+            inventory.SelectAdjacentPage(-1);
             UpdateActiveArea();
             return true;
         }
 
         if (action == InputAction.RightArea)
         {
+            inventory.SelectAdjacentPage(1);
             UpdateActiveArea();
             return true;
         }

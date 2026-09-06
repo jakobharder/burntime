@@ -332,8 +332,6 @@ public class Window
         global::Burntime.Framework.InputAction.PanCameraDown => global::Burntime.Framework.InputAction.MoveDown,
         global::Burntime.Framework.InputAction.PanCameraLeft => global::Burntime.Framework.InputAction.MoveLeft,
         global::Burntime.Framework.InputAction.PanCameraRight => global::Burntime.Framework.InputAction.MoveRight,
-        global::Burntime.Framework.InputAction.Statistics => global::Burntime.Framework.InputAction.LeftArea,
-        global::Burntime.Framework.InputAction.LocationInfo => global::Burntime.Framework.InputAction.RightArea,
         global::Burntime.Framework.InputAction.Options or global::Burntime.Framework.InputAction.Inventory or
             global::Burntime.Framework.InputAction.NextTurn or
             global::Burntime.Framework.InputAction.ToggleInteractionMode => global::Burntime.Framework.InputAction.None,

@@ -25,26 +25,28 @@
 | `SceneAction` | X | Y | scene-specific actions
 | `Back` | Escape | B | all
 | `Options` | O | Menu | both maps, setup
-| `Statistics` | Q / Shift+Left | D-pad left / Left shoulder | both maps
+| `Statistics` | Q | D-pad left | both maps
 | `Inventory` | R / I | D-pad up | both maps
 | `WorldMap` | V / M | View | location map
-| `LocationInfo` | E / Shift+Right | D-pad right / Right shoulder | both maps
+| `LocationInfo` | E | D-pad right | both maps
 | `NextTurn` | Hold Tab | Hold D-pad down | both maps
 | `ToggleInteractionMode` | C | — | both maps
 | `ShowEntrances` | Hold Alt | Hold Left Trigger | both maps
-| `LeftArea` | Q / Shift+Left | Left shoulder | all but maps
-| `RightArea` | E / Shift+Right | Right shoulder | all but maps
+| `LeftArea` | Shift+Left | Left shoulder | contextual previous character/page
+| `RightArea` | Shift+Right | Right shoulder | contextual next character/page
 
 The default keyboard and gamepad mappings are configured in the `[keyboard]` and `[gamepad]` sections of `settings.txt`.
-Prompt rows and map-menu shortcut columns resolve their controls from the active mappings and omit unbound actions. Composite navigation hints remain explicit exceptions.
+Prompt rows and inline map-menu shortcuts resolve their controls from the active mappings and omit unbound actions. Composite navigation hints remain explicit exceptions.
+
+As a layout guideline, LB/RB uses Shift+Left/Right when the related choices are arranged horizontally and Shift+Up/Down when they are arranged vertically. Options therefore keeps Shift+Up/Down for its vertical radio rail.
 
 When no input mode has been established yet, any keyboard press activates keyboard mode. The same applies when switching from gamepad to keyboard. While mouse mode is active, only an arrow-key press switches to keyboard mode; other keys remain shortcuts shared with mouse control and do not hide the mouse cursor or replace mouse mode.
 
 On both maps, `Escape` or Gamepad B opens the actions menu and `O` opens Options directly. On the location map, `V`, `M`, or Gamepad View opens the world map. Contextual map actions advertise `Space`; `Enter` remains an equivalent `Primary` binding but is not shown in the prompt overlay.
 
-Map actions menus show available direct shortcuts beside their matching entries. Those shortcuts remain active while the menu is open. Entries without a direct binding leave the shortcut column blank. The world map omits its Travel/Info-mode entry when the menu is opened with keyboard or gamepad; a mouse-opened menu retains it and shows `C` as its toggle shortcut.
+Map actions menus show global shortcuts beside the right edge of their matching entries without extending the fixed menu artwork. Each shortcut has a half-transparent backing that overlaps the menu edge by one pixel to avoid a seam. Those shortcuts remain active while the menu is open, and entries without a direct binding leave the right side blank. A hold shortcut's `Hold` prefix stays prompt gray while the control can follow the focused row color. A menu-local alternate activation such as Gamepad Y is shown inside the menu immediately left of the entry text to distinguish it from global shortcuts. The world map omits its Travel/Info-mode entry when the menu is opened with keyboard or gamepad; a mouse-opened menu retains it and shows `C` as its toggle shortcut.
 
-`SceneAction` is the scene-specific extra command: e.g. accept a trade, eat, drink or heal. On the location map it opens a separate group menu containing the available Single/All, Dismiss and Make/Leave Camp commands. The prompt is omitted when no group command is available. The keyboard/gamepad actions menu keeps Info, World Map, Inventory, Statistics, Options and Next Turn. For mouse play, right-click retains the original combined menu with interaction, group and global commands. Prompt overlays and context-menu shortcut columns remain hidden in mouse mode. `SceneAction` is unused on the world map and during game setup.
+`SceneAction` is the scene-specific extra command: e.g. accept a trade, eat, drink or heal. On the location map it opens a separate group menu containing the available Single/All, Dismiss and Make/Leave Camp commands. The prompt is omitted when no group command is available. The keyboard/gamepad actions menu keeps Info, World Map, Inventory, Statistics, Options and Next Turn. For mouse play, right-click retains the original combined menu with interaction, group and global commands. The map prompt overlay remains hidden while either menu is open. `SceneAction` is unused on the world map and during game setup.
 
 On map scenes, tap `Tab` or `D-pad down` has no effect.
 The logic for holding is to prevent a single tap to initiate a turn.
@@ -112,12 +114,18 @@ Gamepad actions remain available; names are selected or generated without gamepa
 
 On map scenes in keyboard or gamepad mode, releasing the secondary direction returns the camera to the controlled character or the player's current world-map location. In mouse mode, WASD panning leaves the camera at its new position.
 
+On the world map, the walking cursor animation appears only while the mouse is over a valid travel destination, excluding the current location. The info-mode cursor keeps its normal behavior. In travel mode, right-click opens Info directly for the current or a player-owned location and shows the actions menu elsewhere. In info mode, left-click opens Info and right-click continues to open the actions menu.
+
 Outside map scenes, primary and secondary directions behave identically. They remain separate actions to allow future differences.
 
 ## Context-sensitive shortcuts
 
-| Context | Q / Shift+Left / Left shoulder | E / Shift+Right / Right shoulder |
-| --- | --- | --- |
-| World and location maps | `Statistics` | `LocationInfo` |
-| Inventory, Trader | `LeftArea` | `RightArea` |
-| Any other scene using areas | `LeftArea` | `RightArea` |
+| Context | Q / D-pad left | E / D-pad right | Shift+Left / Left shoulder | Shift+Right / Right shoulder |
+| --- | --- | --- | --- | --- |
+| World map | `Statistics` | `LocationInfo` | — | — |
+| Location map | `Statistics` | `LocationInfo` | Previous character | Next character |
+| Inventory and inventory-based services | — | — | Previous character page | Next character page |
+| Trader | — | — | — | — |
+| Any other scene using areas | — | — | `LeftArea` | `RightArea` |
+
+Inventory character pages wrap in both directions with Shift+Left/Right or LB/RB. Trader pages instead change by moving up or down beyond an inventory grid edge. Horizontal navigation may enter an empty player or trader inventory page, allowing its other pages to remain reachable through vertical navigation.

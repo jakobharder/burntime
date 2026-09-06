@@ -42,10 +42,10 @@ class MapViewOverlaySelectedLocation : IMapViewOverlay
         {
             WorldLocation = game.World.Locations[LocationNumber]
         };
-
         const int topMargin = 8;
         var textTarget = target.GetSubBuffer(new Rect(0, topMargin, target.Width, target.Height - topMargin));
-        hoverText.DrawWorldLocationText(textTarget, info, offset - new Vector2(0, topMargin), 1);
+        hoverText.DrawWorldLocationText(textTarget, info,
+            offset - new Vector2(0, topMargin), 1);
     }
 
     public IMapObject GetObjectAt(Vector2 position)

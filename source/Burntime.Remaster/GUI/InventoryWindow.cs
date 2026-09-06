@@ -60,21 +60,25 @@ namespace Burntime.Remaster.GUI
             get { if (activePage == null) return null; return activePage.Character; }
         }
 
-        public void SelectNextCharacter()
+        public int PageCount => pages.Count;
+
+        public bool SelectAdjacentPage(int direction)
         {
             if (pages.Count <= 1)
-                return;
+                return false;
 
-            int nextPage = (activePageIndex + 1) % pages.Count;
+            int nextPage = (activePageIndex + direction + pages.Count) % pages.Count;
             for (int i = 0; i < pages.Count; i++)
             {
                 if (pageIndices[i] == nextPage)
                 {
                     OnPage(i);
                     grid.ResetKeyboardSelection();
-                    return;
+                    return true;
                 }
             }
+
+            return false;
         }
 
         public LogicEvent LeftClickItemEvent;

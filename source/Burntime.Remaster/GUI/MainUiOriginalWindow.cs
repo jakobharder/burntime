@@ -33,6 +33,9 @@ namespace Burntime.Remaster
         readonly FaceWindow _playerFace;
         string _playerName;
 
+        public Rect PlayerFaceBounds => new(
+            Position + _playerFace.Boundings.Position, _playerFace.Boundings.Size);
+
         public string PromptText { get; set; } = "";
 
         readonly Image _uiElement1;
@@ -187,7 +190,7 @@ namespace Burntime.Remaster
 
             Player player = game.World.Players[game.World.ActivePlayer];
 
-            _playerFace.FaceID = player.FaceID;
+            _playerFace.FaceID = player.SelectedCharacter?.FaceID ?? player.FaceID;
             _playerName = player.Name;
             _playerFont = new GuiFont(BurntimeClassic.FontName, player.Color);
         }

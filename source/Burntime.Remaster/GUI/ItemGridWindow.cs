@@ -323,6 +323,36 @@ namespace Burntime.Remaster.GUI
             return true;
         }
 
+        public bool SelectKeyboardPageEdge(Vector2 direction, Vector2 sourcePosition)
+        {
+            int selected = -1;
+            int selectedScore = int.MaxValue;
+
+            for (int i = 0; itemWindows != null && i < itemWindows.Length; i++)
+            {
+                if (!IsValidKeyboardIndex(i))
+                    continue;
+
+                Vector2 candidate = PositionOnScreen + itemWindows[i].Position + size / 2;
+                // Moving down enters the top of the next page; moving up enters
+                // the bottom of the previous page. Preserve the source column.
+                int edge = direction.y > 0 ? candidate.y : -candidate.y;
+                int columnDistance = System.Math.Abs(candidate.x - sourcePosition.x);
+                int score = edge * 1000 + columnDistance;
+                if (score < selectedScore)
+                {
+                    selected = i;
+                    selectedScore = score;
+                }
+            }
+
+            if (selected == -1)
+                return false;
+
+            keyboardIndex = selected;
+            return true;
+        }
+
         public Vector2? KeyboardSelectionPosition
         {
             get

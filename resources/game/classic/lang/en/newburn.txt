@@ -102,3 +102,4 @@ Def. {defense}}
 % gas 
 % rad. 
 Blocked}
+|J days|#1 day

@@ -28,7 +28,7 @@ public sealed class InputPromptOverlay : Window
 {
     const int HorizontalPadding = 4;
     const int VerticalPadding = 2;
-    const string Separator = "   ";
+    string _separator = "   ";
 
     readonly GuiFont _font;
     readonly InputControlRenderer _controlRenderer;
@@ -41,6 +41,15 @@ public sealed class InputPromptOverlay : Window
     readonly record struct PromptDisplay(InputControlLabel Control, string Label, int Width);
 
     public PixelColor BackgroundColor { get; set; } = new(128, 0, 0, 0);
+    public string Separator
+    {
+        get => _separator;
+        set
+        {
+            _separator = value;
+            RefreshText();
+        }
+    }
 
     public InputPromptOverlay(Module app)
         : base(app)
@@ -122,7 +131,7 @@ public sealed class InputPromptOverlay : Window
         // Lay out from right to left. This keeps trailing/global prompts at the
         // exact same pixel when contextual prompts are inserted before them.
         int x = Size.x - HorizontalPadding;
-        int separatorWidth = _font.GetWidth(Separator);
+        int separatorWidth = _font.GetWidth(_separator);
         for (int i = _display.Length - 1; i >= 0; i--)
         {
             PromptDisplay display = _display[i];
@@ -166,7 +175,7 @@ public sealed class InputPromptOverlay : Window
         _display = display.ToArray();
 
         if (_display.Length > 1)
-            width += _font.GetWidth(Separator) * (_display.Length - 1);
+            width += _font.GetWidth(_separator) * (_display.Length - 1);
         _language = app.Language;
         _glyphRevision = app.Engine.InputGlyphs.Revision;
         Size = new Vector2(

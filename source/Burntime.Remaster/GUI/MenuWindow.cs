@@ -13,6 +13,7 @@ namespace Burntime.Remaster.GUI
     {
         public GuiString Text;
         public CommandEvent Command;
+        public InputShortcut Shortcut;
     }
 
     public class MenuWindow : Window
@@ -26,6 +27,9 @@ namespace Burntime.Remaster.GUI
         readonly GuiImage _bottomElement;
         readonly GuiFont _defaultFont;
         readonly GuiFont _focusFont;
+        readonly GuiFont _promptFont;
+        readonly InputControlRenderer _defaultControlRenderer;
+        readonly InputControlRenderer _focusControlRenderer;
 
         const int TOP_HEIGHT = 4;
         const int MIDDLE_HEIGHT = 11;
@@ -43,6 +47,12 @@ namespace Burntime.Remaster.GUI
             _defaultFont.Borders = TextBorders.Screen;
             _focusFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
             _focusFont.Borders = TextBorders.Screen;
+            _promptFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray)
+            {
+                Borders = TextBorders.None
+            };
+            _defaultControlRenderer = new InputControlRenderer(app, _defaultFont, brackets: false);
+            _focusControlRenderer = new InputControlRenderer(app, _focusFont, brackets: false);
 
             _focusIndex = -1;
             IsModal = true;
@@ -51,11 +61,13 @@ namespace Burntime.Remaster.GUI
         }
 
 
-        public void AddLine(GuiString text, CommandEvent command)
+        public void AddLine(GuiString text, CommandEvent command,
+            InputShortcut shortcut = default)
         {
             MenuItem item;
             item.Text = text;
             item.Command = command;
+            item.Shortcut = shortcut;
             _menuEntries.Add(item);
         }
 
@@ -64,6 +76,7 @@ namespace Burntime.Remaster.GUI
             MenuItem item;
             item.Text = text;
             item.Command = command;
+            item.Shortcut = default;
             _menuEntries.Insert(position, item);
         }
 
@@ -99,21 +112,93 @@ namespace Burntime.Remaster.GUI
         bool _mouseSelectionEnabled;
         bool _mouseHasLeft;
 
+        public InputAction AlternatePrimaryAction { get; set; }
+        public float? ExternalPromptLayer { get; set; }
+
         public override void OnRender(RenderTarget target)
         {
             target.DrawSprite(Vector2.Zero, _topElement);
+
+            InputControlLabel alternatePrimaryControl = InputControlLabel.Empty;
+            if (AlternatePrimaryAction != InputAction.None &&
+                app.LastInputMode is (InputMode.Keyboard or InputMode.Gamepad) &&
+                (app is not BurntimeClassic classic || classic.ShowInputPrompts))
+            {
+                alternatePrimaryControl = InputControlDisplay.Resolve(app,
+                    app.LastInputMode, AlternatePrimaryAction);
+            }
+            InputMode shortcutInputMode = app.LastInputMode == InputMode.Gamepad
+                ? InputMode.Gamepad
+                : InputMode.Keyboard;
+            bool showShortcuts = app is not BurntimeClassic promptOwner ||
+                promptOwner.ShowInputPrompts;
 
             for (int i = 0; i < _menuEntries.Count; i++)
             {
                 int itemx = 0;
                 int itemy = 4 + 11 * i;
-                int textx = 34 - _defaultFont.GetWidth(_menuEntries[i].Text) / 2;
+                int textWidth = _defaultFont.GetWidth(_menuEntries[i].Text);
+                int textx = 34 - textWidth / 2;
                 int texty = itemy + 2;
 
                 target.DrawSprite(new Vector2(itemx, itemy), _middleElement);
                 target.Layer++;
 
                 GuiFont f = _focusIndex == i ? _focusFont : _defaultFont;
+                InputControlRenderer renderer = _focusIndex == i
+                    ? _focusControlRenderer
+                    : _defaultControlRenderer;
+                if (i == 0 && !alternatePrimaryControl.IsEmpty)
+                {
+                    const int controlGap = 2;
+                    int controlWidth = renderer.Measure(alternatePrimaryControl);
+                    renderer.Draw(target,
+                        new Vector2(textx - controlGap - controlWidth, texty),
+                        alternatePrimaryControl);
+                }
+
+                InputShortcut shortcut = _menuEntries[i].Shortcut;
+                if (showShortcuts && shortcut.Action != InputAction.None)
+                {
+                    InputControlLabel shortcutControl = InputControlDisplay.Resolve(app,
+                        shortcutInputMode, shortcut.Action,
+                        shortcut.PreferredKeyboardControl,
+                        shortcut.PreferredGamepadControl,
+                        shortcut.KeyboardOverride, shortcut.GamepadOverride);
+                    if (!shortcutControl.IsEmpty)
+                    {
+                        float rowLayer = target.Layer;
+                        if (ExternalPromptLayer.HasValue)
+                            target.Layer = ExternalPromptLayer.Value;
+
+                        const int backgroundRightPadding = 2;
+                        int shortcutX = Size.x + 2;
+                        string holdText = shortcut.Hold
+                            ? InputControlDisplay.Localized(app,
+                                InputControlDisplay.Hold) + " "
+                            : string.Empty;
+                        int holdWidth = _promptFont.GetWidth(holdText);
+                        int shortcutWidth = renderer.Measure(shortcutControl);
+                        int backgroundX = Size.x - 1;
+                        target.RenderRect(
+                            new Vector2(backgroundX, itemy),
+                            new Vector2(shortcutX - backgroundX + holdWidth +
+                                shortcutWidth + backgroundRightPadding, MIDDLE_HEIGHT),
+                            new PixelColor(128, 0, 0, 0));
+                        if (shortcut.Hold)
+                        {
+                            _promptFont.DrawText(target,
+                                new Vector2(shortcutX, texty), holdText,
+                                TextAlignment.Left, VerticalTextAlignment.Top);
+                            shortcutX += holdWidth;
+                        }
+                        renderer.Draw(target, new Vector2(shortcutX, texty),
+                            shortcutControl);
+
+                        target.Layer = rowLayer;
+                    }
+                }
+
                 f.DrawText(target, new Vector2(textx, texty), _menuEntries[i].Text, TextAlignment.Left, VerticalTextAlignment.Top);
                 target.Layer--;
             }
@@ -199,7 +284,8 @@ namespace Burntime.Remaster.GUI
                 return true;
             }
 
-            if (action == InputAction.Primary)
+            if (action == InputAction.Primary ||
+                AlternatePrimaryAction != InputAction.None && action == AlternatePrimaryAction)
             {
                 if (_focusIndex < 0 && _menuEntries.Count > 0)
                     _focusIndex = 0;

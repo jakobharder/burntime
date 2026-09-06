@@ -100,9 +100,9 @@ public sealed class KeyboardBindings : IKeyboardBindings
         if (key.IsVirtual && (key.Modifier & ModifierKeys.Shift) != 0)
         {
             if (key.VirtualKey == SystemKey.Left)
-                return InputAction.Statistics;
+                return InputAction.LeftArea;
             if (key.VirtualKey == SystemKey.Right)
-                return InputAction.LocationInfo;
+                return InputAction.RightArea;
         }
 
         return actions.TryGetValue(Normalize(key), out InputAction action) ? action : InputAction.None;
@@ -129,9 +129,9 @@ public sealed class KeyboardBindings : IKeyboardBindings
 
         // These navigation chords are intentionally always available in addition
         // to the configurable bindings.
-        if (action is InputAction.Statistics or InputAction.LeftArea)
+        if (action == InputAction.LeftArea)
             result.Add(new Key(SystemKey.Left, ModifierKeys.Shift));
-        else if (action is InputAction.LocationInfo or InputAction.RightArea)
+        else if (action == InputAction.RightArea)
             result.Add(new Key(SystemKey.Right, ModifierKeys.Shift));
         return result;
     }

@@ -39,3 +39,4 @@ Take
 Fight
 Store
 Unselect
+Inventory
