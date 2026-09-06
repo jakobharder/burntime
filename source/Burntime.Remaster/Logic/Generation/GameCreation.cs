@@ -99,14 +99,7 @@ namespace Burntime.Remaster.Logic.Generation
             // create respawn class
             game.World.Respawn = container.Create<CharacterRespawn>(new object[] { settings.Respawn.NPC, settings.Respawn.Trader,
                 settings.Respawn.Mutant, settings.Respawn.Dog });
-            game.World.Respawn.Object.TraderHealth = settings.ClassStats.TraderHealth;
-            game.World.Respawn.Object.MutantHealth = settings.ClassStats.MutantHealth;
-            game.World.Respawn.Object.DogHealth = settings.ClassStats.DogHealth;
-            game.World.Respawn.Object.TraderAttack = settings.ClassStats.TraderAttack;
-            game.World.Respawn.Object.MutantAttack = settings.ClassStats.MutantAttack;
-            game.World.Respawn.Object.DogAttack = settings.ClassStats.DogAttack;
-            game.World.Respawn.Object.MutantDropChance = settings.MutantDropChance;
-            game.World.Respawn.Object.MutantDropType = settings.MutantDropType;
+            game.World.Respawn.Object.ApplySettings(settings);
 
             // create locations
             creator = new OriginalLocationCreator();
@@ -617,6 +610,12 @@ namespace Burntime.Remaster.Logic.Generation
 
             ClassicGame classic = container.Root as ClassicGame;
             classic.InitAfterLoad();
+
+            settings = new GameSettings(classic.ItemTypes.UsesExtendedRules
+                ? "gamesettings_extended.txt"
+                : "gamesettings_original.txt");
+            settings.SetDifficulty(classic.World.Difficulty);
+            classic.World.Respawn.Object.ApplySettings(settings);
 
             _ = new LogicFactory();
             LogicFactory.SetParameter("mainmap", classic.World.Map);

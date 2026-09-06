@@ -68,6 +68,8 @@ namespace Burntime.Remaster.Scenes
 
             font = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray);
             keyboardNavigation = new InventoryKeyboardNavigation(inventory, grid, OnButtonEat, OnButtonExit);
+            inventory.Grid.MouseSelectionChanged += keyboardNavigation.SelectFromMouse;
+            grid.MouseSelectionChanged += keyboardNavigation.SelectFromMouse;
             Windows += promptOverlay = new InputPromptOverlay(app);
             promptOverlay.AnchorToScreenBottomRight();
             Windows += exitPromptOverlay = CreateInlinePrompt(InputAction.Back);
@@ -110,16 +112,41 @@ namespace Burntime.Remaster.Scenes
 
         void UpdatePromptOverlay()
         {
+            bool mouseInput = app.LastInputMode == InputMode.Mouse;
+            exitPromptOverlay.SetPrompts(mouseInput
+                ? []
+                : [new InputPrompt(InputAction.Back, "")]);
+            actionPromptOverlay.SetPrompts(mouseInput
+                ? []
+                : [new InputPrompt(InputAction.SceneAction, "")]);
+
             List<InputPrompt> prompts = [];
-            if (keyboardNavigation.CanMoveSelectedItem())
-                prompts.Add(new(InputAction.Primary,
-                    keyboardNavigation.ActiveGrid == grid ? "@prompts?37" : "@prompts?36"));
-            if (inventory.ActiveCharacter.GetGroup().Count > 1)
+            ItemGridWindow activeGrid = keyboardNavigation.ActiveGrid;
+            Item? selectedItem = mouseInput
+                ? activeGrid.MouseHoveredItem
+                : activeGrid.KeyboardSelectedItem;
+            bool canMoveItem = selectedItem != null &&
+                (activeGrid == grid
+                    ? inventory.Grid.Count < inventory.Grid.MaxCount
+                    : grid.Count < grid.MaxCount);
+            if (canMoveItem)
             {
-                prompts.Add(new(InputAction.Statistics, "@prompts?16")
+                prompts.Add(new(InputAction.Primary,
+                    activeGrid == grid ? "@prompts?37" : "@prompts?36")
                 {
+                    PreferredMouseControl = MouseButton.Left
+                });
+            }
+            if (!mouseInput && inventory.PageCount > 1)
+            {
+                prompts.Add(new(InputAction.LeftArea, "@prompts?16")
+                {
+                    AlternateAction = InputAction.RightArea,
                     PreferredKeyboardControl = new Key(SystemKey.Left, ModifierKeys.Shift),
-                    PreferredGamepadControl = GamepadControl.LeftShoulder
+                    PreferredAlternateKeyboardControl = new Key(SystemKey.Right,
+                        ModifierKeys.Shift),
+                    PreferredGamepadControl = GamepadControl.LeftShoulder,
+                    PreferredAlternateGamepadControl = GamepadControl.RightShoulder
                 });
             }
             promptOverlay.SetPrompts(prompts.ToArray());

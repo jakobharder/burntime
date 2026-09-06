@@ -33,6 +33,7 @@ internal class LoopableSong : IDisposable
     readonly byte[]? _loopBuffer;
     SoundEffect? _effect;
     SoundEffectInstance? _music;
+    bool _loopEnabled = true;
 
     public LoopableSong(Burntime.Platform.IO.File loop, Burntime.Platform.IO.File? intro = null, bool repeat = false)
     {
@@ -65,7 +66,8 @@ internal class LoopableSong : IDisposable
 
     private void BufferNeeded(object? sender, EventArgs e)
     {
-        if (_loopBuffer is not null && _music is DynamicSoundEffectInstance music)
+        if (_loopEnabled && _loopBuffer is not null &&
+            _music is DynamicSoundEffectInstance music)
             music.SubmitBuffer(_loopBuffer);
     }
 
@@ -84,7 +86,15 @@ internal class LoopableSong : IDisposable
     }
 
     public void Play() => _music?.Play();
+    public void Pause() => _music?.Pause();
+    public void Resume() => _music?.Resume();
     public void Stop() => _music?.Stop();
+    public void DisableLoop()
+    {
+        _loopEnabled = false;
+        if (_music is not null && _music is not DynamicSoundEffectInstance)
+            _music.IsLooped = false;
+    }
 
     public float Volume
     {

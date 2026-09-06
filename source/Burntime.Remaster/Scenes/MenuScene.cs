@@ -593,6 +593,27 @@ public class MenuScene : Scene
 
     void UpdatePromptOverlay()
     {
+        if (app.LastInputMode == InputMode.Mouse)
+        {
+            bool changePlayerOneName = PlayerOneSwitch.IsHover &&
+                UsePlayerOne && !UsePlayerTwo && !PlayerOneSwitch.HasManualName;
+            bool changePlayerTwoName = PlayerTwoSwitch.IsHover &&
+                UsePlayerTwo && !UsePlayerOne && !PlayerTwoSwitch.HasManualName;
+            if (changePlayerOneName || changePlayerTwoName)
+            {
+                _promptOverlay.SetPrompts(new InputPrompt(
+                    InputAction.Primary, "@prompts?7")
+                {
+                    PreferredMouseControl = MouseButton.Left
+                });
+            }
+            else
+            {
+                _promptOverlay.SetPrompts();
+            }
+            return;
+        }
+
         GuiString primaryLabel = _setupSelection switch
         {
             SetupSelection.Load => "@prompts?3",

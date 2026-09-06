@@ -1,0 +1,2 @@
+songlist=songs_dos.txt
+playlist=playlist_dos.txt

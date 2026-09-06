@@ -16,6 +16,8 @@ namespace Burntime.Remaster.AI
         protected float tryToAttack = 0;
         [NonSerialized]
         protected Character attack;
+        [NonSerialized]
+        int lastAttackDay;
 
         public override void Process(float elapsed)
         {
@@ -26,11 +28,11 @@ namespace Burntime.Remaster.AI
                 return;
             }
 
-            bool runAway = false;
-            bool canAttack = !Owner.Location.IsCity;
+            int currentDay = ((ClassicGame)container.Root).World.Day;
+            bool canAttack = !Owner.Location.IsCity && lastAttackDay != currentDay;
 
-            // Fighting is disabled in cities, so creatures must not initiate an
-            // attack that the player cannot answer there.
+            // Fighting is disabled in cities, and each creature gets at most one
+            // successful strike per day. Cancel an approach in either case.
             if (!canAttack && attack != null)
             {
                 attack = null;
@@ -42,9 +44,10 @@ namespace Burntime.Remaster.AI
             {
                 if (!attack.IsDead && (attack.Position - Owner.Position).Length < 20)
                 {
-                    Owner.Attack(attack, defendWithAmmo: false);
+                    Owner.AttackWithoutRetaliation(attack);
+                    lastAttackDay = currentDay;
                     attack = null;
-                    runAway = true;
+                    return;
                 }
                 else
                 {
@@ -84,16 +87,16 @@ namespace Burntime.Remaster.AI
             }
 
             // reached its goal, make some new decisions
-            if (Owner.Position == Owner.Path.MoveTo || runAway)
+            if (Owner.Position == Owner.Path.MoveTo)
             {
                 // rest some time before decision
-                if (first && !runAway)
+                if (first)
                 {
                     takeSomeRest = 0.5f;
                     first = false;
                 }
                 // decide to take some rest or go somewhere else 1:9
-                else if (!runAway && Burntime.Platform.Math.Random.Next() % 9 == 0)
+                else if (Burntime.Platform.Math.Random.Next() % 9 == 0)
                 {
                     // rest for about 2 seconds
                     takeSomeRest = 2;

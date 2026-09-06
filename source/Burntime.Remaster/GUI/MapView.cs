@@ -133,6 +133,8 @@ public class MapView : Window
         get { return entrance; }
     }
 
+    public IMapObject HoveredObject { get; private set; }
+
     public override void OnRender(RenderTarget Target)
     {
         base.OnRender(Target);
@@ -372,13 +374,19 @@ public class MapView : Window
         if (handler != null)
         {
             ClassicGame game = app.GameState as ClassicGame;
+            HoveredObject = null;
             game.World.ActiveLocationObj.Hover = null;
             game.World.ActiveLocationObj.HoverCharacter = null;
 
             foreach (Maps.IMapViewOverlay overlay in overlays)
             {
                 if (mouseInputVisible)
+                {
                     overlay.MouseMoveOverlay(mousePosition);
+                    IMapObject hoveredObject = overlay.GetObjectAt(mousePosition);
+                    if (hoveredObject != null)
+                        HoveredObject = hoveredObject;
+                }
                 overlay.UpdateOverlay(game, Elapsed);
             }
 
@@ -387,13 +395,16 @@ public class MapView : Window
                 if (game.MainMapView)
                 {
                     Burntime.Data.BurnGfx.MapEntrance e = game.World.Map.Entrances[entrance];
-                    game.World.ActiveLocationObj.Hover = new MapViewHoverInfo(app.ResourceManager.GetString(e.TitleId), e.Area.Center, BurntimeClassic.LightGray);
+                    game.World.ActiveLocationObj.Hover = new MapViewHoverInfo(app.ResourceManager.GetString(e.TitleId), e.Area.Center, BurntimeClassic.LightGray)
+                    {
+                        WorldLocation = game.World.Locations[entrance]
+                    };
                 }
                 else if (entrance < game.World.ActiveLocationObj.Rooms.Count)
                 {
                     Location location = game.World.ActiveLocationObj;
                     game.World.ActiveLocationObj.Hover = location.AreEntrancesBlockedFor(game.World.ActivePlayerObj)
-                        ? new MapViewHoverInfo(app.ResourceManager.GetString("newburn?103"), location.Map.Entrances[entrance].Area.Center, BurntimeClassic.LightGray)
+                        ? new MapViewHoverInfo(app.ResourceManager.GetString("newburn?103"), location.Map.Entrances[entrance].Area.Center, BurntimeClassic.LightGray, location.Rooms[entrance])
                         : new MapViewHoverInfo(location.Rooms[entrance], app.ResourceManager, BurntimeClassic.LightGray);
                 }
             }

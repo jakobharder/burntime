@@ -9,7 +9,7 @@ using System;
 
 namespace Burntime.Remaster;
 
-public class OptionsScene : Scene
+public class OptionsScene : Scene, IMapMusicInterruptionScene
 {
     GuiFont disabled;
     GuiFont red;
@@ -139,6 +139,20 @@ public class OptionsScene : Scene
         Windows += _jukeboxPage = new OptionsJukeboxPage(app, fonts) { IsVisible = false };
         Windows += _emptyPage = new Container(app) { IsVisible = false };
         Windows += _promptOverlay = new InputPromptOverlay(app);
+        UpdatePromptOverlay();
+        _promptOverlay.AnchorToScreenBottomRight();
+        ActivePage = _savesPage;
+        UpdatePageFocus();
+    }
+
+    void UpdatePromptOverlay()
+    {
+        if (app.LastInputMode == InputMode.Mouse)
+        {
+            _promptOverlay.SetPrompts();
+            return;
+        }
+
         _promptOverlay.SetPrompts(
             new(InputAction.Primary, "@prompts?31"),
             new(InputAction.LeftArea, "@prompts?30")
@@ -149,9 +163,6 @@ public class OptionsScene : Scene
                 PreferredAlternateGamepadControl = GamepadControl.RightShoulder
             },
             new(InputAction.Back, "@prompts?17"));
-        _promptOverlay.AnchorToScreenBottomRight();
-        ActivePage = _savesPage;
-        UpdatePageFocus();
     }
 
     void SelectPage(int index)
@@ -344,6 +355,8 @@ public class OptionsScene : Scene
 
     public override void OnUpdate(float elapsed)
     {
+        UpdatePromptOverlay();
+
         if (app.LastInputMode == InputMode.Mouse)
         {
             int hoveredIndex = Array.FindIndex(_menuButtons,

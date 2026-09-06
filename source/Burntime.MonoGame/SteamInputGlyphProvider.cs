@@ -240,6 +240,10 @@ sealed class SteamInputGlyphProvider : IInputGlyphProvider, IDisposable
             return InputGlyph.None;
         if (origin.EndsWith("_RightStick_Click", StringComparison.Ordinal))
             return InputGlyph.RightStick;
+        if (origin.EndsWith("_LeftTrigger_Pull", StringComparison.Ordinal))
+            return InputGlyph.LeftTrigger;
+        if (origin.EndsWith("_RightTrigger_Pull", StringComparison.Ordinal))
+            return InputGlyph.RightTrigger;
         if (origin.EndsWith("_LeftBumper", StringComparison.Ordinal))
             return InputGlyph.LeftShoulder;
         if (origin.EndsWith("_RightBumper", StringComparison.Ordinal))

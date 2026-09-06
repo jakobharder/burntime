@@ -4,10 +4,24 @@ using System.Collections.Generic;
 
 namespace Burntime.Remaster;
 
-readonly record struct InputControlPart(string Text, InputGlyph Glyph)
+enum KeyboardGlyph
 {
-    public InputControlPart(string text) : this(text, InputGlyph.None) { }
-    public InputControlPart(InputGlyph glyph) : this(string.Empty, glyph) { }
+    None = 0,
+    A, B, C, D, E, F, G, H, I, J, K, L, M,
+    N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+    Digit0, Digit1, Digit2, Digit3, Digit4,
+    Digit5, Digit6, Digit7, Digit8, Digit9,
+    Escape, Enter, Tab, Space, Ctrl, Alt, Shift,
+    Up, Down, Left, Right, MouseLeft, MouseRight,
+    Count
+}
+
+readonly record struct InputControlPart(string Text, InputGlyph Glyph, KeyboardGlyph Keyboard)
+{
+    public bool HasGlyph => Glyph != InputGlyph.None || Keyboard != KeyboardGlyph.None;
+    public InputControlPart(string text) : this(text, InputGlyph.None, KeyboardGlyph.None) { }
+    public InputControlPart(InputGlyph glyph) : this(string.Empty, glyph, KeyboardGlyph.None) { }
+    public InputControlPart(KeyboardGlyph glyph) : this(string.Empty, InputGlyph.None, glyph) { }
 }
 
 sealed class InputControlLabel
@@ -56,22 +70,36 @@ static class InputControlDisplay
         Key? preferredFirstKeyboardControl = null, Key? preferredSecondKeyboardControl = null,
         GamepadControl? preferredFirstGamepadControl = null,
         GamepadControl? preferredSecondGamepadControl = null,
-        string? keyboardOverride = null, string? gamepadOverride = null)
+        string? keyboardOverride = null, string? gamepadOverride = null,
+        MouseButton? preferredFirstMouseControl = null,
+        MouseButton? preferredSecondMouseControl = null)
     {
         string? controlOverride = inputMode == InputMode.Keyboard
             ? keyboardOverride
             : inputMode == InputMode.Gamepad ? gamepadOverride : null;
+        if (inputMode == InputMode.Mouse &&
+            !preferredFirstMouseControl.HasValue &&
+            !preferredSecondMouseControl.HasValue)
+        {
+            // Pair overrides describe a keyboard shortcut that remains usable
+            // while the mouse is active (for example Shift + Up/Down).
+            controlOverride = keyboardOverride;
+        }
         if (controlOverride != null)
         {
             if (inputMode == InputMode.Gamepad && controlOverride == "D-pad Left/Right")
                 return new InputControlLabel(new InputControlPart(InputGlyph.DPadHorizontal));
+            if (inputMode == InputMode.Keyboard)
+                return ResolveKeyboardOverride(app, controlOverride);
             return FromText(TranslateOverride(app, controlOverride));
         }
 
         InputControlLabel first = Resolve(app, inputMode, firstAction,
-            preferredFirstKeyboardControl, preferredFirstGamepadControl);
+            preferredFirstKeyboardControl, preferredFirstGamepadControl,
+            mouseControl: preferredFirstMouseControl);
         InputControlLabel second = Resolve(app, inputMode, secondAction,
-            preferredSecondKeyboardControl, preferredSecondGamepadControl);
+            preferredSecondKeyboardControl, preferredSecondGamepadControl,
+            mouseControl: preferredSecondMouseControl);
         if (first.IsEmpty || second.IsEmpty)
             return InputControlLabel.Empty;
 
@@ -82,24 +110,66 @@ static class InputControlDisplay
             return FromText(Combine(firstText, secondText));
 
         List<InputControlPart> parts = HasGlyph(first) && HasGlyph(second)
-            ? [.. first.Parts, .. second.Parts]
+            ? CombineGlyphs(first, second)
             : [.. first.Parts, new(" / "), .. second.Parts];
         return new(parts.ToArray());
     }
 
+    static List<InputControlPart> CombineGlyphs(InputControlLabel first,
+        InputControlLabel second)
+    {
+        int sharedModifiers = 0;
+        while (sharedModifiers < first.Parts.Count &&
+            sharedModifiers < second.Parts.Count &&
+            IsKeyboardModifier(first.Parts[sharedModifiers]) &&
+            first.Parts[sharedModifiers].Keyboard == second.Parts[sharedModifiers].Keyboard)
+        {
+            sharedModifiers++;
+        }
+
+        List<InputControlPart> parts = [.. first.Parts];
+        for (int i = sharedModifiers; i < second.Parts.Count; i++)
+            parts.Add(second.Parts[i]);
+        return parts;
+    }
+
+    static bool IsKeyboardModifier(InputControlPart part) =>
+        part.Keyboard is KeyboardGlyph.Ctrl or KeyboardGlyph.Alt or KeyboardGlyph.Shift;
+
     public static InputControlLabel Resolve(Module app, InputMode inputMode, InputAction action,
         Key? preferredKeyboardControl = null, GamepadControl? preferredGamepadControl = null,
-        string? keyboardOverride = null, string? gamepadOverride = null)
+        string? keyboardOverride = null, string? gamepadOverride = null,
+        MouseButton? mouseControl = null)
     {
+        if (inputMode == InputMode.Mouse)
+        {
+            MouseButton? control = mouseControl ?? DefaultMouseControl(action);
+            if (control.HasValue)
+            {
+                KeyboardGlyph glyph = control.Value switch
+                {
+                    MouseButton.Left => KeyboardGlyph.MouseLeft,
+                    MouseButton.Right => KeyboardGlyph.MouseRight,
+                    _ => KeyboardGlyph.None
+                };
+                return glyph == KeyboardGlyph.None
+                    ? InputControlLabel.Empty
+                    : new InputControlLabel(new InputControlPart(glyph));
+            }
+
+            // Mouse users can still use the regular keyboard shortcuts.
+            inputMode = InputMode.Keyboard;
+        }
+
         if (inputMode == InputMode.Keyboard)
         {
             if (keyboardOverride != null)
-                return FromText(TranslateOverride(app, keyboardOverride));
+                return ResolveKeyboardOverride(app, keyboardOverride);
 
             IReadOnlyList<Key> controls = app.KeyboardActionBindings.GetControls(action);
             if (controls.Count == 0)
                 return InputControlLabel.Empty;
-            return FromText(Format(app, FindPreferred(controls, preferredKeyboardControl)));
+            return FormatKeyboard(app, FindPreferred(controls, preferredKeyboardControl));
         }
 
         if (inputMode == InputMode.Gamepad)
@@ -108,10 +178,12 @@ static class InputControlDisplay
                 return FromText(TranslateOverride(app, gamepadOverride));
 
             IReadOnlyList<GamepadControl> controls = app.GamepadActionBindings.GetControls(action);
-            if (controls.Count == 0)
+            if (controls.Count == 0 && !preferredGamepadControl.HasValue)
                 return InputControlLabel.Empty;
-            GamepadControl control = FindPreferred(controls,
-                preferredGamepadControl ?? DefaultGamepadControl(action));
+            GamepadControl control = controls.Count == 0
+                ? preferredGamepadControl!.Value
+                : FindPreferred(controls,
+                    preferredGamepadControl ?? DefaultGamepadControl(action));
             IInputGlyphProvider glyphProvider = app.Engine.InputGlyphs;
             InputGlyph glyph = glyphProvider.GetGlyph(control);
             string? labelOverride = glyphProvider.GetLabelOverride(control);
@@ -129,7 +201,7 @@ static class InputControlDisplay
 
     static bool TryGetText(InputControlLabel label, out string text)
     {
-        if (label.Parts.Count == 1 && label.Parts[0].Glyph == InputGlyph.None)
+        if (label.Parts.Count == 1 && !label.Parts[0].HasGlyph)
         {
             text = label.Parts[0].Text;
             return true;
@@ -141,7 +213,7 @@ static class InputControlDisplay
     static bool HasGlyph(InputControlLabel label)
     {
         foreach (InputControlPart part in label.Parts)
-            if (part.Glyph != InputGlyph.None)
+            if (part.HasGlyph)
                 return true;
         return false;
     }
@@ -161,6 +233,12 @@ static class InputControlDisplay
     {
         InputAction.Statistics => GamepadControl.DPadLeft,
         InputAction.LocationInfo => GamepadControl.DPadRight,
+        _ => null
+    };
+
+    static MouseButton? DefaultMouseControl(InputAction action) => action switch
+    {
+        InputAction.Primary => MouseButton.Left,
         _ => null
     };
 
@@ -188,6 +266,60 @@ static class InputControlDisplay
         left.Modifier == right.Modifier;
 
     static string Combine(string first, string second) => first + " / " + second;
+
+    static InputControlLabel FormatKeyboard(Module app, Key key)
+    {
+        KeyboardGlyph glyph = GetKeyboardGlyph(key);
+        if (glyph == KeyboardGlyph.None)
+            return FromText(Format(app, key));
+
+        List<InputControlPart> parts = [];
+        if ((key.Modifier & ModifierKeys.Shift) != 0)
+            parts.Add(new InputControlPart(KeyboardGlyph.Shift));
+        if ((key.Modifier & ModifierKeys.LeftAlt) != 0)
+            parts.Add(new InputControlPart(KeyboardGlyph.Alt));
+        parts.Add(new InputControlPart(glyph));
+        return new InputControlLabel(parts.ToArray());
+    }
+
+    static KeyboardGlyph GetKeyboardGlyph(Key key)
+    {
+        if (!key.IsVirtual)
+        {
+            char character = char.ToLowerInvariant(key.Character);
+            if (character is >= 'a' and <= 'z')
+                return (KeyboardGlyph)((int)KeyboardGlyph.A + character - 'a');
+            if (character is >= '0' and <= '9')
+                return (KeyboardGlyph)((int)KeyboardGlyph.Digit0 + character - '0');
+            return character switch
+            {
+                ' ' => KeyboardGlyph.Space,
+                _ => KeyboardGlyph.None
+            };
+        }
+
+        return key.VirtualKey switch
+        {
+            SystemKey.Escape => KeyboardGlyph.Escape,
+            SystemKey.Enter => KeyboardGlyph.Enter,
+            SystemKey.Tab => KeyboardGlyph.Tab,
+            SystemKey.Alt => KeyboardGlyph.Alt,
+            SystemKey.Up => KeyboardGlyph.Up,
+            SystemKey.Down => KeyboardGlyph.Down,
+            SystemKey.Left => KeyboardGlyph.Left,
+            SystemKey.Right => KeyboardGlyph.Right,
+            _ => KeyboardGlyph.None
+        };
+    }
+
+    static InputControlLabel ResolveKeyboardOverride(Module app, string value) => value switch
+    {
+        "Shift+Up/Down" => new InputControlLabel(
+            new InputControlPart(KeyboardGlyph.Shift),
+            new InputControlPart(KeyboardGlyph.Up),
+            new InputControlPart(KeyboardGlyph.Down)),
+        _ => FromText(TranslateOverride(app, value))
+    };
 
     static string Format(Module app, Key key)
     {

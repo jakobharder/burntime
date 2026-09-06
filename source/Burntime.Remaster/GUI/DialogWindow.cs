@@ -27,6 +27,11 @@ namespace Burntime.Remaster
         Vector2 lastMousePosition;
         bool hasLastMousePosition;
         bool mouseHasLeft;
+        bool openedInMouseMode;
+        bool directionalFocusActive;
+        bool resumePlaylistMusic;
+
+        public override bool PreserveMouseModeForDirectionalInput => openedInMouseMode;
 
         public ConversationType Type { get; private set; }
         public bool PlayMusic { get; set; } = true;
@@ -60,6 +65,8 @@ namespace Burntime.Remaster
         public override void OnShow()
         {
             HasFocus = true;
+            openedInMouseMode = app.LastInputMode == InputMode.Mouse;
+            directionalFocusActive = false;
             lastMousePosition = app.DeviceManager.Mouse.Position - PositionOnScreen;
             hasLastMousePosition = true;
             mouseHasLeft = false;
@@ -67,7 +74,14 @@ namespace Burntime.Remaster
             base.OnShow();
 
             if (PlayMusic)
+            {
+                resumePlaylistMusic =
+                    BurntimeClassic.Instance.MapMusicMode == MapMusicMode.List &&
+                    BurntimeClassic.Instance.Engine.Music.IsPlayingFromPlaylist;
+                if (resumePlaylistMusic)
+                    BurntimeClassic.Instance.Engine.Music.RememberPlaylistSong();
                 BurntimeClassic.Instance.Engine.Music.Play("talking");
+            }
         }
 
         public override void OnHide()
@@ -76,7 +90,14 @@ namespace Burntime.Remaster
             base.OnHide();
 
             if (PlayMusic)
-                BurntimeClassic.Instance.Engine.Music.Stop();
+            {
+                if (BurntimeClassic.Instance.MapMusicMode == MapMusicMode.List &&
+                    resumePlaylistMusic)
+                    BurntimeClassic.Instance.Engine.Music.PlayPlaylist();
+                else if (BurntimeClassic.Instance.MapMusicMode == MapMusicMode.None)
+                    BurntimeClassic.Instance.Engine.Music.Stop();
+                resumePlaylistMusic = false;
+            }
         }
 
         public void SetCharacter(Character character, Conversation conversation, bool showFace = false)
@@ -159,12 +180,14 @@ namespace Burntime.Remaster
 
             if (action.IsUp())
             {
+                directionalFocusActive = true;
                 MoveFocus(-1);
                 return true;
             }
 
             if (action.IsDown())
             {
+                directionalFocusActive = true;
                 MoveFocus(1);
                 return true;
             }
@@ -233,6 +256,8 @@ namespace Burntime.Remaster
                 case ConversationActionType.Trade:
                     Hide();
                     classic.Game.World.ActiveTraderObj = character as Trader;
+                    classic.Game.World.ActivePlayerObj.Group.IgnoreRangeFilter =
+                        !classic.Game.World.ActivePlayerObj.SingleMode;
                     app.SceneManager.SetScene("TraderScene");
                     break;
                 case ConversationActionType.Yes:
@@ -267,6 +292,7 @@ namespace Burntime.Remaster
             lastMousePosition = position;
             hasLastMousePosition = true;
             mouseHasLeft = false;
+            directionalFocusActive = false;
 
             if (position.x >= 0 && position.y >= 0 && position.x < Size.x && position.y < Size.y)
             {
@@ -315,7 +341,7 @@ namespace Burntime.Remaster
 
         void ResetFocus()
         {
-            focusChoiceIndex = app.LastInputMode == InputMode.Mouse
+            focusChoiceIndex = openedInMouseMode && !directionalFocusActive
                 ? ChoiceAt(lastMousePosition)
                 : dialogmode == 0 ? 0 : FirstVisibleChoice();
         }
@@ -380,6 +406,7 @@ namespace Burntime.Remaster
             Player boss = classic.Game.World.ActivePlayerObj;
 
             character.Hire(boss);
+            boss.SelectGroup(boss.Group);
         }
     }
 }

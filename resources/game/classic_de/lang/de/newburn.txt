@@ -102,3 +102,4 @@ Vert. {defense}}
 % Gas 
 % Rad. 
 Blockiert}
+|J Tage|#1 Tag

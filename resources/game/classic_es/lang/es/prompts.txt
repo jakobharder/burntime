@@ -38,3 +38,5 @@ Ofrecer
 Tomar
 Luchar
 Guardar
+Deseleccionar
+Inventario

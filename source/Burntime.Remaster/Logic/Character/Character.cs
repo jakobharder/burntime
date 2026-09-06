@@ -41,11 +41,21 @@ namespace Burntime.Remaster.Logic
         bool wasInTalkingDistance;
         [NonSerialized]
         float movementElapsed;
+        [NonSerialized]
+        float fleeTimeRemaining;
+        [NonSerialized]
+        Vector2 fleeDestination;
 
         const float WALK_SPEED = 35;
         const float CONTROLLED_WALK_SPEED = 50;
+        const float FLEE_SPEED = 70;
+        const float FLEE_DURATION = 2.5f;
+        const float FLEE_DISTANCE = 70;
         const float TALKING_DISTANCE = 30;
         const float PROXIMITY_PAUSE_TIME = 10;
+        // Vertical facing covers 65 degrees to either side of the vertical axis,
+        // leaving a 25-degree cone around each horizontal direction.
+        const float VERTICAL_FACING_MIN_SLOPE = 0.46630767f; // tan(25 degrees)
 
         // some helper attributes
         public bool IsWithBoss
@@ -484,7 +494,7 @@ namespace Burntime.Remaster.Logic
 
         public void CancelAction()
         {
-            Path.MoveTo = Position;
+            Path.Stop(Position);
             Mind.MoveToObject(null);
         }
 
@@ -501,21 +511,19 @@ namespace Burntime.Remaster.Logic
             float difficultyFactor = (1 + Root.World.Difficulty * 0.1f);
             bool isPlayer = (Player == container.Root.CurrentPlayer);
 
-            var attackingGroup = (Player != null && Player.Character == this)
-                ? Player.Group.Where(ch => (ch.Position - Position).Length < 25).ToArray()
+            var attackingGroup = (Player != null && Player.Character == this && !Player.SingleMode)
+                ? Player.Group.ToArray()
                 : new Character[] { this };
-
-            static void attack(Character attacker, Character defender, bool useAmmo, float factor)
-            {
-                int attackValue = attacker.UseBestEquipment(useAmmo);
-                int damage = (int)System.Math.Max(1, (attackValue - defender.DefenseValue) * factor);
-                defender.Health -= damage;
-            };
 
             foreach (var attacker in attackingGroup)
             {
-                attack(attacker, defender, useAmmo: true, isPlayer ? 1 : difficultyFactor);
-                attack(defender, attacker, defendWithAmmo, isPlayer ? difficultyFactor : 1);
+                DealAttackDamage(attacker, defender, useAmmo: true,
+                    isPlayer ? 1 : difficultyFactor);
+                DealAttackDamage(defender, attacker, defendWithAmmo,
+                    isPlayer ? difficultyFactor : 1);
+
+                if (attacker.IsHuman && !defender.IsDead)
+                    defender.FleeFrom(attacker);
 
                 container.Notify(new AttackEvent(attacker, defender));
                 if (defender.Player?.AiState is AI.ClassicAiState strategicAi)
@@ -523,6 +531,72 @@ namespace Burntime.Remaster.Logic
                 if (defender.IsDead || attacker.IsDead)
                     break;
             }
+        }
+
+        internal void AttackWithoutRetaliation(Character defender)
+        {
+            float difficultyFactor = 1 + Root.World.Difficulty * 0.1f;
+            DealAttackDamage(this, defender, useAmmo: true, difficultyFactor);
+            FleeFrom(defender);
+
+            container.Notify(new AttackEvent(this, defender));
+            if (defender.Player?.AiState is AI.ClassicAiState strategicAi)
+                strategicAi.RecordAttack(this, defender);
+        }
+
+        static void DealAttackDamage(Character attacker, Character defender,
+            bool useAmmo, float factor)
+        {
+            int attackValue = attacker.UseBestEquipment(useAmmo);
+            int damage = (int)System.Math.Max(1,
+                (attackValue - defender.DefenseValue) * factor);
+            defender.Health -= damage;
+        }
+
+        void FleeFrom(Character attacker)
+        {
+            Vector2f direction = Position - attacker.Position;
+            if (direction.Length < 0.1f)
+            {
+                direction = new Vector2f(
+                    Burntime.Platform.Math.Random.Next(0, 2) == 0 ? -1 : 1,
+                    Burntime.Platform.Math.Random.Next(-1, 2));
+            }
+            direction.Normalize();
+
+            Vector2 destination = Position + (Vector2)(direction * FLEE_DISTANCE);
+            Location? location = Location ?? Player?.Location;
+            if (location is not null && !location.Map.Mask.IsWalkableMapPosition(destination))
+            {
+                // Try nearby escape angles when the direct route ends outside the
+                // walkable map. Prefer continuing generally away from the attacker.
+                float[] angles = { 45, -45, 90, -90 };
+                foreach (float angle in angles)
+                {
+                    float radians = angle * (float)System.Math.PI / 180;
+                    float cos = (float)System.Math.Cos(radians);
+                    float sin = (float)System.Math.Sin(radians);
+                    Vector2f alternative = new(
+                        direction.x * cos - direction.y * sin,
+                        direction.x * sin + direction.y * cos);
+                    Vector2 candidate = Position + (Vector2)(alternative * FLEE_DISTANCE);
+                    if (location.Map.Mask.IsWalkableMapPosition(candidate))
+                    {
+                        destination = candidate;
+                        break;
+                    }
+                }
+            }
+
+            if (destination == Position)
+                return;
+
+            Mind.MoveToObject(null);
+            if (Path is PathFinding.ManualPath)
+                Path = container.Create<PathFinding.ComplexPath>();
+            Path.MoveTo = destination;
+            fleeDestination = destination;
+            fleeTimeRemaining = FLEE_DURATION;
         }
 
         public virtual void Turn()
@@ -708,6 +782,8 @@ namespace Burntime.Remaster.Logic
                         : Class == CharClass.Mutant
                             ? WALK_SPEED / 2
                             : WALK_SPEED * 0.66f;
+            if (fleeTimeRemaining > 0)
+                Path.Speed = FLEE_SPEED;
 
             bool isHovered = Location?.HoverCharacter == this;
             bool isInTalkingDistance = IsHuman && !isActiveGroup && !isPlayerControlled &&
@@ -721,12 +797,14 @@ namespace Burntime.Remaster.Logic
                 proximityPauseRemaining = 0;
             wasInTalkingDistance = isInTalkingDistance;
 
+            bool isFleeing = fleeTimeRemaining > 0;
             if (proximityPauseRemaining > 0)
             {
                 proximityPauseRemaining = System.Math.Max(0, proximityPauseRemaining - elapsed);
-                Path.Speed = 0;
+                if (!isFleeing)
+                    Path.Speed = 0;
             }
-            if (isHovered)
+            if (isHovered && !isFleeing && !isActiveGroup && !isPlayerControlled)
                 Path.Speed = 0;
 
             Vector2 old = new Vector2(position);
@@ -750,6 +828,15 @@ namespace Burntime.Remaster.Logic
             }
 
             Mind.Process(elapsed);
+
+            if (fleeTimeRemaining > 0)
+            {
+                fleeTimeRemaining = System.Math.Max(0, fleeTimeRemaining - elapsed);
+                if ((fleeDestination - Position).Length <= 2)
+                    fleeTimeRemaining = 0;
+                else
+                    Path.MoveTo = fleeDestination;
+            }
 
             Location loc = Location;
             if (loc == null)
@@ -786,11 +873,13 @@ namespace Burntime.Remaster.Logic
                 dir = Path.MovementDirection;
             if (System.Math.Abs(dir.x) > 0.01f || System.Math.Abs(dir.y) > 0.01f)
             {
-                if (dir.y < 0 /*&& System.Math.Abs(dir.y) > System.Math.Abs(dir.x)*/) // up
+                bool faceVertical = System.Math.Abs(dir.y) >=
+                    System.Math.Abs(dir.x) * VERTICAL_FACING_MIN_SLOPE;
+                if (faceVertical && dir.y < 0) // up
                 {
                     Animation = 8 + ani.Frame;
                 }
-                else if (dir.y > 0 /*&& System.Math.Abs(dir.y) > System.Math.Abs(dir.x)*/) // down
+                else if (faceVertical && dir.y > 0) // down
                 {
                     Animation = 6 + ani.Frame;
                 }

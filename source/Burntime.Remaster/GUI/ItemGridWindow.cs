@@ -46,6 +46,10 @@ namespace Burntime.Remaster.GUI
         bool hasLastMousePosition;
         bool mouseHasLeft;
         Vector2 lastMousePosition;
+        const float MousePromptHideDelay = 0.2f;
+        Item? mousePromptItem;
+        float mousePromptHideRemaining;
+        bool mousePromptHidePending;
 
         int[] gridPositions;
         bool lockPositions = false;
@@ -157,24 +161,56 @@ namespace Burntime.Remaster.GUI
             lastMousePosition = position;
             hasLastMousePosition = true;
             mouseHasLeft = false;
+            mouseHoverIndex = -1;
 
             for (int i = itemWindows?.Length - 1 ?? -1; i >= 0; i--)
             {
                 if (IsValidKeyboardIndex(i) && itemWindows[i].Boundings.PointInside(position))
                 {
+                    mouseHoverIndex = i;
+                    mousePromptItem = items[gridPositions[i]];
+                    mousePromptHidePending = false;
+                    mousePromptHideRemaining = 0;
                     keyboardIndex = i;
                     MouseSelectionChanged?.Invoke(this);
                     break;
                 }
             }
 
+            if (mouseHoverIndex < 0 && mousePromptItem != null && !mousePromptHidePending)
+            {
+                mousePromptHidePending = true;
+                mousePromptHideRemaining = MousePromptHideDelay;
+            }
+
             return base.OnMouseMove(position);
+        }
+
+        public override void OnUpdate(float elapsed)
+        {
+            if (mousePromptHidePending)
+            {
+                mousePromptHideRemaining -= elapsed;
+                if (mousePromptHideRemaining <= 0)
+                    ClearMousePromptItem();
+            }
+
+            base.OnUpdate(elapsed);
         }
 
         public override void OnMouseLeave()
         {
             mouseHasLeft = true;
+            mouseHoverIndex = -1;
+            ClearMousePromptItem();
             base.OnMouseLeave();
+        }
+
+        void ClearMousePromptItem()
+        {
+            mousePromptItem = null;
+            mousePromptHidePending = false;
+            mousePromptHideRemaining = 0;
         }
 
         internal void SelectFromMouseClick(int index)
@@ -182,6 +218,10 @@ namespace Burntime.Remaster.GUI
             if (!UnifiedSelection || !IsValidKeyboardIndex(index))
                 return;
 
+            mouseHoverIndex = index;
+            mousePromptItem = items[gridPositions[index]];
+            mousePromptHidePending = false;
+            mousePromptHideRemaining = 0;
             keyboardIndex = index;
             MouseSelectionChanged?.Invoke(this);
         }
@@ -230,7 +270,12 @@ namespace Burntime.Remaster.GUI
                     continue;
 
                 int sideways = System.Math.Abs(difference.x * direction.y - difference.y * direction.x);
-                int score = sideways * 1000 + forward;
+                // In an interleaved room grid, vertical movement should enter
+                // the nearer offset layer instead of skipping over it to remain
+                // in the same column of the current layer.
+                int score = doubleLayered && direction.x == 0
+                    ? forward * 1000 + sideways
+                    : sideways * 1000 + forward;
                 if (score < selectedScore)
                 {
                     selected = i;
@@ -256,9 +301,44 @@ namespace Burntime.Remaster.GUI
                     continue;
 
                 Vector2 candidate = PositionOnScreen + itemWindows[i].Position + size / 2;
+                Vector2 difference = candidate - sourcePosition;
+                int forward = difference.x * direction.x + difference.y * direction.y;
+                if (forward <= 0)
+                    continue;
+
                 int edge = direction.x > 0 ? candidate.x : -candidate.x;
                 int rowDistance = System.Math.Abs(candidate.y - sourcePosition.y);
                 int score = edge * 1000 + rowDistance;
+                if (score < selectedScore)
+                {
+                    selected = i;
+                    selectedScore = score;
+                }
+            }
+
+            if (selected == -1)
+                return false;
+
+            keyboardIndex = selected;
+            return true;
+        }
+
+        public bool SelectKeyboardPageEdge(Vector2 direction, Vector2 sourcePosition)
+        {
+            int selected = -1;
+            int selectedScore = int.MaxValue;
+
+            for (int i = 0; itemWindows != null && i < itemWindows.Length; i++)
+            {
+                if (!IsValidKeyboardIndex(i))
+                    continue;
+
+                Vector2 candidate = PositionOnScreen + itemWindows[i].Position + size / 2;
+                // Moving down enters the top of the next page; moving up enters
+                // the bottom of the previous page. Preserve the source column.
+                int edge = direction.y > 0 ? candidate.y : -candidate.y;
+                int columnDistance = System.Math.Abs(candidate.x - sourcePosition.x);
+                int score = edge * 1000 + columnDistance;
                 if (score < selectedScore)
                 {
                     selected = i;
@@ -290,6 +370,9 @@ namespace Burntime.Remaster.GUI
         public Item? KeyboardSelectedItem => IsValidKeyboardIndex(keyboardIndex)
             ? items[gridPositions[keyboardIndex]]
             : null;
+
+        int mouseHoverIndex = -1;
+        public Item? MouseHoveredItem => mousePromptItem;
 
         public bool ActivateKeyboardItem(bool secondary)
         {
@@ -330,6 +413,7 @@ namespace Burntime.Remaster.GUI
         {
             keyboardIndex = -1;
             int nearestDistance = int.MaxValue;
+            bool nearestIsOnSameRow = false;
             for (int i = 0; itemWindows != null && i < itemWindows.Length; i++)
             {
                 if (!IsValidKeyboardIndex(i))
@@ -337,10 +421,14 @@ namespace Burntime.Remaster.GUI
 
                 Vector2 difference = itemWindows[i].Position - position;
                 int distance = System.Math.Abs(difference.x) + System.Math.Abs(difference.y);
-                if (distance < nearestDistance)
+                bool isOnSameRow = difference.y == 0;
+                if (keyboardIndex == -1 ||
+                    isOnSameRow && !nearestIsOnSameRow ||
+                    isOnSameRow == nearestIsOnSameRow && distance < nearestDistance)
                 {
                     keyboardIndex = i;
                     nearestDistance = distance;
+                    nearestIsOnSameRow = isOnSameRow;
                 }
             }
         }

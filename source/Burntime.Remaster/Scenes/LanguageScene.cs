@@ -70,6 +70,11 @@ internal class LanguageScene : Scene
         _german.IsKeyboardSelected = _selectedLanguage == 0;
         _english.IsKeyboardSelected = _selectedLanguage == 1;
         bool german = _selectedLanguage == 0;
+        if (app.LastInputMode == InputMode.Mouse)
+        {
+            _promptOverlay.SetPrompts();
+            return;
+        }
         _promptOverlay.SetPrompts(
             new InputPrompt(InputAction.MoveLeft, german ? "Sprache" : "Language")
             {
@@ -77,6 +82,12 @@ internal class LanguageScene : Scene
                 GamepadOverride = "D-pad/Stick Left/Right"
             },
             new InputPrompt(InputAction.Primary, german ? "Auswählen" : "Select"));
+    }
+
+    public override void OnUpdate(float elapsed)
+    {
+        base.OnUpdate(elapsed);
+        UpdateSelection();
     }
 
     public override bool OnInputAction(InputAction action)

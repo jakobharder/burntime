@@ -1,5 +1,24 @@
 ﻿# Burntime Changelog
 
+## [Unreleased]
+
+- Behavior
+  - Automatically select all after hiring an NPC
+  - Improve group following into attacks, rooms and traders
+  - Place produced food preferrably next to the trap
+  - Make attacked people flee a bit
+  - Apply previous dog/mutant changes to existing saves
+
+- New
+  - Show food/trap/water infos on entrances and locations
+  - Show travel days on world map
+  - Alt/LT shortcut to show all entrances
+  - Music on maps; change mode in options
+
+- Input
+  - Polished input, prompts
+  - Added option to hide prompts
+
 ## 1.1 (2026-09-04)
 
 ### Changes

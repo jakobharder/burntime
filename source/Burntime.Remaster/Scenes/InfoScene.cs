@@ -31,7 +31,10 @@ namespace Burntime.Remaster.Scenes
         GuiImage fighterImage;
         GuiImage technicianImage;
         GuiImage doctorImage;
-        readonly InputPromptOverlay promptOverlay;
+        readonly Button exitButton;
+        readonly InputPromptOverlay exitPromptOverlay;
+        readonly InputPromptOverlay productionLeftPromptOverlay;
+        readonly InputPromptOverlay productionRightPromptOverlay;
 
         public InfoScene(Module App)
             : base(App)
@@ -41,15 +44,15 @@ namespace Burntime.Remaster.Scenes
             Size = new Vector2(320, 200);
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
-            Button button = new Button(App);
-            button.Position = new Vector2(5, 174);
-            button.Command += OnButtonBack;
+            exitButton = new Button(App);
+            exitButton.Position = new Vector2(5, 174);
+            exitButton.Command += OnButtonBack;
             //btn.SetHover(TextDB.Singleton.GetString(TextRegion.MenuStrings, 4), ColorTable.HoverGray);
-            button.Image = "gfx/mapbutton.png";
-            button.HoverImage = "gfx/mapbuttonh.png";
-            Windows += button;
+            exitButton.Image = "gfx/mapbutton.png";
+            exitButton.HoverImage = "gfx/mapbuttonh.png";
+            Windows += exitButton;
 
-            button = new Button(App);
+            Button button = new Button(App);
             button.Position = new Vector2(107, 122);
             button.Command += OnButtonListUp;
             button.HoverImage = "gfx/up.png";
@@ -95,8 +98,13 @@ namespace Burntime.Remaster.Scenes
 
             items = new SortedList<string, int>();
 
-            Windows += promptOverlay = new InputPromptOverlay(app);
-            promptOverlay.AnchorToScreenBottomRight();
+            Windows += exitPromptOverlay = CreateInlinePrompt(InputAction.Back,
+                PositionAlignment.Left, PositionAlignment.Center);
+            Windows += productionLeftPromptOverlay = CreateInlinePrompt(InputAction.MoveLeft,
+                PositionAlignment.Right, PositionAlignment.Right);
+            Windows += productionRightPromptOverlay = CreateInlinePrompt(InputAction.MoveRight,
+                PositionAlignment.Left, PositionAlignment.Right);
+            UpdateInlinePromptPositions();
 
             fighterImage = "syssze.raw?32";
             doctorImage = "syssze.raw?16";
@@ -108,7 +116,32 @@ namespace Burntime.Remaster.Scenes
             base.OnResizeScreen();
 
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
-            promptOverlay.AnchorToScreenBottomRight();
+            UpdateInlinePromptPositions();
+        }
+
+        InputPromptOverlay CreateInlinePrompt(InputAction action,
+            PositionAlignment horizontalAlignment, PositionAlignment verticalAlignment)
+        {
+            InputPromptOverlay prompt = new(app)
+            {
+                HorizontalAlignment = horizontalAlignment,
+                VerticalAlignment = verticalAlignment,
+                HorizontalPadding = 2,
+                ShowBackground = false
+            };
+            prompt.SetPrompts(new InputPrompt(action, ""));
+            return prompt;
+        }
+
+        void UpdateInlinePromptPositions()
+        {
+            exitPromptOverlay.Position = new Vector2(exitButton.Boundings.Right + 2,
+                exitButton.Boundings.Top + exitButton.Boundings.Size.y / 2);
+
+            productionLeftPromptOverlay.Position = new Vector2(
+                production.Boundings.Left - 2, production.Boundings.Bottom + 3);
+            productionRightPromptOverlay.Position = new Vector2(
+                production.Boundings.Right + 2, production.Boundings.Bottom + 3);
         }
 
         public override void OnRender(RenderTarget target)
@@ -208,18 +241,7 @@ namespace Burntime.Remaster.Scenes
                 production.ItemID = "";
             }
 
-            if (productionID >= 0)
-            {
-                promptOverlay.SetPrompts(
-                    new(InputAction.MoveLeft, "@prompts?32")
-                    {
-                        AlternateAction = InputAction.MoveRight,
-                        GamepadOverride = "D-pad Left/Right"
-                    },
-                    new(InputAction.Back, "@prompts?17"));
-            }
-            else
-                promptOverlay.SetPrompts();
+            UpdatePromptOverlay();
 
             items.Clear();
             foreach (Room room in loc.Rooms)
@@ -237,6 +259,35 @@ namespace Burntime.Remaster.Scenes
             offset = 0;
             RefreshItems();
             UpdateCampNPCs();
+        }
+
+        public override void OnUpdate(float elapsed)
+        {
+            base.OnUpdate(elapsed);
+            UpdatePromptOverlay();
+            UpdateInlinePromptPositions();
+        }
+
+        void UpdatePromptOverlay()
+        {
+            bool mouseInput = app.LastInputMode == InputMode.Mouse;
+            exitPromptOverlay.SetPrompts(!mouseInput
+                ? [new InputPrompt(InputAction.Back, "")]
+                : []);
+            productionLeftPromptOverlay.SetPrompts(productionID >= 0
+                ? [new InputPrompt(InputAction.MoveLeft, "")
+                {
+                    PreferredGamepadControl = GamepadControl.DPadLeft,
+                    PreferredMouseControl = MouseButton.Right
+                }]
+                : []);
+            productionRightPromptOverlay.SetPrompts(productionID >= 0
+                ? [new InputPrompt(InputAction.MoveRight, "")
+                {
+                    PreferredGamepadControl = GamepadControl.DPadRight,
+                    PreferredMouseControl = MouseButton.Left
+                }]
+                : []);
         }
 
         int offset = 0;

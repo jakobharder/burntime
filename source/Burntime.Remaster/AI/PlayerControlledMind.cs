@@ -8,6 +8,8 @@ namespace Burntime.Remaster.AI
     [Serializable]
     class PlayerControlledMind : CharacterMind
     {
+        const float FollowerWaitTimeout = 10;
+
         [NonSerialized]
         InteractionObject interactionObject;
         [NonSerialized]
@@ -39,18 +41,21 @@ namespace Burntime.Remaster.AI
             {
                 bool everyOneReached = true;
 
-                // wait until fellows reach destination
-                foreach (Character character in Owner.GetGroup())
+                // Group movement waits until the followers reach the destination.
+                if (Owner.Player != null && !Owner.Player.SingleMode)
                 {
-                    if (!Owner.GetGroup().IsInRange(Owner, character))
+                    foreach (Character character in Owner.GetGroup())
                     {
-                        everyOneReached = false;
-                        break;
+                        if (!Owner.GetGroup().IsInRange(Owner, character))
+                        {
+                            everyOneReached = false;
+                            break;
+                        }
                     }
                 }
 
-                // everyone reached or waited for 30 seconds
-                if (everyOneReached || waitForFellowers >= 30)
+                // everyone reached or the follower wait timed out
+                if (everyOneReached || waitForFellowers >= FollowerWaitTimeout)
                 {
                     // do interaction
                     interactionObject.Interact(Owner);

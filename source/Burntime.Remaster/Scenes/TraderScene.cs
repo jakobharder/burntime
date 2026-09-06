@@ -30,6 +30,7 @@ class TraderScene : Scene
     ExchangeWindow exchangeBottom;
     ItemGridWindow temporarySpace;
     KeyboardArea keyboardArea;
+    ItemGridWindow? mouseHoverGrid;
     Vector2? keyboardMousePosition;
     readonly InputPromptOverlay promptOverlay;
     readonly InputPromptOverlay exitPromptOverlay;
@@ -78,11 +79,13 @@ class TraderScene : Scene
         exchangeTop = new ExchangeWindow(App);
         inventoryTrader.Grid.Mask = exchangeTop.Grid;
         exchangeTop.LeftClickItemEvent += OnLeftClickItemTrader;
+        exchangeTop.Grid.MouseSelectionChanged += OnMouseSelectionChanged;
         Windows += exchangeTop;
 
         exchangeBottom = new ExchangeWindow(App);
         inventory.Grid.Mask = exchangeBottom.Grid;
         exchangeBottom.LeftClickItemEvent += OnLeftClickItemInventory;
+        exchangeBottom.Grid.MouseSelectionChanged += OnMouseSelectionChanged;
         Windows += exchangeBottom;
 
         temporarySpace = new ItemGridWindow(App);
@@ -129,6 +132,7 @@ class TraderScene : Scene
     {
         base.OnUpdate(elapsed);
         UpdateInlinePromptPositions();
+        UpdatePromptOverlay();
     }
 
     Vector2 _lastPosition = Vector2.Zero;
@@ -247,7 +251,8 @@ class TraderScene : Scene
 
     void OnMouseSelectionChanged(ItemGridWindow selectedGrid)
     {
-        keyboardArea = selectedGrid == inventoryTrader.Grid
+        mouseHoverGrid = selectedGrid;
+        keyboardArea = selectedGrid == inventoryTrader.Grid || selectedGrid == exchangeTop.Grid
             ? KeyboardArea.Trader
             : selectedGrid == temporarySpace
                 ? KeyboardArea.Temporary
@@ -352,19 +357,10 @@ class TraderScene : Scene
             return true;
         }
 
-        if (action == InputAction.LeftArea)
-        {
-            inventory.SelectNextCharacter();
-            UpdateKeyboardArea();
+        // Trader pages are changed by moving beyond the vertical grid edges.
+        // Shoulder-button page changes are reserved for the single inventory UI.
+        if (action is InputAction.LeftArea or InputAction.RightArea)
             return true;
-        }
-
-        if (action == InputAction.RightArea)
-        {
-            inventoryTrader.SelectNextCharacter();
-            UpdateKeyboardArea();
-            return true;
-        }
 
         Vector2 direction = action switch
         {
@@ -382,7 +378,21 @@ class TraderScene : Scene
         {
             ItemGridWindow activeGrid = ActiveKeyboardGrid;
             Vector2? sourcePosition = activeGrid.KeyboardSelectionPosition;
-            if (!activeGrid.MoveKeyboardSelection(direction) && direction.x != 0)
+            bool moved = activeGrid.MoveKeyboardSelection(direction);
+            InventoryWindow? activeInventory = keyboardArea switch
+            {
+                KeyboardArea.Player => inventory,
+                KeyboardArea.Trader => inventoryTrader,
+                _ => null
+            };
+            if (!moved && direction.x == 0 && direction.y != 0 && activeInventory != null &&
+                activeInventory.SelectAdjacentPage(direction.y > 0 ? 1 : -1))
+            {
+                if (sourcePosition.HasValue)
+                    activeInventory.Grid.SelectKeyboardPageEdge(direction, sourcePosition.Value);
+                UpdateKeyboardArea();
+            }
+            else if (!moved && direction.x != 0)
             {
                 ItemGridWindow targetGrid = null;
                 KeyboardArea targetArea = keyboardArea;
@@ -420,7 +430,9 @@ class TraderScene : Scene
                 bool selectedTarget = sourcePosition.HasValue
                     ? targetGrid?.SelectKeyboardEdge(direction, sourcePosition.Value) == true
                     : targetGrid?.EnsureKeyboardSelection() == true;
-                if (selectedTarget)
+                bool canEnterEmptyInventory = targetArea != keyboardArea &&
+                    targetArea is KeyboardArea.Player or KeyboardArea.Trader;
+                if (selectedTarget || canEnterEmptyInventory)
                 {
                     keyboardArea = targetArea;
                     UpdateKeyboardArea();
@@ -494,26 +506,76 @@ class TraderScene : Scene
 
     void UpdatePromptOverlay()
     {
-        GuiString primaryLabel = keyboardArea == KeyboardArea.Temporary
-            ? "@prompts?14"
-            : "@prompts?31";
-        List<InputPrompt> prompts = [];
-        prompts.Add(new(InputAction.Primary, primaryLabel));
-        if (keyboardArea == KeyboardArea.Player)
-            prompts.Add(new(InputAction.Secondary, "@prompts?14"));
-        if (inventory.ActiveCharacter.GetGroup().Count > 1)
+        bool mouseInput = app.LastInputMode == InputMode.Mouse;
+        exitPromptOverlay.SetPrompts(mouseInput
+            ? []
+            : [new InputPrompt(InputAction.Back, "")]);
+        actionPromptOverlay.SetPrompts(mouseInput
+            ? []
+            : [new InputPrompt(InputAction.SceneAction, "")]);
+
+        if (mouseInput)
         {
-            prompts.Add(new(InputAction.Statistics, "@prompts?16")
+            List<InputPrompt> mousePrompts = [];
+            Item? hoveredItem = mouseHoverGrid?.MouseHoveredItem;
+            if (hoveredItem != null)
             {
-                PreferredKeyboardControl = new Key(SystemKey.Left, ModifierKeys.Shift),
-                PreferredGamepadControl = GamepadControl.LeftShoulder
-            });
+                if (keyboardArea == KeyboardArea.Temporary)
+                {
+                    mousePrompts.Add(new(InputAction.Primary, "@prompts?14")
+                    {
+                        PreferredMouseControl = MouseButton.Left
+                    });
+                }
+                else if (keyboardArea == KeyboardArea.Player)
+                {
+                    bool isOffered = exchangeBottom.Grid.Contains(hoveredItem);
+                    mousePrompts.Add(new(InputAction.Primary,
+                        isOffered ? "@prompts?40" : "@prompts?31")
+                    {
+                        PreferredMouseControl = MouseButton.Left
+                    });
+                    if (mouseHoverGrid == inventory.Grid && !isOffered &&
+                        temporarySpace.Count < temporarySpace.MaxCount)
+                    {
+                        mousePrompts.Add(new(InputAction.Secondary, "@prompts?14")
+                        {
+                            PreferredMouseControl = MouseButton.Right
+                        });
+                    }
+                }
+                else
+                {
+                    bool isTaken = exchangeTop.Grid.Contains(hoveredItem);
+                    mousePrompts.Add(new(InputAction.Primary,
+                        isTaken ? "@prompts?40" : "@prompts?31")
+                    {
+                        PreferredMouseControl = MouseButton.Left
+                    });
+                }
+            }
+            promptOverlay.SetPrompts(mousePrompts.ToArray());
+            return;
         }
-        prompts.Add(new(InputAction.LocationInfo, "@prompts?33")
+
+        Item? selectedItem = ActiveKeyboardGrid.KeyboardSelectedItem;
+        bool isSelectedForTrade = selectedItem != null &&
+            (keyboardArea switch
+            {
+                KeyboardArea.Player => exchangeBottom.Grid.Contains(selectedItem),
+                KeyboardArea.Trader => exchangeTop.Grid.Contains(selectedItem),
+                _ => false
+            });
+        List<InputPrompt> prompts = [];
+        if (selectedItem != null)
         {
-            PreferredKeyboardControl = new Key(SystemKey.Right, ModifierKeys.Shift),
-            PreferredGamepadControl = GamepadControl.RightShoulder
-        });
+            GuiString primaryLabel = keyboardArea == KeyboardArea.Temporary
+                ? "@prompts?14"
+                : isSelectedForTrade ? "@prompts?40" : "@prompts?31";
+            prompts.Add(new(InputAction.Primary, primaryLabel));
+            if (keyboardArea == KeyboardArea.Player)
+                prompts.Add(new(InputAction.Secondary, "@prompts?14"));
+        }
         promptOverlay.SetPrompts(prompts.ToArray());
     }
 

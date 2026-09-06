@@ -110,12 +110,12 @@ namespace Burntime.Remaster.Logic
                 if (Location == HomeArea)
                 {
                     Location = HomeArea.Neighbors[Platform.Math.Random.Next(HomeArea.Neighbors.Count - 1)];
-                    position = Location.EntryPoint;
+                    Position = Location.GetRandomNpcEntryPosition(this);
                 }
                 else
                 {
                     Location = HomeArea;
-                    position = Location.EntryPoint;
+                    Position = Location.GetRandomNpcEntryPosition(this);
                 }
             }
         }

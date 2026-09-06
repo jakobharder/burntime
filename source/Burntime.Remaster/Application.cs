@@ -26,8 +26,22 @@ namespace Burntime.Remaster
         German
     }
 
+    public enum PromptVisibilityMode
+    {
+        Full = 0,
+        Less = 1,
+        Hide = 2
+    }
+
     public class BurntimeClassic : Module
     {
+        static readonly HashSet<string> PersistedRootUserSettings = new(
+            StringComparer.OrdinalIgnoreCase)
+        {
+            "music", "map_music", "fullscreen", "output_filtering", "newgfx", "language",
+            "controller_glyphs", "prompts"
+        };
+
         public GamepadBindings GamepadBindings { get; } = new();
         public KeyboardBindings KeyboardBindings { get; } = new();
         internal AutosaveManager Autosaves { get; }
@@ -96,6 +110,8 @@ namespace Burntime.Remaster
 
         public bool ChooseLanguageOnStart { get; set; }
         public LanguageMode LanguageSelection { get; private set; } = LanguageMode.Auto;
+        public PromptVisibilityMode PromptVisibility { get; private set; } = PromptVisibilityMode.Full;
+        public bool ShowInputPrompts => PromptVisibility != PromptVisibilityMode.Hide;
 
         public override void Start()
         {
@@ -115,6 +131,12 @@ namespace Burntime.Remaster
 
             Settings = new ConfigFile();
             Settings.Open("settings.txt");
+            int musicVolumePercent = int.TryParse(
+                Settings["system"].GetString("music_volume"), out int configuredMusicVolume)
+                ? System.Math.Clamp(configuredMusicVolume, 0, 100)
+                : 100;
+            Engine.MusicVolume = musicVolumePercent / 100.0f;
+            Engine.Music.Volume = Engine.MusicVolume;
 
             // set user folder to game specific location
             FileSystem.SetUserFolder("Burntime");
@@ -122,10 +144,30 @@ namespace Burntime.Remaster
             // read user settings
             UserSettings = new ConfigFile();
             UserSettings.Open("user.txt");
+            bool removedKeyboardMappings = UserSettings.RemoveSection("keyboard");
+            bool removedGamepadMappings = UserSettings.RemoveSection("gamepad");
+            bool removedObsoleteRootSettings = false;
+            ConfigSection rootUserSettings = UserSettings[""];
+            string[] obsoleteRootSettings = rootUserSettings.Values
+                .Select(setting => setting.Key)
+                .Where(setting => !PersistedRootUserSettings.Contains(setting))
+                .ToArray();
+            foreach (string setting in obsoleteRootSettings)
+                removedObsoleteRootSettings |= rootUserSettings.Remove(setting);
+            bool normalizedRootSettings = false;
+            foreach (string setting in PersistedRootUserSettings)
+                normalizedRootSettings |= rootUserSettings.NormalizeSingleValue(setting);
+            if (removedKeyboardMappings || removedGamepadMappings || removedObsoleteRootSettings ||
+                normalizedRootSettings)
+                UserSettings.Save("user.txt");
             Engine.ControllerGlyphMode = ParseControllerGlyphMode(
                 UserSettings[""].GetString("controller_glyphs"));
-            KeyboardBindings.Load(Settings, UserSettings);
-            GamepadBindings.Load(Settings, UserSettings);
+            PromptVisibility = (PromptVisibilityMode)System.Math.Clamp(
+                UserSettings[""].GetInt("prompts"),
+                (int)PromptVisibilityMode.Full,
+                (int)PromptVisibilityMode.Hide);
+            KeyboardBindings.Load(Settings);
+            GamepadBindings.Load(Settings);
             LanguageSelection = ParseLanguageMode(UserSettings[""].GetString("language"));
             FileSystem.LocalizationCode = ResolveLanguage(LanguageSelection);
             if (Engine.SupportsFullscreenToggle)
@@ -155,6 +197,7 @@ namespace Burntime.Remaster
             HasAmigaMusic = FileSystem.ExistsFile("songs_amiga.txt");
 
             SetMusicMode(UserSettings[""].GetString("music"));
+            SetMapMusicMode(UserSettings[""].GetString("map_music"));
 
             // add newgfx package
             if (IsNewGfx)
@@ -205,14 +248,14 @@ namespace Burntime.Remaster
             UserSettings.GetSection("", true);
 
             UserSettings[""].Set("music", GetMusicMode());
+            UserSettings[""].Set("map_music", (int)MapMusicMode);
             if (Engine.SupportsFullscreenToggle)
                 UserSettings[""].Set("fullscreen", Engine.IsFullscreen);
             UserSettings[""].Set("output_filtering", FormatOutputFiltering(Engine.OutputFiltering));
             UserSettings[""].Set("newgfx", IsNewGfx);
             UserSettings[""].Set("language", FormatLanguageMode(LanguageSelection));
             UserSettings[""].Set("controller_glyphs", FormatControllerGlyphMode(Engine.ControllerGlyphMode));
-            KeyboardBindings.Save(UserSettings);
-            GamepadBindings.Save(UserSettings);
+            UserSettings[""].Set("prompts", (int)PromptVisibility);
             UserSettings.Save("user.txt");
         }
 
@@ -226,6 +269,13 @@ namespace Burntime.Remaster
                 ControllerGlyphMode.Steam => ControllerGlyphMode.Switch,
                 _ => ControllerGlyphMode.Auto
             };
+        }
+
+        public void CyclePromptVisibilityMode()
+        {
+            PromptVisibility = PromptVisibility == PromptVisibilityMode.Hide
+                ? PromptVisibilityMode.Full
+                : PromptVisibilityMode.Hide;
         }
 
         static ControllerGlyphMode ParseControllerGlyphMode(string value) =>
@@ -347,6 +397,7 @@ namespace Burntime.Remaster
         public bool HasAmigaMusic { get; private set; }
         public bool HasDosMusic { get; private set; }
         private string? _lastPlayingSong;
+        private string _mapPlaylistFile = "playlist_dos.txt";
 
         public enum MusicModes
         {
@@ -357,6 +408,7 @@ namespace Burntime.Remaster
         }
 
         public MusicModes MusicMode { get; private set; } = MusicModes.Remaster;
+        public Burntime.Platform.MapMusicMode MapMusicMode => Engine.MapMusicMode;
 
         public void SetMusicMode(string mode)
         {
@@ -374,10 +426,10 @@ namespace Burntime.Remaster
             else
                 MusicMode = MusicModes.Off;
 
-            //if (MusicMode != MusicModes.Off)
-            // MusicModes.Off loads songs_dos to ensure jukebox working even when started with off
+            // MusicModes.Off loads the DOS profile to ensure the jukebox works
+            // even when the game starts with music disabled.
             if (!DisableMusic)
-                Engine.Music.LoadSonglist(MusicMode == MusicModes.Amiga ? "songs_amiga.txt" : "songs_dos.txt");
+                LoadMusicProfile();
         }
 
         public string GetMusicMode() => MusicMode switch
@@ -386,6 +438,25 @@ namespace Burntime.Remaster
             MusicModes.Amiga => "amiga",
             _ => "remaster"
         };
+
+        void SetMapMusicMode(string mode)
+        {
+            if (int.TryParse(mode, out int value) &&
+                Enum.IsDefined(typeof(Burntime.Platform.MapMusicMode), value))
+            {
+                Engine.MapMusicMode = (Burntime.Platform.MapMusicMode)value;
+            }
+            else
+            {
+                Engine.MapMusicMode = Burntime.Platform.MapMusicMode.None;
+            }
+        }
+
+        public void CycleMapMusicMode()
+        {
+            Engine.MapMusicMode = (Burntime.Platform.MapMusicMode)
+                (((int)Engine.MapMusicMode + 1) % 3);
+        }
 
         /// <summary>
         /// Toggle between Amiga and remaster.
@@ -398,14 +469,14 @@ namespace Burntime.Remaster
             {
                 MusicMode = MusicModes.Remaster;
                 Engine.Music.Enabled = true;
-                Engine.Music.LoadSonglist("songs_dos.txt");
+                LoadMusicProfile();
             }
             else if ((MusicMode == MusicModes.Dos || MusicMode == MusicModes.Remaster)
                 && HasAmigaMusic)
             {
                 MusicMode = MusicModes.Amiga;
                 Engine.Music.Enabled = true;
-                Engine.Music.LoadSonglist("songs_amiga.txt");
+                LoadMusicProfile();
             }
         }
 
@@ -420,7 +491,7 @@ namespace Burntime.Remaster
             {
                 MusicMode = MusicModes.Remaster;
                 Engine.Music.Enabled = true;
-                Engine.Music.LoadSonglist("songs_dos.txt");
+                LoadMusicProfile();
                 Engine.Music.Play(ResumeSongOrRadio());
             }
             else if ((MusicMode == MusicModes.Off && HasAmigaMusic)
@@ -428,7 +499,7 @@ namespace Burntime.Remaster
             {
                 MusicMode = MusicModes.Amiga;
                 Engine.Music.Enabled = true;
-                Engine.Music.LoadSonglist("songs_amiga.txt");
+                LoadMusicProfile();
                 if (Engine.Music.Playing is null)
                     Engine.Music.Play(ResumeSongOrRadio());
             }
@@ -446,6 +517,30 @@ namespace Burntime.Remaster
         string ResumeSongOrRadio() => _lastPlayingSong is not null && Engine.Music.CanPlay(_lastPlayingSong)
             ? _lastPlayingSong
             : "radio";
+
+        void LoadMusicProfile()
+        {
+            bool amiga = MusicMode == MusicModes.Amiga;
+            string profileFile = amiga ? "music_amiga.txt" : "music_dos.txt";
+            string songlistFile = amiga ? "songs_amiga.txt" : "songs_dos.txt";
+            _mapPlaylistFile = amiga ? "playlist_amiga.txt" : "playlist_dos.txt";
+
+            var profile = new ConfigFile();
+            if (profile.Open(profileFile))
+            {
+                ConfigSection settings = profile[""];
+                string configuredSonglist = settings.GetString("songlist");
+                string configuredPlaylist = settings.GetString("playlist");
+                if (!string.IsNullOrWhiteSpace(configuredSonglist))
+                    songlistFile = configuredSonglist;
+                if (!string.IsNullOrWhiteSpace(configuredPlaylist))
+                    _mapPlaylistFile = configuredPlaylist;
+            }
+
+            Engine.Music.LoadSonglist(songlistFile);
+            Engine.Music.LoadPlaylist(_mapPlaylistFile);
+        }
+
         #endregion
 
         public override string Language

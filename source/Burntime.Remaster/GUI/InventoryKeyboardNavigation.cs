@@ -40,13 +40,14 @@ class InventoryKeyboardNavigation
 
         if (action == InputAction.LeftArea)
         {
-            inventory.SelectNextCharacter();
+            inventory.SelectAdjacentPage(-1);
             UpdateActiveArea();
             return true;
         }
 
         if (action == InputAction.RightArea)
         {
+            inventory.SelectAdjacentPage(1);
             UpdateActiveArea();
             return true;
         }
@@ -102,6 +103,12 @@ class InventoryKeyboardNavigation
     }
 
     public ItemGridWindow ActiveGrid => roomAreaActive ? roomGrid : inventory.Grid;
+
+    public void SelectFromMouse(ItemGridWindow selectedGrid)
+    {
+        roomAreaActive = selectedGrid == roomGrid;
+        UpdateActiveArea();
+    }
 
     public bool CanMoveSelectedItem(Func<Item, bool>? canMoveToRoom = null)
     {

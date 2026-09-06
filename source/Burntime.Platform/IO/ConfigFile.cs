@@ -94,7 +94,7 @@ public class ConfigFile
         {
             if (add)
             {
-                var section = new ConfigSection();
+                var section = new ConfigSection(name);
                 sections.Add(name.ToLower(), section);
                 order.Add(section);
                 return section;
@@ -104,6 +104,17 @@ public class ConfigFile
         }
 
         return sections[name.ToLower()];
+    }
+
+    public bool RemoveSection(string name)
+    {
+        string normalizedName = name.ToLower();
+        if (!sections.TryGetValue(normalizedName, out ConfigSection? section))
+            return false;
+
+        sections.Remove(normalizedName);
+        order.Remove(section);
+        return true;
     }
 
     public ConfigSection this[string name]

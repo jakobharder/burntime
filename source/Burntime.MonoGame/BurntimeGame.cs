@@ -79,6 +79,9 @@ namespace Burntime.MonoGame
             }
         }
         public bool MusicBlend { get; set; } = false;
+        public bool MusicSilenced { get; set; } = false;
+        public MapMusicMode MapMusicMode { get; set; } = MapMusicMode.None;
+        public float MusicVolume { get; set; } = 1;
 
         internal int loadingStack = 0;
         public int LoadingStack
@@ -555,7 +558,10 @@ namespace Burntime.MonoGame
                 if (_previousKeyboardState.IsKeyUp(key))
                 {
                     bool isArrowKey = key is Keys.Up or Keys.Down or Keys.Left or Keys.Right;
-                    if (_burntimeApp.LastInputMode != InputMode.Mouse || isArrowKey)
+                    bool preserveMouseMode = isArrowKey &&
+                        _burntimeApp.SceneManager.PreserveMouseModeForDirectionalInput;
+                    if (_burntimeApp.LastInputMode != InputMode.Mouse ||
+                        isArrowKey && !preserveMouseMode)
                         _burntimeApp.LastInputMode = InputMode.Keyboard;
 
                     if (SupportsFullscreenToggle && (key == Keys.F11
@@ -615,6 +621,7 @@ namespace Burntime.MonoGame
                 Keys.Down => new Key(SystemKey.Down, modifier),
                 Keys.Left => new Key(SystemKey.Left, modifier),
                 Keys.Right => new Key(SystemKey.Right, modifier),
+                Keys.LeftAlt or Keys.RightAlt => new Key(SystemKey.Alt, modifier),
                 _ => null
             };
         }

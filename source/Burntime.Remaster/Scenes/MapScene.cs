@@ -10,7 +10,7 @@ using Burntime.Remaster.Logic;
 
 namespace Burntime.Remaster
 {
-    public class MapScene : Scene, IMapEntranceHandler
+    public class MapScene : Scene, IMapEntranceHandler, IMapNavigationScene
     {
         public override bool UseDiagonalGamepadNavigation => true;
         protected override bool UseGamepadDPadNavigation => false;
@@ -38,7 +38,6 @@ namespace Burntime.Remaster
         Image _cursorAni;
         readonly DialogWindow _dialog;
         readonly InputPromptOverlay _promptOverlay;
-        readonly InputShortcutColumn _menuShortcutColumn;
         readonly Maps.MapViewOverlayHoverText _hoverInfo;
         readonly Maps.MapViewOverlaySelectedLocation _keyboardSelection;
         bool _followKeyboardSelection;
@@ -72,7 +71,7 @@ namespace Burntime.Remaster
             view.Overlays.Add(new Maps.MapViewOverlayFlags(app));
             view.Overlays.Add(new Maps.MapViewOverlayPlayer(app));
             view.Overlays.Add(_hoverInfo = new Maps.MapViewOverlayHoverText(app));
-            view.Overlays.Add(_keyboardSelection = new Maps.MapViewOverlaySelectedLocation(app));
+            view.Overlays.Add(_keyboardSelection = new Maps.MapViewOverlaySelectedLocation(app, _hoverInfo));
             view.Scroll += new EventHandler<MapScrollArgs>(view_Scroll);
             view.ContextMenu += View_OnContextMenu;
             Windows += view;
@@ -90,6 +89,9 @@ namespace Burntime.Remaster
             _cursorAni.Background.Animation.Progressive = false;
             _cursorAni.Layer += 59;
             Windows += _cursorAni;
+            // Font rendering adds one layer internally. Starting two below the
+            // cursor keeps both prompt backgrounds and text beneath it.
+            menu.ExternalPromptLayer = _cursorAni.Layer - 2;
 
             gui.Layer += classic.NewGui ? 40 : 60;
             Windows += gui;
@@ -107,21 +109,29 @@ namespace Burntime.Remaster
 
             Windows += _promptOverlay = new InputPromptOverlay(app);
             _promptOverlay.AnchorToScreenBottomRight();
-            Windows += _menuShortcutColumn = new InputShortcutColumn(app);
-            _menuShortcutColumn.Hide();
-            menu.WindowShow += (_, _) =>
-            {
-                _menuShortcutColumn.Show();
-            };
-            menu.WindowHide += (_, _) =>
-            {
-                _menuShortcutColumn.Hide();
-            };
         }
 
         private void View_OnContextMenu(Vector2 position, MouseButton button)
         {
+            if (!_infoMode && TryShowLocationInfo(view.ActiveEntrance))
+                return;
+
             ShowContextMenu(position, true);
+        }
+
+        bool TryShowLocationInfo(int locationNumber)
+        {
+            ClassicGame game = app.GameState as ClassicGame;
+            if (locationNumber < 0 || locationNumber >= game.World.Locations.Count ||
+                !CanShowInfo(game.World.ActivePlayerObj,
+                    game.World.Locations[locationNumber]))
+            {
+                return false;
+            }
+
+            BurntimeClassic.Instance.InfoCity = locationNumber;
+            app.SceneManager.SetScene("InfoScene");
+            return true;
         }
 
         void ShowContextMenu(Vector2 position, bool openedByMouse)
@@ -137,14 +147,24 @@ namespace Burntime.Remaster
             if (includeInteractionMode)
             {
                 if (_infoMode)
-                    menu.AddLine("@burn?360", (CommandHandler)OnMenuTravel);
+                    menu.AddLine("@burn?360", (CommandHandler)OnMenuTravel,
+                        new(InputAction.ToggleInteractionMode));
                 else
-                    menu.AddLine("@burn?351", (CommandHandler)OnMenuInfo);
+                    menu.AddLine("@burn?351", (CommandHandler)OnMenuInfo,
+                        new(InputAction.ToggleInteractionMode));
             }
-            menu.AddLine("@burn?367", (CommandHandler)OnMenuInventory);
-            menu.AddLine("@burn?359", (CommandHandler)OnMenuStatistics);
-            menu.AddLine("@burn?361", (CommandHandler)OnMenuOptions);
-            menu.AddLine("@burn?357", (CommandHandler)OnMenuTurn);
+            menu.AddLine("@burn?367", (CommandHandler)OnMenuInventory,
+                new(InputAction.Inventory)
+                {
+                    PreferredKeyboardControl = new Key('e'),
+                    PreferredMouseKeyboardControl = new Key('i')
+                });
+            menu.AddLine("@burn?359", (CommandHandler)OnMenuStatistics,
+                new(InputAction.Statistics));
+            menu.AddLine("@burn?361", (CommandHandler)OnMenuOptions,
+                new(InputAction.Options));
+            menu.AddLine("@burn?357", (CommandHandler)OnMenuTurn,
+                new(InputAction.NextTurn) { Hold = true });
         }
 
         void OnDialogShown(object? sender, EventArgs e)
@@ -285,7 +305,8 @@ namespace Burntime.Remaster
         {
             app.Engine.Xbr2IndividualLayer = gui.Layer;
 
-            bool showInteractionMode = app.MouseInputVisible && !_dialog.IsVisible;
+            bool showInteractionMode = app.MouseInputVisible && !_dialog.IsVisible &&
+                (_infoMode || _debugNoTravel || CanTravelToHoveredLocation());
             if (_cursorAni.IsVisible != showInteractionMode)
                 _cursorAni.IsVisible = showInteractionMode;
 
@@ -306,9 +327,12 @@ namespace Burntime.Remaster
         public override void OnUpdate(float Elapsed)
         {
             UpdatePromptOverlay();
-            UpdateMenuShortcutColumn();
             ResetHeldActionsIfReleased();
             UpdateCameraPan(Elapsed);
+            _hoverInfo.ShowAllEntrances = app.IsInputActionDown(InputAction.ShowEntrances);
+            _hoverInfo.HighlightedWorldLocation = app.MouseInputVisible
+                ? -1
+                : _keyboardSelection.LocationNumber;
 
             ClassicGame game = app.GameState as ClassicGame;
             game.World.Update(Elapsed);
@@ -352,6 +376,62 @@ namespace Burntime.Remaster
             }
 
             ClassicGame game = app.GameState as ClassicGame;
+            if (app.LastInputMode == InputMode.Mouse)
+            {
+                List<InputPrompt> mousePrompts = [];
+                int hoveredLocationNumber = view.ActiveEntrance;
+                if (hoveredLocationNumber >= 0)
+                {
+                    Logic.Player player = game.World.ActivePlayerObj;
+                    Logic.Location hoveredLocation =
+                        game.World.Locations[hoveredLocationNumber];
+                    GuiString? primaryLabel = null;
+                    if (_infoMode)
+                    {
+                        if (CanShowInfo(player, hoveredLocation))
+                            primaryLabel = "@prompts?27";
+                    }
+                    else if (hoveredLocationNumber == player.Location.Id)
+                    {
+                        primaryLabel = "@prompts?26";
+                    }
+                    else if (player.Location.Neighbors.Contains(hoveredLocation) &&
+                        player.CanTravel(player.Location, hoveredLocation))
+                    {
+                        primaryLabel = GetTravelTimeLabel(player, hoveredLocation);
+                    }
+
+                    if (primaryLabel != null)
+                    {
+                        mousePrompts.Add(new(InputAction.Primary, primaryLabel)
+                        {
+                            PreferredMouseControl = MouseButton.Left
+                        });
+                    }
+                }
+
+                bool canShowHoveredInfo = !_infoMode && hoveredLocationNumber >= 0 &&
+                    hoveredLocationNumber < game.World.Locations.Count &&
+                    CanShowInfo(game.World.ActivePlayerObj,
+                        game.World.Locations[hoveredLocationNumber]);
+                if (canShowHoveredInfo)
+                {
+                    mousePrompts.Add(new(InputAction.Secondary, "@prompts?27")
+                    {
+                        PreferredMouseControl = MouseButton.Right
+                    });
+                }
+                else
+                {
+                    mousePrompts.Add(new(InputAction.Back, "...")
+                    {
+                        PreferredMouseControl = MouseButton.Right
+                    });
+                }
+                _promptOverlay.SetPrompts(mousePrompts.ToArray());
+                return;
+            }
+
             int locationNumber = _keyboardSelection.LocationNumber;
             bool canEnter = locationNumber == game.World.ActivePlayerObj.Location.Id;
             bool canTravel = locationNumber >= 0 && !canEnter &&
@@ -361,47 +441,51 @@ namespace Burntime.Remaster
                 CanShowInfo(game.World.ActivePlayerObj, game.World.Locations[locationNumber]);
 
             List<InputPrompt> prompts = [];
-            if (canEnter || canTravel)
+            if (app.LastInputMode is (InputMode.Keyboard or InputMode.Gamepad) &&
+                (canEnter || canTravel))
             {
-                GuiString label = canEnter ? "@prompts?26" : "@prompts?25";
+                GuiString label = canEnter
+                    ? "@prompts?26"
+                    : GetTravelTimeLabel(game.World.ActivePlayerObj,
+                        game.World.Locations[locationNumber]);
                 prompts.Add(new(InputAction.Primary, label)
                 {
-                    PreferredKeyboardControl = new Key(' ')
+                    PreferredKeyboardControl = new Key(' '),
+                    PreferredGamepadControl = GamepadControl.A
                 });
             }
             if (canShowInfo)
                 prompts.Add(new(InputAction.Secondary, "@prompts?27"));
-            prompts.Add(new(InputAction.Back, "@prompts?11")
+            if (app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad)
             {
-                PreferredKeyboardControl = new Key(SystemKey.Escape),
-                PreferredGamepadControl = GamepadControl.B
-            });
+                prompts.Add(new(InputAction.Back, "...")
+                {
+                    PreferredKeyboardControl = new Key(SystemKey.Escape),
+                    PreferredGamepadControl = GamepadControl.B
+                });
+            }
             _promptOverlay.SetPrompts(prompts.ToArray());
         }
 
-        void UpdateMenuShortcutColumn()
+        GuiString GetTravelTimeLabel(Logic.Player player, Logic.Location destination)
         {
-            if (!menu.IsVisible)
-                return;
+            var text = new TextHelper(app, "newburn");
+            text.AddArgument("|J", player.GetTravelDays(player.Location, destination));
+            return text[104];
+        }
 
-            if (_menuOpenedByMouse)
-            {
-                _menuShortcutColumn.SetShortcuts(
-                    new(InputAction.ToggleInteractionMode),
-                    new(InputAction.Inventory),
-                    new(InputAction.Statistics),
-                    new(InputAction.Options),
-                    new(InputAction.NextTurn) { Hold = true });
-            }
-            else
-            {
-                _menuShortcutColumn.SetShortcuts(
-                    new(InputAction.Inventory),
-                    new(InputAction.Statistics),
-                    new(InputAction.Options),
-                    new(InputAction.NextTurn) { Hold = true });
-            }
-            _menuShortcutColumn.PlaceBeside(menu, view.Boundings);
+        bool CanTravelToHoveredLocation()
+        {
+            int locationNumber = view.ActiveEntrance;
+            ClassicGame game = app.GameState as ClassicGame;
+            if (locationNumber < 0 || locationNumber >= game.World.Locations.Count)
+                return false;
+
+            Logic.Player player = game.World.ActivePlayerObj;
+            Logic.Location destination = game.World.Locations[locationNumber];
+            return destination != player.Location &&
+                player.Location.Neighbors.Contains(destination) &&
+                player.CanTravel(player.Location, destination);
         }
 
         protected override void OnActivateScene(object parameter)
@@ -423,7 +507,7 @@ namespace Burntime.Remaster
                 BurntimeClassic.Instance.PreviousPlayerId != game.CurrentPlayerIndex)
             {
                 // play player changed sound
-                BurntimeClassic.Instance.Engine.Music.PlayOnce("sounds/change.ogg");
+                BurntimeClassic.Instance.Engine.Music.PlaySound("sounds/change.ogg");
             }
             BurntimeClassic.Instance.PreviousPlayerId = game.CurrentPlayerIndex;
 
@@ -502,13 +586,13 @@ namespace Burntime.Remaster
 
             if (action == InputAction.LeftArea)
             {
-                OnMenuTravel();
+                // Shoulder buttons are reserved for character cycling on the
+                // location map. World-map actions already use A and X directly.
                 return true;
             }
 
             if (action == InputAction.RightArea)
             {
-                OnMenuInfo();
                 return true;
             }
 
@@ -544,11 +628,7 @@ namespace Burntime.Remaster
                 action == InputAction.Primary)
             {
                 int locationNumber = _keyboardSelection.LocationNumber;
-                if (locationNumber == game.World.ActivePlayerObj.Location.Id)
-                    app.SceneManager.SetScene("LocationScene");
-                else if (locationNumber >= 0 &&
-                    game.World.ActivePlayerObj.CanTravel(game.World.ActivePlayerObj.Location,
-                        game.World.Locations[locationNumber]))
+                if (locationNumber >= 0)
                     TravelToLocation(locationNumber);
                 return true;
             }
@@ -557,12 +637,7 @@ namespace Burntime.Remaster
                 action == InputAction.Secondary)
             {
                 int locationNumber = _keyboardSelection.LocationNumber;
-                if (locationNumber >= 0 &&
-                    CanShowInfo(game.World.ActivePlayerObj, game.World.Locations[locationNumber]))
-                {
-                    BurntimeClassic.Instance.InfoCity = locationNumber;
-                    app.SceneManager.SetScene("InfoScene");
-                }
+                TryShowLocationInfo(locationNumber);
                 return true;
             }
 
@@ -771,8 +846,8 @@ namespace Burntime.Remaster
 
         bool CanShowInfo(Logic.Player player, Logic.Location location)
         {
-            return location.Player == player ||
-                !location.IsCity && location == player.Location && location.Player == null;
+            return !location.IsCity &&
+                (location == player.Location || location.Player == player);
         }
 
         void SetKeyboardSelection(int locationNumber)
@@ -936,14 +1011,7 @@ namespace Burntime.Remaster
             {
                 if (_infoMode)
                 {
-                    // only show if current location or owned by player
-                    if (clickedLocation.Player == player ||
-                        (!clickedLocation.IsCity && Number == player.Location.Id && clickedLocation.Player == null))
-                    {
-                        BurntimeClassic.Instance.InfoCity = Number;
-                        app.SceneManager.SetScene("InfoScene");
-                    }
-                    else
+                    if (!TryShowLocationInfo(Number))
                         return false;
                 }
                 else

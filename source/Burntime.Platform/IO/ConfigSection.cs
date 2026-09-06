@@ -20,9 +20,15 @@ public class ConfigSection
         get { if (this == NullSection) return ""; return template.Name; }
     }
 
-    internal ConfigSection()
+    internal ConfigSection() : this("")
+    {
+    }
+
+    internal ConfigSection(string name)
     {
         template = new ConfigSectionTemplate();
+        if (!string.IsNullOrEmpty(name))
+            template.Lines.Add(new ConfigLineTemplate($"[{name}]"));
     }
 
     internal bool Open(ConfigSectionTemplate template)
@@ -109,6 +115,50 @@ public class ConfigSection
             return false;
 
         return values.ContainsKey(key.ToLower());
+    }
+
+    public bool Remove(string key)
+    {
+        if (this == NullSection)
+            return false;
+
+        string normalizedKey = key.ToLower();
+        bool removedValue = values.Remove(normalizedKey);
+        int removedLines = template.Lines.RemoveAll(line =>
+            line.Type == ConfigLineType.Key &&
+            string.Equals(line.Key, normalizedKey, StringComparison.OrdinalIgnoreCase));
+        return removedValue || removedLines > 0;
+    }
+
+    public bool NormalizeSingleValue(string key)
+    {
+        if (this == NullSection)
+            return false;
+
+        string normalizedKey = key.ToLower();
+        if (!values.TryGetValue(normalizedKey, out string? value))
+            return false;
+
+        string[] entries = value.Split('\n');
+        string singleValue = entries.LastOrDefault(entry =>
+            !string.IsNullOrWhiteSpace(entry)) ?? string.Empty;
+        values[normalizedKey] = singleValue;
+
+        bool foundLine = false;
+        int removedLines = template.Lines.RemoveAll(line =>
+        {
+            if (line.Type != ConfigLineType.Key ||
+                !string.Equals(line.Key, normalizedKey, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            if (!foundLine)
+            {
+                foundLine = true;
+                return false;
+            }
+            return true;
+        });
+        return entries.Length > 1 || removedLines > 0;
     }
 
     public String Get(String key)

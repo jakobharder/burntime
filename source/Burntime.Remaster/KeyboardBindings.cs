@@ -24,14 +24,15 @@ public sealed class KeyboardBindings : IKeyboardBindings
         ("accept", "space enter", InputAction.Primary),
         ("back", "escape", InputAction.Back),
         ("secondary", "f", InputAction.Secondary),
-        ("action", "x", InputAction.SceneAction),
+        ("action", "q", InputAction.SceneAction),
         ("options", "o", InputAction.Options),
-        ("inventory", "r i", InputAction.Inventory),
+        ("inventory", "e i", InputAction.Inventory),
         ("world_map", "v m", InputAction.WorldMap),
-        ("statistics", "q", InputAction.Statistics),
-        ("info", "e", InputAction.LocationInfo),
-        ("next_turn", "tab", InputAction.NextTurn),
+        ("statistics", "h", InputAction.Statistics),
+        ("info", "r", InputAction.LocationInfo),
+        ("next_turn", "t", InputAction.NextTurn),
         ("toggle_interaction", "c", InputAction.ToggleInteractionMode),
+        ("show_entrances", "alt", InputAction.ShowEntrances),
     };
 
     static readonly Dictionary<string, Key> controls = CreateControls();
@@ -48,6 +49,7 @@ public sealed class KeyboardBindings : IKeyboardBindings
             ["enter"] = new Key(SystemKey.Enter),
             ["escape"] = new Key(SystemKey.Escape),
             ["tab"] = new Key(SystemKey.Tab),
+            ["alt"] = new Key(SystemKey.Alt),
             ["up"] = new Key(SystemKey.Up),
             ["down"] = new Key(SystemKey.Down),
             ["left"] = new Key(SystemKey.Left),
@@ -62,12 +64,11 @@ public sealed class KeyboardBindings : IKeyboardBindings
         return result;
     }
 
-    public void Load(ConfigFile settings, ConfigFile userSettings)
+    public void Load(ConfigFile settings)
     {
         actions.Clear();
         values.Clear();
         ConfigSection defaults = settings[SectionName];
-        ConfigSection overrides = userSettings[SectionName];
 
         foreach (var definition in definitions)
         {
@@ -78,11 +79,6 @@ public sealed class KeyboardBindings : IKeyboardBindings
                 value = defaults.GetString("global_action").Trim();
             else
                 value = definition.DefaultControls;
-
-            if (overrides.ContainsKey(definition.Setting))
-                value = overrides.GetString(definition.Setting).Trim();
-            else if (definition.Setting == "action" && overrides.ContainsKey("global_action"))
-                value = overrides.GetString("global_action").Trim();
 
             values[definition.Setting] = value;
 
@@ -98,9 +94,9 @@ public sealed class KeyboardBindings : IKeyboardBindings
         if (key.IsVirtual && (key.Modifier & ModifierKeys.Shift) != 0)
         {
             if (key.VirtualKey == SystemKey.Left)
-                return InputAction.Statistics;
+                return InputAction.LeftArea;
             if (key.VirtualKey == SystemKey.Right)
-                return InputAction.LocationInfo;
+                return InputAction.RightArea;
         }
 
         return actions.TryGetValue(Normalize(key), out InputAction action) ? action : InputAction.None;
@@ -127,20 +123,11 @@ public sealed class KeyboardBindings : IKeyboardBindings
 
         // These navigation chords are intentionally always available in addition
         // to the configurable bindings.
-        if (action is InputAction.Statistics or InputAction.LeftArea)
+        if (action == InputAction.LeftArea)
             result.Add(new Key(SystemKey.Left, ModifierKeys.Shift));
-        else if (action is InputAction.LocationInfo or InputAction.RightArea)
+        else if (action == InputAction.RightArea)
             result.Add(new Key(SystemKey.Right, ModifierKeys.Shift));
         return result;
-    }
-
-    public void Save(ConfigFile config)
-    {
-        ConfigSection section = config.GetSection(SectionName, true);
-        foreach (var definition in definitions)
-            section.Set(definition.Setting, values.TryGetValue(definition.Setting, out string value)
-                ? value
-                : definition.DefaultControls);
     }
 
     static Key Normalize(Key key) => key.IsVirtual

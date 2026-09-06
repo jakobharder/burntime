@@ -15,6 +15,8 @@ namespace Burntime.Remaster.Logic
         protected DataID<ItemTypesData> data;
         protected StateLinkList<ItemType> types;
 
+        internal bool UsesExtendedRules => data.Name == "items@items.txt";
+
         [NonSerialized]
         protected Dictionary<string, ItemType>? typeMap;
 

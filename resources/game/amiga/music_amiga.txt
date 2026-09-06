@@ -1,0 +1,2 @@
+songlist=songs_amiga.txt
+playlist=playlist_amiga.txt

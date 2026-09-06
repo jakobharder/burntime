@@ -33,6 +33,9 @@ namespace Burntime.Remaster
         readonly FaceWindow _playerFace;
         string _playerName;
 
+        public Rect PlayerFaceBounds => new(
+            Position + _playerFace.Boundings.Position, _playerFace.Boundings.Size);
+
         public string PromptText { get; set; } = "";
 
         readonly Image _uiElement1;
@@ -100,7 +103,9 @@ namespace Burntime.Remaster
 
             Vector2 health = new Vector2(Size.x / 2 + 64, Size.y - 30);
             int fullBar = 75;
-            int healthBar = fullBar * game.World.ActivePlayerObj.Character.Health / 100;
+            Character healthCharacter = game.World.ActivePlayerObj.SelectedCharacter ??
+                game.World.ActivePlayerObj.Character;
+            int healthBar = fullBar * System.Math.Clamp(healthCharacter.Health, 0, 100) / 100;
             Target.RenderRect(health, new Vector2(healthBar, 6), new PixelColor(240, 64, 56));
 
             Vector2 timebar = new Vector2(Target.Width / 2 - 30, 2);
@@ -187,7 +192,7 @@ namespace Burntime.Remaster
 
             Player player = game.World.Players[game.World.ActivePlayer];
 
-            _playerFace.FaceID = player.FaceID;
+            _playerFace.FaceID = player.SelectedCharacter?.FaceID ?? player.FaceID;
             _playerName = player.Name;
             _playerFont = new GuiFont(BurntimeClassic.FontName, player.Color);
         }

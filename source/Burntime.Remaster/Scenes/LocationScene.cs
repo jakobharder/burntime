@@ -15,7 +15,7 @@ using Burntime.Remaster.Maps;
 
 namespace Burntime.Remaster
 {
-    public class LocationScene : Scene, IMapEntranceHandler, IInteractionHandler, ILogicNotifycationHandler
+    public class LocationScene : Scene, IMapEntranceHandler, IInteractionHandler, ILogicNotifycationHandler, IMapNavigationScene
     {
         protected override bool UseGamepadDPadNavigation => false;
 
@@ -23,6 +23,9 @@ namespace Burntime.Remaster
 
         const int PICKUP_DISTANCE = 20;
         const float NEXT_TURN_HOLD_TIME = 0.6f;
+        const float ATTACK_COOLDOWN_TIME = 0.5f;
+        const float CHARACTER_NAME_ANNOUNCEMENT_TIME = 1.5f;
+        const float CHARACTER_CYCLE_DEBOUNCE_TIME = 0.15f;
 
         MapView view;
         MainUiOriginalWindow gui;
@@ -30,7 +33,8 @@ namespace Burntime.Remaster
         Image cursorAni;
         DialogWindow dialog;
         InputPromptOverlay promptOverlay;
-        InputShortcutColumn menuShortcutColumn;
+        InputPromptOverlay previousCharacterPromptOverlay;
+        InputPromptOverlay nextCharacterPromptOverlay;
         Maps.MapViewOverlayHoverText hoverInfo;
         Maps.MapViewOverlayNearbyAction nearbyAction;
         Maps.MapViewOverlayCharacters charOverlay;
@@ -38,8 +42,12 @@ namespace Burntime.Remaster
         float nextTurnHoldTime;
         bool nextTurnTriggered;
         bool cameraPanActive;
-        bool followCharacterAfterPan;
+        bool followSelectedCharacter;
+        Character lastSelectedCharacter;
         bool groupMenuOpen;
+        bool characterCycleLatched;
+        float characterCycleDebounce;
+        float attackCooldownRemaining;
 
         private bool fightMode
         {
@@ -61,7 +69,7 @@ namespace Burntime.Remaster
             view.Overlays.Add(new Maps.MapViewOverlayDroppedItems(App));
             view.Overlays.Add(charOverlay = new Maps.MapViewOverlayCharacters(App));
             view.Overlays.Add(hoverInfo = new Maps.MapViewOverlayHoverText(App));
-            view.Overlays.Add(nearbyAction = new Maps.MapViewOverlayNearbyAction(App));
+            view.Overlays.Add(nearbyAction = new Maps.MapViewOverlayNearbyAction(App, hoverInfo));
             view.ClickObject += new EventHandler<ObjectArgs>(view_ClickObject);
             view.Scroll += new EventHandler<MapScrollArgs>(view_Scroll);
             view.ContextMenu += View_ContextMenu;
@@ -74,22 +82,14 @@ namespace Burntime.Remaster
             menu.Hide();
             Windows += menu;
 
-            Windows += menuShortcutColumn = new InputShortcutColumn(app);
-            menuShortcutColumn.Hide();
-            menu.WindowShow += (_, _) =>
-            {
-                menuShortcutColumn.Show();
-            };
-            menu.WindowHide += (_, _) =>
-            {
-                menuShortcutColumn.Hide();
-            };
-
             cursorAni = new Image(App);
             cursorAni.Background = "burngfxani@munt.raw?10-13";
             cursorAni.Background.Animation.Progressive = false;
             cursorAni.Layer += 59;
             Windows += cursorAni;
+            // Font rendering adds one layer internally. Starting two below the
+            // cursor keeps both prompt backgrounds and text beneath it.
+            menu.ExternalPromptLayer = cursorAni.Layer - 2;
 
             gui = new MainUiOriginalWindow(App);
             gui.Layer += 60;
@@ -106,6 +106,19 @@ namespace Burntime.Remaster
 
             Windows += promptOverlay = new InputPromptOverlay(app);
             promptOverlay.AnchorToScreenBottomRight();
+
+            Windows += previousCharacterPromptOverlay = new InputPromptOverlay(app)
+            {
+                HorizontalAlignment = PositionAlignment.Right,
+                VerticalAlignment = PositionAlignment.Right
+            };
+            Windows += nextCharacterPromptOverlay = new InputPromptOverlay(app)
+            {
+                HorizontalAlignment = PositionAlignment.Left,
+                VerticalAlignment = PositionAlignment.Right,
+                Separator = " "
+            };
+            UpdateCharacterPromptPositions();
         }
 
         private void View_ContextMenu(Vector2 position, MouseButton button)
@@ -123,6 +136,7 @@ namespace Burntime.Remaster
             gui.SetMapRenderArea(view, Size);
             app.MouseBoundings = view.Boundings;
             promptOverlay.AnchorToScreenBottomRight();
+            UpdateCharacterPromptPositions();
         }
 
         void dialog_WindowShow(object sender, EventArgs e)
@@ -175,19 +189,32 @@ namespace Burntime.Remaster
 
         void AttackCharacter(Character targetCharacter)
         {
+            if (view.Location.IsCity || attackCooldownRemaining > 0)
+                return;
+
             // only if not player owned
             if (view.Player != targetCharacter.Player)
             {
                 if (30 > (charOverlay.SelectedCharacter.Position - targetCharacter.Position).Length)
                 {
-                    charOverlay.SelectedCharacter.Attack(targetCharacter);
-                    charOverlay.SelectedCharacter.CancelAction();
+                    TryAttack(charOverlay.SelectedCharacter, targetCharacter);
                 }
                 else
                 {
                     MoveCharacter(targetCharacter);
                 }
             }
+        }
+
+        bool TryAttack(Character attacker, Character defender)
+        {
+            if (attackCooldownRemaining > 0)
+                return false;
+
+            attacker.Attack(defender);
+            attacker.CancelAction();
+            attackCooldownRemaining = ATTACK_COOLDOWN_TIME;
+            return true;
         }
 
         void ClickCharacter(Character clickedCharacter)
@@ -202,7 +229,7 @@ namespace Burntime.Remaster
             else
             {
                 // otherwise try to talk
-                if (clickedCharacter.Class != CharClass.Dog && !view.Player.Group.Contains(clickedCharacter))
+                if (CanTalkToCharacter(clickedCharacter))
                 {
                     if (30 > (charOverlay.SelectedCharacter.Position - clickedCharacter.Position).Length)
                     {
@@ -264,6 +291,20 @@ namespace Burntime.Remaster
             if (action == InputAction.LocationInfo)
             {
                 OnMenuInfo();
+                return true;
+            }
+
+            if (action == InputAction.LeftArea || action == InputAction.RightArea)
+            {
+                if (app.LastInputMode == InputMode.Gamepad)
+                {
+                    if (characterCycleLatched || characterCycleDebounce > 0)
+                        return true;
+
+                    characterCycleLatched = true;
+                    characterCycleDebounce = CHARACTER_CYCLE_DEBOUNCE_TIME;
+                }
+                SelectAdjacentGroupCharacter(action == InputAction.LeftArea ? -1 : 1);
                 return true;
             }
 
@@ -363,7 +404,8 @@ namespace Burntime.Remaster
         {
             app.Engine.Xbr2IndividualLayer = gui.Layer;
 
-            bool showInteractionMode = app.MouseInputVisible && !dialog.IsVisible;
+            bool showInteractionMode = app.MouseInputVisible && !dialog.IsVisible &&
+                ShouldShowMouseInteractionCursor();
             if (cursorAni.IsVisible != showInteractionMode)
                 cursorAni.IsVisible = showInteractionMode;
 
@@ -381,13 +423,50 @@ namespace Burntime.Remaster
             }
         }
 
+        bool ShouldShowMouseInteractionCursor()
+        {
+            if (fightMode)
+            {
+                if (view.ActiveEntrance >= 0 || view.HoveredObject is DroppedItem)
+                    return false;
+
+                return view.HoveredObject is not Character character ||
+                    character.Player != view.Player;
+            }
+
+            return view.HoveredObject is Character talkTarget &&
+                CanTalkToCharacter(talkTarget);
+        }
+
+        bool CanTalkToCharacter(Character character) =>
+            character.Player != view.Player && character.Class != CharClass.Dog;
+
         public override void OnUpdate(float Elapsed)
         {
+            attackCooldownRemaining = System.Math.Max(0,
+                attackCooldownRemaining - Elapsed);
+            characterCycleDebounce = System.Math.Max(0, characterCycleDebounce - Elapsed);
+            if (characterCycleLatched &&
+                !app.IsInputActionDown(InputAction.LeftArea) &&
+                !app.IsInputActionDown(InputAction.RightArea))
+            {
+                characterCycleLatched = false;
+            }
+
             UpdatePromptOverlay();
             ResetNextTurnHoldIfReleased();
             UpdateCameraPan(Elapsed);
+            hoverInfo.ShowAllEntrances = app.IsInputActionDown(InputAction.ShowEntrances);
 
             ClassicGame game = app.GameState as ClassicGame;
+            Character selectedCharacter = game.World.ActivePlayerObj.SelectedCharacter;
+            if (selectedCharacter != lastSelectedCharacter)
+            {
+                lastSelectedCharacter = selectedCharacter;
+                gui.UpdatePlayer();
+                followSelectedCharacter = !app.MouseInputVisible;
+            }
+
             bool manualMovementActive = UpdateManualCharacterMovement();
             game.World.Update(Elapsed);
 
@@ -395,11 +474,11 @@ namespace Burntime.Remaster
             game.World.ActivePlayerObj.Update(Elapsed);
 
             if (app.MouseInputVisible)
-                followCharacterAfterPan = false;
+                followSelectedCharacter = false;
 
-            if (followCharacterAfterPan && charOverlay.SelectedCharacter != null)
-                followCharacterAfterPan = !view.FollowWithinMiddleThird(
-                    charOverlay.SelectedCharacter.Position, Elapsed);
+            if (followSelectedCharacter && selectedCharacter != null)
+                followSelectedCharacter = !view.FollowWithinMiddleThird(
+                    selectedCharacter.Position, Elapsed);
             else if (manualMovementActive && charOverlay.SelectedCharacter != null)
                 view.FollowWithinMiddleThird(charOverlay.SelectedCharacter.Position, Elapsed);
 
@@ -420,43 +499,167 @@ namespace Burntime.Remaster
             if (dialog.IsVisible || menu.IsVisible)
             {
                 promptOverlay.SetPrompts();
+                SetCharacterPrompts(false);
+                return;
+            }
+
+            if (app.LastInputMode == InputMode.Mouse)
+            {
+                SetCharacterPrompts(false);
+                List<InputPrompt> mousePrompts = [];
+                GuiString? mousePrimaryLabel = null;
+                if (view.ActiveEntrance >= 0 && !fightMode)
+                {
+                    mousePrimaryLabel = "@prompts?26";
+                }
+                else if (view.HoveredObject is DroppedItem)
+                {
+                    mousePrimaryLabel = "@prompts?23";
+                }
+                else if (view.HoveredObject is Character hoveredCharacter)
+                {
+                    if (fightMode && hoveredCharacter.Player != view.Player)
+                        mousePrimaryLabel = "@prompts?38";
+                    else if (!fightMode && hoveredCharacter.Player == view.Player)
+                        mousePrimaryLabel = hoveredCharacter == charOverlay.SelectedCharacter
+                            ? "@prompts?41"
+                            : "@prompts?31";
+                    else if (!fightMode && hoveredCharacter.Class != CharClass.Dog &&
+                        !view.Player.Group.Contains(hoveredCharacter))
+                        mousePrimaryLabel = "@prompts?34";
+                }
+
+                if (mousePrimaryLabel != null)
+                {
+                    mousePrompts.Add(new(InputAction.Primary, mousePrimaryLabel)
+                    {
+                        PreferredMouseControl = MouseButton.Left
+                    });
+                }
+                mousePrompts.Add(new(InputAction.Back, "...")
+                {
+                    PreferredMouseControl = MouseButton.Right
+                });
+                promptOverlay.SetPrompts(mousePrompts.ToArray());
                 return;
             }
 
             List<InputPrompt> prompts = [];
-            GuiString? primaryLabel = null;
-            if (nearbyAction.EntranceNumber != -1)
-                primaryLabel = "@prompts?26";
-            else if (nearbyAction.Object is DroppedItem)
-                primaryLabel = "@prompts?23";
-            else if (nearbyAction.Object is Character primaryTarget)
+            SetCharacterPrompts(app.LastInputMode is (InputMode.Keyboard or InputMode.Gamepad) &&
+                view.Player.Group.Count > 1);
+            if (app.LastInputMode is (InputMode.Keyboard or InputMode.Gamepad))
             {
-                if (primaryTarget.Player == view.Player)
-                    primaryLabel = "@prompts?31";
-                else if (primaryTarget.Class != CharClass.Dog &&
-                    !view.Player.Group.Contains(primaryTarget))
-                    primaryLabel = "@prompts?34";
-            }
-            if (primaryLabel != null)
-            {
-                prompts.Add(new(InputAction.Primary, primaryLabel)
+                GuiString? primaryLabel = null;
+                if (nearbyAction.EntranceNumber != -1)
+                    primaryLabel = "@prompts?26";
+                else if (nearbyAction.Object is DroppedItem)
+                    primaryLabel = "@prompts?23";
+                else if (nearbyAction.Object is Character primaryTarget)
                 {
-                    PreferredKeyboardControl = new Key(' ')
-                });
+                    if (primaryTarget.Player == view.Player)
+                        primaryLabel = "@prompts?31";
+                    else if (primaryTarget.Class != CharClass.Dog &&
+                        !view.Player.Group.Contains(primaryTarget))
+                        primaryLabel = "@prompts?34";
+                }
+                if (primaryLabel != null)
+                {
+                    prompts.Add(new(InputAction.Primary, primaryLabel)
+                    {
+                        PreferredKeyboardControl = new Key(' '),
+                        PreferredGamepadControl = GamepadControl.A
+                    });
+                }
             }
-            if (nearbyAction.Object is Character target && target.Player != view.Player)
+            if (!view.Location.IsCity && nearbyAction.Object is Character target &&
+                target.Player != view.Player)
                 prompts.Add(new(InputAction.Secondary, "@prompts?38"));
-            if (HasGroupMenuCommands())
-            {
-                prompts.Add(new(InputAction.SceneAction, "@prompts?35"));
-            }
-            prompts.Add(new(InputAction.Back, "@prompts?11")
+            prompts.Add(new(InputAction.Back, "...")
             {
                 PreferredKeyboardControl = new Key(SystemKey.Escape),
                 PreferredGamepadControl = GamepadControl.B
             });
 
             promptOverlay.SetPrompts(prompts.ToArray());
+        }
+
+        void SetCharacterPrompts(bool visible)
+        {
+            if (!visible)
+            {
+                previousCharacterPromptOverlay.SetPrompts();
+                nextCharacterPromptOverlay.SetPrompts();
+                return;
+            }
+
+            previousCharacterPromptOverlay.SetPrompts(
+                new InputPrompt(InputAction.LeftArea, "")
+                {
+                    PreferredGamepadControl = GamepadControl.LeftShoulder
+                });
+            nextCharacterPromptOverlay.SetPrompts(
+                new InputPrompt(InputAction.RightArea, "")
+                {
+                    PreferredGamepadControl = GamepadControl.RightShoulder
+                },
+                new InputPrompt(InputAction.SceneAction, "")
+                {
+                    PreferredGamepadControl = GamepadControl.Y
+                });
+            UpdateCharacterPromptPositions();
+        }
+
+        void UpdateCharacterPromptPositions()
+        {
+            const int portraitGap = 2;
+            const int bottomMargin = 6;
+            Rect portrait = gui.PlayerFaceBounds;
+            int baseline = app.Engine.Resolution.Game.y - bottomMargin;
+            previousCharacterPromptOverlay.Position = new Vector2(
+                portrait.Left - portraitGap, baseline);
+            nextCharacterPromptOverlay.Position = new Vector2(
+                portrait.Right + portraitGap, baseline);
+        }
+
+        void SelectAdjacentGroupCharacter(int direction)
+        {
+            var group = view.Player.Group;
+            if (group.Count <= 1)
+                return;
+
+            int targetIndex;
+            if (!view.Player.SingleMode)
+            {
+                // All is a separate state. LB selects the singular boss while
+                // RB starts the follower cycle at its first member.
+                targetIndex = direction > 0 ? 1 : 0;
+            }
+            else
+            {
+                int currentIndex = 0;
+                for (int i = 0; i < group.Count; i++)
+                {
+                    if (group[i] == view.Player.SelectedCharacter)
+                    {
+                        currentIndex = i;
+                        break;
+                    }
+                }
+                targetIndex = (currentIndex + direction + group.Count) % group.Count;
+            }
+
+            Character target = group[targetIndex];
+
+            // Normalize the previous singular selection first so it resumes its
+            // follower role before another character becomes player-controlled.
+            view.Player.SelectGroup(group);
+            if (target == view.Player.Character)
+                view.Player.SelectGroup(target);
+            else
+                view.Player.SelectCharacter(target);
+
+            nearbyAction.AnnounceCharacter(target, CHARACTER_NAME_ANNOUNCEMENT_TIME);
+            followSelectedCharacter = true;
         }
 
         void SyncGamepadCursor()
@@ -502,13 +705,13 @@ namespace Burntime.Remaster
                 if (cameraPanActive)
                 {
                     cameraPanActive = false;
-                    followCharacterAfterPan = !app.MouseInputVisible;
+                    followSelectedCharacter = !app.MouseInputVisible;
                 }
                 return;
             }
 
             cameraPanActive = true;
-            followCharacterAfterPan = false;
+            followSelectedCharacter = false;
             view.Pan(direction, elapsed);
         }
 
@@ -574,7 +777,9 @@ namespace Burntime.Remaster
             nextTurnHoldTime = 0;
             nextTurnTriggered = false;
             cameraPanActive = false;
-            followCharacterAfterPan = false;
+            followSelectedCharacter = false;
+            characterCycleLatched = false;
+            characterCycleDebounce = 0;
 
             app.RenderMouse = false;
             app.MouseBoundings = view.Boundings;
@@ -585,18 +790,25 @@ namespace Burntime.Remaster
                 BurntimeClassic.Instance.PreviousPlayerId != game.CurrentPlayerIndex)
             {
                 // play player changed sound
-                BurntimeClassic.Instance.Engine.Music.PlayOnce("sounds/change.ogg");
+                BurntimeClassic.Instance.Engine.Music.PlaySound("sounds/change.ogg");
             }
             BurntimeClassic.Instance.PreviousPlayerId = game.CurrentPlayerIndex;
 
             view.Map = (MapData)game.World.ActiveLocationObj.Map.MapData;
             view.Location = game.World.ActiveLocationObj;
             view.Player = game.World.ActivePlayerObj;
+            view.Player.Group.IgnoreRangeFilter = false;
+            lastSelectedCharacter = view.Player.SelectedCharacter;
 
-            //if (view.Player.RefreshScrollPosition)
-                view.CenterTo(view.Player.Character.Position);
-            //else
-            //    view.ScrollPosition = view.Player.LocationScrollPosition;
+            if (view.Player.RefreshScrollPosition)
+                view.CenterTo(view.Player.SelectedCharacter.Position);
+            else
+                view.ScrollPosition = view.Player.LocationScrollPosition;
+
+            // Returning from another scene may restore or otherwise reposition the
+            // camera without going through UpdateCameraPan. In directional input
+            // modes, resume the same automatic follow used after manual camera pan.
+            followSelectedCharacter = !app.MouseInputVisible;
             gui.UpdatePlayer();
 
             view.Player.OnMainMap = false;
@@ -617,6 +829,8 @@ namespace Burntime.Remaster
 
         protected override void OnInactivateScene()
         {
+            view.Player?.SelectedCharacter?.CancelAction();
+            manuallyMovedCharacter = null;
             app.RenderMouse = true;
             app.MouseBoundings = null;
             app.GameState.Container.RemoveNotifycationHandler(this);
@@ -625,48 +839,70 @@ namespace Burntime.Remaster
         void ShowActionsMenu(Vector2 position, bool openedByMouse)
         {
             groupMenuOpen = false;
+            menu.AlternatePrimaryAction = InputAction.None;
             menu.Clear();
-            List<InputShortcut> shortcuts = [];
 
             void AddLine(GuiString text, Action command,
                 InputShortcut shortcut = default)
             {
-                menu.AddLine(text, new CommandHandler(command));
-                shortcuts.Add(shortcut);
+                menu.AddLine(text, new CommandHandler(command), shortcut);
             }
 
-            if (!view.Location.IsCity)
+            // 0: interaction mode
+            if (!view.Location.IsCity && openedByMouse)
             {
-                AddLine("@burn?351", OnMenuInfo, new(InputAction.LocationInfo)
+                if (fightMode)
+                    AddLine("@burn?350", OnMenuSpeak, new(InputAction.ToggleInteractionMode));
+                else
+                    AddLine("@burn?352", OnMenuFight, new(InputAction.ToggleInteractionMode));
+            }
+
+            void AddMapLine() => AddLine("@burn?362", OnMenuMap, new(InputAction.WorldMap)
+            {
+                PreferredKeyboardControl = new Key('v'),
+                PreferredMouseKeyboardControl = new Key('m')
+            });
+            void AddInventoryLine() => AddLine("@burn?367", OnMenuInventory,
+                new(InputAction.Inventory)
+                {
+                    PreferredKeyboardControl = new Key('e'),
+                    PreferredMouseKeyboardControl = new Key('i')
+                });
+            void AddInfoLine() => AddLine("@burn?351", OnMenuInfo,
+                new(InputAction.LocationInfo)
                 {
                     PreferredGamepadControl = GamepadControl.DPadRight
                 });
-                if (openedByMouse)
-                {
-                    if (fightMode)
-                        AddLine("@burn?350", OnMenuSpeak, new(InputAction.ToggleInteractionMode));
-                    else
-                        AddLine("@burn?352", OnMenuFight, new(InputAction.ToggleInteractionMode));
-                }
-            }
 
             if (openedByMouse)
-                AddGroupMenuLines((text, command) => AddLine(text, command));
-
-            AddLine("@burn?362", OnMenuMap, new(InputAction.WorldMap));
-            AddLine("@burn?367", OnMenuInventory, new(InputAction.Inventory));
-            if (!openedByMouse)
             {
-                AddLine("@burn?359", () => app.SceneManager.SetScene("StatisticsScene"),
-                    new(InputAction.Statistics));
+                if (view.Location.IsCity)
+                {
+                    AddInventoryLine();
+                    AddGroupMenuLines((text, command) => AddLine(text, command));
+                    AddMapLine();
+                }
+                else
+                {
+                    AddInfoLine();
+                    AddInventoryLine();
+                    AddMapLine();
+                    AddGroupMenuLines((text, command) => AddLine(text, command));
+                }
             }
+            else
+            {
+                AddMapLine();
+                AddInventoryLine();
+                if (!view.Location.IsCity)
+                    AddInfoLine();
+            }
+
             AddLine("@burn?361", () => app.SceneManager.SetScene("OptionsScene"),
                 new(InputAction.Options));
             AddLine("@burn?357", OnMenuTurn, new(InputAction.NextTurn) { Hold = true });
 
             menu.Show(position, view.Boundings, openedByMouse);
-            menuShortcutColumn.SetShortcuts(shortcuts.ToArray());
-            menuShortcutColumn.PlaceBeside(menu, view.Boundings);
         }
 
         bool HasGroupMenuCommands() =>
@@ -699,13 +935,12 @@ namespace Burntime.Remaster
                 return;
 
             groupMenuOpen = true;
+            menu.AlternatePrimaryAction = InputAction.SceneAction;
             menu.Clear();
             AddGroupMenuLines((text, command) =>
                 menu.AddLine(text, new CommandHandler(command)));
 
             menu.Show(position, view.Boundings, openedByMouse);
-            menuShortcutColumn.SetShortcuts();
-            menuShortcutColumn.PlaceBeside(menu, view.Boundings);
         }
 
         bool OnMenuShortcut(InputAction action)
@@ -786,6 +1021,7 @@ namespace Burntime.Remaster
             if (charOverlay.SelectedCharacter.IsDead)
                 return;
 
+            view.Player.Group.IgnoreRangeFilter = false;
             charOverlay.SelectedCharacter.CancelAction();
 
             BurntimeClassic classic = app as BurntimeClassic;
@@ -798,6 +1034,12 @@ namespace Burntime.Remaster
 
         public void OnMenuFight()
         {
+            if (view.Location.IsCity)
+            {
+                OnMenuSpeak();
+                return;
+            }
+
             fightMode = true;
             cursorAni.Background = "burngfxani@munt.raw?14-17";
             cursorAni.Background.Animation.Progressive = false;
@@ -847,23 +1089,22 @@ namespace Burntime.Remaster
                 else
                 {
                     charOverlay.SelectedCharacter.JoinCamp();
-                    SelectBossAfterKeyboardGarrison();
+                    SelectBossAfterGarrison();
                 }
             }
             else
             {
                 charOverlay.SelectedCharacter.JoinCamp();
-                SelectBossAfterKeyboardGarrison();
+                SelectBossAfterGarrison();
 
                 view.Location.Player = view.Player;
-                BurntimeClassic.Instance.Engine.Music.PlayOnce("sounds/camp.ogg");
+                BurntimeClassic.Instance.Engine.Music.PlaySound("sounds/camp.ogg");
             }
         }
 
-        void SelectBossAfterKeyboardGarrison()
+        void SelectBossAfterGarrison()
         {
-            if (app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad)
-                view.Player.SelectGroup(view.Player.Group);
+            view.Player.SelectGroup(view.Player.Group);
         }
 
         public void OnMenuLeaveCamp()
@@ -912,12 +1153,9 @@ namespace Burntime.Remaster
             MapEntrance entrance = loc.Map.Entrances[Number];
 
             EntranceObject entranceObject = new EntranceObject(entrance, Number);
-            if (!TryEnterRoom(entranceObject, charOverlay.SelectedCharacter))
-            {
-                EnsureAutomaticPath(charOverlay.SelectedCharacter);
-                charOverlay.SelectedCharacter.Mind.MoveToObject(new InteractionObject(entranceObject,
-                   classic.Game.World.ActiveLocationObj.Rooms[Number].EntryCondition, this));
-            }
+            EnsureAutomaticPath(charOverlay.SelectedCharacter);
+            charOverlay.SelectedCharacter.Mind.MoveToObject(new InteractionObject(entranceObject,
+                loc.Rooms[Number].EntryCondition, this));
 
             return true;
         }
@@ -953,7 +1191,7 @@ namespace Burntime.Remaster
                 {
                     return true;
                 }
-                else if (!fightMode)
+                else if (!fightMode || view.Location.IsCity)
                 {
                     if (ch.Class != CharClass.Dog && !view.Player.Group.Contains(ch))
                     {
@@ -969,9 +1207,7 @@ namespace Burntime.Remaster
                 {
                     if (!view.Player.Group.Contains(ch))
                     {
-                        actor.Attack(ch);
-
-                        actor.CancelAction();
+                        TryAttack(actor, ch);
 
                         return true;
                     }
@@ -1005,6 +1241,7 @@ namespace Burntime.Remaster
             if (view.Location.AreEntrancesBlockedFor(view.Player))
                 return true;
 
+            view.Player.Group.IgnoreRangeFilter = !view.Player.SingleMode;
             charOverlay.SelectedCharacter.CancelAction();
 
             switch (entrance.RoomType)
@@ -1091,16 +1328,16 @@ namespace Burntime.Remaster
                 if ((eventArgs.Attacker.IsDead && eventArgs.Attacker.Class != CharClass.Dog)
                     || (eventArgs.Defender.IsDead && eventArgs.Defender.Class != CharClass.Dog))
                 {
-                    app.Engine.Music.PlayOnce("sounds/hit-die.ogg");
+                    app.Engine.Music.PlaySound("sounds/hit-die.ogg");
                 }
                 else if ((!eventArgs.Attacker.IsDead && eventArgs.Attacker.Class == CharClass.Dog)
                     || (!eventArgs.Defender.IsDead && eventArgs.Defender.Class == CharClass.Dog))
                 {
-                    app.Engine.Music.PlayOnce("sounds/hit-barf.ogg");
+                    app.Engine.Music.PlaySound("sounds/hit-barf.ogg");
                 }
                 else
                 {
-                    app.Engine.Music.PlayOnce("sounds/hit.ogg");
+                    app.Engine.Music.PlaySound("sounds/hit.ogg");
                 }
             }
         }

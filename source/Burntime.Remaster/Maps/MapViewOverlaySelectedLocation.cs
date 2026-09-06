@@ -9,14 +9,16 @@ namespace Burntime.Remaster.Maps;
 class MapViewOverlaySelectedLocation : IMapViewOverlay
 {
     readonly Module app;
+    readonly MapViewOverlayHoverText hoverText;
     ClassicGame game;
 
     public int LocationNumber { get; set; } = -1;
     public bool IsVisible { get; set; } = true;
 
-    public MapViewOverlaySelectedLocation(Module app)
+    public MapViewOverlaySelectedLocation(Module app, MapViewOverlayHoverText hoverText)
     {
         this.app = app;
+        this.hoverText = hoverText;
     }
 
     public void MouseMoveOverlay(Vector2 position)
@@ -36,12 +38,14 @@ class MapViewOverlaySelectedLocation : IMapViewOverlay
 
         var entrance = game.World.Map.Entrances[LocationNumber];
         string title = app.ResourceManager.GetString(entrance.TitleId);
-        var info = new MapViewHoverInfo(title, entrance.Area.Center, BurntimeClassic.LightGray);
-
+        var info = new MapViewHoverInfo(title, entrance.Area.Center, BurntimeClassic.LightGray)
+        {
+            WorldLocation = game.World.Locations[LocationNumber]
+        };
         const int topMargin = 8;
         var textTarget = target.GetSubBuffer(new Rect(0, topMargin, target.Width, target.Height - topMargin));
-        Font font = app.ResourceManager.GetFont(BurntimeClassic.FontName, info.Color);
-        font.DrawText(textTarget, info.Position + offset - new Vector2(0, topMargin), info.Title, TextAlignment.Center);
+        hoverText.DrawWorldLocationText(textTarget, info,
+            offset - new Vector2(0, topMargin), 1);
     }
 
     public IMapObject GetObjectAt(Vector2 position)

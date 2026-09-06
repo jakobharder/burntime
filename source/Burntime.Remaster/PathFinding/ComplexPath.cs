@@ -504,12 +504,31 @@ namespace Burntime.Remaster.PathFinding
 
         Vector2f move;
         Vector2f adjustedMove;
+        const float MovingTargetRepathDistance = 8;
+
         public override Vector2 MoveTo
         {
             get { return new Vector2(move); }
             set 
             { 
                 move = new Vector2f(value);
+                adjustedMove = move;
+            }
+        }
+
+        /// <summary>
+        /// Updates a moving destination without throwing away the active route.
+        /// The newest destination is adopted once the current route is almost
+        /// consumed. Direction changes may request an immediate replan.
+        /// </summary>
+        public void UpdateMovingTarget(Vector2 value, bool forceRepath)
+        {
+            move = new Vector2f(value);
+
+            if (forceRepath || !path.IsPathSet ||
+                path.HasFinishedCalculation &&
+                (path.IsEmpty || (path.Goal - position).Length <= MovingTargetRepathDistance))
+            {
                 adjustedMove = move;
             }
         }
@@ -531,9 +550,18 @@ namespace Burntime.Remaster.PathFinding
             path = new Path();
         }
 
+        public override void Stop(Vector2 position)
+        {
+            base.Stop(position);
+            this.position = position;
+            path?.Clear();
+        }
+
         public override Vector2 Process(PathMask mask, Vector2 position, float elapsed)
         {
+            Vector2f previousMovementDirection = MovementDirection;
             this.position = BeginMovement(position);
+            Vector2f movementStartPosition = this.position;
             Vector2f dif = move - this.position;
 
             float elapsedSpeed =  speed* elapsed;
@@ -546,7 +574,8 @@ namespace Burntime.Remaster.PathFinding
             }
 
             // moveto position differs from active path goal, recalculate path
-            if (adjustedMove != path.Goal || !path.IsPathSet)
+            bool pathUpdated = adjustedMove != path.Goal || !path.IsPathSet;
+            if (pathUpdated)
                 path.BeginProcess(mask, this.position, adjustedMove, elapsed, false);
             // in case path finding is not finished yet do further processing
             else if (!path.HasFinishedCalculation)
@@ -580,7 +609,39 @@ namespace Burntime.Remaster.PathFinding
                 }
             }
 
+            // A moving-target replan can temporarily have no waypoint. Keep
+            // the previous motion continuous while the new route is calculated
+            // instead of producing an idle frame which also resets animation.
+            if (this.position == movementStartPosition &&
+                (pathUpdated || !path.HasFinishedCalculation) &&
+                previousMovementDirection != Vector2f.Zero)
+            {
+                previousMovementDirection.Normalize();
+                float remainingDistance = speed * elapsed;
+                while (remainingDistance > 0)
+                {
+                    float stepDistance = System.Math.Min(remainingDistance, 1);
+                    Vector2f nextPosition = this.position +
+                        previousMovementDirection * stepDistance;
+                    if (!IsWalkable(mask, nextPosition))
+                        break;
+
+                    this.position = nextPosition;
+                    remainingDistance -= stepDistance;
+                }
+            }
+
             return CommitMovement(this.position);
+        }
+
+        static bool IsWalkable(PathMask mask, Vector2f position)
+        {
+            if (position.x < 0 || position.y < 0)
+                return false;
+
+            Vector2 maskPosition = ((Vector2)position + (mask.Resolution / 2 - 1)) /
+                mask.Resolution;
+            return mask[maskPosition];
         }
 
         public override void DebugRender(Burntime.Platform.Graphics.RenderTarget target)

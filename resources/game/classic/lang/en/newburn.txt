@@ -56,12 +56,12 @@ to get in there.}
 Scaling SHARP
 Scaling SMOOTH
 toggle in-game with Alt+Enter
-
-
-
-
-
-
+Map Music NONE
+Map Music KEEP
+Map Music LIST
+maps stay silent
+scene music continues
+randomized playlist
 
 
 
@@ -102,3 +102,4 @@ Def. {defense}}
 % gas 
 % rad. 
 Blocked}
+|J days|#1 day

@@ -38,3 +38,5 @@ Offer
 Take
 Fight
 Store
+Unselect
+Inventory

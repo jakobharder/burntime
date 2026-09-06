@@ -108,6 +108,23 @@ public sealed class CharacterRespawn : StateObject
         mutantDropType ??= Array.Empty<string>();
     }
 
+    internal void ApplySettings(Generation.GameSettings settings)
+    {
+        npcRespawn = settings.Respawn.NPC;
+        traderRespawn = settings.Respawn.Trader;
+        mutantRespawn = settings.Respawn.Mutant;
+        dogRespawn = settings.Respawn.Dog;
+
+        TraderHealth = settings.ClassStats.TraderHealth;
+        MutantHealth = settings.ClassStats.MutantHealth;
+        DogHealth = settings.ClassStats.DogHealth;
+        TraderAttack = settings.ClassStats.TraderAttack;
+        MutantAttack = settings.ClassStats.MutantAttack;
+        DogAttack = settings.ClassStats.DogAttack;
+        MutantDropChance = settings.MutantDropChance;
+        MutantDropType = settings.MutantDropType;
+    }
+
     public void Respawn(Character character)
     {
         var timeToSpawn = character.Class switch

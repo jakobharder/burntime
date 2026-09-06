@@ -168,7 +168,6 @@ namespace Burntime.Remaster.Maps
             {
                 if (chr.IsDead || chr.IsPlayerCharacter && chr.Player.IsDead)
                     continue;
-
                 Vector2 distance = chr.Position - position;
                 // align to bottom center
                 distance.y -= chr.Body.Object.Height / 2;
