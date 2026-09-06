@@ -491,7 +491,7 @@ namespace Burntime.Remaster.Logic
 
         public void CancelAction()
         {
-            Path.MoveTo = Position;
+            Path.Stop(Position);
             Mind.MoveToObject(null);
         }
 

@@ -16,6 +16,12 @@ namespace Burntime.Remaster.PathFinding
             set { moveTo = value; }
         }
 
+        public override void Stop(Vector2 position)
+        {
+            base.Stop(position);
+            this.position = position;
+        }
+
         public override Vector2 Process(PathMask mask, Vector2 position, float elapsed)
         {
             this.position = BeginMovement(position);

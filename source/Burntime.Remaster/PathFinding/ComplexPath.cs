@@ -550,6 +550,13 @@ namespace Burntime.Remaster.PathFinding
             path = new Path();
         }
 
+        public override void Stop(Vector2 position)
+        {
+            base.Stop(position);
+            this.position = position;
+            path?.Clear();
+        }
+
         public override Vector2 Process(PathMask mask, Vector2 position, float elapsed)
         {
             Vector2f previousMovementDirection = MovementDirection;

@@ -23,6 +23,7 @@ namespace Burntime.Remaster
 
         const int PICKUP_DISTANCE = 20;
         const float NEXT_TURN_HOLD_TIME = 0.6f;
+        const float ATTACK_COOLDOWN_TIME = 0.5f;
         const float CHARACTER_NAME_ANNOUNCEMENT_TIME = 1.5f;
         const float CHARACTER_CYCLE_DEBOUNCE_TIME = 0.15f;
 
@@ -46,6 +47,7 @@ namespace Burntime.Remaster
         bool groupMenuOpen;
         bool characterCycleLatched;
         float characterCycleDebounce;
+        float attackCooldownRemaining;
 
         private bool fightMode
         {
@@ -187,7 +189,7 @@ namespace Burntime.Remaster
 
         void AttackCharacter(Character targetCharacter)
         {
-            if (view.Location.IsCity)
+            if (view.Location.IsCity || attackCooldownRemaining > 0)
                 return;
 
             // only if not player owned
@@ -195,14 +197,24 @@ namespace Burntime.Remaster
             {
                 if (30 > (charOverlay.SelectedCharacter.Position - targetCharacter.Position).Length)
                 {
-                    charOverlay.SelectedCharacter.Attack(targetCharacter);
-                    charOverlay.SelectedCharacter.CancelAction();
+                    TryAttack(charOverlay.SelectedCharacter, targetCharacter);
                 }
                 else
                 {
                     MoveCharacter(targetCharacter);
                 }
             }
+        }
+
+        bool TryAttack(Character attacker, Character defender)
+        {
+            if (attackCooldownRemaining > 0)
+                return false;
+
+            attacker.Attack(defender);
+            attacker.CancelAction();
+            attackCooldownRemaining = ATTACK_COOLDOWN_TIME;
+            return true;
         }
 
         void ClickCharacter(Character clickedCharacter)
@@ -412,6 +424,8 @@ namespace Burntime.Remaster
 
         public override void OnUpdate(float Elapsed)
         {
+            attackCooldownRemaining = System.Math.Max(0,
+                attackCooldownRemaining - Elapsed);
             characterCycleDebounce = System.Math.Max(0, characterCycleDebounce - Elapsed);
             if (characterCycleLatched &&
                 !app.IsInputActionDown(InputAction.LeftArea) &&
@@ -796,6 +810,8 @@ namespace Burntime.Remaster
 
         protected override void OnInactivateScene()
         {
+            view.Player?.SelectedCharacter?.CancelAction();
+            manuallyMovedCharacter = null;
             app.RenderMouse = true;
             app.MouseBoundings = null;
             app.GameState.Container.RemoveNotifycationHandler(this);
@@ -822,30 +838,46 @@ namespace Burntime.Remaster
                     AddLine("@burn?352", OnMenuFight, new(InputAction.ToggleInteractionMode));
             }
 
-            // 1: map -> quickest
-            // 2: inventory -> muscle memory
-            AddLine("@burn?362", OnMenuMap, new(InputAction.WorldMap)
+            void AddMapLine() => AddLine("@burn?362", OnMenuMap, new(InputAction.WorldMap)
             {
                 PreferredKeyboardControl = new Key('v'),
                 PreferredMouseKeyboardControl = new Key('m')
             });
-            AddLine("@burn?367", OnMenuInventory, new(InputAction.Inventory)
-            {
-                PreferredKeyboardControl = new Key('e'),
-                PreferredMouseKeyboardControl = new Key('i')
-            });
-
-            // 3: info screen
-            if (!view.Location.IsCity)
-            {
-                AddLine("@burn?351", OnMenuInfo, new(InputAction.LocationInfo)
+            void AddInventoryLine() => AddLine("@burn?367", OnMenuInventory,
+                new(InputAction.Inventory)
+                {
+                    PreferredKeyboardControl = new Key('e'),
+                    PreferredMouseKeyboardControl = new Key('i')
+                });
+            void AddInfoLine() => AddLine("@burn?351", OnMenuInfo,
+                new(InputAction.LocationInfo)
                 {
                     PreferredGamepadControl = GamepadControl.DPadRight
                 });
-            }
 
             if (openedByMouse)
-                AddGroupMenuLines((text, command) => AddLine(text, command));
+            {
+                if (view.Location.IsCity)
+                {
+                    AddInventoryLine();
+                    AddGroupMenuLines((text, command) => AddLine(text, command));
+                    AddMapLine();
+                }
+                else
+                {
+                    AddInfoLine();
+                    AddInventoryLine();
+                    AddMapLine();
+                    AddGroupMenuLines((text, command) => AddLine(text, command));
+                }
+            }
+            else
+            {
+                AddMapLine();
+                AddInventoryLine();
+                if (!view.Location.IsCity)
+                    AddInfoLine();
+            }
 
             AddLine("@burn?361", () => app.SceneManager.SetScene("OptionsScene"),
                 new(InputAction.Options));
@@ -1157,9 +1189,7 @@ namespace Burntime.Remaster
                 {
                     if (!view.Player.Group.Contains(ch))
                     {
-                        actor.Attack(ch);
-
-                        actor.CancelAction();
+                        TryAttack(actor, ch);
 
                         return true;
                     }

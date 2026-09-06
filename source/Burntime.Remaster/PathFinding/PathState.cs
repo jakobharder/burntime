@@ -33,6 +33,15 @@ namespace Burntime.Remaster.PathFinding
         public abstract Vector2 Process(PathMask mask, Vector2 position, float elapsed);
         public abstract void DebugRender(RenderTarget target);
 
+        public virtual void Stop(Vector2 position)
+        {
+            MoveTo = position;
+            precisePosition = position;
+            precisePositionInitialized = true;
+            movementStartPosition = position;
+            MovementDirection = Vector2f.Zero;
+        }
+
         protected Vector2f BeginMovement(Vector2 rasterPosition)
         {
             if (!precisePositionInitialized || (Vector2)precisePosition != rasterPosition)

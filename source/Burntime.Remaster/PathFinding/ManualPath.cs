@@ -46,6 +46,16 @@ namespace Burntime.Remaster.PathFinding
             set => moveTo = value;
         }
 
+        public override void Stop(Vector2 position)
+        {
+            Direction = Vector2f.Zero;
+            slideSide = 0;
+            detourWaypoints?.Clear();
+            hasFailedDetour = false;
+            this.position = position;
+            base.Stop(position);
+        }
+
         public override Vector2 Process(PathMask mask, Vector2 position, float elapsed)
         {
             this.position = position;

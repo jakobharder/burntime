@@ -384,9 +384,104 @@ namespace Burntime.Remaster.Logic
         // add character to this location
         public void EnterLocation(Character character)
         {
-            character.Position = EntryPoint;
-            character.Path.MoveTo = EntryPoint;
+            Vector2 position = character.IsPlayerCharacter
+                ? EntryPoint
+                : GetRandomNpcEntryPosition(character);
+            character.Position = position;
+            character.Path.MoveTo = position;
             character.Location = this;
+        }
+
+        public Vector2 GetRandomNpcEntryPosition(Character? arrivingCharacter = null,
+            int radius = 20)
+        {
+            var mask = Map.Mask;
+            int resolution = mask.Resolution;
+            List<Vector2> validPositions = new();
+            List<Vector2> unoccupiedPositions = new();
+
+            int minimumX = System.Math.Max(0, (EntryPoint.x - radius) / resolution);
+            int maximumX = System.Math.Min(mask.Width - 1,
+                (EntryPoint.x + radius) / resolution);
+            int minimumY = System.Math.Max(0, (EntryPoint.y - radius) / resolution);
+            int maximumY = System.Math.Min(mask.Height - 1,
+                (EntryPoint.y + radius) / resolution);
+            int radiusSquared = radius * radius;
+
+            for (int y = minimumY; y <= maximumY; y++)
+            {
+                for (int x = minimumX; x <= maximumX; x++)
+                {
+                    if (!mask[x, y])
+                        continue;
+
+                    Vector2 candidate = new Vector2(x, y) * resolution + resolution / 2;
+                    Vector2 difference = candidate - EntryPoint;
+                    if (difference.x * difference.x + difference.y * difference.y > radiusSquared)
+                        continue;
+
+                    validPositions.Add(candidate);
+                    bool occupied = IsNpcSpawnPositionOccupied(candidate,
+                        arrivingCharacter, resolution);
+                    if (!occupied)
+                        unoccupiedPositions.Add(candidate);
+                }
+            }
+
+            List<Vector2> choices = unoccupiedPositions.Count > 0
+                ? unoccupiedPositions
+                : validPositions;
+            if (choices.Count > 0)
+                return choices[Platform.Math.Random.Next(choices.Count)];
+
+            // Entry points should normally have nearby walkable cells. If legacy
+            // data does not, validity is more important than keeping the radius.
+            Vector2 nearest = EntryPoint;
+            int nearestDistanceSquared = int.MaxValue;
+            for (int y = 0; y < mask.Height; y++)
+            {
+                for (int x = 0; x < mask.Width; x++)
+                {
+                    if (!mask[x, y])
+                        continue;
+
+                    Vector2 candidate = new Vector2(x, y) * resolution + resolution / 2;
+                    Vector2 difference = candidate - EntryPoint;
+                    int distanceSquared = difference.x * difference.x +
+                        difference.y * difference.y;
+                    if (distanceSquared < nearestDistanceSquared)
+                    {
+                        nearest = candidate;
+                        nearestDistanceSquared = distanceSquared;
+                    }
+                }
+            }
+            return nearest;
+        }
+
+        bool IsNpcSpawnPositionOccupied(Vector2 candidate, Character? arrivingCharacter,
+            int minimumDistance)
+        {
+            bool IsTooClose(Character character) =>
+                character != arrivingCharacter && !character.IsDead &&
+                (character.Position - candidate).Length < minimumDistance;
+
+            if (Characters.Any(IsTooClose))
+                return true;
+
+            if (Container.Root is not ClassicGame game)
+                return false;
+
+            foreach (Player player in game.World.Players)
+            {
+                if (player.Location != this)
+                    continue;
+                foreach (Character character in player.Group)
+                    if (IsTooClose(character))
+                        return true;
+            }
+
+            return false;
         }
 
         #region get helpers
