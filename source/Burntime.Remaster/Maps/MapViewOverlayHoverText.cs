@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Burntime.Platform;
 using Burntime.Platform.Resource;
 using Burntime.Platform.Graphics;
@@ -168,12 +169,10 @@ class MapViewOverlayHoverText : IMapViewOverlay
         }
 
         int foodPerDay = info.WorldLocation.GetFoodProductionRate().FoodPerDay;
-        int trapLevel = GetTrapLevel(info.WorldLocation);
-        List<GuiTextBar> bars = new(3);
+        List<GuiTextBar> bars = new(4);
         if (foodPerDay > 0)
             bars.Add(new GuiTextBar(GuiTextBarType.RedBar, foodPerDay));
-        if (trapLevel > 0)
-            bars.Add(new GuiTextBar(GuiTextBarType.Dots, trapLevel));
+        AddTrapIcons(bars, info.WorldLocation);
         bars.Add(new GuiTextBar(GuiTextBarType.BlueBar, info.WorldLocation.Source.Water));
         textBars.Draw(target, info.Position + offset, info.Title, info.Color, alpha, bars);
     }
@@ -194,46 +193,48 @@ class MapViewOverlayHoverText : IMapViewOverlay
                 foodValue += item.FoodValue;
 
         int foodUnits = foodValue / 3;
-        int trapLevel = GetTrapLevel(mapState, info.Room);
-        List<GuiTextBar> bars = new(3);
+        List<GuiTextBar> bars = new(4);
         if (foodUnits > 0)
             bars.Add(new GuiTextBar(GuiTextBarType.RedBar, foodUnits));
-        if (trapLevel > 0)
-            bars.Add(new GuiTextBar(GuiTextBarType.Dots, trapLevel));
+        AddTrapIcons(bars, mapState, info.Room);
         if (info.Room.IsWaterSource)
             bars.Add(new GuiTextBar(GuiTextBarType.BlueBar, mapState.Source.Reserve));
         textBars.Draw(target, info.Position + offset, info.Title, info.Color, alpha, bars);
     }
 
-    int GetTrapLevel(Location location, Room? room = null)
+    static void AddTrapIcons(List<GuiTextBar> bars, Location location, Room? room = null)
     {
         var production = location.Production;
         if (production == null ||
             (room != null && location.GetFoodProductionRate().FoodPerDay <= 0))
-            return 0;
+            return;
 
+        if (room != null)
+        {
+            Room? preferredRoom = location.Rooms.FirstOrDefault(candidate => candidate.Items
+                .Any(item => item.Type.Production == production));
+            Room? productionRoom = preferredRoom != null && !preferredRoom.Items.IsFull
+                ? preferredRoom
+                : location.Rooms.FirstOrDefault(candidate => !candidate.Items.IsFull);
+            if (room != productionRoom)
+                return;
+        }
+
+        int toolCount = 0;
         foreach (Room candidateRoom in location.Rooms)
-        {
             foreach (Item item in candidateRoom.Items)
-            {
-                if (item.Type.Production != production)
-                    continue;
+                if (item.Type.Production == production)
+                    toolCount++;
+        foreach (Character npc in location.CampNPC)
+            foreach (Item item in npc.Items)
+                if (item.Type.Production == production)
+                    toolCount++;
 
-                return room == null || candidateRoom == room
-                    ? GetTrapLevel(production)
-                    : 0;
-            }
-        }
-
-        if (room == null)
-        {
-            foreach (Character npc in location.CampNPC)
-                foreach (Item item in npc.Items)
-                    if (item.Type.Production == production)
-                        return GetTrapLevel(production);
-        }
-
-        return 0;
+        int trapLevel = GetTrapLevel(production);
+        int activeToolCount = System.Math.Min(2,
+            System.Math.Min(toolCount, production.MaxToolCount));
+        for (int i = 0; i < activeToolCount && trapLevel > 0; i++)
+            bars.Add(new GuiTextBar(GuiTextBarType.Dots, trapLevel));
     }
 
     static int GetTrapLevel(Production production)
