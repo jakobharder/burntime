@@ -9,6 +9,7 @@ namespace Burntime.Remaster;
 public readonly record struct InputShortcut(InputAction Action)
 {
     public Key? PreferredKeyboardControl { get; init; }
+    public Key? PreferredMouseKeyboardControl { get; init; }
     public GamepadControl? PreferredGamepadControl { get; init; }
     public string? KeyboardOverride { get; init; }
     public string? GamepadOverride { get; init; }
@@ -97,8 +98,8 @@ public sealed class InputShortcutColumn : Window
 
     void RefreshInputMode()
     {
-        InputMode inputMode = app.LastInputMode == InputMode.Gamepad
-            ? InputMode.Gamepad
+        InputMode inputMode = app.LastInputMode is InputMode.Gamepad or InputMode.Mouse
+            ? app.LastInputMode
             : InputMode.Keyboard;
         if (_inputMode == inputMode && _language == app.Language &&
             _glyphRevision == app.Engine.InputGlyphs.Revision)
@@ -115,10 +116,13 @@ public sealed class InputShortcutColumn : Window
         for (int i = 0; i < _shortcuts.Length; i++)
         {
             InputShortcut shortcut = _shortcuts[i];
+            Key? preferredKeyboardControl = _inputMode == InputMode.Mouse
+                ? shortcut.PreferredMouseKeyboardControl ?? shortcut.PreferredKeyboardControl
+                : shortcut.PreferredKeyboardControl;
             InputControlLabel control = shortcut.Action == InputAction.None
                 ? InputControlLabel.Empty
                 : InputControlDisplay.Resolve(app, _inputMode, shortcut.Action,
-                    shortcut.PreferredKeyboardControl, shortcut.PreferredGamepadControl,
+                    preferredKeyboardControl, shortcut.PreferredGamepadControl,
                     shortcut.KeyboardOverride, shortcut.GamepadOverride);
             bool hold = shortcut.Hold && !control.IsEmpty;
             int displayWidth = control.IsEmpty

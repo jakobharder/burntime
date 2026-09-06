@@ -126,6 +126,8 @@ public class Window
         set { Hide(); modal = value; }
     }
 
+    public virtual bool PreserveMouseModeForDirectionalInput => false;
+
     // public attributes
     Rect boundings = new Rect(0, 0, 0, 0);
 

@@ -24,13 +24,13 @@ public sealed class KeyboardBindings : IKeyboardBindings
         ("accept", "space enter", InputAction.Primary),
         ("back", "escape", InputAction.Back),
         ("secondary", "f", InputAction.Secondary),
-        ("action", "x", InputAction.SceneAction),
+        ("action", "q", InputAction.SceneAction),
         ("options", "o", InputAction.Options),
-        ("inventory", "r i", InputAction.Inventory),
+        ("inventory", "e i", InputAction.Inventory),
         ("world_map", "v m", InputAction.WorldMap),
-        ("statistics", "q", InputAction.Statistics),
-        ("info", "e", InputAction.LocationInfo),
-        ("next_turn", "tab", InputAction.NextTurn),
+        ("statistics", "h", InputAction.Statistics),
+        ("info", "r", InputAction.LocationInfo),
+        ("next_turn", "t", InputAction.NextTurn),
         ("toggle_interaction", "c", InputAction.ToggleInteractionMode),
         ("show_entrances", "alt", InputAction.ShowEntrances),
     };
@@ -64,12 +64,11 @@ public sealed class KeyboardBindings : IKeyboardBindings
         return result;
     }
 
-    public void Load(ConfigFile settings, ConfigFile userSettings)
+    public void Load(ConfigFile settings)
     {
         actions.Clear();
         values.Clear();
         ConfigSection defaults = settings[SectionName];
-        ConfigSection overrides = userSettings[SectionName];
 
         foreach (var definition in definitions)
         {
@@ -80,11 +79,6 @@ public sealed class KeyboardBindings : IKeyboardBindings
                 value = defaults.GetString("global_action").Trim();
             else
                 value = definition.DefaultControls;
-
-            if (overrides.ContainsKey(definition.Setting))
-                value = overrides.GetString(definition.Setting).Trim();
-            else if (definition.Setting == "action" && overrides.ContainsKey("global_action"))
-                value = overrides.GetString("global_action").Trim();
 
             values[definition.Setting] = value;
 
@@ -134,15 +128,6 @@ public sealed class KeyboardBindings : IKeyboardBindings
         else if (action == InputAction.RightArea)
             result.Add(new Key(SystemKey.Right, ModifierKeys.Shift));
         return result;
-    }
-
-    public void Save(ConfigFile config)
-    {
-        ConfigSection section = config.GetSection(SectionName, true);
-        foreach (var definition in definitions)
-            section.Set(definition.Setting, values.TryGetValue(definition.Setting, out string value)
-                ? value
-                : definition.DefaultControls);
     }
 
     static Key Normalize(Key key) => key.IsVirtual

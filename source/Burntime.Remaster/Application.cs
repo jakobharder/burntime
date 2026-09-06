@@ -35,6 +35,13 @@ namespace Burntime.Remaster
 
     public class BurntimeClassic : Module
     {
+        static readonly HashSet<string> PersistedRootUserSettings = new(
+            StringComparer.OrdinalIgnoreCase)
+        {
+            "music", "fullscreen", "output_filtering", "newgfx", "language",
+            "controller_glyphs", "prompts"
+        };
+
         public GamepadBindings GamepadBindings { get; } = new();
         public KeyboardBindings KeyboardBindings { get; } = new();
         internal AutosaveManager Autosaves { get; }
@@ -131,14 +138,30 @@ namespace Burntime.Remaster
             // read user settings
             UserSettings = new ConfigFile();
             UserSettings.Open("user.txt");
+            bool removedKeyboardMappings = UserSettings.RemoveSection("keyboard");
+            bool removedGamepadMappings = UserSettings.RemoveSection("gamepad");
+            bool removedObsoleteRootSettings = false;
+            ConfigSection rootUserSettings = UserSettings[""];
+            string[] obsoleteRootSettings = rootUserSettings.Values
+                .Select(setting => setting.Key)
+                .Where(setting => !PersistedRootUserSettings.Contains(setting))
+                .ToArray();
+            foreach (string setting in obsoleteRootSettings)
+                removedObsoleteRootSettings |= rootUserSettings.Remove(setting);
+            bool normalizedRootSettings = false;
+            foreach (string setting in PersistedRootUserSettings)
+                normalizedRootSettings |= rootUserSettings.NormalizeSingleValue(setting);
+            if (removedKeyboardMappings || removedGamepadMappings || removedObsoleteRootSettings ||
+                normalizedRootSettings)
+                UserSettings.Save("user.txt");
             Engine.ControllerGlyphMode = ParseControllerGlyphMode(
                 UserSettings[""].GetString("controller_glyphs"));
             PromptVisibility = (PromptVisibilityMode)System.Math.Clamp(
                 UserSettings[""].GetInt("prompts"),
                 (int)PromptVisibilityMode.Full,
                 (int)PromptVisibilityMode.Hide);
-            KeyboardBindings.Load(Settings, UserSettings);
-            GamepadBindings.Load(Settings, UserSettings);
+            KeyboardBindings.Load(Settings);
+            GamepadBindings.Load(Settings);
             LanguageSelection = ParseLanguageMode(UserSettings[""].GetString("language"));
             FileSystem.LocalizationCode = ResolveLanguage(LanguageSelection);
             if (Engine.SupportsFullscreenToggle)
@@ -225,8 +248,6 @@ namespace Burntime.Remaster
             UserSettings[""].Set("language", FormatLanguageMode(LanguageSelection));
             UserSettings[""].Set("controller_glyphs", FormatControllerGlyphMode(Engine.ControllerGlyphMode));
             UserSettings[""].Set("prompts", (int)PromptVisibility);
-            KeyboardBindings.Save(UserSettings);
-            GamepadBindings.Save(UserSettings);
             UserSettings.Save("user.txt");
         }
 

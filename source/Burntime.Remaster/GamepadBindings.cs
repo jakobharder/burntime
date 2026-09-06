@@ -51,12 +51,11 @@ public sealed class GamepadBindings : IGamepadBindings
     readonly Dictionary<GamepadControl, InputAction> actions = new();
     readonly Dictionary<string, string> values = new(StringComparer.OrdinalIgnoreCase);
 
-    public void Load(ConfigFile settings, ConfigFile userSettings)
+    public void Load(ConfigFile settings)
     {
         actions.Clear();
         values.Clear();
         ConfigSection defaults = settings[SectionName];
-        ConfigSection overrides = userSettings[SectionName];
 
         foreach (var definition in definitions)
         {
@@ -67,11 +66,6 @@ public sealed class GamepadBindings : IGamepadBindings
                 value = defaults.GetString("global_action").Trim();
             else
                 value = definition.DefaultControl;
-
-            if (overrides.ContainsKey(definition.Setting))
-                value = overrides.GetString(definition.Setting).Trim();
-            else if (definition.Setting == "action" && overrides.ContainsKey("global_action"))
-                value = overrides.GetString("global_action").Trim();
 
             values[definition.Setting] = value;
 
@@ -93,12 +87,4 @@ public sealed class GamepadBindings : IGamepadBindings
         return result;
     }
 
-    public void Save(ConfigFile config)
-    {
-        ConfigSection section = config.GetSection(SectionName, true);
-        foreach (var definition in definitions)
-            section.Set(definition.Setting, values.TryGetValue(definition.Setting, out string value)
-                ? value
-                : definition.DefaultControl);
-    }
 }

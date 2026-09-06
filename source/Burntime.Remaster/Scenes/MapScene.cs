@@ -154,7 +154,11 @@ namespace Burntime.Remaster
                         new(InputAction.ToggleInteractionMode));
             }
             menu.AddLine("@burn?367", (CommandHandler)OnMenuInventory,
-                new(InputAction.Inventory));
+                new(InputAction.Inventory)
+                {
+                    PreferredKeyboardControl = new Key('e'),
+                    PreferredMouseKeyboardControl = new Key('i')
+                });
             menu.AddLine("@burn?359", (CommandHandler)OnMenuStatistics,
                 new(InputAction.Statistics));
             menu.AddLine("@burn?361", (CommandHandler)OnMenuOptions,

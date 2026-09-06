@@ -114,6 +114,8 @@ namespace Burntime.Framework
         public string? LastScene => sceneQueue.LastOrDefault();
         public bool UseCardinalGamepadMovement => activeScene?.UseCardinalGamepadMovement ?? false;
         public bool UseDiagonalGamepadNavigation => activeScene?.UseDiagonalGamepadNavigation ?? false;
+        public bool PreserveMouseModeForDirectionalInput =>
+            modalStack.Count > 0 && modalStack.Peek().PreserveMouseModeForDirectionalInput;
 
         internal void Render(RenderTarget Target) => activeScene?.Render(Target);
 

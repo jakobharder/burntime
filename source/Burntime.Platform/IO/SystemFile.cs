@@ -29,7 +29,9 @@ public class SystemFile : File
 
     public SystemFile(String Path, String Name, bool WriteAccess)
     {
-        stream = new System.IO.FileStream(Path, System.IO.FileMode.OpenOrCreate, WriteAccess ? System.IO.FileAccess.ReadWrite : System.IO.FileAccess.Read);
+        stream = new System.IO.FileStream(Path,
+            WriteAccess ? System.IO.FileMode.Create : System.IO.FileMode.OpenOrCreate,
+            WriteAccess ? System.IO.FileAccess.ReadWrite : System.IO.FileAccess.Read);
         path = System.IO.Path.GetFullPath(Path);
 
         String[] token = Name.Split(new Char[] { ':' });

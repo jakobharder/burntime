@@ -824,8 +824,16 @@ namespace Burntime.Remaster
 
             // 1: map -> quickest
             // 2: inventory -> muscle memory
-            AddLine("@burn?362", OnMenuMap, new(InputAction.WorldMap));
-            AddLine("@burn?367", OnMenuInventory, new(InputAction.Inventory));
+            AddLine("@burn?362", OnMenuMap, new(InputAction.WorldMap)
+            {
+                PreferredKeyboardControl = new Key('v'),
+                PreferredMouseKeyboardControl = new Key('m')
+            });
+            AddLine("@burn?367", OnMenuInventory, new(InputAction.Inventory)
+            {
+                PreferredKeyboardControl = new Key('e'),
+                PreferredMouseKeyboardControl = new Key('i')
+            });
 
             // 3: info screen
             if (!view.Location.IsCity)

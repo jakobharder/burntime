@@ -22,33 +22,35 @@
 | `PanCamera*` - secondary direction | W/A/S/D | Right stick | all
 | `Primary` | Space / Enter | A | all
 | `Secondary` | F | X | all except options; setup uses X and Shift+Up/Down
-| `SceneAction` | X | Y | scene-specific actions
+| `SceneAction` | Q | Y | scene-specific actions
 | `Back` | Escape | B | all
 | `Options` | O | Menu | both maps, setup
-| `Statistics` | Q | D-pad left | both maps
-| `Inventory` | R / I | D-pad up | both maps
+| `Statistics` | H | D-pad left | both maps
+| `Inventory` | E / I | D-pad up | both maps
 | `WorldMap` | V / M | View | location map
-| `LocationInfo` | E | D-pad right | both maps
-| `NextTurn` | Hold Tab | Hold D-pad down | both maps
+| `LocationInfo` | R | D-pad right | both maps
+| `NextTurn` | Hold T | Hold D-pad down | both maps
 | `ToggleInteractionMode` | C | — | both maps
 | `ShowEntrances` | Hold Alt | Hold Left Trigger | both maps
 | `LeftArea` | Shift+Left | Left shoulder | contextual previous character/page
 | `RightArea` | Shift+Right | Right shoulder | contextual next character/page
 
-The default keyboard and gamepad mappings are configured in the `[keyboard]` and `[gamepad]` sections of `settings.txt`.
+The keyboard and gamepad mappings are configured in the `[keyboard]` and `[gamepad]` sections of `settings.txt`. Input mappings are currently defaults-only: obsolete mapping sections in `user.txt` are removed at startup and are not written back on shutdown.
 Prompt rows and inline map-menu shortcuts resolve their controls from the active mappings and omit unbound actions. Composite navigation hints remain explicit exceptions.
 
 As a layout guideline, LB/RB uses Shift+Left/Right when the related choices are arranged horizontally and Shift+Up/Down when they are arranged vertically. Options therefore keeps Shift+Up/Down for its vertical radio rail.
 
 When no input mode has been established yet, any keyboard press activates keyboard mode. The same applies when switching from gamepad to keyboard. While mouse mode is active, only an arrow-key press switches to keyboard mode; other keys remain shortcuts shared with mouse control and do not hide the mouse cursor or replace mouse mode.
 
-On both maps, `Escape` or Gamepad B opens the actions menu and `O` opens Options directly. On the location map, `V`, `M`, or Gamepad View opens the world map. Contextual map actions advertise `Space`; `Enter` remains an equivalent `Primary` binding but is not shown in the prompt overlay.
+A context menu or modal dialog opened in mouse mode is a local exception: arrow keys move its selection without changing the global input mode or hiding the cursor. Actual mouse movement takes ownership of the local selection again. Full-screen scenes still switch from mouse to keyboard mode when an arrow key is pressed.
+
+On both maps, `Escape` or Gamepad B opens the actions menu and `O` opens Options directly. On the location map, `V`, `M`, or Gamepad View opens the world map. Keyboard-mode menu shortcuts advertise the nearby `E` and `V` bindings for Inventory and World Map; mouse mode advertises their mnemonic `I` and `M` aliases. Contextual map actions advertise `Space`; `Enter` remains an equivalent `Primary` binding but is not shown in the prompt overlay.
 
 Map actions menus show global shortcuts beside the right edge of their matching entries without extending the fixed menu artwork. Each shortcut has a half-transparent backing that overlaps the menu edge by one pixel to avoid a seam. Those shortcuts remain active while the menu is open, and entries without a direct binding leave the right side blank. A hold shortcut's `Hold` prefix stays prompt gray while the control can follow the focused row color. A menu-local alternate activation such as Gamepad Y is shown inside the menu immediately left of the entry text to distinguish it from global shortcuts. The world map omits its Travel/Info-mode entry when the menu is opened with keyboard or gamepad; a mouse-opened menu retains it and shows `C` as its toggle shortcut.
 
 `SceneAction` is the scene-specific extra command: e.g. accept a trade, eat, drink or heal. On the location map it opens a separate group menu containing the available Single/All, Dismiss and Make/Leave Camp commands. The prompt is omitted when no group command is available. The keyboard/gamepad actions menu keeps Info, World Map, Inventory, Statistics, Options and Next Turn. For mouse play, right-click retains the original combined menu with interaction, group and global commands. The map prompt overlay remains hidden while either menu is open. `SceneAction` is unused on the world map and during game setup.
 
-On map scenes, tap `Tab` or `D-pad down` has no effect.
+On map scenes, tap `T` or `D-pad down` has no effect.
 The logic for holding is to prevent a single tap to initiate a turn.
 Travel on the world map - which also initiates turns - needs `Move*` then `Primary`, hence no extra holding required.
 
@@ -120,7 +122,7 @@ Outside map scenes, primary and secondary directions behave identically. They re
 
 ## Context-sensitive shortcuts
 
-| Context | Q / D-pad left | E / D-pad right | Shift+Left / Left shoulder | Shift+Right / Right shoulder |
+| Context | H / D-pad left | R / D-pad right | Shift+Left / Left shoulder | Shift+Right / Right shoulder |
 | --- | --- | --- | --- | --- |
 | World map | `Statistics` | `LocationInfo` | — | — |
 | Location map | `Statistics` | `LocationInfo` | Previous character | Next character |

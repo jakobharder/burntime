@@ -30,18 +30,15 @@ pan_right         = d
 accept             = space enter
 back               = escape
 secondary          = f
-action             = x
+action             = q
 options            = o
-inventory          = r i
+inventory          = e i
 world_map          = v m
-statistics         = q
-info               = e
-next_turn          = tab t
+statistics         = h
+info               = r
+next_turn          = t
 toggle_interaction = c
 show_entrances     = alt
-toggle_difficulty  = 1
-toggle_game_mode   = 2
-toggle_ai_players  = 3
 
 [gamepad]
 accept         = a

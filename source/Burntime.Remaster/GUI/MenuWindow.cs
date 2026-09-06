@@ -89,6 +89,7 @@ namespace Burntime.Remaster.GUI
 
         public void Show(Vector2 Position, Nullable<Rect> Boundings, bool openedByMouse = false)
         {
+            _openedByMouse = openedByMouse;
             this.Position = Position;
             Size = new Vector2(MENU_WIDTH, 10 + MIDDLE_HEIGHT * _menuEntries.Count);
             this.Position -= new Vector2(MENU_CONTENT_WIDTH, Size.y) / 2;
@@ -108,6 +109,9 @@ namespace Burntime.Remaster.GUI
         Vector2 _lastMousePosition;
         bool _mouseSelectionEnabled;
         bool _mouseHasLeft;
+        bool _openedByMouse;
+
+        public override bool PreserveMouseModeForDirectionalInput => _openedByMouse;
 
         public InputAction AlternatePrimaryAction { get; set; }
         public float? ExternalPromptLayer { get; set; }
@@ -169,17 +173,24 @@ namespace Burntime.Remaster.GUI
                 {
                     const int controlGap = 2;
                     int controlWidth = renderer.Measure(alternatePrimaryControl);
+                    int combinedWidth = controlWidth + controlGap + textWidth;
+                    int combinedX = (MENU_CONTENT_WIDTH - combinedWidth) / 2;
                     renderer.Draw(target,
-                        new Vector2(textx - controlGap - controlWidth, texty),
+                        new Vector2(combinedX, texty),
                         alternatePrimaryControl);
+                    textx = combinedX + controlWidth + controlGap;
                 }
 
                 InputShortcut shortcut = _menuEntries[i].Shortcut;
                 if (showShortcuts && shortcut.Action != InputAction.None)
                 {
+                    Key? preferredKeyboardControl = app.LastInputMode == InputMode.Mouse
+                        ? shortcut.PreferredMouseKeyboardControl ??
+                            shortcut.PreferredKeyboardControl
+                        : shortcut.PreferredKeyboardControl;
                     InputControlLabel shortcutControl = InputControlDisplay.Resolve(app,
                         shortcutInputMode, shortcut.Action,
-                        shortcut.PreferredKeyboardControl,
+                        preferredKeyboardControl,
                         shortcut.PreferredGamepadControl,
                         shortcut.KeyboardOverride, shortcut.GamepadOverride);
                     if (!shortcutControl.IsEmpty)
