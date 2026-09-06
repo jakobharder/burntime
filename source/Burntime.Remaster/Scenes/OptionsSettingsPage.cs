@@ -12,6 +12,7 @@ internal class OptionsSettingsPage : Container
     readonly OptionFonts _fonts;
 
     readonly Button _musicToggle;
+    readonly Button _mapMusicToggle;
     readonly Button _newgfxToggle;
     readonly Button _fullscreenToggle;
     readonly Button _controllerToggle;
@@ -32,6 +33,16 @@ internal class OptionsSettingsPage : Container
             HoverFont = _fonts.Orange,
             DisabledFont = _fonts.Disabled,
             Position = new Vector2(38, 78),
+            IsTextOnly = true,
+            IsEnabled = !BurntimeClassic.Instance.DisableMusic
+        };
+        Windows += _mapMusicToggle = new Button(app,
+            () => BurntimeClassic.Instance.CycleMapMusicMode())
+        {
+            Font = _fonts.Green,
+            HoverFont = _fonts.Orange,
+            DisabledFont = _fonts.Disabled,
+            Position = new Vector2(38, 88),
             IsTextOnly = true,
             IsEnabled = !BurntimeClassic.Instance.DisableMusic
         };
@@ -57,7 +68,7 @@ internal class OptionsSettingsPage : Container
             Font = _fonts.Green,
             HoverFont = _fonts.Orange,
             DisabledFont = _fonts.Disabled,
-            Position = new Vector2(38, 108),
+            Position = new Vector2(38, 118),
             IsTextOnly = true
         };
         Windows += _controllerToggle = new Button(app,
@@ -66,7 +77,7 @@ internal class OptionsSettingsPage : Container
             Font = _fonts.Green,
             HoverFont = _fonts.Orange,
             DisabledFont = _fonts.Disabled,
-            Position = new Vector2(38, 88),
+            Position = new Vector2(38, 98),
             IsTextOnly = true
         };
         Windows += _promptsToggle = new Button(app,
@@ -75,7 +86,7 @@ internal class OptionsSettingsPage : Container
             Font = _fonts.Green,
             HoverFont = _fonts.Orange,
             DisabledFont = _fonts.Disabled,
-            Position = new Vector2(38, 98),
+            Position = new Vector2(38, 108),
             IsTextOnly = true
         };
         if (!app.Engine.SupportsFullscreenToggle)
@@ -93,7 +104,7 @@ internal class OptionsSettingsPage : Container
 
         _buttons = new[]
         {
-            _newgfxToggle, _fullscreenToggle, _musicToggle,
+            _newgfxToggle, _fullscreenToggle, _musicToggle, _mapMusicToggle,
             _controllerToggle, _promptsToggle, _languageToggle
         };
     }
@@ -175,6 +186,12 @@ internal class OptionsSettingsPage : Container
             BurntimeClassic.MusicModes.Remaster => "@newburn?32",
             _ => "@burn?424",
         };
+        _mapMusicToggle.Text = BurntimeClassic.Instance.MapMusicMode switch
+        {
+            MapMusicMode.Keep => "@newburn?59",
+            MapMusicMode.List => "@newburn?60",
+            _ => "@newburn?58"
+        };
         _fullscreenToggle.Text = app.Engine.IsFullscreen ? "@newburn?19" : "@newburn?20";
         _controllerToggle.Text = app.Engine.ControllerGlyphMode switch
         {
@@ -206,6 +223,15 @@ internal class OptionsSettingsPage : Container
         else if (_musicToggle.IsHover || _musicToggle.IsKeyboardSelected)
         {
             _hintText.Text = "@newburn?25";
+        }
+        else if (_mapMusicToggle.IsHover || _mapMusicToggle.IsKeyboardSelected)
+        {
+            _hintText.Text = BurntimeClassic.Instance.MapMusicMode switch
+            {
+                MapMusicMode.Keep => "@newburn?62",
+                MapMusicMode.List => "@newburn?63",
+                _ => "@newburn?61"
+            };
         }
         else
         {

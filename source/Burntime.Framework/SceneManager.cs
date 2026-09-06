@@ -54,7 +54,13 @@ namespace Burntime.Framework
 
         public void SetScene(String Scene, bool DoNotQueue, object parameter)
         {
+            bool sourceIsTransitionBridge = activeScene is ISceneTransitionBridge;
+            bool targetIsTransitionBridge = typeof(ISceneTransitionBridge)
+                .IsAssignableFrom(sceneTypes[Scene]);
+            var musicTransition = ConfigureMusicTransition(sceneTypes[Scene]);
             app.Engine.BlendOverlay.FadeOut(wait: true);
+            if (musicTransition.rememberPlaylist)
+                app.Engine.Music.RememberPlaylistSong();
             if (activeScene != null)
             {
                 if (!DoNotQueue)
@@ -75,7 +81,18 @@ namespace Burntime.Framework
             }
 
             activeScene = scenes[Scene];
+            if (musicTransition.targetIsMap)
+                activeScene.KeepMusic = musicTransition.keepMusic;
             activeScene.ActivateScene(parameter);
+            if (musicTransition.playPlaylist)
+                app.Engine.Music.PlayPlaylist();
+            else
+                app.Engine.Music.SetPlaylistContinuation(
+                    musicTransition.continuePlaylist);
+            if (targetIsTransitionBridge)
+                app.Engine.MusicSilenced = true;
+            else if (sourceIsTransitionBridge)
+                app.Engine.MusicSilenced = false;
             app.Engine.CenterMouse();
             app.Engine.IsLoading = true;
             app.Engine.BlendOverlay.FadeIn();
@@ -85,14 +102,88 @@ namespace Burntime.Framework
         {
             if (sceneQueue.Count > 0)
             {
+                Scene previousScene = scenes[sceneQueue[sceneQueue.Count - 1]];
+                bool sourceIsTransitionBridge = activeScene is ISceneTransitionBridge;
+                bool targetIsTransitionBridge = previousScene is ISceneTransitionBridge;
+                var musicTransition = ConfigureMusicTransition(previousScene.GetType());
                 app.Engine.BlendOverlay.FadeOut(wait: true);
+                if (musicTransition.rememberPlaylist)
+                    app.Engine.Music.RememberPlaylistSong();
                 activeScene.InactivateScene();
-                activeScene = scenes[sceneQueue[sceneQueue.Count - 1]];
+                activeScene = previousScene;
                 app.Engine.CenterMouse();
+                if (musicTransition.targetIsMap)
+                    activeScene.KeepMusic = musicTransition.keepMusic;
                 activeScene.ActivateScene();
+                if (musicTransition.playPlaylist)
+                    app.Engine.Music.PlayPlaylist();
+                else
+                    app.Engine.Music.SetPlaylistContinuation(
+                        musicTransition.continuePlaylist);
+                if (targetIsTransitionBridge)
+                    app.Engine.MusicSilenced = true;
+                else if (sourceIsTransitionBridge)
+                    app.Engine.MusicSilenced = false;
                 sceneQueue.RemoveAt(sceneQueue.Count - 1);
                 app.Engine.BlendOverlay.FadeIn();
             }
+        }
+
+        (bool targetIsMap, bool keepMusic, bool playPlaylist,
+            bool rememberPlaylist, bool continuePlaylist)
+            ConfigureMusicTransition(Type nextSceneType)
+        {
+            bool sourceIsMap = activeScene is IMapMusicContinuationScene;
+            bool targetIsMap = typeof(IMapMusicContinuationScene)
+                .IsAssignableFrom(nextSceneType);
+            bool sourceIsMapNavigation = activeScene is IMapNavigationScene;
+            bool targetIsMapNavigation = typeof(IMapNavigationScene)
+                .IsAssignableFrom(nextSceneType);
+            bool keepMusic = false;
+            bool playPlaylist = false;
+            bool rememberPlaylist = false;
+            bool continuePlaylist = targetIsMap &&
+                app.Engine.MapMusicMode != MapMusicMode.None;
+
+            if (!targetIsMap)
+                app.Engine.Music.SetPlaylistContinuation(false);
+
+            if (app.Engine.MapMusicMode != MapMusicMode.List)
+                app.Engine.Music.DiscardRememberedPlaylistSong();
+
+            if (app.Engine.MapMusicMode == MapMusicMode.List &&
+                sourceIsMap && !targetIsMap)
+            {
+                rememberPlaylist = true;
+            }
+
+            if (targetIsMap)
+            {
+                if (app.Engine.MapMusicMode == MapMusicMode.Keep)
+                {
+                    keepMusic = true;
+                }
+                else if (app.Engine.MapMusicMode == MapMusicMode.List)
+                {
+                    // Direct navigation between the world and location maps must
+                    // preserve both an active track and a track still being queued.
+                    keepMusic = sourceIsMapNavigation && targetIsMapNavigation ||
+                        sourceIsMap && app.Engine.Music.IsPlayingFromPlaylist;
+                    playPlaylist = !keepMusic;
+                }
+            }
+
+            bool continuingAfterScene =
+                app.Engine.MapMusicMode == MapMusicMode.Keep &&
+                targetIsMap && !sourceIsMap && keepMusic;
+            bool navigatingBetweenMaps =
+                app.Engine.MapMusicMode != MapMusicMode.None &&
+                sourceIsMapNavigation && targetIsMapNavigation;
+            app.Engine.MusicBlend =
+                !continuingAfterScene && !navigatingBetweenMaps;
+
+            return (targetIsMap, keepMusic, playPlaylist, rememberPlaylist,
+                continuePlaylist);
         }
 
         public void BlockBlendIn()

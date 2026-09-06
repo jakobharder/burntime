@@ -29,6 +29,7 @@ namespace Burntime.Remaster
         bool mouseHasLeft;
         bool openedInMouseMode;
         bool directionalFocusActive;
+        bool resumePlaylistMusic;
 
         public override bool PreserveMouseModeForDirectionalInput => openedInMouseMode;
 
@@ -73,7 +74,14 @@ namespace Burntime.Remaster
             base.OnShow();
 
             if (PlayMusic)
+            {
+                resumePlaylistMusic =
+                    BurntimeClassic.Instance.MapMusicMode == MapMusicMode.List &&
+                    BurntimeClassic.Instance.Engine.Music.IsPlayingFromPlaylist;
+                if (resumePlaylistMusic)
+                    BurntimeClassic.Instance.Engine.Music.RememberPlaylistSong();
                 BurntimeClassic.Instance.Engine.Music.Play("talking");
+            }
         }
 
         public override void OnHide()
@@ -82,7 +90,14 @@ namespace Burntime.Remaster
             base.OnHide();
 
             if (PlayMusic)
-                BurntimeClassic.Instance.Engine.Music.Stop();
+            {
+                if (BurntimeClassic.Instance.MapMusicMode == MapMusicMode.List &&
+                    resumePlaylistMusic)
+                    BurntimeClassic.Instance.Engine.Music.PlayPlaylist();
+                else if (BurntimeClassic.Instance.MapMusicMode == MapMusicMode.None)
+                    BurntimeClassic.Instance.Engine.Music.Stop();
+                resumePlaylistMusic = false;
+            }
         }
 
         public void SetCharacter(Character character, Conversation conversation, bool showFace = false)

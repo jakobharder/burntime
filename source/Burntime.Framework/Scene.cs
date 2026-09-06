@@ -2,6 +2,16 @@
 
 namespace Burntime.Framework;
 
+public interface IMapMusicContinuationScene { }
+
+// A directly navigable map screen. Unlike WaitScene, transitions between these
+// scenes should not fade music when map music is enabled.
+public interface IMapNavigationScene : IMapMusicContinuationScene { }
+
+// A transient scene that bridges one visible scene to another while the
+// existing fade remains fully out.
+public interface ISceneTransitionBridge { }
+
 public abstract class Scene : Container
 {
     public virtual bool UseCardinalGamepadMovement => false;

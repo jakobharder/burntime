@@ -1,0 +1,11 @@
+' DOS/remaster equivalents of the scene music used for map playback.
+songs=start
+songs=texaco
+songs=trader
+songs=room
+songs=room_water
+songs=diner
+songs=pub
+songs=doctor
+songs=score
+songs=info

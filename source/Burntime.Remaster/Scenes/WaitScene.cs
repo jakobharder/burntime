@@ -10,7 +10,7 @@ using Burntime.Framework.Network;
 
 namespace Burntime.Remaster.Scenes
 {
-    class WaitScene : Scene
+    class WaitScene : Scene, IMapMusicContinuationScene, ISceneTransitionBridge
     {
         GuiFont font;
         float timer = 0;

@@ -276,7 +276,8 @@ namespace Burntime.Remaster.Scenes
                     1 or 2 => "room",
                     3 => "cave",
                     4 or 5 => "room_water",
-                    6 or 8 => "open_water",
+                    6 => "well",
+                    8 => "open_water",
                     7 => "cave_water",
                     _ => classic.InventoryRoom.IsWaterSource ? "open_water" : "room"
                 };

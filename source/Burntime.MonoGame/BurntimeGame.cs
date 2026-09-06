@@ -79,6 +79,9 @@ namespace Burntime.MonoGame
             }
         }
         public bool MusicBlend { get; set; } = false;
+        public bool MusicSilenced { get; set; } = false;
+        public MapMusicMode MapMusicMode { get; set; } = MapMusicMode.None;
+        public float MusicVolume { get; set; } = 1;
 
         internal int loadingStack = 0;
         public int LoadingStack

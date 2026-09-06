@@ -2,6 +2,13 @@
 using Burntime.Platform.Utils;
 namespace Burntime.Platform;
 
+public enum MapMusicMode
+{
+    None = 0,
+    Keep = 1,
+    List = 2
+}
+
 public interface ILoadingCounter
 {
     void IncreaseLoadingCount();
@@ -23,6 +30,9 @@ public interface IEngine
     string AutomaticLanguage { get; }
 
     bool MusicBlend { get; set; }
+    bool MusicSilenced { get; set; }
+    MapMusicMode MapMusicMode { get; set; }
+    float MusicVolume { get; set; }
     bool IsLoading { get; set; }
     bool SupportsFullscreenToggle { get; }
     bool IsFullscreen { get; set; }

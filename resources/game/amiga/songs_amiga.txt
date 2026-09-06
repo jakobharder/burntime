@@ -6,6 +6,7 @@ room_water=amiga_bunker1.ogg
 room2=amiga_bunker4.ogg
 cave=amiga_room.ogg
 cave_water=amiga_room.ogg
+well=amiga_bunker2.ogg
 open_water=amiga_water.ogg
 building=amiga_bunker2.ogg    ' scene did not exist on Amiga
 ruin=amiga_namen.ogg       ' scene did not exist on Amiga

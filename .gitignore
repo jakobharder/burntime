@@ -11,3 +11,4 @@ bindebug
 __pycache__
 .cache
 /packaging/steam/local.conf
+reverse-engineering

@@ -1,0 +1,15 @@
+' Music selected by these AGA scenes continues on the location and world maps.
+songs=start
+songs=texaco
+songs=trader
+songs=room
+songs=cave
+songs=well
+songs=open_water
+songs=pub
+songs=doctor
+songs=score
+songs=radio
+songs=info
+songs=info_irradiated
+songs=info_toxic

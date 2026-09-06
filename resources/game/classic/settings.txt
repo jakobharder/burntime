@@ -2,6 +2,7 @@
 resolution    = 320x200
 windowmode    = off
 music         = on
+music_volume  = 80 ' percent
 newgfx        = on
 highres_font  = on
 language      = de

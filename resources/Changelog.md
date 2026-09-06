@@ -11,10 +11,11 @@ Behavior:
 - Make attacked people flee a bit
 - Apply previous dog/mutant changes to existing saves
 
-Infos:
+New:
 - Show food/trap/water infos on entrances and locations
 - Show travel days on world map
 - Alt/LT shortcut to show all entrances
+- Music on maps; change mode in options
 
 Input:
 - Polished input, prompts

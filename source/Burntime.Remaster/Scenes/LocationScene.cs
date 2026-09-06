@@ -15,7 +15,7 @@ using Burntime.Remaster.Maps;
 
 namespace Burntime.Remaster
 {
-    public class LocationScene : Scene, IMapEntranceHandler, IInteractionHandler, ILogicNotifycationHandler
+    public class LocationScene : Scene, IMapEntranceHandler, IInteractionHandler, ILogicNotifycationHandler, IMapNavigationScene
     {
         protected override bool UseGamepadDPadNavigation => false;
 
@@ -771,7 +771,7 @@ namespace Burntime.Remaster
                 BurntimeClassic.Instance.PreviousPlayerId != game.CurrentPlayerIndex)
             {
                 // play player changed sound
-                BurntimeClassic.Instance.Engine.Music.PlayOnce("sounds/change.ogg");
+                BurntimeClassic.Instance.Engine.Music.PlaySound("sounds/change.ogg");
             }
             BurntimeClassic.Instance.PreviousPlayerId = game.CurrentPlayerIndex;
 
@@ -1079,7 +1079,7 @@ namespace Burntime.Remaster
                 SelectBossAfterKeyboardGarrison();
 
                 view.Location.Player = view.Player;
-                BurntimeClassic.Instance.Engine.Music.PlayOnce("sounds/camp.ogg");
+                BurntimeClassic.Instance.Engine.Music.PlaySound("sounds/camp.ogg");
             }
         }
 
@@ -1310,16 +1310,16 @@ namespace Burntime.Remaster
                 if ((eventArgs.Attacker.IsDead && eventArgs.Attacker.Class != CharClass.Dog)
                     || (eventArgs.Defender.IsDead && eventArgs.Defender.Class != CharClass.Dog))
                 {
-                    app.Engine.Music.PlayOnce("sounds/hit-die.ogg");
+                    app.Engine.Music.PlaySound("sounds/hit-die.ogg");
                 }
                 else if ((!eventArgs.Attacker.IsDead && eventArgs.Attacker.Class == CharClass.Dog)
                     || (!eventArgs.Defender.IsDead && eventArgs.Defender.Class == CharClass.Dog))
                 {
-                    app.Engine.Music.PlayOnce("sounds/hit-barf.ogg");
+                    app.Engine.Music.PlaySound("sounds/hit-barf.ogg");
                 }
                 else
                 {
-                    app.Engine.Music.PlayOnce("sounds/hit.ogg");
+                    app.Engine.Music.PlaySound("sounds/hit.ogg");
                 }
             }
         }

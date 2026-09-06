@@ -10,7 +10,7 @@ using Burntime.Remaster.Logic;
 
 namespace Burntime.Remaster
 {
-    public class MapScene : Scene, IMapEntranceHandler
+    public class MapScene : Scene, IMapEntranceHandler, IMapNavigationScene
     {
         public override bool UseDiagonalGamepadNavigation => true;
         protected override bool UseGamepadDPadNavigation => false;
@@ -507,7 +507,7 @@ namespace Burntime.Remaster
                 BurntimeClassic.Instance.PreviousPlayerId != game.CurrentPlayerIndex)
             {
                 // play player changed sound
-                BurntimeClassic.Instance.Engine.Music.PlayOnce("sounds/change.ogg");
+                BurntimeClassic.Instance.Engine.Music.PlaySound("sounds/change.ogg");
             }
             BurntimeClassic.Instance.PreviousPlayerId = game.CurrentPlayerIndex;
 

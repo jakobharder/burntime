@@ -38,7 +38,7 @@ namespace Burntime.Remaster
         static readonly HashSet<string> PersistedRootUserSettings = new(
             StringComparer.OrdinalIgnoreCase)
         {
-            "music", "fullscreen", "output_filtering", "newgfx", "language",
+            "music", "map_music", "fullscreen", "output_filtering", "newgfx", "language",
             "controller_glyphs", "prompts"
         };
 
@@ -131,6 +131,12 @@ namespace Burntime.Remaster
 
             Settings = new ConfigFile();
             Settings.Open("settings.txt");
+            int musicVolumePercent = int.TryParse(
+                Settings["system"].GetString("music_volume"), out int configuredMusicVolume)
+                ? System.Math.Clamp(configuredMusicVolume, 0, 100)
+                : 100;
+            Engine.MusicVolume = musicVolumePercent / 100.0f;
+            Engine.Music.Volume = Engine.MusicVolume;
 
             // set user folder to game specific location
             FileSystem.SetUserFolder("Burntime");
@@ -191,6 +197,7 @@ namespace Burntime.Remaster
             HasAmigaMusic = FileSystem.ExistsFile("songs_amiga.txt");
 
             SetMusicMode(UserSettings[""].GetString("music"));
+            SetMapMusicMode(UserSettings[""].GetString("map_music"));
 
             // add newgfx package
             if (IsNewGfx)
@@ -241,6 +248,7 @@ namespace Burntime.Remaster
             UserSettings.GetSection("", true);
 
             UserSettings[""].Set("music", GetMusicMode());
+            UserSettings[""].Set("map_music", (int)MapMusicMode);
             if (Engine.SupportsFullscreenToggle)
                 UserSettings[""].Set("fullscreen", Engine.IsFullscreen);
             UserSettings[""].Set("output_filtering", FormatOutputFiltering(Engine.OutputFiltering));
@@ -389,6 +397,7 @@ namespace Burntime.Remaster
         public bool HasAmigaMusic { get; private set; }
         public bool HasDosMusic { get; private set; }
         private string? _lastPlayingSong;
+        private string _mapPlaylistFile = "playlist_dos.txt";
 
         public enum MusicModes
         {
@@ -399,6 +408,7 @@ namespace Burntime.Remaster
         }
 
         public MusicModes MusicMode { get; private set; } = MusicModes.Remaster;
+        public Burntime.Platform.MapMusicMode MapMusicMode => Engine.MapMusicMode;
 
         public void SetMusicMode(string mode)
         {
@@ -416,10 +426,10 @@ namespace Burntime.Remaster
             else
                 MusicMode = MusicModes.Off;
 
-            //if (MusicMode != MusicModes.Off)
-            // MusicModes.Off loads songs_dos to ensure jukebox working even when started with off
+            // MusicModes.Off loads the DOS profile to ensure the jukebox works
+            // even when the game starts with music disabled.
             if (!DisableMusic)
-                Engine.Music.LoadSonglist(MusicMode == MusicModes.Amiga ? "songs_amiga.txt" : "songs_dos.txt");
+                LoadMusicProfile();
         }
 
         public string GetMusicMode() => MusicMode switch
@@ -428,6 +438,25 @@ namespace Burntime.Remaster
             MusicModes.Amiga => "amiga",
             _ => "remaster"
         };
+
+        void SetMapMusicMode(string mode)
+        {
+            if (int.TryParse(mode, out int value) &&
+                Enum.IsDefined(typeof(Burntime.Platform.MapMusicMode), value))
+            {
+                Engine.MapMusicMode = (Burntime.Platform.MapMusicMode)value;
+            }
+            else
+            {
+                Engine.MapMusicMode = Burntime.Platform.MapMusicMode.None;
+            }
+        }
+
+        public void CycleMapMusicMode()
+        {
+            Engine.MapMusicMode = (Burntime.Platform.MapMusicMode)
+                (((int)Engine.MapMusicMode + 1) % 3);
+        }
 
         /// <summary>
         /// Toggle between Amiga and remaster.
@@ -440,14 +469,14 @@ namespace Burntime.Remaster
             {
                 MusicMode = MusicModes.Remaster;
                 Engine.Music.Enabled = true;
-                Engine.Music.LoadSonglist("songs_dos.txt");
+                LoadMusicProfile();
             }
             else if ((MusicMode == MusicModes.Dos || MusicMode == MusicModes.Remaster)
                 && HasAmigaMusic)
             {
                 MusicMode = MusicModes.Amiga;
                 Engine.Music.Enabled = true;
-                Engine.Music.LoadSonglist("songs_amiga.txt");
+                LoadMusicProfile();
             }
         }
 
@@ -462,7 +491,7 @@ namespace Burntime.Remaster
             {
                 MusicMode = MusicModes.Remaster;
                 Engine.Music.Enabled = true;
-                Engine.Music.LoadSonglist("songs_dos.txt");
+                LoadMusicProfile();
                 Engine.Music.Play(ResumeSongOrRadio());
             }
             else if ((MusicMode == MusicModes.Off && HasAmigaMusic)
@@ -470,7 +499,7 @@ namespace Burntime.Remaster
             {
                 MusicMode = MusicModes.Amiga;
                 Engine.Music.Enabled = true;
-                Engine.Music.LoadSonglist("songs_amiga.txt");
+                LoadMusicProfile();
                 if (Engine.Music.Playing is null)
                     Engine.Music.Play(ResumeSongOrRadio());
             }
@@ -488,6 +517,30 @@ namespace Burntime.Remaster
         string ResumeSongOrRadio() => _lastPlayingSong is not null && Engine.Music.CanPlay(_lastPlayingSong)
             ? _lastPlayingSong
             : "radio";
+
+        void LoadMusicProfile()
+        {
+            bool amiga = MusicMode == MusicModes.Amiga;
+            string profileFile = amiga ? "music_amiga.txt" : "music_dos.txt";
+            string songlistFile = amiga ? "songs_amiga.txt" : "songs_dos.txt";
+            _mapPlaylistFile = amiga ? "playlist_amiga.txt" : "playlist_dos.txt";
+
+            var profile = new ConfigFile();
+            if (profile.Open(profileFile))
+            {
+                ConfigSection settings = profile[""];
+                string configuredSonglist = settings.GetString("songlist");
+                string configuredPlaylist = settings.GetString("playlist");
+                if (!string.IsNullOrWhiteSpace(configuredSonglist))
+                    songlistFile = configuredSonglist;
+                if (!string.IsNullOrWhiteSpace(configuredPlaylist))
+                    _mapPlaylistFile = configuredPlaylist;
+            }
+
+            Engine.Music.LoadSonglist(songlistFile);
+            Engine.Music.LoadPlaylist(_mapPlaylistFile);
+        }
+
         #endregion
 
         public override string Language
