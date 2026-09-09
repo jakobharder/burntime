@@ -48,12 +48,13 @@ class GameSettings
             int max = 1;
             var rates = rateConfig.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
-            if (rates.Length > 1)
+            if (rates.Length > 0)
             {
                 if (!int.TryParse(rates[0], out min))
                     min = 1;
-                if (rates.Length > 2 && !int.TryParse(rates[1], out max))
-                    max = 1;
+                max = min;
+                if (rates.Length > 1 && !int.TryParse(rates[1], out max))
+                    max = min;
             }
 
             return FromStrings(
@@ -79,7 +80,7 @@ class GameSettings
             generation.Exclude = exclude.ToArray();
 
             generation.Minimum = Math.Max(0, atLeast);
-            generation.Maximum = Math.Min(generation.Minimum, upTo);
+            generation.Maximum = Math.Max(generation.Minimum, upTo);
 
             return generation;
         }
@@ -112,9 +113,13 @@ class GameSettings
     public int StartRegionCount => config[difficulty].GetInt("start_regions");
     public int[] GetStartLocation(int region) => config[difficulty].GetInts($"start_locations_{region}");
 
+    public int OriginalStartGroupCount => config["original_start_locations"].GetInt("groups");
+    public int[] GetOriginalStartLocations(int group) =>
+        config["original_start_locations"].GetInts($"group_{group}");
+
     public ConfigSection GetRegionItem(int entry) => config.GetSection($"region_item_{entry}");
 
-    public int StartExperience => config[difficulty].GetInt("start_experience");
+    public int StartExperience => config["players"].GetInt("start_experience");
     public string[] RandomItems => config[difficulty].GetStrings("random_items");
     public int RandomItemsMin => config[difficulty].GetInt("random_items_rate_min");
     public int RandomItemsMax => config[difficulty].GetInt("random_items_rate_max");
@@ -124,6 +129,14 @@ class GameSettings
     public RespawnTimes Respawn => respawn;
     public ClassStatInfos ClassStats => stats;
 
+    public int GetBarterFactor(int level) => config[Math.Clamp(level, 0, 2).ToString()].GetInt("barter_factor");
+    public float DoctorHealingFactor => config["doctor"].GetFloat("healing_factor");
+    public int DoctorHealthCap => config["doctor"].GetInt("health_cap");
+    public int CombatTierWidth => config["combat"].GetInt("experience_tier_width");
+    public float HazardDamage(string type) => config["hazards"].GetFloat(type + "_damage_per_second");
+    public bool IsHazardImmune(string type, int face) =>
+        Array.IndexOf(config["hazards"].GetInts(type + "_immune_faces"), face) >= 0;
+
     public int StartHealth => 100;
     public int StartFood => 9;
     public int StartWater => 5;
@@ -131,7 +144,7 @@ class GameSettings
     public GameSettings(string file)
     {
         config = new ConfigFile();
-        config.Open(file);
+        config.Open(GameDefinitions.ResolveSettingsPath(file));
     }
 
     public void SetDifficulty(int difficulty)

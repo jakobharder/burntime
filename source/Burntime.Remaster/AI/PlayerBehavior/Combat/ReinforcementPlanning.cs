@@ -37,7 +37,10 @@ internal static partial class ReinforcementPlanning
             {
                 candidates.Add(new AiDecision(
                     AiAction.StationFollower,
-                    priority,
+                    // Complete a sustainable local delivery before optional
+                    // trade errands (up to 1850). Emergency recovery is handled
+                    // before normal planning; execution rechecks supply safety.
+                    System.Math.Max(priority, 2000),
                     context.Current,
                     Reason: demobilizingSurplus
                         ? "demobilize a surplus attack follower into a strategically needed garrison"
@@ -52,7 +55,8 @@ internal static partial class ReinforcementPlanning
                         ? $"demobilize a surplus attack follower into the needed garrison at {camp.Title}"
                         : recruitment.IsAttackStaging
                         ? $"deliver a recruited guard to frontier camp {camp.Title}"
-                        : $"reinforce critical camp toward {recruitment.ReinforcementTarget} guards");
+                        : $"reinforce critical camp toward {recruitment.ReinforcementTarget} guards",
+                    commitJourney: true);
             }
         }
         else if (demobilizingSurplus)
@@ -204,7 +208,7 @@ internal static partial class ReinforcementPlanning
 
         int toolCount = camp.Rooms.Sum(room => room.Items.Count(item =>
                 item.Type.Production == camp.Production)) +
-            camp.CampNPC.Where(npc => npc.Player == state.Player && !npc.IsDead)
+            camp.CampNPC.Where(npc => camp.Production.AllowInventory && npc.Player == state.Player && !npc.IsDead)
                 .Sum(npc => npc.Items.Count(item => item.Type.Production == camp.Production));
         Production.Rate projected = camp.Production.GetRate(toolCount, projectedGuards);
         return !projected.IsCampStarving &&
@@ -223,7 +227,7 @@ internal static partial class ReinforcementPlanning
 
         int toolCount = camp.Rooms.Sum(room => room.Items.Count(item =>
                 item.Type.Production == camp.Production)) +
-            camp.CampNPC.Where(npc => npc.Player == state.Player && !npc.IsDead)
+            camp.CampNPC.Where(npc => camp.Production.AllowInventory && npc.Player == state.Player && !npc.IsDead)
                 .Sum(npc => npc.Items.Count(item => item.Type.Production == camp.Production));
         Production.Rate projected = camp.Production.GetRate(toolCount, guardTarget);
         return !projected.IsCampStarving &&

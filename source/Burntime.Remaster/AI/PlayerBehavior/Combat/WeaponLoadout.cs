@@ -18,16 +18,18 @@ internal static class WeaponLoadout
         Character character,
         IReadOnlyCollection<Character> unit,
         bool upgradeWeakWeapon,
-        string role)
+        string role,
+        int maximumPriority = int.MaxValue)
     {
         Item current = character.Items.FindBestWeapon();
         int currentDamage = current?.DamageValue ?? 0;
-        int desiredMinimum = upgradeWeakWeapon && currentDamage < 33
+        int desiredMinimum = upgradeWeakWeapon
             ? currentDamage
             : currentDamage > 0 ? int.MaxValue : 0;
         bool reserveProductionTool = ExpansionPlanning.ShouldReserveProductionTool(state);
         bool allowProductionTool = currentDamage == 0 || !reserveProductionTool;
-        bool Allowed(ItemType type) => WeaponAllowed(state, unit, character, type);
+        bool Allowed(ItemType type) => type.WeaponPriority <= maximumPriority &&
+            WeaponAllowed(state, unit, character, type);
         if (desiredMinimum == int.MaxValue ||
             !state.Reserve.HasBetterWeapon(desiredMinimum, allowProductionTool, Allowed))
         {
@@ -54,7 +56,7 @@ internal static class WeaponLoadout
                 .FirstOrDefault();
             if (replaceable == null)
             {
-                state.Reserve.Insert(weapon);
+                CampManagement.StoreInReserveOrAtLocation(state, weapon, character.Location);
                 return;
             }
             character.Items.Remove(replaceable);
@@ -64,7 +66,7 @@ internal static class WeaponLoadout
         }
         if (!character.Items.Add(weapon))
         {
-            state.Reserve.Insert(weapon);
+            CampManagement.StoreInReserveOrAtLocation(state, weapon, character.Location);
             return;
         }
 
@@ -74,52 +76,45 @@ internal static class WeaponLoadout
             $"equipped {role} {character.Name}{location} with {weapon.ID}");
     }
 
-    internal static void NormalizeWeaponLimits(
-        ClassicAiState state,
-        IReadOnlyCollection<Character> unit)
+    // Moving a weapon from room storage onto a guard keeps it in the same
+    // camp's production count; no tool or weapon is created or removed.
+    internal static Item? EquipStoredCampWeapon(Character guard, System.Func<ItemType, bool> allowed)
     {
-        const int firearmLimit = 0;
-        int pitchforkLimit = AiPolicy.ForDifficulty(state.Difficulty).PitchforkLimit;
-        int firearms = 0;
-        int pitchforks = 0;
+        Item? current = guard.Items.FindBestWeapon();
+        if (guard.Items.IsFull && current == null)
+            return null;
+        var stored = guard.Location.Rooms
+            .SelectMany(room => room.Items.Select(item => new { Room = room, Item = item }))
+            .Where(entry => IsMeleeWeapon(entry.Item) && allowed(entry.Item.Type) &&
+                entry.Item.Type.WeaponPriority > (current?.Type.WeaponPriority ?? 0) &&
+                (entry.Item.Type.Production == null ||
+                    entry.Item.Type.Production != guard.Location.Production ||
+                    current?.Type.Production == entry.Item.Type.Production ||
+                    guard.Location.GetProductionToolCount(entry.Item.Type.Production) >
+                        entry.Item.Type.Production.MaxToolCount))
+            .OrderByDescending(entry => entry.Item.Type.WeaponPriority)
+            .FirstOrDefault();
+        if (stored == null)
+            return null;
 
-        foreach (Character character in unit.OrderByDescending(member => member.Experience))
+        stored.Room.Items.Remove(stored.Item);
+        if (current != null)
         {
-            foreach (Item weapon in character.Items.Where(item =>
-                AiItemPool.IsFirearm(item.Type) || item.ID == "item_pitchfork").ToArray())
-            {
-                bool allowed = AiItemPool.IsFirearm(weapon.Type)
-                    ? firearms++ < firearmLimit
-                    : pitchforks++ < pitchforkLimit;
-                if (allowed)
-                    continue;
-
-                if (character.Weapon == weapon)
-                    character.Weapon = null;
-                character.Items.Remove(weapon);
-                CampManagement.StoreInReserveOrAtLocation(state, weapon, character.Location);
-                AiTelemetry.Report(state.Player,
-                    $"reserved restricted weapon {weapon.ID} carried by {character.Name}");
-            }
-            character.Weapon = character.Items.FindBestWeapon(character.Weapon);
+            guard.Items.Remove(current);
+            stored.Room.Items.Add(current);
         }
+        guard.Items.Add(stored.Item);
+        guard.Weapon = stored.Item;
+        return stored.Item;
     }
 
-    internal static bool WeaponAllowed(
-        ClassicAiState state,
-        IReadOnlyCollection<Character> unit,
-        Character recipient,
-        ItemType type)
+    internal static void RefreshWeapons(IReadOnlyCollection<Character> unit)
     {
-        if (AiItemPool.IsFirearm(type))
-            return false;
-        if (type.ID != "item_pitchfork")
-            return true;
-        int pitchforkLimit = AiPolicy.ForDifficulty(state.Difficulty).PitchforkLimit;
-        if (pitchforkLimit <= 0)
-            return false;
-        return unit.Where(character => character != recipient)
-            .SelectMany(character => character.Items)
-            .Count(item => item.ID == "item_pitchfork") < pitchforkLimit;
+        foreach (Character character in unit)
+            character.Weapon = character.Items.FindBestWeapon(character.Weapon);
     }
+
+    internal static bool WeaponAllowed(ClassicAiState state, IReadOnlyCollection<Character> unit,
+        Character recipient, ItemType type) => !AiItemPool.IsFirearm(type) ||
+        EquipmentPlanning.CanAssignFirearm(recipient, unit, type, AiPolicy.ForDifficulty(state.Difficulty));
 }

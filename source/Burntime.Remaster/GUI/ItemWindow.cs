@@ -40,12 +40,21 @@ namespace Burntime.Remaster.GUI
             text = null;
         }
 
-        string itemID;
+        string itemID = "";
+        Item? item;
+        string? displayedSprite;
+        public Item? Item
+        {
+            get => item;
+            set { item = value; itemID = value?.ID ?? ""; RefreshItem(); }
+        }
+        public string? TooltipText => item?.TooltipText ?? text;
         public string ItemID
         {
-            get { return itemID; }
+            get { return item?.ID ?? itemID; }
             set
             {
+                item = null;
                 itemID = value;
                 RefreshItem();
             }
@@ -53,15 +62,22 @@ namespace Burntime.Remaster.GUI
 
         void RefreshItem()
         {
-            if (itemID != "")
+            string? sprite = null;
+            if (!string.IsNullOrEmpty(ItemID))
             {
-                Background = BurntimeClassic.Instance.Game.ItemTypes[itemID].Sprite;
-                text = BurntimeClassic.Instance.Game.ItemTypes[itemID].Title;
+                sprite = item?.Sprite ?? BurntimeClassic.Instance.Game.ItemTypes[ItemID].Sprite;
+                text = item?.TooltipText ?? BurntimeClassic.Instance.Game.ItemTypes[ItemID].Title;
             }
-            else
+            else text = null;
+            if (sprite != displayedSprite)
             {
-                Background = null;
-                text = null;
+                // Keep null typed as GuiImage: a null string still invokes
+                // the implicit resource conversion and crashes in ResourceID.
+                if (string.IsNullOrEmpty(sprite))
+                    Background = null;
+                else
+                    Background = sprite;
+                displayedSprite = sprite;
             }
         }
 
@@ -106,6 +122,7 @@ namespace Burntime.Remaster.GUI
 
         public override void OnRender(RenderTarget Target)
         {
+            if (item != null) RefreshItem();
             base.OnRender(Target);
 
             if (ShowHoverText && GetTopMostItem() == this && text != null)

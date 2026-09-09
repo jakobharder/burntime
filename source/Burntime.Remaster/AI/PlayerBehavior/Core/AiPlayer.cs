@@ -22,11 +22,8 @@ namespace Burntime.Remaster.AI
             if (player == null || player.Type != PlayerType.Ai)
                 throw new BurntimeLogicException();
 
-            ClassicAiState ai = player.AiState as ClassicAiState;
-            if (ai == null)
+            if (!AiStateOperations.Turn(player.AiState))
                 throw new BurntimeLogicException();
-
-            ai.Turn();
         }
     }
 }

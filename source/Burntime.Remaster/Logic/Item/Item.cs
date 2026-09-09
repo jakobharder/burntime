@@ -20,6 +20,10 @@ namespace Burntime.Remaster
     [Serializable]
     public class Item : StateObject
     {
+        // One-based original record slot; zero means an older save/unassigned item.
+        [System.Runtime.Serialization.OptionalField]
+        internal int OriginalRecordSlot;
+
         public string ID
         {
             get { return Type.ID; }
@@ -27,7 +31,7 @@ namespace Burntime.Remaster
 
         public string Sprite
         {
-            get { return Type.Sprite; }
+            get { return ammo == 1 && !string.IsNullOrEmpty(Type.LastRoundSprite) ? Type.LastRoundSprite : Type.Sprite; }
         }
 
         public string Title
@@ -101,6 +105,9 @@ namespace Burntime.Remaster
 
         // remaining bullets
         protected int ammo;
+        [System.Runtime.Serialization.OptionalField]
+        int ammunitionFormat;
+        public string TooltipText => Type.AmmoValue > 0 ? $"{Title} ({ammo}/{Type.AmmoValue})" : Title;
         public int AmmoValue => ammo;
 
         /// <summary>
@@ -125,6 +132,7 @@ namespace Burntime.Remaster
 
             Type = (ItemType)parameter[0];
             ammo = Type.AmmoValue;
+            ammunitionFormat = 1;
         }
 
         public void Use()
@@ -145,6 +153,24 @@ namespace Burntime.Remaster
         public void MakeFull()
         {
             Type = Type.Full;
+        }
+
+        internal void MigrateAmmunition(Func<string, ItemType> resolve)
+        {
+            // The old Extended first stage had one stored round plus a second
+            // one-round item type. Read the saved link before refreshing links.
+            if (ammunitionFormat == 0 && ID == "item_loaded_rifle" &&
+                Type.Empty?.ID == "item_loaded_rifle_1")
+                ammo++;
+            if (ID == "item_loaded_rifle_1")
+                Type = resolve("item_loaded_rifle");
+            ammunitionFormat = 1;
+        }
+
+        internal void Reload(ItemType loadedType)
+        {
+            Type = loadedType;
+            ammo = loadedType.AmmoValue;
         }
 
         // for debug

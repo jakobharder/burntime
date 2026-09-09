@@ -208,7 +208,8 @@ namespace Burntime.Remaster.Logic
             bool hire = false;
             if (type == ConversationType.Hire)
             {
-                if (boss.Experience >= Parent.Experience * 0.66f)
+                ClassicGame game = (ClassicGame)container.Root;
+                if (game.RuleBook.MeetsRecruitmentExperience(boss, Parent))
                 {
                     for (int i = 0; hireItem == null && i < Parent.HireItems.Count; i++)
                     {

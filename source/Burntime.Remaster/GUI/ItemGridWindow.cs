@@ -144,7 +144,7 @@ namespace Burntime.Remaster.GUI
                 Target.Layer += 5;
                 Vector2 itemPosition = itemWindows[keyboardIndex].Position;
                 RenderTarget bigger = Target.GetSubBuffer(new Rect(itemPosition - new Vector2(50, 50), new Vector2(132, 132)));
-                string title = BurntimeClassic.Instance.Game.ItemTypes[itemWindows[keyboardIndex].ItemID].Title;
+                string title = itemWindows[keyboardIndex].TooltipText ?? "";
                 selectionFont.DrawText(bigger, new Vector2(66, 41), title, TextAlignment.Center, VerticalTextAlignment.Top);
                 Target.Layer -= 5;
             }
@@ -464,7 +464,7 @@ namespace Burntime.Remaster.GUI
                     if (itemWindows[i].ItemID == "")
                     {
                         gridPositions[i] = items.Count - 1;
-                        itemWindows[i].ItemID = item.ID;
+                        itemWindows[i].Item = item;
                         break;
                     }
                 }
@@ -538,7 +538,7 @@ namespace Burntime.Remaster.GUI
             {
                 if (itemWindows[i].ItemID != "" && items[gridPositions[i]] == item)
                 {
-                    itemWindows[i].ItemID = item.ID;
+                    itemWindows[i].Item = item;
                 }
             }
         }
@@ -607,7 +607,7 @@ namespace Burntime.Remaster.GUI
             {
                 if (items.Count > i)
                 {
-                    itemWindows[i].ItemID = items[i].ID;
+                    itemWindows[i].Item = items[i];
                     gridPositions[i] = i;
                 }
                 else

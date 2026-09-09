@@ -193,9 +193,12 @@ internal sealed record AiDecision(
             case AiAction.CancelAttackPlan:
                 if (Target == null || !state.HasAttackPlan)
                     return AiActionResult.StateUnchanged;
-                state.DeferAttacksForFailedCityRecruitment(Target, policy);
+                if (state.Current.IsCity)
+                    state.DeferAttacksForFailedCityRecruitment(Target, policy);
+                else
+                    state.DeferAttackPlan(Target, policy);
                 AiTelemetry.Report(player,
-                    $"abandoned attack plan for {Target.Title}: recruitment was unavailable at {state.Current.Title}; returning to economic and territorial planning");
+                    $"abandoned attack plan for {Target.Title}: {Reason}; returning to economic and territorial planning");
                 return AiActionResult.ContinuePlanning;
 
             case AiAction.ImproveCamp:

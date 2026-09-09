@@ -6,8 +6,6 @@ namespace Burntime.Remaster.AI;
 
 internal static class CombatResolver
 {
-    const int MaxRounds = 100;
-
     public static void Resolve(ClassicAiState state, bool fightToDeath = false)
     {
         Player attacker = state.Player;
@@ -19,8 +17,7 @@ internal static class CombatResolver
             return;
         }
 
-        List<Character> originalDefenders = location.CampNPC
-            .Where(character => character.Player == defenderOwner && !character.IsDead)
+        List<Character> originalDefenders = CombatStrength.Defenders(location)
             .ToList();
         List<Character> originalAttackers = attacker.Group.Where(character => !character.IsDead).ToList();
         Dictionary<Character, Item[]> carriedBeforeCombat = originalAttackers
@@ -33,51 +30,11 @@ internal static class CombatResolver
             $"attacks {defenderOwner.Name}'s camp at {location.Title}: " +
             $"{attacker.Group.Count} attackers against {originalDefenders.Count} defenders");
 
-        bool tacticalWithdrawal = false;
-        for (int round = 1; round <= MaxRounds; round++)
-        {
-            List<Character> defenders = originalDefenders.Where(character => !character.IsDead).ToList();
-            if (defenders.Count == 0)
-                break;
-
-            if (!fightToDeath && !attacker.Group.Any(character => character != attacker.Character && !character.IsDead))
-                break;
-
-            int defendersBeforeRound = defenders.Count;
-            foreach (Character fighter in attacker.Group.Where(character => !character.IsDead).ToArray())
-            {
-                Character? target = defenders.Where(character => !character.IsDead)
-                    .OrderBy(character => character.Health)
-                    .FirstOrDefault();
-                if (target == null)
-                    break;
-                DealDamage(fighter, target);
-            }
-
-            defenders = originalDefenders.Where(character => !character.IsDead).ToList();
-            foreach (Character fighter in defenders)
-            {
-                Character? target = attacker.Group
-                    .Where(character => !character.IsDead &&
-                        (fightToDeath || character != attacker.Character))
-                    .OrderBy(character => character.Health)
-                    .FirstOrDefault();
-                if (target == null)
-                    break;
-                DealDamage(fighter, target);
-            }
-
-            bool killedDefender = defenders.Count < defendersBeforeRound;
-            bool lostFollower = originalAttackers.Any(character =>
-                character != attacker.Character && character.IsDead);
-            bool followerInDanger = attacker.Group.Any(character =>
-                character != attacker.Character && !character.IsDead && character.Health <= 35);
-            if (!fightToDeath && defenders.Count > 0 && !lostFollower && (killedDefender || followerInDanger))
-            {
-                tacticalWithdrawal = true;
-                break;
-            }
-        }
+        var encounter = StrategicEncounter.Fight(state.RootGame, attacker, defenderOwner,
+            originalDefenders, fightToDeath);
+        bool tacticalWithdrawal = encounter.AttackerWithdrew;
+        if (encounter.DefendingPartyDisengaged)
+            AiTelemetry.Report(defenderOwner, $"disengaged defending party at {location.Title} to protect the boss; party stays at the location");
 
         foreach (Character casualty in originalDefenders.Where(character => character.IsDead))
             AiTelemetry.Report(attacker, $"defeated defender {casualty.Name} at {location.Title}");
@@ -90,15 +47,16 @@ internal static class CombatResolver
             .ToArray();
         state.CollectCombatLoot(ownDrops);
 
-        bool defendersDefeated = originalDefenders.All(character => character.IsDead);
-        Character[] survivingDefenders = originalDefenders.Where(character => !character.IsDead).ToArray();
+        Character[] survivingDefenders = originalDefenders.Where(character => !character.IsDead &&
+            (!encounter.DefendingPartyDisengaged || !defenderOwner.Group.Contains(character))).ToArray();
+        bool defendersDefeated = survivingDefenders.Length == 0;
         DefenseIntelligence.UpdateKnowledgeFromEncounter(state, location, survivingDefenders);
         if (defendersDefeated)
         {
             state.LastChanceAttackTarget = null;
             Character? guard = attacker.Group
                 .Where(character => character != attacker.Character && !character.IsDead)
-                .OrderBy(character => character.AttackValue + character.DefenseValue)
+                .OrderBy(character => CombatStrength.Fighter(character))
                 .FirstOrDefault();
 
             location.Player = null;
@@ -159,12 +117,4 @@ internal static class CombatResolver
         }
     }
 
-    static void DealDamage(Character attacker, Character defender)
-    {
-        int attack = attacker.PrepareStrategicAttack();
-        float defense = defender.PrepareStrategicDefense();
-        float randomFactor = 0.85f + (float)Burntime.Platform.Math.Random.NextDouble() * 0.30f;
-        int damage = (int)System.Math.Max(1, (attack - defense) * randomFactor);
-        defender.Health -= damage;
-    }
 }

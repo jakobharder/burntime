@@ -18,8 +18,10 @@ namespace Burntime.Remaster.Logic.Generation
         public int Difficulty;
         public BurntimePlayerColor ColorOne;
         public BurntimePlayerColor ColorTwo;
-        public bool DisableAI;
-        public bool ExtendedGame;
+        public RuleSetId Rules;
+        public AiProfileId AI;
+        public AiProfileId[] AiProfiles;
+        public WorldId World;
         public int[] AiDifficulties;
     }
 
@@ -57,8 +59,10 @@ namespace Burntime.Remaster.Logic.Generation
             app.Autosaves.OnNewGameCreated();
             new LogicFactory();
 
+            GameDefinition definition = GameDefinitions.Get(Info.Rules, Info.World);
+
             // load game settings
-            settings = new GameSettings(Info.ExtendedGame ? "gamesettings_extended.txt" : "gamesettings_original.txt");
+            settings = new GameSettings(definition.SettingsPath);
             settings.SetDifficulty(Info.Difficulty);
 
             // set up game server
@@ -66,6 +70,7 @@ namespace Burntime.Remaster.Logic.Generation
 
             // get root game object
             ClassicGame game = container.Root as ClassicGame;
+            game.SetProfiles(Info.Rules, Info.AI, Info.World, Info.AiProfiles);
 
             LogicFactory.SetParameter("resource", app.ResourceManager);
 
@@ -85,13 +90,13 @@ namespace Burntime.Remaster.Logic.Generation
             AddPlayer(game, Info, gamdat, settings);
 
             // set main map
-            game.World.Map = container.Create<Map>(new object[] { "maps/mat_000.burnmap" });
+            game.World.Map = container.Create<Map>(new object[] { definition.MapPath });
             LogicFactory.SetParameter("mainmap", game.World.Map);
-            game.World.Ways = container.Create<Ways>(new object[] { "ways@maps/mat_000-ways.txt" });
+            game.World.Ways = container.Create<Ways>(new object[] { definition.WaysPath });
 
             // set constructions
             game.Constructions = (Constructions)app.ResourceManager.GetData("constructions@construction.txt");
-            game.ItemTypes = container.Create<ItemTypes>(new object[] { Info.ExtendedGame ? "items@items.txt" : "items@items_original.txt" });
+            game.ItemTypes = container.Create<ItemTypes>(new object[] { definition.ItemsPath });
 
             // set productions
             LoadProductions(game, gamdat);
@@ -111,16 +116,16 @@ namespace Burntime.Remaster.Logic.Generation
             LoadNPCs(game, gamdat);
 
             // set start locations for player
-            SetStartLocations(game);
+            game.RuleBook.SetStartLocations(game, settings, gamdat);
 
             // place items
-            LoadItems(game, gamdat);
+            game.RuleBook.PopulateInitialItems(game, settings, gamdat);
+
+            // Player-owned starting state belongs to the controlling rules or AI profile.
+            InitializeStartingPlayers(game, gamdat);
 
             // set trader
-            LoadTrader(game, gamdat);
-
-            // set start inventory for player
-            SetStartInventory(game);
+            LoadTrader(game, gamdat, definition.TraderPath);
 
             game.InitPersistentTelemetry("new");
 
@@ -169,17 +174,11 @@ namespace Burntime.Remaster.Logic.Generation
                 game.World.Players[i].Character.Items.MaxCount = 9;
                 game.World.Players[i].Flag = app.ResourceManager.GetData("burngfxani@syst.raw?" + gamdat.Player[i].Info.FlagId + "-" + (gamdat.Player[i].Info.FlagId + 3));
                 game.World.Players[i].Flag.Object.Animation.Progressive = false;
-                game.World.Players[i].Character.Health = settings.StartHealth;
-                game.World.Players[i].Character.Experience = settings.StartExperience;
-                game.World.Players[i].Character.Food = settings.StartFood;
-                game.World.Players[i].Character.Water = settings.StartWater;
                 game.World.Players[i].Character.Class = (CharClass)gamdat.Characters[i].Type;
                 game.World.Players[i].Character.Player = game.World.Players[i];
                 game.World.Players[i].Color = colors[i];
                 game.World.Players[i].ColorDark = colorsdark[i];
                 game.World.Players[i].OnMainMap = true;
-                game.World.Players[i].BaseExperience = settings.StartExperience;
-
                 game.World.AllCharacters += game.World.Players[i].Character;
             }
 
@@ -240,80 +239,49 @@ namespace Burntime.Remaster.Logic.Generation
             {
                 if (p.Type == PlayerType.Ai)
                 {
+                    AiProfileId profile = Info.AiProfiles != null &&
+                        p.Index < Info.AiProfiles.Length
+                        ? Info.AiProfiles[p.Index]
+                        : Info.AI;
                     bool explicitDifficulty = Info.AiDifficulties != null &&
                         p.Index < Info.AiDifficulties.Length;
                     AI.AiSettings aiSettings = explicitDifficulty
                         ? AI.AiPolicy.SettingsFor(Info.AiDifficulties[p.Index])
                         : AI.AiPolicy.SettingsForPlayer(p.Index, Info.Difficulty);
-                    p.AiState = container.Create<AI.ClassicAiState>(p, aiSettings);
-                }
-            }
-
-            // kill all ai player
-            if (Info.DisableAI)
-            {
-                foreach (Player p in game.World.Players)
-                {
-                    if (p.Type == PlayerType.Ai)
+                    p.AiState = AI.AiStateFactory.Create(container, profile, p, aiSettings);
+                    if (profile == AiProfileId.None)
                     {
                         p.IsDead = true;
                         p.Character.Die();
                     }
                 }
+            }
 
-                foreach (Burntime.Framework.Network.GameClient client in app.Server.Clients)
-                {
-                    if (game.World.Players[client.Player].Type == PlayerType.Ai)
-                        client.Die();
-                }
+            // Disable server clients for individually disabled AI slots.
+            foreach (Burntime.Framework.Network.GameClient client in app.Server.Clients)
+            {
+                Player p = game.World.Players[client.Player];
+                if (p.Type == PlayerType.Ai && game.GetAiProfile(p) == AiProfileId.None)
+                    client.Die();
             }
         }
 
-        void SetStartLocations(ClassicGame game)
-        {
-            var availableRegions = Enumerable.Range(1, settings.StartRegionCount).ToList();
-            foreach (Player player in game.World.Players)
-            {
-                // find free random region
-                int regionIndex = availableRegions[Platform.Math.Random.Next(0, availableRegions.Count)];
-                availableRegions.Remove(regionIndex);
-                int[] regionLocations = settings.GetStartLocation(regionIndex);
-
-                // choose random location
-                int locationIndex = regionLocations[Platform.Math.Random.Next(0, regionLocations.Length)] - 1;
-                var startLocation = game.World.Locations[locationIndex];
-
-                // set location
-                player.Location = startLocation;
-                player.Character.Position = new Vector2(startLocation.EntryPoint);
-                player.Character.Path.MoveTo = new Vector2(startLocation.EntryPoint);
-            }
-        }
-
-        void SetStartInventory(ClassicGame game)
+        void InitializeStartingPlayers(ClassicGame game,
+            Burntime.Data.BurnGfx.Save.SaveGame gamdat)
         {
             foreach (Player player in game.World.Players)
             {
-                // clear
-                player.Character.Items.Clear();
-
-                // add items
-                IEnumerable<string> items = player.Type == PlayerType.Ai
-                    ? settings.GetStartItems(0).Concat(new[] { "item_knife" })
-                    : settings.StartItems;
-                foreach (string item in items)
-                {
-                    if (player.Type == PlayerType.Ai && item == "item_advice")
-                        continue;
-                    player.Character.Items.Add(game.ItemTypes[item].Generate());
-                }
+                if (player.Type == PlayerType.Human)
+                    game.RuleBook.InitializeHumanPlayer(player, player.Index, settings, gamdat);
+                else
+                    AI.AiStateOperations.InitializeNewGamePlayer(player.AiState, gamdat);
             }
         }
 
         void LoadProductions(ClassicGame game, Burntime.Data.BurnGfx.Save.SaveGame gamdat)
         {
             ConfigFile file = new ConfigFile();
-            file.Open("production.txt");
+            file.Open(GameDefinitions.Get(game.Rules, game.WorldDefinition).ProductionPath);
             ConfigSection[] sections = file.GetAllSections();
 
             foreach (ConfigSection section in sections)
@@ -339,7 +307,8 @@ namespace Burntime.Remaster.Logic.Generation
                     section.GetInts("amount"),
                     section.GetInts("amount2"),
                     game.ItemTypes[produce],
-                    game.Productions.Count
+                    game.Productions.Count,
+                    section.GetBool("allow_inventory")
                 ));
 
                 game.ItemTypes[section.Name].Production = p;
@@ -356,6 +325,37 @@ namespace Burntime.Remaster.Logic.Generation
                 }
 
                 game.Productions.Add(p);
+            }
+        }
+
+        internal static void RefreshExtendedTraderSettings(ClassicGame game)
+        {
+            if (game.Rules != RuleSetId.Extended)
+                return;
+            ConfigFile file = new ConfigFile();
+            if (!file.Open(GameDefinitions.Get(game.Rules, game.WorldDefinition).TraderPath))
+                throw new InvalidOperationException("Could not load trader settings.");
+            foreach (Trader trader in game.World.AllCharacters.OfType<Trader>())
+            {
+                string[] items = file["trader"].GetStrings(trader.TraderId.ToString());
+                if (items.Length > 0)
+                    trader.RefreshAssortment(items.Select(id => game.ItemTypes[id]));
+            }
+        }
+
+        internal static void RefreshProductionSettings(ClassicGame game)
+        {
+            ConfigFile file = new ConfigFile();
+            if (!file.Open(GameDefinitions.Get(game.Rules, game.WorldDefinition).ProductionPath))
+                throw new InvalidOperationException("Could not load production settings.");
+            foreach (ConfigSection section in file.GetAllSections())
+            {
+                if (section.Name == "" || !game.ItemTypes.Contains(section.Name))
+                    continue;
+                Production production = game.ItemTypes[section.Name].Production;
+                if (production != null)
+                    production.ApplySettings(section.GetInt("maxcombination"),
+                        section.GetInts("amount"), section.GetInts("amount2"), section.GetBool("allow_inventory"));
             }
         }
 
@@ -481,10 +481,11 @@ namespace Burntime.Remaster.Logic.Generation
             }
         }
 
-        void LoadTrader(ClassicGame game, Burntime.Data.BurnGfx.Save.SaveGame gamdat)
+        void LoadTrader(ClassicGame game, Burntime.Data.BurnGfx.Save.SaveGame gamdat,
+            string traderPath)
         {
             ConfigFile traderItems = new ConfigFile();
-            traderItems.Open("trader.txt");
+            traderItems.Open(traderPath);
 
             for (int i = 0; i < gamdat.Locations.Length; i++)
             {
@@ -507,50 +508,9 @@ namespace Burntime.Remaster.Logic.Generation
                     foreach (string item in items)
                         trader.AddRefreshItem(game.ItemTypes[item], 1);
 
-                    trader.RandomizeInventory();
+                    game.RuleBook.InitializeTraderInventory(trader);
                 }
             }
-        }
-
-        void LoadItems(ClassicGame game, Burntime.Data.BurnGfx.Save.SaveGame gamdat)
-        {
-            var spawner = new ItemSpawner(game, gamdat, settings);
-
-            spawner.SpawnAtPlayerLocation();
-            spawner.SpawnInAllLocations();
-            spawner.SpawnRegionItems();
-
-            //foreach (Burntime.Data.BurnGfx.Save.Item info in gamdat.Items)
-            //{
-            //    if (info.OwnerType != ItemOwnerType.Pool)
-            //    {
-            //        Item item = game.ItemTypes[info.SpriteId].Generate();
-            //        if (info.OwnerId >= 0 && info.OwnerId < game.World.AllCharacters.Count)
-            //        {
-            //            game.World.AllCharacters[info.OwnerId].Items.Add(item);
-            //        }
-            //        else if (info.OwnerType == ItemOwnerType.Room)
-            //        {
-            //            if (info.RoomId < game.World.Locations[info.LocationId].Rooms.Count)
-            //            {
-            //                Location location = game.World.Locations[info.LocationId];
-            //                Room room = location.Rooms[info.RoomId];
-            //                room.Items.Add(item);
-
-            //                // fill up empty bottles
-            //                if (room.IsWaterSource && item.Type.Full != null && location.Source.Reserve >= item.Type.Full.WaterValue)
-            //                {
-            //                    item.MakeFull();
-            //                    location.Source.Reserve -= item.WaterValue;
-            //                }
-            //            }
-            //        }
-            //        else if (info.OwnerType == ItemOwnerType.Dropped)
-            //        {
-            //            game.World.Locations[info.DroppedLocationId].Items.DropAt(item, info.DroppedPosition);
-            //        }
-            //    }
-            //}
         }
 
         public void SaveGame(string filename)
@@ -611,9 +571,8 @@ namespace Burntime.Remaster.Logic.Generation
             ClassicGame classic = container.Root as ClassicGame;
             classic.InitAfterLoad();
 
-            settings = new GameSettings(classic.ItemTypes.UsesExtendedRules
-                ? "gamesettings_extended.txt"
-                : "gamesettings_original.txt");
+            GameDefinition definition = GameDefinitions.Get(classic.Rules, classic.WorldDefinition);
+            settings = new GameSettings(definition.SettingsPath);
             settings.SetDifficulty(classic.World.Difficulty);
             classic.World.Respawn.Object.ApplySettings(settings);
 

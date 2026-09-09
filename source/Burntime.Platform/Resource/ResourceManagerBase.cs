@@ -230,6 +230,8 @@ public abstract class ResourceManagerBase : IResourceManager
     {
         if (!txtDB.ContainsKey(file))
             AddDB(file);
+        if (index < 0 || index >= txtDB[file].Data.Count)
+            return string.Empty;
         string res = txtDB[file].Data[index];
 
         if (res.EndsWith("}"))

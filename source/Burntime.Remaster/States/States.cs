@@ -7,6 +7,8 @@ using Burntime.Framework.States;
 using Burntime.Remaster.Logic;
 using Burntime.Platform.Resource;
 using Burntime.Remaster.Logic.Interaction;
+using Burntime.Remaster.Logic.Generation;
+using Burntime.Remaster.Logic.Rules;
 using System.Linq;
 
 namespace Burntime.Remaster
@@ -70,6 +72,51 @@ namespace Burntime.Remaster
             set { constructions = value; }
         }
 
+        [System.Runtime.Serialization.OptionalField]
+        string? ruleSetId;
+        [System.Runtime.Serialization.OptionalField]
+        string? aiProfileId;
+        [System.Runtime.Serialization.OptionalField]
+        string[]? aiProfileIds;
+        [System.Runtime.Serialization.OptionalField]
+        string? worldId;
+
+        public RuleSetId Rules => GameDefinitions.ParseRules(
+            ruleSetId,
+            ItemTypes?.UsesExtendedRules == true ? RuleSetId.Extended : RuleSetId.Dos);
+        public AiProfileId AI => GameDefinitions.ParseAi(aiProfileId);
+        public WorldId WorldDefinition => Enum.TryParse(worldId, true, out WorldId value) &&
+            Enum.IsDefined(value) ? value : WorldId.Original;
+        public GameFeature Features => GameDefinitions.Get(Rules, WorldDefinition).Features;
+        public bool HasFeature(GameFeature feature) => Features.HasFlag(feature);
+
+        [NonSerialized]
+        IGameRules? ruleBook;
+        internal IGameRules RuleBook => ruleBook ??= GameRulesRegistry.Get(Rules);
+
+        public AiProfileId GetAiProfile(Player player)
+        {
+            if (aiProfileIds != null && player.Index >= 0 && player.Index < aiProfileIds.Length)
+                return GameDefinitions.ParseAi(aiProfileIds[player.Index], AI);
+            if (player.AiState is IAiProfileState profileState)
+                return profileState.Profile;
+            return player.Type == PlayerType.Ai && player.IsDead ? AiProfileId.None : AI;
+        }
+
+        internal bool UsesAiProfile(Player player, AiProfileId profile) =>
+            player.Type == PlayerType.Ai && GetAiProfile(player) == profile;
+
+        internal void SetProfiles(RuleSetId rules, AiProfileId ai, WorldId world,
+            AiProfileId[]? playerAiProfiles = null)
+        {
+            ruleSetId = rules.ToString();
+            aiProfileId = ai.ToString();
+            aiProfileIds = (playerAiProfiles ?? Enumerable.Repeat(ai, 4).ToArray())
+                .Select(profile => profile.ToString())
+                .ToArray();
+            worldId = world.ToString();
+        }
+
         protected override void InitInstance(object[] parameter)
         {
             productions = container.CreateLinkList<Production>();
@@ -81,6 +128,7 @@ namespace Burntime.Remaster
         {
             base.AfterDeserialization();
             persistentTelemetry = null;
+            ruleBook = null;
         }
 
         [System.Runtime.Serialization.OptionalField]
@@ -113,10 +161,23 @@ namespace Burntime.Remaster
         /// </summary>
         public void InitAfterLoad()
         {
+            foreach (Item item in World.AllCharacters.SelectMany(c => c.Items)
+                .Concat(World.Locations.SelectMany(l => l.Items))
+                .Concat(World.Locations.SelectMany(l => l.Rooms).SelectMany(r => r.Items)).Distinct())
+                item.MigrateAmmunition(id => ItemTypes[id]);
+            ItemTypes.RefreshItemLinks();
+            GameCreation.RefreshProductionSettings(this);
+            // New Village is defined by map configuration rather than GAM.DAT.
+            if (World.Locations.Count > 37)
+            {
+                var config = new Burntime.Platform.IO.ConfigFile();
+                if (config.Open("maps/mat_038.txt"))
+                    LocationCreator.ApplyEnvironment(World.Locations[37], config, ResourceManager);
+            }
+            GameCreation.RefreshExtendedTraderSettings(this);
             foreach (Player player in World.Players)
             {
-                if (player.AiState is AI.ClassicAiState ai)
-                    ai.InitAfterLoad();
+                Burntime.Remaster.AI.AiStateOperations.InitAfterLoad(player.AiState);
             }
             InitPersistentTelemetry("load");
         }

@@ -31,6 +31,7 @@ namespace Burntime.Remaster.Logic.Generation
                 loc.Source.Capacity = city.WaterCapacity;
                 loc.Production = city.Producing == -1 ? null : game.Productions[city.Producing];
                 loc.AvailableProducts = (int[])city.Production.Clone();
+                loc.OriginalDosFoodFlag = city.Info.Production1;
                 if (city.Danger != 0)
                     loc.Danger = Danger.Instance((city.Danger == 3) ? "radiation" : "gas", city.DangerAmount);
                 loc.IsCity = city.IsCity;

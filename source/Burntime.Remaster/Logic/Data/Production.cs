@@ -15,23 +15,31 @@ public sealed class Production : StateObject
 
     readonly public int ID;
 
-    readonly int[] ProductionPerDay;
-    readonly int[] ProductionPerDay2Person;
-    readonly int MaxCombination;
+    int[] ProductionPerDay;
+    int[] ProductionPerDay2Person;
+    int MaxCombination;
     readonly StateLink<ItemType> produce;
 
     public ItemType Produce => produce;
     public int MaxToolCount => MaxCombination;
+    [System.Runtime.Serialization.OptionalField]
+    bool allowInventory;
+    public bool AllowInventory => allowInventory;
 
-    public Production(int maxCombi, int[] perDay, int[] perDayDouble, ItemType produce, int id)
+    public Production(int maxCombi, int[] perDay, int[] perDayDouble, ItemType produce, int id, bool allowInventory = false)
     {
-        MaxCombination = maxCombi;
-        ProductionPerDay = perDay;
-        ProductionPerDay2Person = perDayDouble;
-        if (ProductionPerDay2Person.Length == 0)
-            ProductionPerDay2Person = ProductionPerDay;
+        ApplySettings(maxCombi, perDay, perDayDouble, allowInventory);
         this.produce = produce;
         ID = id;
+    }
+
+    // Keep serialized field names and object identities for existing saves.
+    internal void ApplySettings(int maxCombi, int[] perDay, int[] perDayDouble, bool allowInventory = false)
+    {
+        this.allowInventory = allowInventory;
+        MaxCombination = maxCombi;
+        ProductionPerDay = perDay;
+        ProductionPerDay2Person = perDayDouble.Length == 0 ? perDay : perDayDouble;
     }
 
     public Rate GetRate(int toolCount, int npcCount)
@@ -42,6 +50,7 @@ public sealed class Production : StateObject
         {
             FoodPerDay = (npcCount >= 2) ? ProductionPerDay2Person[trapCount] : ProductionPerDay[trapCount]
         };
+
         int remainingPerDay = info.FoodPerDay - npcCount;
         if (remainingPerDay > 0)
             info.ItemDropInterval = info.FoodPerDay > npcCount ? Produce.FoodValue / (float)remainingPerDay : 0;

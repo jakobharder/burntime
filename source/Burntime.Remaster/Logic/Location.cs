@@ -22,10 +22,13 @@ namespace Burntime.Remaster.Logic
         public Interaction.Danger Danger
         {
             get { return danger; }
-            set { danger = value; }
+            set { danger = value == null ? default(DataID<Interaction.Danger>) : new DataID<Interaction.Danger>(value); }
         }
 
         public bool IsCity;
+
+        [System.Runtime.Serialization.OptionalField]
+        internal byte OriginalDosFoodFlag;
 
         Vector2 entryPoint;
         public Vector2 EntryPoint
@@ -96,6 +99,25 @@ namespace Burntime.Remaster.Logic
                     return;
                 player = value;
                 (Container.Root as ClassicGame)?.NotifyCampOwnershipChanged(this, previous, value);
+            }
+        }
+
+        public Player? ControllingPlayer
+        {
+            get
+            {
+                if (!IsCity || neighbors == null || neighbors.Count == 0)
+                    return null;
+
+                Player? controller = neighbors[0].Player;
+                if (controller == null)
+                    return null;
+
+                for (int i = 1; i < neighbors.Count; i++)
+                    if (neighbors[i].Player != controller)
+                        return null;
+
+                return controller;
             }
         }
 
@@ -224,11 +246,13 @@ namespace Burntime.Remaster.Logic
             if (Player is null || production is null)
                 return new Production.Rate();
 
-            int trapsInRooms = Rooms.Sum(room => room.Items.Where(item => item.Type.Production == production).Count());
-            int trapsOnNPCs = CampNPC.Sum(npc => npc.Items.Where(item => item.Type.Production == production).Count());
-
-            return production.GetRate(trapsInRooms + trapsOnNPCs, CampNPC.Count());
+            return production.GetRate(GetProductionToolCount(production), CampNPC.Count());
         }
+
+        public int GetProductionToolCount(Production production) => Rooms
+            .SelectMany(room => room.Items)
+            .Concat(production.AllowInventory ? CampNPC.SelectMany(npc => npc.Items) : Enumerable.Empty<Item>())
+            .Count(item => item.Type.Production == production);
 
         public Production.Rate AutoSelectFoodProduction(bool onlyIfCurrentProducesNothing)
         {
@@ -270,24 +294,7 @@ namespace Burntime.Remaster.Logic
 
             // produce food
             var production = AutoSelectFoodProduction(onlyIfCurrentProducesNothing: true);
-            NPCFoodProduction = production.FoodPerDay;
-            if (production.ItemDropInterval > 0)
-            {
-                int alreadyInStock = GetCurrentProductionStockCount();
-                // Only the selected product is capped. Food from an older
-                // selection remains untouched until normal use or AI cleanup.
-                if (alreadyInStock < MaxStockFood && Rooms.Any(room => !room.Items.IsFull))
-                {
-                    productionState += 1;
-                    if (productionState >= production.ItemDropInterval)
-                    {
-                        productionState -= production.ItemDropInterval;
-                        Room trapRoom = Rooms.FirstOrDefault(room => room.Items
-                            .Any(item => item.Type.Production == Production));
-                        StoreItem(Production.Produce.Generate(), preferredRoom: trapRoom);
-                    }
-                }
-            }
+            ((ClassicGame)Container.Root).RuleBook.ProcessFoodProduction(this, production);
 
             // turn npcs
             foreach (Character npc in Characters)
@@ -313,6 +320,54 @@ namespace Burntime.Remaster.Logic
             }
 
             Source.EndTurn();
+        }
+
+        internal void ProcessExtendedFoodProduction(Production.Rate production)
+        {
+            NPCFoodProduction = production.FoodPerDay;
+            if (production.ItemDropInterval > 0)
+            {
+                int alreadyInStock = GetCurrentProductionStockCount();
+                // Like DOS, only the selected product counts toward the cap.
+                // Food from an older selection remains available for normal use.
+                if (alreadyInStock < MaxStockFood && Rooms.Any(room => !room.Items.IsFull) &&
+                    ((ClassicGame)Container.Root).RuleBook.CanCreateItem(
+                        (ClassicGame)Container.Root))
+                {
+                    productionState += 1;
+                    if (productionState >= production.ItemDropInterval)
+                    {
+                        productionState -= production.ItemDropInterval;
+                        Room trapRoom = Rooms.FirstOrDefault(room => room.Items
+                            .Any(item => item.Type.Production == Production));
+                        StoreItem(Production.Produce.Generate(), preferredRoom: trapRoom);
+                    }
+                }
+            }
+        }
+
+        internal void AccumulateOriginalFood(int points)
+        {
+            NPCFoodProduction = 0;
+            if (points <= 0 || Production == null ||
+                GetCurrentProductionStockCount() >= MaxStockFood ||
+                !Rooms.Any(room => !room.Items.IsFull) ||
+                !((ClassicGame)Container.Root).RuleBook.CanCreateItem(
+                    (ClassicGame)Container.Root))
+                return;
+
+            productionState += points;
+            while (productionState >= Production.Produce.FoodValue &&
+                GetCurrentProductionStockCount() < MaxStockFood &&
+                Rooms.Any(room => !room.Items.IsFull) &&
+                ((ClassicGame)Container.Root).RuleBook.CanCreateItem(
+                    (ClassicGame)Container.Root))
+            {
+                productionState -= Production.Produce.FoodValue;
+                Room trapRoom = Rooms.FirstOrDefault(room => room.Items
+                    .Any(item => item.Type.Production == Production));
+                StoreItem(Production.Produce.Generate(), preferredRoom: trapRoom);
+            }
         }
 
         protected override void InitInstance(object[] parameter)
@@ -384,12 +439,62 @@ namespace Burntime.Remaster.Logic
         // add character to this location
         public void EnterLocation(Character character)
         {
-            Vector2 position = character.IsPlayerCharacter
+            Vector2 position = character.IsWithBoss || character.IsPlayerCharacter
                 ? EntryPoint
-                : GetRandomNpcEntryPosition(character);
+                : GetResidentPosition(character);
             character.Position = position;
             character.Path.MoveTo = position;
             character.Location = this;
+        }
+
+        [System.Runtime.Serialization.OptionalField]
+        bool legacyEntryPositionsRepaired;
+
+        internal void RepairLegacyEntryPositions()
+        {
+            if (legacyEntryPositionsRepaired)
+                return;
+
+            // Older arrivals used the entrance itself or a 20-pixel radius.
+            // Exclude that whole cluster from both local anchors and fallback.
+            bool AwayFromEntry(Vector2 position) => (position - EntryPoint).Length > 20;
+            foreach (Character resident in Characters.Where(character =>
+                !character.IsDead && !character.IsWithBoss && !character.IsPlayerCharacter &&
+                !AwayFromEntry(character.Position)).ToArray())
+                resident.Position = GetResidentPosition(resident, AwayFromEntry);
+
+            legacyEntryPositionsRepaired = true;
+        }
+
+        // Residents inherit an established local position instead of remaining
+        // in an arriving party's entrance formation. Shared by all editions.
+        public Vector2 GetResidentPosition(Character arrivingCharacter, Func<Vector2, bool>? allowedPosition = null)
+        {
+            var mask = Map.Mask;
+            var positions = Characters
+                .Where(other => other != arrivingCharacter && !other.IsWithBoss &&
+                    !other.IsPlayerCharacter && other.Location == this)
+                .Select(other => other.Position)
+                .Where(mask.IsWalkableMapPosition)
+                .Where(position => allowedPosition == null || allowedPosition(position))
+                .Distinct().ToArray();
+            if (positions.Length > 0)
+                return positions[Platform.Math.Random.Next(positions.Length)];
+
+            // Empty camps have no position to copy. Choose a walkable map cell
+            // rather than making the entrance the default resident position.
+            var walkable = new List<Vector2>();
+            for (int y = 0; y < mask.Height; y++)
+                for (int x = 0; x < mask.Width; x++)
+                    if (mask[x, y])
+                    {
+                        Vector2 position = new Vector2(x, y) * mask.Resolution + mask.Resolution / 2;
+                        if (allowedPosition == null || allowedPosition(position))
+                            walkable.Add(position);
+                    }
+            return walkable.Count > 0
+                ? walkable[Platform.Math.Random.Next(walkable.Count)]
+                : EntryPoint;
         }
 
         public Vector2 GetRandomNpcEntryPosition(Character? arrivingCharacter = null,

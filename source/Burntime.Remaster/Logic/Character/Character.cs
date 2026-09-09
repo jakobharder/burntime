@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Burntime.Remaster.Logic.Rules;
 
 namespace Burntime.Remaster.Logic
 {
@@ -129,9 +130,7 @@ namespace Burntime.Remaster.Logic
         }
 
         public virtual int BaseAttackValue => DEFAULT_ATTACK_VALUE;
-        public virtual float AttackValue => (Weapon?.DamageValue ?? BaseAttackValue) * Experience / 100;
-        public virtual float DefenseValue => (DEFAULT_ATTACK_VALUE + (Protection?.DefenseValue ?? 0)) * Experience / 100;
-
+        internal int CombatExperience => RuleFormulas.CombatExperience(Class, Experience);
         protected DataID<Platform.Graphics.ISprite> body;
         public DataID<Platform.Graphics.ISprite> Body
         {
@@ -340,6 +339,7 @@ namespace Burntime.Remaster.Logic
             Player.Group.Remove(this);
             Location = Player.Location;
             Location.Player = Player;
+            Position = Location.GetResidentPosition(this);
             Mind = container.Create<AI.SimpleMind>(new object[] { this });
             Path = container.Create<PathFinding.SimplePath>();
             Path.MoveTo = Position;
@@ -362,7 +362,13 @@ namespace Burntime.Remaster.Logic
             Path.MoveTo = Position;
         }
 
-        public void Hire(Player boss, bool waivePayment = false)
+        public void Hire(Player boss, bool waivePayment = false) =>
+            Hire(boss, waivePayment, initializeRecruit: true);
+
+        internal void HireWithoutInitialization(Player boss) =>
+            Hire(boss, waivePayment: true, initializeRecruit: false);
+
+        void Hire(Player boss, bool waivePayment, bool initializeRecruit)
         {
             Location = null;
             boss.Group.Add(this);
@@ -386,34 +392,8 @@ namespace Burntime.Remaster.Logic
             Path = container.Create<PathFinding.ComplexPath>();
             Path.MoveTo = Position;
 
-            ClassicGame classic = (ClassicGame)container.Root;
-            int difficulty = 2 - classic.World.Difficulty; // set inverted difficulty (0 hard, 1 normal, 2 easy)
-
-            if (boss.Type == PlayerType.Ai)
-            {
-                // Fixed reserves make every AI recruitment option strategically
-                // equivalent, whether it happens in a city or at the target camp.
-                Food = 5;
-                Water = 5;
-            }
-            else
-            {
-                // if hire item is food or water then use it
-                if (hireItem.FoodValue != 0)
-                    Food = System.Math.Min(MaxFood, Food + hireItem.FoodValue);
-
-                // prevent 0 food situation depending on difficulty setting
-                if (Food < difficulty)
-                    Food = difficulty;
-
-                (int minimumWater, int maximumWater) = classic.World.Difficulty switch
-                {
-                    0 => (3, 5),
-                    1 => (1, 4),
-                    _ => (0, 2)
-                };
-                Water = Burntime.Platform.Math.Random.Next(minimumWater, maximumWater + 1);
-            }
+            if (initializeRecruit)
+                ((ClassicGame)container.Root).RuleBook.InitializeRecruit(this, boss, hireItem);
         }
 
         public void Dismiss()
@@ -507,9 +487,8 @@ namespace Burntime.Remaster.Logic
         {
 #warning TODO attacks against camps should involve every camp member
 
-            // Add 25% per difficulty. Reverse if current player is not the attacker
-            float difficultyFactor = (1 + Root.World.Difficulty * 0.1f);
-            bool isPlayer = (Player == container.Root.CurrentPlayer);
+            if (IsDead || defender.IsDead)
+                return;
 
             var attackingGroup = (Player != null && Player.Character == this && !Player.SingleMode)
                 ? Player.Group.ToArray()
@@ -517,10 +496,11 @@ namespace Burntime.Remaster.Logic
 
             foreach (var attacker in attackingGroup)
             {
-                DealAttackDamage(attacker, defender, useAmmo: true,
-                    isPlayer ? 1 : difficultyFactor);
-                DealAttackDamage(defender, attacker, defendWithAmmo,
-                    isPlayer ? difficultyFactor : 1);
+                if (attacker.IsDead)
+                    continue;
+                Root.RuleBook.DealAttackDamage(attacker, defender, useAmmo: true);
+                if (!defender.IsDead)
+                    Root.RuleBook.DealAttackDamage(defender, attacker, defendWithAmmo);
 
                 if (attacker.IsHuman && !defender.IsDead)
                     defender.FleeFrom(attacker);
@@ -535,8 +515,7 @@ namespace Burntime.Remaster.Logic
 
         internal void AttackWithoutRetaliation(Character defender)
         {
-            float difficultyFactor = 1 + Root.World.Difficulty * 0.1f;
-            DealAttackDamage(this, defender, useAmmo: true, difficultyFactor);
+            Root.RuleBook.DealAttackDamage(this, defender, useAmmo: true);
             FleeFrom(defender);
 
             container.Notify(new AttackEvent(this, defender));
@@ -544,13 +523,41 @@ namespace Burntime.Remaster.Logic
                 strategicAi.RecordAttack(this, defender);
         }
 
-        static void DealAttackDamage(Character attacker, Character defender,
-            bool useAmmo, float factor)
+        internal Item? FindOriginalWeapon(bool allowUnloadedRifle = false)
         {
-            int attackValue = attacker.UseBestEquipment(useAmmo);
-            int damage = (int)System.Math.Max(1,
-                (attackValue - defender.DefenseValue) * factor);
-            defender.Health -= damage;
+            Item? selected = Weapon;
+            if (selected?.DamageValue == 0 &&
+                !(allowUnloadedRifle && selected.ID == "item_unloaded_rifle"))
+                selected = null;
+            selected = Items.FindBestWeapon(selected);
+            if (allowUnloadedRifle && selected == null)
+                selected = Items.FirstOrDefault(item => item.ID == "item_unloaded_rifle");
+            return selected;
+        }
+
+        internal Item? SelectOriginalWeapon(bool allowUnloadedRifle = false)
+        {
+            Weapon = FindOriginalWeapon(allowUnloadedRifle);
+            return Weapon;
+        }
+
+        internal void UseOriginalWeapon(Item weapon)
+        {
+            ItemType loadedType = weapon.Type;
+            weapon.Use();
+            if (weapon.DamageValue != 0)
+                return;
+
+            Item? ammunition = Items.FirstOrDefault(item => item.ID == "item_ammunition");
+            if (ammunition != null)
+            {
+                Items.Remove(ammunition);
+                weapon.Reload(loadedType);
+            }
+            else
+            {
+                Weapon = null;
+            }
         }
 
         void FleeFrom(Character attacker)
@@ -610,6 +617,24 @@ namespace Burntime.Remaster.Logic
                 return;
             }
 
+            Root.RuleBook.TurnEmployedCharacter(this);
+
+            if (IsDead)
+                return;
+
+            ResetStationedMind();
+
+            //Dialog.Turn();
+        }
+
+        internal bool HasLocalDoctor => IsWithBoss
+            ? Player.Group.Any(member => !member.IsDead && member.Class == CharClass.Doctor)
+            : Location?.CampNPC.Any(member => !member.IsDead &&
+                member.Class == CharClass.Doctor && member.Player == Player) == true;
+
+        internal void TurnExtendedEmployed(bool amigaSurvivalBehavior)
+        {
+            bool amigaActiveParty = amigaSurvivalBehavior && IsWithBoss;
             // npc is with boss
             if (IsWithBoss)
             {
@@ -626,7 +651,7 @@ namespace Burntime.Remaster.Logic
                     }
                 }
 
-                if (Water == 0)
+                if (!amigaActiveParty && Water == 0)
                 {
                     Item item = group.FindWater();
                     if (item != null)
@@ -677,9 +702,8 @@ namespace Burntime.Remaster.Logic
             }
 
             // TODO move location healing to location
-            bool doctorAvailable = Player?.Group.Any(chr => chr.Class == CharClass.Doctor) == true ||
-                Location?.CampNPC.Any(chr => chr.Class == CharClass.Doctor && chr.Player == Player) == true;
-            bool aiAutoHealing = Player?.Type == PlayerType.Ai;
+            bool doctorAvailable = HasLocalDoctor;
+            bool aiAutoHealing = Player?.Type == PlayerType.Ai && !amigaSurvivalBehavior;
             if (doctorAvailable)
             {
                 if (health >= 50 || aiAutoHealing)
@@ -687,7 +711,7 @@ namespace Burntime.Remaster.Logic
             }
             else
             {
-                if (health >= 70 || aiAutoHealing)
+                if (health >= (amigaSurvivalBehavior ? 50 : 70) || aiAutoHealing)
                     health += 2;
             }
 
@@ -695,7 +719,7 @@ namespace Burntime.Remaster.Logic
                 health = 100;
             if (Food == 0)
                 health -= 25;
-            if (Water == 0)
+            if (!amigaActiveParty && Water == 0)
                 health -= 25;
 
             if (health <= 0)
@@ -707,10 +731,16 @@ namespace Burntime.Remaster.Logic
             Food--;
             if (Food < 0)
                 Food = 0;
-            Water--;
-            if (Water < 0)
-                Water = 0;
+            if (!amigaActiveParty)
+            {
+                Water--;
+                if (Water < 0)
+                    Water = 0;
+            }
+        }
 
+        void ResetStationedMind()
+        {
             // Selecting a stationed NPC gives it a player-controlled mind. At the
             // start of each new day, camp NPCs return to roaming independently of
             // whether their camp belongs to a human or AI player.
@@ -720,8 +750,6 @@ namespace Burntime.Remaster.Logic
                 Path = container.Create<PathFinding.SimplePath>();
                 Path.MoveTo = Position;
             }
-
-            //Dialog.Turn();
         }
 
         protected void TurnNonPlayer()
@@ -739,19 +767,39 @@ namespace Burntime.Remaster.Logic
                 Water = 0;
         }
 
+        public float GetHazardProtectionRate(string hazardType)
+        {
+            if (((ClassicGame)Container.Root).RuleBook.Settings.IsHazardImmune(hazardType, FaceID))
+                return 1;
+            return System.Math.Clamp(Protection?.Type.GetProtection(hazardType)?.Rate ?? 0, 0, 1);
+        }
+
         public float GetDangerRate()
         {
             if (Location.Danger is null)
                 return 0;
 
-            float rate = 1;
             UseBestProtection();
+            return 1 - GetHazardProtectionRate(Location.Danger.Type);
+        }
 
-            Interaction.DangerProtection? p = Protection?.Type.GetProtection(Location.Danger.Type);
-            if (p is not null)
-                rate -= p.Rate;
+        internal bool ApplyContinuousHazard(float elapsed)
+        {
+            if (Location?.Danger == null)
+                return false;
 
-            return rate;
+            var settings = ((ClassicGame)Container.Root).RuleBook.Settings;
+            if (settings.IsHazardImmune(Location.Danger.Type, FaceID))
+                return false;
+            float rate = GetDangerRate();
+            if (rate <= 0)
+                return false;
+
+            health -= settings.HazardDamage(Location.Danger.Type) * elapsed * rate;
+            if (!IsDead)
+                return false;
+            Die();
+            return true;
         }
 
         public virtual void Update(float elapsed)
@@ -810,21 +858,9 @@ namespace Burntime.Remaster.Logic
             Vector2 old = new Vector2(position);
 
             // process dangers (only if hired)
-            if (Player != null)
+            if (Player != null && Root.RuleBook.ApplyContinuousHazard(this, elapsed))
             {
-                if (Location.Danger != null)
-                {
-                    float rate = GetDangerRate();
-                    if (rate > 0)
-                    {
-                        health -= Location.Danger.HealthDecrease * elapsed * rate;
-                        if (IsDead)
-                        {
-                            Die();
-                            return;
-                        }
-                    }
-                }
+                return;
             }
 
             Mind.Process(elapsed);
@@ -919,45 +955,7 @@ namespace Burntime.Remaster.Logic
         }
 
         /// <summary>
-        /// Use best weapon and protection. Returns attack value.
-        /// </summary>
-        private int UseBestEquipment(bool allowAmmo = true)
-        {
-            Protection = Items.FindBestDefense(Protection);
-
-            // make sure empty guns are not used
-            if (Weapon?.DamageValue == 0)
-                Weapon = null;
-
-            Item? weapon = Items.FindBestWeapon(allowAmmo ? Weapon : null);
-            if (weapon is null)
-                return BaseAttackValue * Experience / 100;
-
-            int attackValue = weapon.DamageValue;
-            if (allowAmmo)
-            {
-                weapon.Use();
-                if (weapon.DamageValue == 0)
-                    Weapon = null;
-            }
-
-            Weapon = Items.FindBestWeapon(Weapon);
-            return attackValue * Experience / 100;
-        }
-
-        internal int PrepareStrategicAttack()
-        {
-            return UseBestEquipment(allowAmmo: true);
-        }
-
-        internal float PrepareStrategicDefense()
-        {
-            Protection = Items.FindBestDefense(Protection);
-            return DefenseValue;
-        }
-
-        /// <summary>
-        /// Use best danger protection.
+        /// Select the best protection against the current environmental hazard.
         /// </summary>
         private void UseBestProtection()
         {

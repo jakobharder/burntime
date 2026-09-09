@@ -235,16 +235,19 @@ public class MenuScene : Scene
         GameMode = new(app);
         GameMode.Position = new(145, 149);
         GameMode.ToolTipFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray) { Borders = TextBorders.Screen };
-        GameMode.AddState(null, "gfx/ui/start_button_remake.png", "gfx/ui/start_button_remake_down.png", "gfx/ui/start_button_remake_down.png", "@newburn?1");
-        GameMode.AddState(null, "gfx/ui/start_button_original.png", "gfx/ui/start_button_original_down.png", "gfx/ui/start_button_original_down.png", "@newburn?0");
+        GameMode.AddState(null, "gfx/ui/start_button_remake.png", "gfx/ui/start_button_remake_down.png", "gfx/ui/start_button_remake_down.png", "@newburn?110");
+        GameMode.AddState(null, "gfx/ui/start_button_original.png", "gfx/ui/start_button_original_down.png", "gfx/ui/start_button_original_down.png", "@newburn?105");
+        GameMode.AddState(null, "gfx/ui/start_button_original.png", "gfx/ui/start_button_original_down.png", "gfx/ui/start_button_original_down.png", "@newburn?106");
         Windows += GameMode;
 
         // ai
         AiPlayers = new(app);
         AiPlayers.Position = new(190, 149);
         AiPlayers.ToolTipFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray) { Borders = TextBorders.Screen };
-        AiPlayers.AddState(null, "gfx/ui/start_button_ai.png", "gfx/ui/start_button_ai_down.png", "gfx/ui/start_button_ai_down.png", "@newburn?12");
+        AiPlayers.AddState(null, "gfx/ui/start_button_ai.png", "gfx/ui/start_button_ai_down.png", "gfx/ui/start_button_ai_down.png", "@newburn?109");
         AiPlayers.AddState(null, "gfx/ui/start_button_noai.png", "gfx/ui/start_button_noai_down.png", "gfx/ui/start_button_noai_down.png", "@newburn?13");
+        AiPlayers.AddState(null, "gfx/ui/start_button_ai.png", "gfx/ui/start_button_ai_down.png", "gfx/ui/start_button_ai_down.png", "@newburn?107");
+        AiPlayers.AddState(null, "gfx/ui/start_button_ai.png", "gfx/ui/start_button_ai_down.png", "gfx/ui/start_button_ai_down.png", "@newburn?108");
         Windows += AiPlayers;
 
         // input conversion
@@ -852,8 +855,20 @@ public class MenuScene : Scene
             Difficulty = Difficulty.State,
             ColorOne = Color.IsDown ? BurntimePlayerColor.Red : BurntimePlayerColor.Green,
             ColorTwo = Color.IsDown ? BurntimePlayerColor.Green : BurntimePlayerColor.Red,
-            ExtendedGame = GameMode.State == 0,
-            DisableAI = AiPlayers.State == 1
+            Rules = GameMode.State switch
+            {
+                1 => RuleSetId.Dos,
+                2 => RuleSetId.Amiga,
+                _ => RuleSetId.Extended
+            },
+            AI = AiPlayers.State switch
+            {
+                1 => AiProfileId.None,
+                2 => AiProfileId.Dos,
+                3 => AiProfileId.Amiga,
+                _ => AiProfileId.Extended
+            },
+            World = WorldId.Original
         };
 
         creation.CreateNewGame(Info);

@@ -183,10 +183,8 @@ internal static class CampEconomy
     public static int LivingGuardCount(Location camp, Player player) =>
         camp.CampNPC.Count(npc => npc.Player == player && !npc.IsDead);
 
-    public static int ProductionToolCount(Location camp, Production production) => camp.Rooms
-        .SelectMany(room => room.Items)
-        .Concat(camp.CampNPC.SelectMany(npc => npc.Items))
-        .Count(item => item.Type.Production == production);
+    public static int ProductionToolCount(Location camp, Production production) =>
+        camp.GetProductionToolCount(production);
 
     public static int DesiredProductionToolCount(
         ClassicAiState state,

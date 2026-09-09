@@ -57,6 +57,7 @@ internal static class AiTurnController
         Construction.ConstructPortableEconomicUpgrade(state);
         GroupManagement.MaintainGroupEquipment(state, allowCampTransfers: true);
         CampManagement.MaintainCampNetwork(state);
+        EquipmentPlanning.Maintain(state);
         ExpansionPlanning.TryClaimCurrentAsLocalOpportunity(state);
 
         if (state.Current.Player == state.Player)
@@ -73,6 +74,7 @@ internal static class AiTurnController
         if (completedTrade)
         {
             GroupManagement.MaintainGroupEquipment(state);
+            EquipmentPlanning.Maintain(state);
             GroupInventory.MaintainLeaderRoleSlots(state);
         }
     }
@@ -725,7 +727,8 @@ internal static class AiTurnController
         string reason,
         bool allowSurvivableRecoveryRisk = false,
         RouteFinder.Route? knownRoute = null,
-        bool allowFatalRecoveryRisk = false)
+        bool allowFatalRecoveryRisk = false,
+        bool commitJourney = false)
     {
         if (target == null)
             return;
@@ -748,7 +751,8 @@ internal static class AiTurnController
             score - route.Days,
             target,
             route.NextStep,
-            reason));
+            reason,
+            CommitJourney: commitJourney));
     }
 
     internal static Location? FindNearestLogistics(ClassicAiState state, bool requireReachable = false)

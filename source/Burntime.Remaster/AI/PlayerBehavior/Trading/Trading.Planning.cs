@@ -287,7 +287,7 @@ internal static partial class Trading
 
     internal static bool HasAffordableHighReturnTradeCargo(ClassicAiState state)
     {
-        float buyingPower = SurvivalSafeEconomicCapital(state) * Trading.TradeBenefit(state);
+        float buyingPower = SurvivalSafeEconomicCapital(state) * Trading.TradeFactor(state);
         if (buyingPower <= 0)
             return false;
         return ReachableHighReturnPurchaseTypes(state).Any(type => type.TradeValue <= buyingPower);

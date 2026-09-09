@@ -140,11 +140,7 @@ namespace Burntime.Remaster.Logic
 
         public virtual void TurnTraders(StateLinkList<Trader> TraderList)
         {
-            for (int i = 0; i < TraderList.Count; i++)
-            {
-                Trader trader = TraderList[i];
-                trader.Turn();
-            }
+            ((ClassicGame)Container.Root).RuleBook.TurnTraders(TraderList);
         }
     }
 }

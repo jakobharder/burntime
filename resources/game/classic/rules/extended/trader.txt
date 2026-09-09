@@ -62,8 +62,8 @@
 'Willy
 198=item_meat item_empty_wineskin item_pitchfork item_spare_parts item_hose item_iron_pipe item_gas_mask
 
-'Ivan
-199=item_meat item_knife item_axe item_loaded_rifle item_woodpile item_ammunition item_tools
+'Ivan: pistol replaces the rifle slot; total firearm availability is unchanged.
+199=item_meat item_knife item_axe item_loaded_pistol item_woodpile item_ammunition item_tools
 
 'Steelman
 200=item_meat item_empty_wineskin item_knife item_screws item_tin item_spring item_gas_mask

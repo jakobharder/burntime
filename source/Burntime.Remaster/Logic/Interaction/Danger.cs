@@ -11,11 +11,6 @@ namespace Burntime.Remaster.Logic.Interaction
 {
     public class Danger : DataObject
     {
-        public float HealthDecrease
-        {
-            get { return type == "radiation" ? 1.35f : 0.5f; }
-        }
-
         public string InfoString
         {
             get { return infoString; }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Burntime.Remaster.Logic;
+using Burntime.Remaster.Logic.Rules;
 
 namespace Burntime.Remaster.AI;
 
@@ -50,7 +51,7 @@ internal static partial class Trading
         for (int exchange = 0; exchange < 2; exchange++)
         {
             TradePlan plan = nextPlan;
-            if (plan == null)
+            if (plan == null || !CanAfford(state, plan.Offers, plan.Targets))
                 break;
 
             for (int index = 0; index < plan.Offers.Count; index++)
@@ -80,14 +81,13 @@ internal static partial class Trading
 
             foreach (Item target in plan.Targets)
             {
-                if (AiItemPool.Accepts(target.Type))
-                    state.Reserve.Insert(target);
-                else
+                if (!AiItemPool.Accepts(target.Type) || !state.Reserve.Insert(target))
                     (GroupInventory.FindCargoCarrier(state, target) ??
                         throw new InvalidOperationException("planned trade target no longer fits reserved cargo roles"))
                         .Items.Add(target);
             }
 
+            EquipmentPlanning.Maintain(state);
             completed++;
             if (plan.Targets.Any(target => target.ID == "item_snake_trap"))
                 EconomicSupport.CompleteSnakeTrapCampaign(state);
@@ -101,7 +101,7 @@ internal static partial class Trading
                 $"{action} {string.Join(", ", plan.Offers.Select(offer => offer.ID))} for " +
                 $"{string.Join(", ", plan.Targets.Select(target => target.ID))} with {trader.Name} " +
                 $"(value {offeredValue:0} -> {receivedValue:0}, " +
-                $"AI barter value x{plan.AppliedTradeBenefit:0.0})");
+                $"barter value x{plan.AppliedTradeFactor:0.00})");
 
             AiTurnContext.For(state).RefreshNeeds();
             needs = AiTurnContext.For(state).Needs;
@@ -190,7 +190,6 @@ internal static partial class Trading
                 .ThenBy(asset => asset.Item == null ? 3 : SalePriority(asset.Item))
                 .ToList();
             List<TradeAsset> offers = new();
-            float offeredValue = 0;
             int remainingFoodInventory = state.Player.Group.GetFoodInInventory();
             int requiredFoodInventory = state.Current.IsCity && state.OwnedCampCount > 0
                 ? RecoveryServices.RequiredReturnFoodInventory(state)
@@ -207,7 +206,7 @@ internal static partial class Trading
             Dictionary<string, int> remainingMaterials = Trading.ConstructionMaterials
                 .ToDictionary(itemId => itemId, itemId => PortableMaterialCount(state, itemId));
             bool strategicPurchase = needs.IsStrategic(target.Type);
-            float appliedTradeBenefit = TradeBenefit(state);
+            float appliedTradeFactor = TradeFactor(state);
             foreach (TradeAsset candidate in allCandidates.Where(asset => asset.ID != target.ID))
             {
                 if (!strategicPurchase && candidate.TradeValue >= target.TradeValue)
@@ -233,7 +232,6 @@ internal static partial class Trading
                     continue;
 
                 offers.Add(candidate);
-                offeredValue += candidate.TradeValue * appliedTradeBenefit;
                 if (!candidate.FromPool)
                 {
                     remainingFoodInventory -= candidate.FoodValue;
@@ -244,7 +242,7 @@ internal static partial class Trading
                     remainingMeleeWeapons--;
                 if (Trading.ConstructionMaterials.Contains(candidate.ID))
                     remainingMaterials[candidate.ID]--;
-                if ((int)offeredValue >= (int)target.TradeValue)
+                if (CanAfford(state, offers, new[] { target }))
                     break;
             }
 
@@ -260,24 +258,12 @@ internal static partial class Trading
             {
                 if (offers.Count <= 1)
                     break;
-                float withoutCandidate = offers
-                    .Where(offer => offer != candidate)
-                    .Sum(offer => offer.TradeValue * appliedTradeBenefit);
-                if ((int)withoutCandidate < (int)target.TradeValue)
+                if (!CanAfford(state, offers.Where(offer => offer != candidate), new[] { target }))
                     continue;
                 offers.Remove(candidate);
-                offeredValue = withoutCandidate;
             }
 
-            float rawBudget = offers.Sum(offer => offer.TradeValue);
-            float effectiveBudget = rawBudget * appliedTradeBenefit;
-            // Artificial buying power discounts only the primary target. Any
-            // basket fillers must be covered by the goods' unmodified value, so
-            // the multiplier cannot compound into a growing pile of extras.
-            float barterBudget = appliedTradeBenefit > 1f
-                ? target.TradeValue + Math.Max(0,
-                    rawBudget - target.TradeValue / appliedTradeBenefit)
-                : effectiveBudget;
+            float barterBudget = TradeValue(state, offers.Select(offer => offer.TradeValue));
             List<Item> targets = BuildReceivedBasket(state, needs, trader, target, excludedTargets,
                 barterBudget, allowStrategicPurchase);
             int freedPortableSlots = offers.Count(offer => !offer.FromPool);
@@ -296,17 +282,30 @@ internal static partial class Trading
                 state.Player.Group.GetFreeSlotCount() + freedPortableSlots - reservedLeaderSlots;
             bool compressesCargo = strategicPurchase || offers.Count >= 2;
             float receivedUtility = targets.Sum(item => AcquisitionUtilityValue(state, item));
-            bool avoidsSevereWaste = receivedUtility >= offers.Sum(offer => offer.TradeValue) * 0.65f;
+            bool avoidsSevereWaste = receivedUtility >= barterBudget * 0.65f;
             if (offers.Count > 0 && compressesCargo &&
-                (int)offeredValue >= (int)target.TradeValue && canStoreTarget && avoidsSevereWaste)
-                return new TradePlan(targets, offers, appliedTradeBenefit);
+                CanAfford(state, offers, targets) && canStoreTarget && avoidsSevereWaste)
+                return new TradePlan(targets, offers, appliedTradeFactor);
         }
 
         return null;
     }
 
-    internal static float TradeBenefit(ClassicAiState state) =>
-        AiPolicy.ForDifficulty(state.Difficulty).TradeBenefit;
+    internal static float TradeFactor(ClassicAiState state) =>
+        RuleFormulas.EffectiveTradeFactor(
+            BarterFactor(state), AiPolicy.ForDifficulty(state.Difficulty).TradeBenefit);
+
+    internal static float TradeValue(ClassicAiState state, IEnumerable<float> values) =>
+        RuleFormulas.EffectiveTradeValue(
+            values, BarterFactor(state), AiPolicy.ForDifficulty(state.Difficulty).TradeBenefit);
+
+    static int BarterFactor(ClassicAiState state) =>
+        state.RootGame.RuleBook.Settings.GetBarterFactor(state.RootGame.World.Difficulty);
+
+    static bool CanAfford(ClassicAiState state, IEnumerable<TradeAsset> offers, IEnumerable<Item> targets) =>
+        RuleFormulas.AcceptTrade(offers.Select(offer => offer.TradeValue),
+            targets.Select(item => item.TradeValue), BarterFactor(state),
+            AiPolicy.ForDifficulty(state.Difficulty).TradeBenefit);
 
     internal static bool IsHighReturnLiquidReserve(Item item) =>
         item.FoodValue > 0 || AiItemPool.IsWaterContainer(item.Type) ||
@@ -360,7 +359,9 @@ internal static partial class Trading
         {
             Item filler = rankedFillers
                 .Where(item => !targets.Contains(item) && item.TradeValue <= remaining &&
-                    needs.CanBuy(item.Type, targets.Count(target => target.Type == item.Type)))
+                    needs.CanBuy(item.Type, targets.Count(target => target.Type == item.Type)) &&
+                    (!AiItemPool.IsFirearm(item.Type) ||
+                        targets.Count(target => AiItemPool.IsFirearm(target.Type)) < needs.EquipmentDemand(item.Type)))
                 .FirstOrDefault();
             if (filler == null)
                 break;
@@ -412,6 +413,15 @@ internal static partial class Trading
             assets.Add(new TradeAsset(null, null, type, true));
             remaining.Remove(type);
         }
+        // Clothing above this difficulty's cap is useful barter cargo, not a
+        // permanent reserve that Easy/Normal can never equip.
+        foreach (ItemType type in remaining.Where(type =>
+            type.DefenseValue > AiPolicy.ForDifficulty(state.Difficulty).ArmourLimit &&
+            !AiItemPool.IsHazardProtection(type)).ToArray())
+        {
+            assets.Add(new TradeAsset(null, null, type, true));
+            remaining.Remove(type);
+        }
         int surplusProductionTools = System.Math.Max(0,
             needs.ProductionToolStock - needs.ProductionToolQuota);
         foreach (ItemType type in remaining
@@ -455,7 +465,7 @@ internal static partial class Trading
     internal sealed record TradePlan(
         List<Item> Targets,
         List<TradeAsset> Offers,
-        float AppliedTradeBenefit);
+        float AppliedTradeFactor);
     internal sealed class TradeFailureState
     {
         public string Signature;

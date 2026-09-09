@@ -191,11 +191,9 @@ namespace Burntime.Remaster.Scenes
 
         void OnButtonHeal()
         {
-            int value = grid.GetHealValue();
-
             BurntimeClassic classic = app as BurntimeClassic;
-
-            inventory.ActiveCharacter.Health += value;
+            inventory.ActiveCharacter.Health = classic.Game.RuleBook.CalculateDoctorResult(
+                inventory.ActiveCharacter.Health, grid);
 
             UpdateText();
 
@@ -236,7 +234,9 @@ namespace Burntime.Remaster.Scenes
         {
             doctorText = new String[3];
             int baseLine = 0;
-            int value = grid.GetHealValue();
+            BurntimeClassic classic = app as BurntimeClassic;
+            int value = classic.Game.RuleBook.CalculateDoctorResult(
+                inventory.ActiveCharacter.Health, grid) - inventory.ActiveCharacter.Health;
 
             if (value == 0)
                 baseLine = 522;

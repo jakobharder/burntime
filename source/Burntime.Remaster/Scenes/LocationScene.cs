@@ -796,6 +796,7 @@ namespace Burntime.Remaster
 
             view.Map = (MapData)game.World.ActiveLocationObj.Map.MapData;
             view.Location = game.World.ActiveLocationObj;
+            view.Location.RepairLegacyEntryPositions();
             view.Player = game.World.ActivePlayerObj;
             view.Player.Group.IgnoreRangeFilter = false;
             lastSelectedCharacter = view.Player.SelectedCharacter;

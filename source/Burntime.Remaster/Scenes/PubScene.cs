@@ -220,14 +220,14 @@ namespace Burntime.Remaster.Scenes
 
         void OnButtonDrink()
         {
-            drinkLastAmount = grid.GetDrinkValue();
-            UpdateText();
-
             BurntimeClassic classic = app as BurntimeClassic;
+            drinkLastAmount = classic.Game.RuleBook.CalculatePubValue(grid);
+            UpdateText();
 
             classic.Game.World.ActivePlayerObj.Character.Items.Remove(grid);
 
-            classic.SelectedCharacter.GetGroup().Drink(BurntimeClassic.Instance.SelectedCharacter, grid.GetDrinkValue());
+            classic.SelectedCharacter.GetGroup().Drink(
+                BurntimeClassic.Instance.SelectedCharacter, drinkLastAmount);
             grid.Clear();
             keyboardNavigation.ItemsChanged();
         }
@@ -265,7 +265,8 @@ namespace Burntime.Remaster.Scenes
         {
             restaurantText = new String[3];
             int baseLine = 0;
-            int value = grid.GetDrinkValue();
+            BurntimeClassic classic = app as BurntimeClassic;
+            int value = classic.Game.RuleBook.CalculatePubValue(grid);
 
             if (drinkLastAmount == 0)
                 baseLine += 6;

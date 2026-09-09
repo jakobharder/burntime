@@ -9,6 +9,7 @@ using Burntime.Platform;
 using Burntime.Platform.IO;
 using Burntime.Remaster;
 using Burntime.Remaster.AI;
+using Burntime.Remaster.Logic.Generation;
 
 namespace Burntime.MonoGame;
 
@@ -47,10 +48,15 @@ internal static class HeadlessSimulationCommand
                 Turns = parsed.Turns,
                 Difficulty = parsed.Difficulty,
                 AiDifficulties = parsed.AiDifficulties,
+                AiProfiles = parsed.AiProfiles,
                 Seed = parsed.Seed,
-                ExtendedGame = parsed.ExtendedGame,
+                Rules = parsed.Rules,
+                AI = parsed.AI,
                 LoadGamePath = loadGamePath,
-                SaveGamePath = saveGamePath
+                SaveGamePath = saveGamePath,
+                AssertSmokeInvariants = parsed.AssertSmokeInvariants,
+                EconomyReportPath = parsed.EconomyReportPath,
+                EarlyDeathTurn = parsed.EarlyDeathTurn
             });
 
             if (parsed.ReportPath is null)
@@ -74,7 +80,10 @@ internal static class HeadlessSimulationCommand
             Console.Error.WriteLine(exception.Message);
             Console.Error.WriteLine("Usage: Burntime --ai-simulate [--turns N] [--difficulty easy|normal|hard] " +
                 "[--ai-difficulties easy,normal,hard,hard] [--seed N] [--load-save PATH] " +
-                "[--save-at-end PATH] [--report PATH] [--extended]");
+                "[--save-at-end PATH] [--report PATH] [--rules dos|amiga|extended] " +
+                "[--ai none|dos|amiga|extended] " +
+                "[--ai-profiles dos,amiga,extended,none] [--smoke-test] " +
+                "[--early-death-turn N] [--economy-report PATH]");
             return 2;
         }
         catch (Exception exception)
@@ -109,6 +118,9 @@ internal static class HeadlessSimulationCommand
                     result.AiDifficulties = ParseAiDifficulties(
                         NextValue(args, ref index, argument));
                     break;
+                case "--economy-report":
+                    result.EconomyReportPath = NextValue(args, ref index, argument);
+                    break;
                 case "--report":
                     result.ReportPath = NextValue(args, ref index, argument);
                     break;
@@ -119,7 +131,24 @@ internal static class HeadlessSimulationCommand
                     result.SaveAtEndPath = NextValue(args, ref index, argument);
                     break;
                 case "--extended":
-                    result.ExtendedGame = true;
+                    result.Rules = RuleSetId.Extended;
+                    break;
+                case "--rules":
+                    result.Rules = ParseRules(NextValue(args, ref index, argument));
+                    break;
+                case "--ai":
+                    result.AI = ParseAi(NextValue(args, ref index, argument));
+                    break;
+                case "--ai-profiles":
+                    result.AiProfiles = ParseAiProfiles(
+                        NextValue(args, ref index, argument));
+                    break;
+                case "--smoke-test":
+                    result.AssertSmokeInvariants = true;
+                    break;
+                case "--early-death-turn":
+                    result.EarlyDeathTurn = ParsePositiveInt(
+                        NextValue(args, ref index, argument), argument);
                     break;
                 default:
                     throw new ArgumentException($"Unknown AI simulation option: {argument}");
@@ -167,16 +196,48 @@ internal static class HeadlessSimulationCommand
         return values.Select(ParseDifficulty).ToArray();
     }
 
+    static RuleSetId ParseRules(string value) => value.ToLowerInvariant() switch
+    {
+        "dos" => RuleSetId.Dos,
+        "amiga" => RuleSetId.Amiga,
+        "extended" => RuleSetId.Extended,
+        _ => throw new ArgumentException("--rules must be dos, amiga, or extended.")
+    };
+
+    static AiProfileId ParseAi(string value) => value.ToLowerInvariant() switch
+    {
+        "none" => AiProfileId.None,
+        "dos" => AiProfileId.Dos,
+        "amiga" => AiProfileId.Amiga,
+        "extended" => AiProfileId.Extended,
+        _ => throw new ArgumentException("--ai must be none, dos, amiga, or extended.")
+    };
+
+    static AiProfileId[] ParseAiProfiles(string value)
+    {
+        string[] values = value.Split(',', StringSplitOptions.RemoveEmptyEntries |
+            StringSplitOptions.TrimEntries);
+        if (values.Length != 4)
+            throw new ArgumentException(
+                "--ai-profiles must contain four comma-separated values.");
+        return values.Select(ParseAi).ToArray();
+    }
+
     sealed class ParsedOptions
     {
         public int Turns { get; set; } = 100;
         public int Difficulty { get; set; } = 2;
         public int[]? AiDifficulties { get; set; }
+        public AiProfileId[]? AiProfiles { get; set; }
         public int Seed { get; set; } = 1;
         public string? ReportPath { get; set; }
+        public string? EconomyReportPath { get; set; }
         public string? LoadSavePath { get; set; }
         public string? SaveAtEndPath { get; set; }
-        public bool ExtendedGame { get; set; }
+        public bool AssertSmokeInvariants { get; set; }
+        public int EarlyDeathTurn { get; set; } = 60;
+        public RuleSetId Rules { get; set; } = RuleSetId.Dos;
+        public AiProfileId AI { get; set; } = AiProfileId.Extended;
     }
 
     sealed class LoadingCounter : ILoadingCounter

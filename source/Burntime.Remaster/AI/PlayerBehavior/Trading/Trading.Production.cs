@@ -170,6 +170,7 @@ internal static partial class Trading
                         !reservedWeapons.Contains(item))
                     .Select(item => ((IItemCollection)room.Items, item)))
                 .Concat(camp.CampNPC
+                    .Where(_ => production.AllowInventory)
                     .Where(npc => npc.Player == state.Player)
                     .SelectMany(npc => npc.Items
                         .Where(item => item.Type.Production == production && npc.Weapon != item)

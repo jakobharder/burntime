@@ -207,20 +207,27 @@ internal static class CampManagement
             .ToArray();
 
         foreach (Location camp in camps)
-            WeaponLoadout.NormalizeWeaponLimits(state,
+            WeaponLoadout.RefreshWeapons(
                 camp.CampNPC.Where(npc => npc.Player == player && !npc.IsDead).ToArray());
 
         Character[] frontierGuards = camps
             .Where(location => ReinforcementPlanning.IsThreatened(state, location))
             .SelectMany(location => location.CampNPC
                 .Where(npc => npc.Player == player && !npc.IsDead))
+            .OrderByDescending(guard => guard.Experience)
             .ToArray();
         foreach (Character guard in frontierGuards)
-            WeaponLoadout.EquipWeapon(state, guard,
-                guard.Location.CampNPC
-                    .Where(npc => npc.Player == player && !npc.IsDead)
-                    .ToArray(),
+        {
+            Character[] garrison = guard.Location.CampNPC
+                .Where(npc => npc.Player == player && !npc.IsDead).ToArray();
+            bool Allowed(ItemType type) => WeaponLoadout.WeaponAllowed(state, garrison, guard, type);
+            Item? localWeapon = WeaponLoadout.EquipStoredCampWeapon(guard, Allowed);
+            if (localWeapon != null)
+                AiTelemetry.Report(player,
+                    $"equipped frontier guard {guard.Name} at {guard.Location.Title} with stored {localWeapon.ID}");
+            WeaponLoadout.EquipWeapon(state, guard, garrison,
                 upgradeWeakWeapon: true, "frontier guard");
+        }
 
         StockCurrentCampWeaponReserve(state);
         foreach (Location camp in camps.Where(location => location.Danger != null))
@@ -355,13 +362,19 @@ internal static class CampManagement
         camp.AutoSelectFoodProduction(onlyIfCurrentProducesNothing: false);
         EnsureAiProductionStorage(state, camp);
 
-        // collect
-        Trading.CollectRedundantProductionTools(state, camp);
+        // Collecting local goods is unsafe under binary original hazards unless
+        // every traveller passes the ruleset's protection check. Water handling
+        // remains available so a transit party can refill and leave.
+        if (state.CanCollectLocalLoot)
+            Trading.CollectRedundantProductionTools(state, camp);
 
         Item? depositedWaterReserve = StockCriticalWaterContainerFromGroup(state, camp);
-        CollectFutureRecruitmentPayment(state, camp);
-        CollectProducedSurplus(state, camp);
-        CollectStoredTradeGoods(state, camp, depositedWaterReserve);
+        if (state.CanCollectLocalLoot)
+        {
+            CollectFutureRecruitmentPayment(state, camp);
+            CollectProducedSurplus(state, camp);
+            CollectStoredTradeGoods(state, camp, depositedWaterReserve);
+        }
     }
 
     static Item? StockCriticalWaterContainerFromGroup(ClassicAiState state, Location camp)

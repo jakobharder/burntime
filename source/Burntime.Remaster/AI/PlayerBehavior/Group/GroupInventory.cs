@@ -134,7 +134,8 @@ internal static class GroupInventory
         Character? owner = item == null ? null : state.Player.Group
             .First(character => character.Items.Contains(item));
         Room? room = null;
-        if (item == null && state.Current.Player == state.Player)
+        if (item == null && state.CanCollectLocalLoot &&
+            state.Current.Player == state.Player)
         {
             var stored = state.Current.Rooms
                 .SelectMany(candidate => candidate.Items
@@ -201,7 +202,7 @@ internal static class GroupInventory
                         reservedPayment != item.Type)
                     .Select(item => ((IItemCollection)character.Items, item)))
                 .ToList();
-            if (current.Player == player)
+            if (state.CanCollectLocalLoot && current.Player == player)
             {
                 int storedFood = current.Rooms.Sum(room =>
                     room.Items.Count(item => item.FoodValue > 0));

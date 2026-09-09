@@ -20,6 +20,8 @@ internal static partial class Trading
 
     internal static float ShoppingPriority(ClassicAiState state, Item item)
     {
+        if (AiItemPool.IsFirearm(item.Type) && EquipmentPlanning.LoadedShots(item.Type, item.AmmoValue) <= 0)
+            return 0;
         float strategic = ShoppingPriority(
             AiTurnContext.For(state).Needs, item.Type, allowConsolidation: false);
         return strategic > 0 || !IsTradeValueUpgrade(state, item)
@@ -92,6 +94,9 @@ internal static partial class Trading
             (needs.NeedsProtection(type) || needs.ProtectionStock < needs.ProtectionQuota))
             return 1100 + type.TradeValue;
 
+        if (needs.EquipmentDemand(type) > 0)
+            return 900 + type.WeaponPriority + type.DefenseValue;
+
         // 5. Cargo consolidation is deliberately last.
         return allowConsolidation ? 500 + type.TradeValue : 0;
     }
@@ -103,7 +108,8 @@ internal static partial class Trading
     {
         if (needs.PlannedSettlementPaymentType == item.Type)
             return false;
-        if (state.Player.Group.Any(character => character.Weapon == item || character.Protection == item))
+        if (state.Player.Group.Any(character => character.Weapon == item || character.Protection == item ||
+            character.Items.FindBestDefense() == item))
             return false;
         if (item.Type.Production != null &&
             (needs.NeedsProduction(item.Type) ||
@@ -137,6 +143,9 @@ internal static partial class Trading
             return false;
         if (needs.IsPolicyAttackWeapon(item.Type) &&
             needs.MeleeWeaponStock <= needs.MeleeWeaponQuota)
+            return false;
+        if (item.ID == "item_ammunition" && state.Player.Group.Any(character =>
+            character.Items.Any(weapon => AiItemPool.IsFirearm(weapon.Type))))
             return false;
         if (Trading.ConstructionMaterials.Contains(item.ID) &&
             needs.MaterialStock(item.ID) <= needs.MaterialQuota(item.ID))
@@ -177,7 +186,7 @@ internal static partial class Trading
             .OrderBy(item => item.TradeValue)
             .ToArray();
         return lowerValueGoods.Length >= 2 &&
-            lowerValueGoods.Sum(item => item.TradeValue * TradeBenefit(state)) >= target.TradeValue;
+            lowerValueGoods.Sum(item => item.TradeValue * TradeFactor(state)) >= target.TradeValue;
     }
 
     internal static bool IsStrategicPurchase(ClassicAiState state, Item item) =>

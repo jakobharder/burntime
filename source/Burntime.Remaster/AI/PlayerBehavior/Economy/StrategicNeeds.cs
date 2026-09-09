@@ -35,8 +35,10 @@ internal sealed class StrategicNeeds
     readonly Dictionary<string, int> globalItemStock = new();
     readonly List<HashSet<string>> usefulRecipes = new();
     readonly HashSet<string> requiredHazards = new();
-    readonly int pitchforkLimit;
-    readonly int pitchforkStock;
+
+    readonly ClassicAiState state;
+    readonly EquipmentNeeds equipment;
+    public int EquipmentDemand(ItemType type) => equipment.Demand(type);
 
     public ItemType? PlannedSettlementPaymentType { get; }
     public bool DoctorPaymentNeeded { get; }
@@ -68,7 +70,9 @@ internal sealed class StrategicNeeds
 
     public StrategicNeeds(ClassicAiState state)
     {
+        this.state = state;
         Player player = state.Player;
+        equipment = new EquipmentNeeds(state);
         Item[] portableItems = player.Group.SelectMany(character => character.Items).ToArray();
         (ItemType Type, int Count)[] poolItems = state.Reserve.GetContents().ToArray();
 
@@ -85,7 +89,6 @@ internal sealed class StrategicNeeds
             state.Reserve.TotalWaterContainerCapacity;
         DesiredPortableWaterCapacity = Trading.DesiredPortableWaterCapacity(state);
         AiPolicy policy = AiPolicy.ForDifficulty(state.Difficulty);
-        pitchforkLimit = policy.PitchforkLimit;
         DesiredAttackWaterContainerCapacity =
             Trading.DesiredWaterContainerCapacity(policy.AttackGroupSize);
         CampWaterContainerShortfall = Trading.CampWaterContainerShortfall(state);
@@ -100,10 +103,10 @@ internal sealed class StrategicNeeds
             poolItems.Where(entry => entry.Type.ID != "item_pitchfork" &&
                     IsMeleeWeapon(entry.Type))
                 .Sum(entry => entry.Count);
-        pitchforkStock = portableItems.Count(item => item.ID == "item_pitchfork") +
+        int pitchforkStock = portableItems.Count(item => item.ID == "item_pitchfork") +
             poolItems.Where(entry => entry.Type.ID == "item_pitchfork")
                 .Sum(entry => entry.Count);
-        MeleeWeaponStock = ordinaryMeleeWeapons + Math.Min(pitchforkStock, pitchforkLimit);
+        MeleeWeaponStock = ordinaryMeleeWeapons + pitchforkStock;
         UrgentWeaponNeeded = state.RootGame.World.Day >= 100 &&
             !AttackPlanning.HasGroupWeapon(player);
         // Prepare durable attack equipment during ordinary trade instead of
@@ -279,21 +282,33 @@ internal sealed class StrategicNeeds
     public bool ProvidesMissionProtection(ItemType type) =>
         MissionHazard != null && type.GetProtection(MissionHazard) != null;
 
-    public bool IsPolicyAttackWeapon(ItemType type) =>
-        IsMeleeWeapon(type) && (type.ID != "item_pitchfork" || pitchforkLimit > 0);
+    public bool IsPolicyAttackWeapon(ItemType type) => IsMeleeWeapon(type);
 
     public bool CanAcquireAttackWeapon(ItemType type) =>
-        IsPolicyAttackWeapon(type) &&
-        (type.ID != "item_pitchfork" || pitchforkStock < pitchforkLimit);
+        type.DamageValue > 0 && EquipmentDemand(type) > 0;
 
     public int GlobalItemCount(ItemType type) => Demand(globalItemStock, type.ID);
 
-    public bool CanBuy(ItemType type, int pendingCount = 0) =>
-        type.FoodValue > 0 ||
-        AiItemPool.IsWaterContainer(type) &&
+    public bool CanBuy(ItemType type, int pendingCount = 0)
+    {
+        // Assigned equipment is not a stock budget. Keep only the existing cap
+        // on unused pooled items, and never let upgrade preferences block tools
+        // or essential protection.
+        if (EquipmentNeeds.IsEquipment(type))
+        {
+            if (AiItemPool.Accepts(type) && state.Reserve.GetContents()
+                .Where(entry => entry.Type == type).Sum(entry => entry.Count) + pendingCount >= MaximumPurchasedItemsPerType)
+                return false;
+            bool essential = PlannedSettlementPaymentType == type || NeedsProduction(type) ||
+                NeedsMaterial(type.ID) || AiItemPool.IsHazardProtection(type) &&
+                    (ProvidesMissionProtection(type) || NeedsProtection(type));
+            return EquipmentDemand(type) > pendingCount || essential &&
+                GlobalItemCount(type) + pendingCount < MaximumPurchasedItemsPerType;
+        }
+        return type.FoodValue > 0 || AiItemPool.IsWaterContainer(type) &&
             pendingCount < CampWaterContainerShortfall ||
-        !AiItemPool.IsFirearm(type) &&
-        GlobalItemCount(type) + pendingCount < MaximumPurchasedItemsPerType;
+            GlobalItemCount(type) + pendingCount < MaximumPurchasedItemsPerType;
+    }
 
     public bool IsStrategic(ItemType type)
     {
@@ -305,7 +320,7 @@ internal sealed class StrategicNeeds
                     PortableWaterCapacity < DesiredAttackWaterContainerCapacity ||
                     CampWaterContainerShortfall > 0) ||
             type.FoodValue > 0 && PortableFood < DesiredPortableFood ||
-            NeedsProduction(type) || NeedsMaterial(type.ID) ||
+            NeedsProduction(type) || NeedsMaterial(type.ID) || EquipmentDemand(type) > 0 ||
             Trading.IsPump(type) && PumpStock < PumpQuota ||
             CanAcquireAttackWeapon(type) && MeleeWeaponStock < MeleeWeaponQuota ||
             AiItemPool.IsHazardProtection(type) &&

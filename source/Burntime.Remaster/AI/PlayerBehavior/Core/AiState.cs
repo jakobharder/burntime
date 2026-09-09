@@ -4,35 +4,10 @@ using Burntime.Remaster.Logic;
 using Burntime.Framework;
 using Burntime.Framework.States;
 using System.Linq;
+using Burntime.Remaster.Logic.Generation;
 
 namespace Burntime.Remaster.AI
 {
-    #region public AI settings structure
-    /// <summary>
-    /// AI settings
-    /// </summary>
-    [Serializable]
-    public struct AiSettings
-    {
-        // Serialized by v1.0.4. Keep these unused members so the legacy settings
-        // contract remains explicit and old save data continues to bind cleanly.
-        public int MinInterval;
-        public int MaxInterval;
-
-        /// <summary>
-        /// Maximum number of camps in advance of human players.
-        /// </summary>
-        public int MaxAdvance;
-
-        /// <summary>
-        /// AI policy profile: 0 = easy, 1 = normal, 2 = hard.
-        /// The default value intentionally maps old saves without this field to easy.
-        /// </summary>
-        [System.Runtime.Serialization.OptionalField]
-        public int Difficulty;
-    }
-    #endregion
-
     /// <summary>
     /// AI processing StateObject.
     /// Save compatibility policy: preserve members present in v1.0.4. Prefer
@@ -43,7 +18,7 @@ namespace Burntime.Remaster.AI
     /// so v1.0.4 saves deserialize with the default value.
     /// </summary>
     [Serializable]
-    class ClassicAiState : Burntime.Framework.States.AiState
+    class ClassicAiState : Burntime.Framework.States.AiState, IAiProfileState
     {
         protected enum Mode
         {
@@ -160,6 +135,8 @@ namespace Burntime.Remaster.AI
             get { return headedLocation; }
         }
 
+        AiProfileId IAiProfileState.Profile => settings.Profile;
+
         /// <summary>
         /// Empire-wide strategic equipment and construction reserve.
         /// </summary>
@@ -201,6 +178,25 @@ namespace Burntime.Remaster.AI
                     AiPolicy.ForDifficulty(Difficulty).AttackPlanTurns;
             CampManagement.NormalizeLoadedGarrisonBelongings(this);
         }
+
+        internal void InitializeNewGamePlayer(
+            Burntime.Data.BurnGfx.Save.SaveGame source)
+        {
+            int experience = RootGame.RuleBook.Settings.StartExperience;
+            Player.Character.Health = 100;
+            Player.Character.Experience = experience;
+            Player.Character.Food = 9;
+            Player.Character.Water = 5;
+            Player.BaseExperience = experience;
+
+            Player.Character.Items.Clear();
+            foreach (string item in new[]
+            {
+                "item_meat", "item_bottle", "item_knife",
+                "item_full_canteen", "item_knife"
+            })
+                Player.Character.Items.Add(RootGame.ItemTypes[item].Generate());
+        }
         #endregion
 
         /// <summary>
@@ -212,7 +208,8 @@ namespace Burntime.Remaster.AI
             if (discardedReserveItems > 0)
                 AiTelemetry.Report(Player,
                     $"discarded {discardedReserveItems} excess shared reserve items above the per-type cap");
-            HuntOneDogForMeat();
+            if (CanCollectLocalLoot)
+                HuntOneDogForMeat();
             ManageLocalItems();
             AiTurnController.RunTurn(this);
         }
@@ -309,10 +306,12 @@ namespace Burntime.Remaster.AI
             get => slumpMaterialGrantsUsed;
             set => slumpMaterialGrantsUsed = value;
         }
-        internal int OwnedCampCount => CampCount;
-        internal int HumanCampBenchmark => MaxHumanCampCount;
-        internal bool HasHumanPlayers => RootGame.World.Players.Any(candidate =>
-            candidate.Type == PlayerType.Human);
+        internal int OwnedCampCount => AiStateOperations.OwnedCampCount(RootGame, Player);
+        internal bool CanCollectLocalLoot => Player.Group
+            .Where(character => !character.IsDead)
+            .All(character => RootGame.RuleBook.PassesDailyHazardCheck(character));
+        internal AiStateOperations.ProgressBenchmark ProgressBenchmark =>
+            AiStateOperations.GetProgressBenchmark(RootGame, Player);
         internal bool IsRetaliatingAgainst(Player opponent) =>
             retaliatingAgainst != null && retaliatingAgainst.Object == opponent &&
             RootGame.World.Day <= retaliationUntilDay;
@@ -573,7 +572,7 @@ namespace Burntime.Remaster.AI
                     CharClass.Mercenary => 2,
                     _ => 1
                 })
-                .ThenBy(character => character.AttackValue + character.DefenseValue)
+                .ThenBy(character => CombatStrength.Fighter(character))
                 .ThenBy(character => character.Health)
                 .FirstOrDefault();
             if (follower != null)
@@ -598,7 +597,7 @@ namespace Burntime.Remaster.AI
                     CharClass.Mercenary => 2,
                     _ => 1
                 })
-                .ThenBy(character => character.AttackValue + character.DefenseValue)
+                .ThenBy(character => CombatStrength.Fighter(character))
                 .FirstOrDefault();
             if (npc == null || !PreserveTravelSuppliesBeforeStationing(npc))
                 return null;
@@ -703,7 +702,7 @@ namespace Burntime.Remaster.AI
             Character npc = Player.Group
                 .Where(character => character != Player.Character)
                 .OrderBy(character => character.Items.Sum(item => item.TradeValue))
-                .ThenBy(character => character.AttackValue + character.DefenseValue)
+                .ThenBy(character => CombatStrength.Fighter(character))
                 .FirstOrDefault();
             if (npc != null)
                 JoinCamp(npc);
@@ -720,7 +719,7 @@ namespace Burntime.Remaster.AI
                 : 1;
             Character npc = CurrentLocation.CampNPC
                 .Where(character => character.Player == Player && !character.IsDead)
-                .OrderByDescending(character => character.AttackValue + character.DefenseValue)
+                .OrderByDescending(character => CombatStrength.Fighter(character))
                 .FirstOrDefault();
             if (npc == null || CurrentLocation.CampNPC.Count(character =>
                     character.Player == Player && !character.IsDead) <= minimumGuards)
@@ -735,7 +734,7 @@ namespace Burntime.Remaster.AI
                 return null;
             Character npc = CurrentLocation.CampNPC
                 .Where(character => character.Player == Player && !character.IsDead)
-                .OrderByDescending(character => character.AttackValue + character.DefenseValue)
+                .OrderByDescending(character => CombatStrength.Fighter(character))
                 .FirstOrDefault();
             if (npc == null || CurrentLocation.CampNPC.Count(character =>
                     character.Player == Player && !character.IsDead) <= minimumGuards)
@@ -797,8 +796,12 @@ namespace Burntime.Remaster.AI
             DeferAttackPlan(location, policy);
         }
 
+        [NonSerialized]
+        internal Location? AttackRecruitmentCity;
+
         internal void DeferAttackPlan(Location location, AiPolicy policy)
         {
+            AttackRecruitmentCity = null;
             TerritorialTargetDeferrals.DeferForTurns(
                 this, location, policy.AttackPlanRetryDelay);
             StrategicTarget = null;
@@ -937,40 +940,6 @@ namespace Burntime.Remaster.AI
             get { return CurrentLocation.Player == Player; }
         }
 
-        private int CampCount
-        {
-            get
-            {
-                int count = 0;
-
-                foreach (Location loc in Game.World.Locations)
-                {
-                    if (loc.Player == Player)
-                        count++;
-                }
-
-                return count;
-            }
-        }
-
-        private int MaxHumanCampCount
-        {
-            get
-            {
-                int max = 0;
-
-                foreach (Player human in Game.World.Players.Where(candidate =>
-                    candidate.Type == PlayerType.Human))
-                {
-                    int count = Game.World.Locations.Count(location =>
-                        location.Player == human);
-                    max = System.Math.Max(count, max);
-                }
-
-                return max;
-            }
-        }
-
         #endregion
 
         #region item management
@@ -983,7 +952,8 @@ namespace Burntime.Remaster.AI
             if (itemPool == null)
                 itemPool = container.Create<AiItemPool>();
 
-            CollectGroundItems();
+            if (CanCollectLocalLoot)
+                CollectGroundItems();
 
             if (IsHome)
                 StockCampWaterContainers();
@@ -996,6 +966,8 @@ namespace Burntime.Remaster.AI
 
         internal void CollectGroundItems()
         {
+            if (!CanCollectLocalLoot)
+                return;
             if (CurrentLocation.Player != null && CurrentLocation.Player != Player)
                 return;
             CollectGroundItems(CurrentLocation.Items.ToArray());
@@ -1003,6 +975,8 @@ namespace Burntime.Remaster.AI
 
         internal void CollectCombatLoot(IEnumerable<Item> dropped)
         {
+            if (!CanCollectLocalLoot)
+                return;
             Item[] combatDrops = dropped
                 .Where(item => CurrentLocation.Items.Any(ground => ground == item))
                 .Distinct()
@@ -1149,10 +1123,9 @@ namespace Burntime.Remaster.AI
             npc.JoinCamp();
             CampManagement.UnloadGarrisonBelongings(this, CurrentLocation, npc);
 
-            // Add a real compatible production tool. A carried weapon such as a knife can
-            // remain on the guard and serve both defense and maggot production.
+            // Production tools must be installed in a room. A guard's carried
+            // weapon is not evidence that camp production is equipped.
             Item existingTool = CurrentLocation.Rooms.SelectMany(room => room.Items)
-                .Concat(npc.Items)
                 .FirstOrDefault(item => item.Type.Production != null &&
                     GetAvailableProducts(CurrentLocation).Contains(item.Type.Production.Produce.ID));
             bool preferProductionUpgrade = CampManagement.ShouldPreferProductionAtCamp(this, CurrentLocation) &&
@@ -1170,25 +1143,8 @@ namespace Burntime.Remaster.AI
                 : null;
             if (trap != null)
             {
-                if (trap.Type.IsClass("weapon") && !npc.Items.IsFull)
-                {
-                    if (!npc.Items.Contains(trap))
-                        npc.Items.Add(trap);
-                    npc.Weapon = trap;
-                }
-                else if (CurrentLocation.Rooms.Count > 0)
-                {
-                    if (!CampManagement.StoreItemInCamp(CurrentLocation, trap))
-                        npc.Items.Add(trap);
-                }
-                else
-                {
-                    npc.Items.Add(trap);
-                }
-            }
-            else if (existingTool?.DamageValue > 0)
-            {
-                npc.Weapon = existingTool;
+                if (!CampManagement.StoreItemInCamp(CurrentLocation, trap))
+                    CampManagement.StoreInReserveOrAtLocation(this, trap, CurrentLocation);
             }
 
             GroupInventory.MaintainLeaderRoleSlots(this);

@@ -242,8 +242,11 @@ namespace Burntime.Remaster.GUI
             txt.AddArgument("|C", activePage.Character.Water);
             txt.AddArgument("|D", activePage.Character.Food);
 
-            txt.AddArgument("{attack}", (int)activePage.Character.AttackValue);
-            txt.AddArgument("{defense}", (int)activePage.Character.DefenseValue);
+            var combat = ((ClassicGame)activePage.Character.Container.Root).RuleBook
+                .GetCombatPreview(activePage.Character);
+            txt.AddArgument("{defense}", combat.Defense ?? 0);
+            txt.AddArgument("{damage}", combat.Minimum == combat.Maximum
+                ? combat.Minimum.ToString() : $"{combat.Minimum}-{combat.Maximum}");
 
             int fontSpacing = 10;
 
@@ -264,19 +267,23 @@ namespace Burntime.Remaster.GUI
                 font.DrawText(Target, textPos, txt[402], TextAlignment.Left, VerticalTextAlignment.Top);
                 textPos.y += fontSpacing;
 
-                font.DrawText(Target, textPos, txt.Get("newburn?100"), TextAlignment.Left, VerticalTextAlignment.Top);
+                textPos.x = basePos.x + 73;
+                if (combat.Defense > 0)
+                    font.DrawText(Target, textPos, txt.Get("newburn?112"), TextAlignment.Left, VerticalTextAlignment.Top);
                 textPos.x = basePos.x + 20;
-                font.DrawText(Target, textPos, txt.Get("newburn?99"), TextAlignment.Left, VerticalTextAlignment.Top);
+                font.DrawText(Target, textPos, txt.Get("newburn?111"),
+                    TextAlignment.Left, VerticalTextAlignment.Top);
                 textPos.y += fontSpacing;
 
-                if (activePage.Character.Protection != null)
                 {
                     string text = "";
-                    foreach (var protection in activePage.Character.Protection.Type.Protection)
+                    foreach (string hazard in new[] { "gas", "radiation" })
                     {
-                        var p = protection.Object;
-                        text += (int)(System.Math.Round(p.Rate * 100));
-                        if (p.Type == "gas")
+                        float rate = activePage.Character.GetHazardProtectionRate(hazard);
+                        if (rate <= 0)
+                            continue;
+                        text += (int)(System.Math.Round(rate * 100));
+                        if (hazard == "gas")
                             text += app.ResourceManager.GetString("newburn?101");
                         else
                             text += app.ResourceManager.GetString("newburn?102");

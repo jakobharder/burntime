@@ -13,6 +13,8 @@ internal readonly record struct TerritorialPlan(
 
 internal static partial class ExpansionPlanning
 {
+    const int FirstCampRouteDayPenalty = 100;
+
     public static void CancelSettlementAtHostileWaypoint(
         ClassicAiState state,
         DecisionContext context)
@@ -306,6 +308,13 @@ internal static partial class ExpansionPlanning
         }
         if (target.Player == null)
         {
+            if (IsOccupiedByOtherBoss(state, target))
+            {
+                AiTelemetry.Report(context.Player,
+                    $"released settlement target {target.Title}: another player is present");
+                state.StrategicTarget = null;
+                return null;
+            }
             if (!IsSustainableNeutralFrontier(state, target))
             {
                 AiTelemetry.Report(context.Player,
@@ -363,6 +372,7 @@ internal static partial class ExpansionPlanning
             if (location == context.Current)
             {
                 if (location.Player == null && context.NeutralExpansionAllowed &&
+                    !IsOccupiedByOtherBoss(state, location) &&
                     state.CanClaim(location) && HasTravellingHazardProtection(state, location) &&
                     CampEconomy.HasFoodProductionPotential(location))
                 {
@@ -381,6 +391,7 @@ internal static partial class ExpansionPlanning
                 continue;
 
             if (location.Player == null && context.NeutralExpansionAllowed &&
+                !IsOccupiedByOtherBoss(state, location) &&
                 state.CanClaim(location) && HasTravellingHazardProtection(state, location) &&
                 IsSustainableNeutralFrontier(state, location) &&
                 (HasSettlementRouteSupplies(state, context, location, route) ||
@@ -438,6 +449,7 @@ internal static partial class ExpansionPlanning
 
         var candidates = state.RootGame.World.Locations
             .Where(location => !location.IsCity && location.Player == null &&
+                !IsOccupiedByOtherBoss(state, location) &&
                 !TerritorialTargetDeferrals.IsDeferred(state, location) &&
                 state.CanClaim(location) &&
                 HasTravellingHazardProtection(state, location) &&
@@ -463,8 +475,8 @@ internal static partial class ExpansionPlanning
             .Where(candidate => !hasPreferred ||
                 CampEconomy.IsAcceptableFirstCamp(candidate.Location))
             .OrderByDescending(candidate =>
-                NeutralTargetScore(state, policy, candidate.Location) +
-                CampEconomy.TerritorialValue(candidate.Location))
+                NeutralTargetScore(state, policy, candidate.Location) -
+                (candidate.Route?.Days ?? 0) * FirstCampRouteDayPenalty)
             .ThenBy(candidate => candidate.Route?.Days ?? 0)
             .Select(candidate => candidate.Location)
             .FirstOrDefault();
@@ -486,6 +498,11 @@ internal static partial class ExpansionPlanning
         return state.Player.Group.All(character => character.Items.Any(item =>
             item.Type.GetProtection(location.Danger.Type) != null));
     }
+
+    internal static bool IsOccupiedByOtherBoss(ClassicAiState state, Location location) =>
+        state.RootGame.World.Players.Any(player =>
+            player != state.Player && !player.IsDead && !player.Character.IsDead &&
+            !player.IsTraveling && player.Location == location);
 
     static int TerritorialEliminationBonus(ClassicAiState state, Location target)
     {
@@ -629,7 +646,8 @@ internal static partial class ExpansionPlanning
 
     static bool IsSuitableCurrentClaim(ClassicAiState state, DecisionContext context)
     {
-        if (!CampEconomy.HasFoodProductionPotential(context.Current))
+        if (IsOccupiedByOtherBoss(state, context.Current) ||
+            !CampEconomy.HasFoodProductionPotential(context.Current))
             return false;
 
         // Do not consume a committed settler at a barren intermediate stop. It
@@ -651,6 +669,7 @@ internal static partial class ExpansionPlanning
         state.RootGame.World.Locations.Any(location =>
         {
             if (location == context.Current || location.IsCity || location.Player != null ||
+                IsOccupiedByOtherBoss(state, location) ||
                 TerritorialTargetDeferrals.IsDeferred(state, location) ||
                 !CampEconomy.IsAcceptableFirstCamp(location) || !state.CanClaim(location) ||
                 !HasTravellingHazardProtection(state, location))

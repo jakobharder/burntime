@@ -42,6 +42,13 @@ namespace Burntime.Remaster.Logic.Generation
             }
         }
 
+        internal static void ApplyEnvironment(Location location, ConfigFile config, IResourceManager resources)
+        {
+            location.AvailableProducts = config[""].GetInts("available_products");
+            string danger = config[""].GetString("danger");
+            location.Danger = string.IsNullOrEmpty(danger) ? null : resources.GetData(danger) as Danger;
+        }
+
         public void Create(ClassicGame game)
         {
             var resources = LogicFactory.GetParameter<IResourceManager>("resource");
@@ -59,8 +66,7 @@ namespace Burntime.Remaster.Logic.Generation
                 loc.Source.Reserve = loc.Source.Water;
                 loc.Source.Capacity = cfg[""].GetInt("water_capacity");
                 loc.Production = null;// city.Producing == -1 ? null : game.Productions[city.Producing];
-                loc.AvailableProducts = new int[] { };// (int[])city.Production.Clone();
-                loc.Danger = resources.GetData(cfg[""].GetString("danger")) as Danger;
+                ApplyEnvironment(loc, cfg, resources);
                 loc.IsCity = cfg[""].GetBool("city");
                 loc.EntryPoint = cfg[""].GetVector2("entry_point");
 

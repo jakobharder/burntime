@@ -34,7 +34,7 @@ internal static class Construction
     internal static void RefillConstructionReserve(ClassicAiState state)
     {
         List<(IItemCollection Owner, Item Item)> available = new();
-        if (state.Current.Player == state.Player)
+        if (state.CanCollectLocalLoot && state.Current.Player == state.Player)
         {
             available.AddRange(state.Current.Rooms
                 .SelectMany(room => room.Items.Select(item => ((IItemCollection)room.Items, item))));
@@ -56,7 +56,9 @@ internal static class Construction
                 continue;
 
             (IItemCollection Owner, Item Item) candidate = available
-                .FirstOrDefault(entry => entry.Item.ID == itemId);
+                .FirstOrDefault(entry => entry.Item.ID == itemId &&
+                    !AiItemPool.IsFirearm(entry.Item.Type) &&
+                    !(itemId == "item_ammunition" && entry.Owner.Any(item => AiItemPool.IsFirearm(item.Type))));
             if (candidate.Item == null || !state.Reserve.TryReserveConstructionMaterial(candidate.Item))
                 continue;
 

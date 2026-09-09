@@ -9,7 +9,7 @@ internal static class CargoManagement
 {
     internal static void FillCityCaravan(ClassicAiState state, Location camp)
     {
-        if (state.Player.Group.GetFreeSlotCount() == 0)
+        if (!state.CanCollectLocalLoot || state.Player.Group.GetFreeSlotCount() == 0)
             return;
 
         HashSet<Item> reservedWeapons = CampManagement.CampStoredWeaponReserveItems(camp);

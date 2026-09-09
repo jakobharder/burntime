@@ -382,22 +382,10 @@ namespace Burntime.Remaster.Logic
             return world.Locations.OfType<Location>().Where(l => l.Player == this).Count();
         }
 
-        private void RecalculateExperience()
+        internal void RecalculateExperience()
         {
-            int count = 0;
-
             ClassicGame game = container.Root as ClassicGame;
-            foreach (Location location in game.World.Locations)
-            {
-                if (location.Player == this)
-                    count++;
-            }
-
-            Character.Experience = count * 3 + BaseExperience;
-
-            // limit experience to 99%
-            if (Character.Experience > 99)
-                Character.Experience = 99;
+            Character.Experience = game.RuleBook.CalculateBossExperience(this, game);
         }
     }
 }

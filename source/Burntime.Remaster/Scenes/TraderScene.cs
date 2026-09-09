@@ -638,9 +638,13 @@ class TraderScene : Scene
 
     ExchangeResult CheckTrade()
     {
-        int player = exchangeBottom.Grid.GetTradeValue();
-        int trader = exchangeTop.Grid.GetTradeValue();
-        ExchangeResult result = (player >= trader && exchangeBottom.Grid.Count > 0) ? ExchangeResult.Ok : ExchangeResult.Ng;
+        BurntimeClassic classic = app as BurntimeClassic;
+        ExchangeResult result = classic.Game.RuleBook.AcceptTrade(
+            exchangeBottom.Grid,
+            exchangeTop.Grid,
+            classic.Game.World.Difficulty)
+            ? ExchangeResult.Ok
+            : ExchangeResult.Ng;
         if (exchangeTop.Grid.Count - exchangeBottom.Grid.Count > inventory.FreeSlots)
             result = ExchangeResult.Ng;
         if (exchangeBottom.Grid.Count - exchangeTop.Grid.Count > inventoryTrader.FreeSlots)

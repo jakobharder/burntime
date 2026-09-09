@@ -17,8 +17,7 @@ internal static class AttackPlanning
             return false;
 
         DefenseIntelligence.UpdateKnowledgeFromEncounter(state, context.Current,
-            context.Current.CampNPC.Where(character =>
-                character.Player == context.Current.Player && !character.IsDead));
+            CombatStrength.Defenders(context.Current));
 
         if (!IsSuitable(state, player, context.Current, policy))
         {
@@ -29,15 +28,25 @@ internal static class AttackPlanning
                 state.DeferAttackPlan(context.Current, policy);
             }
             Location? suppliedRetreat = AiTurnController.FindNearestLogistics(state, requireReachable: true);
-            Location? retreat = suppliedRetreat ?? AiTurnController.FindNearestLogistics(state);
+            Location? ownedRetreat = suppliedRetreat ??
+                AiTurnController.FindNearestLogistics(state);
+            Location? previousRetreat = player.PreviousLocation is Location previous &&
+                !IsHostile(previous, player) &&
+                player.CanTravel(context.Current, previous)
+                ? previous
+                : null;
+            Location? retreat = ownedRetreat ?? previousRetreat;
             if (retreat != null)
             {
+                bool returningToPreviousLocation = ownedRetreat == null;
                 candidates.Add(new AiDecision(
                     AiAction.Travel,
                     1250,
                     retreat,
                     RouteFinder.Find(player, context.Current, retreat)?.NextStep,
-                    suppliedRetreat != null
+                    returningToPreviousLocation
+                        ? $"retreat to the previous location {retreat.Title} because no owned logistics remain"
+                        : suppliedRetreat != null
                         ? "retreat toward the nearest reachable safe location"
                         : "make an emergency retreat despite insufficient route supplies"));
             }
@@ -202,19 +211,12 @@ internal static class AttackPlanning
             !IsTargetAllowed(state, target, policy))
             return false;
 
-        Character[] attackers = player.Group.Where(character => !character.IsDead).ToArray();
-        if (attackers.Any(character =>
-                AiItemPool.IsFirearm(character.Items.FindBestWeapon()?.Type)) ||
-            attackers.Count(character => character.Items.FindBestWeapon()?.ID == "item_pitchfork") >
-                policy.PitchforkLimit)
-            return false;
-
         float defenders = DefenseIntelligence.Estimate(state, target).EstimatedStrength;
         if (defenders <= 0)
             return true;
         float attackersStrength = CombatStrength.Attacker(player);
         return state.HasImprovedSinceFailedAttack(
-                target, attackers.Length, attackersStrength, defenders) &&
+                target, followers.Length + (player.Character.IsDead ? 0 : 1), attackersStrength, defenders) &&
             attackersStrength / defenders >= policy.MinimumAttackRatio;
     }
 
@@ -245,8 +247,16 @@ internal static class AttackPlanning
         // campaigns assembling a third or fourth body even when the current
         // armed group was strong enough to attack safely.
         int numericalAdvantage = policy.UseDetailedCombatEstimate ? 0 : 1;
-        return System.Math.Clamp(
+        int desired = System.Math.Clamp(
             expectedDefenders + numericalAdvantage, 2, policy.AttackGroupSize);
+        // Numerical superiority is a preparation goal, not a reason to reject
+        // an existing armed party that already meets the safety margin. Easy
+        // still requires two; Hard retains its detailed-estimate policy.
+        int available = state.Player.Group.Count(character => !character.IsDead);
+        if (!policy.UseDetailedCombatEstimate && available >= 2 && available < desired &&
+            IsSuitable(state, state.Player, target, policy))
+            return available;
+        return desired;
     }
 
     public static bool IsTerritorialFrontierTarget(ClassicAiState state, Location target)

@@ -17,7 +17,7 @@ internal static class GroupManagement
     {
         Player player = state.Player;
         Character[] group = player.Group.Where(character => !character.IsDead).ToArray();
-        WeaponLoadout.NormalizeWeaponLimits(state, group);
+        WeaponLoadout.RefreshWeapons(group);
         NormalizeCarriedProtection(state, group);
 
         // Keep one weapon on every traveller before spending weapons on camp upgrades.
@@ -25,9 +25,9 @@ internal static class GroupManagement
             WeaponLoadout.EquipWeapon(state, traveller, group,
                 upgradeWeakWeapon: false,
                 traveller == player.Character ? "leader" : "follower");
-        if (allowCampTransfers)
+        if (allowCampTransfers && state.CanCollectLocalLoot)
             TransferRearCampWeapons(state, group, group);
-        if (state.HasAttackPlan)
+        if (state.HasAttackPlan || state.Difficulty > 0)
         {
             foreach (Character traveller in group)
                 WeaponLoadout.EquipWeapon(state, traveller, group,
@@ -95,7 +95,8 @@ internal static class GroupManagement
                     .Where(item => item.FoodValue > 0 && reservedPayment != item.Type)
                     .Select(item => ((IItemCollection)character.Items, item)))
                 .ToList();
-            if (storedFood > CampManagement.CampFoodItemReserve)
+            if (state.CanCollectLocalLoot &&
+                storedFood > CampManagement.CampFoodItemReserve)
             {
                 candidates.AddRange(camp.Rooms.SelectMany(room => room.Items
                     .Where(item => item.FoodValue > 0 && reservedPayment != item.Type)

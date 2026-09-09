@@ -32,7 +32,8 @@ namespace Burntime.Remaster.AI
 
         internal static bool Accepts(ItemType type)
         {
-            return Array.Exists(ItemTypeFilter, id => id == type.ID) || IsWaterContainer(type);
+            return !IsFirearm(type) && (Array.Exists(ItemTypeFilter, id => id == type.ID) ||
+                IsWaterContainer(type) || type.DefenseValue > 0);
         }
 
         internal static bool IsWaterContainer(ItemType type) =>
@@ -162,7 +163,7 @@ namespace Burntime.Remaster.AI
             int removed = 0;
             foreach (PoolItem item in items)
             {
-                int maximum = Accepts(item.Type) ? MaximumItemsPerType : 1;
+                int maximum = Accepts(item.Type) || IsFirearm(item.Type) ? MaximumItemsPerType : 1;
                 if (item.Count <= maximum)
                     continue;
                 removed += item.Count - maximum;
@@ -420,7 +421,7 @@ namespace Burntime.Remaster.AI
         }
 
         internal static bool IsFirearm(ItemType? type) =>
-            type != null && (type.ID is "item_loaded_rifle" or "item_loaded_pistol");
+            type != null && (type.ID is "item_loaded_rifle" or "item_loaded_rifle_1" or "item_loaded_pistol" or "item_unloaded_rifle" or "item_unloaded_pistol");
 
         internal static int WaterContainerCapacity(ItemType type) =>
             type.WaterValue > 0 ? type.WaterValue : type.Full?.WaterValue ?? 0;

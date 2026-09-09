@@ -145,7 +145,7 @@ class MapViewOverlayHoverText : IMapViewOverlay
         List<GuiTextBar> bars = new(2);
         if (showExperience)
             bars.Add(new GuiTextBar(GuiTextBarType.Dots,
-                GetLevel(character!.Experience, 4)));
+                game.RuleBook.GetExperienceTier(character!.Experience) + 1));
         if (showHealth)
             bars.Add(new GuiTextBar(GuiTextBarType.RedBar,
                 GetLevel(character!.Health, 7)));
@@ -162,9 +162,11 @@ class MapViewOverlayHoverText : IMapViewOverlay
     internal void DrawWorldLocationText(RenderTarget target, MapViewHoverInfo info, Vector2 offset,
         float alpha)
     {
+        PixelColor color = info.WorldLocation?.ControllingPlayer?.Color ?? info.Color;
+
         if (info.WorldLocation?.Player != player)
         {
-            textBars.Draw(target, info.Position + offset, info.Title, info.Color, alpha,
+            textBars.Draw(target, info.Position + offset, info.Title, color, alpha,
                 System.Array.Empty<GuiTextBar>());
             return;
         }
@@ -175,7 +177,7 @@ class MapViewOverlayHoverText : IMapViewOverlay
             bars.Add(new GuiTextBar(GuiTextBarType.RedBar, foodPerDay));
         AddTrapIcons(bars, info.WorldLocation);
         bars.Add(new GuiTextBar(GuiTextBarType.BlueBar, info.WorldLocation.Source.Water));
-        textBars.Draw(target, info.Position + offset, info.Title, info.Color, alpha, bars);
+        textBars.Draw(target, info.Position + offset, info.Title, color, alpha, bars);
     }
 
     internal void DrawEntranceText(RenderTarget target, MapViewHoverInfo info, Vector2 offset, float alpha,
@@ -221,15 +223,7 @@ class MapViewOverlayHoverText : IMapViewOverlay
                 return;
         }
 
-        int toolCount = 0;
-        foreach (Room candidateRoom in location.Rooms)
-            foreach (Item item in candidateRoom.Items)
-                if (item.Type.Production == production)
-                    toolCount++;
-        foreach (Character npc in location.CampNPC)
-            foreach (Item item in npc.Items)
-                if (item.Type.Production == production)
-                    toolCount++;
+        int toolCount = location.GetProductionToolCount(production);
 
         int trapLevel = GetTrapLevel(production);
         int activeToolCount = System.Math.Min(2,

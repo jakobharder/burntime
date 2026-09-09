@@ -92,8 +92,7 @@ internal static class DefenseIntelligence
         CampObservation observation = KnowledgeByPlayer.GetOrCreateValue(state.Player).Camps[camp];
         observation.ObservedDay = state.RootGame.World.Day;
         observation.ObservedDefenders = living.Length;
-        observation.ObservedStrength = living.Sum(character =>
-            character.AttackValue + character.DefenseValue + character.Health / 10f);
+        observation.ObservedStrength = living.Sum(CombatStrength.Fighter);
     }
 
     static int SustainableDefenderCapacity(Location camp)

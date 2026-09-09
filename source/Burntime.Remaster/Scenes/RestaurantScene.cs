@@ -203,14 +203,13 @@ namespace Burntime.Remaster.Scenes
 
         void OnButtonEat()
         {
-            eatLastAmount = grid.GetEatValue();
-            UpdateText();
-
             BurntimeClassic classic = app as BurntimeClassic;
+            eatLastAmount = classic.Game.RuleBook.CalculateRestaurantValue(grid);
+            UpdateText();
 
             classic.Game.World.ActivePlayerObj.Character.Items.Remove(grid);
 
-            classic.SelectedCharacter.GetGroup().Eat(classic.SelectedCharacter, (int)grid.GetEatValue());
+            classic.SelectedCharacter.GetGroup().Eat(classic.SelectedCharacter, eatLastAmount);
             grid.Clear();
             keyboardNavigation.ItemsChanged();
         }
@@ -248,7 +247,8 @@ namespace Burntime.Remaster.Scenes
         {
             restaurantText = new String[3];
             int baseLine = 0;
-            int value = grid.GetEatValue();
+            BurntimeClassic classic = app as BurntimeClassic;
+            int value = classic.Game.RuleBook.CalculateRestaurantValue(grid);
 
             //if (restaurantType == RestaurantType.Water)
             //    baseLine += 20;

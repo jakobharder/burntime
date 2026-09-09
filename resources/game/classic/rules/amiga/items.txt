@@ -1,4 +1,6 @@
 image=gfx/dummy.png
+' Damage: four rolls per XP tier, from lowest to highest tier. Root damage is unarmed.
+damage=2 3 4 6 6 8 10 11 8 10 12 15 9 11 13 15
 
 [item_maggots]
 class=food
@@ -58,26 +60,31 @@ burngfx=9
 full=item_full_wineskin
 
 [item_knife]
+weapon_priority=25
 class=weapon trap
 burngfx=10
-damage=25
+damage=9 11 14 16 10 13 16 18 12 14 17 20 14 16 18 20
 
 [item_axe]
+weapon_priority=33
 class=weapon rare
 burngfx=11
-damage=33
+damage=9 11 15 20 9 12 17 22 10 14 19 25 13 17 21 25
 
 [item_pitchfork]
+weapon_priority=38
 class=weapon rare
 burngfx=12
-damage=38
+damage=4 7 10 20 5 8 11 21 6 9 12 25 9 12 16 25
 
 [item_loaded_rifle]
+image_last_round=gfx/rifle.png
+weapon_priority=55
 class=weapon nodrop
 burngfx=13
-damage=55
-empty=item_loaded_rifle_1
-ammo=1
+damage=0 6 14 15 0 10 17 20 5 13 19 25 8 16 25 40
+empty=item_unloaded_rifle
+ammo=6
 
 [item_unloaded_rifle]
 class=weapon nodrop
@@ -202,7 +209,7 @@ class=protection_parts
 burngfx=43
 
 [item_rope]
-class=key rare
+class=key
 burngfx=44
 fluff=@newburn?33
 
@@ -223,7 +230,7 @@ class=useless rare
 burngfx=48
 
 [item_gold]
-class=useless rare
+class=useless
 burngfx=49
 
 [item_tools]
@@ -239,80 +246,21 @@ class=useless
 burngfx=52
 
 [item_leather_jacket]
-class=protection
+class=useless
 burngfx=53
-defense=1
 
 [item_tires]
 class=useless
 burngfx=54
 
 [item_steel_helmet]
-class=protection
+class=useless
 burngfx=55
-defense=1
 
 [item_sweater]
-class=protection
+class=useless
 burngfx=56
-defense=1
 
 [item_pants]
-class=protection
+class=useless
 burngfx=57
-defense=1
-
-[item_dogshit]
-class=useless nodrop
-title=@newburn?2
-text=@newburn?2
-image=gfx/dogshit.png
-value=1
-food=0
-
-[item_dish]
-class=useless rare
-title=@newburn?3
-text=@newburn?3
-image=gfx/dish.png
-value=24
-
-[item_paper_helmet]
-class=special protection
-title=@newburn?4
-text=@newburn?4
-image=gfx/paper_helmet.png
-protection=protection@radiation??20 protection@gas??20
-value=8
-
-[item_advice]
-class=nodrop
-title=@newburn?5
-text=@newburn?5
-image=gfx/advice.png
-value=1
-
-[item_loaded_rifle_1]
-class=weapon nodrop
-burngfx=13
-damage=55
-image=gfx/rifle.png
-empty=item_unloaded_rifle
-ammo=1
-
-[item_loaded_pistol]
-class=weapon nodrop
-title=@newburn?6
-text=@newburn?7
-image=gfx/pistol_loaded.png
-value=150
-ammo=1
-empty=item_unloaded_pistol
-damage=55
-
-[item_unloaded_pistol]
-class=weapon special rare
-title=@newburn?8
-text=@newburn?9
-image=gfx/pistol_unloaded.png
-value=100

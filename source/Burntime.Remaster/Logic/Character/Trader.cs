@@ -49,6 +49,28 @@ namespace Burntime.Remaster.Logic
             itemRefreshs.Add(item);
         }
 
+        internal void RefreshAssortment(IEnumerable<ItemType> types)
+        {
+            ItemType[] assortment = types.ToArray();
+            TraderItemRefreshItem[] saved = itemRefreshs.ToArray();
+            itemRefreshRange = assortment.Length;
+            for (int i = 0; i < assortment.Length; i++)
+            {
+                if (i < saved.Length)
+                {
+                    saved[i].Type = assortment[i];
+                    saved[i].Rate = 1;
+                }
+                else
+                {
+                    itemRefreshRange--;
+                    AddRefreshItem(assortment[i], 1);
+                }
+            }
+            foreach (var removed in saved.Skip(assortment.Length))
+                itemRefreshs.Remove(removed);
+        }
+
         public IEnumerable<ItemType> GetAssortment() => itemRefreshs.Select(item => item.Type.Object);
 
         protected override void InitInstance(object[] parameter)
@@ -71,16 +93,21 @@ namespace Burntime.Remaster.Logic
             if (IsDead)
                 return;
 
-            // ignore food/water
+            Root.RuleBook.TurnTrader(this);
 
+            RestoreTraderHealth();
+        }
+
+        // Shared by ordinary turns and Amiga's world-wide stock passes.
+        internal void RestoreTraderHealth() => Health = Root.World.Respawn.Object.TraderHealth;
+
+        internal void TurnExtendedTrader()
+        {
             NextSellLocation();
             RefreshItems();
-
-            // refresh health
-            Health = Root.World.Respawn.Object.TraderHealth;
-
-            //Dialog.Turn();
         }
+
+        internal void MoveToNextSellLocation() => NextSellLocation();
 
         public void RandomizeInventory()
         {
@@ -110,12 +137,12 @@ namespace Burntime.Remaster.Logic
                 if (Location == HomeArea)
                 {
                     Location = HomeArea.Neighbors[Platform.Math.Random.Next(HomeArea.Neighbors.Count - 1)];
-                    Position = Location.GetRandomNpcEntryPosition(this);
+                    Position = Location.GetResidentPosition(this);
                 }
                 else
                 {
                     Location = HomeArea;
-                    Position = Location.GetRandomNpcEntryPosition(this);
+                    Position = Location.GetResidentPosition(this);
                 }
             }
         }
@@ -169,7 +196,10 @@ namespace Burntime.Remaster.Logic
             // list up all item types not yet in inventory
             foreach (TraderItemRefreshItem item in itemRefreshs)
             {
-                if (!Items.Contains(item.Type.Object.ID))
+                if (!Items.Contains(item.Type.Object.ID) &&
+                    !(Root.Rules == Burntime.Remaster.Logic.Generation.RuleSetId.Extended &&
+                      AI.AiItemPool.IsFirearm(item.Type.Object) &&
+                      Items.Any(stock => AI.AiItemPool.IsFirearm(stock.Type))))
                 {
                     itemTypes.Add(item.Type.Object.ID);
                 }

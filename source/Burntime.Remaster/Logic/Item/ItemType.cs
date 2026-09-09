@@ -73,6 +73,7 @@ namespace Burntime.Remaster.Logic
 
         public bool IsSelectable => data.Object.IsSelectable;
         public string Sprite => data.Object.Sprite;
+        public string? LastRoundSprite => data.Object.LastRoundSprite;
 
         public string Title => dummy ??
             (string.IsNullOrEmpty(data.Object.Title) ? data.Object.ID : ResourceManager.GetString(data.Object.Title));
@@ -91,6 +92,8 @@ namespace Burntime.Remaster.Logic
         public float HealValue => data.Object.HealValue;
         public int ExperienceValue => data.Object.ExperienceValue;
         public int DamageValue => data.Object.DamageValue;
+        public int WeaponPriority => data.Object.WeaponPriority ?? DamageValue;
+        public int[] DamageValues => data.Object.DamageValues;
         public int DefenseValue => data.Object.DefenseValue;
         public int AmmoValue => data.Object.AmmoValue;
 
@@ -121,6 +124,8 @@ namespace Burntime.Remaster.Logic
 
         public Item Generate()
         {
+            if (ID == "item_loaded_rifle_1")
+                return ((ClassicGame)Container.Root).ItemTypes["item_loaded_rifle"].Generate();
             return container.Create<Item>(new object[] { this });
         }
     }
