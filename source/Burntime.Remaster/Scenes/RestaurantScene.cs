@@ -171,6 +171,15 @@ namespace Burntime.Remaster.Scenes
                 ani.Background.Animation.Progressive = false;
                 Windows += ani;
             }
+            else
+            {
+                ani = new Image(app);
+                ani.Position = new Vector2(202, 51);
+                ani.Background = "wirt.ani??p";
+                //ani.Background.Animation.Speed = 6.5f;
+                ani.Background.Animation.Progressive = false;
+                Windows += ani;
+            }
 
             eatLastAmount = -1;
             grid.Clear();
