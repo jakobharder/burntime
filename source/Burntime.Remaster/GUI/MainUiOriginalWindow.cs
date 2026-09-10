@@ -74,9 +74,9 @@ namespace Burntime.Remaster
             _playerFace.Layer++;
         }
 
-        public override void OnResizeScreen()
+        public override void OnResizeScreen(bool reload = false)
         {
-            base.OnResizeScreen();
+            base.OnResizeScreen(reload);
 
             Size = app.Engine.Resolution.Game;
             _uiElement1.Position = new Vector2(Size.x / 2 - 60, Size.y - 40);

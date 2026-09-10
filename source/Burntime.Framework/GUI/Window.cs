@@ -411,5 +411,5 @@ public class Window
     // render
     public virtual void OnRender(RenderTarget target) { }
 
-    public virtual void OnResizeScreen() { }
+    public virtual void OnResizeScreen(bool reload = false) { }
 }

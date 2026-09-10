@@ -235,9 +235,9 @@ public class MenuScene : Scene
         GameMode = new(app);
         GameMode.Position = new(145, 149);
         GameMode.ToolTipFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray) { Borders = TextBorders.Screen };
-        GameMode.AddState(null, "gfx/ui/start_button_remake.png", "gfx/ui/start_button_remake_down.png", "gfx/ui/start_button_remake_down.png", "@newburn?110");
-        GameMode.AddState(null, "gfx/ui/start_button_original.png", "gfx/ui/start_button_original_down.png", "gfx/ui/start_button_original_down.png", "@newburn?105");
-        GameMode.AddState(null, "gfx/ui/start_button_original.png", "gfx/ui/start_button_original_down.png", "gfx/ui/start_button_original_down.png", "@newburn?106");
+        GameMode.AddState(null, "gfx/ui/start_button_extended.png", "gfx/ui/start_button_extended_down.png", "gfx/ui/start_button_extended_down.png", "@newburn?110");
+        GameMode.AddState(null, "gfx/ui/start_button_dos.png", "gfx/ui/start_button_dos_down.png", "gfx/ui/start_button_dos_down.png", "@newburn?105");
+        GameMode.AddState(null, "gfx/ui/start_button_amiga.png", "gfx/ui/start_button_amiga_down.png", "gfx/ui/start_button_amiga_down.png", "@newburn?106");
         Windows += GameMode;
 
         // ai
@@ -257,9 +257,9 @@ public class MenuScene : Scene
         PlayerTwoSwitch.Table = conversionTable;
     }
 
-    public override void OnResizeScreen()
+    public override void OnResizeScreen(bool reload = false)
     {
-        base.OnResizeScreen();
+        base.OnResizeScreen(reload);
 
         Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
         UpdatePromptOverlayPosition();

@@ -325,9 +325,9 @@ namespace Burntime.Framework
             activeScene = null;
         }
 
-        public void ResizeScene()
+        public void ResizeScene(bool reload = false)
         {
-            activeScene?.OnResizeScreen();
+            activeScene?.OnResizeScreen(reload);
         }
     }
 }

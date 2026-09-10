@@ -201,9 +201,9 @@ class TraderScene : Scene
         UpdateInlinePromptPositions();
     }
 
-    public override void OnResizeScreen()
+    public override void OnResizeScreen(bool reload = false)
     {
-        base.OnResizeScreen();
+        base.OnResizeScreen(reload);
 
         PositionElements();
         promptOverlay.AnchorToScreenBottomRight();

@@ -567,7 +567,7 @@ namespace Burntime.Remaster
             RefreshResourceReplacements();
 
             Engine.ReloadGraphics();
-            SceneManager.ResizeScene();
+            SceneManager.ResizeScene(reload: true);
         }
 
         public void RefreshResourceReplacements()

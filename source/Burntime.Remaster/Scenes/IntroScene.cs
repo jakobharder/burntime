@@ -96,9 +96,9 @@ namespace Burntime.Remaster.Scenes
             PreloadAnimations();
         }
 
-        public override void OnResizeScreen()
+        public override void OnResizeScreen(bool reload = false)
         {
-            base.OnResizeScreen();
+            base.OnResizeScreen(reload);
 
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
         }

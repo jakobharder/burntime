@@ -58,9 +58,9 @@ internal class LanguageScene : Scene
         UpdateSelection();
     }
 
-    public override void OnResizeScreen()
+    public override void OnResizeScreen(bool reload = false)
     {
-        base.OnResizeScreen();
+        base.OnResizeScreen(reload);
         Size = app.Engine.Resolution.Game;
         _promptOverlay.AnchorToScreenBottomRight();
     }

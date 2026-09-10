@@ -370,9 +370,9 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         base.OnUpdate(elapsed);
     }
 
-    public override void OnResizeScreen()
+    public override void OnResizeScreen(bool reload = false)
     {
-        base.OnResizeScreen();
+        base.OnResizeScreen(reload);
         Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
         _backgroundAni.IsVisible = !app.IsNewGfx;
         _promptOverlay.AnchorToScreenBottomRight();

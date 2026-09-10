@@ -126,9 +126,9 @@ namespace Burntime.Remaster
             ShowActionsMenu(position, true);
         }
 
-        public override void OnResizeScreen()
+        public override void OnResizeScreen(bool reload = false)
         {
-            base.OnResizeScreen();
+            base.OnResizeScreen(reload);
 
             Size = app.Engine.Resolution.Game;
             view.Size = new Vector2(Size.x - 32, Size.y - 40);
@@ -1265,7 +1265,7 @@ namespace Burntime.Remaster
                     switch (entrance.Background)
                     {
                         case 0x0D: classic.ImageScene = "film_10.pac"; break;
-                        case 0x11: classic.ImageScene = "film_05.pac"; break;
+                        case 0x11: classic.ImageScene = "film_05.txt"; break;
                     }
                     if (classic.ImageScene != null)
                         app.SceneManager.SetScene("ImageScene");

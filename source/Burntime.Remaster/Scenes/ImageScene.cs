@@ -52,36 +52,12 @@ namespace Burntime.Remaster.Scenes
                 ani2.Background.Animation.Speed = 6.5f;
                 Windows += ani2;
             }
-            else if (game.ImageScene == "film_05.pac")
+            else if (game.ImageScene == "film_05.txt")
             {
                 Music = "sounds/trader.ogg";
                 MusicLoop = false;
-
-                ani1 = new Image(app);
-                ani1.Background = "film_05.ani?0-17?p";
-                ani1.Position = app.IsNewGfx ? new Vector2(76, 120) : new Vector2(98, 120);
-                ani1.Background.Animation.Speed = 6.5f;
-                ani1.Background.Animation.IntervalMargin = 4;
-                ani1.Background.Animation.Progressive = false;
-                Windows += ani1;
-
-                ani2 = new Image(app);
-                ani2.Background = "film_05.ani?18-19";
-                ani2.Position = app.IsNewGfx ? new Vector2(52, 88) : new Vector2(77, 89);
-                ani2.Background.Animation.Speed = 6.5f;
-                ani2.Background.Animation.IntervalMargin = 5;
-                ani2.Background.Animation.ReverseAnimation = true;
-                ani2.Background.Animation.Progressive = false;
-                Windows += ani2;
-
-                ani3 = new Image(app);
-                ani3.Background = "film_05.ani?20-21";
-                ani3.Position = app.IsNewGfx ? new Vector2(84, 48) : new Vector2(106, 59);
-                ani3.Background.Animation.Speed = 6.5f;
-                ani3.Background.Animation.Progressive = false;
-                Windows += ani3;
             }
-            else if (game.ImageScene == "film_10.pac")
+        else if (game.ImageScene == "film_10.pac")
             {
                 Music = "sounds/trader.ogg";
                 MusicLoop = false;
@@ -111,9 +87,9 @@ namespace Burntime.Remaster.Scenes
             }
         }
 
-        public override void OnResizeScreen()
+        public override void OnResizeScreen(bool reload = false)
         {
-            base.OnResizeScreen();
+            base.OnResizeScreen(reload);
 
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
@@ -121,12 +97,6 @@ namespace Burntime.Remaster.Scenes
             {
                 ani1.Position = app.IsNewGfx ? new Vector2(108, 89) : new Vector2(125, 92);
                 ani1.Background.Animation.Speed = app.IsNewGfx ? 9.0f : 5.0f;
-            }
-            else if (BurntimeClassic.Instance.ImageScene == "film_05.pac" && ani1 is not null && ani2 is not null && ani3 is not null)
-            {
-                ani1.Position = app.IsNewGfx ? new Vector2(76, 120) : new Vector2(98, 120);
-                ani2.Position = app.IsNewGfx ? new Vector2(52, 88) : new Vector2(77, 89);
-                ani3.Position = app.IsNewGfx ? new Vector2(84, 48) : new Vector2(106, 59);
             }
         }
 

@@ -326,6 +326,14 @@ public abstract class ResourceManagerBase : IResourceManager
         return null;
     }
 
+    public string ResolveFileReplacement(string file)
+    {
+        var replacement = GetReplacement(file);
+        return replacement is not null && FileSystem.ExistsFile(replacement.Id.File)
+            ? replacement.Id.File
+            : file;
+    }
+
     private static ResourceID? GetReplacementID(ResourceID id, ConfigSection section)
     {
         string? idstring = null;

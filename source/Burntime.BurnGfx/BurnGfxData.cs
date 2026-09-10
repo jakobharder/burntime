@@ -59,7 +59,7 @@ namespace Burntime.Data.BurnGfx
                 case "pub1.ani":
                     return colorTables["pub1.pac"];
                 case "koch.ani":
-                    return colorTables["opti.pac"];
+                    return colorTables["koch.pac"];
                 case "arzt.ani":
                     return colorTables["arzt.pac"];
                 case "intro2.ani":
@@ -85,6 +85,7 @@ namespace Burntime.Data.BurnGfx
         {
             #warning OPTIMIZE remove, as it is only needed in development
             _ = PacImageFileReader.Read("opti.pac");
+            _ = PacImageFileReader.Read("koch.pac");
         }
         #endregion
 
