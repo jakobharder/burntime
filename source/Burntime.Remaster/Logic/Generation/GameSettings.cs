@@ -8,7 +8,9 @@ class GameSettings
 {
     public struct RespawnTimes
     {
+        public RespawnMethod Method;
         public int NPC;
+        public int CitySpawnThreshold;
         public int Trader;
         public int Dog;
         public int Mutant;
@@ -151,7 +153,19 @@ class GameSettings
     {
         this.difficulty = difficulty.ToString();
 
-        respawn.NPC = config[this.difficulty].GetInt("npc_respawn");
+        string method = config[this.difficulty].GetString("spawn_method");
+        respawn.Method = method.ToLowerInvariant() switch
+        {
+            "player_cycle" => RespawnMethod.PlayerCycle,
+            "location_cycle" => RespawnMethod.LocationCycle,
+            _ => RespawnMethod.Timer,
+        };
+
+        // npc_respawn is retained as a fallback for custom and older rulesets.
+        respawn.NPC = string.IsNullOrWhiteSpace(config[this.difficulty].GetString("npc_spawn"))
+            ? config[this.difficulty].GetInt("npc_respawn")
+            : config[this.difficulty].GetInt("npc_spawn");
+        respawn.CitySpawnThreshold = config[this.difficulty].GetInt("city_spawn_threshold");
         respawn.Trader = config[this.difficulty].GetInt("trader_respawn");
         respawn.Mutant = config[this.difficulty].GetInt("mutant_respawn");
         respawn.Dog = config[this.difficulty].GetInt("dog_respawn");

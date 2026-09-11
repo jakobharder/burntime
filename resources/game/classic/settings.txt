@@ -63,5 +63,5 @@ no_travel	= no
 show_path	= no
 insert_items_1	= item_meat item_full_canteen
 insert_items_2	= item_rope item_gas_mask
-insert_items_3	=
+insert_items_3	= item_unloaded_rifle item_unloaded_pistol item_ammunition item_ammunition
 godmode         = no ' recover human player main character health to 100 when below 1 

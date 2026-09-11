@@ -445,8 +445,10 @@ namespace Burntime.Remaster.Logic
 
         public virtual void Revive()
         {
-            // set full heatlh
-            health = 100;
+            health = 95;
+            Food = 8;
+            Water = 4;
+            Items.Clear();
 
             // reset animation
             ani = new Burntime.Platform.Graphics.SpriteAnimation(2);

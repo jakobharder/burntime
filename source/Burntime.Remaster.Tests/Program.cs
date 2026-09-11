@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Burntime.Remaster;
+using Burntime.Remaster.Logic;
 using Burntime.Remaster.Logic.Generation;
 using Burntime.Remaster.Logic.Rules;
 
@@ -610,12 +611,39 @@ static partial class Program
                 Equal(100, rules.Settings.GetBarterFactor(0), "easy barter factor");
                 Equal(rule == RuleSetId.Dos ? 60 : 90,
                     rules.Settings.GetBarterFactor(2), "hard barter factor");
+                rules.Settings.SetDifficulty(0);
+                Equal(rule == RuleSetId.Dos ? RespawnMethod.PlayerCycle : RespawnMethod.LocationCycle,
+                    rules.Settings.Respawn.Method, "configured NPC spawn method");
+                Equal(rule switch
+                    {
+                        RuleSetId.Amiga => 8,
+                        RuleSetId.Dos => 4,
+                        _ => 4,
+                    },
+                    rules.Settings.Respawn.NPC, "configured easy NPC spawn interval");
+                Equal(rule == RuleSetId.Extended ? 12 : 0,
+                    rules.Settings.Respawn.CitySpawnThreshold,
+                    "configured city spawn threshold");
                 Equal(true, rules.AcceptTrade(payment, demand, 0), "equal offer accepted on easy");
                 Equal(false, rules.AcceptTrade(payment, demand, 2), "equal offer rejected on hard");
                 Equal(16,
                     config["item_knife"].GetInts("damage").Length, "damage format");
                 Equal(true, RuleFormulas.OriginalDamage(new[] { 7 }, 99, 25, 3) == 7,
                     "scalar damage supports every tier and roll");
+
+                if (rule != RuleSetId.Dos)
+                {
+                    int interval = rules.Settings.Respawn.NPC;
+                    for (int location = 0; location < 3; location++)
+                    {
+                        int dueDays = Enumerable.Range(1, interval * 2)
+                            .Count(day => CharacterRespawn.IsLocationCycleDue(day, location, interval));
+                        Equal(2, dueDays, "location cycle runs once per interval");
+                    }
+                    Equal(false,
+                        CharacterRespawn.IsLocationCycleDue(1, 0, 0),
+                        "disabled location cycle never runs");
+                }
                 return 0;
             });
     }
