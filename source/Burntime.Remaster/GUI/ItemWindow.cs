@@ -111,7 +111,7 @@ namespace Burntime.Remaster.GUI
             }
 
             if (Parent is ItemGridWindow grid)
-                grid.SelectFromMouseClick(index);
+                grid.FocusFromMouseClick(index);
 
             if (Button == MouseButton.Left && leftClickEvent != null)
                 leftClickEvent.Execute(index);

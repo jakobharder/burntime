@@ -39,6 +39,7 @@ namespace Burntime.MonoGame
         readonly bool _emulateSteamMachine;
         readonly bool _emulateSteamDeck;
         readonly bool _chooseLanguage;
+        readonly Platform.Vector2? _windowSizeOverride;
         public OutputFiltering OutputFiltering { get; set; }
         internal OutputFiltering DefaultOutputFiltering { get; }
         public bool ForceLinearOutputFiltering { get; }
@@ -130,11 +131,12 @@ namespace Burntime.MonoGame
         public BurntimeGame(bool emulateSteamMachine = false, bool emulateSteamDeck = false,
             bool chooseLanguage = false, bool linearOutputFiltering = false,
             bool nearestPointOutputFiltering = false, bool disableShaders = false,
-            bool showFps = false)
+            bool showFps = false, Platform.Vector2? windowSizeOverride = null)
         {
             _emulateSteamMachine = emulateSteamMachine;
             _emulateSteamDeck = emulateSteamDeck;
             _chooseLanguage = chooseLanguage;
+            _windowSizeOverride = windowSizeOverride;
             ForceLinearOutputFiltering = linearOutputFiltering;
             ForceNearestPointOutputFiltering = nearestPointOutputFiltering;
             DisableShaders = disableShaders;
@@ -251,6 +253,9 @@ namespace Burntime.MonoGame
                 Log.Info("Steam Deck test mode: 1280x800 windowed");
             else if (_emulateSteamMachine)
                 Log.Info("Steam Machine test mode: gamescope features, windowed");
+            if (_windowSizeOverride.HasValue)
+                Log.Info($"Window size override: {_windowSizeOverride.Value.x}x" +
+                    $"{_windowSizeOverride.Value.y} windowed");
 
             Window.Title = "Burntime " + BurntimeClassic.Version;
 
@@ -271,9 +276,6 @@ namespace Burntime.MonoGame
             Resolution.RatioCorrection = _burntimeApp.RatioCorrection;
             Resolution.MinResolution = _burntimeApp.MinResolution;
             Resolution.MaxResolution = _burntimeApp.MaxResolution;
-            if (_emulateSteamDeck || IsSteamDeck())
-                Resolution.OutputScaleOverride = 1.5f;
-
             _burntimeApp.Engine = this;
             _burntimeApp.SceneManager = new SceneManager(_burntimeApp);
             _burntimeApp.DeviceManager = new DeviceManager(Resolution);
@@ -328,12 +330,11 @@ namespace Burntime.MonoGame
                     var displayResolution = new Platform.Vector2(
                         GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
                         GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height);
-                    Resolution.Native = _emulateSteamDeck
+                    Resolution.Native = _windowSizeOverride ?? (_emulateSteamDeck
                         ? new Platform.Vector2(1280, 800)
                         : IsGamescopeSession() || IsSteamDeck()
                             ? displayResolution
-                            : displayResolution / 2;
-                    //Resolution.Native = new Platform.Vector2(2560, 1440);
+                            : displayResolution / 2);
                 }
                 else
                 {
@@ -544,6 +545,14 @@ namespace Burntime.MonoGame
             _burntimeApp.InputManager.ClearDown(InputSource.Keyboard);
             foreach (var key in keys)
             {
+                // Alt remains a held gameplay binding, but the Enter part of the
+                // platform fullscreen chord must not also activate Primary.
+                if (SupportsFullscreenToggle && key == Keys.Enter &&
+                    (modifier & ModifierKeys.LeftAlt) == ModifierKeys.LeftAlt)
+                {
+                    continue;
+                }
+
                 Key? bindingKey = ConvertToBindingKey(key, modifier);
                 if (bindingKey.HasValue)
                 {

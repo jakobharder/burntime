@@ -16,7 +16,7 @@ public sealed class GamepadBindings : IGamepadBindings
         ("accept", "a", InputAction.Primary),
         ("back", "b", InputAction.Back),
         ("secondary", "x", InputAction.Secondary),
-        ("action", "y", InputAction.SceneAction),
+        ("action", "y", InputAction.Action),
         ("options", "menu", InputAction.Options),
         ("world_map", "view", InputAction.WorldMap),
         ("left_area", "left_shoulder", InputAction.LeftArea),

@@ -18,8 +18,6 @@ namespace Burntime.Remaster.Scenes
         ItemGridWindow grid;
         GuiFont waterSourceFont;
         DialogWindow dialog;
-        InputPromptOverlay promptOverlay;
-        InputPromptOverlay exitPromptOverlay;
         Button exitButton;
         Construction construction;
         Item item;
@@ -38,8 +36,9 @@ namespace Burntime.Remaster.Scenes
             inventory.Position = new Vector2(2, 5);
             inventory.LeftClickItemEvent += OnLeftClickItemInventory;
             inventory.RightClickItemEvent += OnRightClickItemInventory;
-            inventory.Grid.MouseSelectionChanged += OnMouseSelectionChanged;
-            inventory.Grid.SelectionEmptied += OnSelectionEmptied;
+            inventory.Grid.MouseFocusChanged += OnMouseFocusChanged;
+            inventory.Grid.FocusEmptied += OnFocusEmptied;
+            AddGridPrompts(inventory.Grid, true);
             Windows += inventory;
 
             exitButton = new Button(app);
@@ -62,16 +61,12 @@ namespace Burntime.Remaster.Scenes
             dialog.Layer += 55;
             dialog.WindowHide += new EventHandler(dialog_WindowHide);
 
-            Windows += promptOverlay = new InputPromptOverlay(app);
-            promptOverlay.AnchorToScreenBottomRight();
-
-            Windows += exitPromptOverlay = new InputPromptOverlay(app)
-            {
-                HorizontalAlignment = PositionAlignment.Left,
-                VerticalAlignment = PositionAlignment.Left
-            };
-            exitPromptOverlay.SetPrompts(new InputPrompt(InputAction.Back, ""));
-            UpdateExitPromptPosition();
+            Windows += new InputPromptOverlay(app, Prompts,
+                InputPromptColorScheme.Hud);
+            Prompts.SuppressWhen(() => dialog.IsVisible);
+            Prompts.Add(InputAction.Back, "@prompts?17");
+            Prompts.Add(InputPattern.HorizontalPaging, "@prompts?30",
+                () => inventory.PageCount > 1);
         }
 
         public override void OnResizeScreen(bool reload = false)
@@ -79,8 +74,6 @@ namespace Burntime.Remaster.Scenes
             base.OnResizeScreen(reload);
 
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
-            promptOverlay.AnchorToScreenBottomRight();
-            UpdateExitPromptPosition();
         }
 
         void dialog_WindowHide(object? sender, EventArgs e)
@@ -129,73 +122,37 @@ namespace Burntime.Remaster.Scenes
 
         public override void OnUpdate(float elapsed)
         {
-            UpdatePromptOverlay();
-            UpdateExitPromptPosition();
             ClassicGame game = app.GameState as ClassicGame;
             game.World.Update(elapsed);
         }
 
-        void UpdateExitPromptPosition()
+        bool CanTransferSelectedItem(ItemGridWindow source)
         {
-            exitPromptOverlay.Position = new Vector2(exitButton.Boundings.Right + 2, 181);
-        }
-
-        void UpdatePromptOverlay()
-        {
-            if (dialog.IsVisible)
-            {
-                promptOverlay.SetPrompts();
-                exitPromptOverlay.SetPrompts();
-                return;
-            }
-
-            exitPromptOverlay.SetPrompts(app.LastInputMode == InputMode.Mouse
-                ? []
-                : [new InputPrompt(InputAction.Back, "")]);
-
-            ItemGridWindow activeGrid = roomAreaActive && grid != null ? grid : inventory.Grid;
-            Item? selectedItem = app.LastInputMode == InputMode.Mouse
-                ? activeGrid.MouseHoveredItem
-                : activeGrid.KeyboardSelectedItem;
-            GuiString? secondaryAction = GetSecondaryPrompt(selectedItem, activeGrid == inventory.Grid);
-
-            List<InputPrompt> prompts = [];
-            if (secondaryAction != null)
-            {
-                prompts.Add(new(InputAction.Secondary, secondaryAction)
-                {
-                    PreferredMouseControl = MouseButton.Right
-                });
-            }
-            bool canTransfer = selectedItem != null && grid != null &&
-                (activeGrid == inventory.Grid
+            Item? focusedItem = source.FocusedItem;
+            return focusedItem != null && grid != null &&
+                (source == inventory.Grid
                     ? grid.Count < grid.MaxCount
                     : inventory.Grid.Count < inventory.Grid.MaxCount);
-            if (canTransfer)
-            {
-                prompts.Add(new(InputAction.Primary,
-                    activeGrid == inventory.Grid ? "@prompts?39" : "@prompts?37")
-                {
-                    PreferredMouseControl = MouseButton.Left
-                });
-            }
-            if (app.LastInputMode != InputMode.Mouse && inventory.PageCount > 1)
-            {
-                prompts.Add(new(InputAction.LeftArea, "@prompts?16")
-                {
-                    AlternateAction = InputAction.RightArea,
-                    PreferredKeyboardControl = new Key(SystemKey.Left, ModifierKeys.Shift),
-                    PreferredAlternateKeyboardControl = new Key(SystemKey.Right,
-                        ModifierKeys.Shift),
-                    PreferredGamepadControl = GamepadControl.LeftShoulder,
-                    PreferredAlternateGamepadControl = GamepadControl.RightShoulder
-                });
-            }
-
-            promptOverlay.SetPrompts(prompts.ToArray());
         }
 
-        GuiString? GetSecondaryPrompt(Item? selectedItem, bool isInInventory)
+        void AddGridPrompts(ItemGridWindow promptGrid, bool isInInventory)
+        {
+            promptGrid.Prompts.Add(InputAction.Primary,
+                isInInventory ? "@prompts?39" : "@prompts?37",
+                () => CanTransferSelectedItem(promptGrid));
+            promptGrid.Prompts.AddDynamic(
+                () => GetItemPrompt(promptGrid.FocusedItem, isInInventory),
+                new(InputAction.Action, "@prompts?18"),
+                new(InputAction.Action, "@prompts?19"),
+                new(InputAction.Secondary, "@prompts?20"),
+                new(InputAction.Secondary, "@prompts?21"),
+                new(InputAction.Secondary, "@prompts?22"),
+                new(InputAction.Secondary, "@prompts?23"),
+                new(InputAction.Action, "@prompts?24"));
+        }
+
+        InputPrompt? GetItemPrompt(Item? selectedItem,
+            bool isInInventory)
         {
             if (selectedItem == null)
                 return null;
@@ -204,18 +161,18 @@ namespace Burntime.Remaster.Scenes
             {
                 if (!CanSupplyGroup(character => character.Food < character.MaxFood))
                     return null;
-                return "@prompts?18";
+                return new(InputAction.Action, "@prompts?18");
             }
             if (selectedItem.WaterValue != 0)
             {
                 if (!CanSupplyGroup(character => character.Water < character.MaxWater))
                     return null;
-                return "@prompts?19";
+                return new(InputAction.Action, "@prompts?19");
             }
             if (selectedItem.Type.Full != null && selectedItem.Type.Full.WaterValue != 0)
             {
                 if (isInInventory && classic.InventoryRoom?.IsWaterSource == true)
-                    return "@prompts?24";
+                    return new(InputAction.Action, "@prompts?24");
                 return null;
             }
 
@@ -223,7 +180,8 @@ namespace Burntime.Remaster.Scenes
             {
                 bool isEquipped = inventory.ActiveCharacter.Weapon == selectedItem ||
                     inventory.ActiveCharacter.Protection == selectedItem;
-                return isEquipped ? "@prompts?22" : "@prompts?21";
+                return new(InputAction.Secondary,
+                    isEquipped ? "@prompts?22" : "@prompts?21");
             }
 
             IItemCollection? roomItems = classic.InventoryRoom != null
@@ -231,9 +189,9 @@ namespace Burntime.Remaster.Scenes
                 : classic.PickItems;
             if (roomItems != null && classic.Game.Constructions.HasConstruction(
                 inventory.ActiveCharacter, roomItems, selectedItem))
-                return "@prompts?20";
+                return new(InputAction.Secondary, "@prompts?20");
 
-            return "@prompts?23";
+            return new(InputAction.Secondary, "@prompts?23");
         }
 
         bool CanSupplyGroup(Func<Character, bool> needsSupply)
@@ -289,11 +247,14 @@ namespace Burntime.Remaster.Scenes
                 grid.Position = new Vector2(160, classic.InventoryRoom.IsWaterSource ? 128 : 20);
                 grid.Spacing = new Vector2(4, 4);
                 grid.Grid = new Vector2(4, classic.InventoryRoom.IsWaterSource ? 2 : 5);
+                if (app.IsNewGfx && classic.InventoryRoom.IsWaterSource)
+                    grid.BackgroundColor = new PixelColor(128, 0, 0, 0);
                 grid.Layer++;
                 grid.LeftClickItemEvent += OnLeftClickItemRoom;
                 grid.RightClickItemEvent += OnRightClickItemRoom;
-                grid.MouseSelectionChanged += OnMouseSelectionChanged;
-                grid.SelectionEmptied += OnSelectionEmptied;
+                grid.MouseFocusChanged += OnMouseFocusChanged;
+                grid.FocusEmptied += OnFocusEmptied;
+                AddGridPrompts(grid, false);
                 Windows += grid;
 
                 grid.Add(classic.InventoryRoom.Items);
@@ -317,8 +278,9 @@ namespace Burntime.Remaster.Scenes
                 grid.Layer++;
                 grid.LeftClickItemEvent += OnLeftClickItemRoom;
                 grid.RightClickItemEvent += OnRightClickItemRoom;
-                grid.MouseSelectionChanged += OnMouseSelectionChanged;
-                grid.SelectionEmptied += OnSelectionEmptied;
+                grid.MouseFocusChanged += OnMouseFocusChanged;
+                grid.FocusEmptied += OnFocusEmptied;
+                AddGridPrompts(grid, false);
                 Windows += grid;
 
                 grid.Add(classic.PickItems);
@@ -326,23 +288,23 @@ namespace Burntime.Remaster.Scenes
             else
                 Music = "room";
 
-            roomAreaActive = grid != null && grid.HasKeyboardItems;
-            inventory.Grid.ResetKeyboardSelection();
-            grid?.ResetKeyboardSelection();
+            roomAreaActive = grid != null && grid.HasFocusableItems;
+            inventory.Grid.ResetFocus();
+            grid?.ResetFocus();
             UpdateActiveArea();
         }
 
-        void OnMouseSelectionChanged(ItemGridWindow selectedGrid)
+        void OnMouseFocusChanged(ItemGridWindow focusedGrid)
         {
-            roomAreaActive = grid != null && selectedGrid == grid;
+            roomAreaActive = grid != null && focusedGrid == grid;
             UpdateActiveArea();
         }
 
-        void OnSelectionEmptied(ItemGridWindow emptiedGrid, Vector2 previousPosition)
+        void OnFocusEmptied(ItemGridWindow emptiedGrid, Vector2 previousPosition)
         {
             ItemGridWindow targetGrid = emptiedGrid == inventory.Grid ? grid : inventory.Grid;
             Vector2 direction = emptiedGrid == inventory.Grid ? new Vector2(1, 0) : new Vector2(-1, 0);
-            if (targetGrid?.SelectKeyboardEdge(direction, previousPosition) != true)
+            if (targetGrid?.FocusEdge(direction, previousPosition) != true)
                 return;
 
             roomAreaActive = targetGrid == grid;
@@ -400,22 +362,22 @@ namespace Burntime.Remaster.Scenes
             };
             if (direction != Vector2.Zero)
             {
-                Vector2? sourcePosition = activeGrid.KeyboardSelectionPosition;
-                bool moved = activeGrid.MoveKeyboardSelection(direction);
+                Vector2? sourcePosition = activeGrid.FocusPosition;
+                bool moved = activeGrid.MoveFocus(direction);
                 if (!moved && direction.x == 0 && direction.y != 0 &&
                     activeGrid == inventory.Grid &&
                     inventory.SelectAdjacentPage(direction.y > 0 ? 1 : -1))
                 {
                     if (sourcePosition.HasValue)
-                        inventory.Grid.SelectKeyboardPageEdge(direction, sourcePosition.Value);
+                        inventory.Grid.FocusPageEdge(direction, sourcePosition.Value);
                     UpdateActiveArea();
                 }
                 else if (!moved && direction.x != 0)
                 {
                     ItemGridWindow targetGrid = roomAreaActive ? inventory.Grid : grid;
                     bool selectedTarget = sourcePosition.HasValue
-                        ? targetGrid?.SelectKeyboardEdge(direction, sourcePosition.Value) == true
-                        : targetGrid?.EnsureKeyboardSelection() == true;
+                        ? targetGrid?.FocusEdge(direction, sourcePosition.Value) == true
+                        : targetGrid?.EnsureFocus() == true;
                     if (selectedTarget)
                     {
                         roomAreaActive = !roomAreaActive;
@@ -425,9 +387,10 @@ namespace Burntime.Remaster.Scenes
                 return true;
             }
 
-            if (action == InputAction.Primary || action == InputAction.Secondary)
+            if (action is InputAction.Primary or InputAction.Secondary or
+                InputAction.Action)
             {
-                activeGrid.ActivateKeyboardItem(action == InputAction.Secondary);
+                activeGrid.ActivateFocusedItem(action != InputAction.Primary);
                 EnsureNonEmptyArea();
                 return true;
             }
@@ -437,19 +400,19 @@ namespace Burntime.Remaster.Scenes
 
         void UpdateActiveArea()
         {
-            inventory.Grid.KeyboardSelectionVisible = !roomAreaActive || grid == null;
+            inventory.Grid.FocusVisible = !roomAreaActive || grid == null;
             if (grid != null)
-                grid.KeyboardSelectionVisible = roomAreaActive;
+                grid.FocusVisible = roomAreaActive;
         }
 
         void EnsureNonEmptyArea()
         {
             ItemGridWindow activeGrid = roomAreaActive && grid != null ? grid : inventory.Grid;
-            if (activeGrid.HasKeyboardItems)
+            if (activeGrid.HasFocusableItems)
                 return;
 
             ItemGridWindow otherGrid = roomAreaActive ? inventory.Grid : grid;
-            if (otherGrid != null && otherGrid.HasKeyboardItems)
+            if (otherGrid != null && otherGrid.HasFocusableItems)
                 roomAreaActive = !roomAreaActive;
 
             UpdateActiveArea();

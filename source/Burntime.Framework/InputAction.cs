@@ -24,7 +24,7 @@ public enum InputAction
     Back,
     Primary,
     Secondary,
-    SceneAction,
+    Action,
     Options,
     Statistics,
     ToggleInteractionMode,

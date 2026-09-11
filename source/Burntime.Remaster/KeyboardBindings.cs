@@ -24,7 +24,7 @@ public sealed class KeyboardBindings : IKeyboardBindings
         ("accept", "space enter", InputAction.Primary),
         ("back", "escape", InputAction.Back),
         ("secondary", "f", InputAction.Secondary),
-        ("action", "q", InputAction.SceneAction),
+        ("action", "q", InputAction.Action),
         ("options", "o", InputAction.Options),
         ("inventory", "e i", InputAction.Inventory),
         ("world_map", "v m", InputAction.WorldMap),

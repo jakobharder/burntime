@@ -15,6 +15,8 @@ public enum PositionAlignment
 
 public class Window
 {
+    public InputPromptCollection Prompts { get; }
+
     internal Container parent;
     public Container Parent
     {
@@ -156,7 +158,10 @@ public class Window
     public Window(Module App)
     {
         app = App;
+        Prompts = new InputPromptCollection(this);
     }
+
+    protected internal virtual bool IsPromptActive(InputMode inputMode) => HasFocus;
 
     public void Show()
     {

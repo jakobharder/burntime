@@ -73,7 +73,7 @@ namespace Burntime.Remaster.GUI
                 if (pageIndices[i] == nextPage)
                 {
                     OnPage(i);
-                    grid.ResetKeyboardSelection();
+                    grid.ResetFocus();
                     return true;
                 }
             }

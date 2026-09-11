@@ -132,7 +132,6 @@ namespace Burntime.Framework
         public InputManager InputManager { get; } = new();
         public IKeyboardBindings KeyboardActionBindings { get; protected set; } = new EmptyKeyboardBindings();
         public IGamepadBindings GamepadActionBindings { get; protected set; } = new EmptyGamepadBindings();
-
         public bool IsInputActionDown(InputAction action)
         {
             if (InputManager.ActionsDown.Contains(action))

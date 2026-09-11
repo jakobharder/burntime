@@ -231,17 +231,15 @@ namespace Burntime.Framework
         public bool UseDiagonalGamepadNavigation => activeScene?.UseDiagonalGamepadNavigation ?? false;
         public bool PreserveMouseModeForDirectionalInput =>
             modalStack.Count > 0 && modalStack.Peek().PreserveMouseModeForDirectionalInput;
+        internal Window? InputWindow => modalStack.Count > 0
+            ? modalStack.Peek()
+            : activeScene;
 
         internal void Render(RenderTarget Target) => activeScene?.Render(Target);
 
         internal void Process(float Elapsed)
         {
-            Window handle = null;
-
-            if (modalStack.Count > 0)
-                handle = modalStack.Peek();
-            else
-                handle = activeScene;
+            Window handle = InputWindow;
 
             Vector2 parentPos = handle.PositionOnScreen - handle.Position;
 

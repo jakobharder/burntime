@@ -2,132 +2,76 @@
 
 ## Selection
 
-- **Hover** and **focus** are the same navigation target: mouse mode presents it as
-  hover, keyboard/gamepad mode as focus.
-- Mouse mode has no focused item when nothing is hovered.
-- Entering a page in keyboard/gamepad mode immediately focuses its first enabled item.
-- Switching from mouse to keyboard/gamepad keeps focus on the hovered item, or uses
-  the first enabled item when nothing is hovered.
-- Directional input is applied relative to that focus.
-- Mouse click activates the hovered item. Enter and Gamepad A activate only an item
-  that had visible focus before the button press; otherwise they only establish focus.
-- The resulting **active item**, such as a playing track, active tab or marked save,
-  is persistent state and separate from hover/focus.
+- Hover and focus share one navigation target.
+- Active is persistent and separate from hover/focus.
+- Keyboard/gamepad mode: if nothing is focused, the first item is focused when entering a page or switching from mouse.
 
 ## Action mappings
 
-| InputAction | Keyboard | Gamepad | Context
-| --- | --- | --- | ---
-| `Move*` - primary direction | Arrow keys | Left stick | all
-| `PanCamera*` - secondary direction | W/A/S/D | Right stick | all
-| `Primary` | Space / Enter | A | all
-| `Secondary` | F | X | all except options; setup uses X and Shift+Up/Down
-| `SceneAction` | Q | Y | scene-specific actions
-| `Back` | Escape | B | all
-| `Options` | O | Menu | both maps, setup
-| `Statistics` | H | D-pad left | both maps
-| `Inventory` | E / I | D-pad up | both maps
-| `WorldMap` | V / M | View | location map
-| `LocationInfo` | R | D-pad right | both maps
-| `NextTurn` | Hold T | Hold D-pad down | both maps
-| `ToggleInteractionMode` | C | — | both maps
-| `ShowEntrances` | Hold Alt | Hold Left Trigger | both maps
-| `LeftArea` | Shift+Left | Left shoulder | contextual previous character/page
-| `RightArea` | Shift+Right | Right shoulder | contextual next character/page
+| InputAction | Role | Uses |
+| --- | --- | --- |
+| `Primary` | Primary interaction | Select, enter, open, talk |
+| `Secondary` | Information | Inspect, details, info |
+| `Action` | Consequential action | Travel, fight, buy, trade, consume, heal |
+| `Back` | Leave current context | Back, close, cancel, map actions |
 
-The keyboard and gamepad mappings are configured in the `[keyboard]` and `[gamepad]` sections of `settings.txt`. Input mappings are currently defaults-only: obsolete mapping sections in `user.txt` are removed at startup and are not written back on shutdown.
-Prompt rows and inline map-menu shortcuts resolve their controls from the active mappings and omit unbound actions. Composite navigation hints remain explicit exceptions.
+| InputAction | Keyboard | Gamepad | Context |
+| --- | --- | --- | --- |
+| `Move*` | Arrow keys | Left stick | All |
+| `PanCamera*` | W/A/S/D | Right stick | All |
+| `Primary` | Space / Enter | A | All |
+| `Secondary` | F | X | All except Options |
+| `Action` | Q | Y | Scene-specific |
+| `Back` | Escape | B | All |
+| `Options` | O | Menu | Maps, setup |
+| `Statistics` | H | D-pad left | Maps |
+| `Inventory` | E / I | D-pad up | Maps |
+| `WorldMap` | V / M | View | Location map |
+| `LocationInfo` | R | D-pad right | Maps |
+| `NextTurn` | Hold T | Hold D-pad down | Maps |
+| `ToggleInteractionMode` | C | — | Maps |
+| `ShowEntrances` | Hold Alt | Hold Left Trigger | Maps |
+| `LeftArea` | Shift+Left | Left shoulder | Previous character/page |
+| `RightArea` | Shift+Right | Right shoulder | Next character/page |
 
-As a layout guideline, LB/RB uses Shift+Left/Right when the related choices are arranged horizontally and Shift+Up/Down when they are arranged vertically. Options therefore keeps Shift+Up/Down for its vertical radio rail.
+On the location map, `Action` (Q/Y) fights and `Secondary` (F/X) opens the
+available group actions.
 
-When no input mode has been established yet, any keyboard press activates keyboard mode. The same applies when switching from gamepad to keyboard. While mouse mode is active, only an arrow-key press switches to keyboard mode; other keys remain shortcuts shared with mouse control and do not hide the mouse cursor or replace mouse mode.
+Prompt position is normally inferred from the action. A dynamic prompt with
+different actions specifies its shared position explicitly. On the world map,
+Enter (`Primary`) and Travel (`Action`) share the Primary prompt position.
 
-A context menu or modal dialog opened in mouse mode is a local exception: arrow keys move its selection without changing the global input mode or hiding the cursor. Actual mouse movement takes ownership of the local selection again. Full-screen scenes still switch from mouse to keyboard mode when an arrow key is pressed.
+LB/RB maps to Shift+Left/Right for horizontal choices and Shift+Up/Down for vertical choices.
 
-On both maps, `Escape` or Gamepad B opens the actions menu and `O` opens Options directly. On the location map, `V`, `M`, or Gamepad View opens the world map. Keyboard-mode menu shortcuts advertise the nearby `E` and `V` bindings for Inventory and World Map; mouse mode advertises their mnemonic `I` and `M` aliases. Contextual map actions advertise `Space`; `Enter` remains an equivalent `Primary` binding but is not shown in the prompt overlay.
+## Input mode activation
 
-Map actions menus show global shortcuts beside the right edge of their matching entries without extending the fixed menu artwork. Each shortcut has a half-transparent backing that overlaps the menu edge by one pixel to avoid a seam. Those shortcuts remain active while the menu is open, and entries without a direct binding leave the right side blank. A hold shortcut's `Hold` prefix stays prompt gray while the control can follow the focused row color. A menu-local alternate activation such as Gamepad Y is shown inside the menu immediately left of the entry text to distinguish it from global shortcuts. The world map omits its Travel/Info-mode entry when the menu is opened with keyboard or gamepad; a mouse-opened menu retains it and shows `C` as its toggle shortcut.
-
-`SceneAction` is the scene-specific extra command: e.g. accept a trade, eat, drink or heal. On the location map it opens a separate group menu containing the available Single/All, Dismiss and Make/Leave Camp commands. The prompt is omitted when no group command is available. The keyboard/gamepad actions menu keeps Info, World Map, Inventory, Statistics, Options and Next Turn. For mouse play, right-click retains the original combined menu with interaction, group and global commands. The map prompt overlay remains hidden while either menu is open. `SceneAction` is unused on the world map and during game setup.
-
-On map scenes, tap `T` or `D-pad down` has no effect.
-The logic for holding is to prevent a single tap to initiate a turn.
-Travel on the world map - which also initiates turns - needs `Move*` then `Primary`, hence no extra holding required.
-
-`ToggleInteractionMode` is a legacy keyboard shortcut retained for mouse play. It switches mouse clicks between primary and secondary behavior; pure keyboard and gamepad play do not require it.
+| Current mode | Input | Result |
+| --- | --- | --- |
+| Unset | Any keyboard key | Keyboard mode |
+| Gamepad | Any keyboard key | Keyboard mode |
+| Mouse | Arrow key | Keyboard mode |
+| Mouse | Other shortcut | Mouse mode retained |
+| Any | Mouse movement | Mouse mode |
 
 ## Text input
 
-In text-input scenes, printable keyboard characters, `Space` and `Backspace` are reserved for text and never invoke their mapped actions.
-When no text input is active, typing may activate the input associated with the current selection; the scene defines whether this behavior applies.
-Text changes take effect immediately; leaving the input does not commit or cancel them. Active, selected and normal text inputs need distinct visual states.
-Gamepad actions remain available; names are selected or generated without gamepad text entry.
-
-### Language selection
-
-- Before the first input, Steam Deck and GameScope sessions present gamepad controls; other platforms start in mouse mode. The first actual input replaces that initial assumption normally.
-- The first-time language scene ignores saved language settings. A German system UI culture defaults to German and every other culture defaults to English.
-- Mouse hover and keyboard/gamepad focus share one language selection instead of producing separate highlights.
-- The selected language uses an orange highlight; the other language uses muted blue.
-- Changing the selection immediately previews hardcoded German/English text in the fullscreen hint and prompt overlay, without reloading language resources or fading the scene. Left/right changes the preview and Primary applies the language and confirms it.
-- The fullscreen hint shows `Alt+Enter` on macOS and `F11` on other supported desktop platforms.
-
-### Game setup
-
-- Player 1 starts enabled with a generated name, while Start has focus.
-- Arrow keys, D-pad and the left stick navigate.
-- `Tab` switches between Player 1 and Player 2. `Shift+Tab` switches in reverse. From the button group, Tab prefers Player 1 and Shift+Tab prefers Player 2 when both are enabled.
-- While an enabled player is selected, `Shift+Left/Right` or Gamepad LB/RB selects the previous/next face. `Shift+Left/Right` is the general keyboard equivalent of LB/RB throughout the game.
-- While an enabled player is selected, `Shift+Up/Down` or Gamepad X swaps the two player colors.
-- Menu, `Escape`, or Gamepad B opens Options.
-- `Enter` or Gamepad `A` toggles the selected player on/off. At least one player remains enabled.
-- `Enter` or Gamepad `A` starts the game when Start is selected; X/Y is not a second Start shortcut.
-- A mouse click on another player selects it without changing whether it is enabled. Clicking the selected player toggles it.
-- Typing while a disabled player is selected enables them and starts a new name with the typed character.
-- Manual names survive disabling and re-enabling a player. Backspacing a name to empty returns it to automatic-name behavior; leaving an enabled empty name field generates a new random name.
-
-### Save and load
-
-- The page contains one scrolling column. `[NEW SAVE]` is the first entry and creates an automatically named save for the first human player.
-- Existing saves are ordered by file modification time, newest first. Up/down moves and scrolls the list.
-- `Enter` or Gamepad `A` on `[NEW SAVE]` saves immediately. On an existing save it marks that save in blue and moves to the load/save/delete actions; `Enter` executes the selected action.
-- The red keyboard cursor and mouse hover are transient. Load, save and delete act on the save marked in blue.
-- While the list has focus, the bottom row shows details for the entry under the keyboard cursor. Mouse hover previews the same details. It changes to the action buttons when actions have focus or the mouse leaves the list.
-- Two global autosaves rotate before committed travel. Their player names are shown in brackets. They can be loaded but not deleted; saving while one is selected creates a new manual save.
-- Loading an autosave suppresses rotation before the next committed travel. Opening or cancelling travel does not consume this suppression.
-- Left/right navigates the action buttons as displayed.
-- Gamepad `A` follows `Enter`; D-pad and either stick follow arrow-key navigation.
-
-### Options radio
-
-- Options opens with the left page focused. While a page has focus, arrows navigate its controls and confirm activates the focused control. Right or `Tab` moves focus to the active radio entry.
-- The radio entries form a vertical tab rail on the right. While it has focus, up/down moves without wrapping and immediately displays the focused page. Left or confirm returns to that page.
-- `Shift+Up/Down` and Gamepad LB/RB cycle backward/forward through the radio entries. When invoked from a page, focus remains in the newly displayed page unless Back is reached.
-- Changing pages initializes focus to the first item; Jukebox prefers the currently playing track when one is available. Moving to the tab rail and returning to the same page preserves its previous focus. Page controls still require confirm to activate.
-- The Back entry shows an empty left panel and remains on the tab rail; click or confirm it to leave Options.
-- The red bulb marks the active radio entry. A separate focus index uses the blue hover color while the tab rail has keyboard or gamepad focus. Mouse hover shares that focus index but does not switch pages; clicking selects the hovered entry.
+- Printable keys, Space, and Backspace edit text and do not trigger mapped actions.
+- Text changes apply immediately.
+- Active, selected, and normal inputs have distinct visual states.
 
 ## Direction behavior
 
 | Context | Primary direction | Secondary direction |
 | --- | --- | --- |
 | World map | Move location selection | Pan camera |
-| Location map | Move the character | Pan camera |
+| Location map | Move character | Pan camera |
+| Other scenes | Navigate | Navigate |
 
-On map scenes in keyboard or gamepad mode, releasing the secondary direction returns the camera to the controlled character or the player's current world-map location. In mouse mode, WASD panning leaves the camera at its new position.
+Releasing gamepad/keyboard camera input on maps returns the camera to the controlled target.
 
-On the world map, the walking cursor animation appears only while the mouse is over a valid travel destination, excluding the current location. The info-mode cursor keeps its normal behavior. In travel mode, right-click opens Info directly for the current or a player-owned location and shows the actions menu elsewhere. In info mode, left-click opens Info and right-click continues to open the actions menu.
+## Location interaction mode
 
-Outside map scenes, primary and secondary directions behave identically. They remain separate actions to allow future differences.
-
-## Context-sensitive shortcuts
-
-| Context | H / D-pad left | R / D-pad right | Shift+Left / Left shoulder | Shift+Right / Right shoulder |
-| --- | --- | --- | --- | --- |
-| World map | `Statistics` | `LocationInfo` | — | — |
-| Location map | `Statistics` | `LocationInfo` | Previous character | Next character |
-| Inventory and inventory-based services | — | — | Previous character page | Next character page |
-| Trader | — | — | — | — |
-| Any other scene using areas | — | — | `LeftArea` | `RightArea` |
-
-Inventory character pages wrap in both directions with Shift+Left/Right or LB/RB. Trader pages instead change by moving up or down beyond an inventory grid edge. Horizontal navigation may enter an empty player or trader inventory page, allowing its other pages to remain reachable through vertical navigation.
+- Auto is the scene-local default and is restored whenever the location scene activates. Left click keeps the normal interaction, while right click fights a hovered fightable character instead of opening the actions menu.
+- Auto does not show the mouth or fight animation beside the mouse cursor.
+- C changes Auto to Fight, then toggles between Fight and Talk. It does not return to Auto.
+- In Auto, a fightable hover shows Talk on left click and Fight on right click. The actions-menu prompt is hidden while right click is assigned to Fight.

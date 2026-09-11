@@ -33,9 +33,6 @@ namespace Burntime.Remaster
         readonly FaceWindow _playerFace;
         string _playerName;
 
-        public Rect PlayerFaceBounds => new(
-            Position + _playerFace.Boundings.Position, _playerFace.Boundings.Size);
-
         public string PromptText { get; set; } = "";
 
         readonly Image _uiElement1;

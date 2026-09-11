@@ -22,11 +22,12 @@ namespace Burntime.Remaster.GUI
         ISprite maskSprite;
         ISprite selectionSprite;
         GuiFont selectionFont;
-        int keyboardIndex = -1;
-        Vector2? lastSelectionPosition;
-        public bool KeyboardSelectionVisible { get; set; }
-        public event Action<ItemGridWindow> MouseSelectionChanged;
-        public event Action<ItemGridWindow, Vector2> SelectionEmptied;
+        int focusIndex = -1;
+        Vector2? lastFocusPosition;
+        public bool FocusVisible { get; set; }
+        public PixelColor? BackgroundColor { get; set; }
+        public event Action<ItemGridWindow> MouseFocusChanged;
+        public event Action<ItemGridWindow, Vector2> FocusEmptied;
 
         bool unifiedSelection;
         public bool UnifiedSelection
@@ -46,10 +47,10 @@ namespace Burntime.Remaster.GUI
         bool hasLastMousePosition;
         bool mouseHasLeft;
         Vector2 lastMousePosition;
-        const float MousePromptHideDelay = 0.2f;
-        Item? mousePromptItem;
-        float mousePromptHideRemaining;
-        bool mousePromptHidePending;
+        const float MouseFocusHideDelay = 0.2f;
+        bool mouseFocusActive;
+        float mouseFocusHideRemaining;
+        bool mouseFocusHidePending;
 
         int[] gridPositions;
         bool lockPositions = false;
@@ -86,7 +87,7 @@ namespace Burntime.Remaster.GUI
             get { return grid.x * grid.y + (doubleLayered ? (grid.x - 1) * (grid.y - 1) : 0); }
         }
 
-        public bool HasKeyboardItems => items.Count > 0;
+        public bool HasFocusableItems => items.Count > 0;
 
         public IItemCollection Mask
         {
@@ -110,6 +111,9 @@ namespace Burntime.Remaster.GUI
 
         public override void OnRender(RenderTarget Target)
         {
+            if (BackgroundColor.HasValue)
+                Target.RenderRect(Vector2.Zero, Size, BackgroundColor.Value);
+
             if (mask != null)
             {
                 Target.Layer += 3;
@@ -139,12 +143,12 @@ namespace Burntime.Remaster.GUI
                 Target.Layer -= 3;
             }
 
-            if (KeyboardSelectionVisible && IsValidKeyboardIndex(keyboardIndex))
+            if (FocusVisible && IsValidFocusIndex(focusIndex))
             {
                 Target.Layer += 5;
-                Vector2 itemPosition = itemWindows[keyboardIndex].Position;
+                Vector2 itemPosition = itemWindows[focusIndex].Position;
                 RenderTarget bigger = Target.GetSubBuffer(new Rect(itemPosition - new Vector2(50, 50), new Vector2(132, 132)));
-                string title = itemWindows[keyboardIndex].TooltipText ?? "";
+                string title = itemWindows[focusIndex].TooltipText ?? "";
                 selectionFont.DrawText(bigger, new Vector2(66, 41), title, TextAlignment.Center, VerticalTextAlignment.Top);
                 Target.Layer -= 5;
             }
@@ -161,26 +165,26 @@ namespace Burntime.Remaster.GUI
             lastMousePosition = position;
             hasLastMousePosition = true;
             mouseHasLeft = false;
-            mouseHoverIndex = -1;
+            bool foundFocus = false;
 
             for (int i = itemWindows?.Length - 1 ?? -1; i >= 0; i--)
             {
-                if (IsValidKeyboardIndex(i) && itemWindows[i].Boundings.PointInside(position))
+                if (IsValidFocusIndex(i) && itemWindows[i].Boundings.PointInside(position))
                 {
-                    mouseHoverIndex = i;
-                    mousePromptItem = items[gridPositions[i]];
-                    mousePromptHidePending = false;
-                    mousePromptHideRemaining = 0;
-                    keyboardIndex = i;
-                    MouseSelectionChanged?.Invoke(this);
+                    foundFocus = true;
+                    mouseFocusActive = true;
+                    mouseFocusHidePending = false;
+                    mouseFocusHideRemaining = 0;
+                    focusIndex = i;
+                    MouseFocusChanged?.Invoke(this);
                     break;
                 }
             }
 
-            if (mouseHoverIndex < 0 && mousePromptItem != null && !mousePromptHidePending)
+            if (!foundFocus && mouseFocusActive && !mouseFocusHidePending)
             {
-                mousePromptHidePending = true;
-                mousePromptHideRemaining = MousePromptHideDelay;
+                mouseFocusHidePending = true;
+                mouseFocusHideRemaining = MouseFocusHideDelay;
             }
 
             return base.OnMouseMove(position);
@@ -188,11 +192,11 @@ namespace Burntime.Remaster.GUI
 
         public override void OnUpdate(float elapsed)
         {
-            if (mousePromptHidePending)
+            if (mouseFocusHidePending)
             {
-                mousePromptHideRemaining -= elapsed;
-                if (mousePromptHideRemaining <= 0)
-                    ClearMousePromptItem();
+                mouseFocusHideRemaining -= elapsed;
+                if (mouseFocusHideRemaining <= 0)
+                    ClearMouseFocus();
             }
 
             base.OnUpdate(elapsed);
@@ -201,54 +205,52 @@ namespace Burntime.Remaster.GUI
         public override void OnMouseLeave()
         {
             mouseHasLeft = true;
-            mouseHoverIndex = -1;
-            ClearMousePromptItem();
+            ClearMouseFocus();
             base.OnMouseLeave();
         }
 
-        void ClearMousePromptItem()
+        void ClearMouseFocus()
         {
-            mousePromptItem = null;
-            mousePromptHidePending = false;
-            mousePromptHideRemaining = 0;
+            mouseFocusActive = false;
+            mouseFocusHidePending = false;
+            mouseFocusHideRemaining = 0;
         }
 
-        internal void SelectFromMouseClick(int index)
+        internal void FocusFromMouseClick(int index)
         {
-            if (!UnifiedSelection || !IsValidKeyboardIndex(index))
+            if (!UnifiedSelection || !IsValidFocusIndex(index))
                 return;
 
-            mouseHoverIndex = index;
-            mousePromptItem = items[gridPositions[index]];
-            mousePromptHidePending = false;
-            mousePromptHideRemaining = 0;
-            keyboardIndex = index;
-            MouseSelectionChanged?.Invoke(this);
+            mouseFocusActive = true;
+            mouseFocusHidePending = false;
+            mouseFocusHideRemaining = 0;
+            focusIndex = index;
+            MouseFocusChanged?.Invoke(this);
         }
 
-        public void ResetKeyboardSelection()
+        public void ResetFocus()
         {
-            keyboardIndex = -1;
-            SelectFirstKeyboardItem();
+            focusIndex = -1;
+            FocusFirstItem();
         }
 
-        public bool EnsureKeyboardSelection()
+        public bool EnsureFocus()
         {
-            return IsValidKeyboardIndex(keyboardIndex) || SelectFirstKeyboardItem();
+            return IsValidFocusIndex(focusIndex) || FocusFirstItem();
         }
 
-        public bool MoveKeyboardSelection(Vector2 direction)
+        public bool MoveFocus(Vector2 direction)
         {
-            if (!IsValidKeyboardIndex(keyboardIndex))
-                return SelectFirstKeyboardItem();
+            if (!IsValidFocusIndex(focusIndex))
+                return FocusFirstItem();
 
-            Vector2 current = itemWindows[keyboardIndex].Position + size / 2;
+            Vector2 current = itemWindows[focusIndex].Position + size / 2;
             int selected = -1;
             int selectedScore = int.MaxValue;
 
             for (int i = 0; i < itemWindows.Length; i++)
             {
-                if (!IsValidKeyboardIndex(i) || i == keyboardIndex)
+                if (!IsValidFocusIndex(i) || i == focusIndex)
                     continue;
 
                 Vector2 candidate = itemWindows[i].Position + size / 2;
@@ -259,7 +261,7 @@ namespace Burntime.Remaster.GUI
                 // what crosses between the interleaved layers.
                 if (doubleLayered && direction.x != 0)
                 {
-                    bool currentSecondLayer = keyboardIndex >= grid.Count;
+                    bool currentSecondLayer = focusIndex >= grid.Count;
                     bool candidateSecondLayer = i >= grid.Count;
                     if (currentSecondLayer != candidateSecondLayer || candidate.y != current.y)
                         continue;
@@ -286,18 +288,18 @@ namespace Burntime.Remaster.GUI
             if (selected == -1)
                 return false;
 
-            keyboardIndex = selected;
+            focusIndex = selected;
             return true;
         }
 
-        public bool SelectKeyboardEdge(Vector2 direction, Vector2 sourcePosition)
+        public bool FocusEdge(Vector2 direction, Vector2 sourcePosition)
         {
             int selected = -1;
             int selectedScore = int.MaxValue;
 
             for (int i = 0; itemWindows != null && i < itemWindows.Length; i++)
             {
-                if (!IsValidKeyboardIndex(i))
+                if (!IsValidFocusIndex(i))
                     continue;
 
                 Vector2 candidate = PositionOnScreen + itemWindows[i].Position + size / 2;
@@ -319,18 +321,18 @@ namespace Burntime.Remaster.GUI
             if (selected == -1)
                 return false;
 
-            keyboardIndex = selected;
+            focusIndex = selected;
             return true;
         }
 
-        public bool SelectKeyboardPageEdge(Vector2 direction, Vector2 sourcePosition)
+        public bool FocusPageEdge(Vector2 direction, Vector2 sourcePosition)
         {
             int selected = -1;
             int selectedScore = int.MaxValue;
 
             for (int i = 0; itemWindows != null && i < itemWindows.Length; i++)
             {
-                if (!IsValidKeyboardIndex(i))
+                if (!IsValidFocusIndex(i))
                     continue;
 
                 Vector2 candidate = PositionOnScreen + itemWindows[i].Position + size / 2;
@@ -349,91 +351,98 @@ namespace Burntime.Remaster.GUI
             if (selected == -1)
                 return false;
 
-            keyboardIndex = selected;
+            focusIndex = selected;
             return true;
         }
 
-        public Vector2? KeyboardSelectionPosition
+        public Vector2? FocusPosition
         {
             get
             {
-                if (IsValidKeyboardIndex(keyboardIndex))
+                if (IsValidFocusIndex(focusIndex))
                 {
-                    lastSelectionPosition = PositionOnScreen + itemWindows[keyboardIndex].Position + size / 2;
-                    return lastSelectionPosition;
+                    lastFocusPosition = PositionOnScreen + itemWindows[focusIndex].Position + size / 2;
+                    return lastFocusPosition;
                 }
 
-                return lastSelectionPosition;
+                return lastFocusPosition;
             }
         }
 
-        public Item? KeyboardSelectedItem => IsValidKeyboardIndex(keyboardIndex)
-            ? items[gridPositions[keyboardIndex]]
+        Item? FocusedItemAtIndex => IsValidFocusIndex(focusIndex)
+            ? items[gridPositions[focusIndex]]
             : null;
 
-        int mouseHoverIndex = -1;
-        public Item? MouseHoveredItem => mousePromptItem;
-
-        public bool ActivateKeyboardItem(bool secondary)
+        public Item? FocusedItem => app.LastInputMode switch
         {
-            if (!IsValidKeyboardIndex(keyboardIndex))
+            InputMode.Mouse when mouseFocusActive => FocusedItemAtIndex,
+            InputMode.Keyboard or InputMode.Gamepad when FocusVisible =>
+                FocusedItemAtIndex,
+            _ => null
+        };
+
+        protected override bool IsPromptActive(InputMode inputMode) => FocusedItem != null;
+
+        public bool ActivateFocusedItem(bool secondary)
+        {
+            if (!IsValidFocusIndex(focusIndex))
                 return false;
 
-            Vector2 previousPosition = itemWindows[keyboardIndex].Position;
-            Item item = items[gridPositions[keyboardIndex]];
+            Vector2 previousPosition = itemWindows[focusIndex].Position;
+            Item item = items[gridPositions[focusIndex]];
             if (secondary)
                 RightClickItemEvent?.Execute(item);
             else
                 LeftClickItemEvent?.Execute(item);
 
-            if (!IsValidKeyboardIndex(keyboardIndex))
-                SelectNearestKeyboardItem(previousPosition);
+            if (!IsValidFocusIndex(focusIndex))
+                FocusNearestItem(previousPosition);
             return true;
         }
 
-        bool SelectFirstKeyboardItem()
+        bool FocusFirstItem()
         {
             if (itemWindows == null)
                 return false;
 
             for (int i = 0; i < itemWindows.Length; i++)
             {
-                if (IsValidKeyboardIndex(i))
+                if (IsValidFocusIndex(i))
                 {
-                    keyboardIndex = i;
+                    focusIndex = i;
                     return true;
                 }
             }
 
-            keyboardIndex = -1;
+            focusIndex = -1;
             return false;
         }
 
-        void SelectNearestKeyboardItem(Vector2 position)
+        void FocusNearestItem(Vector2 position)
         {
-            keyboardIndex = -1;
+            focusIndex = -1;
             int nearestDistance = int.MaxValue;
             bool nearestIsOnSameRow = false;
             for (int i = 0; itemWindows != null && i < itemWindows.Length; i++)
             {
-                if (!IsValidKeyboardIndex(i))
+                if (!IsValidFocusIndex(i))
                     continue;
 
                 Vector2 difference = itemWindows[i].Position - position;
                 int distance = System.Math.Abs(difference.x) + System.Math.Abs(difference.y);
                 bool isOnSameRow = difference.y == 0;
-                if (keyboardIndex == -1 ||
+                if (focusIndex == -1 ||
                     isOnSameRow && !nearestIsOnSameRow ||
                     isOnSameRow == nearestIsOnSameRow && distance < nearestDistance)
                 {
-                    keyboardIndex = i;
+                    focusIndex = i;
                     nearestDistance = distance;
                     nearestIsOnSameRow = isOnSameRow;
                 }
             }
         }
 
-        bool IsValidKeyboardIndex(int index)
+        bool IsValidFocusIndex(int index)
         {
             return itemWindows != null && gridPositions != null && index >= 0 && index < itemWindows.Length &&
                 gridPositions[index] >= 0 && gridPositions[index] < items.Count &&
@@ -442,13 +451,13 @@ namespace Burntime.Remaster.GUI
 
         public void Clear()
         {
-            if (IsValidKeyboardIndex(keyboardIndex))
-                lastSelectionPosition = PositionOnScreen + itemWindows[keyboardIndex].Position + size / 2;
+            if (IsValidFocusIndex(focusIndex))
+                lastFocusPosition = PositionOnScreen + itemWindows[focusIndex].Position + size / 2;
 
             items.Clear();
             RefreshContent();
             selection = app.GameState.Container.Create<ItemList>(StateObjectOptions.Temporary);
-            keyboardIndex = -1;
+            focusIndex = -1;
         }
 
         public bool Add(Item item)
@@ -472,16 +481,16 @@ namespace Burntime.Remaster.GUI
             else
                 RefreshContent();
 
-            if (!IsValidKeyboardIndex(keyboardIndex))
-                SelectFirstKeyboardItem();
+            if (!IsValidFocusIndex(focusIndex))
+                FocusFirstItem();
             
             return true;
         }
 
         public void Remove(Item item)
         {
-            Vector2? removedSelectionPosition = items.Count == 1 && IsValidKeyboardIndex(keyboardIndex)
-                ? PositionOnScreen + itemWindows[keyboardIndex].Position + size / 2
+            Vector2? removedFocusPosition = items.Count == 1 && IsValidFocusIndex(focusIndex)
+                ? PositionOnScreen + itemWindows[focusIndex].Position + size / 2
                 : null;
 
             if (lockPositions)
@@ -512,8 +521,8 @@ namespace Burntime.Remaster.GUI
                 RefreshContent();
             }
 
-            if (items.Count == 0 && removedSelectionPosition.HasValue)
-                SelectionEmptied?.Invoke(this, removedSelectionPosition.Value);
+            if (items.Count == 0 && removedFocusPosition.HasValue)
+                FocusEmptied?.Invoke(this, removedFocusPosition.Value);
         }
 
         public int Count
@@ -551,7 +560,9 @@ namespace Burntime.Remaster.GUI
                     Windows -= wnd;
             }
 
-            base.Size = grid * size + (grid + 1) * spacing;
+            base.Size = grid.Count == 0
+                ? Vector2.Zero
+                : grid * size + (grid - Vector2.One) * spacing;
 
             int count = grid.Count;
             if (doubleLayered && count > 0)
@@ -594,8 +605,8 @@ namespace Burntime.Remaster.GUI
             }
 
             RefreshContent();
-            if (!IsValidKeyboardIndex(keyboardIndex))
-                SelectFirstKeyboardItem();
+            if (!IsValidFocusIndex(focusIndex))
+                FocusFirstItem();
         }
 
         void RefreshContent()

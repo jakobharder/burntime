@@ -23,6 +23,14 @@ bool nearestPointFiltering = args.Contains("--nearest-point", StringComparer.Ord
 bool disableShaders = args.Contains("--no-shader", StringComparer.OrdinalIgnoreCase);
 bool showFps = args.Contains("--fps", StringComparer.OrdinalIgnoreCase);
 
+if (!TryParseWindowSize(args, out Burntime.Platform.Vector2? windowSize,
+    out string? windowSizeError))
+{
+    Console.Error.WriteLine(windowSizeError);
+    Environment.ExitCode = 2;
+    return;
+}
+
 if (emulateSteamMachine && emulateSteamDeck)
 {
     Console.Error.WriteLine("Use either --steam-machine or --steam-deck, not both.");
@@ -41,5 +49,50 @@ if ((linearFiltering ? 1 : 0) + (nearestPointFiltering ? 1 : 0) +
 
 using var game = new Burntime.MonoGame.BurntimeGame(
     emulateSteamMachine, emulateSteamDeck, chooseLanguage, linearFiltering,
-    nearestPointFiltering, disableShaders, showFps);
+    nearestPointFiltering, disableShaders, showFps, windowSize);
 game.Run();
+
+static bool TryParseWindowSize(string[] arguments, out Burntime.Platform.Vector2? size,
+    out string? error)
+{
+    size = null;
+    error = null;
+    for (int index = 0; index < arguments.Length; index++)
+    {
+        string argument = arguments[index];
+        string? value = null;
+        if (argument.Equals("--window-size", StringComparison.OrdinalIgnoreCase))
+        {
+            if (++index >= arguments.Length)
+            {
+                error = "--window-size requires WIDTHxHEIGHT, for example 2560x1440.";
+                return false;
+            }
+            value = arguments[index];
+        }
+        else if (argument.StartsWith("--window-size=", StringComparison.OrdinalIgnoreCase))
+        {
+            value = argument["--window-size=".Length..];
+        }
+
+        if (value is null)
+            continue;
+        if (size.HasValue)
+        {
+            error = "Specify --window-size only once.";
+            return false;
+        }
+
+        string[] dimensions = value.Split('x', 'X');
+        if (dimensions.Length != 2 ||
+            !int.TryParse(dimensions[0], out int width) ||
+            !int.TryParse(dimensions[1], out int height) ||
+            width <= 0 || height <= 0)
+        {
+            error = $"Invalid window size '{value}'. Use WIDTHxHEIGHT, for example 2560x1440.";
+            return false;
+        }
+        size = new Burntime.Platform.Vector2(width, height);
+    }
+    return true;
+}

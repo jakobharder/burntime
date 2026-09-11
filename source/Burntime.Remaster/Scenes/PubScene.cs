@@ -21,9 +21,6 @@ namespace Burntime.Remaster.Scenes
         String[] restaurantText = null;
         int drinkLastAmount = 0;
         InventoryKeyboardNavigation keyboardNavigation;
-        readonly InputPromptOverlay promptOverlay;
-        readonly InputPromptOverlay exitPromptOverlay;
-        readonly InputPromptOverlay actionPromptOverlay;
         readonly Button exitButton;
         readonly Button actionButton;
 
@@ -96,17 +93,25 @@ namespace Burntime.Remaster.Scenes
             grid.Spacing = new Vector2(4, 4);
             grid.Grid = new Vector2(4, 1);
             grid.LeftClickItemEvent += OnLeftClickItemGrid;
+            grid.Prompts.Add(InputAction.Primary, "@prompts?37",
+                () => CanMoveFocusedItem(grid));
             Windows += grid;
+
+            inventory.Grid.Prompts.Add(InputAction.Primary, "@prompts?36",
+                () => CanMoveFocusedItem(inventory.Grid));
 
             font = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray);
             keyboardNavigation = new InventoryKeyboardNavigation(inventory, grid, OnButtonDrink, OnButtonExit);
-            inventory.Grid.MouseSelectionChanged += keyboardNavigation.SelectFromMouse;
-            grid.MouseSelectionChanged += keyboardNavigation.SelectFromMouse;
-            Windows += promptOverlay = new InputPromptOverlay(app);
-            promptOverlay.AnchorToScreenBottomRight();
-            Windows += exitPromptOverlay = CreateInlinePrompt(InputAction.Back);
-            Windows += actionPromptOverlay = CreateInlinePrompt(InputAction.SceneAction);
-            UpdateInlinePromptPositions();
+            inventory.Grid.MouseFocusChanged += keyboardNavigation.FocusFromMouse;
+            grid.MouseFocusChanged += keyboardNavigation.FocusFromMouse;
+            Windows += new InputPromptOverlay(app, Prompts,
+                InputPromptColorScheme.Hud);
+            exitButton.Prompts.Add(InputAction.Back, "",
+                new Vector2(exitButton.Size.x + 2, -2));
+            actionButton.Prompts.Add(InputAction.Action, "",
+                new Vector2(actionButton.Size.x + 2, -2));
+            Prompts.Add(InputPattern.HorizontalPaging, "@prompts?16",
+                () => inventory.PageCount > 1);
         }
 
         public override void OnResizeScreen(bool reload = false)
@@ -114,85 +119,24 @@ namespace Burntime.Remaster.Scenes
             base.OnResizeScreen(reload);
 
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
-            promptOverlay.AnchorToScreenBottomRight();
-            UpdateInlinePromptPositions();
         }
 
-        InputPromptOverlay CreateInlinePrompt(InputAction action)
+        bool CanMoveFocusedItem(ItemGridWindow source)
         {
-            InputPromptOverlay prompt = new(app)
-            {
-                HorizontalAlignment = PositionAlignment.Left,
-                VerticalAlignment = PositionAlignment.Left
-            };
-            prompt.SetPrompts(new InputPrompt(action, ""));
-            return prompt;
-        }
-
-        void UpdateInlinePromptPositions()
-        {
-            exitPromptOverlay.Position = new Vector2(exitButton.Boundings.Right + 2, 181);
-            actionPromptOverlay.Position = new Vector2(actionButton.Boundings.Right + 2, 181);
-        }
-
-        public override void OnUpdate(float elapsed)
-        {
-            base.OnUpdate(elapsed);
-            UpdateInlinePromptPositions();
-            UpdatePromptOverlay();
-        }
-
-        void UpdatePromptOverlay()
-        {
-            bool mouseInput = app.LastInputMode == InputMode.Mouse;
-            exitPromptOverlay.SetPrompts(mouseInput
-                ? []
-                : [new InputPrompt(InputAction.Back, "")]);
-            actionPromptOverlay.SetPrompts(mouseInput
-                ? []
-                : [new InputPrompt(InputAction.SceneAction, "")]);
-
-            List<InputPrompt> prompts = [];
-            ItemGridWindow activeGrid = keyboardNavigation.ActiveGrid;
-            Item? selectedItem = mouseInput
-                ? activeGrid.MouseHoveredItem
-                : activeGrid.KeyboardSelectedItem;
-            bool canMoveItem = selectedItem != null &&
-                (activeGrid == grid
+            Item? focusedItem = source.FocusedItem;
+            return focusedItem != null &&
+                (source == grid
                     ? inventory.Grid.Count < inventory.Grid.MaxCount
                     : grid.Count < grid.MaxCount);
-            if (canMoveItem)
-            {
-                prompts.Add(new(InputAction.Primary,
-                    activeGrid == grid ? "@prompts?37" : "@prompts?36")
-                {
-                    PreferredMouseControl = MouseButton.Left
-                });
-            }
-            if (!mouseInput && inventory.PageCount > 1)
-            {
-                prompts.Add(new(InputAction.LeftArea, "@prompts?16")
-                {
-                    AlternateAction = InputAction.RightArea,
-                    PreferredKeyboardControl = new Key(SystemKey.Left, ModifierKeys.Shift),
-                    PreferredAlternateKeyboardControl = new Key(SystemKey.Right,
-                        ModifierKeys.Shift),
-                    PreferredGamepadControl = GamepadControl.LeftShoulder,
-                    PreferredAlternateGamepadControl = GamepadControl.RightShoulder
-                });
-            }
-            promptOverlay.SetPrompts(prompts.ToArray());
         }
 
         protected override void OnActivateScene(object parameter)
         {
             inventory.SetGroup(BurntimeClassic.Instance.SelectedCharacter);
-
             restaurantText = null;
             drinkLastAmount = -1;
             grid.Clear();
             keyboardNavigation.Reset();
-            UpdatePromptOverlay();
         }
 
         public override bool OnInputAction(InputAction action) => keyboardNavigation.Handle(action);

@@ -32,9 +32,7 @@ namespace Burntime.Remaster.Scenes
         GuiImage technicianImage;
         GuiImage doctorImage;
         readonly Button exitButton;
-        readonly InputPromptOverlay exitPromptOverlay;
-        readonly InputPromptOverlay productionLeftPromptOverlay;
-        readonly InputPromptOverlay productionRightPromptOverlay;
+        readonly InputPromptHandle exitPrompt;
 
         public InfoScene(Module App)
             : base(App)
@@ -98,13 +96,30 @@ namespace Burntime.Remaster.Scenes
 
             items = new SortedList<string, int>();
 
-            Windows += exitPromptOverlay = CreateInlinePrompt(InputAction.Back,
-                PositionAlignment.Left, PositionAlignment.Center);
-            Windows += productionLeftPromptOverlay = CreateInlinePrompt(InputAction.MoveLeft,
-                PositionAlignment.Right, PositionAlignment.Right);
-            Windows += productionRightPromptOverlay = CreateInlinePrompt(InputAction.MoveRight,
-                PositionAlignment.Left, PositionAlignment.Right);
-            UpdateInlinePromptPositions();
+            Windows += new InputPromptOverlay(app, Prompts,
+                InputPromptColorScheme.Muted);
+            exitPrompt = exitButton.Prompts.Add(InputAction.Back, "",
+                app.Language == "de" ? new Vector2(56, 7) : new Vector2(50, 4),
+                horizontalAlignment: PositionAlignment.Left,
+                verticalAlignment: PositionAlignment.Center,
+                showBackground: false, horizontalPadding: 2);
+            production.Prompts.Add(
+                new InputPrompt(InputAction.MoveLeft, "")
+                {
+                    GamepadControl = GamepadControl.DPadLeft,
+                    MouseControl = MouseButton.Right
+                }, new Vector2(-2, 35), () => productionID >= 0,
+                PositionAlignment.Right, PositionAlignment.Right,
+                showBackground: false, horizontalPadding: 2);
+            production.Prompts.Add(
+                new InputPrompt(InputAction.MoveRight, "")
+                {
+                    GamepadControl = GamepadControl.DPadRight,
+                    MouseControl = MouseButton.Left
+                }, new Vector2(34, 35),
+                () => productionID >= 0,
+                PositionAlignment.Left, PositionAlignment.Right,
+                showBackground: false, horizontalPadding: 2);
 
             fighterImage = "syssze.raw?32";
             doctorImage = "syssze.raw?16";
@@ -116,32 +131,6 @@ namespace Burntime.Remaster.Scenes
             base.OnResizeScreen(reload);
 
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
-            UpdateInlinePromptPositions();
-        }
-
-        InputPromptOverlay CreateInlinePrompt(InputAction action,
-            PositionAlignment horizontalAlignment, PositionAlignment verticalAlignment)
-        {
-            InputPromptOverlay prompt = new(app)
-            {
-                HorizontalAlignment = horizontalAlignment,
-                VerticalAlignment = verticalAlignment,
-                HorizontalPadding = 2,
-                ShowBackground = false
-            };
-            prompt.SetPrompts(new InputPrompt(action, ""));
-            return prompt;
-        }
-
-        void UpdateInlinePromptPositions()
-        {
-            exitPromptOverlay.Position = new Vector2(exitButton.Boundings.Right + 2,
-                exitButton.Boundings.Top + exitButton.Boundings.Size.y / 2);
-
-            productionLeftPromptOverlay.Position = new Vector2(
-                production.Boundings.Left - 2, production.Boundings.Bottom + 3);
-            productionRightPromptOverlay.Position = new Vector2(
-                production.Boundings.Right + 2, production.Boundings.Bottom + 3);
         }
 
         public override void OnRender(RenderTarget target)
@@ -205,6 +194,8 @@ namespace Burntime.Remaster.Scenes
         protected override void OnActivateScene(object parameter)
         {
             BurntimeClassic classic = app as BurntimeClassic;
+            exitPrompt.UpdatePosition(app.Language == "de" ? new Vector2(56, 7) : new Vector2(50, 4));
+
             int city = classic.InfoCity;
             Location loc = classic.Game.World.Locations[city];
 
@@ -241,7 +232,6 @@ namespace Burntime.Remaster.Scenes
                 production.ItemID = "";
             }
 
-            UpdatePromptOverlay();
 
             items.Clear();
             foreach (Room room in loc.Rooms)
@@ -259,35 +249,6 @@ namespace Burntime.Remaster.Scenes
             offset = 0;
             RefreshItems();
             UpdateCampNPCs();
-        }
-
-        public override void OnUpdate(float elapsed)
-        {
-            base.OnUpdate(elapsed);
-            UpdatePromptOverlay();
-            UpdateInlinePromptPositions();
-        }
-
-        void UpdatePromptOverlay()
-        {
-            bool mouseInput = app.LastInputMode == InputMode.Mouse;
-            exitPromptOverlay.SetPrompts(!mouseInput
-                ? [new InputPrompt(InputAction.Back, "")]
-                : []);
-            productionLeftPromptOverlay.SetPrompts(productionID >= 0
-                ? [new InputPrompt(InputAction.MoveLeft, "")
-                {
-                    PreferredGamepadControl = GamepadControl.DPadLeft,
-                    PreferredMouseControl = MouseButton.Right
-                }]
-                : []);
-            productionRightPromptOverlay.SetPrompts(productionID >= 0
-                ? [new InputPrompt(InputAction.MoveRight, "")
-                {
-                    PreferredGamepadControl = GamepadControl.DPadRight,
-                    PreferredMouseControl = MouseButton.Left
-                }]
-                : []);
         }
 
         int offset = 0;

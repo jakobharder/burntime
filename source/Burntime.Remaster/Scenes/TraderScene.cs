@@ -30,11 +30,7 @@ class TraderScene : Scene
     ExchangeWindow exchangeBottom;
     ItemGridWindow temporarySpace;
     KeyboardArea keyboardArea;
-    ItemGridWindow? mouseHoverGrid;
     Vector2? keyboardMousePosition;
-    readonly InputPromptOverlay promptOverlay;
-    readonly InputPromptOverlay exitPromptOverlay;
-    readonly InputPromptOverlay actionPromptOverlay;
 
     public TraderScene(Module App)
         : base(App)
@@ -46,16 +42,18 @@ class TraderScene : Scene
         inventory.Position = new Vector2(2, 5);
         inventory.LeftClickItemEvent += OnLeftClickItemInventory;
         inventory.RightClickItemEvent += OnRightClickItemInventory;
-        inventory.Grid.MouseSelectionChanged += OnMouseSelectionChanged;
-        inventory.Grid.SelectionEmptied += OnSelectionEmptied;
+        inventory.Grid.MouseFocusChanged += OnMouseFocusChanged;
+        inventory.Grid.FocusEmptied += OnFocusEmptied;
+        AddTradeGridPrompts(inventory.Grid, playerSide: true);
         Windows += inventory;
 
         inventoryTrader = new InventoryWindow(App, InventorySide.Right);
         inventoryTrader.Position = new Vector2(154, 5);
         inventoryTrader.LeftClickItemEvent += OnLeftClickItemTrader;
         inventoryTrader.RightClickItemEvent += OnRightClickItemTrader;
-        inventoryTrader.Grid.MouseSelectionChanged += OnMouseSelectionChanged;
-        inventoryTrader.Grid.SelectionEmptied += OnSelectionEmptied;
+        inventoryTrader.Grid.MouseFocusChanged += OnMouseFocusChanged;
+        inventoryTrader.Grid.FocusEmptied += OnFocusEmptied;
+        AddTradeGridPrompts(inventoryTrader.Grid, playerSide: false);
         Windows += inventoryTrader;
 
         exitButton = new Button(App);
@@ -79,13 +77,15 @@ class TraderScene : Scene
         exchangeTop = new ExchangeWindow(App);
         inventoryTrader.Grid.Mask = exchangeTop.Grid;
         exchangeTop.LeftClickItemEvent += OnLeftClickItemTrader;
-        exchangeTop.Grid.MouseSelectionChanged += OnMouseSelectionChanged;
+        exchangeTop.Grid.MouseFocusChanged += OnMouseFocusChanged;
+        AddTradeGridPrompts(exchangeTop.Grid, playerSide: false);
         Windows += exchangeTop;
 
         exchangeBottom = new ExchangeWindow(App);
         inventory.Grid.Mask = exchangeBottom.Grid;
         exchangeBottom.LeftClickItemEvent += OnLeftClickItemInventory;
-        exchangeBottom.Grid.MouseSelectionChanged += OnMouseSelectionChanged;
+        exchangeBottom.Grid.MouseFocusChanged += OnMouseFocusChanged;
+        AddTradeGridPrompts(exchangeBottom.Grid, playerSide: true);
         Windows += exchangeBottom;
 
         temporarySpace = new ItemGridWindow(App);
@@ -95,44 +95,19 @@ class TraderScene : Scene
         temporarySpace.LeftClickItemEvent += OnClickTemporarySpace;
         temporarySpace.RightClickItemEvent += OnClickTemporarySpace;
         temporarySpace.UnifiedSelection = true;
-        temporarySpace.MouseSelectionChanged += OnMouseSelectionChanged;
-        temporarySpace.SelectionEmptied += OnSelectionEmptied;
+        temporarySpace.MouseFocusChanged += OnMouseFocusChanged;
+        temporarySpace.FocusEmptied += OnFocusEmptied;
+        temporarySpace.Prompts.Add(InputAction.Primary, "@prompts?14");
         Windows += temporarySpace;
 
-        Windows += promptOverlay = new InputPromptOverlay(app);
-        Windows += exitPromptOverlay = CreateInlinePrompt(InputAction.Back);
-        Windows += actionPromptOverlay = CreateInlinePrompt(InputAction.SceneAction);
+        Windows += new InputPromptOverlay(app, Prompts,
+            InputPromptColorScheme.Hud);
+        exitButton.Prompts.Add(InputAction.Back, "",
+            new Vector2(exitButton.Size.x + 2, -2));
+        acceptButton.Prompts.Add(InputAction.Action, "",
+            new Vector2(acceptButton.Size.x + 2, -2));
 
         PositionElements();
-        promptOverlay.AnchorToScreenBottomRight();
-    }
-
-    InputPromptOverlay CreateInlinePrompt(InputAction action)
-    {
-        InputPromptOverlay prompt = new(app)
-        {
-            HorizontalAlignment = PositionAlignment.Left,
-            VerticalAlignment = PositionAlignment.Left
-        };
-        prompt.SetPrompts(new InputPrompt(action, ""));
-        return prompt;
-    }
-
-    void UpdateInlinePromptPositions()
-    {
-        exitPromptOverlay.Position = new Vector2(exitButton.Boundings.Right + 2, 181);
-        actionPromptOverlay.Position = new Vector2(acceptButton.Boundings.Right + 2, 181);
-        if (exitPromptOverlay.IsVisible != exitButton.IsVisible)
-            exitPromptOverlay.IsVisible = exitButton.IsVisible;
-        if (actionPromptOverlay.IsVisible != acceptButton.IsVisible)
-            actionPromptOverlay.IsVisible = acceptButton.IsVisible;
-    }
-
-    public override void OnUpdate(float elapsed)
-    {
-        base.OnUpdate(elapsed);
-        UpdateInlinePromptPositions();
-        UpdatePromptOverlay();
     }
 
     Vector2 _lastPosition = Vector2.Zero;
@@ -198,7 +173,6 @@ class TraderScene : Scene
         if (mousePosition.HasValue)
             _lastPosition = mousePosition.Value;
 
-        UpdateInlinePromptPositions();
     }
 
     public override void OnResizeScreen(bool reload = false)
@@ -206,7 +180,6 @@ class TraderScene : Scene
         base.OnResizeScreen(reload);
 
         PositionElements();
-        promptOverlay.AnchorToScreenBottomRight();
     }
 
     public override void OnRender(RenderTarget Target)
@@ -241,26 +214,25 @@ class TraderScene : Scene
 
         side = InventorySide.None;
         keyboardArea = KeyboardArea.Trader;
-        inventory.Grid.ResetKeyboardSelection();
-        inventoryTrader.Grid.ResetKeyboardSelection();
-        temporarySpace.ResetKeyboardSelection();
-        exchangeTop.Grid.KeyboardSelectionVisible = false;
-        exchangeBottom.Grid.KeyboardSelectionVisible = false;
+        inventory.Grid.ResetFocus();
+        inventoryTrader.Grid.ResetFocus();
+        temporarySpace.ResetFocus();
+        exchangeTop.Grid.FocusVisible = false;
+        exchangeBottom.Grid.FocusVisible = false;
         UpdateKeyboardArea();
     }
 
-    void OnMouseSelectionChanged(ItemGridWindow selectedGrid)
+    void OnMouseFocusChanged(ItemGridWindow focusedGrid)
     {
-        mouseHoverGrid = selectedGrid;
-        keyboardArea = selectedGrid == inventoryTrader.Grid || selectedGrid == exchangeTop.Grid
+        keyboardArea = focusedGrid == inventoryTrader.Grid || focusedGrid == exchangeTop.Grid
             ? KeyboardArea.Trader
-            : selectedGrid == temporarySpace
+            : focusedGrid == temporarySpace
                 ? KeyboardArea.Temporary
                 : KeyboardArea.Player;
         UpdateKeyboardArea();
     }
 
-    void OnSelectionEmptied(ItemGridWindow emptiedGrid, Vector2 previousPosition)
+    void OnFocusEmptied(ItemGridWindow emptiedGrid, Vector2 previousPosition)
     {
         ItemGridWindow targetGrid;
         KeyboardArea targetArea;
@@ -268,14 +240,14 @@ class TraderScene : Scene
 
         if (emptiedGrid == inventory.Grid)
         {
-            targetGrid = temporarySpace.HasKeyboardItems ? temporarySpace : inventoryTrader.Grid;
-            targetArea = temporarySpace.HasKeyboardItems ? KeyboardArea.Temporary : KeyboardArea.Trader;
+            targetGrid = temporarySpace.HasFocusableItems ? temporarySpace : inventoryTrader.Grid;
+            targetArea = temporarySpace.HasFocusableItems ? KeyboardArea.Temporary : KeyboardArea.Trader;
             direction = new Vector2(1, 0);
         }
         else if (emptiedGrid == inventoryTrader.Grid)
         {
-            targetGrid = temporarySpace.HasKeyboardItems ? temporarySpace : inventory.Grid;
-            targetArea = temporarySpace.HasKeyboardItems ? KeyboardArea.Temporary : KeyboardArea.Player;
+            targetGrid = temporarySpace.HasFocusableItems ? temporarySpace : inventory.Grid;
+            targetArea = temporarySpace.HasFocusableItems ? KeyboardArea.Temporary : KeyboardArea.Player;
             direction = new Vector2(-1, 0);
         }
         else
@@ -285,7 +257,7 @@ class TraderScene : Scene
             direction = new Vector2(-1, 0);
         }
 
-        if (!targetGrid.SelectKeyboardEdge(direction, previousPosition))
+        if (!targetGrid.FocusEdge(direction, previousPosition))
             return;
 
         keyboardArea = targetArea;
@@ -350,7 +322,7 @@ class TraderScene : Scene
             return true;
         }
 
-        if (action == InputAction.SceneAction)
+        if (action == InputAction.Action)
         {
             OnButtonAccept();
             EnsureKeyboardArea();
@@ -377,8 +349,8 @@ class TraderScene : Scene
         if (direction != Vector2.Zero)
         {
             ItemGridWindow activeGrid = ActiveKeyboardGrid;
-            Vector2? sourcePosition = activeGrid.KeyboardSelectionPosition;
-            bool moved = activeGrid.MoveKeyboardSelection(direction);
+            Vector2? sourcePosition = activeGrid.FocusPosition;
+            bool moved = activeGrid.MoveFocus(direction);
             InventoryWindow? activeInventory = keyboardArea switch
             {
                 KeyboardArea.Player => inventory,
@@ -389,7 +361,7 @@ class TraderScene : Scene
                 activeInventory.SelectAdjacentPage(direction.y > 0 ? 1 : -1))
             {
                 if (sourcePosition.HasValue)
-                    activeInventory.Grid.SelectKeyboardPageEdge(direction, sourcePosition.Value);
+                    activeInventory.Grid.FocusPageEdge(direction, sourcePosition.Value);
                 UpdateKeyboardArea();
             }
             else if (!moved && direction.x != 0)
@@ -408,7 +380,7 @@ class TraderScene : Scene
                 }
                 else if (direction.x > 0 && keyboardArea == KeyboardArea.Player)
                 {
-                    targetArea = temporarySpace.HasKeyboardItems ? KeyboardArea.Temporary : KeyboardArea.Trader;
+                    targetArea = temporarySpace.HasFocusableItems ? KeyboardArea.Temporary : KeyboardArea.Trader;
                     targetGrid = targetArea == KeyboardArea.Temporary ? temporarySpace : inventoryTrader.Grid;
                 }
                 else if (direction.x > 0 && keyboardArea == KeyboardArea.Temporary)
@@ -418,7 +390,7 @@ class TraderScene : Scene
                 }
                 else if (direction.x < 0 && keyboardArea == KeyboardArea.Trader)
                 {
-                    targetArea = temporarySpace.HasKeyboardItems ? KeyboardArea.Temporary : KeyboardArea.Player;
+                    targetArea = temporarySpace.HasFocusableItems ? KeyboardArea.Temporary : KeyboardArea.Player;
                     targetGrid = targetArea == KeyboardArea.Temporary ? temporarySpace : inventory.Grid;
                 }
                 else if (direction.x < 0 && keyboardArea == KeyboardArea.Temporary)
@@ -428,8 +400,8 @@ class TraderScene : Scene
                 }
 
                 bool selectedTarget = sourcePosition.HasValue
-                    ? targetGrid?.SelectKeyboardEdge(direction, sourcePosition.Value) == true
-                    : targetGrid?.EnsureKeyboardSelection() == true;
+                    ? targetGrid?.FocusEdge(direction, sourcePosition.Value) == true
+                    : targetGrid?.EnsureFocus() == true;
                 bool canEnterEmptyInventory = targetArea != keyboardArea &&
                     targetArea is KeyboardArea.Player or KeyboardArea.Trader;
                 if (selectedTarget || canEnterEmptyInventory)
@@ -443,7 +415,7 @@ class TraderScene : Scene
 
         if (action == InputAction.Primary || action == InputAction.Secondary)
         {
-            ActiveKeyboardGrid.ActivateKeyboardItem(action == InputAction.Secondary);
+            ActiveKeyboardGrid.ActivateFocusedItem(action == InputAction.Secondary);
             EnsureKeyboardArea();
             return true;
         }
@@ -480,7 +452,7 @@ class TraderScene : Scene
         // Player and trader inventories remain active even on an empty page:
         // the active side determines which set of character pages G cycles.
         // Temporary storage, unlike those inventories, has no pages of its own.
-        if (keyboardArea == KeyboardArea.Temporary && !temporarySpace.HasKeyboardItems)
+        if (keyboardArea == KeyboardArea.Temporary && !temporarySpace.HasFocusableItems)
             keyboardArea = KeyboardArea.Player;
 
         UpdateKeyboardArea();
@@ -488,95 +460,57 @@ class TraderScene : Scene
 
     bool IsKeyboardAreaAvailable(KeyboardArea area)
     {
-        return area != KeyboardArea.Temporary || temporarySpace.HasKeyboardItems;
+        return area != KeyboardArea.Temporary || temporarySpace.HasFocusableItems;
     }
 
     void UpdateKeyboardArea()
     {
-        inventory.Grid.KeyboardSelectionVisible = keyboardArea == KeyboardArea.Player;
-        inventoryTrader.Grid.KeyboardSelectionVisible = keyboardArea == KeyboardArea.Trader;
-        temporarySpace.KeyboardSelectionVisible = keyboardArea == KeyboardArea.Temporary;
+        inventory.Grid.FocusVisible = keyboardArea == KeyboardArea.Player;
+        inventoryTrader.Grid.FocusVisible = keyboardArea == KeyboardArea.Trader;
+        temporarySpace.FocusVisible = keyboardArea == KeyboardArea.Temporary;
 
         keyboardMousePosition = _lastPosition;
         PositionElements(requestedSide: keyboardArea == KeyboardArea.Trader
             ? InventorySide.Right
             : InventorySide.Left);
-        UpdatePromptOverlay();
     }
 
-    void UpdatePromptOverlay()
+    void AddTradeGridPrompts(ItemGridWindow promptGrid, bool playerSide)
     {
-        bool mouseInput = app.LastInputMode == InputMode.Mouse;
-        exitPromptOverlay.SetPrompts(mouseInput
-            ? []
-            : [new InputPrompt(InputAction.Back, "")]);
-        actionPromptOverlay.SetPrompts(mouseInput
-            ? []
-            : [new InputPrompt(InputAction.SceneAction, "")]);
+        promptGrid.Prompts.AddDynamic(InputAction.Primary,
+            () => GetTradePrompt(promptGrid, playerSide),
+            "@prompts?40", "@prompts?31");
+        if (promptGrid == inventory.Grid)
+            promptGrid.Prompts.Add(InputAction.Secondary, "@prompts?14",
+                () => CanShowMovePrompt(promptGrid));
+    }
 
-        if (mouseInput)
-        {
-            List<InputPrompt> mousePrompts = [];
-            Item? hoveredItem = mouseHoverGrid?.MouseHoveredItem;
-            if (hoveredItem != null)
-            {
-                if (keyboardArea == KeyboardArea.Temporary)
-                {
-                    mousePrompts.Add(new(InputAction.Primary, "@prompts?14")
-                    {
-                        PreferredMouseControl = MouseButton.Left
-                    });
-                }
-                else if (keyboardArea == KeyboardArea.Player)
-                {
-                    bool isOffered = exchangeBottom.Grid.Contains(hoveredItem);
-                    mousePrompts.Add(new(InputAction.Primary,
-                        isOffered ? "@prompts?40" : "@prompts?31")
-                    {
-                        PreferredMouseControl = MouseButton.Left
-                    });
-                    if (mouseHoverGrid == inventory.Grid && !isOffered &&
-                        temporarySpace.Count < temporarySpace.MaxCount)
-                    {
-                        mousePrompts.Add(new(InputAction.Secondary, "@prompts?14")
-                        {
-                            PreferredMouseControl = MouseButton.Right
-                        });
-                    }
-                }
-                else
-                {
-                    bool isTaken = exchangeTop.Grid.Contains(hoveredItem);
-                    mousePrompts.Add(new(InputAction.Primary,
-                        isTaken ? "@prompts?40" : "@prompts?31")
-                    {
-                        PreferredMouseControl = MouseButton.Left
-                    });
-                }
-            }
-            promptOverlay.SetPrompts(mousePrompts.ToArray());
-            return;
-        }
+    GuiString? GetTradePrompt(ItemGridWindow source, bool playerSide)
+    {
+        if (source.FocusedItem == null)
+            return null;
+        return IsFocusedItemForTrade(source, playerSide)
+            ? "@prompts?40"
+            : "@prompts?31";
+    }
 
-        Item? selectedItem = ActiveKeyboardGrid.KeyboardSelectedItem;
-        bool isSelectedForTrade = selectedItem != null &&
-            (keyboardArea switch
-            {
-                KeyboardArea.Player => exchangeBottom.Grid.Contains(selectedItem),
-                KeyboardArea.Trader => exchangeTop.Grid.Contains(selectedItem),
-                _ => false
-            });
-        List<InputPrompt> prompts = [];
-        if (selectedItem != null)
-        {
-            GuiString primaryLabel = keyboardArea == KeyboardArea.Temporary
-                ? "@prompts?14"
-                : isSelectedForTrade ? "@prompts?40" : "@prompts?31";
-            prompts.Add(new(InputAction.Primary, primaryLabel));
-            if (keyboardArea == KeyboardArea.Player)
-                prompts.Add(new(InputAction.Secondary, "@prompts?14"));
-        }
-        promptOverlay.SetPrompts(prompts.ToArray());
+    bool IsFocusedItemForTrade(ItemGridWindow source, bool playerSide)
+    {
+        Item? focusedItem = source.FocusedItem;
+        return focusedItem != null && (playerSide
+            ? exchangeBottom.Grid.Contains(focusedItem)
+            : exchangeTop.Grid.Contains(focusedItem));
+    }
+
+    bool CanShowMovePrompt(ItemGridWindow source)
+    {
+        Item? focusedItem = source.FocusedItem;
+        if (focusedItem == null || source != inventory.Grid)
+            return false;
+        if (app.LastInputMode != InputMode.Mouse)
+            return true;
+        return !exchangeBottom.Grid.Contains(focusedItem) &&
+            temporarySpace.Count < temporarySpace.MaxCount;
     }
 
     void OnLeftClickItemInventory(Framework.States.StateObject State)
@@ -599,13 +533,13 @@ class TraderScene : Scene
         if (exchangeBottom.Grid.Contains(item))
             return;
         Vector2? previousPosition = inventory.Grid.Count == 1
-            ? inventory.Grid.KeyboardSelectionPosition
+            ? inventory.Grid.FocusPosition
             : null;
         inventory.ActiveCharacter.Items.Remove(item);
         inventory.OnSelectPage();
         temporarySpace.Add(item);
         if (previousPosition.HasValue)
-            OnSelectionEmptied(inventory.Grid, previousPosition.Value);
+            OnFocusEmptied(inventory.Grid, previousPosition.Value);
         EnsureKeyboardArea();
     }
 

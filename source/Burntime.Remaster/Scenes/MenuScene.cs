@@ -7,11 +7,15 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Principal;
 
 namespace Burntime.Remaster;
 
 public class MenuScene : Scene
 {
+    public override Key PreferredPrimaryKeyboardControl =>
+        new(SystemKey.Enter);
+
     enum SetupSelection
     {
         Player,
@@ -44,7 +48,6 @@ public class MenuScene : Scene
     readonly Button _loadButton;
     readonly Button _startButton;
     readonly Button _exitButton;
-    readonly InputPromptOverlay _promptOverlay;
     Burntime.Platform.IO.ConfigFile conversionTable;
     readonly string[] _playerNames;
 
@@ -64,6 +67,7 @@ public class MenuScene : Scene
 
     readonly GuiFont _infoFont;
     readonly GuiFont _copyrightFont;
+    readonly GuiFont _selectedNameFont;
 
     public MenuScene(Module app)
         : base(app)
@@ -74,7 +78,7 @@ public class MenuScene : Scene
         Position = (base.app.Engine.Resolution.Game - base.Size) / 2;
 
         GuiFont buttonFont = new GuiFont("gfx/ui/start_font.txt", PixelColor.Transparent);
-        GuiFont selectedNameFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(144, 160, 212));
+        _selectedNameFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(144, 160, 212));
         _playerFont = new GuiFont("gfx/ui/start_font_player.txt", PixelColor.Transparent);
         _copyrightFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.Gray) { Borders = TextBorders.None };
         _infoFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.Gray/*new PixelColor(135, 140, 145)*/) { Borders = TextBorders.None };
@@ -144,7 +148,8 @@ public class MenuScene : Scene
             Font = buttonFont,
             Text = "@newburn?41",
             TextHorizontalAlign = TextAlignment.Center,
-            TextVerticalAlign = VerticalTextAlignment.Center
+            TextVerticalAlign = VerticalTextAlignment.Center,
+            Prompts = { { InputAction.Primary, "@prompts?2" } }
         };
         Windows += _loadButton = new Button(app, OnButtonLoad)
         {
@@ -154,7 +159,8 @@ public class MenuScene : Scene
             Font = buttonFont,
             Text = "@newburn?40",
             TextHorizontalAlign = TextAlignment.Center,
-            TextVerticalAlign = VerticalTextAlignment.Center
+            TextVerticalAlign = VerticalTextAlignment.Center,
+            Prompts = { { InputAction.Primary, "@prompts?3" } }
         };
 
         // exit button
@@ -162,42 +168,20 @@ public class MenuScene : Scene
         {
             Image = "gfx/menu_exit.png",
             HoverImage = "gfx/menu_exit_hover.png",
-            Position = new Vector2(276, 163)
+            Position = new Vector2(276, 163),
+            Prompts = { { InputAction.Primary, "@prompts?4" } }
         };
         Windows += _exitButton;
 
-        // Input prompts are scene-owned: place the reusable overlay once, then
-        // replace its contents from UpdateSetupSelection as focus changes.
-        Windows += _promptOverlay = new InputPromptOverlay(app);
-        UpdatePromptOverlayPosition();
+        Windows += new InputPromptOverlay(app, Prompts,
+            InputPromptColorScheme.Default);
 
         // player names
-        PlayerOneSwitch = new NameWindow(app)
-        {
-            Position = new Vector2(15, 92),
-            Image = "pngsheet@gfx/ui/start_buttons.png?0?112x24",
-            DownImage = "pngsheet@gfx/ui/start_buttons.png?1?112x24",
-            Size = new Vector2(104, 24),
-            Font = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.Gray),
-            HoverFont = selectedNameFont,
-            TextHorizontalAlign = TextAlignment.Center,
-            TextVerticalAlign = VerticalTextAlignment.Center
-        };
-        PlayerOneSwitch.Command += OnPlayerOneClick;
-        Windows += PlayerOneSwitch;
-        PlayerTwoSwitch = new NameWindow(app)
-        {
-            Position = new Vector2(204, 92),
-            Image = "pngsheet@gfx/ui/start_buttons.png?0?112x24",
-            DownImage = "pngsheet@gfx/ui/start_buttons.png?1?112x24",
-            Size = new Vector2(104, 24),
-            Font = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.Gray),
-            HoverFont = selectedNameFont,
-            TextHorizontalAlign = TextAlignment.Center,
-            TextVerticalAlign = VerticalTextAlignment.Center
-        };
-        PlayerTwoSwitch.Command += OnPlayerTwoClick;
-        Windows += PlayerTwoSwitch;
+        conversionTable = new Burntime.Platform.IO.ConfigFile();
+        conversionTable.Open(Burntime.Platform.IO.FileSystem.GetFile("conversion_table.txt"));
+
+        Windows += PlayerOneSwitch = CreatePlayer(0, new Vector2(15, 92), OnPlayerOneClick);
+        Windows += PlayerTwoSwitch = CreatePlayer(1, new Vector2(204, 92), OnPlayerTwoClick);
 
         PlayerOneSwitch.TextInputDeactivated += () => FillEmptyName(PlayerOneSwitch, PlayerTwoSwitch);
         PlayerTwoSwitch.TextInputDeactivated += () => FillEmptyName(PlayerTwoSwitch, PlayerOneSwitch);
@@ -223,38 +207,81 @@ public class MenuScene : Scene
         Windows += _otherColor;
 
         // difficulty
-        Difficulty = new(app);
-        Difficulty.Position = new(100, 149);
-        Difficulty.ToolTipFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray) { Borders = TextBorders.Screen };
+        Difficulty = new(app)
+        {
+            Position = new(100, 149),
+            ToolTipFont = new GuiFont(BurntimeClassic.FontName,
+                BurntimeClassic.LightGray) { Borders = TextBorders.Screen },
+            Prompts = { { InputAction.Primary, "@prompts?9" } }
+        };
         Difficulty.AddState(null, "gfx/ui/start_button_level1.png", "gfx/ui/start_button_level1_down.png", "gfx/ui/start_button_level1_down.png", "@newburn?14");
         Difficulty.AddState(null, "gfx/ui/start_button_level2.png", "gfx/ui/start_button_level2_down.png", "gfx/ui/start_button_level2_down.png", "@newburn?15");
         Difficulty.AddState(null, "gfx/ui/start_button_level3.png", "gfx/ui/start_button_level3_down.png", "gfx/ui/start_button_level3_down.png", "@newburn?16");
         Windows += Difficulty;
 
         // mode
-        GameMode = new(app);
-        GameMode.Position = new(145, 149);
-        GameMode.ToolTipFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray) { Borders = TextBorders.Screen };
+        GameMode = new(app)
+        {
+            Position = new(145, 149),
+            ToolTipFont = new GuiFont(BurntimeClassic.FontName,
+                BurntimeClassic.LightGray) { Borders = TextBorders.Screen },
+            Prompts = { { InputAction.Primary, "@prompts?9" } }
+        };
         GameMode.AddState(null, "gfx/ui/start_button_extended.png", "gfx/ui/start_button_extended_down.png", "gfx/ui/start_button_extended_down.png", "@newburn?110");
         GameMode.AddState(null, "gfx/ui/start_button_dos.png", "gfx/ui/start_button_dos_down.png", "gfx/ui/start_button_dos_down.png", "@newburn?105");
         GameMode.AddState(null, "gfx/ui/start_button_amiga.png", "gfx/ui/start_button_amiga_down.png", "gfx/ui/start_button_amiga_down.png", "@newburn?106");
         Windows += GameMode;
 
         // ai
-        AiPlayers = new(app);
-        AiPlayers.Position = new(190, 149);
-        AiPlayers.ToolTipFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray) { Borders = TextBorders.Screen };
+        AiPlayers = new(app)
+        {
+            Position = new(190, 149),
+            ToolTipFont = new GuiFont(BurntimeClassic.FontName,
+                BurntimeClassic.LightGray) { Borders = TextBorders.Screen },
+            Prompts = { { InputAction.Primary, "@prompts?9" } }
+        };
         AiPlayers.AddState(null, "gfx/ui/start_button_ai.png", "gfx/ui/start_button_ai_down.png", "gfx/ui/start_button_ai_down.png", "@newburn?109");
         AiPlayers.AddState(null, "gfx/ui/start_button_noai.png", "gfx/ui/start_button_noai_down.png", "gfx/ui/start_button_noai_down.png", "@newburn?13");
         AiPlayers.AddState(null, "gfx/ui/start_button_ai.png", "gfx/ui/start_button_ai_down.png", "gfx/ui/start_button_ai_down.png", "@newburn?107");
         AiPlayers.AddState(null, "gfx/ui/start_button_ai.png", "gfx/ui/start_button_ai_down.png", "gfx/ui/start_button_ai_down.png", "@newburn?108");
         Windows += AiPlayers;
 
-        // input conversion
-        conversionTable = new Burntime.Platform.IO.ConfigFile();
-        conversionTable.Open(Burntime.Platform.IO.FileSystem.GetFile("conversion_table.txt"));
-        PlayerOneSwitch.Table = conversionTable;
-        PlayerTwoSwitch.Table = conversionTable;
+    }
+
+    NameWindow CreatePlayer(int player, Vector2 position, Action command)
+    {
+        bool IsEnabled() => player == 0 ? UsePlayerOne : UsePlayerTwo;
+        bool IsOtherEnabled() => player == 0 ? UsePlayerTwo : UsePlayerOne;
+
+        NameWindow playerSwitch = new(app)
+        {
+            Position = position,
+            Image = "pngsheet@gfx/ui/start_buttons.png?0?112x24",
+            DownImage = "pngsheet@gfx/ui/start_buttons.png?1?112x24",
+            Size = new Vector2(104, 24),
+            Font = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.Gray),
+            HoverFont = _selectedNameFont,
+            TextHorizontalAlign = TextAlignment.Center,
+            TextVerticalAlign = VerticalTextAlignment.Center,
+            Table = conversionTable
+        };
+
+        playerSwitch.Prompts.Add(InputPattern.HorizontalPaging, "@prompts?0", IsEnabled);
+        playerSwitch.Prompts.Add(new InputPrompt(InputAction.Secondary, "@prompts?1")
+        {
+            KeyboardPattern = InputPattern.VerticalPaging,
+            MouseControl = MouseButton.None
+        }, IsEnabled);
+        playerSwitch.Prompts.AddDynamic(
+            () => SetupPlayerPrompt(!IsEnabled()
+                ? "@prompts?8"
+                : IsOtherEnabled() ? "@prompts?6" : "@prompts?7"),
+            SetupPlayerPrompt("@prompts?8"),
+            SetupPlayerPrompt("@prompts?6"),
+            SetupPlayerPrompt("@prompts?7"));
+
+        playerSwitch.Command += new CommandHandler(command);
+        return playerSwitch;
     }
 
     public override void OnResizeScreen(bool reload = false)
@@ -262,14 +289,6 @@ public class MenuScene : Scene
         base.OnResizeScreen(reload);
 
         Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
-        UpdatePromptOverlayPosition();
-    }
-
-    void UpdatePromptOverlayPosition()
-    {
-        // As a child window, the screen-relative anchor is expressed relative
-        // to this scene.
-        _promptOverlay.AnchorToScreenBottomRight();
     }
 
     public override void OnRender(RenderTarget target)
@@ -577,7 +596,6 @@ public class MenuScene : Scene
         GameMode.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.GameMode;
         AiPlayers.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.AiPlayers;
         _exitButton.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.Exit;
-        UpdatePromptOverlay();
     }
 
     bool HasVisibleSetupSelection() => _setupSelection switch
@@ -594,71 +612,14 @@ public class MenuScene : Scene
         _ => false
     };
 
-    void UpdatePromptOverlay()
+    static InputPrompt SetupPlayerPrompt(GuiString label)
     {
-        if (app.LastInputMode == InputMode.Mouse)
-        {
-            bool changePlayerOneName = PlayerOneSwitch.IsHover &&
-                UsePlayerOne && !UsePlayerTwo && !PlayerOneSwitch.HasManualName;
-            bool changePlayerTwoName = PlayerTwoSwitch.IsHover &&
-                UsePlayerTwo && !UsePlayerOne && !PlayerTwoSwitch.HasManualName;
-            if (changePlayerOneName || changePlayerTwoName)
-            {
-                _promptOverlay.SetPrompts(new InputPrompt(
-                    InputAction.Primary, "@prompts?7")
-                {
-                    PreferredMouseControl = MouseButton.Left
-                });
-            }
-            else
-            {
-                _promptOverlay.SetPrompts();
-            }
-            return;
-        }
-
-        GuiString primaryLabel = _setupSelection switch
-        {
-            SetupSelection.Load => "@prompts?3",
-            SetupSelection.Start => "@prompts?2",
-            SetupSelection.Exit => "@prompts?4",
-            SetupSelection.Player when !CurrentPlayerEnabled => "@prompts?8",
-            SetupSelection.Player when OtherPlayerEnabled => "@prompts?6",
-            SetupSelection.Player => "@prompts?7",
-            _ => "@prompts?9"
-        };
-        InputPrompt primary = new(InputAction.Primary, primaryLabel)
+        return new InputPrompt(InputAction.Primary, label)
         {
             // The change-name action runs while the name field consumes printable
             // input, including Space, so advertise the usable Primary control.
-            PreferredKeyboardControl = _setupSelection == SetupSelection.Player
-                ? new Key(SystemKey.Enter)
-                : null
+            KeyboardControl = new Key(SystemKey.Enter)
         };
-
-        if (_setupSelection == SetupSelection.Player && CurrentPlayerEnabled)
-        {
-            List<InputPrompt> prompts =
-            [
-                new(InputAction.LeftArea, "@prompts?0")
-                {
-                    AlternateAction = InputAction.RightArea,
-                    PreferredKeyboardControl = new Key(SystemKey.Left, ModifierKeys.Shift),
-                    PreferredAlternateKeyboardControl = new Key(SystemKey.Right, ModifierKeys.Shift),
-                    PreferredGamepadControl = GamepadControl.LeftShoulder,
-                    PreferredAlternateGamepadControl = GamepadControl.RightShoulder
-                },
-                new(InputAction.Secondary, "@prompts?1")
-                {
-                    KeyboardOverride = "Shift+Up/Down"
-                },
-                primary
-            ];
-            _promptOverlay.SetPrompts(prompts.ToArray());
-            return;
-        }
-
-        _promptOverlay.SetPrompts(primary);
     }
 
     public override void OnUpdate(float elapsed)

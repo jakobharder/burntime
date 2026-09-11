@@ -53,7 +53,7 @@ static partial class Program
             return 0;
         });
 
-        yield return Int("movement instantly recovers from an unwalkable tile", 0, () =>
+        yield return Int("unwalkable positions recover only on scene entry", 0, () =>
         {
             var m = new StateManager(null!);
             var mask = new Burntime.Data.BurnGfx.PathMask(5, 5, 8);
@@ -73,20 +73,24 @@ static partial class Program
 
             var simple = m.Create<Burntime.Remaster.PathFinding.SimplePath>();
             simple.MoveTo = blockedPosition;
-            Equal(recoveredPosition, simple.Process(mask, blockedPosition, 0.016f),
-                "simple path recovers before movement");
+            Equal(blockedPosition, simple.Process(mask, blockedPosition, 0.016f),
+                "simple path does not recover during movement");
+            Equal(recoveredPosition, simple.GetSceneEntryPosition(mask, blockedPosition),
+                "simple path recovers on scene entry");
 
             var manual = m.Create<Burntime.Remaster.PathFinding.ManualPath>();
             manual.MoveTo = blockedPosition;
-            Equal(recoveredPosition, manual.Process(mask, blockedPosition, 0.016f),
-                "manual path recovers before movement");
+            Equal(blockedPosition, manual.Process(mask, blockedPosition, 0.016f),
+                "manual path does not recover during movement");
+            Equal(recoveredPosition, manual.GetSceneEntryPosition(mask, blockedPosition),
+                "manual path recovers on scene entry");
 
             var edgeMask = new Burntime.Data.BurnGfx.PathMask(3, 3, 8);
             edgeMask[1, 1] = true;
             var validSlidePosition = new Burntime.Platform.Vector2(7, 8);
-            manual.Stop(validSlidePosition);
-            Equal(validSlidePosition, manual.Process(edgeMask, validSlidePosition, 0),
-                "manual path preserves centered-sampled edge slide positions");
+            Equal(validSlidePosition,
+                manual.GetSceneEntryPosition(edgeMask, validSlidePosition),
+                "scene entry preserves centered-sampled edge slide positions");
             return 0;
         });
 

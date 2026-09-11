@@ -69,14 +69,13 @@ public class Resolution
         const int DOUBLED_RESOLUTION = 2;
 
         Vector2f min = (Vector2f)MinResolution * DOUBLED_RESOLUTION * _ratioCorrection;
-        Vector2f max = (Vector2f)MaxResolution * DOUBLED_RESOLUTION * _ratioCorrection;
-
-        Vector2 maxFactor = ((Vector2f)_native / max).Floor();
-        Vector2 minFactor = ((Vector2f)_native / min).Floor();
-        int verticalFactor = Math.Max(1, maxFactor.y, minFactor.y);
-        int horizontalFactor = Math.Max(1, maxFactor.x, minFactor.x);
-
-        int automaticFactor = Math.Min(verticalFactor, horizontalFactor);
+        // Half-step output scales keep low-resolution displays near the same
+        // logical viewport as their higher-resolution multiples. For example,
+        // 720p at 1.5x matches 1440p at 3x instead of expanding to 682x320.
+        float verticalFactor = MathF.Floor(_native.y / min.y * 2) / 2;
+        float horizontalFactor = MathF.Floor(_native.x / min.x * 2) / 2;
+        float automaticFactor = System.MathF.Max(1,
+            System.MathF.Min(verticalFactor, horizontalFactor));
         OutputScale = _outputScaleOverride ?? automaticFactor;
 
         BackBuffer = (Vector2f)_native / OutputScale;

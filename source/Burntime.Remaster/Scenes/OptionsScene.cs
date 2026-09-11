@@ -11,6 +11,9 @@ namespace Burntime.Remaster;
 
 public class OptionsScene : Scene, IMapMusicInterruptionScene
 {
+    public override Key PreferredPrimaryKeyboardControl =>
+        new(SystemKey.Enter);
+
     GuiFont disabled;
     GuiFont red;
     GuiFont hover;
@@ -22,10 +25,10 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
     readonly OptionsGiveUpPage _giveUpPage;
     readonly OptionsJukeboxPage _jukeboxPage;
     readonly Container _emptyPage;
-    readonly InputPromptOverlay _promptOverlay;
 
     readonly GuiImage _optionsBulb;
     readonly Image _backgroundAni;
+    readonly Button _tabRail;
     readonly Button[] _menuButtons;
     int _menuIndex = 1;
     int _tabFocusIndex = 1;
@@ -116,7 +119,7 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         };
 
         // radio cover
-        Windows += new Button(app)
+        Windows += _tabRail = new Button(app)
         {
             #warning TODO make this fixed? merge it with the background? It doesn't work well with non-mouse input.
             Image = "opta.raw?1",
@@ -138,31 +141,22 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         Windows += _giveUpPage = new OptionsGiveUpPage(app, fonts) { IsVisible = false };
         Windows += _jukeboxPage = new OptionsJukeboxPage(app, fonts) { IsVisible = false };
         Windows += _emptyPage = new Container(app) { IsVisible = false };
-        Windows += _promptOverlay = new InputPromptOverlay(app);
-        UpdatePromptOverlay();
-        _promptOverlay.AnchorToScreenBottomRight();
-        ActivePage = _savesPage;
-        UpdatePageFocus();
-    }
 
-    void UpdatePromptOverlay()
-    {
-        if (app.LastInputMode == InputMode.Mouse)
+        foreach (Window promptOwner in new Window[]
         {
-            _promptOverlay.SetPrompts();
-            return;
+            _tabRail, _savesPage, _settingsPage, _giveUpPage, _jukeboxPage
+        })
+        {
+            promptOwner.Prompts.Add(InputAction.Primary, "@prompts?31",
+                () => app.LastInputMode != InputMode.Mouse);
         }
 
-        _promptOverlay.SetPrompts(
-            new(InputAction.Primary, "@prompts?31"),
-            new(InputAction.LeftArea, "@prompts?30")
-            {
-                AlternateAction = InputAction.RightArea,
-                KeyboardOverride = "Shift+Up/Down",
-                PreferredGamepadControl = GamepadControl.LeftShoulder,
-                PreferredAlternateGamepadControl = GamepadControl.RightShoulder
-            },
-            new(InputAction.Back, "@prompts?17"));
+        Windows += new InputPromptOverlay(app, Prompts,
+            InputPromptColorScheme.Options);
+        Prompts.Add(InputAction.Back, "@prompts?17");
+        Prompts.Add(InputPattern.VerticalPaging, "@prompts?30");
+        ActivePage = _savesPage;
+        UpdatePageFocus();
     }
 
     void SelectPage(int index)
@@ -202,6 +196,7 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
     {
         bool showKeyboardFocus = _tabsFocused &&
             app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad;
+        _tabRail.IsKeyboardSelected = showKeyboardFocus;
         for (int i = 0; i < _menuButtons.Length; i++)
             _menuButtons[i].IsKeyboardSelected = showKeyboardFocus && i == _tabFocusIndex;
     }
@@ -355,8 +350,6 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
 
     public override void OnUpdate(float elapsed)
     {
-        UpdatePromptOverlay();
-
         if (app.LastInputMode == InputMode.Mouse)
         {
             int hoveredIndex = Array.FindIndex(_menuButtons,
@@ -375,7 +368,6 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         base.OnResizeScreen(reload);
         Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
         _backgroundAni.IsVisible = !app.IsNewGfx;
-        _promptOverlay.AnchorToScreenBottomRight();
     }
 
     protected override void OnActivateScene(object parameter)
@@ -408,8 +400,8 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         target.Layer--;
 
         target.Layer += 10;
-        red.DrawText(target, new Vector2(6, target.ScreenSize.y - 6) - target.ScreenOffset,
-            BurntimeClassic.Version, TextAlignment.Left, VerticalTextAlignment.Bottom);
+        red.DrawText(target, new Vector2(6, 6) - target.ScreenOffset,
+            BurntimeClassic.Version, TextAlignment.Left, VerticalTextAlignment.Top);
         target.Layer -= 10;
 
         base.OnRender(target);

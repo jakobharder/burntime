@@ -27,8 +27,8 @@ namespace Burntime.Remaster.GUI
         readonly GuiImage _bottomElement;
         readonly GuiFont _defaultFont;
         readonly GuiFont _focusFont;
-        readonly InputControlRenderer _defaultControlRenderer;
-        readonly InputControlRenderer _focusControlRenderer;
+        readonly InputControlLabelRenderer _defaultControlRenderer;
+        readonly InputControlLabelRenderer _focusControlRenderer;
 
         const int TOP_HEIGHT = 4;
         const int MIDDLE_HEIGHT = 11;
@@ -48,8 +48,15 @@ namespace Burntime.Remaster.GUI
             _defaultFont.Borders = TextBorders.Screen;
             _focusFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
             _focusFont.Borders = TextBorders.Screen;
-            _defaultControlRenderer = new InputControlRenderer(app, _defaultFont, brackets: false);
-            _focusControlRenderer = new InputControlRenderer(app, _focusFont, brackets: false);
+            PixelColor promptColor = new(144, 160, 212);
+            GuiFont promptFont = new(BurntimeClassic.FontName, promptColor)
+            {
+                Borders = TextBorders.Screen
+            };
+            _defaultControlRenderer = new InputControlLabelRenderer(app, promptFont,
+                brackets: false, glyphTint: promptColor);
+            _focusControlRenderer = new InputControlLabelRenderer(app, promptFont,
+                brackets: false, glyphTint: promptColor);
 
             _focusIndex = -1;
             IsModal = true;
@@ -166,7 +173,7 @@ namespace Burntime.Remaster.GUI
                 target.Layer++;
 
                 GuiFont f = _focusIndex == i ? _focusFont : _defaultFont;
-                InputControlRenderer renderer = _focusIndex == i
+                InputControlLabelRenderer renderer = _focusIndex == i
                     ? _focusControlRenderer
                     : _defaultControlRenderer;
                 if (i == 0 && !alternatePrimaryControl.IsEmpty)
@@ -191,8 +198,7 @@ namespace Burntime.Remaster.GUI
                     InputControlLabel shortcutControl = InputControlDisplay.Resolve(app,
                         shortcutInputMode, shortcut.Action,
                         preferredKeyboardControl,
-                        shortcut.PreferredGamepadControl,
-                        shortcut.KeyboardOverride, shortcut.GamepadOverride);
+                        shortcut.PreferredGamepadControl);
                     if (!shortcutControl.IsEmpty)
                     {
                         float rowLayer = target.Layer;

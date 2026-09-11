@@ -44,6 +44,7 @@ static partial class Program
         Run("item generation ranges", ItemGenerationCases());
         Run("profile parsing", ProfileParsingCases());
         Run("rule registry", RuleRegistryCases());
+        Run("resolution scaling", ResolutionCases());
 
         Console.WriteLine($"Rule formulas: {passed} passed, {failed} failed.");
         return failed == 0 ? 0 : 1;

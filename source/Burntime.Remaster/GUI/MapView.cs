@@ -61,6 +61,8 @@ public class ObjectArgs : EventArgs
 
 public class MapView : Window
 {
+    protected override bool IsPromptActive(InputMode inputMode) => true;
+
     public event EventHandler<ObjectArgs> ClickObject;
     public event EventHandler<MapScrollArgs> Scroll;
 
@@ -288,10 +290,13 @@ public class MapView : Window
 
         if (button == MouseButton.Right)
         {
-            if (_moveTotal < 10)
+            bool wasDrag = _moveTotal >= 10;
+            if (!wasDrag)
                 ContextMenu?.Invoke(position, button);
             _rightClickMove = null;
             _moveTotal = 0;
+            if (wasDrag)
+                return true;
         }
 
         // end all capture here
