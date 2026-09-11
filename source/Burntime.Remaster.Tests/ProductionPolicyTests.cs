@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Burntime.Framework;
 using Burntime.Framework.States;
 using Burntime.Remaster.Logic;
 using Burntime.Remaster.Logic.Generation;
@@ -17,6 +18,78 @@ static partial class Program
 
     static IEnumerable<Case<int>> ProductionPolicyCases()
     {
+        yield return Int("keyboard movement latches automatic camera follow", 0, () =>
+        {
+            InputAction[] movementActions =
+            {
+                InputAction.MoveUp,
+                InputAction.MoveDown,
+                InputAction.MoveLeft,
+                InputAction.MoveRight
+            };
+            foreach (InputAction action in movementActions)
+                Equal(true, LocationScene.StartsAutomaticCameraFollow(action),
+                    $"{action} starts camera follow");
+
+            Equal(false, LocationScene.StartsAutomaticCameraFollow(InputAction.PanCameraUp),
+                "manual camera pan does not start character follow");
+            return 0;
+        });
+
+        yield return Int("party travel uses shared Amiga arrival formation", 0, () =>
+        {
+            var entry = new Burntime.Platform.Vector2(100, 80);
+            var offsets = new[]
+            {
+                new Burntime.Platform.Vector2(0, 0),
+                new Burntime.Platform.Vector2(0, -8),
+                new Burntime.Platform.Vector2(8, 0),
+                new Burntime.Platform.Vector2(-8, 0),
+                new Burntime.Platform.Vector2(0, 8)
+            };
+            for (int i = 0; i < Group.MAX_PEOPLE; i++)
+                Equal(entry + offsets[i], Player.GetArrivalPosition(entry, i),
+                    $"member {i} arrival position");
+            return 0;
+        });
+
+        yield return Int("movement instantly recovers from an unwalkable tile", 0, () =>
+        {
+            var m = new StateManager(null!);
+            var mask = new Burntime.Data.BurnGfx.PathMask(5, 5, 8);
+            mask[1, 2] = true;
+            mask[3, 2] = true;
+            var blockedPosition = new Burntime.Platform.Vector2(20, 20);
+            var recoveredPosition = new Burntime.Platform.Vector2(12, 20);
+
+            Equal(recoveredPosition,
+                Burntime.Remaster.PathFinding.PathState.GetNearestWalkablePosition(
+                    mask, blockedPosition),
+                "nearest walkable cell is selected deterministically");
+            Equal(recoveredPosition,
+                Burntime.Remaster.PathFinding.PathState.GetNearestWalkablePosition(
+                    mask, recoveredPosition),
+                "walkable positions remain unchanged");
+
+            var simple = m.Create<Burntime.Remaster.PathFinding.SimplePath>();
+            simple.MoveTo = blockedPosition;
+            Equal(recoveredPosition, simple.Process(mask, blockedPosition, 0.016f),
+                "simple path recovers before movement");
+
+            var manual = m.Create<Burntime.Remaster.PathFinding.ManualPath>();
+            manual.MoveTo = blockedPosition;
+            Equal(recoveredPosition, manual.Process(mask, blockedPosition, 0.016f),
+                "manual path recovers before movement");
+
+            var edgeMask = new Burntime.Data.BurnGfx.PathMask(3, 3, 8);
+            edgeMask[1, 1] = true;
+            var validSlidePosition = new Burntime.Platform.Vector2(7, 8);
+            manual.Stop(validSlidePosition);
+            Equal(validSlidePosition, manual.Process(edgeMask, validSlidePosition, 0),
+                "manual path preserves centered-sampled edge slide positions");
+            return 0;
+        });
+
         foreach (bool clearByItem in new[] { false, true })
             yield return Int($"clearing populated item window, instance setter {clearByItem}", 0, () =>
             {

@@ -634,6 +634,9 @@ namespace Burntime.Remaster.PathFinding
             return CommitMovement(this.position);
         }
 
+        protected override bool IsPositionWalkable(PathMask mask, Vector2 position) =>
+            IsWalkable(mask, position);
+
         static bool IsWalkable(PathMask mask, Vector2f position)
         {
             if (position.x < 0 || position.y < 0)
