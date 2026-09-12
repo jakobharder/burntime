@@ -9,7 +9,7 @@ namespace Burntime.Remaster.Logic.Rules;
 internal abstract class OriginalRules : IGameRules
 {
     const int OriginalItemRecordCount = 1199;
-    public abstract RuleSetId Id { get; }
+    public abstract RuleSet Id { get; }
 
     GameSettings? settings;
     public GameSettings Settings => settings ??= new(GameDefinitions.Get(Id).SettingsPath);
@@ -129,7 +129,7 @@ internal abstract class OriginalRules : IGameRules
     public void TurnEmployedCharacter(Character character)
     {
         ClassicGame game = (ClassicGame)character.Container.Root;
-        bool amigaAi = game.UsesAiProfile(character.Player, AiProfileId.Amiga);
+        bool amigaAi = game.UsesAiProfile(character.Player, AiProfile.Amiga);
         bool amigaActiveParty = amigaAi && character.IsWithBoss;
         bool doctorAvailable = character.HasLocalDoctor;
 

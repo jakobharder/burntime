@@ -97,7 +97,11 @@ namespace Burntime.Remaster.Logic
         public int DefenseValue => data.Object.DefenseValue;
         public int AmmoValue => data.Object.AmmoValue;
 
-        public ItemType Empty => empty;
+        public ItemType Empty
+        {
+            get => empty;
+            internal set => empty = value;
+        }
         public ItemType Full => full;
 
         public Production Production

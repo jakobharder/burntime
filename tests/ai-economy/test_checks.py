@@ -18,7 +18,7 @@ def game(turns=200, requested=None):
         rows.append(dict(Turn=turn, Players=[dict(Player=0, Alive=True, Camps=[owned],
             SupplyDamage=0, SupplyDeaths=0, BossSupplyDeath=False, CampFoodWithdrawn=0)]))
     return dict(SchemaVersion=1, Rules='extended', RequestedTurns=requested or turns,
-                Seed=29, Difficulty=2, Profiles=['extended'], Turns=rows)
+                Seed=29, Difficulty=2, Profiles=['modern'], Turns=rows)
 
 
 def player_result(data, mode='solo'):

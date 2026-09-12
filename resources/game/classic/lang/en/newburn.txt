@@ -103,11 +103,11 @@ Def. {defense}}
 % rad. 
 Blocked}
 |J days|#1 day
-DOS rules
+Classic rules
 Amiga rules
 DOS AI players
 Amiga AI players
-Extended AI players
+Modern AI players
 Extended rules
 Damage {damage}}
 Def. {defense}%}

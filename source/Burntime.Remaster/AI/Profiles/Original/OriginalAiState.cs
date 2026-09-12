@@ -55,7 +55,7 @@ internal abstract class OriginalAiState : Burntime.Framework.States.AiState,
     }
 
     public Player Player => player;
-    Logic.Generation.AiProfileId Logic.Generation.IAiProfileState.Profile => settings.Profile;
+    Logic.Generation.AiProfile Logic.Generation.IAiProfileState.Profile => settings.Profile;
     internal int Difficulty => settings.Difficulty;
     internal ClassicGame RootGame => (ClassicGame)container.Root;
     internal Location Current => Player.Location;
@@ -64,7 +64,7 @@ internal abstract class OriginalAiState : Burntime.Framework.States.AiState,
     internal virtual void InitAfterLoad()
     {
         // All persistent original-AI state is held in its player, settings,
-        // mode, destination and wait fields. It has no Extended planner caches.
+        // mode, destination and wait fields. It has no Modern planner caches.
     }
 
     internal void InitializeNewGamePlayer(

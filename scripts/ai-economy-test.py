@@ -43,14 +43,14 @@ def main():
         command = ['dotnet', str(args.app.resolve()), '--ai-simulate', '--turns', '200' if mode == 'solo' else '500',
                    '--rules', 'extended', '--difficulty', difficulty,
                    '--ai-difficulties', ','.join([difficulty] * 4), '--seed', str(seed),
-                   '--ai-profiles', 'extended,none,none,none' if mode == 'solo' else 'extended,extended,extended,extended',
+                   '--ai-profiles', 'modern,none,none,none' if mode == 'solo' else 'modern,modern,modern,modern',
                    '--economy-report', str(report), '--report', str(args.output / f'{name}.txt')]
         with (args.output / f'{name}.log').open('w') as log:
             process = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, timeout=600)
         if process.returncode:
             raise RuntimeError(f'{name}: simulation failed; see {name}.log')
         data = json.loads(report.read_text())
-        expected_profiles = ['extended', 'none', 'none', 'none'] if mode == 'solo' else ['extended'] * 4
+        expected_profiles = ['modern', 'none', 'none', 'none'] if mode == 'solo' else ['modern'] * 4
         if data['Profiles'] != expected_profiles or data['Seed'] != seed or data['Difficulty'] != difficulties_order.index(difficulty):
             raise ValueError(f'{name}: simulation configuration mismatch')
         result = check.evaluate(data, mode)
@@ -74,7 +74,7 @@ def main():
     checks = check.suite(results)
     ok = all(c['ok'] for c in checks) and not any(r.get('error') for r in results)
     (args.output / 'results.json').write_text(json.dumps(dict(ok=ok, results=results, checks=checks), indent=2) + '\n')
-    lines = ['# Extended AI economy smoke tests', '', f"Overall: **{'PASS' if ok else 'FAIL'}**.", '',
+    lines = ['# Modern AI economy smoke tests', '', f"Overall: **{'PASS' if ok else 'FAIL'}**.", '',
              'Uncontested: 200 turns. Competitive: 500 turns. Extended rules.', '',
              '| Mode | Difficulty | Passing / covered | Required passes | Covered / total | Result |',
              '|---|---|---|---|---|---|']

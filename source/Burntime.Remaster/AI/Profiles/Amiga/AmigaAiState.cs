@@ -7,7 +7,7 @@ namespace Burntime.Remaster.AI;
 
 /// <summary>
 /// Amiga AI identity and serialization boundary. Its recovered decision loop is
-/// intentionally isolated here so it can evolve without changing Extended AI.
+/// intentionally isolated here so it can evolve without changing Modern AI.
 /// </summary>
 [Serializable]
 internal sealed class AmigaAiState : OriginalAiState

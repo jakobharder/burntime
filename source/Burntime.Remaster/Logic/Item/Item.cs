@@ -105,8 +105,6 @@ namespace Burntime.Remaster
 
         // remaining bullets
         protected int ammo;
-        [System.Runtime.Serialization.OptionalField]
-        int ammunitionFormat;
         public string TooltipText => Type.AmmoValue > 0 ? $"{Title} ({ammo}/{Type.AmmoValue})" : Title;
         public int AmmoValue => ammo;
 
@@ -132,7 +130,6 @@ namespace Burntime.Remaster
 
             Type = (ItemType)parameter[0];
             ammo = Type.AmmoValue;
-            ammunitionFormat = 1;
         }
 
         public void Use()
@@ -153,18 +150,6 @@ namespace Burntime.Remaster
         public void MakeFull()
         {
             Type = Type.Full;
-        }
-
-        internal void MigrateAmmunition(Func<string, ItemType> resolve)
-        {
-            // The old Extended first stage had one stored round plus a second
-            // one-round item type. Read the saved link before refreshing links.
-            if (ammunitionFormat == 0 && ID == "item_loaded_rifle" &&
-                Type.Empty?.ID == "item_loaded_rifle_1")
-                ammo++;
-            if (ID == "item_loaded_rifle_1")
-                Type = resolve("item_loaded_rifle");
-            ammunitionFormat = 1;
         }
 
         internal void Reload(ItemType loadedType)

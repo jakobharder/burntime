@@ -16,8 +16,7 @@ namespace Burntime.Remaster.Logic
         protected StateLinkList<ItemType> types;
 
         internal int[] UnarmedDamage => data.Object.Items[0].DamageValues;
-
-        internal bool UsesExtendedRules => data.Name is "items@items.txt" or "items@rules/extended/items.txt";
+        internal string Path => data.Name;
 
         [NonSerialized]
         protected Dictionary<string, ItemType>? typeMap;
@@ -26,7 +25,6 @@ namespace Burntime.Remaster.Logic
         {
             get
             {
-                id = ResolveLegacyId(id);
                 typeMap ??= GenerateMap();
 
                 if (!typeMap.ContainsKey(id))
@@ -50,12 +48,8 @@ namespace Burntime.Remaster.Logic
             }
         }
 
-        internal static string ResolveLegacyId(string id) =>
-            id == "item_loaded_rifle_1" ? "item_loaded_rifle" : id;
-
         public bool Contains(string id)
         {
-            id = ResolveLegacyId(id);
             typeMap ??= GenerateMap();
             return typeMap.ContainsKey(id);
         }
@@ -166,11 +160,6 @@ namespace Burntime.Remaster.Logic
 
             foreach (ItemType type in types)
                 type.InitializeLinks(this);
-        }
-
-        internal void RefreshItemLinks()
-        {
-            foreach (ItemType type in types) type.InitializeLinks(this);
         }
 
         protected override void AfterDeserialization()

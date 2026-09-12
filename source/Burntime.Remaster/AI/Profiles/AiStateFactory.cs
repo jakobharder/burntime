@@ -8,16 +8,16 @@ internal static class AiStateFactory
 {
     internal static AiState? Create(
         StateManager container,
-        AiProfileId profile,
+        AiProfile profile,
         Player player,
         AiSettings settings)
     {
         settings.Profile = profile;
         return profile switch
         {
-            AiProfileId.None => null,
-            AiProfileId.Dos => container.Create<DosAiState>(player, settings),
-            AiProfileId.Amiga => container.Create<AmigaAiState>(player, settings),
+            AiProfile.None => null,
+            AiProfile.Dos => container.Create<DosAiState>(player, settings),
+            AiProfile.Amiga => container.Create<AmigaAiState>(player, settings),
             _ => container.Create<ClassicAiState>(player, settings)
         };
     }

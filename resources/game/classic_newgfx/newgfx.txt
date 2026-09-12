@@ -1,3 +1,7 @@
+[compatibility]
+items.txt=rules/extended/items.txt
+items_original.txt=rules/dos/items.txt
+
 [replacement_60x72]
 ' Remastered graphics are ratio corrected from 8:5 to 4:3 - 1 horizontal to 1.2 vertical.
 ' Upscale is not exactly 2x but ratio correct to ensure clean pixel sizes and positions.

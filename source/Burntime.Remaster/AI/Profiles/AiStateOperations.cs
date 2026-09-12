@@ -21,8 +21,8 @@ internal static class AiStateOperations
             case OriginalAiState original:
                 original.Turn();
                 return true;
-            case ClassicAiState extended:
-                extended.Turn();
+            case ClassicAiState modern:
+                modern.Turn();
                 return true;
             default:
                 return false;
@@ -33,8 +33,8 @@ internal static class AiStateOperations
     {
         if (state is OriginalAiState original)
             original.InitAfterLoad();
-        else if (state is ClassicAiState extended)
-            extended.InitAfterLoad();
+        else if (state is ClassicAiState modern)
+            modern.InitAfterLoad();
     }
 
     internal static void InitializeNewGamePlayer(
@@ -43,8 +43,8 @@ internal static class AiStateOperations
     {
         if (state is OriginalAiState original)
             original.InitializeNewGamePlayer(source);
-        else if (state is ClassicAiState extended)
-            extended.InitializeNewGamePlayer(source);
+        else if (state is ClassicAiState modern)
+            modern.InitializeNewGamePlayer(source);
     }
 
     internal static bool TryGetDifficulty(AiState? state, out int difficulty)
@@ -54,9 +54,9 @@ internal static class AiStateOperations
             difficulty = original.Difficulty;
             return true;
         }
-        if (state is ClassicAiState extended)
+        if (state is ClassicAiState modern)
         {
-            difficulty = extended.Difficulty;
+            difficulty = modern.Difficulty;
             return true;
         }
         difficulty = 0;

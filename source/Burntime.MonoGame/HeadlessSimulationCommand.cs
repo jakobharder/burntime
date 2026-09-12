@@ -80,9 +80,9 @@ internal static class HeadlessSimulationCommand
             Console.Error.WriteLine(exception.Message);
             Console.Error.WriteLine("Usage: Burntime --ai-simulate [--turns N] [--difficulty easy|normal|hard] " +
                 "[--ai-difficulties easy,normal,hard,hard] [--seed N] [--load-save PATH] " +
-                "[--save-at-end PATH] [--report PATH] [--rules dos|amiga|extended] " +
-                "[--ai none|dos|amiga|extended] " +
-                "[--ai-profiles dos,amiga,extended,none] [--smoke-test] " +
+                "[--save-at-end PATH] [--report PATH] [--rules dos|amiga|classic|extended] " +
+                "[--ai none|dos|amiga|modern] " +
+                "[--ai-profiles dos,amiga,modern,none] [--smoke-test] " +
                 "[--early-death-turn N] [--economy-report PATH]");
             return 2;
         }
@@ -131,7 +131,7 @@ internal static class HeadlessSimulationCommand
                     result.SaveAtEndPath = NextValue(args, ref index, argument);
                     break;
                 case "--extended":
-                    result.Rules = RuleSetId.Extended;
+                    result.Rules = RuleSet.Extended;
                     break;
                 case "--rules":
                     result.Rules = ParseRules(NextValue(args, ref index, argument));
@@ -196,24 +196,25 @@ internal static class HeadlessSimulationCommand
         return values.Select(ParseDifficulty).ToArray();
     }
 
-    static RuleSetId ParseRules(string value) => value.ToLowerInvariant() switch
+    static RuleSet ParseRules(string value) => value.ToLowerInvariant() switch
     {
-        "dos" => RuleSetId.Dos,
-        "amiga" => RuleSetId.Amiga,
-        "extended" => RuleSetId.Extended,
-        _ => throw new ArgumentException("--rules must be dos, amiga, or extended.")
+        "dos" => RuleSet.Dos,
+        "amiga" => RuleSet.Amiga,
+        "classic" => RuleSet.Classic,
+        "extended" => RuleSet.Extended,
+        _ => throw new ArgumentException("--rules must be dos, amiga, classic, or extended.")
     };
 
-    static AiProfileId ParseAi(string value) => value.ToLowerInvariant() switch
+    static AiProfile ParseAi(string value) => value.ToLowerInvariant() switch
     {
-        "none" => AiProfileId.None,
-        "dos" => AiProfileId.Dos,
-        "amiga" => AiProfileId.Amiga,
-        "extended" => AiProfileId.Extended,
-        _ => throw new ArgumentException("--ai must be none, dos, amiga, or extended.")
+        "none" => AiProfile.None,
+        "dos" => AiProfile.Dos,
+        "amiga" => AiProfile.Amiga,
+        "modern" => AiProfile.Modern,
+        _ => throw new ArgumentException("--ai must be none, dos, amiga, or modern.")
     };
 
-    static AiProfileId[] ParseAiProfiles(string value)
+    static AiProfile[] ParseAiProfiles(string value)
     {
         string[] values = value.Split(',', StringSplitOptions.RemoveEmptyEntries |
             StringSplitOptions.TrimEntries);
@@ -228,7 +229,7 @@ internal static class HeadlessSimulationCommand
         public int Turns { get; set; } = 100;
         public int Difficulty { get; set; } = 2;
         public int[]? AiDifficulties { get; set; }
-        public AiProfileId[]? AiProfiles { get; set; }
+        public AiProfile[]? AiProfiles { get; set; }
         public int Seed { get; set; } = 1;
         public string? ReportPath { get; set; }
         public string? EconomyReportPath { get; set; }
@@ -236,8 +237,8 @@ internal static class HeadlessSimulationCommand
         public string? SaveAtEndPath { get; set; }
         public bool AssertSmokeInvariants { get; set; }
         public int EarlyDeathTurn { get; set; } = 60;
-        public RuleSetId Rules { get; set; } = RuleSetId.Dos;
-        public AiProfileId AI { get; set; } = AiProfileId.Extended;
+        public RuleSet Rules { get; set; } = RuleSet.Dos;
+        public AiProfile AI { get; set; } = AiProfile.Modern;
     }
 
     sealed class LoadingCounter : ILoadingCounter

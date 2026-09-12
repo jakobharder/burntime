@@ -9,7 +9,8 @@ using Burntime.Remaster.Logic.Generation;
 namespace Burntime.Remaster.AI
 {
     /// <summary>
-    /// AI processing StateObject.
+    /// Modern AI processing StateObject. The ClassicAiState type name is retained
+    /// because released save games serialize its fully qualified name.
     /// Save compatibility policy: preserve members present in v1.0.4. Prefer
     /// <see cref="NonSerializedAttribute"/> for new tactical memory and rebuild it
     /// in <see cref="AfterResolving"/> or <see cref="InitAfterLoad"/>. A new value
@@ -135,7 +136,7 @@ namespace Burntime.Remaster.AI
             get { return headedLocation; }
         }
 
-        AiProfileId IAiProfileState.Profile => settings.Profile;
+        AiProfile IAiProfileState.Profile => settings.Profile;
 
         /// <summary>
         /// Empire-wide strategic equipment and construction reserve.

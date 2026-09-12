@@ -103,11 +103,11 @@ Vert. {defense}}
 % Rad. 
 Blockiert}
 |J Tage|#1 Tag
-DOS-Regeln
+Klassische Regeln
 Amiga-Regeln
 DOS-Computerspieler
 Amiga-Computerspieler
-Erweiterte Computerspieler
+Moderne Computerspieler
 Erweiterte Regeln
 Schaden {damage}}
 Vert. {defense}%}

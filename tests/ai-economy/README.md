@@ -1,4 +1,4 @@
-# Extended AI economy smoke tests
+# Modern AI economy smoke tests
 
 Run from the repository root:
 
@@ -13,11 +13,11 @@ then runs three fixed seeds (29, 71, 123) at Easy, Normal and Hard on Extended
 rules. Per-player difficulty is explicitly set, so local `ai.txt` slot overrides
 cannot silently change the test difficulty. There are 18 games:
 
-- **Uncontested:** one Extended AI and three None slots, **200 turns**.
-- **Competitive:** four Extended AIs, **500 turns**.
+- **Uncontested:** one Modern AI and three None slots, **200 turns**.
+- **Competitive:** four Modern AIs, **500 turns**.
 
 Economy simulations continue after victory or after only one faction remains.
-They stop early if no Extended AI survives. This changes only the headless run's
+They stop early if no Modern AI survives. This changes only the headless run's
 stopping condition, not AI decisions or game mechanics.
 
 For a smaller development run:

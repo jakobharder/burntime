@@ -18,7 +18,7 @@ namespace Burntime.Remaster.Logic.Data
             public DataObject Process(ResourceID id, IResourceManager resourceManager)
             {
                 ConfigFile file = new ConfigFile();
-                file.Open(Generation.GameDefinitions.ResolveItemsPath(id.File));
+                file.Open(resourceManager.ResolveFileReplacement(id.File));
 
                 return new ItemTypesData(file, resourceManager);
             }

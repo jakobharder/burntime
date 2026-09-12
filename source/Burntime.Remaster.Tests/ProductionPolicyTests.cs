@@ -181,7 +181,7 @@ static partial class Program
                 "empty resident pool falls back to walkable map cell, excluding travelling party");
             return 0;
         });
-        foreach (RuleSetId rule in Enum.GetValues<RuleSetId>())
+        foreach (RuleSet rule in Enum.GetValues<RuleSet>())
             foreach (string tool in new[] { "item_knife", "item_rat_trap", "item_snake_trap", "item_trap" })
                 yield return Int($"{rule} / {tool} inventory and room production", 0, () =>
                 {
@@ -248,19 +248,6 @@ static partial class Program
             Equal(1, camp.GetProductionToolCount(production), "inventory weapon is not a second trap");
             return 0;
         });
-        foreach (var (oldName, rule) in new[] { ("gamesettings_original.txt", RuleSetId.Dos), ("gamesettings_extended.txt", RuleSetId.Extended) })
-            yield return Int($"{oldName} loads canonical settings", 0, () =>
-            {
-                string canonical = GameDefinitions.Get(rule).SettingsPath;
-                Equal(canonical, GameDefinitions.ResolveSettingsPath(oldName), "alias");
-                Equal(canonical, GameDefinitions.ResolveSettingsPath(canonical), "canonical passes through");
-                var legacy = new GameSettings(oldName); var current = new GameSettings(canonical);
-                Equal(95, legacy.DoctorHealthCap, "alias actually loads file");
-                Equal(current.StartExperience, legacy.StartExperience, "starting state");
-                Equal(current.DoctorHealingFactor, legacy.DoctorHealingFactor, "healing factor");
-                Equal(false, System.IO.File.Exists(System.IO.Path.Combine(System.IO.Path.GetDirectoryName(ResourceFile(canonical))!, "../..", oldName)), "duplicate file removed");
-                return 0;
-            });
     }
 
     static IEnumerable<Case<int>> AmmunitionLifecycleCases()
@@ -316,22 +303,16 @@ static partial class Program
                             "rifles and pistols share Easy/Normal cap; Hard unrestricted");
                     return 0;
                 });
-        yield return Int("ammo icons, counts and legacy migration", 0, () =>
+        yield return Int("ammo icons, counts and reload", 0, () =>
         {
             var m = new StateManager(null!);
-            const System.Reflection.BindingFlags fields = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
             ItemType Make(string id, int capacity, string sprite, string? last = null)
                 => m.Create<ItemType>(new Burntime.Remaster.Logic.Data.ItemTypeData {
                     DataName = id, Sprite = sprite, LastRoundSprite = last,
                     AmmoValue = capacity, Class = Array.Empty<string>(), Protection = Array.Empty<string>() });
-            void Link(ItemType from, ItemType to) => typeof(ItemType).GetField("empty", fields)!.SetValue(from, (StateLink<ItemType>)to);
-            void Old(Item item, int rounds) {
-                typeof(Item).GetField("ammo", fields)!.SetValue(item, rounds);
-                typeof(Item).GetField("ammunitionFormat", fields)!.SetValue(item, 0);
-            }
             var empty = Make("item_unloaded_rifle", 0, "empty");
             var loaded = Make("item_loaded_rifle", 6, "two", "one");
-            Link(loaded, empty);
+            loaded.Empty = empty;
             var gun = m.Create<Item>(loaded);
             for (int rounds = 6; rounds > 0; rounds--) {
                 Equal(rounds == 1 ? "one" : "two", gun.Sprite, "ammo display threshold");
@@ -340,34 +321,16 @@ static partial class Program
             }
             Equal("empty", gun.Sprite, "empty sprite");
             Equal(0, gun.AmmoValue, "empty counter");
-            var alias = Make("item_loaded_rifle_1", 6, "two", "one");
-            Link(alias, empty);
-            var oldFirst = m.Create<Item>(loaded); Old(oldFirst, 1);
-            var oldLast = m.Create<Item>(alias); Old(oldLast, 1);
-            Link(loaded, alias);
-            oldFirst.MigrateAmmunition(_ => loaded);
-            oldFirst.MigrateAmmunition(_ => loaded);
-            Equal(2, oldFirst.AmmoValue, "old first stage preserves two shots, migration idempotent");
-            oldLast.MigrateAmmunition(_ => loaded);
-            Equal("item_loaded_rifle", oldLast.ID, "legacy type canonicalized");
-            Equal(1, oldLast.AmmoValue, "last stage keeps one shot");
-            Link(loaded, empty);
-            var partial = m.Create<Item>(loaded); Old(partial, 4);
-            partial.MigrateAmmunition(_ => loaded);
-            Equal(4, partial.AmmoValue, "DOS/Amiga partial magazine unchanged");
-            var pistol = m.Create<Item>(Make("item_loaded_pistol", 6, "two", "one")); Old(pistol, 1);
-            pistol.MigrateAmmunition(_ => loaded);
-            Equal(1, pistol.AmmoValue, "old pistol keeps one shot");
-            oldLast.Reload(loaded);
-            Equal(6, oldLast.AmmoValue, "reload fills migrated rifle");
+            gun.Reload(loaded);
+            Equal(6, gun.AmmoValue, "reload fills rifle");
             return 0;
         });
         foreach (var (rule, id, initial, perAmmo) in new[]
         {
-            (RuleSetId.Dos, "item_loaded_rifle", 6, 6),
-            (RuleSetId.Amiga, "item_loaded_rifle", 6, 6),
-            (RuleSetId.Extended, "item_loaded_rifle", 6, 6),
-            (RuleSetId.Extended, "item_loaded_pistol", 6, 6)
+            (RuleSet.Dos, "item_loaded_rifle", 6, 6),
+            (RuleSet.Amiga, "item_loaded_rifle", 6, 6),
+            (RuleSet.Extended, "item_loaded_rifle", 6, 6),
+            (RuleSet.Extended, "item_loaded_pistol", 6, 6)
         })
             foreach (int spare in new[] { 0, 2 })
                 yield return Int($"{rule} {id}, {spare} spare ammunition", initial + spare * perAmmo, () =>

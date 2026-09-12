@@ -25,7 +25,7 @@ def evaluate(data, mode):
         raise ValueError('Missing or unordered turn observations.')
     results = []
     for index, profile in enumerate(data['Profiles']):
-        if profile != 'extended':
+        if profile != 'modern':
             continue
         rows = [t['Players'][index] for t in turns]
         windows = []
@@ -76,7 +76,7 @@ def evaluate(data, mode):
         status = 'fail' if failures else 'pass' if windows else 'insufficient'
         results.append(dict(player=index + 1, status=status, failures=failures, windows=windows))
     if not results:
-        raise ValueError('No Extended AI was observed.')
+        raise ValueError('No Modern AI was observed.')
     return dict(seed=data['Seed'], difficulty=data['Difficulty'], mode=mode, players=results)
 
 

@@ -36,8 +36,8 @@ run_leg() {
 }
 
 scenario_count=0
-for rules in dos amiga extended; do
-  for profile in dos amiga extended; do
+for rules in dos amiga classic extended; do
+  for profile in dos amiga modern; do
     for seed in 11 29 47; do
       scenario_count=$((scenario_count + 1))
       label="${rules}-${profile}-${seed}"
@@ -51,11 +51,11 @@ for rules in dos amiga extended; do
   done
 done
 
-for rules in dos amiga extended; do
+for rules in dos amiga classic extended; do
   scenario_count=$((scenario_count + 1))
   label="${rules}-mixed-71"
   save="$scratch_dir/scenario_${scenario_count}.sav"
-  common=(--rules "$rules" --ai-profiles dos,amiga,extended,none \
+  common=(--rules "$rules" --ai-profiles dos,amiga,modern,none \
     --difficulty hard --seed 71)
 
   run_leg "${label}-new" "${common[@]}" --turns 30 --save-at-end "$save"

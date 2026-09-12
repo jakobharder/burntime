@@ -5,7 +5,7 @@ namespace Burntime.Remaster.Logic.Rules;
 
 internal sealed class AmigaRules : OriginalRules
 {
-    public override RuleSetId Id => RuleSetId.Amiga;
+    public override RuleSet Id => RuleSet.Amiga;
     protected override void SetOriginalStartLocations(ClassicGame game, GameSettings settings) =>
         StartLocationPlacement.ApplyRegional(game, settings);
 

@@ -8,7 +8,7 @@ namespace Burntime.Remaster.Logic.Rules;
 
 internal sealed class ExtendedRules : IGameRules
 {
-    public RuleSetId Id => RuleSetId.Extended;
+    public RuleSet Id => RuleSet.Extended;
 
     GameSettings? settings;
     public GameSettings Settings => settings ??= new(GameDefinitions.Get(Id).SettingsPath);
@@ -91,7 +91,7 @@ internal sealed class ExtendedRules : IGameRules
 
     static bool UsesAmigaSurvivalBehavior(Character character) =>
         ((ClassicGame)character.Container.Root).UsesAiProfile(
-            character.Player, AiProfileId.Amiga);
+            character.Player, AiProfile.Amiga);
 
     public int CalculateDoctorResult(int health, IItemCollection payment) =>
         RuleFormulas.DoctorResult(health, payment.GetHealValue(),

@@ -232,7 +232,9 @@ public sealed class CharacterRespawn : StateObject
     }
 
     internal static bool IsLocationCycleDue(int day, int locationId, int interval) =>
-        interval > 0 && (day + locationId) % interval == 0;
+        interval > 0 && LocationTurn(day, locationId) % interval == 0;
+
+    internal static int LocationTurn(int day, int locationId) => day + locationId;
 
     static bool IsOrdinaryNpc(Character character) =>
         character.Class is CharClass.Mercenary or CharClass.Technician or CharClass.Doctor;
@@ -245,20 +247,22 @@ public sealed class CharacterRespawn : StateObject
             return false;
 
         Character character = respawn.Character;
+        World world = ((ClassicGame)container.Root).World;
+        int locationTurn = LocationTurn(world.Day, respawn.Location.Id);
         (character.NameId, nameDonor.Character.NameId) =
             (nameDonor.Character.NameId, character.NameId);
 
         // Face 10 wears a gas mask, so neither replace it nor assign it randomly.
         if (character.FaceID != 10)
         {
-            int face = Burntime.Platform.Math.Random.Next(7, 28);
+            int face = 7 + locationTurn % 21;
             character.FaceID = face >= 10 ? face + 1 : face;
         }
 
         character.SetBodyId = Helper.GetSetBodyId(character.Class);
         if (character.SetBodyId >= 0)
             character.Body = Helper.GetCharacterBody(character.SetBodyId,
-                Burntime.Platform.Math.Random.Next(0, 3));
+                locationTurn % 3);
 
         return true;
     }
@@ -266,7 +270,7 @@ public sealed class CharacterRespawn : StateObject
     Location GetSpawnLocation(Character character, Location deathLocation)
     {
         ClassicGame game = (ClassicGame)container.Root;
-        if (game.Rules != Generation.RuleSetId.Extended || citySpawnThreshold <= 0 ||
+        if (game.Rules != Generation.RuleSet.Extended || citySpawnThreshold <= 0 ||
             !IsOrdinaryNpc(character))
             return deathLocation;
 

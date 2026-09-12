@@ -3,9 +3,9 @@ using Burntime.Remaster.Logic.Generation;
 
 namespace Burntime.Remaster.Logic.Rules;
 
-internal sealed class DosRules : OriginalRules
+internal class DosRules : OriginalRules
 {
-    public override RuleSetId Id => RuleSetId.Dos;
+    public override RuleSet Id => RuleSet.Dos;
     protected override void SetOriginalStartLocations(ClassicGame game, GameSettings settings) =>
         StartLocationPlacement.ApplyRotatingOriginalGroups(game, settings);
 

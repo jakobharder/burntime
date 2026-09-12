@@ -18,10 +18,9 @@ namespace Burntime.Remaster.Logic.Generation
         public int Difficulty;
         public BurntimePlayerColor ColorOne;
         public BurntimePlayerColor ColorTwo;
-        public RuleSetId Rules;
-        public AiProfileId AI;
-        public AiProfileId[] AiProfiles;
-        public WorldId World;
+        public RuleSet Rules;
+        public AiProfile AI;
+        public AiProfile[] AiProfiles;
         public int[] AiDifficulties;
     }
 
@@ -59,7 +58,7 @@ namespace Burntime.Remaster.Logic.Generation
             app.Autosaves.OnNewGameCreated();
             new LogicFactory();
 
-            GameDefinition definition = GameDefinitions.Get(Info.Rules, Info.World);
+            GameDefinition definition = GameDefinitions.Get(Info.Rules);
 
             // load game settings
             settings = new GameSettings(definition.SettingsPath);
@@ -70,7 +69,7 @@ namespace Burntime.Remaster.Logic.Generation
 
             // get root game object
             ClassicGame game = container.Root as ClassicGame;
-            game.SetProfiles(Info.Rules, Info.AI, Info.World, Info.AiProfiles);
+            game.SetProfiles(Info.Rules, Info.AI, Info.AiProfiles);
 
             LogicFactory.SetParameter("resource", app.ResourceManager);
 
@@ -239,7 +238,7 @@ namespace Burntime.Remaster.Logic.Generation
             {
                 if (p.Type == PlayerType.Ai)
                 {
-                    AiProfileId profile = Info.AiProfiles != null &&
+                    AiProfile profile = Info.AiProfiles != null &&
                         p.Index < Info.AiProfiles.Length
                         ? Info.AiProfiles[p.Index]
                         : Info.AI;
@@ -249,7 +248,7 @@ namespace Burntime.Remaster.Logic.Generation
                         ? AI.AiPolicy.SettingsFor(Info.AiDifficulties[p.Index])
                         : AI.AiPolicy.SettingsForPlayer(p.Index, Info.Difficulty);
                     p.AiState = AI.AiStateFactory.Create(container, profile, p, aiSettings);
-                    if (profile == AiProfileId.None)
+                    if (profile == AiProfile.None)
                     {
                         p.IsDead = true;
                         p.Character.Die();
@@ -261,7 +260,7 @@ namespace Burntime.Remaster.Logic.Generation
             foreach (Burntime.Framework.Network.GameClient client in app.Server.Clients)
             {
                 Player p = game.World.Players[client.Player];
-                if (p.Type == PlayerType.Ai && game.GetAiProfile(p) == AiProfileId.None)
+                if (p.Type == PlayerType.Ai && game.GetAiProfile(p) == AiProfile.None)
                     client.Die();
             }
         }
@@ -281,7 +280,7 @@ namespace Burntime.Remaster.Logic.Generation
         void LoadProductions(ClassicGame game, Burntime.Data.BurnGfx.Save.SaveGame gamdat)
         {
             ConfigFile file = new ConfigFile();
-            file.Open(GameDefinitions.Get(game.Rules, game.WorldDefinition).ProductionPath);
+            file.Open(GameDefinitions.Get(game.Rules).ProductionPath);
             ConfigSection[] sections = file.GetAllSections();
 
             foreach (ConfigSection section in sections)
@@ -330,10 +329,10 @@ namespace Burntime.Remaster.Logic.Generation
 
         internal static void RefreshExtendedTraderSettings(ClassicGame game)
         {
-            if (game.Rules != RuleSetId.Extended)
+            if (game.Rules != RuleSet.Extended)
                 return;
             ConfigFile file = new ConfigFile();
-            if (!file.Open(GameDefinitions.Get(game.Rules, game.WorldDefinition).TraderPath))
+            if (!file.Open(GameDefinitions.Get(game.Rules).TraderPath))
                 throw new InvalidOperationException("Could not load trader settings.");
             foreach (Trader trader in game.World.AllCharacters.OfType<Trader>())
             {
@@ -346,7 +345,7 @@ namespace Burntime.Remaster.Logic.Generation
         internal static void RefreshProductionSettings(ClassicGame game)
         {
             ConfigFile file = new ConfigFile();
-            if (!file.Open(GameDefinitions.Get(game.Rules, game.WorldDefinition).ProductionPath))
+            if (!file.Open(GameDefinitions.Get(game.Rules).ProductionPath))
                 throw new InvalidOperationException("Could not load production settings.");
             foreach (ConfigSection section in file.GetAllSections())
             {
@@ -571,7 +570,7 @@ namespace Burntime.Remaster.Logic.Generation
             ClassicGame classic = container.Root as ClassicGame;
             classic.InitAfterLoad();
 
-            GameDefinition definition = GameDefinitions.Get(classic.Rules, classic.WorldDefinition);
+            GameDefinition definition = GameDefinitions.Get(classic.Rules);
             settings = new GameSettings(definition.SettingsPath);
             settings.SetDifficulty(classic.World.Difficulty);
             classic.World.Respawn.Object.ApplySettings(settings);

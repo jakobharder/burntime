@@ -228,8 +228,7 @@ public class MenuScene : Scene
             Prompts = { { InputAction.Primary, "@prompts?9" } }
         };
         GameMode.AddState(null, "gfx/ui/start_button_extended.png", "gfx/ui/start_button_extended_down.png", "gfx/ui/start_button_extended_down.png", "@newburn?110");
-        GameMode.AddState(null, "gfx/ui/start_button_dos.png", "gfx/ui/start_button_dos_down.png", "gfx/ui/start_button_dos_down.png", "@newburn?105");
-        GameMode.AddState(null, "gfx/ui/start_button_amiga.png", "gfx/ui/start_button_amiga_down.png", "gfx/ui/start_button_amiga_down.png", "@newburn?106");
+        GameMode.AddState(null, "gfx/ui/start_button_original.png", "gfx/ui/start_button_original_down.png", "gfx/ui/start_button_original_down.png", "@newburn?105");
         Windows += GameMode;
 
         // ai
@@ -241,9 +240,8 @@ public class MenuScene : Scene
             Prompts = { { InputAction.Primary, "@prompts?9" } }
         };
         AiPlayers.AddState(null, "gfx/ui/start_button_ai.png", "gfx/ui/start_button_ai_down.png", "gfx/ui/start_button_ai_down.png", "@newburn?109");
-        AiPlayers.AddState(null, "gfx/ui/start_button_noai.png", "gfx/ui/start_button_noai_down.png", "gfx/ui/start_button_noai_down.png", "@newburn?13");
-        AiPlayers.AddState(null, "gfx/ui/start_button_ai.png", "gfx/ui/start_button_ai_down.png", "gfx/ui/start_button_ai_down.png", "@newburn?107");
         AiPlayers.AddState(null, "gfx/ui/start_button_ai.png", "gfx/ui/start_button_ai_down.png", "gfx/ui/start_button_ai_down.png", "@newburn?108");
+        AiPlayers.AddState(null, "gfx/ui/start_button_noai.png", "gfx/ui/start_button_noai_down.png", "gfx/ui/start_button_noai_down.png", "@newburn?13");
         Windows += AiPlayers;
 
     }
@@ -818,18 +816,15 @@ public class MenuScene : Scene
             ColorTwo = Color.IsDown ? BurntimePlayerColor.Green : BurntimePlayerColor.Red,
             Rules = GameMode.State switch
             {
-                1 => RuleSetId.Dos,
-                2 => RuleSetId.Amiga,
-                _ => RuleSetId.Extended
+                1 => RuleSet.Classic,
+                _ => RuleSet.Extended
             },
             AI = AiPlayers.State switch
             {
-                1 => AiProfileId.None,
-                2 => AiProfileId.Dos,
-                3 => AiProfileId.Amiga,
-                _ => AiProfileId.Extended
-            },
-            World = WorldId.Original
+                1 => AiProfile.Amiga,
+                2 => AiProfile.None,
+                _ => AiProfile.Modern
+            }
         };
 
         creation.CreateNewGame(Info);

@@ -221,6 +221,7 @@ namespace Burntime.Remaster
 
             Settings = new ConfigFile();
             Settings.Open("settings.txt");
+            RefreshResourceReplacements();
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             ResourceManager.Encoding = Encoding.UTF8;
@@ -577,7 +578,7 @@ namespace Burntime.Remaster
             // character-body ranges to frames that exist in the original RAW.
             if (FileSystem.ExistsFile("newgfx.txt"))
                 replacements.Add("newgfx.txt");
-            if (Engine.OutputFiltering == OutputFiltering.Xbr2 &&
+            if (Engine?.OutputFiltering == OutputFiltering.Xbr2 &&
                 FileSystem.ExistsFile("xbr2.txt"))
                 replacements.Add("xbr2.txt");
             ResourceManager.SetResourceReplacements(replacements.ToArray());

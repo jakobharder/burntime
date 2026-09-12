@@ -2,13 +2,13 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
-expected_extended_hash="a5200e0c79d36ceef0aef21a851cee495c133b65df861dae7548f0c55d450603"
+expected_modern_hash="a5200e0c79d36ceef0aef21a851cee495c133b65df861dae7548f0c55d450603"
 expected_dos_hash="5a8299af78789977d401cf5b8dabf42317c04d3b5b8f07db37da68cd9746eb48"
 expected_amiga_hash="8a67a89a941c6799edcc92e68660b81fa6d1e6b2a596669c093e44b912bd5c93"
-extended_report="$(mktemp "${TMPDIR:-/tmp}/burntime-ai-extended.XXXXXX")"
+modern_report="$(mktemp "${TMPDIR:-/tmp}/burntime-ai-modern.XXXXXX")"
 dos_report="$(mktemp "${TMPDIR:-/tmp}/burntime-ai-dos.XXXXXX")"
 amiga_report="$(mktemp "${TMPDIR:-/tmp}/burntime-ai-amiga.XXXXXX")"
-trap 'rm -f "$extended_report" "$dos_report" "$amiga_report"' EXIT
+trap 'rm -f "$modern_report" "$dos_report" "$amiga_report"' EXIT
 
 report_hash() {
   sed -E \
@@ -43,6 +43,6 @@ check_profile() {
   echo "$profile AI behavior baseline matched: $actual"
 }
 
-check_profile extended extended "$expected_extended_hash" "$extended_report"
+check_profile modern extended "$expected_modern_hash" "$modern_report"
 check_profile dos dos "$expected_dos_hash" "$dos_report"
 check_profile amiga amiga "$expected_amiga_hash" "$amiga_report"

@@ -35,7 +35,7 @@ internal sealed class EquipmentNeeds
         if (type.DamageValue <= 0 && type.DefenseValue <= 0)
             return 0;
         bool armour = type.DefenseValue > 0;
-        if (armour && (state.RootGame.Rules != RuleSetId.Extended || type.DefenseValue > policy.ArmourLimit))
+        if (armour && (state.RootGame.Rules != RuleSet.Extended || type.DefenseValue > policy.ArmourLimit))
             return 0;
         bool firearm = AiItemPool.IsFirearm(type);
         int wanted = recipients.Count(character =>

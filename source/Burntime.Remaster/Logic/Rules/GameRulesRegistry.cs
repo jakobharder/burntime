@@ -5,11 +5,12 @@ namespace Burntime.Remaster.Logic.Rules;
 
 internal static class GameRulesRegistry
 {
-    public static IGameRules Get(RuleSetId id) => id switch
+    public static IGameRules Get(RuleSet id) => id switch
     {
-        RuleSetId.Dos => new DosRules(),
-        RuleSetId.Amiga => new AmigaRules(),
-        RuleSetId.Extended => new ExtendedRules(),
+        RuleSet.Dos => new DosRules(),
+        RuleSet.Amiga => new AmigaRules(),
+        RuleSet.Classic => new ClassicRules(),
+        RuleSet.Extended => new ExtendedRules(),
         _ => throw new ArgumentOutOfRangeException(nameof(id))
     };
 }

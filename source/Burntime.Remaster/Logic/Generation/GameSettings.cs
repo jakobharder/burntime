@@ -169,7 +169,7 @@ class GameSettings
     public GameSettings(string file)
     {
         config = new ConfigFile();
-        config.Open(GameDefinitions.ResolveSettingsPath(file));
+        config.Open(file);
     }
 
     public void SetDifficulty(int difficulty)

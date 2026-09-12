@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 using Burntime.Platform;
@@ -37,6 +38,11 @@ namespace Burntime.Remaster.Logic
         public StateLinkList<Character> AllCharacters;
         public StateLinkList<Trader> Traders;
         public StateLink<CharacterRespawn> Respawn;
+        public IEnumerable<Item> AllItems => AllCharacters.SelectMany(character => character.Items)
+            .Concat(Locations.SelectMany(location => location.Items))
+            .Concat(Locations.SelectMany(location => location.Rooms)
+                .SelectMany(room => room.Items))
+            .Distinct();
         public int ActivePlayer;
         public float Time;
         public int Day;

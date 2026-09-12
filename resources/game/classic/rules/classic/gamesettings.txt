@@ -1,11 +1,10 @@
 [0] ' difficulty easy
 barter_factor = 100
-start_locations_1   = 2 4
-start_locations_2   = 18 25
-start_locations_3   = 30 32
-start_locations_4   = 6 11
-start_locations_5   = 29 37
-start_regions       = 5
+start_regions = 4
+start_locations_1 = 26 34 19 20
+start_locations_2 = 31 28 33 23
+start_locations_3 = 11 12 17 10
+start_locations_4 = 5 3 9 2
 start_items        = item_meat item_bottle item_knife item_full_canteen
 
 random_items_start        = food material weapon -nodrop -rare -special
@@ -20,28 +19,27 @@ random_items_danger_location        = special -nodrop
 random_items_danger_location_rate   = 2 5
 
 spawn_method          = location_cycle
-npc_spawn             = 4
-city_spawn_threshold  = 12
-trader_respawn        = 50
-mutant_respawn        = 500
-dog_respawn           = 50
-trader_health         = 100
+npc_spawn             = 8
+city_spawn_threshold  = 0
+trader_respawn        = 0
+mutant_respawn        = 0
+dog_respawn           = 0
+trader_health         = 97
 mutant_health         = 31
 dog_health            = 31
-trader_attack         = 8 16 25 40
+trader_attack         = 9 11 13 15
 mutant_attack         = 2 3 4 6
-mutant_drop_chance    = 0.20
+mutant_drop_chance    = 0
 mutant_drop_type      = useless
 dog_attack            = 2 3 4 6
 
 [1] ' difficulty normal
 barter_factor = 90
-start_locations_1   = 1 8 7
-start_locations_2   = 12 17 33 19 24
-start_locations_3   = 30 32 34 21
-start_locations_4   = 6 11 10 9
-start_locations_5   = 29 35 37 36
-start_regions       = 5
+start_regions = 4
+start_locations_1 = 26 34 19 20
+start_locations_2 = 31 28 33 23
+start_locations_3 = 11 12 17 10
+start_locations_4 = 5 3 9 2
 start_items         = item_snake item_bottle item_knife item_empty_canteen
 
 random_items_start        = food material -nodrop -rare -special
@@ -57,27 +55,26 @@ random_items_danger_location_rate = 1 3
 
 spawn_method          = location_cycle
 npc_spawn             = 8
-city_spawn_threshold  = 12
-trader_respawn        = 150
-mutant_respawn        = 350
-dog_respawn           = 150
-trader_health         = 150
-mutant_health         = 40
+city_spawn_threshold  = 0
+trader_respawn        = 0
+mutant_respawn        = 0
+dog_respawn           = 0
+trader_health         = 97
+mutant_health         = 31
 dog_health            = 31
-trader_attack         = 8 16 25 40
-mutant_attack         = 4 5 6 8
-mutant_drop_chance    = 0.20
+trader_attack         = 9 11 13 15
+mutant_attack         = 2 3 4 6
+mutant_drop_chance    = 0
 mutant_drop_type      = useless
-dog_attack            = 4 5 6 8
+dog_attack            = 2 3 4 6
 
 [2] ' difficulty hard
 barter_factor = 80
-start_locations_1   = 5 8
-start_locations_2   = 26 24
-start_locations_3   = 28 31
-start_locations_4   = 3 15
-start_locations_5   = 23
-start_regions       = 5
+start_regions = 4
+start_locations_1 = 26 34 19 20
+start_locations_2 = 31 28 33 23
+start_locations_3 = 11 12 17 10
+start_locations_4 = 5 3 9 2
 start_items           = item_maggots item_knife
 
 random_items_start        = material -nodrop -rare -special -food
@@ -92,19 +89,19 @@ random_items_danger_location      = special -rare -nodrop
 random_items_danger_location_rate = 1 2
 
 spawn_method          = location_cycle
-npc_spawn             = 12
-city_spawn_threshold  = 12
+npc_spawn             = 8
+city_spawn_threshold  = 0
 trader_respawn        = 0
-mutant_respawn        = 200
+mutant_respawn        = 0
 dog_respawn           = 0
-trader_health         = 250
-mutant_health         = 60
+trader_health         = 97
+mutant_health         = 31
 dog_health            = 31
-trader_attack         = 8 16 25 40
-mutant_attack         = 6 7 8 10
-mutant_drop_chance    = 0.20
+trader_attack         = 9 11 13 15
+mutant_attack         = 2 3 4 6
+mutant_drop_chance    = 0
 mutant_drop_type      = useless
-dog_attack            = 6 7 8 10
+dog_attack            = 2 3 4 6
 
 [region_item_0]
 items     = item_rat_trap

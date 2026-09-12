@@ -78,37 +78,30 @@ namespace Burntime.Remaster
         }
 
         [System.Runtime.Serialization.OptionalField]
-        string? ruleSetId;
+        string? ruleSet;
         [System.Runtime.Serialization.OptionalField]
-        string? aiProfileId;
-        [System.Runtime.Serialization.OptionalField]
-        string[]? aiProfileIds;
-        [System.Runtime.Serialization.OptionalField]
-        string? worldId;
+        string[]? aiProfiles;
 
-        public RuleSetId Rules => GameDefinitions.ParseRules(
-            ruleSetId,
-            ItemTypes?.UsesExtendedRules == true ? RuleSetId.Extended : RuleSetId.Dos);
-        public AiProfileId AI => GameDefinitions.ParseAi(aiProfileId);
-        public WorldId WorldDefinition => Enum.TryParse(worldId, true, out WorldId value) &&
-            Enum.IsDefined(value) ? value : WorldId.Original;
-        public GameFeature Features => GameDefinitions.Get(Rules, WorldDefinition).Features;
+        public RuleSet Rules => GameDefinitions.ParseRules(ruleSet);
+        public GameFeature Features => GameDefinitions.Get(Rules).Features;
         public bool HasFeature(GameFeature feature) => Features.HasFlag(feature);
 
         [NonSerialized]
         IGameRules? ruleBook;
         internal IGameRules RuleBook => ruleBook ??= GameRulesRegistry.Get(Rules);
 
-        public AiProfileId GetAiProfile(Player player)
+        public AiProfile GetAiProfile(Player player)
         {
-            if (aiProfileIds != null && player.Index >= 0 && player.Index < aiProfileIds.Length)
-                return GameDefinitions.ParseAi(aiProfileIds[player.Index], AI);
+            if (aiProfiles != null && player.Index >= 0 && player.Index < aiProfiles.Length)
+                return GameDefinitions.ParseAi(aiProfiles[player.Index]);
             if (player.AiState is IAiProfileState profileState)
                 return profileState.Profile;
-            return player.Type == PlayerType.Ai && player.IsDead ? AiProfileId.None : AI;
+            return player.Type == PlayerType.Ai && player.IsDead
+                ? AiProfile.None
+                : AiProfile.Modern;
         }
 
-        internal bool UsesAiProfile(Player player, AiProfileId profile) =>
+        internal bool UsesAiProfile(Player player, AiProfile profile) =>
             player.Type == PlayerType.Ai && GetAiProfile(player) == profile;
 
         internal void UpdateCreatureAttackCooldown(float elapsed)
@@ -126,15 +119,13 @@ namespace Burntime.Remaster
             return true;
         }
 
-        internal void SetProfiles(RuleSetId rules, AiProfileId ai, WorldId world,
-            AiProfileId[]? playerAiProfiles = null)
+        internal void SetProfiles(RuleSet rules, AiProfile ai,
+            AiProfile[]? playerAiProfiles = null)
         {
-            ruleSetId = rules.ToString();
-            aiProfileId = ai.ToString();
-            aiProfileIds = (playerAiProfiles ?? Enumerable.Repeat(ai, 4).ToArray())
+            ruleSet = rules.ToString();
+            aiProfiles = (playerAiProfiles ?? Enumerable.Repeat(ai, 4).ToArray())
                 .Select(profile => profile.ToString())
                 .ToArray();
-            worldId = world.ToString();
         }
 
         protected override void InitInstance(object[] parameter)
@@ -181,11 +172,32 @@ namespace Burntime.Remaster
         /// </summary>
         public void InitAfterLoad()
         {
-            foreach (Item item in World.AllCharacters.SelectMany(c => c.Items)
-                .Concat(World.Locations.SelectMany(l => l.Items))
-                .Concat(World.Locations.SelectMany(l => l.Rooms).SelectMany(r => r.Items)).Distinct())
-                item.MigrateAmmunition(id => ItemTypes[id]);
-            ItemTypes.RefreshItemLinks();
+            if (ruleSet is null)
+            {
+                RuleSet rules = ItemTypes.Path switch
+                {
+                    "items@items.txt" => RuleSet.Extended,
+                    "items@items_original.txt" => RuleSet.Classic,
+                    _ => RuleSet.Extended
+                };
+                AiProfile[] profiles = Enumerable.Repeat(
+                    AiProfile.Modern, World.Players.Count).ToArray();
+
+                foreach (Player player in World.Players.Where(player => player.Type == PlayerType.Ai))
+                {
+                    if (player.IsDead)
+                        profiles[player.Index] = AiProfile.None;
+                }
+
+                SetProfiles(rules, AiProfile.Modern, profiles);
+            }
+
+            // remove old intermediate rifle states
+            foreach (Item item in World.AllItems)
+                if (item.ID == "item_loaded_rifle_1")
+                    item.Type = ItemTypes["item_loaded_rifle"];
+            ItemTypes["item_loaded_rifle"].Empty = ItemTypes["item_unloaded_rifle"];
+
             GameCreation.RefreshProductionSettings(this);
             // New Village is defined by map configuration rather than GAM.DAT.
             if (World.Locations.Count > 37)

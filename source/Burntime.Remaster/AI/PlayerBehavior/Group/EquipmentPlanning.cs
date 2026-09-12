@@ -129,7 +129,7 @@ internal static class EquipmentPlanning
             }
             character.Weapon = character.Items.FindBestWeapon();
         }
-        if (state.RootGame.Rules != RuleSetId.Extended)
+        if (state.RootGame.Rules != RuleSet.Extended)
             return;
 
         // Pool spare clothing so upgrades can pass down to another recipient.

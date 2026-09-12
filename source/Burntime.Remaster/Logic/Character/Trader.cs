@@ -197,7 +197,7 @@ namespace Burntime.Remaster.Logic
             foreach (TraderItemRefreshItem item in itemRefreshs)
             {
                 if (!Items.Contains(item.Type.Object.ID) &&
-                    !(Root.Rules == Burntime.Remaster.Logic.Generation.RuleSetId.Extended &&
+                    !(Root.Rules == Burntime.Remaster.Logic.Generation.RuleSet.Extended &&
                       AI.AiItemPool.IsFirearm(item.Type.Object) &&
                       Items.Any(stock => AI.AiItemPool.IsFirearm(stock.Type))))
                 {

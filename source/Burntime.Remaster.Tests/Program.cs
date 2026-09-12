@@ -95,16 +95,16 @@ static partial class Program
     {
         yield return new("blocked maintenance permits daily supply death", true,
             () => Burntime.Remaster.AI.HeadlessSimulation.IsExpectedDosConflictAttrition(
-                AiProfileId.Dos, true, true, true));
+                AiProfile.Dos, true, true, true));
         yield return new("successful refill clears the exemption", false,
             () => Burntime.Remaster.AI.HeadlessSimulation.IsExpectedDosConflictAttrition(
-                AiProfileId.Dos, true, true, false));
+                AiProfile.Dos, true, true, false));
         yield return new("unrelated DOS daily death remains unexpected", false,
             () => Burntime.Remaster.AI.HeadlessSimulation.IsExpectedDosConflictAttrition(
-                AiProfileId.Dos, true, false, true));
-        yield return new("Extended AI never receives the exemption", false,
+                AiProfile.Dos, true, false, true));
+        yield return new("Modern AI never receives the exemption", false,
             () => Burntime.Remaster.AI.HeadlessSimulation.IsExpectedDosConflictAttrition(
-                AiProfileId.Extended, true, true, true));
+                AiProfile.Modern, true, true, true));
     }
 
     static IEnumerable<Case<int>> RecoveryAndEquipmentCases()
@@ -269,7 +269,7 @@ static partial class Program
         foreach (int startingHealth in new[] { 30, 35, 36 })
             yield return Int($"follower starting at {startingHealth} health withdraws only after new injury", 0, () =>
             {
-                var (game, attacker, defender, manager) = EncounterPlayers(RuleSetId.Extended);
+                var (game, attacker, defender, manager) = EncounterPlayers(RuleSet.Extended);
                 var guard = EncounterFighter(manager, defender, 100, 1);
                 var follower = EncounterFighter(manager, attacker, startingHealth, 10);
                 attacker.Group.Add(follower);
@@ -281,7 +281,7 @@ static partial class Program
             });
         yield return Int("raid still withdraws after eliminating a defender with an injured follower along", 0, () =>
         {
-            var (game, attacker, defender, manager) = EncounterPlayers(RuleSetId.Extended);
+            var (game, attacker, defender, manager) = EncounterPlayers(RuleSet.Extended);
             var weakGuard = EncounterFighter(manager, defender, 2, 1);
             var otherGuard = EncounterFighter(manager, defender, 100, 1);
             var follower = EncounterFighter(manager, attacker, 30, 10);
@@ -294,7 +294,7 @@ static partial class Program
             Equal(true, result.AttackerWithdrew, "raid-and-return behavior preserved");
             return 0;
         });
-        foreach (RuleSetId rule in Enum.GetValues<RuleSetId>())
+        foreach (RuleSet rule in Enum.GetValues<RuleSet>())
         {
             yield return Int($"{rule} immediate retaliation protects attacking boss", 0, () =>
             {
@@ -351,12 +351,12 @@ static partial class Program
     }
 
     static (ClassicGame Game, Burntime.Remaster.Logic.Player Attacker, Burntime.Remaster.Logic.Player Defender,
-        Burntime.Framework.States.StateManager Manager) EncounterPlayers(RuleSetId rule)
+        Burntime.Framework.States.StateManager Manager) EncounterPlayers(RuleSet rule)
     {
         var manager = new Burntime.Framework.States.StateManager(null!);
         var game = manager.Create(() => new ClassicGame());
         manager.Root = game;
-        game.SetProfiles(rule, AiProfileId.Extended, WorldId.Original);
+        game.SetProfiles(rule, AiProfile.Modern);
         var attacker = manager.Create<Burntime.Remaster.Logic.Player>(new object[] { 0 });
         var defender = manager.Create<Burntime.Remaster.Logic.Player>(new object[] { 1 });
         attacker.Character = EncounterFighter(manager, attacker, 100, 1);
@@ -378,14 +378,14 @@ static partial class Program
 
     static IEnumerable<Case<int>> LocalCombatCases()
     {
-        foreach (RuleSetId rule in Enum.GetValues<RuleSetId>())
+        foreach (RuleSet rule in Enum.GetValues<RuleSet>())
         foreach (bool lethal in new[] { false, true })
             yield return Int($"{rule} local retaliation, lethal={lethal}", 0, () =>
             {
                 var manager = new Burntime.Framework.States.StateManager(null!);
                 var game = manager.Create(() => new ClassicGame());
                 manager.Root = game;
-                game.SetProfiles(rule, AiProfileId.Extended, WorldId.Original);
+                game.SetProfiles(rule, AiProfile.Modern);
                 var attacker = manager.Create(() => new HazardCharacter());
                 var defender = manager.Create(() => new HazardCharacter());
                 attacker.Class = defender.Class = CharClass.Dog;
@@ -460,7 +460,7 @@ static partial class Program
 
     static IEnumerable<Case<int>> ExperienceTierCases()
     {
-        foreach (RuleSetId rule in Enum.GetValues<RuleSetId>())
+        foreach (RuleSet rule in Enum.GetValues<RuleSet>())
         {
             var rules = GameRulesRegistry.Get(rule);
             int width = 25;
@@ -499,7 +499,7 @@ static partial class Program
     }
 
     static bool ExtendedCanRecruit(int bossExperience, int recruitExperience) =>
-        GameRulesRegistry.Get(RuleSetId.Extended).MeetsRecruitmentExperience(
+        GameRulesRegistry.Get(RuleSet.Extended).MeetsRecruitmentExperience(
             new Burntime.Remaster.Logic.Character { Experience = bossExperience },
             new Burntime.Remaster.Logic.Character { Experience = recruitExperience });
 
@@ -561,12 +561,12 @@ static partial class Program
 
     static IEnumerable<Case<int>> ConfiguredRuleCases()
     {
-        foreach (RuleSetId rule in Enum.GetValues<RuleSetId>())
+        foreach (RuleSet rule in Enum.GetValues<RuleSet>())
             yield return Int($"{rule} configured doctor, barter and damage", 0, () =>
             {
                 var rules = GameRulesRegistry.Get(rule);
                 Equal(37, rules.Settings.StartExperience, "shared boss starting XP");
-                if (rule == RuleSetId.Amiga)
+                if (rule is RuleSet.Amiga or RuleSet.Classic)
                 {
                     int[][] regions = { new[] { 26, 34, 19, 20 }, new[] { 31, 28, 33, 23 },
                         new[] { 11, 12, 17, 10 }, new[] { 5, 3, 9, 2 } };
@@ -588,36 +588,49 @@ static partial class Program
                 var meat = TestItem(manager, "item_meat", food: 9,
                     heal: config["item_meat"].GetInt("heal"), trade: 27);
                 payment.Add(meat);
-                Equal(rule == RuleSetId.Amiga ? 37 : 46,
+                Equal(rule == RuleSet.Amiga ? 37 : 46,
                     rules.CalculateDoctorResult(10, payment), "meat healing from item and settings");
                 Equal(95,
                     rules.CalculateDoctorResult(90, payment), "configured health cap");
-                Equal(rule == RuleSetId.Dos ? 80 : 95,
+                Equal(rule switch
+                    {
+                        RuleSet.Dos => 80,
+                        RuleSet.Classic => 90,
+                        RuleSet.Extended => 90,
+                        _ => 95,
+                    },
                     rules.Settings.GetBarterFactor(1), "normal barter factor");
                 Equal(25,
                     rules.Settings.CombatTierWidth, "combat XP tier width");
                 Equal(true, rules.Settings.FightClasses.Contains("fighter"),
                     "fighters use full combat XP");
-                Equal(rule != RuleSetId.Amiga, rules.Settings.FightClasses.Contains("trader"),
+                Equal(rule != RuleSet.Amiga, rules.Settings.FightClasses.Contains("trader"),
                     "trader combat XP follows the ruleset");
                 var demand = manager.Create<ItemList>();
                 demand.Add(TestItem(manager, "payment", trade: 27));
                 Equal(false, rules.AcceptTrade(payment, demand, 1),
                     "normal trade uses the configured factor");
                 Equal(100, rules.Settings.GetBarterFactor(0), "easy barter factor");
-                Equal(rule == RuleSetId.Dos ? 60 : 90,
+                Equal(rule switch
+                    {
+                        RuleSet.Dos => 60,
+                        RuleSet.Classic => 80,
+                        RuleSet.Extended => 80,
+                        _ => 90,
+                    },
                     rules.Settings.GetBarterFactor(2), "hard barter factor");
                 rules.Settings.SetDifficulty(0);
-                Equal(rule == RuleSetId.Dos ? RespawnMethod.PlayerCycle : RespawnMethod.LocationCycle,
+                Equal(rule == RuleSet.Dos ? RespawnMethod.PlayerCycle : RespawnMethod.LocationCycle,
                     rules.Settings.Respawn.Method, "configured NPC spawn method");
                 Equal(rule switch
                     {
-                        RuleSetId.Amiga => 8,
-                        RuleSetId.Dos => 4,
+                        RuleSet.Amiga => 8,
+                        RuleSet.Classic => 8,
+                        RuleSet.Dos => 4,
                         _ => 4,
                     },
                     rules.Settings.Respawn.NPC, "configured easy NPC spawn interval");
-                Equal(rule == RuleSetId.Extended ? 12 : 0,
+                Equal(rule == RuleSet.Extended ? 12 : 0,
                     rules.Settings.Respawn.CitySpawnThreshold,
                     "configured city spawn threshold");
                 Equal(true, rules.AcceptTrade(payment, demand, 0), "equal offer accepted on easy");
@@ -626,7 +639,7 @@ static partial class Program
                     config["item_knife"].GetInts("damage").Length, "damage format");
                 Equal(true, RuleFormulas.OriginalDamage(new[] { 7 }, 99, 25, 3) == 7,
                     "scalar damage supports every tier and roll");
-                int[] traderDamage = rule == RuleSetId.Amiga
+                int[] traderDamage = rule is RuleSet.Amiga or RuleSet.Classic
                     ? new[] { 9, 11, 13, 15 }
                     : new[] { 8, 16, 25, 40 };
                 Equal(true, traderDamage.SequenceEqual(rules.Settings.GetTraderAttack(0)),
@@ -636,8 +649,8 @@ static partial class Program
                     "trader damage is a fixed four-roll table");
                 for (int difficulty = 0; difficulty < 3; difficulty++)
                 {
-                    int bonus = rule == RuleSetId.Extended ? difficulty * 2 : 0;
-                    int[] creatureDamage = rule == RuleSetId.Dos
+                    int bonus = rule == RuleSet.Extended ? difficulty * 2 : 0;
+                    int[] creatureDamage = rule == RuleSet.Dos
                         ? new[] { 2, 2, 2, 2 }
                         : new[] { 2 + bonus, 3 + bonus, 4 + bonus, 6 + bonus };
                     Equal(true, creatureDamage.SequenceEqual(
@@ -648,7 +661,7 @@ static partial class Program
                         "configured dog damage rolls");
                 }
 
-                if (rule != RuleSetId.Dos)
+                if (rule != RuleSet.Dos)
                 {
                     int interval = rules.Settings.Respawn.NPC;
                     for (int location = 0; location < 3; location++)
@@ -681,8 +694,8 @@ static partial class Program
 
     static IEnumerable<Case<bool>> BarterCases()
     {
-        foreach (RuleSetId rule in Enum.GetValues<RuleSetId>())
-            yield return Bool($"{rule} preserves fractional barter value", rule != RuleSetId.Dos, () =>
+        foreach (RuleSet rule in Enum.GetValues<RuleSet>())
+            yield return Bool($"{rule} preserves fractional barter value", rule != RuleSet.Dos, () =>
             {
                 var manager = new Burntime.Framework.States.StateManager(null!);
                 var offer = manager.Create<ItemList>();
@@ -694,7 +707,7 @@ static partial class Program
         yield return Bool("empty offers still rejected", false, () =>
         {
             var manager = new Burntime.Framework.States.StateManager(null!);
-            return GameRulesRegistry.Get(RuleSetId.Extended).AcceptTrade(
+            return GameRulesRegistry.Get(RuleSet.Extended).AcceptTrade(
                 manager.Create<ItemList>(), manager.Create<ItemList>(), 0);
         });
         yield return Bool("reserve quote preserves quarter values", true,
@@ -742,7 +755,7 @@ static partial class Program
     {
         yield return Int("DOS strategic damage zero boundary", 0, () =>
         {
-            var (game, attacker, defender, manager) = EncounterPlayers(RuleSetId.Dos);
+            var (game, attacker, defender, manager) = EncounterPlayers(RuleSet.Dos);
             // This damage calculation reads only Day; skip the world's UI-singleton initializer.
             game.World = manager.Create(() =>
             {
@@ -756,7 +769,7 @@ static partial class Program
             defender.Character.Experience = 37; // Knife basis 20: strength 57.
             var ai = manager.Create<Burntime.Remaster.AI.DosAiState>(new object[]
             {
-                attacker, new Burntime.Remaster.AI.AiSettings { Difficulty = 2, Profile = AiProfileId.Dos }
+                attacker, new Burntime.Remaster.AI.AiSettings { Difficulty = 2, Profile = AiProfile.Dos }
             });
             var damage = typeof(Burntime.Remaster.AI.DosAiState).GetMethod("StrategicDamage",
                 System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
@@ -790,7 +803,7 @@ static partial class Program
                     camp.Characters.Add(guard);
                 var ai = manager.Create<Burntime.Remaster.AI.DosAiState>(new object[]
                 {
-                    attacker, new Burntime.Remaster.AI.AiSettings { Difficulty = 2, Profile = AiProfileId.Dos }
+                    attacker, new Burntime.Remaster.AI.AiSettings { Difficulty = 2, Profile = AiProfile.Dos }
                 });
                 const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
                 var resolve = typeof(Burntime.Remaster.AI.DosAiState).GetMethod("ResolveCurrentOpposition", flags)!;
@@ -831,14 +844,14 @@ static partial class Program
             var dos = Burntime.Remaster.AI.AiStateOperations.GetCampDefenders(camp, attacker, new[] { owner }).ToArray();
             Equal(true, dos.SequenceEqual(new[] { guard, boss }), "DOS includes stationed guard and present owner, excludes dead members");
             Equal(true, Burntime.Remaster.AI.CombatStrength.Defenders(camp).SequenceEqual(dos),
-                "Extended roster includes the owner party, not unrelated visitors");
+                "Modern roster includes the owner party, not unrelated visitors");
             var amiga = Burntime.Remaster.AI.AiStateOperations.GetCampDefenders(camp, attacker, new[] { attacker, owner, visitor }).ToArray();
             Equal(true, amiga.SequenceEqual(new[] { guard, boss, visitingBoss }), "Amiga includes other opposing parties");
             owner.Traveling = true;
             Equal(true, Burntime.Remaster.AI.AiStateOperations.GetCampDefenders(camp, attacker, new[] { owner })
                 .SequenceEqual(new[] { guard }), "travelling party excluded, guard remains");
             Equal(true, Burntime.Remaster.AI.CombatStrength.Defenders(camp).SequenceEqual(new[] { guard }),
-                "Extended excludes parties already travelling");
+                "Modern excludes parties already travelling");
             owner.Traveling = false;
             owner.Location = manager.Create(() => new Burntime.Remaster.Logic.Location());
             Equal(1, Burntime.Remaster.AI.AiStateOperations.GetCampDefenders(camp, attacker, new[] { owner }).Count(), "absent party excluded");
@@ -856,13 +869,13 @@ static partial class Program
         })
         {
             yield return Int($"corrected DOS base {source}, no pump", source,
-                () => GameRulesRegistry.Get(RuleSetId.Dos).CalculateWaterOutput(source, false, false));
+                () => GameRulesRegistry.Get(RuleSet.Dos).CalculateWaterOutput(source, false, false));
             yield return Int($"corrected DOS base {source}, hand", hand,
-                () => GameRulesRegistry.Get(RuleSetId.Dos).CalculateWaterOutput(source, true, false));
+                () => GameRulesRegistry.Get(RuleSet.Dos).CalculateWaterOutput(source, true, false));
             yield return Int($"corrected DOS base {source}, industrial", industrial,
-                () => GameRulesRegistry.Get(RuleSetId.Dos).CalculateWaterOutput(source, false, true));
+                () => GameRulesRegistry.Get(RuleSet.Dos).CalculateWaterOutput(source, false, true));
             yield return Int($"corrected DOS base {source}, both", industrial,
-                () => GameRulesRegistry.Get(RuleSetId.Dos).CalculateWaterOutput(source, true, true));
+                () => GameRulesRegistry.Get(RuleSet.Dos).CalculateWaterOutput(source, true, true));
         }
         (int Base, bool Hand, bool Industrial, int Original, int Extended)[] cases =
         {
@@ -891,7 +904,7 @@ static partial class Program
 
     static IEnumerable<Case<int>> OriginalRegressionCases()
     {
-        foreach (RuleSetId rule in Enum.GetValues<RuleSetId>())
+        foreach (RuleSet rule in Enum.GetValues<RuleSet>())
         {
             yield return Int($"{rule} production comes from its config", 0, () =>
             {
@@ -904,7 +917,8 @@ static partial class Program
                     section.GetInt("maxcombination"), section.GetInts("amount"),
                     section.GetInts("amount2"), food, 2));
                 Equal(5, snakes.GetRate(2, 1).FoodPerDay, "two traps, one employee");
-                Equal(rule == RuleSetId.Extended ? section.GetInts("amount")[1] : rule == RuleSetId.Amiga ? 4 : 3,
+                Equal(rule == RuleSet.Extended ? section.GetInts("amount")[1] :
+                    rule is RuleSet.Amiga or RuleSet.Classic ? 4 : 3,
                     snakes.GetRate(1, 1).FoodPerDay, "single snake trap");
                 Equal(5, snakes.GetRate(2, 0).FoodPerDay, "no rules-specific staffing check");
                 snakes.ApplySettings(2, new[] { 0, 8, 9 }, Array.Empty<int>());
@@ -912,25 +926,25 @@ static partial class Program
                 return 0;
             });
         }
-        yield return Int("legacy item paths still resolve", 0, () =>
+        yield return Int("profile item paths exist", 0, () =>
         {
-            Equal("rules/dos/items.txt", GameDefinitions.ResolveItemsPath("items_original.txt"), "classic save");
-            Equal("rules/extended/items.txt", GameDefinitions.ResolveItemsPath("items.txt"), "extended save");
-            foreach (RuleSetId rule in Enum.GetValues<RuleSetId>())
+            foreach (RuleSet rule in Enum.GetValues<RuleSet>())
             {
                 var path = new Burntime.Platform.Resource.ResourceID(GameDefinitions.Get(rule).ItemsPath).File;
-                Equal(true, System.IO.File.Exists(ResourceFile(GameDefinitions.ResolveItemsPath(path))), "item file exists");
+                Equal(true, System.IO.File.Exists(ResourceFile(path)), "item file exists");
             }
             return 0;
         });
         yield return Int("DOS base zero industrial minimum boost", 2,
-            () => GameRulesRegistry.Get(RuleSetId.Dos).CalculateWaterOutput(0, false, true));
+            () => GameRulesRegistry.Get(RuleSet.Dos).CalculateWaterOutput(0, false, true));
         yield return Int("DOS base 3 industrial", 5,
-            () => GameRulesRegistry.Get(RuleSetId.Dos).CalculateWaterOutput(3, false, true));
+            () => GameRulesRegistry.Get(RuleSet.Dos).CalculateWaterOutput(3, false, true));
         yield return Int("Amiga base 3 industrial", 6,
-            () => GameRulesRegistry.Get(RuleSetId.Amiga).CalculateWaterOutput(3, false, true));
+            () => GameRulesRegistry.Get(RuleSet.Amiga).CalculateWaterOutput(3, false, true));
+        yield return Int("Classic uses useful original pump minimum", 6,
+            () => GameRulesRegistry.Get(RuleSet.Classic).CalculateWaterOutput(3, false, true));
         yield return Int("DOS base 1 industrial precedence", 3,
-            () => GameRulesRegistry.Get(RuleSetId.Dos).CalculateWaterOutput(1, true, true));
+            () => GameRulesRegistry.Get(RuleSet.Dos).CalculateWaterOutput(1, true, true));
         yield return Int("Amiga stock removal residue classes", 0, () =>
         {
             for (int day = 0; day < 8; day++)
@@ -1032,7 +1046,7 @@ static partial class Program
 
     static IEnumerable<Case<int>> ContinuousHazardCases()
     {
-        foreach (RuleSetId rule in Enum.GetValues<RuleSetId>())
+        foreach (RuleSet rule in Enum.GetValues<RuleSet>())
         foreach (string hazard in new[] { "gas", "radiation" })
         {
             yield return Int($"{rule} {hazard} exposure, equipment and death", 0, () =>
@@ -1040,7 +1054,7 @@ static partial class Program
                 var manager = new Burntime.Framework.States.StateManager(null!);
                 var game = manager.Create(() => new ClassicGame());
                 manager.Root = game;
-                game.SetProfiles(rule, AiProfileId.Extended, WorldId.Original);
+                game.SetProfiles(rule, AiProfile.Modern);
                 var owner = manager.Create<HazardPlayer>(new object[] { 0 });
                 owner.Type = Burntime.Remaster.Logic.PlayerType.Human;
                 var character = manager.Create(() => new HazardCharacter());
@@ -1123,7 +1137,7 @@ static partial class Program
         return manager.Create<Item>(type);
     }
 
-    static int[] ReadDamage(string? weapon, RuleSetId rule = RuleSetId.Dos)
+    static int[] ReadDamage(string? weapon, RuleSet rule = RuleSet.Dos)
     {
         var config = new Burntime.Platform.IO.ConfigFile();
         config.Open(System.IO.File.OpenRead(ResourceFile(new Burntime.Platform.Resource.ResourceID(GameDefinitions.Get(rule).ItemsPath).File)));
@@ -1173,7 +1187,7 @@ static partial class Program
                 $"{weaponName}, width {tierWidth}, tier {tier}, roll {roll}",
                 tiers[tier][roll],
                 () => RuleFormulas.OriginalDamage(
-                    ReadDamage(weapon, tierWidth == 25 ? RuleSetId.Dos : RuleSetId.Amiga), capturedTier * tierWidth, tierWidth, capturedRoll));
+                    ReadDamage(weapon, tierWidth == 25 ? RuleSet.Dos : RuleSet.Amiga), capturedTier * tierWidth, tierWidth, capturedRoll));
         }
 
         yield return Int("DOS tier clamps above 99", 20,
@@ -1184,7 +1198,7 @@ static partial class Program
 
     static IEnumerable<Case<int>> CombatPreviewCases()
     {
-        foreach (RuleSetId rule in Enum.GetValues<RuleSetId>())
+        foreach (RuleSet rule in Enum.GetValues<RuleSet>())
             yield return Int($"{rule} trader uses configured attack instead of stock", 0, () =>
             {
                 var manager = new Burntime.Framework.States.StateManager(null!);
@@ -1201,9 +1215,9 @@ static partial class Program
                 defender.Health = 100;
                 var rules = GameRulesRegistry.Get(rule);
                 var preview = rules.GetCombatPreview(trader);
-                Equal(rule == RuleSetId.Amiga ? 9 : 8, preview.Minimum,
+                Equal(rule is RuleSet.Amiga or RuleSet.Classic ? 9 : 8, preview.Minimum,
                     "configured trader minimum");
-                Equal(rule == RuleSetId.Amiga ? 15 : 40, preview.Maximum,
+                Equal(rule is RuleSet.Amiga or RuleSet.Classic ? 15 : 40, preview.Maximum,
                     "configured trader maximum");
                 rules.DealAttackDamage(trader, defender, true);
                 Equal(6, rifle.AmmoValue, "trader stock is not used as a weapon");
@@ -1211,7 +1225,7 @@ static partial class Program
                 return 0;
             });
 
-        foreach (RuleSetId rule in Enum.GetValues<RuleSetId>())
+        foreach (RuleSet rule in Enum.GetValues<RuleSet>())
         foreach (CharClass creatureClass in new[] { CharClass.Mutant, CharClass.Dog })
             yield return Int($"{rule} {creatureClass} uses configured attack", 0, () =>
             {
@@ -1228,12 +1242,13 @@ static partial class Program
                 defender.Items = manager.Create<ItemList>();
                 defender.Health = 100;
                 var preview = GameRulesRegistry.Get(rule).GetCombatPreview(creature);
-                Equal(rule == RuleSetId.Extended ? 4 : 2, preview.Minimum,
+                Equal(rule == RuleSet.Extended ? 4 : 2, preview.Minimum,
                     "configured creature minimum at normal difficulty");
                 Equal(rule switch
                     {
-                        RuleSetId.Dos => 2,
-                        RuleSetId.Amiga => 6,
+                        RuleSet.Dos => 2,
+                        RuleSet.Amiga => 6,
+                        RuleSet.Classic => 6,
                         _ => 8,
                     }, preview.Maximum, "configured creature maximum at normal difficulty");
                 GameRulesRegistry.Get(rule).DealAttackDamage(creature, defender, true);
@@ -1242,7 +1257,7 @@ static partial class Program
                 return 0;
             });
 
-        foreach (RuleSetId rule in new[] { RuleSetId.Dos, RuleSetId.Amiga })
+        foreach (RuleSet rule in new[] { RuleSet.Dos, RuleSet.Amiga })
             yield return Int($"{rule} preview follows weapon and XP without changing equipment", 0, () =>
             {
                 var manager = new Burntime.Framework.States.StateManager(null!);
@@ -1295,8 +1310,8 @@ static partial class Program
             fighter.Class = CharClass.Mercenary;
             fighter.Experience = 50;
             fighter.Items.Add(TestItem(manager, "item_knife", damage: 25,
-                damageValues: ReadDamage("item_knife", RuleSetId.Extended)));
-            var rules = GameRulesRegistry.Get(RuleSetId.Extended);
+                damageValues: ReadDamage("item_knife", RuleSet.Extended)));
+            var rules = GameRulesRegistry.Get(RuleSet.Extended);
             var preview = rules.GetCombatPreview(fighter);
             Equal(new CombatPreview(12, 20, null), preview, "damage range; zero defence hidden");
             var sweater = TestItem(manager, "sweater", defense: 5);
@@ -1319,7 +1334,7 @@ static partial class Program
             attacker.Class = CharClass.Mercenary;
             attacker.Experience = 50;
             var rifle = TestItem(manager, "item_loaded_rifle", damage: 55, ammo: 6,
-                damageValues: ReadDamage("item_loaded_rifle", RuleSetId.Extended));
+                damageValues: ReadDamage("item_loaded_rifle", RuleSet.Extended));
             attacker.Items.Add(rifle);
             var defender = manager.Create(() => new Burntime.Remaster.Logic.Character());
             defender.Items = manager.Create<ItemList>();
@@ -1327,7 +1342,7 @@ static partial class Program
             defender.Experience = 99;
             defender.Health = 100;
             defender.Items.Add(TestItem(manager, "jacket", defense: 20));
-            var rules = GameRulesRegistry.Get(RuleSetId.Extended);
+            var rules = GameRulesRegistry.Get(RuleSet.Extended);
             Burntime.Platform.Math.SetRandomSeed(42);
             rules.DealAttackDamage(attacker, defender, true);
             int local = 100 - defender.Health;
@@ -1395,28 +1410,34 @@ static partial class Program
 
     static IEnumerable<Case<int>> ProfileParsingCases()
     {
-        yield return Int("DOS rules case-insensitive", (int)RuleSetId.Dos,
+        yield return Int("DOS rules case-insensitive", (int)RuleSet.Dos,
             () => (int)GameDefinitions.ParseRules("dOs"));
-        yield return Int("invalid rules fallback", (int)RuleSetId.Amiga,
-            () => (int)GameDefinitions.ParseRules("invalid", RuleSetId.Amiga));
-        yield return Int("numeric undefined rules fallback", (int)RuleSetId.Extended,
+        yield return Int("Classic rules case-insensitive", (int)RuleSet.Classic,
+            () => (int)GameDefinitions.ParseRules("cLaSsIc"));
+        yield return Int("invalid rules fallback", (int)RuleSet.Amiga,
+            () => (int)GameDefinitions.ParseRules("invalid", RuleSet.Amiga));
+        yield return Int("numeric undefined rules fallback", (int)RuleSet.Extended,
             () => (int)GameDefinitions.ParseRules("99"));
-        yield return Int("Amiga AI case-insensitive", (int)AiProfileId.Amiga,
+        yield return Int("Amiga AI case-insensitive", (int)AiProfile.Amiga,
             () => (int)GameDefinitions.ParseAi("aMiGa"));
-        yield return Int("missing AI defaults Extended", (int)AiProfileId.Extended,
+        yield return Int("Modern AI case-insensitive", (int)AiProfile.Modern,
+            () => (int)GameDefinitions.ParseAi("mOdErN"));
+        yield return Int("missing AI defaults Modern", (int)AiProfile.Modern,
             () => (int)GameDefinitions.ParseAi(null));
-        yield return Int("numeric undefined AI fallback", (int)AiProfileId.Extended,
+        yield return Int("numeric undefined AI fallback", (int)AiProfile.Modern,
             () => (int)GameDefinitions.ParseAi("99"));
     }
 
     static IEnumerable<Case<int>> RuleRegistryCases()
     {
-        yield return Int("DOS registry", (int)RuleSetId.Dos,
-            () => (int)GameRulesRegistry.Get(RuleSetId.Dos).Id);
-        yield return Int("Amiga registry", (int)RuleSetId.Amiga,
-            () => (int)GameRulesRegistry.Get(RuleSetId.Amiga).Id);
-        yield return Int("Extended registry", (int)RuleSetId.Extended,
-            () => (int)GameRulesRegistry.Get(RuleSetId.Extended).Id);
+        yield return Int("DOS registry", (int)RuleSet.Dos,
+            () => (int)GameRulesRegistry.Get(RuleSet.Dos).Id);
+        yield return Int("Amiga registry", (int)RuleSet.Amiga,
+            () => (int)GameRulesRegistry.Get(RuleSet.Amiga).Id);
+        yield return Int("Classic registry", (int)RuleSet.Classic,
+            () => (int)GameRulesRegistry.Get(RuleSet.Classic).Id);
+        yield return Int("Extended registry", (int)RuleSet.Extended,
+            () => (int)GameRulesRegistry.Get(RuleSet.Extended).Id);
     }
 
     static Case<int> Int(string name, int expected, Func<int> actual) => new(name, expected, actual);

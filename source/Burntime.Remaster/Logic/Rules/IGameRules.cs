@@ -6,7 +6,7 @@ namespace Burntime.Remaster.Logic.Rules;
 
 internal interface IGameRules
 {
-    RuleSetId Id { get; }
+    RuleSet Id { get; }
     GameSettings Settings { get; }
 
     void InitializeHumanPlayer(Player player, int playerIndex, GameSettings settings,

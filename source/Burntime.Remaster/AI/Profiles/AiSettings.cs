@@ -19,7 +19,7 @@ public struct AiSettings
     [System.Runtime.Serialization.OptionalField]
     public int Difficulty;
 
-    // Extended is zero so old saves retain the established Remaster AI.
+    // Modern is zero so old saves retain the established Remaster AI.
     [System.Runtime.Serialization.OptionalField]
-    public AiProfileId Profile;
+    public AiProfile Profile;
 }

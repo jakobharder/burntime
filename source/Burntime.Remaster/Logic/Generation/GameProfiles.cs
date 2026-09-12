@@ -2,16 +2,17 @@ using System;
 
 namespace Burntime.Remaster.Logic.Generation;
 
-public enum RuleSetId
+public enum RuleSet
 {
     Dos = 0,
     Amiga = 1,
-    Extended = 2
+    Extended = 2,
+    Classic = 3
 }
 
-public enum AiProfileId
+public enum AiProfile
 {
-    Extended = 0,
+    Modern = 0,
     None = 1,
     Dos = 2,
     Amiga = 3
@@ -23,12 +24,7 @@ public enum AiProfileId
 /// </summary>
 internal interface IAiProfileState
 {
-    AiProfileId Profile { get; }
-}
-
-public enum WorldId
-{
-    Original = 0
+    AiProfile Profile { get; }
 }
 
 [Flags]
@@ -41,12 +37,11 @@ public enum GameFeature
 }
 
 public sealed record GameDefinition(
-    RuleSetId Rules,
+    RuleSet Rules,
     string SettingsPath,
     string ItemsPath,
     string TraderPath,
     string ProductionPath,
-    WorldId World,
     string MapPath,
     string WaysPath,
     GameFeature Features)
@@ -56,40 +51,43 @@ public sealed record GameDefinition(
 
 public static class GameDefinitions
 {
-    public static GameDefinition Get(RuleSetId rules, WorldId world = WorldId.Original)
+    public static GameDefinition Get(RuleSet rules)
     {
-        if (world != WorldId.Original)
-            throw new ArgumentOutOfRangeException(nameof(world));
-
         return rules switch
         {
-            RuleSetId.Dos => new(
+            RuleSet.Dos => new(
                 rules,
                 "rules/dos/gamesettings.txt",
                 "items@rules/dos/items.txt",
                 "rules/dos/trader.txt",
                 "rules/dos/production.txt",
-                world,
                 "maps/mat_000.burnmap",
                 "ways@maps/mat_000-ways.txt",
                 GameFeature.Construction),
-            RuleSetId.Amiga => new(
+            RuleSet.Amiga => new(
                 rules,
                 "rules/amiga/gamesettings.txt",
                 "items@rules/amiga/items.txt",
                 "rules/amiga/trader.txt",
                 "rules/amiga/production.txt",
-                world,
                 "maps/mat_000.burnmap",
                 "ways@maps/mat_000-ways.txt",
                 GameFeature.Construction),
-            RuleSetId.Extended => new(
+            RuleSet.Classic => new(
+                rules,
+                "rules/classic/gamesettings.txt",
+                "items@rules/dos/items.txt",
+                "rules/dos/trader.txt",
+                "rules/amiga/production.txt",
+                "maps/mat_000.burnmap",
+                "ways@maps/mat_000-ways.txt",
+                GameFeature.Construction),
+            RuleSet.Extended => new(
                 rules,
                 "rules/extended/gamesettings.txt",
                 "items@rules/extended/items.txt",
                 "rules/extended/trader.txt",
                 "rules/extended/production.txt",
-                world,
                 "maps/mat_000.burnmap",
                 "ways@maps/mat_000-ways.txt",
                 GameFeature.ExtendedItems | GameFeature.Construction | GameFeature.MutantDrops),
@@ -97,30 +95,14 @@ public static class GameDefinitions
         };
     }
 
-    // Saved DataIDs from releases before per-rule item files remain resolvable.
-    internal static string ResolveItemsPath(string path) => path switch
-    {
-        "items.txt" => "rules/extended/items.txt",
-        "items_original.txt" => "rules/dos/items.txt",
-        _ => path
-    };
-
-    // Old callers retain their names, but never load a second copy of settings.
-    internal static string ResolveSettingsPath(string path) => path switch
-    {
-        "gamesettings_original.txt" => "rules/dos/gamesettings.txt",
-        "gamesettings_extended.txt" => "rules/extended/gamesettings.txt",
-        _ => path
-    };
-
-    public static RuleSetId ParseRules(string? value, RuleSetId fallback = RuleSetId.Extended) =>
-        Enum.TryParse(value, ignoreCase: true, out RuleSetId rules) &&
+    public static RuleSet ParseRules(string? value, RuleSet fallback = RuleSet.Extended) =>
+        Enum.TryParse(value, ignoreCase: true, out RuleSet rules) &&
             Enum.IsDefined(rules)
             ? rules
             : fallback;
 
-    public static AiProfileId ParseAi(string? value, AiProfileId fallback = AiProfileId.Extended) =>
-        Enum.TryParse(value, ignoreCase: true, out AiProfileId ai) &&
+    public static AiProfile ParseAi(string? value, AiProfile fallback = AiProfile.Modern) =>
+        Enum.TryParse(value, ignoreCase: true, out AiProfile ai) &&
             Enum.IsDefined(ai)
             ? ai
             : fallback;

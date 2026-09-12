@@ -44,7 +44,7 @@ static partial class Program
         yield return Int("Amiga pending local maintenance survives expansion suppression, then runs once", 0, () =>
         {
             var m = new StateManager(null!); var game = m.Create<ClassicGame>(); m.Root = game;
-            game.SetProfiles(RuleSetId.Extended, AiProfileId.Amiga, WorldId.Original);
+            game.SetProfiles(RuleSet.Extended, AiProfile.Amiga);
             game.World = m.Create(() =>
             {
                 var world = (ClassicWorld)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(ClassicWorld));
@@ -68,7 +68,7 @@ static partial class Program
             city.Characters = m.CreateLinkList<Character>(); player.Location = city;
             game.World.Locations.Add(city);
             for (int i = 0; i < 4; i++) { var camp = m.Create<Location>(); camp.Player = player; camp.Rooms = m.CreateLinkList<Room>(); game.World.Locations.Add(camp); }
-            var ai = m.Create<AmigaAiState>(new object[] { player, new AiSettings { Difficulty = 0, Profile = AiProfileId.Amiga } });
+            var ai = m.Create<AmigaAiState>(new object[] { player, new AiSettings { Difficulty = 0, Profile = AiProfile.Amiga } });
             ai.Turn(); Equal(9, player.Character.Food, "first maintenance");
             player.Character.Food = 0; game.World.Day++;
             ai.Turn(); Equal(9, player.Character.Food, "suppressed local work retains maintenance");
@@ -81,7 +81,7 @@ static partial class Program
 
         yield return Int("medium uses sufficient existing fighters but retains safety and retry gates", 0, () =>
         {
-            var (game, player, enemy, m) = EncounterPlayers(RuleSetId.Extended);
+            var (game, player, enemy, m) = EncounterPlayers(RuleSet.Extended);
             enemy.Type = PlayerType.Ai;
             game.World = m.Create(() =>
             {

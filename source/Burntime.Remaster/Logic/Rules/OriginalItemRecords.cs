@@ -11,10 +11,7 @@ internal static class OriginalItemRecords
 
     internal static Item[] Snapshot(ClassicGame game)
     {
-        Item[] items = game.World.AllCharacters.SelectMany(c => c.Items)
-            .Concat(game.World.Locations.SelectMany(l => l.Items))
-            .Concat(game.World.Locations.SelectMany(l => l.Rooms).SelectMany(r => r.Items))
-            .Distinct().ToArray();
+        Item[] items = game.World.AllItems.ToArray();
         AssignMissingSlots(items);
         return items.OrderBy(i => i.OriginalRecordSlot).ToArray();
     }
