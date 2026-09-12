@@ -15,16 +15,15 @@ public sealed class Production : StateObject
 
     readonly public int ID;
 
-    int[] ProductionPerDay;
-    int[] ProductionPerDay2Person;
-    int MaxCombination;
+    int[] ProductionPerDay = [0];
+    int[] ProductionPerDay2Person = [0];
+    int MaxCombination = 0;
     readonly StateLink<ItemType> produce;
 
     public ItemType Produce => produce;
     public int MaxToolCount => MaxCombination;
-    [System.Runtime.Serialization.OptionalField]
-    bool allowInventory;
-    public bool AllowInventory => allowInventory;
+    [field: NonSerialized]
+    public bool AllowInventory { get; private set; }
 
     public Production(int maxCombi, int[] perDay, int[] perDayDouble, ItemType produce, int id, bool allowInventory = false)
     {
@@ -36,7 +35,7 @@ public sealed class Production : StateObject
     // Keep serialized field names and object identities for existing saves.
     internal void ApplySettings(int maxCombi, int[] perDay, int[] perDayDouble, bool allowInventory = false)
     {
-        this.allowInventory = allowInventory;
+        AllowInventory = allowInventory;
         MaxCombination = maxCombi;
         ProductionPerDay = perDay;
         ProductionPerDay2Person = perDayDouble.Length == 0 ? perDay : perDayDouble;
