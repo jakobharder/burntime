@@ -45,11 +45,10 @@ internal sealed class GameRules
         player.BaseExperience = character.Experience;
 
         player.Character.Items.Clear();
-        foreach (var (info, index) in source.Items.Select((info, index) => (info, index)).Where(entry =>
-            entry.info.OwnerType == ItemOwnerType.Character && entry.info.OwnerId == playerIndex))
+        foreach (var info in source.Items.Where(info =>
+            info.OwnerType == ItemOwnerType.Character && info.OwnerId == playerIndex))
         {
             Item item = ((ClassicGame)player.Container.Root).ItemTypes[info.SpriteId].Generate();
-            item.OriginalRecordSlot = index + 1;
             player.Character.Items.Add(item);
         }
     }
@@ -70,7 +69,7 @@ internal sealed class GameRules
             return;
         }
 
-        foreach (var (info, index) in source.Items.Select((info, index) => (info, index)))
+        foreach (var info in source.Items)
         {
             if (info.OwnerType == ItemOwnerType.Pool)
                 continue;
@@ -78,7 +77,6 @@ internal sealed class GameRules
                 continue;
 
             Item item = game.ItemTypes[info.SpriteId].Generate();
-            item.OriginalRecordSlot = index + 1;
             if (info.OwnerType == ItemOwnerType.Character && info.OwnerId >= 4 &&
                 info.OwnerId < game.World.AllCharacters.Count)
             {

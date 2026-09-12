@@ -82,12 +82,11 @@ internal abstract class OriginalAiState : Burntime.Framework.States.AiState,
         Player.BaseExperience = experience;
 
         Player.Character.Items.Clear();
-        foreach (var (info, index) in source.Items.Select((info, index) => (info, index)).Where(entry =>
-            entry.info.OwnerType == Burntime.Data.BurnGfx.Save.ItemOwnerType.Character &&
-            entry.info.OwnerId == templateSlot))
+        foreach (var info in source.Items.Where(info =>
+            info.OwnerType == Burntime.Data.BurnGfx.Save.ItemOwnerType.Character &&
+            info.OwnerId == templateSlot))
         {
             Item item = RootGame.ItemTypes[info.SpriteId].Generate();
-            item.OriginalRecordSlot = index + 1;
             Player.Character.Items.Add(item);
         }
     }

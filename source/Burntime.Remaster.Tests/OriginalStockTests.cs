@@ -9,18 +9,14 @@ namespace Burntime.Remaster.Tests;
 
 static partial class Program
 {
-    static Item StockItem(StateManager manager, int title, int slot)
-    {
-        Item item = TestItem(manager, "title_" + title);
-        item.OriginalRecordSlot = slot;
-        return item;
-    }
+    static Item StockItem(StateManager manager, int title, int _) =>
+        TestItem(manager, "title_" + title);
     static int StockTitle(ItemType type) => int.Parse(type.ID.Substring(6));
 
     static IEnumerable<Case<int>> OriginalStockCases()
     {
         foreach (int difficulty in new[] { 0, 1, 2 })
-            yield return Int($"DOS cleanup difficulty {difficulty}, mixed record order", 0, () =>
+            yield return Int($"DOS cleanup difficulty {difficulty}, local collection order", 0, () =>
             {
                 var manager = new StateManager(null!);
                 var camp = manager.Create<Location>();
@@ -34,8 +30,8 @@ static partial class Program
                 camp.Items.Add(StockItem(manager, 0x48, 4));
                 OriginalItemRecords.CleanupDos(camp, difficulty, i => StockTitle(i.Type));
                 Equal(difficulty == 0 ? 4 : 3, camp.Items.Count + room.Items.Count, "at most one release");
-                Equal(difficulty != 2, room.Items.Contains(roomLoot), "Hard sees earlier room record before ground");
-                Equal(difficulty != 1, camp.Items.Any(i => i == groundLoot), "Normal deletes ground even when title protected in rooms");
+                Equal(true, room.Items.Contains(roomLoot), "ground items are checked before rooms");
+                Equal(difficulty == 0, camp.Items.Any(i => i == groundLoot), "first local ground candidate removed");
                 Equal(true, room.Items.Contains(protectedPump), "pump preserved in room");
                 return 0;
             });
@@ -75,15 +71,15 @@ static partial class Program
         {
             var m = new StateManager(null!); var stock = m.Create<ItemList>();
             var core = Enumerable.Range(0x3d, 4).Select(t => StockItem(m, t, 0).Type).ToArray();
-            Item coreAtEnd = m.Create<Item>(core[0]); coreAtEnd.OriginalRecordSlot = 1;
+            Item coreAtEnd = m.Create<Item>(core[0]);
             Item junk = StockItem(m, 0x48, 2);
             Item food1 = StockItem(m, 0x36, 3), food2 = StockItem(m, 0x36, 4);
             stock.Add(food2); stock.Add(junk); stock.Add(food1); stock.Add(coreAtEnd);
             OriginalTraderRefresh.Dos(stock, core, 3, StockTitle, _ => 1, _ => { }, food1.Type);
             Equal(true, stock.Contains(coreAtEnd), "core type survives independent of display position");
             Equal(false, stock.Contains(junk), "first non-core removed");
-            Equal(false, stock.Contains(food1), "earlier food record removed");
-            Equal(true, stock.Contains(food2), "not all food is cleared");
+            Equal(true, stock.Contains(food1), "later food remains");
+            Equal(false, stock.Contains(food2), "first local food removed");
             return 0;
         });
         yield return Int("DOS removes at most one non-core item", 0, () =>
@@ -93,7 +89,7 @@ static partial class Program
             OriginalTraderRefresh.Dos(stock, Array.Empty<ItemType>(), 1, StockTitle, _ => 1,
                 _ => throw new Exception("unexpected restock"), StockItem(m, 0x36, 0).Type);
             Equal(1, stock.Count, "single preliminary removal");
-            Equal(0x48, StockTitle(stock[0].Type), "global record order wins");
+            Equal(0x49, StockTitle(stock[0].Type), "first local non-core item removed");
             return 0;
         });
         yield return Int("DOS removal is not replenished in the same visit", 0, () =>
@@ -136,7 +132,7 @@ static partial class Program
             Equal(0, stock.Count, "all matching records removed, not only one");
             return 0;
         });
-        yield return Int("Amiga removal traverses traders in global record order", 0, () =>
+        yield return Int("Amiga removal preserves global phases with local trader order", 0, () =>
         {
             var m = new StateManager(null!); var a = m.Create<ItemList>(); var b = m.Create<ItemList>();
             a.Add(StockItem(m, 0x45, 3)); b.Add(StockItem(m, 0x45, 1));
@@ -144,7 +140,7 @@ static partial class Program
             var visits = new List<string>();
             OriginalTraderRefresh.AmigaRemove(new[] { a, b }, 0, StockTitle,
                 _ => { visits.Add($"{a.Count}/{b.Count}"); return 1; });
-            Equal("2/2,2/1,1/0", string.Join(",", visits), "whole-world offset-five before offset-zero");
+            Equal("2/2,1/2,1/0", string.Join(",", visits), "whole-world offset-five before offset-zero");
             Equal(0, a.Count + b.Count, "all deletion passes finish before additions");
             return 0;
         });
@@ -210,19 +206,7 @@ static partial class Program
             Equal(1, room.Items.Count, "opponent room skipped"); Equal(0, camp.Items.Count, "ground still scanned");
             return 0;
         });
-        yield return Int("record slots survive moves and resolve duplicate templates", 0, () =>
-        {
-            var m = new StateManager(null!);
-            Item first = StockItem(m, 0x40, 3), duplicate = StockItem(m, 0x40, 3), added = StockItem(m, 0x40, 0);
-            OriginalItemRecords.AssignMissingSlots(new[] { first, duplicate, added });
-            Equal(3, first.OriginalRecordSlot, "imported position preserved");
-            Equal(1, duplicate.OriginalRecordSlot, "duplicate gets first gap");
-            Equal(2, added.OriginalRecordSlot, "new item gets next gap");
-            OriginalItemRecords.AssignMissingSlots(new[] { added, first, duplicate });
-            Equal(2, added.OriginalRecordSlot, "reordering ownership leaves slot unchanged");
-            return 0;
-        });
-        yield return Int("original trader allocation exceeds carrying and former global caps", 0, () =>
+        yield return Int("original trader allocation exceeds carrying caps", 0, () =>
         {
             var m = new StateManager(null!); var game = m.Create<ClassicGame>(); m.Root = game;
             game.World = m.Create(() =>
@@ -238,17 +222,13 @@ static partial class Program
             game.World.AllCharacters.Add(trader);
             ItemType type = StockItem(m, 0x36, 0).Type;
             for (int i = 0; i < 6; i++) trader.Items.Add(m.Create<Item>(type));
-            OriginalItemRecords.AddTraderStock(game, trader, type);
+            OriginalItemRecords.AddTraderStock(trader, type);
             Equal(7, trader.Items.Count, "direct allocation bypasses cap");
             Equal(6, trader.Items.MaxCount, "human capacity setting preserved");
             trader.Items.MaxCount = ItemList.Infinite;
             while (trader.Items.Count < 1199) trader.Items.Add(m.Create<Item>(type));
-            OriginalItemRecords.AddTraderStock(game, trader, type);
+            OriginalItemRecords.AddTraderStock(trader, type);
             Equal(1200, trader.Items.Count, "former global pool cap does not prevent creation");
-            Item released = trader.Items[0]; int slot = released.OriginalRecordSlot;
-            trader.Items.Remove(released);
-            OriginalItemRecords.AddTraderStock(game, trader, type);
-            Equal(slot, trader.Items[trader.Items.Count - 1].OriginalRecordSlot, "first released record reused");
             return 0;
         });
     }

@@ -20,10 +20,6 @@ namespace Burntime.Remaster
     [Serializable]
     public class Item : StateObject
     {
-        // One-based original record slot; zero means an older save/unassigned item.
-        [System.Runtime.Serialization.OptionalField]
-        internal int OriginalRecordSlot;
-
         public string ID
         {
             get { return Type.ID; }

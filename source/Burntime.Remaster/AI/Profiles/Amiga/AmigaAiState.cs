@@ -282,7 +282,6 @@ internal sealed class AmigaAiState : OriginalAiState
 
         // 0x726a..0x7282 calls 0x7b1e for ground items, then rooms when
         // unowned/self-owned. This is not DOS's one-record deletion shortcut.
-        OriginalItemRecords.Snapshot(RootGame);
         Logic.Character[] party = RootGame.World.AllCharacters.Where(c =>
             c.Player == Player && c.IsWithBoss && !c.IsDead).ToArray();
         int productionTool = Player.Location.Production?.ID switch

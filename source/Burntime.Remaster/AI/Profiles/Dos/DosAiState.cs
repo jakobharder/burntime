@@ -25,7 +25,6 @@ internal sealed class DosAiState : OriginalAiState
         Player.Character.Food = Player.Location.IsCity ? 9 : 18;
         AiTelemetry.Report(Player, AiTelemetryEvent.DosMaintenanceCompleted);
 
-        OriginalItemRecords.Snapshot(RootGame);
         OriginalItemRecords.CleanupDos(Player.Location, Difficulty,
             item => RootGame.ItemTypes.GetOriginalTitleId(item.Type));
     }

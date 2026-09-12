@@ -4,42 +4,12 @@ using System.Linq;
 
 namespace Burntime.Remaster.Logic.Rules;
 
-// Original scans use global record order, not inventory/room display order.
+// Approximate original item rules using deterministic local collection order.
 internal static class OriginalItemRecords
 {
-    internal static Item[] Snapshot(ClassicGame game)
+    internal static void AddTraderStock(Trader trader, ItemType type)
     {
-        Item[] items = game.World.AllItems.ToArray();
-        AssignMissingSlots(items);
-        return items.OrderBy(i => i.OriginalRecordSlot).ToArray();
-    }
-
-    internal static void AssignMissingSlots(IEnumerable<Item> items)
-    {
-        Item[] records = items.ToArray();
-        var used = new HashSet<int>();
-        foreach (Item item in records)
-            if (item.OriginalRecordSlot > 0 && !used.Add(item.OriginalRecordSlot))
-                item.OriginalRecordSlot = 0; // Duplicated original boss templates in custom games.
-        int slot = 1;
-        // Old saves and items created outside original allocation have no slot.
-        // Assign once in stable world traversal order; subsequently moves retain it.
-        foreach (Item item in records.Where(i => i.OriginalRecordSlot == 0))
-        {
-            while (used.Contains(slot)) slot++;
-            item.OriginalRecordSlot = slot;
-            used.Add(slot++);
-        }
-    }
-
-    internal static void AddTraderStock(ClassicGame game, Trader trader, ItemType type)
-    {
-        Item[] records = Snapshot(game);
-        var used = records.Select(i => i.OriginalRecordSlot).ToHashSet();
-        int slot = 1;
-        while (used.Contains(slot)) slot++;
         Item item = type.Generate();
-        item.OriginalRecordSlot = slot;
         // Direct original allocation bypasses the human carrying limit.
         int limit = trader.Items.MaxCount;
         try
@@ -57,7 +27,7 @@ internal static class OriginalItemRecords
             .Concat(location.Rooms.SelectMany(r => r.Items
                 .Where(i => difficulty >= 2 && (title(i) < 0x37 || title(i) > 0x47))
                 .Select(i => (Owner: (IItemCollection)r.Items, Item: i))))
-            .OrderBy(entry => entry.Item.OriginalRecordSlot).ToArray();
+            .ToArray();
         if (candidates.Length != 0)
             candidates[0].Owner.Remove(candidates[0].Item);
     }
@@ -79,7 +49,7 @@ internal static class OriginalItemRecords
 
         void SweepRecords(IEnumerable<(IItemCollection Owner, Item Item)> source)
         {
-            var records = source.OrderBy(e => e.Item.OriginalRecordSlot).ToArray();
+            var records = source.ToArray();
             int cursor = 0;
             bool discardedOther = false;
             foreach (Character character in party)
