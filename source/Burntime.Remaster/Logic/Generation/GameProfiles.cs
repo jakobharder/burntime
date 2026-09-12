@@ -57,7 +57,7 @@ public static class GameDefinitions
         {
             RuleSet.Dos => new(
                 rules,
-                "rules/dos/gamesettings.txt",
+                "rules/dos/game.txt",
                 "items@rules/dos/items.txt",
                 "rules/dos/trader.txt",
                 "rules/dos/production.txt",
@@ -66,7 +66,7 @@ public static class GameDefinitions
                 GameFeature.Construction),
             RuleSet.Amiga => new(
                 rules,
-                "rules/amiga/gamesettings.txt",
+                "rules/amiga/game.txt",
                 "items@rules/amiga/items.txt",
                 "rules/amiga/trader.txt",
                 "rules/amiga/production.txt",
@@ -75,7 +75,7 @@ public static class GameDefinitions
                 GameFeature.Construction),
             RuleSet.Classic => new(
                 rules,
-                "rules/classic/gamesettings.txt",
+                "rules/classic/game.txt",
                 "items@rules/dos/items.txt",
                 "rules/dos/trader.txt",
                 "rules/amiga/production.txt",
@@ -84,7 +84,7 @@ public static class GameDefinitions
                 GameFeature.Construction),
             RuleSet.Extended => new(
                 rules,
-                "rules/extended/gamesettings.txt",
+                "rules/extended/game.txt",
                 "items@rules/extended/items.txt",
                 "rules/extended/trader.txt",
                 "rules/extended/production.txt",

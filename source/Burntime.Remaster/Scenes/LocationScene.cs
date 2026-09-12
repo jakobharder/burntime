@@ -825,7 +825,7 @@ namespace Burntime.Remaster
 
             view.Map = (MapData)game.World.ActiveLocationObj.Map.MapData;
             view.Location = game.World.ActiveLocationObj;
-            view.Location.RepairLegacyEntryPositions();
+            view.Location.PlaceUnpositionedResidents();
             view.Player = game.World.ActivePlayerObj;
             RecoverUnwalkableCharacters(view.Location, view.Player);
             view.Player.Group.IgnoreRangeFilter = false;

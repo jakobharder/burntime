@@ -205,6 +205,8 @@ namespace Burntime.Remaster
                 var config = new Burntime.Platform.IO.ConfigFile();
                 if (config.Open("maps/mat_038.txt"))
                     LocationCreator.ApplyEnvironment(World.Locations[37], config, ResourceManager);
+                if (World.Locations[37].Rooms.Count > 3)
+                    World.Locations[37].Rooms[3].IsWaterSource = true;
             }
             GameCreation.RefreshExtendedTraderSettings(this);
             foreach (Player player in World.Players)

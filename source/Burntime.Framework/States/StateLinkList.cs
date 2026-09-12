@@ -22,9 +22,9 @@ public class StateLinkList<TState> : IStateLinkList, IEnumerable, IEnumerable<TS
         readonly StateLinkList<TState> list;
         int current;
 
-        public StateLinkListEnumerator(StateLinkList<TState> List)
+        public StateLinkListEnumerator(StateLinkList<TState> list)
         {
-            list = List;
+            this.list = list;
             Reset();
         }
 
@@ -40,8 +40,8 @@ public class StateLinkList<TState> : IStateLinkList, IEnumerable, IEnumerable<TS
         }
 
         void IDisposable.Dispose() { }
-        object IEnumerator.Current => list[current];
-        TState IEnumerator<TState>.Current => list[current];
+        public TState Current => list[current];
+        object IEnumerator.Current => Current;
     }
 
     IEnumerator IEnumerable.GetEnumerator() => new StateLinkListEnumerator(this);
@@ -81,7 +81,7 @@ public class StateLinkList<TState> : IStateLinkList, IEnumerable, IEnumerable<TS
         set => list[index] = (StateLinkBase)value;
     }
 
-    public int Count => list?.Count ?? 0;
+    public int Count => list.Count;
 
     public TState Last
     {

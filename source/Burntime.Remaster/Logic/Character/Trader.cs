@@ -137,12 +137,14 @@ namespace Burntime.Remaster.Logic
                 if (Location == HomeArea)
                 {
                     Location = HomeArea.Neighbors[Platform.Math.Random.Next(HomeArea.Neighbors.Count - 1)];
-                    Position = Location.GetResidentPosition(this);
+                    Position = Location.EntryPoint;
+                    Path.Stop(Position);
                 }
                 else
                 {
                     Location = HomeArea;
-                    Position = Location.GetResidentPosition(this);
+                    Position = Location.EntryPoint;
+                    Path.Stop(Position);
                 }
             }
         }

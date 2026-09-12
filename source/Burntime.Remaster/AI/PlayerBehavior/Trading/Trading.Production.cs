@@ -99,7 +99,7 @@ internal static partial class Trading
 
     internal static bool NeedsPump(Location camp)
     {
-        Room source = camp.GetSourceRoom();
+        Room? source = camp.SourceRoom;
         if (source == null || source.Items.Any(IsPump))
             return false;
         int guards = camp.CampNPC.Count();

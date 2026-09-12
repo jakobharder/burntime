@@ -29,18 +29,6 @@ namespace Burntime.Remaster.Logic
     [DebuggerDisplay("{Name}{Index} at {Location.Title}")]
     public class Player : PlayerState, IUpdateable, ITurnable
     {
-        static readonly Vector2[] arrivalFormation =
-        {
-            new(0, 0),
-            new(0, -8),
-            new(8, 0),
-            new(-8, 0),
-            new(0, 8)
-        };
-
-        internal static Vector2 GetArrivalPosition(Vector2 entryPoint, int groupIndex) =>
-            entryPoint + arrivalFormation[groupIndex];
-
         protected bool onMainMap;
         
         protected int index;
@@ -332,11 +320,15 @@ namespace Burntime.Remaster.Logic
             RefreshScrollPosition = true;
             RefreshMapScrollPosition = true;
 
-            for (int i = 0; i < Group.Count; i++)
+            foreach (Character character in Group)
             {
-                Character chr = Group[i];
-                chr.Position = GetArrivalPosition(destination.EntryPoint, i);
-                chr.Path.MoveTo = chr.Position;
+                character.Position = destination.EntryPoint;
+                character.Path.MoveTo = character.Position;
+            }
+            for (int i = 1; i < Group.Count; i++)
+            {
+                Group[i].Position = destination.GetEntryPosition(i);
+                Group[i].Path.MoveTo = Group[i].Position;
             }
 
             remainingTravelDays = days;

@@ -279,16 +279,16 @@ namespace Burntime.Remaster.Logic
                 if (value == null)
                 {
                     if (location != null)
-                        location.Object.Characters -= this;
+                        location.Object.Characters.Remove(this);
 
                     location = null;
                 }
                 else
                 {
                     if (location != null)
-                        location.Object.Characters -= this;
+                        location.Object.Characters.Remove(this);
 
-                    value.Characters += this;
+                    value.Characters.Add(this);
 
                     location = value;
                 }
@@ -357,7 +357,7 @@ namespace Burntime.Remaster.Logic
             Player.Group.Remove(this);
             Location = Player.Location;
             Location.Player = Player;
-            Position = Location.GetResidentPosition(this);
+            Position = Location.EntryPoint;
             Mind = container.Create<AI.SimpleMind>(new object[] { this });
             Path = container.Create<PathFinding.SimplePath>();
             Path.MoveTo = Position;

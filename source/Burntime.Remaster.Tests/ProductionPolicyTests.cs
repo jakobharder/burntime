@@ -10,12 +10,6 @@ namespace Burntime.Remaster.Tests;
 
 static partial class Program
 {
-    sealed class PlacementMap : Map
-    {
-        protected override void InitInstance(object[] parameter)
-            => mapData = (Burntime.Data.BurnGfx.MapData)parameter[0];
-    }
-
     static IEnumerable<Case<int>> ProductionPolicyCases()
     {
         yield return Int("keyboard movement latches automatic camera follow", 0, () =>
@@ -33,23 +27,6 @@ static partial class Program
 
             Equal(false, LocationScene.StartsAutomaticCameraFollow(InputAction.PanCameraUp),
                 "manual camera pan does not start character follow");
-            return 0;
-        });
-
-        yield return Int("party travel uses shared Amiga arrival formation", 0, () =>
-        {
-            var entry = new Burntime.Platform.Vector2(100, 80);
-            var offsets = new[]
-            {
-                new Burntime.Platform.Vector2(0, 0),
-                new Burntime.Platform.Vector2(0, -8),
-                new Burntime.Platform.Vector2(8, 0),
-                new Burntime.Platform.Vector2(-8, 0),
-                new Burntime.Platform.Vector2(0, 8)
-            };
-            for (int i = 0; i < Group.MAX_PEOPLE; i++)
-                Equal(entry + offsets[i], Player.GetArrivalPosition(entry, i),
-                    $"member {i} arrival position");
             return 0;
         });
 
@@ -124,61 +101,6 @@ static partial class Program
             LocationCreator.ApplyEnvironment(camp, config, null!);
             Equal(true, camp.Danger == null, "old saved radiation cleared");
             Equal(true, camp.AvailableProducts.SequenceEqual(new[] { 1 }), "rat production potential");
-            return 0;
-        });
-        foreach (bool hasAnchor in new[] { false, true })
-            yield return Int($"legacy entrance repair, local anchor {hasAnchor}", 0, () =>
-            {
-                var m = new StateManager(null!);
-                var mask = new Burntime.Data.BurnGfx.PathMask(100, 100, 8);
-                mask[2, 2] = true; mask[50, 50] = true;
-                var camp = m.Create<Location>(); camp.EntryPoint = new Burntime.Platform.Vector2(16, 16);
-                camp.Map = m.Create<PlacementMap>(new Burntime.Data.BurnGfx.MapData { DataName = "repair", Mask = mask });
-                var npc = m.Create<HazardCharacter>(); npc.Location = camp; npc.Position = camp.EntryPoint;
-                npc.Health = 43;
-                var dog = m.Create<HazardCharacter>(); dog.Class = CharClass.Dog; dog.Location = camp;
-                dog.Position = camp.EntryPoint + new Burntime.Platform.Vector2(8, 0);
-                var boss = m.Create<HazardPlayer>(new object[] { 0 });
-                var follower = m.Create<HazardCharacter>(); follower.Player = boss; boss.Group.Add(follower);
-                follower.Location = camp; follower.Position = camp.EntryPoint;
-                var dead = m.Create<HazardCharacter>(); dead.Location = camp; dead.Position = camp.EntryPoint; dead.Health = 0;
-                if (hasAnchor) {
-                    var anchor = m.Create<HazardCharacter>(); anchor.Location = camp;
-                    anchor.Position = new Burntime.Platform.Vector2(400, 400);
-                }
-                camp.RepairLegacyEntryPositions();
-                var expected = new Burntime.Platform.Vector2(hasAnchor ? 400 : 404, hasAnchor ? 400 : 404);
-                Equal(expected, npc.Position, "NPC leaves entrance using local position or fallback");
-                Equal(expected, dog.Position, "dog leaves old jittered spawn area");
-                Equal(43f, npc.ExactHealth, "repair preserves health");
-                Equal(camp.EntryPoint, follower.Position, "travelling group stays in place");
-                Equal(camp.EntryPoint, dead.Position, "dead character stays in place");
-                npc.Position = camp.EntryPoint;
-                camp.RepairLegacyEntryPositions();
-                Equal(camp.EntryPoint, npc.Position, "later legitimate entrance movement is not repaired again");
-                return 0;
-            });
-        yield return Int("resident placement copies locals and excludes arriving groups", 0, () =>
-        {
-            var m = new StateManager(null!);
-            var mask = new Burntime.Data.BurnGfx.PathMask(100, 100, 8);
-            mask[50, 50] = true; mask[2, 2] = true;
-            var camp = m.Create<Location>();
-            camp.Map = m.Create<PlacementMap>(new Burntime.Data.BurnGfx.MapData { DataName = "placement", Mask = mask });
-            var incoming = m.Create<HazardCharacter>(); incoming.Location = camp;
-            incoming.Position = new Burntime.Platform.Vector2(16, 16);
-            var local = m.Create<HazardCharacter>(); local.Location = camp;
-            local.Position = new Burntime.Platform.Vector2(400, 400);
-            Equal(local.Position, camp.GetResidentPosition(incoming), "copies resident far from entrance, excludes self");
-            local.Health = 0;
-            Equal(local.Position, camp.GetResidentPosition(incoming), "remembered dead local position remains usable");
-            local.Location = null;
-            var boss = m.Create<HazardPlayer>(new object[] { 0 });
-            var traveller = m.Create<HazardCharacter>(); traveller.Player = boss;
-            boss.Group.Add(traveller); traveller.Location = camp; traveller.Position = incoming.Position;
-            mask[2, 2] = false;
-            Equal(new Burntime.Platform.Vector2(404, 404), camp.GetResidentPosition(incoming),
-                "empty resident pool falls back to walkable map cell, excluding travelling party");
             return 0;
         });
         foreach (RuleSet rule in Enum.GetValues<RuleSet>())

@@ -72,8 +72,7 @@ internal sealed class DosAiState : OriginalAiState
 
     bool CanMaintainCurrentLocation() => Player.Location.IsCity ||
         Player.Location.Player == Player ||
-        (Player.Location.Player == null && Player.Location.Source.BaseWater != 0 &&
-         Player.Location.OriginalDosFoodFlag != 0x33);
+        (Player.Location.Player == null && Player.Location.Source.BaseWater != 0);
 
     protected override bool RecruitOneAtCurrentLocation()
     {

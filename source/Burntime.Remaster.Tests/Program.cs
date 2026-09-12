@@ -35,6 +35,7 @@ static partial class Program
         Run("water output", WaterOutputCases());
         Run("original regression cases", OriginalRegressionCases());
         Run("original stock and cleanup", OriginalStockCases());
+        Run("locations", LocationCases());
         Run("production policy and compatibility", ProductionPolicyCases());
         Run("configured ammunition lifecycle", AmmunitionLifecycleCases());
         Run("continuous hazards", ContinuousHazardCases());
@@ -417,8 +418,7 @@ static partial class Program
             var manager = new Burntime.Framework.States.StateManager(null!);
             var owner = manager.Create<HazardPlayer>(new object[] { 0 });
             var otherOwner = manager.Create<HazardPlayer>(new object[] { 1 });
-            var camp = manager.Create(() => new Burntime.Remaster.Logic.Location());
-            camp.Characters = manager.CreateLinkList<Burntime.Remaster.Logic.Character>();
+            var camp = manager.Create<Burntime.Remaster.Logic.Location>();
             var patient = manager.Create(() => new HazardCharacter());
             patient.Player = owner;
             patient.Health = 70;
@@ -786,9 +786,8 @@ static partial class Program
             yield return Int($"DOS owner safeguard: {position}", 0, () =>
             {
                 var manager = new Burntime.Framework.States.StateManager(null!);
-                var camp = manager.Create(() => new Burntime.Remaster.Logic.Location());
-                var away = manager.Create(() => new Burntime.Remaster.Logic.Location());
-                camp.Characters = manager.CreateLinkList<Burntime.Remaster.Logic.Character>();
+                var camp = manager.Create<Burntime.Remaster.Logic.Location>();
+                var away = manager.Create<Burntime.Remaster.Logic.Location>();
                 var attacker = manager.Create<HazardPlayer>(new object[] { 0 });
                 var owner = manager.Create<HazardPlayer>(new object[] { 1 });
                 attacker.Location = camp;
@@ -821,8 +820,7 @@ static partial class Program
         yield return Int("DOS owner-only and Amiga opposing parties", 0, () =>
         {
             var manager = new Burntime.Framework.States.StateManager(null!);
-            var camp = manager.Create(() => new Burntime.Remaster.Logic.Location());
-            camp.Characters = manager.CreateLinkList<Burntime.Remaster.Logic.Character>();
+            var camp = manager.Create<Burntime.Remaster.Logic.Location>();
             var attacker = manager.Create<HazardPlayer>(new object[] { 0 });
             var owner = manager.Create<HazardPlayer>(new object[] { 1 });
             var visitor = manager.Create<HazardPlayer>(new object[] { 2 });
@@ -1062,7 +1060,6 @@ static partial class Program
                 character.Items = manager.Create<ItemList>();
                 character.Health = 100;
                 var location = manager.Create(() => new Burntime.Remaster.Logic.Location());
-                location.Characters = manager.CreateLinkList<Burntime.Remaster.Logic.Character>();
                 location.Danger = new Burntime.Remaster.Logic.Interaction.Danger(hazard, 95, "", null!)
                     { DataName = "test_hazard" };
                 character.Place(location);

@@ -156,7 +156,7 @@ internal sealed class GameRules
         if (Settings.FoodProductionRules.Equals(
             "amiga_store_all", StringComparison.OrdinalIgnoreCase))
         {
-            location.AccumulateOriginalFood(production.FoodPerDay);
+            location.ProduceFood(production.FoodPerDay);
             return;
         }
 
@@ -174,7 +174,7 @@ internal sealed class GameRules
                 available--;
             }
         }
-        location.AccumulateOriginalFood(available);
+        location.ProduceFood(available);
     }
 
     public int CalculateBossExperience(Player player, ClassicGame game) =>

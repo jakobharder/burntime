@@ -53,8 +53,8 @@ static partial class Program
             game.World.AllCharacters = m.CreateLinkList<Character>();
             game.World.Locations = m.CreateLinkList<Location>();
             var camp = m.Create<Location>(); camp.IsCity = true;
-            camp.Rooms = m.CreateLinkList<Room>(); camp.Neighbors = m.CreateLinkList<Location>();
-            camp.Characters = m.CreateLinkList<Character>(); game.World.Locations.Add(camp);
+            camp.Rooms = m.CreateLinkList<Room>();
+            game.World.Locations.Add(camp);
             var player = m.Create<HazardPlayer>(new object[] { 0 }); player.Location = camp;
             var boss = m.Create<HazardCharacter>(); boss.Items = m.Create<ItemList>();
             boss.Player = player; boss.Health = 100; player.Character = boss;

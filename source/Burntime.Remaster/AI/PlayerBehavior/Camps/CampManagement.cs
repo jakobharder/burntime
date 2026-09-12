@@ -11,10 +11,7 @@ internal static class CampManagement
     {
         foreach (Location camp in state.RootGame.World.Locations.Where(location =>
             location.Player == state.Player && !location.IsCity))
-        {
             camp.AutoSelectFoodProduction(onlyIfCurrentProducesNothing: false);
-            camp.ConsumeExcessFoodStock(Location.MaxStockFood);
-        }
     }
 
     internal const int CampWeaponReserve = 2;
@@ -511,7 +508,7 @@ internal static class CampManagement
     {
         if (Trading.IsPump(item))
         {
-            Room source = camp.GetSourceRoom();
+            Room? source = camp.SourceRoom;
             if (source != null && !source.Items.IsFull)
                 source.Items.Add(item);
             else
@@ -534,7 +531,7 @@ internal static class CampManagement
     {
         if (!Trading.NeedsPump(camp))
             return;
-        Room source = camp.GetSourceRoom();
+        Room? source = camp.SourceRoom;
         if (source == null || source.Items.IsFull)
             return;
 

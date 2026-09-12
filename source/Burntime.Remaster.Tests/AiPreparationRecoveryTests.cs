@@ -64,8 +64,8 @@ static partial class Program
                 game.World.Players.Add(owner); game.World.AllCharacters.Add(boss);
             }
             var city = m.Create<Location>(); city.IsCity = true;
-            city.Rooms = m.CreateLinkList<Room>(); city.Neighbors = m.CreateLinkList<Location>();
-            city.Characters = m.CreateLinkList<Character>(); player.Location = city;
+            city.Rooms = m.CreateLinkList<Room>();
+            player.Location = city;
             game.World.Locations.Add(city);
             for (int i = 0; i < 4; i++) { var camp = m.Create<Location>(); camp.Player = player; camp.Rooms = m.CreateLinkList<Room>(); game.World.Locations.Add(camp); }
             var ai = m.Create<AmigaAiState>(new object[] { player, new AiSettings { Difficulty = 0, Profile = AiProfile.Amiga } });
@@ -93,7 +93,7 @@ static partial class Program
             game.World.Locations = m.CreateLinkList<Location>();
             game.World.Day = 200;
             var camp = m.Create<Location>(); camp.Player = enemy;
-            camp.Neighbors = m.CreateLinkList<Location>(); camp.AvailableProducts = new[] { 0 };
+            camp.AvailableProducts = new[] { 0 };
             camp.Source.Water = 5;
             var food = TestItem(m, "item_meat").Type;
             game.Productions = m.CreateLinkList<Production>();
