@@ -398,8 +398,8 @@ static partial class Program
                     damageValues: new[] { 9 }, ammo: 6);
                 defender.Items.Add(rifle);
                 attacker.Attack(defender);
-                Equal(lethal ? 100 : 91, attacker.Health, "only living defenders retaliate");
-                Equal(lethal ? 6 : 5, rifle.AmmoValue, "only retaliation consumes defender ammo");
+                Equal(lethal, attacker.Health == 100, "only living defenders retaliate");
+                Equal(6, rifle.AmmoValue, "creature retaliation ignores inventory weapons");
                 Equal(lethal ? 1 : 0, defender.DeathCalls, "lethal hit invokes death once");
                 if (lethal)
                 {
@@ -450,20 +450,12 @@ static partial class Program
 
     static IEnumerable<Case<int>> CombatExperienceCases()
     {
-        yield return Int("mercenary uses full XP", 99,
-            () => RuleFormulas.CombatExperience(CharClass.Mercenary, 99));
-        yield return Int("boss uses half XP", 49,
-            () => RuleFormulas.CombatExperience(CharClass.Boss, 99));
-        yield return Int("technician uses half XP", 49,
-            () => RuleFormulas.CombatExperience(CharClass.Technician, 99));
-        yield return Int("doctor uses half XP", 49,
-            () => RuleFormulas.CombatExperience(CharClass.Doctor, 99));
+        yield return Int("fight class uses full XP", 99,
+            () => RuleFormulas.CombatExperience(true, 99));
+        yield return Int("other class uses half XP", 49,
+            () => RuleFormulas.CombatExperience(false, 99));
         yield return Int("odd XP rounds down", 18,
-            () => RuleFormulas.CombatExperience(CharClass.Doctor, 37));
-        yield return Int("mutant uses full XP", 63,
-            () => RuleFormulas.CombatExperience(CharClass.Mutant, 63));
-        yield return Int("dog uses full XP", 27,
-            () => RuleFormulas.CombatExperience(CharClass.Dog, 27));
+            () => RuleFormulas.CombatExperience(false, 37));
     }
 
     static IEnumerable<Case<int>> ExperienceTierCases()
@@ -604,6 +596,10 @@ static partial class Program
                     rules.Settings.GetBarterFactor(1), "normal barter factor");
                 Equal(25,
                     rules.Settings.CombatTierWidth, "combat XP tier width");
+                Equal(true, rules.Settings.FightClasses.Contains("fighter"),
+                    "fighters use full combat XP");
+                Equal(rule != RuleSetId.Amiga, rules.Settings.FightClasses.Contains("trader"),
+                    "trader combat XP follows the ruleset");
                 var demand = manager.Create<ItemList>();
                 demand.Add(TestItem(manager, "payment", trade: 27));
                 Equal(false, rules.AcceptTrade(payment, demand, 1),
@@ -630,6 +626,27 @@ static partial class Program
                     config["item_knife"].GetInts("damage").Length, "damage format");
                 Equal(true, RuleFormulas.OriginalDamage(new[] { 7 }, 99, 25, 3) == 7,
                     "scalar damage supports every tier and roll");
+                int[] traderDamage = rule == RuleSetId.Amiga
+                    ? new[] { 9, 11, 13, 15 }
+                    : new[] { 8, 16, 25, 40 };
+                Equal(true, traderDamage.SequenceEqual(rules.Settings.GetTraderAttack(0)),
+                    "configured trader damage rolls");
+                Equal(traderDamage[3],
+                    RuleFormulas.OriginalDamage(traderDamage, 99, 25, 3),
+                    "trader damage is a fixed four-roll table");
+                for (int difficulty = 0; difficulty < 3; difficulty++)
+                {
+                    int bonus = rule == RuleSetId.Extended ? difficulty * 2 : 0;
+                    int[] creatureDamage = rule == RuleSetId.Dos
+                        ? new[] { 2, 2, 2, 2 }
+                        : new[] { 2 + bonus, 3 + bonus, 4 + bonus, 6 + bonus };
+                    Equal(true, creatureDamage.SequenceEqual(
+                        rules.Settings.GetMutantAttack(difficulty)),
+                        "configured mutant damage rolls");
+                    Equal(true, creatureDamage.SequenceEqual(
+                        rules.Settings.GetDogAttack(difficulty)),
+                        "configured dog damage rolls");
+                }
 
                 if (rule != RuleSetId.Dos)
                 {
@@ -1167,6 +1184,64 @@ static partial class Program
 
     static IEnumerable<Case<int>> CombatPreviewCases()
     {
+        foreach (RuleSetId rule in Enum.GetValues<RuleSetId>())
+            yield return Int($"{rule} trader uses configured attack instead of stock", 0, () =>
+            {
+                var manager = new Burntime.Framework.States.StateManager(null!);
+                var trader = manager.Create(() => new Burntime.Remaster.Logic.Character());
+                trader.Class = CharClass.Trader;
+                trader.Experience = 99;
+                trader.Items = manager.Create<ItemList>();
+                var rifle = TestItem(manager, "item_loaded_rifle", damage: 55, ammo: 6,
+                    damageValues: ReadDamage("item_loaded_rifle", rule));
+                trader.Items.Add(rifle);
+                trader.Weapon = rifle;
+                var defender = manager.Create(() => new Burntime.Remaster.Logic.Character());
+                defender.Items = manager.Create<ItemList>();
+                defender.Health = 100;
+                var rules = GameRulesRegistry.Get(rule);
+                var preview = rules.GetCombatPreview(trader);
+                Equal(rule == RuleSetId.Amiga ? 9 : 8, preview.Minimum,
+                    "configured trader minimum");
+                Equal(rule == RuleSetId.Amiga ? 15 : 40, preview.Maximum,
+                    "configured trader maximum");
+                rules.DealAttackDamage(trader, defender, true);
+                Equal(6, rifle.AmmoValue, "trader stock is not used as a weapon");
+                Equal(rifle, trader.Weapon, "trader weapon selection is unchanged");
+                return 0;
+            });
+
+        foreach (RuleSetId rule in Enum.GetValues<RuleSetId>())
+        foreach (CharClass creatureClass in new[] { CharClass.Mutant, CharClass.Dog })
+            yield return Int($"{rule} {creatureClass} uses configured attack", 0, () =>
+            {
+                var manager = new Burntime.Framework.States.StateManager(null!);
+                var creature = manager.Create(() => new Burntime.Remaster.Logic.Character());
+                creature.Class = creatureClass;
+                creature.Experience = 99;
+                creature.Items = manager.Create<ItemList>();
+                var rifle = TestItem(manager, "item_loaded_rifle", damage: 55, ammo: 6,
+                    damageValues: ReadDamage("item_loaded_rifle", rule));
+                creature.Items.Add(rifle);
+                creature.Weapon = rifle;
+                var defender = manager.Create(() => new Burntime.Remaster.Logic.Character());
+                defender.Items = manager.Create<ItemList>();
+                defender.Health = 100;
+                var preview = GameRulesRegistry.Get(rule).GetCombatPreview(creature);
+                Equal(rule == RuleSetId.Extended ? 4 : 2, preview.Minimum,
+                    "configured creature minimum at normal difficulty");
+                Equal(rule switch
+                    {
+                        RuleSetId.Dos => 2,
+                        RuleSetId.Amiga => 6,
+                        _ => 8,
+                    }, preview.Maximum, "configured creature maximum at normal difficulty");
+                GameRulesRegistry.Get(rule).DealAttackDamage(creature, defender, true);
+                Equal(6, rifle.AmmoValue, "creature inventory is not used as a weapon");
+                Equal(rifle, creature.Weapon, "creature weapon selection is unchanged");
+                return 0;
+            });
+
         foreach (RuleSetId rule in new[] { RuleSetId.Dos, RuleSetId.Amiga })
             yield return Int($"{rule} preview follows weapon and XP without changing equipment", 0, () =>
             {

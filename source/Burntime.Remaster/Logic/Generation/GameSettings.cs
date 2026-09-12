@@ -135,6 +135,29 @@ class GameSettings
     public float DoctorHealingFactor => config["doctor"].GetFloat("healing_factor");
     public int DoctorHealthCap => config["doctor"].GetInt("health_cap");
     public int CombatTierWidth => config["combat"].GetInt("experience_tier_width");
+    public string[] FightClasses => config["combat"].GetStrings("fight_class");
+    public int[] GetTraderAttack(int difficultyLevel) =>
+        config[Math.Clamp(difficultyLevel, 0, 2).ToString()].GetInts("trader_attack");
+    public int[] GetMutantAttack(int difficultyLevel) =>
+        config[Math.Clamp(difficultyLevel, 0, 2).ToString()].GetInts("mutant_attack");
+    public int[] GetDogAttack(int difficultyLevel) =>
+        config[Math.Clamp(difficultyLevel, 0, 2).ToString()].GetInts("dog_attack");
+    public bool IsFightClass(CharClass characterClass)
+    {
+        string name = characterClass switch
+        {
+            CharClass.Mercenary => "fighter",
+            CharClass.Technician => "technician",
+            CharClass.Doctor => "doctor",
+            CharClass.Boss => "boss",
+            CharClass.Mutant => "mutant",
+            CharClass.Trader => "trader",
+            CharClass.Dog => "dog",
+            _ => "",
+        };
+        return Array.Exists(FightClasses,
+            configured => configured.Equals(name, StringComparison.OrdinalIgnoreCase));
+    }
     public float HazardDamage(string type) => config["hazards"].GetFloat(type + "_damage_per_second");
     public bool IsHazardImmune(string type, int face) =>
         Array.IndexOf(config["hazards"].GetInts(type + "_immune_faces"), face) >= 0;

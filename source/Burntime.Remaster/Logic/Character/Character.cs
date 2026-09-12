@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Burntime.Remaster.Logic.Generation;
 using Burntime.Remaster.Logic.Rules;
 
 namespace Burntime.Remaster.Logic
@@ -130,7 +131,8 @@ namespace Burntime.Remaster.Logic
         }
 
         public virtual int BaseAttackValue => DEFAULT_ATTACK_VALUE;
-        internal int CombatExperience => RuleFormulas.CombatExperience(Class, Experience);
+        internal int CombatExperience(GameSettings settings) =>
+            RuleFormulas.CombatExperience(settings.IsFightClass(Class), Experience);
         protected DataID<Platform.Graphics.ISprite> body;
         public DataID<Platform.Graphics.ISprite> Body
         {

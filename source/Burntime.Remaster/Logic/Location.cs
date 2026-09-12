@@ -277,6 +277,8 @@ namespace Burntime.Remaster.Logic
         // logic
         public virtual void Update(float elapsed)
         {
+            ((ClassicGame)Container.Root).UpdateCreatureAttackCooldown(elapsed);
+
             //Time -= 0.5f * elapsed;
             //if (Time < 0)
             //    Time = 0;

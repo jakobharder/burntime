@@ -29,11 +29,11 @@ dog_respawn           = 50
 trader_health         = 100
 mutant_health         = 31
 dog_health            = 31
-trader_attack         = 60
-mutant_attack         = 40
+trader_attack         = 8 16 25 40
+mutant_attack         = 2 3 4 6
 mutant_drop_chance    = 0.20
 mutant_drop_type      = useless
-dog_attack            = 30
+dog_attack            = 2 3 4 6
 
 [1] ' difficulty normal
 barter_factor = 95
@@ -66,11 +66,11 @@ dog_respawn           = 150
 trader_health         = 150
 mutant_health         = 40
 dog_health            = 31
-trader_attack         = 60
-mutant_attack         = 40
+trader_attack         = 8 16 25 40
+mutant_attack         = 4 5 6 8
 mutant_drop_chance    = 0.20
 mutant_drop_type      = useless
-dog_attack            = 30
+dog_attack            = 4 5 6 8
 
 [2] ' difficulty hard
 barter_factor = 90
@@ -103,11 +103,11 @@ dog_respawn           = 0
 trader_health         = 250
 mutant_health         = 60
 dog_health            = 31
-trader_attack         = 60
-mutant_attack         = 40
+trader_attack         = 8 16 25 40
+mutant_attack         = 6 7 8 10
 mutant_drop_chance    = 0.20
 mutant_drop_type      = useless
-dog_attack            = 30
+dog_attack            = 6 7 8 10
 
 [region_item_0]
 items     = item_rat_trap
@@ -141,6 +141,7 @@ health_cap = 95
 
 [combat]
 experience_tier_width = 25
+fight_class = fighter trader
 
 [hazards]
 gas_damage_per_second = 0.5

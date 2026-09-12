@@ -16,6 +16,11 @@ namespace Burntime.Remaster
     [Serializable]
     public class ClassicGame : WorldState
     {
+        const float CREATURE_ATTACK_COOLDOWN = 1.0f;
+
+        [NonSerialized]
+        float creatureAttackCooldownRemaining;
+
         StateLink<ClassicWorld> world;
         public ClassicWorld World
         {
@@ -105,6 +110,21 @@ namespace Burntime.Remaster
 
         internal bool UsesAiProfile(Player player, AiProfileId profile) =>
             player.Type == PlayerType.Ai && GetAiProfile(player) == profile;
+
+        internal void UpdateCreatureAttackCooldown(float elapsed)
+        {
+            creatureAttackCooldownRemaining = Math.Max(0,
+                creatureAttackCooldownRemaining - elapsed);
+        }
+
+        internal bool TryBeginCreatureAttack()
+        {
+            if (creatureAttackCooldownRemaining > 0)
+                return false;
+
+            creatureAttackCooldownRemaining = CREATURE_ATTACK_COOLDOWN;
+            return true;
+        }
 
         internal void SetProfiles(RuleSetId rules, AiProfileId ai, WorldId world,
             AiProfileId[]? playerAiProfiles = null)

@@ -16,8 +16,6 @@ namespace Burntime.Remaster.AI
         protected float tryToAttack = 0;
         [NonSerialized]
         protected Character attack;
-        [NonSerialized]
-        int lastAttackDay;
 
         public override void Process(float elapsed)
         {
@@ -28,11 +26,10 @@ namespace Burntime.Remaster.AI
                 return;
             }
 
-            int currentDay = ((ClassicGame)container.Root).World.Day;
-            bool canAttack = !Owner.Location.IsCity && lastAttackDay != currentDay;
+            ClassicGame game = (ClassicGame)container.Root;
+            bool canAttack = !Owner.Location.IsCity;
 
-            // Fighting is disabled in cities, and each creature gets at most one
-            // successful strike per day. Cancel an approach in either case.
+            // Fighting is disabled in cities, so cancel an approach there.
             if (!canAttack && attack != null)
             {
                 attack = null;
@@ -44,10 +41,15 @@ namespace Burntime.Remaster.AI
             {
                 if (!attack.IsDead && (attack.Position - Owner.Position).Length < 20)
                 {
-                    Owner.AttackWithoutRetaliation(attack);
-                    lastAttackDay = currentDay;
-                    attack = null;
-                    return;
+                    // DOS serializes creature attacks through one pending slot and
+                    // Amiga uses one global timer. A short game-wide cooldown keeps
+                    // that shared pacing without tying attacks to world turns.
+                    if (game.TryBeginCreatureAttack())
+                    {
+                        Owner.AttackWithoutRetaliation(attack);
+                        attack = null;
+                        return;
+                    }
                 }
                 else
                 {

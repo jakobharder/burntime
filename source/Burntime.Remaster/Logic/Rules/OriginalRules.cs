@@ -184,13 +184,13 @@ internal abstract class OriginalRules : IGameRules
         RuleFormulas.ExperienceTier(experience, Settings.CombatTierWidth);
 
     public CombatPreview GetCombatPreview(Character character) =>
-        TableCombat.Preview(character, Settings.CombatTierWidth, armour: false);
+        TableCombat.Preview(character, Settings, armour: false);
 
     public float CalculateStrategicStrength(Character character, bool detailed) =>
-        TableCombat.Strength(character, Settings.CombatTierWidth, detailed, armour: false);
+        TableCombat.Strength(character, Settings, detailed, armour: false);
 
     int RollAttackDamage(Character attacker, bool useAmmo) =>
-        TableCombat.Roll(attacker, null, Settings.CombatTierWidth, useAmmo, armour: false);
+        TableCombat.Roll(attacker, null, Settings, useAmmo, armour: false);
 
     static int ServiceValue(IItemCollection payment) =>
         RuleFormulas.OriginalServiceValue(payment.Select(item => item.TradeValue));

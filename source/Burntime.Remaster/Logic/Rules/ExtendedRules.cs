@@ -110,21 +110,21 @@ internal sealed class ExtendedRules : IGameRules
         Character attacker,
         Character defender,
         bool useAmmo) =>
-        defender.Health -= TableCombat.Roll(attacker, defender, Settings.CombatTierWidth, useAmmo, armour: true);
+        defender.Health -= TableCombat.Roll(attacker, defender, Settings, useAmmo, armour: true);
 
     public int GetExperienceTier(int experience) =>
         RuleFormulas.ExperienceTier(experience, Settings.CombatTierWidth);
 
     public CombatPreview GetCombatPreview(Character character) =>
-        TableCombat.Preview(character, Settings.CombatTierWidth, armour: true);
+        TableCombat.Preview(character, Settings, armour: true);
 
     public float CalculateStrategicStrength(Character character, bool detailed) =>
-        TableCombat.Strength(character, Settings.CombatTierWidth, detailed, armour: true);
+        TableCombat.Strength(character, Settings, detailed, armour: true);
 
     public int RollStrategicDamage(
         ClassicGame game,
         Player attackerOwner,
         Character attacker,
         Character defender) =>
-        TableCombat.Roll(attacker, defender, Settings.CombatTierWidth, useAmmo: true, armour: true);
+        TableCombat.Roll(attacker, defender, Settings, useAmmo: true, armour: true);
 }

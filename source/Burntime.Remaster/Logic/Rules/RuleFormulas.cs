@@ -10,10 +10,8 @@ namespace Burntime.Remaster.Logic.Rules;
 /// </summary>
 internal static class RuleFormulas
 {
-    internal static int CombatExperience(CharClass characterClass, int experience) =>
-        characterClass is CharClass.Boss or CharClass.Technician or CharClass.Doctor
-            ? experience / 2
-            : experience;
+    internal static int CombatExperience(bool fightClass, int experience) =>
+        fightClass ? experience : experience / 2;
 
     internal static int DosBossExperience(int ownedCamps) =>
         Math.Min(99, 37 + 3 * ownedCamps);
@@ -119,10 +117,10 @@ internal static class RuleFormulas
 
     static ReadOnlySpan<int> OriginalDamageTable(int[] damage, int combatExperience, int tierWidth)
     {
-        if (damage.Length == 1)
+        if (damage.Length is 1 or 4)
             return damage;
         if (damage.Length != 16 || tierWidth <= 0)
-            throw new ArgumentException("Original combat requires 16 damage values and a positive tier width.");
+            throw new ArgumentException("Original combat requires one value, four rolls, or four tiers of four rolls.");
         int tier = ExperienceTier(combatExperience, tierWidth);
         return damage.AsSpan(tier * 4, 4);
     }
