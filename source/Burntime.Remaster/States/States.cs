@@ -87,8 +87,8 @@ namespace Burntime.Remaster
         public bool HasFeature(GameFeature feature) => Features.HasFlag(feature);
 
         [NonSerialized]
-        IGameRules? ruleBook;
-        internal IGameRules RuleBook => ruleBook ??= GameRulesRegistry.Get(Rules);
+        GameRules? ruleBook;
+        internal GameRules RuleBook => ruleBook ??= new(Rules);
 
         public AiProfile GetAiProfile(Player player)
         {

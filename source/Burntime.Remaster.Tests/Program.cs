@@ -462,7 +462,7 @@ static partial class Program
     {
         foreach (RuleSet rule in Enum.GetValues<RuleSet>())
         {
-            var rules = GameRulesRegistry.Get(rule);
+            var rules = new GameRules(rule);
             int width = 25;
             foreach (int xp in new[] { -1, 0, 24, 25, 26, 49, 50, 51, 52, 74, 75, 77, 78, 99, 100, 500 })
             {
@@ -481,9 +481,9 @@ static partial class Program
 
     static IEnumerable<Case<int>> BossExperienceCases()
     {
-        yield return Int("DOS initial", 37, () => RuleFormulas.DosBossExperience(0));
-        yield return Int("DOS camps", 97, () => RuleFormulas.DosBossExperience(20));
-        yield return Int("DOS cap", 99, () => RuleFormulas.DosBossExperience(40));
+        yield return Int("DOS initial", 37, () => RuleFormulas.CampBossExperience(37, 0));
+        yield return Int("DOS camps", 97, () => RuleFormulas.CampBossExperience(37, 20));
+        yield return Int("DOS cap", 99, () => RuleFormulas.CampBossExperience(37, 40));
         yield return Int("Amiga initial", 38,
             () => RuleFormulas.AmigaBossExperience(0, 0, 0));
         yield return Int("Amiga economy", 45,
@@ -492,14 +492,14 @@ static partial class Program
             () => RuleFormulas.AmigaBossExperience(1, 1, 1));
         yield return Int("Amiga cap", 99,
             () => RuleFormulas.AmigaBossExperience(100, 100, 20));
-        yield return Int("Extended base and camps", 67,
-            () => RuleFormulas.ExtendedBossExperience(37, 10));
-        yield return Int("Extended cap", 99,
-            () => RuleFormulas.ExtendedBossExperience(90, 10));
+        yield return Int("Custom base and camps", 67,
+            () => RuleFormulas.CampBossExperience(37, 10));
+        yield return Int("Camp experience cap", 99,
+            () => RuleFormulas.CampBossExperience(90, 10));
     }
 
     static bool ExtendedCanRecruit(int bossExperience, int recruitExperience) =>
-        GameRulesRegistry.Get(RuleSet.Extended).MeetsRecruitmentExperience(
+        new GameRules(RuleSet.Extended).MeetsRecruitmentExperience(
             new Burntime.Remaster.Logic.Character { Experience = bossExperience },
             new Burntime.Remaster.Logic.Character { Experience = recruitExperience });
 
@@ -564,7 +564,7 @@ static partial class Program
         foreach (RuleSet rule in Enum.GetValues<RuleSet>())
             yield return Int($"{rule} configured doctor, barter and damage", 0, () =>
             {
-                var rules = GameRulesRegistry.Get(rule);
+                var rules = new GameRules(rule);
                 Equal(37, rules.Settings.StartExperience, "shared boss starting XP");
                 if (rule is RuleSet.Amiga or RuleSet.Classic)
                 {
@@ -702,12 +702,12 @@ static partial class Program
                 var demand = manager.Create<ItemList>();
                 offer.Add(TestItem(manager, "offer", trade: 6.75f));
                 demand.Add(TestItem(manager, "demand", trade: 6f));
-                return GameRulesRegistry.Get(rule).AcceptTrade(offer, demand, 1);
+                return new GameRules(rule).AcceptTrade(offer, demand, 1);
             });
         yield return Bool("empty offers still rejected", false, () =>
         {
             var manager = new Burntime.Framework.States.StateManager(null!);
-            return GameRulesRegistry.Get(RuleSet.Extended).AcceptTrade(
+            return new GameRules(RuleSet.Extended).AcceptTrade(
                 manager.Create<ItemList>(), manager.Create<ItemList>(), 0);
         });
         yield return Bool("reserve quote preserves quarter values", true,
@@ -869,13 +869,13 @@ static partial class Program
         })
         {
             yield return Int($"corrected DOS base {source}, no pump", source,
-                () => GameRulesRegistry.Get(RuleSet.Dos).CalculateWaterOutput(source, false, false));
+                () => new GameRules(RuleSet.Dos).CalculateWaterOutput(source, false, false));
             yield return Int($"corrected DOS base {source}, hand", hand,
-                () => GameRulesRegistry.Get(RuleSet.Dos).CalculateWaterOutput(source, true, false));
+                () => new GameRules(RuleSet.Dos).CalculateWaterOutput(source, true, false));
             yield return Int($"corrected DOS base {source}, industrial", industrial,
-                () => GameRulesRegistry.Get(RuleSet.Dos).CalculateWaterOutput(source, false, true));
+                () => new GameRules(RuleSet.Dos).CalculateWaterOutput(source, false, true));
             yield return Int($"corrected DOS base {source}, both", industrial,
-                () => GameRulesRegistry.Get(RuleSet.Dos).CalculateWaterOutput(source, true, true));
+                () => new GameRules(RuleSet.Dos).CalculateWaterOutput(source, true, true));
         }
         (int Base, bool Hand, bool Industrial, int Original, int Extended)[] cases =
         {
@@ -936,15 +936,15 @@ static partial class Program
             return 0;
         });
         yield return Int("DOS base zero industrial minimum boost", 2,
-            () => GameRulesRegistry.Get(RuleSet.Dos).CalculateWaterOutput(0, false, true));
+            () => new GameRules(RuleSet.Dos).CalculateWaterOutput(0, false, true));
         yield return Int("DOS base 3 industrial", 5,
-            () => GameRulesRegistry.Get(RuleSet.Dos).CalculateWaterOutput(3, false, true));
+            () => new GameRules(RuleSet.Dos).CalculateWaterOutput(3, false, true));
         yield return Int("Amiga base 3 industrial", 6,
-            () => GameRulesRegistry.Get(RuleSet.Amiga).CalculateWaterOutput(3, false, true));
+            () => new GameRules(RuleSet.Amiga).CalculateWaterOutput(3, false, true));
         yield return Int("Classic uses useful original pump minimum", 6,
-            () => GameRulesRegistry.Get(RuleSet.Classic).CalculateWaterOutput(3, false, true));
+            () => new GameRules(RuleSet.Classic).CalculateWaterOutput(3, false, true));
         yield return Int("DOS base 1 industrial precedence", 3,
-            () => GameRulesRegistry.Get(RuleSet.Dos).CalculateWaterOutput(1, true, true));
+            () => new GameRules(RuleSet.Dos).CalculateWaterOutput(1, true, true));
         yield return Int("Amiga stock removal residue classes", 0, () =>
         {
             for (int day = 0; day < 8; day++)
@@ -1066,7 +1066,7 @@ static partial class Program
                 location.Danger = new Burntime.Remaster.Logic.Interaction.Danger(hazard, 95, "", null!)
                     { DataName = "test_hazard" };
                 character.Place(location);
-                IGameRules rules = GameRulesRegistry.Get(rule);
+                GameRules rules = new(rule);
                 for (int frame = 0; frame < 20; frame++)
                     Equal(false, rules.ApplyContinuousHazard(character, 0.1f), "survives exposure");
                 float expected = 100 - (hazard == "gas" ? 0.5f : 1.35f) * 2;
@@ -1213,7 +1213,7 @@ static partial class Program
                 var defender = manager.Create(() => new Burntime.Remaster.Logic.Character());
                 defender.Items = manager.Create<ItemList>();
                 defender.Health = 100;
-                var rules = GameRulesRegistry.Get(rule);
+                var rules = new GameRules(rule);
                 var preview = rules.GetCombatPreview(trader);
                 Equal(rule is RuleSet.Amiga or RuleSet.Classic ? 9 : 8, preview.Minimum,
                     "configured trader minimum");
@@ -1241,7 +1241,7 @@ static partial class Program
                 var defender = manager.Create(() => new Burntime.Remaster.Logic.Character());
                 defender.Items = manager.Create<ItemList>();
                 defender.Health = 100;
-                var preview = GameRulesRegistry.Get(rule).GetCombatPreview(creature);
+                var preview = new GameRules(rule).GetCombatPreview(creature);
                 Equal(rule == RuleSet.Extended ? 4 : 2, preview.Minimum,
                     "configured creature minimum at normal difficulty");
                 Equal(rule switch
@@ -1251,7 +1251,7 @@ static partial class Program
                         RuleSet.Classic => 6,
                         _ => 8,
                     }, preview.Maximum, "configured creature maximum at normal difficulty");
-                GameRulesRegistry.Get(rule).DealAttackDamage(creature, defender, true);
+                new GameRules(rule).DealAttackDamage(creature, defender, true);
                 Equal(6, rifle.AmmoValue, "creature inventory is not used as a weapon");
                 Equal(rifle, creature.Weapon, "creature weapon selection is unchanged");
                 return 0;
@@ -1268,7 +1268,7 @@ static partial class Program
                 var knife = TestItem(manager, "item_knife", damage: 25,
                     damageValues: ReadDamage("item_knife", rule));
                 fighter.Items.Add(knife);
-                var rules = GameRulesRegistry.Get(rule);
+                var rules = new GameRules(rule);
                 var preview = rules.GetCombatPreview(fighter);
                 Equal(10, preview.Minimum, "boss combat uses half XP");
                 Equal(18, preview.Maximum, "weapon range");
@@ -1311,7 +1311,7 @@ static partial class Program
             fighter.Experience = 50;
             fighter.Items.Add(TestItem(manager, "item_knife", damage: 25,
                 damageValues: ReadDamage("item_knife", RuleSet.Extended)));
-            var rules = GameRulesRegistry.Get(RuleSet.Extended);
+            var rules = new GameRules(RuleSet.Extended);
             var preview = rules.GetCombatPreview(fighter);
             Equal(new CombatPreview(12, 20, null), preview, "damage range; zero defence hidden");
             var sweater = TestItem(manager, "sweater", defense: 5);
@@ -1342,7 +1342,7 @@ static partial class Program
             defender.Experience = 99;
             defender.Health = 100;
             defender.Items.Add(TestItem(manager, "jacket", defense: 20));
-            var rules = GameRulesRegistry.Get(RuleSet.Extended);
+            var rules = new GameRules(RuleSet.Extended);
             Burntime.Platform.Math.SetRandomSeed(42);
             rules.DealAttackDamage(attacker, defender, true);
             int local = 100 - defender.Health;
@@ -1431,13 +1431,13 @@ static partial class Program
     static IEnumerable<Case<int>> RuleRegistryCases()
     {
         yield return Int("DOS registry", (int)RuleSet.Dos,
-            () => (int)GameRulesRegistry.Get(RuleSet.Dos).Id);
+            () => (int)new GameRules(RuleSet.Dos).Id);
         yield return Int("Amiga registry", (int)RuleSet.Amiga,
-            () => (int)GameRulesRegistry.Get(RuleSet.Amiga).Id);
+            () => (int)new GameRules(RuleSet.Amiga).Id);
         yield return Int("Classic registry", (int)RuleSet.Classic,
-            () => (int)GameRulesRegistry.Get(RuleSet.Classic).Id);
+            () => (int)new GameRules(RuleSet.Classic).Id);
         yield return Int("Extended registry", (int)RuleSet.Extended,
-            () => (int)GameRulesRegistry.Get(RuleSet.Extended).Id);
+            () => (int)new GameRules(RuleSet.Extended).Id);
     }
 
     static Case<int> Int(string name, int expected, Func<int> actual) => new(name, expected, actual);

@@ -195,7 +195,7 @@ internal sealed class AmigaAiState : OriginalAiState
                 protection = "item_protective_suit";
             }
 
-            if (guard.Items.IsFull || !RootGame.RuleBook.CanCreateItem(RootGame))
+            if (guard.Items.IsFull)
                 return false;
             Item item = RootGame.ItemTypes[protection].Generate();
             guard.Items.Add(item);
@@ -251,8 +251,7 @@ internal sealed class AmigaAiState : OriginalAiState
     bool TryCreateCampItem(Logic.Location location, string itemId,
         Logic.Room? preferredRoom = null)
     {
-        if (!RootGame.RuleBook.CanCreateItem(RootGame) ||
-            !location.Rooms.Any(room => !room.Items.IsFull))
+        if (!location.Rooms.Any(room => !room.Items.IsFull))
             return false;
         Item item = RootGame.ItemTypes[itemId].Generate();
         location.StoreItem(item, preferredRoom: preferredRoom);

@@ -222,7 +222,7 @@ static partial class Program
             Equal(2, added.OriginalRecordSlot, "reordering ownership leaves slot unchanged");
             return 0;
         });
-        yield return Int("original trader allocation exceeds carrying cap but respects global pool", 0, () =>
+        yield return Int("original trader allocation exceeds carrying and former global caps", 0, () =>
         {
             var m = new StateManager(null!); var game = m.Create<ClassicGame>(); m.Root = game;
             game.World = m.Create(() =>
@@ -242,9 +242,9 @@ static partial class Program
             Equal(7, trader.Items.Count, "direct allocation bypasses cap");
             Equal(6, trader.Items.MaxCount, "human capacity setting preserved");
             trader.Items.MaxCount = ItemList.Infinite;
-            while (trader.Items.Count < OriginalItemRecords.Capacity) trader.Items.Add(m.Create<Item>(type));
+            while (trader.Items.Count < 1199) trader.Items.Add(m.Create<Item>(type));
             OriginalItemRecords.AddTraderStock(game, trader, type);
-            Equal(1199, trader.Items.Count, "global pool prevents creation");
+            Equal(1200, trader.Items.Count, "former global pool cap does not prevent creation");
             Item released = trader.Items[0]; int slot = released.OriginalRecordSlot;
             trader.Items.Remove(released);
             OriginalItemRecords.AddTraderStock(game, trader, type);

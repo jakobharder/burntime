@@ -121,7 +121,20 @@ class GameSettings
 
     public ConfigSection GetRegionItem(int entry) => config.GetSection($"region_item_{entry}");
 
-    public int StartExperience => config["players"].GetInt("start_experience");
+    public int StartExperience => config["rules"].GetInt("start_experience");
+    public string StartLocationRules => config["rules"].GetString("start_locations");
+    public string BossExperienceRules => config["rules"].GetString("boss_experience");
+    public string RecruitmentRules => config["rules"].GetString("recruitment");
+    public string TraderRefreshRules => config["rules"].GetString("trader_refresh");
+    public string WaterOutputRules => config["rules"].GetString("water_output");
+    public string PlayerSetupRules => config["rules"].GetString("player_setup");
+    public string InitialItemRules => config["rules"].GetString("initial_items");
+    public string RecruitSupplyRules => config["rules"].GetString("recruit_supplies");
+    public string TraderInventoryRules => config["rules"].GetString("trader_inventory");
+    public string FoodProductionRules => config["rules"].GetString("food_production");
+    public string SurvivalRules => config["rules"].GetString("survival");
+    public string ServiceValueRules => config["rules"].GetString("service_value");
+    public string CombatRules => config["rules"].GetString("combat");
     public string[] RandomItems => config[difficulty].GetStrings("random_items");
     public int RandomItemsMin => config[difficulty].GetInt("random_items_rate_min");
     public int RandomItemsMax => config[difficulty].GetInt("random_items_rate_max");
@@ -132,10 +145,10 @@ class GameSettings
     public ClassStatInfos ClassStats => stats;
 
     public int GetBarterFactor(int level) => config[Math.Clamp(level, 0, 2).ToString()].GetInt("barter_factor");
-    public float DoctorHealingFactor => config["doctor"].GetFloat("healing_factor");
-    public int DoctorHealthCap => config["doctor"].GetInt("health_cap");
-    public int CombatTierWidth => config["combat"].GetInt("experience_tier_width");
-    public string[] FightClasses => config["combat"].GetStrings("fight_class");
+    public float DoctorHealingFactor => config["rules"].GetFloat("healing_factor");
+    public int DoctorHealthCap => config["rules"].GetInt("health_cap");
+    public int CombatTierWidth => config["rules"].GetInt("experience_tier_width");
+    public string[] FightClasses => config["rules"].GetStrings("fight_class");
     public int[] GetTraderAttack(int difficultyLevel) =>
         config[Math.Clamp(difficultyLevel, 0, 2).ToString()].GetInts("trader_attack");
     public int[] GetMutantAttack(int difficultyLevel) =>
@@ -158,9 +171,9 @@ class GameSettings
         return Array.Exists(FightClasses,
             configured => configured.Equals(name, StringComparison.OrdinalIgnoreCase));
     }
-    public float HazardDamage(string type) => config["hazards"].GetFloat(type + "_damage_per_second");
+    public float HazardDamage(string type) => config["rules"].GetFloat(type + "_damage_per_second");
     public bool IsHazardImmune(string type, int face) =>
-        Array.IndexOf(config["hazards"].GetInts(type + "_immune_faces"), face) >= 0;
+        Array.IndexOf(config["rules"].GetInts(type + "_immune_faces"), face) >= 0;
 
     public int StartHealth => 100;
     public int StartFood => 9;
@@ -176,11 +189,11 @@ class GameSettings
     {
         this.difficulty = difficulty.ToString();
 
-        string method = config[this.difficulty].GetString("spawn_method");
+        string method = config["rules"].GetString("spawn_method");
         respawn.Method = method.ToLowerInvariant() switch
         {
-            "player_cycle" => RespawnMethod.PlayerCycle,
-            "location_cycle" => RespawnMethod.LocationCycle,
+            "dos_player_cycle" => RespawnMethod.PlayerCycle,
+            "amiga_location_cycle" => RespawnMethod.LocationCycle,
             _ => RespawnMethod.Timer,
         };
 

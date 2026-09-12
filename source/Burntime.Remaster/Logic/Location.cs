@@ -134,7 +134,7 @@ namespace Burntime.Remaster.Logic
         }
 
         /// <summary>
-        /// Find food. Prefer currently produced food, then highest value.
+        /// Find the stored food item with the lowest positive food value.
         /// </summary>
         public Item? FindFood(out IItemCollection? owner)
         {
@@ -145,12 +145,10 @@ namespace Burntime.Remaster.Logic
             {
                 foreach (var item in room.Items)
                 {
-                    if (item.FoodValue == 0)
+                    if (item.FoodValue <= 0)
                         continue;
                     
-                    if (foundItem == null
-                        || (Production is not null && foundItem.Type == Production.Produce)
-                        || foundItem.FoodValue < item.FoodValue)
+                    if (foundItem == null || item.FoodValue < foundItem.FoodValue)
                     {
                         foundItem = item;
                         owner = room.Items;
@@ -196,8 +194,8 @@ namespace Burntime.Remaster.Logic
         public const int MaxStockFood = 6;
         StateLink<Production> production;
         public int[] AvailableProducts;
-        float productionState = 0;
-        public int NPCFoodProduction;
+        float productionState = 0; // accumulated food value
+        public int NPCFoodProduction; // [unused]
 
         public Production? Production
         {
@@ -279,10 +277,6 @@ namespace Burntime.Remaster.Logic
         {
             ((ClassicGame)Container.Root).UpdateCreatureAttackCooldown(elapsed);
 
-            //Time -= 0.5f * elapsed;
-            //if (Time < 0)
-            //    Time = 0;
-
             for (int i = 0; i < characters.Count; i++)
             {
                 characters[i].Update(elapsed);
@@ -324,46 +318,17 @@ namespace Burntime.Remaster.Logic
             Source.EndTurn();
         }
 
-        internal void ProcessExtendedFoodProduction(Production.Rate production)
-        {
-            NPCFoodProduction = production.FoodPerDay;
-            if (production.ItemDropInterval > 0)
-            {
-                int alreadyInStock = GetCurrentProductionStockCount();
-                // Like DOS, only the selected product counts toward the cap.
-                // Food from an older selection remains available for normal use.
-                if (alreadyInStock < MaxStockFood && Rooms.Any(room => !room.Items.IsFull) &&
-                    ((ClassicGame)Container.Root).RuleBook.CanCreateItem(
-                        (ClassicGame)Container.Root))
-                {
-                    productionState += 1;
-                    if (productionState >= production.ItemDropInterval)
-                    {
-                        productionState -= production.ItemDropInterval;
-                        Room trapRoom = Rooms.FirstOrDefault(room => room.Items
-                            .Any(item => item.Type.Production == Production));
-                        StoreItem(Production.Produce.Generate(), preferredRoom: trapRoom);
-                    }
-                }
-            }
-        }
-
         internal void AccumulateOriginalFood(int points)
         {
-            NPCFoodProduction = 0;
             if (points <= 0 || Production == null ||
                 GetCurrentProductionStockCount() >= MaxStockFood ||
-                !Rooms.Any(room => !room.Items.IsFull) ||
-                !((ClassicGame)Container.Root).RuleBook.CanCreateItem(
-                    (ClassicGame)Container.Root))
+                !Rooms.Any(room => !room.Items.IsFull))
                 return;
 
             productionState += points;
             while (productionState >= Production.Produce.FoodValue &&
                 GetCurrentProductionStockCount() < MaxStockFood &&
-                Rooms.Any(room => !room.Items.IsFull) &&
-                ((ClassicGame)Container.Root).RuleBook.CanCreateItem(
-                    (ClassicGame)Container.Root))
+                Rooms.Any(room => !room.Items.IsFull))
             {
                 productionState -= Production.Produce.FoodValue;
                 Room trapRoom = Rooms.FirstOrDefault(room => room.Items

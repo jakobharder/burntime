@@ -228,6 +228,55 @@ static partial class Program
             }
             return 0;
         });
+        yield return Int("stationed NPC prefers its lowest-value inventory food before storage", 0, () =>
+        {
+            var m = new StateManager(null!);
+            var camp = m.Create<Location>();
+            camp.Rooms = m.CreateLinkList<Room>();
+            var room = m.Create<Room>(); camp.Rooms.Add(room);
+            var player = m.Create<HazardPlayer>(new object[] { 0 }); camp.Player = player;
+            var guard = m.Create<HazardCharacter>(); guard.Player = player; guard.Location = camp;
+            camp.Characters.Add(guard);
+            Item inventoryHigh = TestItem(m, "inventory_high", food: 9);
+            Item inventoryLow = TestItem(m, "inventory_low", food: 5);
+            Item storedLowest = TestItem(m, "stored_lowest", food: 3);
+            guard.Items.Add(inventoryHigh); guard.Items.Add(inventoryLow); room.Items.Add(storedLowest);
+
+            Item? selected = guard.FindAccessibleFood(out IItemCollection? owner);
+            Equal(inventoryLow, selected, "lowest inventory food selected");
+            Equal(true, ReferenceEquals(guard.Items, owner), "own inventory checked first");
+
+            guard.Items.Clear();
+            selected = guard.FindAccessibleFood(out owner);
+            Equal(storedLowest, selected, "storage used when inventory has no food");
+            Equal(true, ReferenceEquals(room.Items, owner), "storage owns fallback item");
+            return 0;
+        });
+        yield return Int("travelling NPC uses lowest food across group without storage", 0, () =>
+        {
+            var m = new StateManager(null!);
+            var camp = m.Create<Location>();
+            camp.Rooms = m.CreateLinkList<Room>();
+            var room = m.Create<Room>(); camp.Rooms.Add(room);
+            Item storedLowest = TestItem(m, "stored_lowest", food: 3); room.Items.Add(storedLowest);
+            var player = m.Create<HazardPlayer>(new object[] { 0 }); player.Location = camp;
+            var first = m.Create<HazardCharacter>(); first.Player = player; first.Location = camp;
+            var second = m.Create<HazardCharacter>(); second.Player = player; second.Location = camp;
+            player.Group.Add(first); player.Group.Add(second);
+            Item groupHigh = TestItem(m, "group_high", food: 9);
+            Item groupLow = TestItem(m, "group_low", food: 5);
+            first.Items.Add(groupHigh); second.Items.Add(groupLow);
+
+            Item? selected = first.FindAccessibleFood(out IItemCollection? owner);
+            Equal(groupLow, selected, "lowest group food selected");
+            Equal(true, ReferenceEquals(second.Items, owner), "group inventory owns selected item");
+
+            first.Items.Clear(); second.Items.Clear();
+            selected = first.FindAccessibleFood(out owner);
+            Equal<Item?>(null, selected, "camp storage is unavailable to travelling group");
+            Equal<IItemCollection?>(null, owner, "no storage owner returned");
+            return 0;
+        });
         yield return Int("guard equipment preserves installed knife trap but can take a spare", 0, () =>
         {
             var m = new StateManager(null!);

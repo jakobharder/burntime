@@ -7,8 +7,6 @@ namespace Burntime.Remaster.Logic.Rules;
 // Original scans use global record order, not inventory/room display order.
 internal static class OriginalItemRecords
 {
-    internal const int Capacity = 1199;
-
     internal static Item[] Snapshot(ClassicGame game)
     {
         Item[] items = game.World.AllItems.ToArray();
@@ -37,9 +35,9 @@ internal static class OriginalItemRecords
     internal static void AddTraderStock(ClassicGame game, Trader trader, ItemType type)
     {
         Item[] records = Snapshot(game);
-        if (records.Length >= Capacity) return;
         var used = records.Select(i => i.OriginalRecordSlot).ToHashSet();
-        int slot = Enumerable.Range(1, Capacity).First(i => !used.Contains(i));
+        int slot = 1;
+        while (used.Contains(slot)) slot++;
         Item item = type.Generate();
         item.OriginalRecordSlot = slot;
         // Direct original allocation bypasses the human carrying limit.

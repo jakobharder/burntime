@@ -10,6 +10,22 @@ using System.Linq;
 using Burntime.Remaster.Logic.Generation;
 using Burntime.Remaster.Logic.Rules;
 
+namespace Burntime.Remaster
+{
+    public enum CharClass
+    {
+        Mercenary,
+        Technician,
+        Doctor,
+        Boss,
+        Mutant,
+        Trader,
+        Dog,
+
+        Count
+    }
+}
+
 namespace Burntime.Remaster.Logic
 {
     [Serializable]
@@ -639,22 +655,21 @@ namespace Burntime.Remaster.Logic
         internal void TurnExtendedEmployed(bool amigaSurvivalBehavior)
         {
             bool amigaActiveParty = amigaSurvivalBehavior && IsWithBoss;
+            ICharacterCollection group = GetGroup();
+
+            if (Food == 0)
+            {
+                Item? item = FindAccessibleFood(out IItemCollection? owner);
+                if (item != null && owner != null)
+                {
+                    group.Eat(null, item.FoodValue);
+                    owner.Remove(item);
+                }
+            }
+
             // npc is with boss
             if (IsWithBoss)
             {
-                Group group = Player.Group;
-
-                if (Food == 0)
-                {
-                    IItemCollection owner;
-                    Item item = group.FindFood(out owner);
-                    if (item != null)
-                    {
-                        group.Eat(null, item.FoodValue);
-                        owner.Remove(item);
-                    }
-                }
-
                 if (!amigaActiveParty && Water == 0)
                 {
                     Item item = group.FindWater();
@@ -667,28 +682,6 @@ namespace Burntime.Remaster.Logic
             }
             else // npc is stationed
             {
-                ICharacterCollection group = GetGroup();
-
-                if (Location.NPCFoodProduction > 0)
-                {
-                    Location.NPCFoodProduction--;
-                    Food++;
-                }
-                else if (Food == 0)
-                {
-                    IItemCollection owner;
-                    // search for food in rooms
-                    Item item = Location.FindFood(out owner);
-                    // if not available then try the inventory
-                    if (item == null)
-                        item = group.FindFood(out owner);
-                    if (item != null)
-                    {
-                        group.Eat(null, item.FoodValue);
-                        owner.Remove(item);
-                    }
-                }
-
                 Location.Source.Reserve = group.Drink(null, Location.Source.Reserve);
                 if (Water == 0)
                 {
@@ -958,6 +951,23 @@ namespace Burntime.Remaster.Logic
             return this;
         }
 
+        internal Item? FindAccessibleFood(out IItemCollection? owner)
+        {
+            ICharacterCollection inventory = GetGroup();
+            Item? item = inventory.FindFood(out IItemCollection inventoryOwner);
+            if (item != null)
+            {
+                owner = inventoryOwner;
+                return item;
+            }
+
+            if (!IsWithBoss && Location != null)
+                return Location.FindFood(out owner);
+
+            owner = null;
+            return null;
+        }
+
         /// <summary>
         /// Select the best protection against the current environmental hazard.
         /// </summary>
@@ -1020,8 +1030,8 @@ namespace Burntime.Remaster.Logic
 
             for (int j = 0; j < Items.Count; j++)
             {
-                if (Items[j].FoodValue != 0 &&
-                    (item == null || Items[j].FoodValue > item.FoodValue))
+                if (Items[j].FoodValue > 0 &&
+                    (item == null || Items[j].FoodValue < item.FoodValue))
                 {
                     item = Items[j];
                     owner = Items;

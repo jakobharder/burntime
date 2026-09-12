@@ -13,8 +13,8 @@ internal static class RuleFormulas
     internal static int CombatExperience(bool fightClass, int experience) =>
         fightClass ? experience : experience / 2;
 
-    internal static int DosBossExperience(int ownedCamps) =>
-        Math.Min(99, 37 + 3 * ownedCamps);
+    internal static int CampBossExperience(int baseExperience, int ownedCamps) =>
+        Math.Min(99, baseExperience + 3 * ownedCamps);
 
     internal static int AmigaBossExperience(
         int foodOutput,
@@ -22,14 +22,35 @@ internal static class RuleFormulas
         int employees) =>
         Math.Min(99, 38 + (foodOutput + waterOutput + 3 * employees) / 4);
 
-    internal static int ExtendedBossExperience(int baseExperience, int ownedCamps) =>
-        Math.Min(99, baseExperience + 3 * ownedCamps);
+    internal static int BossExperience(
+        string rules,
+        Player player,
+        ClassicGame game)
+    {
+        if (!rules.Equals("amiga_economy", StringComparison.OrdinalIgnoreCase))
+            return CampBossExperience(
+                player.BaseExperience, player.GetOwnedLocationCount(game.World));
+
+        Location[] camps = game.World.Locations
+            .Where(location => location.Player == player)
+            .ToArray();
+        int foodOutput = camps.Sum(location => location.GetFoodProductionRate().FoodPerDay);
+        int waterOutput = camps.Sum(location => location.Source.Water);
+        int employees = player.Group.Count + camps.Sum(location =>
+            location.CampNPC.Count(character => character.Player == player && !character.IsDead));
+        return AmigaBossExperience(foodOutput, waterOutput, employees);
+    }
 
     internal static bool DosCanRecruit(int bossExperience, int recruitExperience) =>
         3 * bossExperience / 2 >= recruitExperience;
 
     internal static bool AmigaCanRecruit(int bossExperience, int recruitExperience) =>
         bossExperience >= recruitExperience - 4;
+
+    internal static bool CanRecruit(string rules, int bossExperience, int recruitExperience) =>
+        rules.Equals("amiga_xp_plus_4", StringComparison.OrdinalIgnoreCase)
+            ? AmigaCanRecruit(bossExperience, recruitExperience)
+            : DosCanRecruit(bossExperience, recruitExperience);
 
     internal static int DoctorResult(int health, int healingPoints, float factor, int cap) =>
         Math.Max(health, Math.Min(cap, health + (int)(healingPoints * factor)));
@@ -106,6 +127,19 @@ internal static class RuleFormulas
     {
         int boost = industrialPump ? 5 : handPump ? 2 : 0;
         return baseOutput + boost;
+    }
+
+    internal static int WaterOutput(
+        string rules,
+        int baseOutput,
+        bool handPump,
+        bool industrialPump)
+    {
+        if (rules.Equals("remaster_fixed", StringComparison.OrdinalIgnoreCase))
+            return ExtendedWaterOutput(baseOutput, handPump, industrialPump);
+        return rules.Equals("dos_proportional", StringComparison.OrdinalIgnoreCase)
+            ? DosWaterOutput(baseOutput, handPump, industrialPump)
+            : OriginalWaterOutput(baseOutput, handPump, industrialPump);
     }
 
     internal static int ExperienceTier(int combatExperience, int tierWidth)

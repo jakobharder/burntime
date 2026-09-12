@@ -13,6 +13,11 @@ using System.ComponentModel;
 
 namespace Burntime.Remaster.Logic
 {
+    [Serializable]
+    public class Fog : StateObject
+    {
+    }
+
 
     public enum PlayerType
     {

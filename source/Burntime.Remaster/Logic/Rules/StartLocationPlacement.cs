@@ -7,6 +7,15 @@ namespace Burntime.Remaster.Logic.Rules;
 
 internal static class StartLocationPlacement
 {
+    public static void Apply(ClassicGame game, GameSettings settings)
+    {
+        if (settings.StartLocationRules.Equals(
+            "dos_rotating_groups", System.StringComparison.OrdinalIgnoreCase))
+            ApplyRotatingOriginalGroups(game, settings);
+        else
+            ApplyRegional(game, settings);
+    }
+
     public static void ApplyRegional(ClassicGame game, GameSettings settings)
     {
         List<int> availableGroups = Enumerable.Range(1, settings.StartRegionCount).ToList();

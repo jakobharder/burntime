@@ -5,6 +5,56 @@ namespace Burntime.Remaster.Logic.Rules;
 
 internal static class OriginalTraderRefresh
 {
+    internal static void Turn(Trader trader, string rules)
+    {
+        if (rules.Equals("amiga_global", StringComparison.OrdinalIgnoreCase))
+        {
+            RefreshAmiga(new[] { trader });
+            return;
+        }
+
+        ClassicGame game = (ClassicGame)trader.Container.Root;
+        OriginalItemRecords.Snapshot(game);
+        Dos(trader.Items, trader.GetAssortment().ToArray(), game.World.Day,
+            game.ItemTypes.GetOriginalTitleId, Burntime.Platform.Math.Random.Next,
+            type => OriginalItemRecords.AddTraderStock(game, trader, type),
+            game.ItemTypes["item_meat"]);
+        trader.MoveToNextSellLocation();
+    }
+
+    internal static void Turn(System.Collections.Generic.IEnumerable<Trader> traders, string rules)
+    {
+        if (!rules.Equals("amiga_global", StringComparison.OrdinalIgnoreCase))
+        {
+            foreach (Trader trader in traders)
+                trader.Turn();
+            return;
+        }
+
+        Trader[] active = traders.Where(trader => !trader.IsDead).ToArray();
+        RefreshAmiga(active);
+        foreach (Trader trader in active)
+            trader.RestoreTraderHealth();
+    }
+
+    static void RefreshAmiga(Trader[] traders)
+    {
+        if (traders.Length == 0)
+            return;
+
+        ClassicGame game = (ClassicGame)traders[0].Container.Root;
+        OriginalItemRecords.Snapshot(game);
+        AmigaRemove(traders.Select(trader => trader.Items).ToArray(), game.World.Day,
+            game.ItemTypes.GetOriginalTitleId, Burntime.Platform.Math.Random.Next);
+        foreach (Trader trader in traders)
+            AmigaRestock(trader.GetAssortment().ToArray(), game.World.Day,
+                game.ItemTypes.GetOriginalTitleId,
+                type => OriginalItemRecords.AddTraderStock(game, trader, type),
+                game.ItemTypes["item_meat"]);
+        foreach (Trader trader in traders)
+            trader.MoveToNextSellLocation();
+    }
+
     internal static void Dos(ItemList stock, ItemType[] assortment, int day,
         Func<ItemType, int> title, Func<int, int> random, Action<ItemType> add, ItemType meat)
     {

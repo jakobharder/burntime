@@ -190,8 +190,8 @@ namespace Burntime.Remaster.Logic
             {
                 for (int j = 0; j < characterList[i].Items.Count; j++)
                 {
-                    if (characterList[i].Items[j].FoodValue != 0 &&
-                        (item == null || characterList[i].Items[j].FoodValue > item.FoodValue))
+                    if (characterList[i].Items[j].FoodValue > 0 &&
+                        (item == null || characterList[i].Items[j].FoodValue < item.FoodValue))
                     {
                         item = characterList[i].Items[j];
                         owner = characterList[i].Items;
