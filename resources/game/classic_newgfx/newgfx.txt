@@ -46,10 +46,6 @@ maps/mat_033_tiles.png=pngsheet@maps/mat_033_tiles_2x.png?{0}?60x72
 maps/ways/newvillage_0.png=gfx/ways/newvillage_0.png
 
 info.pac=gfx/backgrounds/info.png
-koch.pac=gfx/backgrounds/koch.png
-koch.ani??p=pngsheet@gfx/backgrounds/koch_ani.png?0-11?143x97
-wirt.pac=gfx/backgrounds/wirt.png
-wirt.ani??p=pngsheet@gfx/backgrounds/wirt_ani.png?0-10?64x96
 gfx/trader_background.png=gfx/backgrounds/trader.png
 syssze.raw=pngsheet@gfx/syssze.png?{0}?30x36
 

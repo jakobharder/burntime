@@ -1,0 +1,10 @@
+[image]
+background=gfx/backgrounds/koch.png
+animations=1
+sprite_scale=1.875x2.25
+
+[animation0]
+image=pngsheet@gfx/backgrounds/koch_ani.png?0-11?143x97
+position=186x50
+speed=6.5
+progressive=false

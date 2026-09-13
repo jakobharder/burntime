@@ -1,0 +1,10 @@
+[image]
+background=film_08.pac
+animations=1
+
+[animation0]
+image=film_08.ani??p
+position=200x117
+speed=4.5
+interval_margin=1
+progressive=false

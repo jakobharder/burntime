@@ -19,14 +19,6 @@ namespace Burntime.Remaster.Scenes
             Music = "church";
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
-            Image ani = new Image(app);
-            ani.Position = new Vector2(200, 117);
-            ani.Background = "film_08.ani??p";
-            ani.Background.Animation.Speed = 4.5f;
-            ani.Background.Animation.IntervalMargin = 1.0f;
-            ani.Background.Animation.Progressive = false;
-            Windows += ani;
-
             font = new GuiFont(BurntimeClassic.FontName, new PixelColor(72, 72, 76));
 
             CaptureAllMouseClicks = true;
@@ -42,7 +34,7 @@ namespace Burntime.Remaster.Scenes
         protected override void OnActivateScene(object parameter)
         {
             BurntimeClassic game = app as BurntimeClassic;
-            Background = "film_08.pac";
+            Background = "scenes/church.txt";
             app.RenderMouse = false;
 
             txtlines = 9;

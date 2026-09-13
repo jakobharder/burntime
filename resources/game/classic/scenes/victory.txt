@@ -1,0 +1,15 @@
+[image]
+background=film_01.pac
+animations=3
+
+[animation0]
+image=film_01.ani?0-21?p
+position=170x43
+
+[animation1]
+image=film_01.ani?22-23?p
+position=33x23
+
+[animation2]
+image=film_01.ani?24-27?p
+position=126x121

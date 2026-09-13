@@ -27,43 +27,8 @@ namespace Burntime.Remaster.Scenes
         public PubScene(Module app)
             : base(app)
         {
-            BurntimeClassic classic = app as BurntimeClassic;
-            Background = classic.InventoryBackground == 14 ? "bar.pac" : "pub1.pac";
             Music = "pub";
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
-
-            if (classic.InventoryBackground == 14)
-            {
-                Image ani = new Image(app);
-                ani.Position = new Vector2(206, 67);
-                ani.Background = "bar.ani??p";
-                ani.Background.Animation.IntervalMargin = 6;
-                ani.Background.Animation.Progressive = false;
-                Windows += ani;
-            }
-            else
-            {
-                Image ani = new Image(app);
-                ani.Position = new Vector2(201, 22);
-                ani.Background = "pub1.ani?0-11?p";
-                ani.Background.Animation.Speed = 6.1f;
-                ani.Background.Animation.IntervalMargin = 1;
-                ani.Background.Animation.Progressive = false;
-                Windows += ani;
-                ani = new Image(app);
-                ani.Position = new Vector2(237, 28);
-                ani.Background = "pub1.ani?12-13";
-                ani.Background.Animation.Speed = 8;
-                ani.Background.Animation.Progressive = false;
-                Windows += ani;
-                ani = new Image(app);
-                ani.Position = new Vector2(231, 55);
-                ani.Background = "pub1.ani?14-64?p";
-                ani.Background.Animation.Speed = 6.6f;
-                ani.Background.Animation.IntervalMargin = 6;
-                ani.Background.Animation.Progressive = false;
-                Windows += ani;
-            }
 
             inventory = new InventoryWindow(app, InventorySide.Left);
             inventory.Position = new Vector2(2, 5);
@@ -132,6 +97,10 @@ namespace Burntime.Remaster.Scenes
 
         protected override void OnActivateScene(object parameter)
         {
+            BurntimeClassic classic = app as BurntimeClassic;
+            Background = classic.InventoryBackground == 14
+                ? "scenes/bar.txt"
+                : "scenes/pub1.txt";
             inventory.SetGroup(BurntimeClassic.Instance.SelectedCharacter);
             restaurantText = null;
             drinkLastAmount = -1;

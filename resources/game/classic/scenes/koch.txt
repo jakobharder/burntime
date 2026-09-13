@@ -1,0 +1,9 @@
+[image]
+background=koch.pac
+animations=1
+
+[animation0]
+image=koch.ani??p
+position=186x50
+speed=6.5
+progressive=false

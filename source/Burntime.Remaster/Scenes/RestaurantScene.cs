@@ -20,7 +20,6 @@ namespace Burntime.Remaster.Scenes
         GuiFont font;
         String[] restaurantText = null;
         int eatLastAmount = 0;
-        Image ani;
         InventoryKeyboardNavigation keyboardNavigation;
         readonly Button exitButton;
         readonly Button actionButton;
@@ -103,29 +102,10 @@ namespace Burntime.Remaster.Scenes
             BurntimeClassic classic = app as BurntimeClassic;
             inventory.SetGroup(BurntimeClassic.Instance.SelectedCharacter);
            
-            Background = classic.InventoryBackground == 22 ? "wirt.pac" : "koch.pac";
+            Background = classic.InventoryBackground == 22
+                ? "scenes/wirt.txt"
+                : "scenes/koch.txt";
             restaurantText = null;
-
-            Windows.Remove(ani);
-
-            if (classic.InventoryBackground != 22)
-            {
-                ani = new Image(app);
-                ani.Position = new Vector2(186, 50);
-                ani.Background = "koch.ani??p";
-                ani.Background.Animation.Speed = 6.5f;
-                ani.Background.Animation.Progressive = false;
-                Windows += ani;
-            }
-            else
-            {
-                ani = new Image(app);
-                ani.Position = new Vector2(202, 51);
-                ani.Background = "wirt.ani??p";
-                //ani.Background.Animation.Speed = 6.5f;
-                ani.Background.Animation.Progressive = false;
-                Windows += ani;
-            }
 
             eatLastAmount = -1;
             grid.Clear();

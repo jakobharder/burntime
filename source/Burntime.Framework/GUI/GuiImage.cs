@@ -81,6 +81,10 @@ namespace Burntime.Framework.GUI
                     animation.Animation.IntervalMargin = settings.GetInt("interval_margin");
                 if (settings.ContainsKey("progressive"))
                     animation.Animation.Progressive = settings.GetBool("progressive");
+                if (settings.ContainsKey("endless"))
+                    animation.Animation.Endless = settings.GetBool("endless");
+                if (settings.ContainsKey("delay"))
+                    animation.Animation.Delay = settings.GetFloat("delay");
                 if (settings.ContainsKey("reverse"))
                 {
                     animation.Animation.ReverseAnimation = settings.GetBool("reverse");

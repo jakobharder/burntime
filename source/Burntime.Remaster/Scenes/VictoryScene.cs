@@ -17,23 +17,9 @@ namespace Burntime.Remaster.Scenes
         public VictoryScene(Module app)
             : base(app)
         {
-            Background = "film_01.pac";
             Music = "victory";
             CaptureAllMouseClicks = true;
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
-
-            Image ani = new Image(app);
-            ani.Background = "film_01.ani?0-21?p";
-            ani.Position = new Vector2(170, 43);
-            Windows += ani;
-            ani = new Image(app);
-            ani.Background = "film_01.ani?22-23?p";
-            ani.Position = new Vector2(33, 23);
-            Windows += ani;
-            ani = new Image(app);
-            ani.Background = "film_01.ani?24-27?p";
-            ani.Position = new Vector2(126, 121);
-            Windows += ani;
 
             font = new GuiFont(BurntimeClassic.FontName, new PixelColor(72, 72, 76));
         }
@@ -47,6 +33,7 @@ namespace Burntime.Remaster.Scenes
 
         protected override void OnActivateScene(object parameter)
         {
+            Background = "scenes/victory.txt";
             BurntimeClassic.Instance.RenderMouse = false;
 
             name = ((VictoryNews)parameter).Name;

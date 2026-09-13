@@ -1,0 +1,8 @@
+[image]
+background=wirt.pac
+animations=1
+
+[animation0]
+image=wirt.ani??p
+position=202x51
+progressive=false
