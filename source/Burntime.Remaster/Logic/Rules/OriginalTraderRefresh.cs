@@ -1,13 +1,14 @@
 using System;
 using System.Linq;
+using Burntime.Remaster.Logic.Generation;
 
 namespace Burntime.Remaster.Logic.Rules;
 
 internal static class OriginalTraderRefresh
 {
-    internal static void Turn(Trader trader, string rules)
+    internal static void Turn(Trader trader, TraderRefreshRule rule)
     {
-        if (rules.Equals("amiga_global", StringComparison.OrdinalIgnoreCase))
+        if (rule == TraderRefreshRule.AmigaGlobal)
         {
             RefreshAmiga(new[] { trader });
             return;
@@ -21,9 +22,10 @@ internal static class OriginalTraderRefresh
         trader.MoveToNextSellLocation();
     }
 
-    internal static void Turn(System.Collections.Generic.IEnumerable<Trader> traders, string rules)
+    internal static void Turn(System.Collections.Generic.IEnumerable<Trader> traders,
+        TraderRefreshRule rule)
     {
-        if (!rules.Equals("amiga_global", StringComparison.OrdinalIgnoreCase))
+        if (rule != TraderRefreshRule.AmigaGlobal)
         {
             foreach (Trader trader in traders)
                 trader.Turn();

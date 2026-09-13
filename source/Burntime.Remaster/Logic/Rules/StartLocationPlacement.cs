@@ -9,8 +9,7 @@ internal static class StartLocationPlacement
 {
     public static void Apply(ClassicGame game, GameSettings settings)
     {
-        if (settings.StartLocationRules.Equals(
-            "dos_rotating_groups", System.StringComparison.OrdinalIgnoreCase))
+        if (settings.StartLocationRule == StartLocationRule.DosRotatingGroups)
             ApplyRotatingOriginalGroups(game, settings);
         else
             ApplyRegional(game, settings);

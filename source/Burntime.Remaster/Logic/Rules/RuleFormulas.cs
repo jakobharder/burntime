@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Burntime.Remaster.Logic.Generation;
 
 namespace Burntime.Remaster.Logic.Rules;
 
@@ -23,11 +24,11 @@ internal static class RuleFormulas
         Math.Min(99, 38 + (foodOutput + waterOutput + 3 * employees) / 4);
 
     internal static int BossExperience(
-        string rules,
+        BossExperienceRule rule,
         Player player,
         ClassicGame game)
     {
-        if (!rules.Equals("amiga_economy", StringComparison.OrdinalIgnoreCase))
+        if (rule != BossExperienceRule.AmigaEconomy)
             return CampBossExperience(
                 player.BaseExperience, player.GetOwnedLocationCount(game.World));
 
@@ -47,8 +48,8 @@ internal static class RuleFormulas
     internal static bool AmigaCanRecruit(int bossExperience, int recruitExperience) =>
         bossExperience >= recruitExperience - 4;
 
-    internal static bool CanRecruit(string rules, int bossExperience, int recruitExperience) =>
-        rules.Equals("amiga_xp_plus_4", StringComparison.OrdinalIgnoreCase)
+    internal static bool CanRecruit(RecruitmentRule rule, int bossExperience, int recruitExperience) =>
+        rule == RecruitmentRule.AmigaXpPlus4
             ? AmigaCanRecruit(bossExperience, recruitExperience)
             : DosCanRecruit(bossExperience, recruitExperience);
 
@@ -135,14 +136,14 @@ internal static class RuleFormulas
     }
 
     internal static int WaterOutput(
-        string rules,
+        WaterOutputRule rule,
         int baseOutput,
         bool handPump,
         bool industrialPump)
     {
-        if (rules.Equals("remaster_fixed", StringComparison.OrdinalIgnoreCase))
+        if (rule == WaterOutputRule.RemasterFixed)
             return ExtendedWaterOutput(baseOutput, handPump, industrialPump);
-        return rules.Equals("dos_proportional", StringComparison.OrdinalIgnoreCase)
+        return rule == WaterOutputRule.DosProportional
             ? DosWaterOutput(baseOutput, handPump, industrialPump)
             : OriginalWaterOutput(baseOutput, handPump, industrialPump);
     }

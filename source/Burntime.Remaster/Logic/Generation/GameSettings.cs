@@ -1,8 +1,24 @@
 ﻿using Burntime.Platform.IO;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Burntime.Remaster.Logic.Generation;
+
+enum StartLocationRule { DosRotatingGroups, AmigaRegions }
+enum BossExperienceRule { DosCamps, AmigaEconomy }
+enum RecruitmentRule { DosXpTimes15, AmigaXpPlus4 }
+enum TraderRefreshRule { DosIndividual, AmigaGlobal, RemasterRandom }
+enum WaterOutputRule { DosProportional, AmigaMinimum, RemasterFixed }
+enum SpawnMethodRule { Timer, DosPlayerCycle, AmigaLocationCycle }
+enum PlayerSetupRule { DosGamdat, RemasterSettings }
+enum InitialItemsRule { DosGamdat, RemasterSpawning }
+enum RecruitSuppliesRule { DosFixed, RemasterDifficulty }
+enum TraderInventoryRule { DosGamdat, RemasterRandom }
+enum FoodProductionRule { DosFeedThenStore, AmigaStoreAll }
+enum SurvivalRule { DosDailyConsumption, RemasterSupplyPool }
+enum ServiceValueRule { DosTradeValue, RemasterNutrition }
+enum CombatRule { DosUnarmoured, RemasterArmour }
 
 class GameSettings
 {
@@ -122,19 +138,19 @@ class GameSettings
     public ConfigSection GetRegionItem(int entry) => config.GetSection($"region_item_{entry}");
 
     public int StartExperience => config["rules"].GetInt("start_experience");
-    public string StartLocationRules => config["rules"].GetString("start_locations");
-    public string BossExperienceRules => config["rules"].GetString("boss_experience");
-    public string RecruitmentRules => config["rules"].GetString("recruitment");
-    public string TraderRefreshRules => config["rules"].GetString("trader_refresh");
-    public string WaterOutputRules => config["rules"].GetString("water_output");
-    public string PlayerSetupRules => config["rules"].GetString("player_setup");
-    public string InitialItemRules => config["rules"].GetString("initial_items");
-    public string RecruitSupplyRules => config["rules"].GetString("recruit_supplies");
-    public string TraderInventoryRules => config["rules"].GetString("trader_inventory");
-    public string FoodProductionRules => config["rules"].GetString("food_production");
-    public string SurvivalRules => config["rules"].GetString("survival");
-    public string ServiceValueRules => config["rules"].GetString("service_value");
-    public string CombatRules => config["rules"].GetString("combat");
+    public StartLocationRule StartLocationRule { get; }
+    public BossExperienceRule BossExperienceRule { get; }
+    public RecruitmentRule RecruitmentRule { get; }
+    public TraderRefreshRule TraderRefreshRule { get; }
+    public WaterOutputRule WaterOutputRule { get; }
+    public PlayerSetupRule PlayerSetupRule { get; }
+    public InitialItemsRule InitialItemsRule { get; }
+    public RecruitSuppliesRule RecruitSuppliesRule { get; }
+    public TraderInventoryRule TraderInventoryRule { get; }
+    public FoodProductionRule FoodProductionRule { get; }
+    public SurvivalRule SurvivalRule { get; }
+    public ServiceValueRule ServiceValueRule { get; }
+    public CombatRule CombatRule { get; }
     public string[] RandomItems => config[difficulty].GetStrings("random_items");
     public int RandomItemsMin => config[difficulty].GetInt("random_items_rate_min");
     public int RandomItemsMax => config[difficulty].GetInt("random_items_rate_max");
@@ -183,19 +199,54 @@ class GameSettings
     {
         config = new ConfigFile();
         config.Open(file);
+        ConfigSection rules = config["rules"];
+        StartLocationRule = ParseRule(rules, "start_locations", StartLocationRule.AmigaRegions);
+        BossExperienceRule = ParseRule(rules, "boss_experience", BossExperienceRule.DosCamps);
+        RecruitmentRule = ParseRule(rules, "recruitment", RecruitmentRule.DosXpTimes15);
+        TraderRefreshRule = ParseRule(rules, "trader_refresh", TraderRefreshRule.DosIndividual);
+        WaterOutputRule = ParseRule(rules, "water_output", WaterOutputRule.AmigaMinimum);
+        SpawnMethodRule spawnMethod = ParseRule(rules, "spawn_method", SpawnMethodRule.Timer);
+        respawn.Method = spawnMethod switch
+        {
+            SpawnMethodRule.DosPlayerCycle => RespawnMethod.PlayerCycle,
+            SpawnMethodRule.AmigaLocationCycle => RespawnMethod.LocationCycle,
+            _ => RespawnMethod.Timer
+        };
+        PlayerSetupRule = ParseRule(rules, "player_setup", PlayerSetupRule.DosGamdat);
+        InitialItemsRule = ParseRule(rules, "initial_items", InitialItemsRule.DosGamdat);
+        RecruitSuppliesRule = ParseRule(rules, "recruit_supplies", RecruitSuppliesRule.DosFixed);
+        TraderInventoryRule = ParseRule(rules, "trader_inventory", TraderInventoryRule.DosGamdat);
+        FoodProductionRule = ParseRule(rules, "food_production", FoodProductionRule.DosFeedThenStore);
+        SurvivalRule = ParseRule(rules, "survival", SurvivalRule.DosDailyConsumption);
+        ServiceValueRule = ParseRule(rules, "service_value", ServiceValueRule.DosTradeValue);
+        CombatRule = ParseRule(rules, "combat", CombatRule.DosUnarmoured);
+    }
+
+    static T ParseRule<T>(ConfigSection section, string key, T fallback,
+        bool optional = false) where T : struct, Enum
+    {
+        string value = section.GetString(key);
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            if (!optional)
+                Burntime.Platform.Log.Warning($"Missing rule '{key}'; using '{fallback}'.");
+            return fallback;
+        }
+
+        string name = string.Concat(value.Split(new[] { '_', '-' },
+            StringSplitOptions.RemoveEmptyEntries).Select(part =>
+                char.ToUpperInvariant(part[0]) + part[1..]));
+        if (Enum.TryParse(name, ignoreCase: false, out T result) && Enum.IsDefined(result))
+            return result;
+
+        Burntime.Platform.Log.Warning(
+            $"Unknown rule '{key}={value}'; using '{fallback}'.");
+        return fallback;
     }
 
     public void SetDifficulty(int difficulty)
     {
         this.difficulty = difficulty.ToString();
-
-        string method = config["rules"].GetString("spawn_method");
-        respawn.Method = method.ToLowerInvariant() switch
-        {
-            "dos_player_cycle" => RespawnMethod.PlayerCycle,
-            "amiga_location_cycle" => RespawnMethod.LocationCycle,
-            _ => RespawnMethod.Timer,
-        };
 
         // npc_respawn is retained as a fallback for custom and older rulesets.
         respawn.NPC = string.IsNullOrWhiteSpace(config[this.difficulty].GetString("npc_spawn"))

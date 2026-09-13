@@ -23,7 +23,7 @@ internal sealed class GameRules
     public void InitializeHumanPlayer(Player player, int playerIndex, GameSettings settings,
         Burntime.Data.BurnGfx.Save.SaveGame source)
     {
-        if (settings.PlayerSetupRules.Equals("remaster_settings", StringComparison.OrdinalIgnoreCase))
+        if (settings.PlayerSetupRule == PlayerSetupRule.RemasterSettings)
         {
             player.Character.Health = settings.StartHealth;
             player.Character.Experience = settings.StartExperience;
@@ -60,7 +60,7 @@ internal sealed class GameRules
     public void PopulateInitialItems(ClassicGame game, GameSettings settings,
         Burntime.Data.BurnGfx.Save.SaveGame source)
     {
-        if (settings.InitialItemRules.Equals("remaster_spawning", StringComparison.OrdinalIgnoreCase))
+        if (settings.InitialItemsRule == InitialItemsRule.RemasterSpawning)
         {
             var spawner = new ItemSpawner(game, source, settings);
             spawner.SpawnAtPlayerLocation();
@@ -100,8 +100,7 @@ internal sealed class GameRules
 
     public void InitializeRecruit(Character recruit, Player boss, Item? payment)
     {
-        if (!Settings.RecruitSupplyRules.Equals(
-            "remaster_difficulty", StringComparison.OrdinalIgnoreCase))
+        if (Settings.RecruitSuppliesRule != RecruitSuppliesRule.RemasterDifficulty)
         {
             recruit.Food = 9;
             recruit.Water = 5;
@@ -133,26 +132,24 @@ internal sealed class GameRules
 
     public void InitializeTraderInventory(Trader trader)
     {
-        if (Settings.TraderInventoryRules.Equals(
-            "remaster_random", StringComparison.OrdinalIgnoreCase))
+        if (Settings.TraderInventoryRule == TraderInventoryRule.RemasterRandom)
             trader.RandomizeInventory();
     }
 
     public void TurnTrader(Trader trader)
     {
-        if (Settings.TraderRefreshRules.Equals("remaster_random", StringComparison.OrdinalIgnoreCase))
+        if (Settings.TraderRefreshRule == TraderRefreshRule.RemasterRandom)
             trader.TurnExtendedTrader();
         else
-            OriginalTraderRefresh.Turn(trader, Settings.TraderRefreshRules);
+            OriginalTraderRefresh.Turn(trader, Settings.TraderRefreshRule);
     }
 
     public void TurnTraders(IEnumerable<Trader> traders) =>
-        OriginalTraderRefresh.Turn(traders, Settings.TraderRefreshRules);
+        OriginalTraderRefresh.Turn(traders, Settings.TraderRefreshRule);
 
     public void ProcessFoodProduction(Location location, Production.Rate production)
     {
-        if (Settings.FoodProductionRules.Equals(
-            "amiga_store_all", StringComparison.OrdinalIgnoreCase))
+        if (Settings.FoodProductionRule == FoodProductionRule.AmigaStoreAll)
         {
             location.ProduceFood(production.FoodPerDay);
             return;
@@ -176,15 +173,14 @@ internal sealed class GameRules
     }
 
     public int CalculateBossExperience(Player player, ClassicGame game) =>
-        RuleFormulas.BossExperience(Settings.BossExperienceRules, player, game);
+        RuleFormulas.BossExperience(Settings.BossExperienceRule, player, game);
 
     public bool MeetsRecruitmentExperience(Character boss, Character recruit) =>
-        RuleFormulas.CanRecruit(Settings.RecruitmentRules, boss.Experience, recruit.Experience);
+        RuleFormulas.CanRecruit(Settings.RecruitmentRule, boss.Experience, recruit.Experience);
 
     public void TurnEmployedCharacter(Character character, int? naturalHealingThreshold = null)
     {
-        if (Settings.SurvivalRules.Equals(
-            "remaster_supply_pool", StringComparison.OrdinalIgnoreCase))
+        if (Settings.SurvivalRule == SurvivalRule.RemasterSupplyPool)
         {
             character.TurnExtendedEmployed(naturalHealingThreshold);
             HazardRules.ApplyDaily(character);
@@ -204,12 +200,12 @@ internal sealed class GameRules
             Settings.DoctorHealingFactor, Settings.DoctorHealthCap);
 
     public int CalculateRestaurantValue(IItemCollection payment) =>
-        Settings.ServiceValueRules.Equals("remaster_nutrition", StringComparison.OrdinalIgnoreCase)
+        Settings.ServiceValueRule == ServiceValueRule.RemasterNutrition
             ? payment.GetEatValue()
             : OriginalServiceValue(payment);
 
     public int CalculatePubValue(IItemCollection payment) =>
-        Settings.ServiceValueRules.Equals("remaster_nutrition", StringComparison.OrdinalIgnoreCase)
+        Settings.ServiceValueRule == ServiceValueRule.RemasterNutrition
             ? payment.GetDrinkValue()
             : OriginalServiceValue(payment);
 
@@ -218,7 +214,7 @@ internal sealed class GameRules
 
     public int CalculateWaterOutput(int baseOutput, bool handPump, bool industrialPump) =>
         RuleFormulas.WaterOutput(
-            Settings.WaterOutputRules, baseOutput, handPump, industrialPump);
+            Settings.WaterOutputRule, baseOutput, handPump, industrialPump);
 
     public void DealAttackDamage(Character attacker, Character defender, bool useAmmo) =>
         defender.Health -= RollAttackDamage(attacker, defender, useAmmo);
@@ -239,8 +235,7 @@ internal sealed class GameRules
         Character defender) =>
         RollAttackDamage(attacker, defender, useAmmo: true);
 
-    bool UsesArmour => Settings.CombatRules.Equals(
-        "remaster_armour", StringComparison.OrdinalIgnoreCase);
+    bool UsesArmour => Settings.CombatRule == CombatRule.RemasterArmour;
 
     int RollAttackDamage(Character attacker, Character defender, bool useAmmo) =>
         TableCombat.Roll(attacker, UsesArmour ? defender : null,
