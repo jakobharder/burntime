@@ -56,6 +56,7 @@ namespace Burntime.Framework.GUI
             ConfigFile config = new();
             config.Open(Module.Instance.ResourceManager.ResolveFileReplacement(description_));
             ConfigSection image = config["image"];
+            bool hasSpriteScale = image.ContainsKey("sprite_scale");
             Vector2f spriteScale = image.GetVector2f("sprite_scale", Vector2f.One);
             Vector2f resolution = spriteScale.x != 0 && spriteScale.y != 0
                 ? Vector2f.One / spriteScale
@@ -63,7 +64,8 @@ namespace Burntime.Framework.GUI
             sprite_ = Module.Instance.ResourceManager.GetImage(
                 image.GetString("background"), ResourceLoadType.Delayed);
             sprite_ = sprite_.Clone();
-            sprite_.Resolution = resolution;
+            if (hasSpriteScale)
+                sprite_.Resolution = resolution;
             layers_.Clear();
 
             int animationCount = image.GetInt("animations");
@@ -73,7 +75,8 @@ namespace Burntime.Framework.GUI
                 ISprite animation = Module.Instance.ResourceManager.GetImage(
                     settings.GetString("image"), ResourceLoadType.Delayed);
                 animation = animation.Clone();
-                animation.Resolution = resolution;
+                if (hasSpriteScale)
+                    animation.Resolution = resolution;
 
                 if (settings.ContainsKey("speed"))
                     animation.Animation.Speed = settings.GetFloat("speed");
