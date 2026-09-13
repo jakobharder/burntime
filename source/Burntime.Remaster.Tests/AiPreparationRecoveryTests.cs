@@ -14,7 +14,7 @@ static class AiPreparationRecoveryTests
 {
     internal static IEnumerable<Case<int>> AiPreparationRecoveryCases()
     {
-        yield return Int("Amiga offsets exactly one daily water consumption for its living party", 0, () =>
+        yield return Int("Amiga prepares its living party with enough water for maximum travel", 0, () =>
         {
             var m = new StateManager(null!);
             var player = m.Create<HazardPlayer>(new object[] { 0 });
@@ -34,7 +34,7 @@ static class AiPreparationRecoveryTests
                 "Amiga healing policy");
             Equal(null, AiStateOperations.GetNaturalHealingThreshold(null),
                 "default healing policy");
-            Equal(1, boss.Water, "empty bottle avoidance");
+            Equal(boss.MaxWater, boss.Water, "maximum travel reserve");
             Equal(follower.MaxWater, follower.Water, "maximum respected");
             Equal(0, deadFollower.Water, "dead follower ignored");
             return 0;

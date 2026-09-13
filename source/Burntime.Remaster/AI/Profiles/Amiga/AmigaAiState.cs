@@ -102,7 +102,7 @@ internal sealed class AmigaAiState : OriginalAiState
     internal static void OffsetDailyWaterConsumption(Logic.Player player)
     {
         foreach (Logic.Character character in player.Group.Where(character => !character.IsDead))
-            character.Water = Math.Min(character.MaxWater, character.Water + 1);
+            character.Water = character.MaxWater;
     }
 
     Logic.Location? ChooseNextStep(bool expansionRoute)
