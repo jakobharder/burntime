@@ -56,9 +56,14 @@ namespace Burntime.Framework.GUI
             ConfigFile config = new();
             config.Open(Module.Instance.ResourceManager.ResolveFileReplacement(description_));
             ConfigSection image = config["image"];
+            Vector2f spriteScale = image.GetVector2f("sprite_scale", Vector2f.One);
+            Vector2f resolution = spriteScale.x != 0 && spriteScale.y != 0
+                ? Vector2f.One / spriteScale
+                : Vector2f.One;
             sprite_ = Module.Instance.ResourceManager.GetImage(
                 image.GetString("background"), ResourceLoadType.Delayed);
-            sprite_ = sprite_.Animation is null ? sprite_ : sprite_.Clone();
+            sprite_ = sprite_.Clone();
+            sprite_.Resolution = resolution;
             layers_.Clear();
 
             int animationCount = image.GetInt("animations");
@@ -67,7 +72,8 @@ namespace Burntime.Framework.GUI
                 ConfigSection settings = config["animation" + i];
                 ISprite animation = Module.Instance.ResourceManager.GetImage(
                     settings.GetString("image"), ResourceLoadType.Delayed);
-                animation = animation.Animation is null ? animation : animation.Clone();
+                animation = animation.Clone();
+                animation.Resolution = resolution;
 
                 if (settings.ContainsKey("speed"))
                     animation.Animation.Speed = settings.GetFloat("speed");
@@ -76,7 +82,11 @@ namespace Burntime.Framework.GUI
                 if (settings.ContainsKey("progressive"))
                     animation.Animation.Progressive = settings.GetBool("progressive");
                 if (settings.ContainsKey("reverse"))
+                {
                     animation.Animation.ReverseAnimation = settings.GetBool("reverse");
+                    if (animation.Animation.ReverseAnimation)
+                        animation.Animation.GoLastFrame();
+                }
 
                 layers_.Add((settings.GetVector2("position"), animation));
             }

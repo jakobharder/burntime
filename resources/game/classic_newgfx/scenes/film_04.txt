@@ -1,0 +1,8 @@
+[image]
+background=gfx/backgrounds/film4.png
+animations=0
+sprite_scale=1.875x2.25
+
+[music]
+song=building
+loop=true

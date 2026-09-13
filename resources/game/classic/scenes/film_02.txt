@@ -1,0 +1,7 @@
+[image]
+background=film_02.pac
+animations=0
+
+[music]
+song=ruin
+loop=true

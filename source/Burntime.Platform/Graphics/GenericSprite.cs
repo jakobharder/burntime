@@ -20,6 +20,7 @@ public abstract class GenericSprite<TSpriteFrame, TTexture> : ISprite where TTex
     public ResourceLoadType LoadType = ResourceLoadType.Now;
     protected IResourceManager resMan;
     protected bool colorKey = true;
+    Vector2f? resolutionOverride;
     // Clones have independent playback state, but a reload must replace the
     // resource frames for every clone that refers to the sprite.
     FrameStorage frameStorage = new([]);
@@ -43,6 +44,7 @@ public abstract class GenericSprite<TSpriteFrame, TTexture> : ISprite where TTex
         resMan = source.resMan;
         LoadType = source.LoadType;
         colorKey = source.colorKey;
+        resolutionOverride = source.resolutionOverride;
         IsNew = source.IsNew;
         Animation = source.Animation?.Clone();
     }
@@ -60,7 +62,7 @@ public abstract class GenericSprite<TSpriteFrame, TTexture> : ISprite where TTex
     }
 
 #warning TODO resolution down and up again for newgfx may lead to precision loss
-    public override Vector2 Size => (Vector2)((Vector2f)Frame.Size * Frame.Resolution);
+    public override Vector2 Size => (Vector2)((Vector2f)Frame.Size * Resolution);
     public Vector2 OriginalSize => Frame.Size;
 
     public int CurrentFrame
@@ -82,8 +84,8 @@ public abstract class GenericSprite<TSpriteFrame, TTexture> : ISprite where TTex
     public override SpriteAnimation Animation { get; set; }
     public override Vector2f Resolution
     {
-        get => internalFrames[0].Resolution;
-        set => internalFrames[0].Resolution = value;
+        get => resolutionOverride ?? internalFrames[0].Resolution;
+        set => resolutionOverride = value;
     }
 
     public abstract override ISprite Clone();

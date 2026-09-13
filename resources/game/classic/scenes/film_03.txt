@@ -1,0 +1,7 @@
+[image]
+background=film_03.pac
+animations=0
+
+[music]
+song=death
+loop=true

@@ -1,0 +1,13 @@
+[image]
+background=film_10.pac
+animations=1
+
+[music]
+song=sounds/trader.ogg
+loop=false
+
+[animation0]
+image=film_10.ani
+position=125x92
+speed=5
+interval_margin=3

@@ -1,0 +1,7 @@
+[image]
+background=film_04.pac
+animations=0
+
+[music]
+song=building
+loop=true

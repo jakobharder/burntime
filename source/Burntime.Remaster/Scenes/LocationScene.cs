@@ -1313,8 +1313,8 @@ namespace Burntime.Remaster
                     classic.Game.World.ActiveTraderObj = classic.Game.World.ActiveLocationObj.LocalTrader;
                     switch (entrance.Background)
                     {
-                        case 0x0D: classic.ImageScene = "film_10.pac"; break;
-                        case 0x11: classic.ImageScene = "film_05.txt"; break;
+                        case 0x0D: classic.ImageScene = "scenes/film_10.txt"; break;
+                        case 0x11: classic.ImageScene = "scenes/film_05.txt"; break;
                     }
                     if (classic.ImageScene != null)
                         app.SceneManager.SetScene("ImageScene");
@@ -1323,7 +1323,7 @@ namespace Burntime.Remaster
                     classic.InventoryBackground = entrance.Background;
                     if (entrance.Background == 14)
                     {
-                        classic.ImageScene = "film_06.pac";
+                        classic.ImageScene = "scenes/film_06.txt";
                         classic.ActionAfterImageScene = ActionAfterImageScene.Pub;
                         app.SceneManager.SetScene("ImageScene");
                     }
@@ -1347,9 +1347,9 @@ namespace Burntime.Remaster
                     {
                         case 0x0A:
                         case 0x0B:
-                        case 0x0C: classic.ImageScene = "film_" + (entrance.Background - 8).ToString("D2") + ".pac"; break;
-                        case 0x10: classic.ImageScene = "film_08.pac"; break;
-                        case 0x12: classic.ImageScene = "film_09.pac"; break;
+                        case 0x0C: classic.ImageScene = "scenes/film_" + (entrance.Background - 8).ToString("D2") + ".txt"; break;
+                        case 0x10: classic.ImageScene = "scenes/film_08.txt"; break;
+                        case 0x12: classic.ImageScene = "scenes/film_09.txt"; break;
                     }
                     if (classic.ImageScene != null)
                         app.SceneManager.SetScene("ImageScene");

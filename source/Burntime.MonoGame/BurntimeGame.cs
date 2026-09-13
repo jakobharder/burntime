@@ -935,7 +935,7 @@ namespace Burntime.MonoGame
             {
                 Rectangle = new Rectangle(0, 0, nativeSprite.OriginalSize.x, nativeSprite.OriginalSize.y),
                 Color = new Color(alpha, alpha, alpha, alpha),
-                Factor = nativeSprite.Frame.Resolution,
+                Factor = nativeSprite.Resolution,
                 LinearFiltering = nativeSprite.LinearFiltering
             };
 
@@ -952,7 +952,7 @@ namespace Burntime.MonoGame
                 Color = entity.Color,
                 SpriteFrame = nativeSprite.Frame,
                 Position = new Vector3(pos.x, pos.y, CalcZ(Layer)),
-                Factor = nativeSprite.Frame.Resolution,
+                Factor = nativeSprite.Resolution,
                 LinearFiltering = nativeSprite.LinearFiltering
             };
             RenderDevice.AddEntity(entity2);
@@ -973,7 +973,7 @@ namespace Burntime.MonoGame
             {
                 Rectangle = new Rectangle(srcPos.x, srcPos.y, srcWidth, srcHeight),
                 Color = new Color(color.r, color.g, color.b, color.a),
-                Factor = nativeSprite.Frame.Resolution,
+                Factor = nativeSprite.Resolution,
                 LinearFiltering = nativeSprite.LinearFiltering,
                 PostFilter = postFilter,
                 DirectToFramebuffer = directToFramebuffer
@@ -1001,7 +1001,7 @@ namespace Burntime.MonoGame
                 Color = entity.Color,
                 SpriteFrame = nativeSprite.Frame,
                 Position = new Vector3(pos.x, pos.y, CalcZ(Layer)),
-                Factor = nativeSprite.Frame.Resolution,
+                Factor = nativeSprite.Resolution,
                 LinearFiltering = nativeSprite.LinearFiltering,
                 PostFilter = postFilter,
                 DirectToFramebuffer = directToFramebuffer
