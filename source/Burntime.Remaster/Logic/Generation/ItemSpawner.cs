@@ -83,7 +83,8 @@ internal class ItemSpawner
         var entry = _settings.GetRegionItem(0);
         for (int entryIndex = 0; entry is not null && entry != ConfigSection.NullSection; entry = _settings.GetRegionItem(++entryIndex))
         {
-            var generator = GameSettings.ItemGeneration.FromString(entry.GetString("items"), entry.GetString("rate"));
+            var generator = GameSettings.ItemGeneration.FromStrings(
+                entry.GetStrings("items"), entry.GetStrings("rate"));
             var locations = entry.GetInts("locations");
             if (locations.Length <= 0)
                 continue;

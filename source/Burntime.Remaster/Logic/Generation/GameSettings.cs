@@ -60,11 +60,12 @@ class GameSettings
             }
         }
 
-        public static ItemGeneration FromString(string itemsConfig, string rateConfig = "1")
+        public static ItemGeneration FromStrings(IEnumerable<string> itemsConfig,
+            IEnumerable<string> rateConfig)
         {
             int min = 1;
             int max = 1;
-            var rates = rateConfig.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            string[] rates = rateConfig.ToArray();
 
             if (rates.Length > 0)
             {
@@ -75,13 +76,6 @@ class GameSettings
                     max = min;
             }
 
-            return FromStrings(
-                itemsConfig.Split(' ', StringSplitOptions.RemoveEmptyEntries),
-                min, max);
-        }
-
-        public static ItemGeneration FromStrings(IEnumerable<string> itemsConfig, int atLeast = 1, int upTo = 1)
-        {
             var include = new List<string>();
             var exclude = new List<string>();
             var generation = new ItemGeneration();
@@ -97,8 +91,8 @@ class GameSettings
             generation.Include = include.ToArray();
             generation.Exclude = exclude.ToArray();
 
-            generation.Minimum = Math.Max(0, atLeast);
-            generation.Maximum = Math.Max(generation.Minimum, upTo);
+            generation.Minimum = Math.Max(0, min);
+            generation.Maximum = Math.Max(generation.Minimum, max);
 
             return generation;
         }
@@ -266,30 +260,9 @@ class GameSettings
 
     }
 
-    public ItemGeneration GetItemGeneration(string name)
-    {
-        string[] itemclass = config[difficulty].GetStrings(name);
-        List<string> include = new List<string>();
-        List<string> exclude = new List<string>();
+    public ItemGeneration GetItemGeneration(string name) =>
+        ItemGeneration.FromStrings(
+            config[difficulty].GetStrings(name),
+            config[difficulty].GetStrings(name + "_rate"));
 
-        ItemGeneration generation;
-
-        foreach (string item in itemclass)
-        {
-            if (item.StartsWith("-"))
-                exclude.Add(item.Substring(1));
-            else
-                include.Add(item);
-        }
-
-        generation.Include = include.ToArray();
-        generation.Exclude = exclude.ToArray();
-
-        int[] rate = config[difficulty].GetInts(name + "_rate");
-
-        generation.Minimum = rate.Length > 0 ? rate[0] : 0;
-        generation.Maximum = rate.Length > 1 ? rate[1] : generation.Minimum;
-
-        return generation;
-    }
 }

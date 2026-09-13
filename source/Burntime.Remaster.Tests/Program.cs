@@ -1402,8 +1402,10 @@ static partial class Program
         string[] include,
         string[] exclude) => Int(name, 0, () =>
         {
-            GameSettings.ItemGeneration generation = GameSettings.ItemGeneration.FromString(
-                "food -rare", rate);
+            GameSettings.ItemGeneration generation =
+                GameSettings.ItemGeneration.FromStrings(
+                    new[] { "food", "-rare" },
+                    rate.Split(' ', StringSplitOptions.RemoveEmptyEntries));
             Equal(minimum, generation.Minimum, "minimum");
             Equal(maximum, generation.Maximum, "maximum");
             Equal(string.Join(',', include), string.Join(',', generation.Include), "include");
