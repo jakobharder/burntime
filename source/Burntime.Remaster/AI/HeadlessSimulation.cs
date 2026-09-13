@@ -165,13 +165,16 @@ public static class HeadlessSimulation
 
                 economy.RecordCappedCampTurn();
                 observation?.BeforeDaily();
-                bool[] supplyExhaustedBeforeDaily = game.World.Players
-                    .Select(player => player.Character.Food == 0 || player.Character.Water == 0)
+                bool[] foodExhaustedBeforeDaily = game.World.Players
+                    .Select(player => player.Character.Food == 0)
+                    .ToArray();
+                bool[] waterExhaustedBeforeDaily = game.World.Players
+                    .Select(player => player.Character.Water == 0)
                     .ToArray();
                 game.Turn();
                 RecordDeaths(game, knownCharacterDeaths, deaths, campaignTurn,
                     DeathCause.DailyProcessing, dosMaintenanceBlocked,
-                    supplyExhaustedBeforeDaily);
+                    foodExhaustedBeforeDaily, waterExhaustedBeforeDaily);
 
                 // Advance every player, including human-controlled slots from
                 // loaded games. This makes the simulation a save compatibility
@@ -266,14 +269,16 @@ public static class HeadlessSimulation
         int turn,
         DeathCause cause,
         IReadOnlyList<bool> dosMaintenanceBlocked,
-        IReadOnlyList<bool>? supplyExhausted = null)
+        IReadOnlyList<bool>? foodExhausted = null,
+        IReadOnlyList<bool>? waterExhausted = null)
     {
         foreach (Player player in game.World.Players)
         {
             bool dead = player.Character.IsDead;
             if (!knownDeaths[player.Index] && dead)
                 deaths.Add(new DeathObservation(player.Index, turn, cause,
-                    supplyExhausted?[player.Index] == true,
+                    foodExhausted?[player.Index] == true,
+                    waterExhausted?[player.Index] == true,
                     dosMaintenanceBlocked[player.Index]));
             knownDeaths[player.Index] = dead;
         }
@@ -288,17 +293,18 @@ public static class HeadlessSimulation
     {
         AssertConfiguration(game, options);
 
-        // Original Amiga AI can legitimately lose a faction to resource
-        // attrition during this window; keep that fidelity concern out of the
-        // general engine/profile smoke invariant for now.
         DeathObservation[] unexpected = deaths.Where(death =>
                 death.Turn <= options.EarlyDeathTurn && death.Cause is not
                     (DeathCause.StrategicCombat or DeathCause.LastChanceCombat) &&
-                AiStateOperations.GetProfile(game.World.Players[death.Player]) != AiProfile.Amiga &&
+                !IsExpectedAmigaFoodAttrition(
+                    AiStateOperations.GetProfile(game.World.Players[death.Player]),
+                    death.Cause == DeathCause.DailyProcessing,
+                    death.FoodExhausted,
+                    death.WaterExhausted) &&
                 !IsExpectedDosConflictAttrition(
                     AiStateOperations.GetProfile(game.World.Players[death.Player]),
                     death.Cause == DeathCause.DailyProcessing,
-                    death.SupplyExhausted,
+                    death.FoodExhausted || death.WaterExhausted,
                     death.DosMaintenanceBlocked))
             .Take(1)
             .ToArray();
@@ -328,10 +334,14 @@ public static class HeadlessSimulation
         {
             int[] unexplained = enabledPlayers
                 .Where(player => player.IsDead && !initiallyDead[player.Index] &&
-                    AiStateOperations.GetProfile(player) != AiProfile.Amiga &&
                     !deaths.Any(death =>
-                        death.Player == player.Index && death.Cause is
-                            DeathCause.StrategicCombat or DeathCause.LastChanceCombat))
+                        death.Player == player.Index &&
+                        (death.Cause is DeathCause.StrategicCombat or DeathCause.LastChanceCombat ||
+                            IsExpectedAmigaFoodAttrition(
+                                AiStateOperations.GetProfile(player),
+                                death.Cause == DeathCause.DailyProcessing,
+                                death.FoodExhausted,
+                                death.WaterExhausted))))
                 .Select(player => player.Index + 1)
                 .ToArray();
             if (unexplained.Length > 0)
@@ -360,11 +370,20 @@ public static class HeadlessSimulation
         profile == AiProfile.Dos && diedDuringDailyProcessing &&
         supplyExhausted && maintenanceBlockedSinceLastRefill;
 
+    internal static bool IsExpectedAmigaFoodAttrition(
+        AiProfile profile,
+        bool diedDuringDailyProcessing,
+        bool foodExhausted,
+        bool waterExhausted) =>
+        profile == AiProfile.Amiga && diedDuringDailyProcessing &&
+        foodExhausted && !waterExhausted;
+
     readonly record struct DeathObservation(
         int Player,
         int Turn,
         DeathCause Cause,
-        bool SupplyExhausted,
+        bool FoodExhausted,
+        bool WaterExhausted,
         bool DosMaintenanceBlocked);
 
     static Dictionary<int, int?> CaptureOwnership(ClassicGame game)

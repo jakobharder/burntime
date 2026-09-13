@@ -30,4 +30,20 @@ static class HeadlessSimulationTests
             () => Burntime.Remaster.AI.HeadlessSimulation.IsExpectedDosConflictAttrition(
                 AiProfile.Modern, true, true, true));
     }
+
+    internal static IEnumerable<Case<bool>> AmigaFoodAttritionCases()
+    {
+        yield return new("daily food attrition remains permitted", true,
+            () => HeadlessSimulation.IsExpectedAmigaFoodAttrition(
+                AiProfile.Amiga, true, true, false));
+        yield return new("water exhaustion is never exempted", false,
+            () => HeadlessSimulation.IsExpectedAmigaFoodAttrition(
+                AiProfile.Amiga, true, true, true));
+        yield return new("non-daily deaths are not food attrition", false,
+            () => HeadlessSimulation.IsExpectedAmigaFoodAttrition(
+                AiProfile.Amiga, false, true, false));
+        yield return new("Modern AI never receives the exemption", false,
+            () => HeadlessSimulation.IsExpectedAmigaFoodAttrition(
+                AiProfile.Modern, true, true, false));
+    }
 }

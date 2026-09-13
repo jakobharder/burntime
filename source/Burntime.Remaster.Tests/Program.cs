@@ -19,6 +19,7 @@ static class Program
         Run("AI preparation and Amiga recovery", AiPreparationRecoveryTests.AiPreparationRecoveryCases());
         Run("economy observations", EconomyObservationTests.EconomyObservationCases());
         Run("DOS conflict attrition", HeadlessSimulationTests.DosConflictAttritionCases());
+        Run("Amiga food attrition", HeadlessSimulationTests.AmigaFoodAttritionCases());
         Run("recovery and frontier equipment", EquipmentPlanningTests.RecoveryAndEquipmentCases());
         Run("strategic encounters", StrategicEncounterTests.StrategicEncounterCases());
         Run("local combat lifecycle", CombatResolverTests.LocalCombatCases());
