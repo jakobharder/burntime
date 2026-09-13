@@ -7,13 +7,15 @@ using Burntime.Remaster.Logic.Rules;
 
 namespace Burntime.Remaster.Tests;
 
-static partial class Program
+using static Program;
+
+static class OriginalStockTests
 {
     static Item StockItem(StateManager manager, int title, int _) =>
         TestItem(manager, "title_" + title);
     static int StockTitle(ItemType type) => int.Parse(type.ID.Substring(6));
 
-    static IEnumerable<Case<int>> OriginalStockCases()
+    internal static IEnumerable<Case<int>> OriginalStockCases()
     {
         foreach (int difficulty in new[] { 0, 1, 2 })
             yield return Int($"DOS cleanup difficulty {difficulty}, local collection order", 0, () =>

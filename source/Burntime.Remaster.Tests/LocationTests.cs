@@ -6,7 +6,9 @@ using Burntime.Remaster.Logic;
 
 namespace Burntime.Remaster.Tests;
 
-static partial class Program
+using static Program;
+
+static class LocationTests
 {
     sealed class LocationTestMap : Map
     {
@@ -14,7 +16,7 @@ static partial class Program
             => mapData = (MapData)parameter[0];
     }
 
-    static IEnumerable<Case<int>> LocationCases()
+    internal static IEnumerable<Case<int>> LocationCases()
     {
         yield return Int("party arrival formation", 0, () =>
         {

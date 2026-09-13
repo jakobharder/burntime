@@ -8,9 +8,11 @@ using Burntime.Remaster.Logic.Generation;
 
 namespace Burntime.Remaster.Tests;
 
-static partial class Program
+using static Program;
+
+static class ProductionPolicyTests
 {
-    static IEnumerable<Case<int>> ProductionPolicyCases()
+    internal static IEnumerable<Case<int>> ProductionPolicyCases()
     {
         yield return Int("keyboard movement latches automatic camera follow", 0, () =>
         {
@@ -221,7 +223,7 @@ static partial class Program
         });
     }
 
-    static IEnumerable<Case<int>> AmmunitionLifecycleCases()
+    internal static IEnumerable<Case<int>> AmmunitionLifecycleCases()
     {
         yield return Int("Extended traders replace one rifle slot with a pistol", 0, () =>
         {

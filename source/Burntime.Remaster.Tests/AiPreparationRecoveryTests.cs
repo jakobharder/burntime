@@ -8,9 +8,11 @@ using Burntime.Remaster.Logic.Generation;
 
 namespace Burntime.Remaster.Tests;
 
-static partial class Program
+using static Program;
+
+static class AiPreparationRecoveryTests
 {
-    static IEnumerable<Case<int>> AiPreparationRecoveryCases()
+    internal static IEnumerable<Case<int>> AiPreparationRecoveryCases()
     {
         yield return Int("Amiga offsets exactly one daily water consumption for its living party", 0, () =>
         {

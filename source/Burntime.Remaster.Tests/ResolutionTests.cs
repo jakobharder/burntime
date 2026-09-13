@@ -4,9 +4,11 @@ using Burntime.Platform.Utils;
 
 namespace Burntime.Remaster.Tests;
 
-static partial class Program
+using static Program;
+
+static class ResolutionTests
 {
-    static IEnumerable<Case<int>> ResolutionCases()
+    internal static IEnumerable<Case<int>> ResolutionCases()
     {
         yield return Int("720p and 1440p retain the same logical viewport", 0, () =>
         {
