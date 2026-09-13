@@ -200,7 +200,7 @@ public static class HeadlessSimulation
                 if (survivors.Length == 1)
                     winner = survivors[0];
                 if (observation == null ? survivors.Length <= 1 :
-                    !survivors.Any(player => game.GetAiProfile(player) == AiProfile.Modern))
+                    !survivors.Any(player => AiStateOperations.GetProfile(player) == AiProfile.Modern))
                     break;
             }
         }
@@ -231,7 +231,7 @@ public static class HeadlessSimulation
 
         AiProfile[] expected = options.AiProfiles ??
             Enumerable.Repeat(options.AI, game.World.Players.Count).ToArray();
-        AiProfile[] actual = game.World.Players.Select(game.GetAiProfile).ToArray();
+        AiProfile[] actual = game.World.Players.Select(AiStateOperations.GetProfile).ToArray();
         if (!expected.SequenceEqual(actual))
         {
             throw new InvalidDataException(
@@ -294,9 +294,9 @@ public static class HeadlessSimulation
         DeathObservation[] unexpected = deaths.Where(death =>
                 death.Turn <= options.EarlyDeathTurn && death.Cause is not
                     (DeathCause.StrategicCombat or DeathCause.LastChanceCombat) &&
-                game.GetAiProfile(game.World.Players[death.Player]) != AiProfile.Amiga &&
+                AiStateOperations.GetProfile(game.World.Players[death.Player]) != AiProfile.Amiga &&
                 !IsExpectedDosConflictAttrition(
-                    game.GetAiProfile(game.World.Players[death.Player]),
+                    AiStateOperations.GetProfile(game.World.Players[death.Player]),
                     death.Cause == DeathCause.DailyProcessing,
                     death.SupplyExhausted,
                     death.DosMaintenanceBlocked))
@@ -315,7 +315,7 @@ public static class HeadlessSimulation
 
         bool gameVictory = game.CheckWinner() is Player;
         Player[] enabledPlayers = game.World.Players.Where(player =>
-            game.GetAiProfile(player) != AiProfile.None).ToArray();
+            AiStateOperations.GetProfile(player) != AiProfile.None).ToArray();
         bool soleSurvivor = enabledPlayers.Count(player => !player.IsDead) <= 1;
         if (!gameVictory && !soleSurvivor)
         {
@@ -328,7 +328,7 @@ public static class HeadlessSimulation
         {
             int[] unexplained = enabledPlayers
                 .Where(player => player.IsDead && !initiallyDead[player.Index] &&
-                    game.GetAiProfile(player) != AiProfile.Amiga &&
+                    AiStateOperations.GetProfile(player) != AiProfile.Amiga &&
                     !deaths.Any(death =>
                         death.Player == player.Index && death.Cause is
                             DeathCause.StrategicCombat or DeathCause.LastChanceCombat))
@@ -486,13 +486,13 @@ public static class HeadlessSimulation
         report.AppendLine($"Difficulty: {DifficultyLabel(game.World.Difficulty)}");
         report.AppendLine("AI difficulties: " + string.Join(", ",
             game.World.Players.Select(player =>
-                game.GetAiProfile(player) == AiProfile.None
+                AiStateOperations.GetProfile(player) == AiProfile.None
                     ? $"P{player.Index + 1} disabled"
                     : AiStateOperations.TryGetDifficulty(player.AiState, out int difficulty)
                     ? $"P{player.Index + 1} {DifficultyLabel(difficulty)}"
                     : $"P{player.Index + 1} human")));
         AiProfile[] profiles = game.World.Players
-            .Select(game.GetAiProfile)
+            .Select(AiStateOperations.GetProfile)
             .ToArray();
         if (profiles.Distinct().Count() > 1)
             report.AppendLine("AI profiles: " + string.Join(", ", profiles.Select(

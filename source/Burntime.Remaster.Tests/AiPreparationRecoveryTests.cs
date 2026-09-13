@@ -12,6 +12,32 @@ static partial class Program
 {
     static IEnumerable<Case<int>> AiPreparationRecoveryCases()
     {
+        yield return Int("Amiga offsets exactly one daily water consumption for its living party", 0, () =>
+        {
+            var m = new StateManager(null!);
+            var player = m.Create<HazardPlayer>(new object[] { 0 });
+            var boss = m.Create<HazardCharacter>(); boss.Player = player; player.Character = boss;
+            var follower = m.Create<HazardCharacter>(); follower.Player = player; player.Group.Add(follower);
+            var deadFollower = m.Create<HazardCharacter>(); deadFollower.Player = player;
+            deadFollower.Health = 0; player.Group.Add(deadFollower);
+            boss.Water = 0;
+            follower.Water = follower.MaxWater;
+            deadFollower.Water = 0;
+            var ai = m.Create<AmigaAiState>(new object[]
+                { player, new AiSettings { Difficulty = 0 } });
+
+            AmigaAiState.OffsetDailyWaterConsumption(player);
+
+            Equal(50, AiStateOperations.GetNaturalHealingThreshold(ai),
+                "Amiga healing policy");
+            Equal(null, AiStateOperations.GetNaturalHealingThreshold(null),
+                "default healing policy");
+            Equal(1, boss.Water, "empty bottle avoidance");
+            Equal(follower.MaxWater, follower.Water, "maximum respected");
+            Equal(0, deadFollower.Water, "dead follower ignored");
+            return 0;
+        });
+
         foreach (bool city in new[] { false, true })
         foreach (bool hostileOrigin in new[] { false, true })
         foreach (bool hostileDestination in new[] { false, true })
@@ -44,7 +70,7 @@ static partial class Program
         yield return Int("Amiga pending local maintenance survives expansion suppression, then runs once", 0, () =>
         {
             var m = new StateManager(null!); var game = m.Create<ClassicGame>(); m.Root = game;
-            game.SetProfiles(RuleSet.Extended, AiProfile.Amiga);
+            game.SetRules(RuleSet.Extended);
             game.World = m.Create(() =>
             {
                 var world = (ClassicWorld)System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(ClassicWorld));
@@ -68,7 +94,7 @@ static partial class Program
             player.Location = city;
             game.World.Locations.Add(city);
             for (int i = 0; i < 4; i++) { var camp = m.Create<Location>(); camp.Player = player; camp.Rooms = m.CreateLinkList<Room>(); game.World.Locations.Add(camp); }
-            var ai = m.Create<AmigaAiState>(new object[] { player, new AiSettings { Difficulty = 0, Profile = AiProfile.Amiga } });
+            var ai = m.Create<AmigaAiState>(new object[] { player, new AiSettings { Difficulty = 0 } });
             ai.Turn(); Equal(9, player.Character.Food, "first maintenance");
             player.Character.Food = 0; game.World.Day++;
             ai.Turn(); Equal(9, player.Character.Food, "suppressed local work retains maintenance");

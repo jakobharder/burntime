@@ -637,7 +637,8 @@ namespace Burntime.Remaster.Logic
                 return;
             }
 
-            Root.RuleBook.TurnEmployedCharacter(this);
+            Root.RuleBook.TurnEmployedCharacter(
+                this, AI.AiStateOperations.GetNaturalHealingThreshold(Player.AiState));
 
             if (IsDead)
                 return;
@@ -652,9 +653,8 @@ namespace Burntime.Remaster.Logic
             : Location?.CampNPC.Any(member => !member.IsDead &&
                 member.Class == CharClass.Doctor && member.Player == Player) == true;
 
-        internal void TurnExtendedEmployed(bool amigaSurvivalBehavior)
+        internal void TurnExtendedEmployed(int? naturalHealingThreshold)
         {
-            bool amigaActiveParty = amigaSurvivalBehavior && IsWithBoss;
             ICharacterCollection group = GetGroup();
 
             if (Food == 0)
@@ -670,7 +670,7 @@ namespace Burntime.Remaster.Logic
             // npc is with boss
             if (IsWithBoss)
             {
-                if (!amigaActiveParty && Water == 0)
+                if (Water == 0)
                 {
                     Item item = group.FindWater();
                     if (item != null)
@@ -700,23 +700,16 @@ namespace Burntime.Remaster.Logic
 
             // TODO move location healing to location
             bool doctorAvailable = HasLocalDoctor;
-            bool aiAutoHealing = Player?.Type == PlayerType.Ai && !amigaSurvivalBehavior;
-            if (doctorAvailable)
-            {
-                if (health >= 50 || aiAutoHealing)
-                    health += 4;
-            }
-            else
-            {
-                if (health >= (amigaSurvivalBehavior ? 50 : 70) || aiAutoHealing)
-                    health += 2;
-            }
+            int healingThreshold = RuleFormulas.NaturalHealingThreshold(
+                doctorAvailable, naturalHealingThreshold);
+            if (health >= healingThreshold)
+                health += doctorAvailable ? 4 : 2;
 
             if (health > 100)
                 health = 100;
             if (Food == 0)
                 health -= 25;
-            if (!amigaActiveParty && Water == 0)
+            if (Water == 0)
                 health -= 25;
 
             if (health <= 0)
@@ -728,12 +721,9 @@ namespace Burntime.Remaster.Logic
             Food--;
             if (Food < 0)
                 Food = 0;
-            if (!amigaActiveParty)
-            {
-                Water--;
-                if (Water < 0)
-                    Water = 0;
-            }
+            Water--;
+            if (Water < 0)
+                Water = 0;
         }
 
         void ResetStationedMind()

@@ -181,17 +181,17 @@ internal sealed class GameRules
     public bool MeetsRecruitmentExperience(Character boss, Character recruit) =>
         RuleFormulas.CanRecruit(Settings.RecruitmentRules, boss.Experience, recruit.Experience);
 
-    public void TurnEmployedCharacter(Character character)
+    public void TurnEmployedCharacter(Character character, int? naturalHealingThreshold = null)
     {
         if (Settings.SurvivalRules.Equals(
             "remaster_supply_pool", StringComparison.OrdinalIgnoreCase))
         {
-            character.TurnExtendedEmployed(UsesAmigaSurvivalBehavior(character));
+            character.TurnExtendedEmployed(naturalHealingThreshold);
             HazardRules.ApplyDaily(character);
             return;
         }
 
-        TurnOriginalEmployed(character);
+        TurnOriginalEmployed(character, naturalHealingThreshold);
     }
 
     public bool PassesDailyHazardCheck(Character character) => HazardRules.PassesDailyCheck(character);
@@ -246,25 +246,19 @@ internal sealed class GameRules
         TableCombat.Roll(attacker, UsesArmour ? defender : null,
             Settings, useAmmo, UsesArmour);
 
-    static bool UsesAmigaSurvivalBehavior(Character character) =>
-        ((ClassicGame)character.Container.Root).UsesAiProfile(
-            character.Player, AiProfile.Amiga);
-
     static int OriginalServiceValue(IItemCollection payment) =>
         RuleFormulas.OriginalServiceValue(payment.Select(item => item.TradeValue));
 
-    static void TurnOriginalEmployed(Character character)
+    static void TurnOriginalEmployed(Character character, int? naturalHealingThreshold)
     {
-        ClassicGame game = (ClassicGame)character.Container.Root;
-        bool amigaAi = game.UsesAiProfile(character.Player, AiProfile.Amiga);
-        bool amigaActiveParty = amigaAi && character.IsWithBoss;
         bool doctorAvailable = character.HasLocalDoctor;
 
-        int threshold = doctorAvailable || amigaAi ? 50 : 70;
+        int threshold = RuleFormulas.NaturalHealingThreshold(
+            doctorAvailable, naturalHealingThreshold);
         if (character.Health >= threshold)
             character.Health += doctorAvailable ? 4 : 2;
 
-        if (!amigaActiveParty && !ConsumeWater(character))
+        if (!ConsumeWater(character))
         {
             character.Water = 0;
             character.Health -= 25;

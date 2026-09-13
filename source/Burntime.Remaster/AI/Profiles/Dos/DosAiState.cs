@@ -12,6 +12,7 @@ namespace Burntime.Remaster.AI;
 [Serializable]
 internal sealed class DosAiState : OriginalAiState
 {
+    protected override string ProfileLabel => "dos";
     int ConflictBudget => new[] { 2, 4, 6 }[Difficulty];
 
     protected override bool CanRecruit(Logic.Character candidate) => true;

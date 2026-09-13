@@ -135,7 +135,7 @@ internal sealed class EconomyObservation
         {
             SchemaVersion = 1, options.Seed, Difficulty = options.Difficulty,
             Rules = game.Rules.ToString().ToLowerInvariant(), RequestedTurns = options.Turns,
-            Profiles = game.World.Players.Select(player => game.GetAiProfile(player).ToString().ToLowerInvariant()),
+            Profiles = game.World.Players.Select(player => AiStateOperations.GetProfile(player).ToString().ToLowerInvariant()),
             Turns = turns
         }));
     }

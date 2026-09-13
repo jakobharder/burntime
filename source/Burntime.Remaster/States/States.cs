@@ -79,8 +79,6 @@ namespace Burntime.Remaster
 
         [System.Runtime.Serialization.OptionalField]
         string? ruleSet;
-        [System.Runtime.Serialization.OptionalField]
-        string[]? aiProfiles;
 
         public RuleSet Rules => GameDefinitions.ParseRules(ruleSet);
         public GameFeature Features => GameDefinitions.Get(Rules).Features;
@@ -89,20 +87,6 @@ namespace Burntime.Remaster
         [NonSerialized]
         GameRules? ruleBook;
         internal GameRules RuleBook => ruleBook ??= new(Rules);
-
-        public AiProfile GetAiProfile(Player player)
-        {
-            if (aiProfiles != null && player.Index >= 0 && player.Index < aiProfiles.Length)
-                return GameDefinitions.ParseAi(aiProfiles[player.Index]);
-            if (player.AiState is IAiProfileState profileState)
-                return profileState.Profile;
-            return player.Type == PlayerType.Ai && player.IsDead
-                ? AiProfile.None
-                : AiProfile.Modern;
-        }
-
-        internal bool UsesAiProfile(Player player, AiProfile profile) =>
-            player.Type == PlayerType.Ai && GetAiProfile(player) == profile;
 
         internal void UpdateCreatureAttackCooldown(float elapsed)
         {
@@ -119,14 +103,7 @@ namespace Burntime.Remaster
             return true;
         }
 
-        internal void SetProfiles(RuleSet rules, AiProfile ai,
-            AiProfile[]? playerAiProfiles = null)
-        {
-            ruleSet = rules.ToString();
-            aiProfiles = (playerAiProfiles ?? Enumerable.Repeat(ai, 4).ToArray())
-                .Select(profile => profile.ToString())
-                .ToArray();
-        }
+        internal void SetRules(RuleSet rules) => ruleSet = rules.ToString();
 
         protected override void InitInstance(object[] parameter)
         {
@@ -180,16 +157,7 @@ namespace Burntime.Remaster
                     "items@items_original.txt" => RuleSet.Classic,
                     _ => RuleSet.Extended
                 };
-                AiProfile[] profiles = Enumerable.Repeat(
-                    AiProfile.Modern, World.Players.Count).ToArray();
-
-                foreach (Player player in World.Players.Where(player => player.Type == PlayerType.Ai))
-                {
-                    if (player.IsDead)
-                        profiles[player.Index] = AiProfile.None;
-                }
-
-                SetProfiles(rules, AiProfile.Modern, profiles);
+                SetRules(rules);
             }
 
             // remove old intermediate rifle states

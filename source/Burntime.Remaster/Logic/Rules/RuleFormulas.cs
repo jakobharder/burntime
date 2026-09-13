@@ -55,6 +55,11 @@ internal static class RuleFormulas
     internal static int DoctorResult(int health, int healingPoints, float factor, int cap) =>
         Math.Max(health, Math.Min(cap, health + (int)(healingPoints * factor)));
 
+    internal static int NaturalHealingThreshold(
+        bool doctorAvailable,
+        int? thresholdOverride = null) =>
+        doctorAvailable ? 50 : thresholdOverride ?? 70;
+
     internal static int OriginalServiceValue(IEnumerable<float> tradeValues) =>
         (int)tradeValues.Sum();
 

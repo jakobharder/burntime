@@ -12,7 +12,6 @@ internal static class AiStateFactory
         Player player,
         AiSettings settings)
     {
-        settings.Profile = profile;
         return profile switch
         {
             AiProfile.None => null,

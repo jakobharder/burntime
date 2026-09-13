@@ -12,6 +12,8 @@ namespace Burntime.Remaster.AI;
 [Serializable]
 internal sealed class AmigaAiState : OriginalAiState
 {
+    protected override string ProfileLabel => "amiga";
+
     // The original player record stores the day of the last completed trip;
     // its route filter relaxes after three stationary days. OptionalField
     // keeps experimental saves made before this fidelity pass loadable.
@@ -58,6 +60,7 @@ internal sealed class AmigaAiState : OriginalAiState
     {
         if (Player.IsDead || Player.Character.IsDead)
             return;
+        OffsetDailyWaterConsumption(Player);
         Player.RecalculateExperience();
         if (Player.IsTraveling)
             return;
@@ -92,6 +95,12 @@ internal sealed class AmigaAiState : OriginalAiState
         Logic.Location? next = ChooseNextStep(expansionRoute);
         if (next != null)
             StartTravel(next);
+    }
+
+    internal static void OffsetDailyWaterConsumption(Logic.Player player)
+    {
+        foreach (Logic.Character character in player.Group.Where(character => !character.IsDead))
+            character.Water = Math.Min(character.MaxWater, character.Water + 1);
     }
 
     Logic.Location? ChooseNextStep(bool expansionRoute)

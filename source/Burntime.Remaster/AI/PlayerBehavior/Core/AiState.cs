@@ -19,7 +19,7 @@ namespace Burntime.Remaster.AI
     /// so v1.0.4 saves deserialize with the default value.
     /// </summary>
     [Serializable]
-    class ClassicAiState : Burntime.Framework.States.AiState, IAiProfileState
+    class ClassicAiState : Burntime.Framework.States.AiState
     {
         protected enum Mode
         {
@@ -135,8 +135,6 @@ namespace Burntime.Remaster.AI
         {
             get { return headedLocation; }
         }
-
-        AiProfile IAiProfileState.Profile => settings.Profile;
 
         /// <summary>
         /// Empire-wide strategic equipment and construction reserve.

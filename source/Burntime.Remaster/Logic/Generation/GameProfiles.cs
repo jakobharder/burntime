@@ -18,15 +18,6 @@ public enum AiProfile
     Amiga = 3
 }
 
-/// <summary>
-/// Runtime identity exposed by a serialized AI state. Rules depend on this
-/// neutral profile contract rather than concrete AI implementations.
-/// </summary>
-internal interface IAiProfileState
-{
-    AiProfile Profile { get; }
-}
-
 [Flags]
 public enum GameFeature
 {

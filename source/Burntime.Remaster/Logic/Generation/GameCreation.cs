@@ -69,7 +69,7 @@ namespace Burntime.Remaster.Logic.Generation
 
             // get root game object
             ClassicGame game = container.Root as ClassicGame;
-            game.SetProfiles(Info.Rules, Info.AI, Info.AiProfiles);
+            game.SetRules(Info.Rules);
 
             LogicFactory.SetParameter("resource", app.ResourceManager);
 
@@ -260,7 +260,7 @@ namespace Burntime.Remaster.Logic.Generation
             foreach (Burntime.Framework.Network.GameClient client in app.Server.Clients)
             {
                 Player p = game.World.Players[client.Player];
-                if (p.Type == PlayerType.Ai && game.GetAiProfile(p) == AiProfile.None)
+                if (p.Type == PlayerType.Ai && p.IsDead)
                     client.Die();
             }
         }

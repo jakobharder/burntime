@@ -72,8 +72,7 @@ internal sealed class AiPolicy
         return new AiSettings
         {
             MaxAdvance = policy.CampMaxAdvance,
-            Difficulty = difficulty,
-            Profile = AiProfile.Modern
+            Difficulty = difficulty
         };
     }
 

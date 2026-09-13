@@ -63,6 +63,18 @@ internal static class AiStateOperations
         return false;
     }
 
+    internal static AiProfile GetProfile(Player player) => player.AiState switch
+    {
+        DosAiState => AiProfile.Dos,
+        AmigaAiState => AiProfile.Amiga,
+        ClassicAiState => AiProfile.Modern,
+        _ when player.Type == PlayerType.Ai && player.IsDead => AiProfile.None,
+        _ => AiProfile.Modern
+    };
+
+    internal static int? GetNaturalHealingThreshold(AiState? state) =>
+        state is AmigaAiState ? 50 : null;
+
     internal static IEnumerable<Character> GetCampDefenders(
         Location location, Player? attacker, IEnumerable<Player> opponents)
     {

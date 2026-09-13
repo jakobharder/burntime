@@ -12,8 +12,7 @@ namespace Burntime.Remaster.AI;
 /// DOS and Amiga each implement their own turn loop.
 /// </summary>
 [Serializable]
-internal abstract class OriginalAiState : Burntime.Framework.States.AiState,
-    Logic.Generation.IAiProfileState
+internal abstract class OriginalAiState : Burntime.Framework.States.AiState
 {
     protected enum Mode
     {
@@ -30,6 +29,7 @@ internal abstract class OriginalAiState : Burntime.Framework.States.AiState,
     protected int wait;
 
     protected virtual int MaximumGroupSize => 5;
+    protected abstract string ProfileLabel { get; }
     protected virtual bool HasRecruitmentCapacity => Player.Group.Count < MaximumGroupSize;
     protected abstract bool CanRecruit(Character candidate);
     protected abstract void RecoverGroup(bool arrived);
@@ -55,7 +55,6 @@ internal abstract class OriginalAiState : Burntime.Framework.States.AiState,
     }
 
     public Player Player => player;
-    Logic.Generation.AiProfile Logic.Generation.IAiProfileState.Profile => settings.Profile;
     internal int Difficulty => settings.Difficulty;
     internal ClassicGame RootGame => (ClassicGame)container.Root;
     internal Location Current => Player.Location;
@@ -92,8 +91,6 @@ internal abstract class OriginalAiState : Burntime.Framework.States.AiState,
     }
 
     public abstract void Turn();
-
-    protected string ProfileLabel => settings.Profile.ToString().ToLowerInvariant();
 
     protected abstract bool ResolveCurrentOpposition();
 

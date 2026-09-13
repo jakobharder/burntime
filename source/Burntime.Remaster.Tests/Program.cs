@@ -357,7 +357,7 @@ static partial class Program
         var manager = new Burntime.Framework.States.StateManager(null!);
         var game = manager.Create(() => new ClassicGame());
         manager.Root = game;
-        game.SetProfiles(rule, AiProfile.Modern);
+        game.SetRules(rule);
         var attacker = manager.Create<Burntime.Remaster.Logic.Player>(new object[] { 0 });
         var defender = manager.Create<Burntime.Remaster.Logic.Player>(new object[] { 1 });
         attacker.Character = EncounterFighter(manager, attacker, 100, 1);
@@ -386,7 +386,7 @@ static partial class Program
                 var manager = new Burntime.Framework.States.StateManager(null!);
                 var game = manager.Create(() => new ClassicGame());
                 manager.Root = game;
-                game.SetProfiles(rule, AiProfile.Modern);
+                game.SetRules(rule);
                 var attacker = manager.Create(() => new HazardCharacter());
                 var defender = manager.Create(() => new HazardCharacter());
                 attacker.Class = defender.Class = CharClass.Dog;
@@ -549,6 +549,12 @@ static partial class Program
             () => RuleFormulas.DoctorResult(80, 12, 1, 95));
         yield return Int("Extended doctor cap", 95,
             () => RuleFormulas.DoctorResult(95, 12, 1, 95));
+        yield return Int("natural healing starts at 70", 70,
+            () => RuleFormulas.NaturalHealingThreshold(doctorAvailable: false));
+        yield return Int("caller can override natural healing threshold", 50,
+            () => RuleFormulas.NaturalHealingThreshold(doctorAvailable: false, thresholdOverride: 50));
+        yield return Int("doctor lowers natural healing threshold to 50", 50,
+            () => RuleFormulas.NaturalHealingThreshold(doctorAvailable: true));
         foreach (float factor in new[] { 1f, 0.75f })
         foreach (int health in new[] { 94, 95, 96, 100 })
         {
@@ -769,7 +775,7 @@ static partial class Program
             defender.Character.Experience = 37; // Knife basis 20: strength 57.
             var ai = manager.Create<Burntime.Remaster.AI.DosAiState>(new object[]
             {
-                attacker, new Burntime.Remaster.AI.AiSettings { Difficulty = 2, Profile = AiProfile.Dos }
+                attacker, new Burntime.Remaster.AI.AiSettings { Difficulty = 2 }
             });
             var damage = typeof(Burntime.Remaster.AI.DosAiState).GetMethod("StrategicDamage",
                 System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
@@ -802,7 +808,7 @@ static partial class Program
                     camp.Characters.Add(guard);
                 var ai = manager.Create<Burntime.Remaster.AI.DosAiState>(new object[]
                 {
-                    attacker, new Burntime.Remaster.AI.AiSettings { Difficulty = 2, Profile = AiProfile.Dos }
+                    attacker, new Burntime.Remaster.AI.AiSettings { Difficulty = 2 }
                 });
                 const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
                 var resolve = typeof(Burntime.Remaster.AI.DosAiState).GetMethod("ResolveCurrentOpposition", flags)!;
@@ -1052,7 +1058,7 @@ static partial class Program
                 var manager = new Burntime.Framework.States.StateManager(null!);
                 var game = manager.Create(() => new ClassicGame());
                 manager.Root = game;
-                game.SetProfiles(rule, AiProfile.Modern);
+                game.SetRules(rule);
                 var owner = manager.Create<HazardPlayer>(new object[] { 0 });
                 owner.Type = Burntime.Remaster.Logic.PlayerType.Human;
                 var character = manager.Create(() => new HazardCharacter());
