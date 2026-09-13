@@ -31,6 +31,7 @@ namespace Burntime.Remaster
         }
 
         const float NEXT_TURN_HOLD_TIME = 0.6f;
+        const float CHARACTER_CYCLE_DEBOUNCE_TIME = 0.15f;
 
         ClassicMapView view;
         IMapGuiWindow gui;
@@ -44,6 +45,10 @@ namespace Burntime.Remaster
         bool _followPlayerAfterPan;
         float _nextTurnHoldTime;
         bool _nextTurnTriggered;
+        bool _characterCycleLatched;
+        float _characterCycleDebounce;
+        InputPromptHandle _previousCharacterPrompt;
+        InputPromptHandle _nextCharacterPrompt;
         string _cheatCommand = string.Empty;
         bool _cheatDialogActive;
         bool _menuOpenedByMouse;
@@ -128,6 +133,16 @@ namespace Burntime.Remaster
                 {
                     MouseControl = MouseButton.Left
                 });
+            _previousCharacterPrompt = Prompts.Add(
+                new InputPrompt(InputAction.LeftArea, ""),
+                Vector2.Zero, CanShowCharacterPrompts,
+                PositionAlignment.Right, PositionAlignment.Right);
+            _nextCharacterPrompt = Prompts.Add(
+                new InputPrompt(InputAction.RightArea, ""),
+                Vector2.Zero, CanShowCharacterPrompts,
+                PositionAlignment.Left, PositionAlignment.Right,
+                separator: " ");
+            UpdateCharacterPromptPositions();
         }
 
         private void View_OnContextMenu(Vector2 position, MouseButton button)
@@ -226,6 +241,7 @@ namespace Burntime.Remaster
             Size = app.Engine.Resolution.Game;
             gui.SetMapRenderArea(view, Size);
             app.MouseBoundings = view.Boundings;
+            UpdateCharacterPromptPositions();
         }
 
         void view_Scroll(object sender, MapScrollArgs e)
@@ -345,6 +361,7 @@ namespace Burntime.Remaster
         public override void OnUpdate(float Elapsed)
         {
             ResetHeldActionsIfReleased();
+            _characterCycleDebounce = System.Math.Max(0, _characterCycleDebounce - Elapsed);
             UpdateCameraPan(Elapsed);
             _hoverInfo.ShowAllEntrances = app.IsInputActionDown(InputAction.ShowEntrances);
             _hoverInfo.HighlightedWorldLocation = app.MouseInputVisible
@@ -421,6 +438,68 @@ namespace Burntime.Remaster
             return null;
         }
 
+        bool CanShowCharacterPrompts() =>
+            app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad &&
+            (app.GameState as ClassicGame).World.ActivePlayerObj.Party.Count > 1;
+
+        void UpdateCharacterPromptPositions()
+        {
+            const int portraitLeftOffset = -31;
+            const int portraitWidth = 68;
+            const int portraitGap = 2;
+            const int bottomMargin = 6;
+            int portraitLeft = app.Engine.Resolution.Game.x / 2 + portraitLeftOffset;
+            int portraitRight = portraitLeft + portraitWidth;
+            int baseline = app.Engine.Resolution.Game.y - bottomMargin;
+            _previousCharacterPrompt.UpdatePosition(new Vector2(
+                portraitLeft - portraitGap, baseline));
+            _nextCharacterPrompt.UpdatePosition(new Vector2(
+                portraitRight + portraitGap, baseline));
+        }
+
+        void CyclePartyCharacter(int direction)
+        {
+            Logic.Player player = (app.GameState as ClassicGame).World.ActivePlayerObj;
+            Group party = player.Party;
+            if (party.Count <= 1)
+                return;
+
+            if (app.LastInputMode == InputMode.Gamepad)
+            {
+                if (_characterCycleLatched || _characterCycleDebounce > 0)
+                    return;
+                _characterCycleLatched = true;
+                _characterCycleDebounce = CHARACTER_CYCLE_DEBOUNCE_TIME;
+            }
+
+            int targetIndex;
+            if (!player.SingleMode)
+            {
+                targetIndex = direction > 0 ? 1 : 0;
+            }
+            else
+            {
+                int currentIndex = 0;
+                for (int i = 0; i < party.Count; i++)
+                {
+                    if (party[i] == player.SelectedCharacter)
+                    {
+                        currentIndex = i;
+                        break;
+                    }
+                }
+                targetIndex = (currentIndex + direction + party.Count) % party.Count;
+            }
+
+            Character target = party[targetIndex];
+            player.SelectGroup(party);
+            if (target == player.Character)
+                player.SelectGroup(target);
+            else
+                player.SelectCharacter(target);
+            gui.UpdatePlayer();
+        }
+
         bool CanPromptEnter()
         {
             if (!HasValidPromptLocation())
@@ -476,6 +555,8 @@ namespace Burntime.Remaster
             _nextTurnTriggered = false;
             _cameraPanActive = false;
             _followPlayerAfterPan = false;
+            _characterCycleLatched = false;
+            _characterCycleDebounce = 0;
 
             if (!BurntimeClassic.Instance.NewGui)
             {
@@ -568,13 +649,13 @@ namespace Burntime.Remaster
 
             if (action == InputAction.LeftArea)
             {
-                // Shoulder buttons are reserved for character cycling on the
-                // location map. World-map actions use their semantic bindings directly.
+                CyclePartyCharacter(-1);
                 return true;
             }
 
             if (action == InputAction.RightArea)
             {
+                CyclePartyCharacter(1);
                 return true;
             }
 
@@ -895,6 +976,10 @@ namespace Burntime.Remaster
                 _nextTurnHoldTime = 0;
                 _nextTurnTriggered = false;
             }
+            if (_characterCycleLatched &&
+                !app.IsInputActionDown(InputAction.LeftArea) &&
+                !app.IsInputActionDown(InputAction.RightArea))
+                _characterCycleLatched = false;
         }
 
         void UpdateCameraPan(float elapsed)
@@ -965,7 +1050,9 @@ namespace Burntime.Remaster
             classic.InventoryBackground = -1;
             classic.InventoryRoom = null;
             classic.PickItems = null;
-            app.SceneManager.SetScene("InventoryScene", classic.Game.World.ActivePlayerObj.Character);
+            Logic.Player player = classic.Game.World.ActivePlayerObj;
+            app.SceneManager.SetScene("InventoryScene",
+                player.SelectedCharacter ?? player.Character);
         }
 
         public void OnMenuStatistics()

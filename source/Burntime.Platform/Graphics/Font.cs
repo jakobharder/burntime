@@ -35,6 +35,31 @@ public enum TextBorders
     Window
 }
 
+/// <summary>A text or sprite segment in a single inline font layout.</summary>
+public readonly struct FontInlineRun
+{
+    public string? Text { get; }
+    public ISprite? Sprite { get; }
+    public int Advance { get; }
+    public int VerticalOffset { get; }
+
+    public FontInlineRun(string text)
+    {
+        Text = text;
+        Sprite = null;
+        Advance = 0;
+        VerticalOffset = 0;
+    }
+
+    public FontInlineRun(ISprite sprite, int? advance = null, int verticalOffset = 0)
+    {
+        Text = null;
+        Sprite = sprite;
+        Advance = advance ?? sprite.Width;
+        VerticalOffset = verticalOffset;
+    }
+}
+
 public struct CharInfo
 {
     public int pos;
@@ -115,20 +140,65 @@ public class Font
             _resourceManager.LoadFont(this);
 
         target.Layer++;
-        if (!Info.Colorize)
+        DrawText(target, position, text, align, verticalAlign, GetDrawColor(alpha));
+        target.Layer--;
+    }
+
+    /// <summary>
+    /// Draws one aligned line containing text and sprites. Positioning and border
+    /// correction apply to the complete line, including overlapping sprites.
+    /// </summary>
+    public void DrawInline(RenderTarget target, Vector2 position,
+        IReadOnlyList<FontInlineRun> runs, TextAlignment align = TextAlignment.Left,
+        VerticalTextAlignment verticalAlign = VerticalTextAlignment.Center, float alpha = 1)
+    {
+        if (!IsLoaded)
+            _resourceManager.LoadFont(this);
+        if (runs == null || runs.Count == 0)
+            return;
+
+        float advance = 0;
+        float width = 0;
+        int height = GetHeight();
+        for (int i = 0; i < runs.Count; i++)
         {
-            DrawText(target, position, text, align, verticalAlign,
-                new PixelColor((int)(255 * alpha), 255, 255, 255));
+            FontInlineRun run = runs[i];
+            if (run.Text != null)
+            {
+                float textWidth = GetWidthF(run.Text);
+                width = System.Math.Max(width, advance + textWidth);
+                advance += textWidth;
+            }
+            else if (run.Sprite != null)
+            {
+                width = System.Math.Max(width, advance + run.Sprite.Width);
+                advance += run.Advance;
+                height = System.Math.Max(height,
+                    run.Sprite.Height + System.Math.Abs(run.VerticalOffset) * 2);
+            }
         }
-        else if (Info.UseBackColor)
+
+        Vector2f origin = ResolvePosition(target, position, width, height, align, verticalAlign);
+        float cursor = origin.x;
+        PixelColor color = GetDrawColor(alpha);
+        target.Layer++;
+        for (int i = 0; i < runs.Count; i++)
         {
-            DrawText(target, position, text, align, verticalAlign,
-                new PixelColor((int)(255 * alpha), 255, 255, 255));
-        }
-        else
-        {
-            var c = new PixelColor((int)(Info.ForeColor.a * alpha), Info.ForeColor.r, Info.ForeColor.g, Info.ForeColor.b);
-            DrawText(target, position, text, align, verticalAlign, c);
+            FontInlineRun run = runs[i];
+            if (run.Text != null)
+            {
+                DrawInlineText(target, new Vector2f(cursor,
+                    origin.y + (height - GetHeight()) / 2f), run.Text, color);
+                cursor += GetWidthF(run.Text);
+            }
+            else if (run.Sprite != null)
+            {
+                int spriteY = (int)System.Math.Round(origin.y +
+                    (height - run.Sprite.Height) / 2f + run.VerticalOffset);
+                target.DrawSprite(new Vector2((int)System.Math.Round(cursor), spriteY),
+                    run.Sprite, alpha);
+                cursor += run.Advance;
+            }
         }
         target.Layer--;
     }
@@ -157,38 +227,10 @@ public class Font
 
             offset.x = position.x;
             float lineWidth = GetWidthFPlain(str);
-            float renderX = offset.x;
-
-            if (align == TextAlignment.Center)
-                renderX -= lineWidth / 2;
-            else if (align == TextAlignment.Right)
-                renderX -= lineWidth;
-
-            if (verticalAlign == VerticalTextAlignment.Center)
-                offset.y -= GetHeight() / 2;
-            else if (verticalAlign == VerticalTextAlignment.Bottom)
-                offset.y -= GetHeight();
-
-            if (Borders == TextBorders.Window)
-            {
-                Vector2 lt = new Vector2();
-                float right = lt.x + target.Size.x - lineWidth;
-                int bottom = lt.y + target.Size.y - GetHeight();
-                renderX = System.Math.Max(renderX, lt.x);
-                offset.y = System.Math.Max(offset.y, lt.y);
-                renderX = System.Math.Min(renderX, right);
-                offset.y = System.Math.Min(offset.y, bottom);
-            }
-            else if (Borders == TextBorders.Screen)
-            {
-                Vector2 lt = -target.ScreenOffset + 2;
-                float right = lt.x + target.ScreenSize.x - lineWidth - 2;
-                int bottom = lt.y + target.ScreenSize.y - GetHeight() - 2;
-                renderX = System.Math.Max(renderX, lt.x);
-                offset.y = System.Math.Max(offset.y, lt.y);
-                renderX = System.Math.Min(renderX, right);
-                offset.y = System.Math.Min(offset.y, bottom);
-            }
+            Vector2f resolved = ResolvePosition(target, offset, lineWidth, GetHeight(),
+                align, verticalAlign);
+            float renderX = resolved.x;
+            offset.y = (int)resolved.y;
 
             target.SelectSprite(Resource.Sprite);
 
@@ -219,6 +261,75 @@ public class Font
             offset.y += (int)(GetHeight() - Resource.Offset);
             if (lineIndex < lines.Length - 1)
                 characterIndex++;
+        }
+    }
+
+    Vector2f ResolvePosition(RenderTarget target, Vector2 position, float width, int height,
+        TextAlignment align, VerticalTextAlignment verticalAlign)
+    {
+        float x = position.x;
+        float y = position.y;
+        if (align == TextAlignment.Center)
+            x -= width / 2;
+        else if (align == TextAlignment.Right)
+            x -= width;
+        if (verticalAlign == VerticalTextAlignment.Center)
+            y -= height / 2f;
+        else if (verticalAlign == VerticalTextAlignment.Bottom)
+            y -= height;
+
+        if (Borders == TextBorders.Window)
+        {
+            x = System.Math.Clamp(x, 0, System.Math.Max(0, target.Size.x - width));
+            y = System.Math.Clamp(y, 0, System.Math.Max(0, target.Size.y - height));
+        }
+        else if (Borders == TextBorders.Screen)
+        {
+            Vector2 topLeft = -target.ScreenOffset + 2;
+            float right = topLeft.x + target.ScreenSize.x - width - 2;
+            float bottom = topLeft.y + target.ScreenSize.y - height - 2;
+            x = System.Math.Clamp(x, topLeft.x, System.Math.Max(topLeft.x, right));
+            y = System.Math.Clamp(y, topLeft.y, System.Math.Max(topLeft.y, bottom));
+        }
+        return new Vector2f(x, y);
+    }
+
+    PixelColor GetDrawColor(float alpha)
+    {
+        if (!Info.Colorize || Info.UseBackColor)
+            return new PixelColor((int)(255 * alpha), 255, 255, 255);
+        return new PixelColor((int)(Info.ForeColor.a * alpha),
+            Info.ForeColor.r, Info.ForeColor.g, Info.ForeColor.b);
+    }
+
+    void DrawInlineText(RenderTarget target, Vector2f position, string text, PixelColor color)
+    {
+        ParsedText parsed = ParseText(text);
+        target.SelectSprite(Resource.Sprite);
+        float renderX = position.x;
+        float renderY = position.y;
+        if (Resource.Sprite.LinearFiltering)
+        {
+            Vector2f snapped = target.SnapToPhysicalPixels(position);
+            renderX = snapped.x;
+            renderY = snapped.y;
+        }
+
+        char previous = '\0';
+        for (int i = 0; i < parsed.Text.Length; i++)
+        {
+            char ch = parsed.Text[i];
+            if (ch == '\n')
+                continue;
+            char current = translateChar(ch);
+            if (previous != '\0')
+                renderX += GetKerningOverlap(previous, current);
+            if (parsed.BlinkingCharacters.Contains(i) && target.TotalElapsed % 1 >= 0.5f)
+                renderX += Resource.CharInfo[current].renderWidth;
+            else
+                renderX += DrawChar(target, current, new Vector2f(renderX, renderY), color);
+            if (!char.IsWhiteSpace(ch))
+                previous = current;
         }
     }
 

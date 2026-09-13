@@ -227,7 +227,7 @@ public class MenuScene : Scene
                 BurntimeClassic.LightGray) { Borders = TextBorders.Screen },
             Prompts = { { InputAction.Primary, "@prompts?9" } }
         };
-        GameMode.AddState(null, "gfx/ui/start_button_extended.png", "gfx/ui/start_button_extended_down.png", "gfx/ui/start_button_extended_down.png", "@newburn?110");
+        GameMode.AddState(null, "gfx/ui/start_button_remake.png", "gfx/ui/start_button_remake_down.png", "gfx/ui/start_button_remake_down.png", "@newburn?110");
         GameMode.AddState(null, "gfx/ui/start_button_original.png", "gfx/ui/start_button_original_down.png", "gfx/ui/start_button_original_down.png", "@newburn?105");
         Windows += GameMode;
 
@@ -240,7 +240,7 @@ public class MenuScene : Scene
             Prompts = { { InputAction.Primary, "@prompts?9" } }
         };
         AiPlayers.AddState(null, "gfx/ui/start_button_ai.png", "gfx/ui/start_button_ai_down.png", "gfx/ui/start_button_ai_down.png", "@newburn?109");
-        AiPlayers.AddState(null, "gfx/ui/start_button_ai.png", "gfx/ui/start_button_ai_down.png", "gfx/ui/start_button_ai_down.png", "@newburn?108");
+        AiPlayers.AddState(null, "gfx/ui/start_button_amiga.png", "gfx/ui/start_button_amiga_down.png", "gfx/ui/start_button_amiga_down.png", "@newburn?108");
         AiPlayers.AddState(null, "gfx/ui/start_button_noai.png", "gfx/ui/start_button_noai_down.png", "gfx/ui/start_button_noai_down.png", "@newburn?13");
         Windows += AiPlayers;
 

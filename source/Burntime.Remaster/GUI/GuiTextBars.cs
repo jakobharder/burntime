@@ -46,35 +46,17 @@ sealed class GuiTextBars
         float alpha, IReadOnlyList<GuiTextBar> bars)
     {
         Font font = resourceManager.GetFont(BurntimeClassic.FontName, color);
-        if (bars.Count == 0)
+        List<FontInlineRun> runs = new(bars.Count + 1)
         {
-            font.DrawText(target, center, text, TextAlignment.Center,
-                VerticalTextAlignment.Center, alpha);
-            return;
-        }
-
-        string label = text + " ";
-        int labelWidth = font.GetWidth(label);
-        int barsWidth = 0;
-        for (int i = 0; i < bars.Count; i++)
-            barsWidth += GetWidth(bars[i].Type);
-
-        int totalWidth = labelWidth + barsWidth;
-        Vector2 position = center - new Vector2(totalWidth / 2, 0);
-        position.x = System.Math.Clamp(position.x, 0,
-            System.Math.Max(0, target.Size.x - totalWidth));
-        font.DrawText(target, position, label, TextAlignment.Left,
-            VerticalTextAlignment.Center, alpha);
-        position.x += labelWidth;
-
+            new FontInlineRun(bars.Count > 0 ? text + " " : text)
+        };
         for (int i = 0; i < bars.Count; i++)
         {
             GuiTextBar bar = bars[i];
-            ISprite sprite = GetSprite(bar);
-            target.DrawSprite(new Vector2(position.x, position.y - sprite.Height / 2),
-                sprite, alpha);
-            position.x += GetWidth(bar.Type);
+            runs.Add(new FontInlineRun(GetSprite(bar), GetWidth(bar.Type)));
         }
+        font.DrawInline(target, center, runs, TextAlignment.Center,
+            VerticalTextAlignment.Center, alpha);
     }
 
     ISprite GetSprite(GuiTextBar bar)

@@ -31,7 +31,6 @@ namespace Burntime.Remaster
         readonly GuiFont _promptFont;
         GuiFont _playerFont;
         readonly FaceWindow _playerFace;
-        string _playerName;
 
         public string PromptText { get; set; } = "";
 
@@ -47,7 +46,7 @@ namespace Burntime.Remaster
 
             _standardFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(92, 92, 148));
             _playerFont = new GuiFont(BurntimeClassic.FontName, PixelColor.White);
-            _warningFont = _standardFont;//new GuiFont(BurntimeClassic.FontName, new PixelColor(252, 180, 56));
+            _warningFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(252, 180, 56));
             _promptFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray);
 
             Windows += _uiElement1 = new Image(App)
@@ -98,11 +97,13 @@ namespace Burntime.Remaster
             Target.Layer++;
             ClassicGame game = app.GameState as ClassicGame;
 
+            int inputPromptMargin = app.LastInputMode == InputMode.Keyboard ? 10 : 0;
+
             Vector2 health = new Vector2(Size.x / 2 + 64, Size.y - 30);
             int fullBar = 75;
-            Character healthCharacter = game.World.ActivePlayerObj.SelectedCharacter ??
-                game.World.ActivePlayerObj.Character;
-            int healthBar = fullBar * System.Math.Clamp(healthCharacter.Health, 0, 100) / 100;
+            Player player = game.World.ActivePlayerObj;
+            Character selectedCharacter = player.SelectedCharacter ?? player.Character;
+            int healthBar = fullBar * System.Math.Clamp(selectedCharacter.Health, 0, 100) / 100;
             Target.RenderRect(health, new Vector2(healthBar, 6), new PixelColor(240, 64, 56));
 
             Vector2 timebar = new Vector2(Target.Width / 2 - 30, 2);
@@ -113,61 +114,84 @@ namespace Burntime.Remaster
 
             Target.Layer += 10;
 
-            var name = new Vector2(Size.x / 2 - 97, Size.y - 30);
-            _playerFont.DrawText(Target, name, this._playerName, TextAlignment.Center, VerticalTextAlignment.Top);
+            int portraitLeft = Size.x / 2 - 31;
+            int leftTextRight = portraitLeft - 24;
+            var name = new Vector2(leftTextRight, Size.y - 30);
+            string playerName = selectedCharacter.Name;
+            if (player.Party.Count > 1)
+            {
+                int selectedIndex = 0;
+                for (int i = 0; i < player.Party.Count; i++)
+                {
+                    if (player.Party[i] == selectedCharacter)
+                    {
+                        selectedIndex = i;
+                        break;
+                    }
+                }
+                string partyPosition = $"{selectedIndex + 1}/{player.Party.Count}";
+                int nameWidth = _playerFont.GetWidth(playerName);
+                _standardFont.DrawText(Target,
+                    new Vector2(leftTextRight - nameWidth - _standardFont.GetWidth(" "), name.y),
+                    partyPosition, TextAlignment.Right, VerticalTextAlignment.Top);
+            }
+            _playerFont.DrawText(Target, name, playerName,
+                TextAlignment.Right, VerticalTextAlignment.Top);
 
             var txt = new TextHelper(app, "newburn");
-            Vector2 nutrition = new(Size.x / 2 - 97, Size.y - 17);
+            int secondLineY = Size.y - 16;
 
+            if (ExpectedTravelDays > 0)
+            {
+                txt.AddArgument("|J", ExpectedTravelDays);
+                string travelDuration = txt[104];
+                Vector2 duration = new(Size.x / 2 + 61 + inputPromptMargin, secondLineY);
+                _standardFont.DrawText(Target, duration, travelDuration,
+                    TextAlignment.Left, VerticalTextAlignment.Top);
+            }
+
+            Vector2 nutrition = new(leftTextRight - inputPromptMargin, secondLineY);
             var playerGroup = game.World.ActivePlayerObj.Party;
             var currentLocation = game.World.ActiveLocationObj;
             int totalWaterReserve = playerGroup.GetLowestWaterWithInventory();
             int totalFoodReserve = playerGroup.GetLowestFoodWithInventory();
-            bool statusDisplayed = false;
 
-            if (totalWaterReserve < ExpectedTravelDays)
+            if (totalWaterReserve == 0)
             {
                 _warningFont.DrawText(Target, nutrition, txt[38],
-                    TextAlignment.Center, VerticalTextAlignment.Top);
-                statusDisplayed = true;
-            }
-            else if (totalFoodReserve < ExpectedTravelDays)
-            {
-                _warningFont.DrawText(Target, nutrition, txt[39],
-                    TextAlignment.Center, VerticalTextAlignment.Top);
-                statusDisplayed = true;
-            }
-            else if (playerGroup.IsInDanger())
-            {
-                _warningFont.DrawText(Target, nutrition, currentLocation.Danger.InfoString,
-                    TextAlignment.Center, VerticalTextAlignment.Top);
-                statusDisplayed = true;
-            }
-            else if (totalWaterReserve == 0)
-            {
-                _warningFont.DrawText(Target, nutrition, txt[38],
-                    TextAlignment.Center, VerticalTextAlignment.Top);
-                statusDisplayed = true;
+                    TextAlignment.Right, VerticalTextAlignment.Top);
             }
             else if (totalFoodReserve == 0)
             {
                 _warningFont.DrawText(Target, nutrition, txt[39],
-                    TextAlignment.Center, VerticalTextAlignment.Top);
-                statusDisplayed = true;
+                    TextAlignment.Right, VerticalTextAlignment.Top);
+            }
+            else if (ExpectedTravelDays > 0 && totalWaterReserve < ExpectedTravelDays)
+            {
+                _warningFont.DrawText(Target, nutrition, txt[38],
+                    TextAlignment.Right, VerticalTextAlignment.Top);
+            }
+            else if (ExpectedTravelDays > 0 && totalFoodReserve < ExpectedTravelDays)
+            {
+                _warningFont.DrawText(Target, nutrition, txt[39],
+                    TextAlignment.Right, VerticalTextAlignment.Top);
+            }
+            else if (playerGroup.IsInDanger())
+            {
+                _warningFont.DrawText(Target, nutrition, currentLocation.Danger.InfoString,
+                    TextAlignment.Right, VerticalTextAlignment.Top);
             }
             else if (currentLocation.Danger is not null)
             {
                 _standardFont.DrawText(Target, nutrition, currentLocation.Danger.InfoString,
-                    TextAlignment.Center, VerticalTextAlignment.Top);
-                statusDisplayed = true;
+                    TextAlignment.Right, VerticalTextAlignment.Top);
             }
-
-            if (!statusDisplayed)
+            else
             {
                 txt = new TextHelper(app, "burn");
                 txt.AddArgument("|A", game.World.Day);
                 _standardFont.DrawText(Target, nutrition, txt[404],
-                    TextAlignment.Center, VerticalTextAlignment.Top);
+                    TextAlignment.Right, VerticalTextAlignment.Top);
             }
 
             if (!string.IsNullOrEmpty(PromptText))
@@ -183,14 +207,12 @@ namespace Burntime.Remaster
             if (game.World.ActivePlayer == -1)
             {
                 _playerFace.FaceID = -1;
-                _playerName = "";
                 return;
             }
 
             Player player = game.World.Players[game.World.ActivePlayer];
 
             _playerFace.FaceID = player.SelectedCharacter?.FaceID ?? player.FaceID;
-            _playerName = player.Name;
             _playerFont = new GuiFont(BurntimeClassic.FontName, player.Color);
         }
     }
