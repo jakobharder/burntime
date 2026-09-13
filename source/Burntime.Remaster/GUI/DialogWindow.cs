@@ -55,9 +55,9 @@ namespace Burntime.Remaster
             face.DisplayOnly = true;
             Windows += face;
 
-            fontText = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 164, 56));
-            fontOptions = new GuiFont(BurntimeClassic.FontName, new PixelColor(108, 116, 168));
-            fontFocusedChoice = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
+            fontText = new GuiFont(BurntimeClassic.FontName, ClassicColors.DialogText);
+            fontOptions = new GuiFont(BurntimeClassic.FontName, ClassicColors.MenuText);
+            fontFocusedChoice = new GuiFont(BurntimeClassic.FontName, ClassicColors.MenuTextHover);
 
             CaptureAllMouseMove = true;
         }

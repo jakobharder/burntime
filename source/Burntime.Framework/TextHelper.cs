@@ -89,6 +89,12 @@ public sealed class TextHelper
     public string[] GetStrings(int start)
     {
         string[] strs = _resourceManager.GetStrings(_textFile + "?" + start);
+        ReplaceArguments(strs);
+        return strs;
+    }
+
+    void ReplaceArguments(string[] strs)
+    {
         for (int i = 0; i < strs.Length; i++)
         {
             foreach (Replacement r in _arguments)
@@ -96,7 +102,5 @@ public sealed class TextHelper
                 strs[i] = strs[i].Replace(r.Argument, r.Value);
             }
         }
-
-        return strs;
     }
 }

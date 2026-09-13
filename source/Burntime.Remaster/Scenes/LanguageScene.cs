@@ -20,11 +20,11 @@ internal class LanguageScene : Scene
     {
         Size = app.Engine.Resolution.Game;
         var center = app.Engine.Resolution.Game / 2;
-        _font = new GuiFont(BurntimeClassic.FontName, new PixelColor(108, 116, 168))
+        _font = new GuiFont(BurntimeClassic.FontName, ClassicColors.MenuText)
         {
             Borders = TextBorders.None
         };
-        _selectedFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 164, 56))
+        _selectedFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.DialogText)
         {
             Borders = TextBorders.None
         };

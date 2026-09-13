@@ -22,6 +22,7 @@ sealed class InputControlLabelRenderer
     readonly GuiFont _font;
     readonly Module _app;
     readonly bool _brackets;
+    readonly bool _bracketTextControls;
     readonly PixelColor _glyphTint;
     readonly GuiImage[][] _glyphs = new GuiImage[4][];
     readonly GuiImage[] _keyboardGlyphs =
@@ -31,11 +32,12 @@ sealed class InputControlLabelRenderer
     public int HoldGlyphWidth => GlyphWidth;
 
     public InputControlLabelRenderer(Module app, GuiFont font, bool brackets = true,
-        PixelColor? glyphTint = null)
+        PixelColor? glyphTint = null, bool bracketTextControls = true)
     {
         _app = app;
         _font = font;
         _brackets = brackets;
+        _bracketTextControls = bracketTextControls;
         _glyphTint = glyphTint ?? PixelColor.White;
         _holdGlyph = "gfx/ui/input_glyphs_hold.png";
         string[] families = ["xbox", "playstation", "steam", "switch"];
@@ -141,7 +143,7 @@ sealed class InputControlLabelRenderer
                 (_app.IsNewGfx ? 0.5f : 0)),
             new Rect(Vector2.Zero, new Vector2(sourceSize, sourceSize)),
             tint,
-            postFilter: true, directToFramebuffer: !_app.IsNewGfx);
+            postFilter: true);
     }
 
     static int GetKeyboardAtlasIndex(KeyboardGlyph glyph)
@@ -172,7 +174,7 @@ sealed class InputControlLabelRenderer
         foreach (InputControlPart part in control.Parts)
             if (part.HasGlyph)
                 return false;
-        return true;
+        return _bracketTextControls;
     }
 
     int GetLabelGap(InputControlLabel control, bool brackets, bool labelFirst = false)

@@ -28,9 +28,17 @@ namespace Burntime.Remaster.Logic.Interaction
             public int Dialog;
             public bool[] Classes;
         }
+
+        public readonly record struct ConstructionAvailability(
+            ConstructionInfo? Recipe,
+            bool CanBuild,
+            IReadOnlyList<string> MissingRequirements);
         
         int defaultDialog;
         Dictionary<string, List<ConstructionInfo>> constructions = new Dictionary<string, List<ConstructionInfo>>();
+        readonly List<ConstructionInfo> recipes = new();
+
+        public IReadOnlyList<ConstructionInfo> Recipes => recipes;
 
         public Constructions(ConfigFile file)
         {
@@ -47,6 +55,7 @@ namespace Burntime.Remaster.Logic.Interaction
                 c.Tools = section.GetStrings("tools");
                 c.MainItems = section.GetStrings("main_items");
                 c.Classes = new bool[(int)CharClass.Count];
+                recipes.Add(c);
 
                 string[] classNames = section.GetStrings("class");
 
@@ -133,8 +142,25 @@ namespace Burntime.Remaster.Logic.Interaction
 
         public bool HasConstruction(Character technician, IItemCollection roomItems, Item mainItem)
         {
-            return FindConstruction(technician.Items, roomItems, mainItem.Type,
-                technician.Class, out _) != null;
+            return EvaluateConstruction(technician, roomItems, mainItem).Recipe != null;
+        }
+
+        public ConstructionAvailability EvaluateConstruction(Character technician,
+            IItemCollection roomItems, Item mainItem)
+        {
+            ConstructionInfo? recipe = FindConstruction(technician.Items, roomItems,
+                mainItem.Type, technician.Class, out bool canBuild);
+            if (recipe == null)
+                return new(null, false, System.Array.Empty<string>());
+
+            string[] missing = canBuild
+                ? System.Array.Empty<string>()
+                : recipe.Items.Concat(recipe.Tools)
+                    .Where(item => !technician.Items.Contains(item) &&
+                        !roomItems.Contains(item))
+                    .Distinct()
+                    .ToArray();
+            return new(recipe, canBuild, missing);
         }
 
         public void Construct(Construction construction, Character technician, IItemCollection roomItems, Item mainItem, ClassicGame world)

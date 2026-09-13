@@ -59,8 +59,8 @@ class TraderScene : Scene
         exitButton = new Button(App);
         exitButton.Position = new Vector2(25, 183);
         exitButton.Text = app.ResourceManager.GetString("burn?354");
-        exitButton.Font = new GuiFont(BurntimeClassic.FontName, new PixelColor(92, 92, 148));
-        exitButton.HoverFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(144, 160, 212));
+        exitButton.Font = new GuiFont(BurntimeClassic.FontName, ClassicColors.HudText);
+        exitButton.HoverFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.HudTextHover);
         exitButton.Command += OnButtonExit;
         exitButton.IsTextOnly = true;
         Windows += exitButton;
@@ -68,8 +68,8 @@ class TraderScene : Scene
         acceptButton = new Button(App);
         acceptButton.Position = new Vector2(170, 183);
         acceptButton.Text = app.ResourceManager.GetString("burn?353");
-        acceptButton.Font = new GuiFont(BurntimeClassic.FontName, new PixelColor(92, 92, 148));
-        acceptButton.HoverFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(144, 160, 212));
+        acceptButton.Font = new GuiFont(BurntimeClassic.FontName, ClassicColors.HudText);
+        acceptButton.HoverFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.HudTextHover);
         acceptButton.Command += OnButtonAccept;
         acceptButton.IsTextOnly = true;
         Windows += acceptButton;

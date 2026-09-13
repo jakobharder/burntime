@@ -53,11 +53,11 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         Music = "radio";
         Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
-        disabled = new GuiFont(BurntimeClassic.FontName, new PixelColor(100, 100, 100)) { Borders = TextBorders.None };
-        red = new GuiFont(BurntimeClassic.FontName, new PixelColor(134, 44, 4)) { Borders = TextBorders.None };
-        hover = new GuiFont(BurntimeClassic.FontName, new PixelColor(109, 117, 170)) { Borders = TextBorders.None };
-        hoverRed = new GuiFont(BurntimeClassic.FontName, new PixelColor(190, 77, 12)) { Borders = TextBorders.None };
-        green = new GuiFont(BurntimeClassic.FontName, new PixelColor(0, 108, 0)) { Borders = TextBorders.None };
+        disabled = new GuiFont(BurntimeClassic.FontName, ClassicColors.OptionsDisabled) { Borders = TextBorders.None };
+        red = new GuiFont(BurntimeClassic.FontName, ClassicColors.OptionsRed) { Borders = TextBorders.None };
+        hover = new GuiFont(BurntimeClassic.FontName, ClassicColors.OptionsBlueHover) { Borders = TextBorders.None };
+        hoverRed = new GuiFont(BurntimeClassic.FontName, ClassicColors.OptionsRedHover) { Borders = TextBorders.None };
+        green = new GuiFont(BurntimeClassic.FontName, ClassicColors.OptionsGreen) { Borders = TextBorders.None };
 
         _optionsBulb = "gfx/ui/options_bulb.png";
 
@@ -74,7 +74,7 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         Windows += _menuButtons[0] = new Button(app, app.SceneManager.PreviousScene)
         {
             Font = red,
-            HoverFont = hover,
+            HoverFont = hoverRed,
             Text = "@burn?388",
             Position = new Vector2(214, 64),
             IsTextOnly = true
@@ -83,7 +83,7 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         Windows += _menuButtons[1] = new Button(app, () => SelectPage(1))
         {
             Font = red,
-            HoverFont = hover,
+            HoverFont = hoverRed,
             Text = "@newburn?21",
             Position = new Vector2(214, 84),
             IsTextOnly = true
@@ -92,7 +92,7 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         Windows += _menuButtons[2] = new Button(app, () => SelectPage(2))
         {
             Font = red,
-            HoverFont = hover,
+            HoverFont = hoverRed,
             DisabledFont = disabled,
             IsEnabled = !BurntimeClassic.Instance.DisableMusic,
             Text = "@newburn?29",
@@ -103,7 +103,7 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         Windows += _menuButtons[3] = new Button(app, () => SelectPage(3))
         {
             Font = red,
-            HoverFont = hover,
+            HoverFont = hoverRed,
             Text = "@newburn?22",
             Position = new Vector2(214, 127),
             IsTextOnly = true
@@ -112,7 +112,7 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         Windows += _menuButtons[4] = new Button(app, () => SelectPage(4))
         {
             Font = red,
-            HoverFont = hover,
+            HoverFont = hoverRed,
             Text = "@newburn?27",
             Position = new Vector2(214, 148),
             IsTextOnly = true

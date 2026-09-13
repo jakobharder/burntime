@@ -1,6 +1,8 @@
 ﻿image=highres-font-full.png
 scale=1.875x2.25
 offset=-2
+
+
 kerning1=Fa Fä Fc Fd Fe Fg Fj Fm Fn Fo Fö Fp Fq Fr Fs Fu Fü Fv Fw Fx Fy Fz
 'kerning1=Sf St
 kerning2=Ta Tc Td Te Tg Tj Tm Tn To Tp Tq Tr Ts Tu Tv Tw Tx Ty Tz
@@ -9,11 +11,15 @@ kerning2=r,
 kerning1="T; P; F; f; v; y; r;"
 kerning1=S? a? ä? b? c? e? g? k? l? m? n? o? ö? p? q? r? s? t? u? v? w? x? y? z?
 kerning1=Y. V. T. P. F. f. v. y. r.
-kerning1=af äf cf ef kf lf of öf pf sf zf
+kerning1=lf
+kerning0.5=af äf cf ef kf of öf pf sf zf
 kerning1=fJ vJ yJ Pj Vj Yj VJ
 kerning2=rJ FJ PJ TJ
-kerning1=at ät ct et kt lt ot öt pt st zt
+kerning1=lt st
+kerning0.5=at ät ct et kt ot öt pt zt
 kerning1=Pa
+kerning0.5=ra re ro
+kerning0.5=ly
 lines=3
 height=13
 char0=" !""#$%&'()*+,-./0123456789:;<=>?@[\]^_`"

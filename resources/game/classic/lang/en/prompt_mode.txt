@@ -1,2 +1,2 @@
-Prompts SHOW
-Prompts HIDE
+UI Hints SHOW
+UI Hints HIDE

@@ -48,6 +48,10 @@ public class MenuScene : Scene
     readonly Button _loadButton;
     readonly Button _startButton;
     readonly Button _exitButton;
+    readonly TooltipWindow _aiTooltip;
+    readonly TooltipWindow _gameModeTooltip;
+    readonly TooltipWindow _difficultyTooltip;
+    readonly GuiFont _setupTooltipFont;
     Burntime.Platform.IO.ConfigFile conversionTable;
     readonly string[] _playerNames;
 
@@ -78,10 +82,12 @@ public class MenuScene : Scene
         Position = (base.app.Engine.Resolution.Game - base.Size) / 2;
 
         GuiFont buttonFont = new GuiFont("gfx/ui/start_font.txt", PixelColor.Transparent);
-        _selectedNameFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(144, 160, 212));
+        _selectedNameFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.HudTextHover);
         _playerFont = new GuiFont("gfx/ui/start_font_player.txt", PixelColor.Transparent);
-        _copyrightFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.Gray) { Borders = TextBorders.None };
-        _infoFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.Gray/*new PixelColor(135, 140, 145)*/) { Borders = TextBorders.None };
+        _copyrightFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.Gray) { Borders = TextBorders.None };
+        _infoFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.Gray/*new PixelColor(135, 140, 145)*/) { Borders = TextBorders.None };
+        _setupTooltipFont = new GuiFont(BurntimeClassic.FontName,
+            ClassicColors.LightGray) { Borders = TextBorders.Screen };
 
         _playerOne = "@newburn?43";
         _playerTwo = "@newburn?44";
@@ -210,39 +216,67 @@ public class MenuScene : Scene
         Difficulty = new(app)
         {
             Position = new(100, 149),
-            ToolTipFont = new GuiFont(BurntimeClassic.FontName,
-                BurntimeClassic.LightGray) { Borders = TextBorders.Screen },
-            Prompts = { { InputAction.Primary, "@prompts?9" } }
+            ToolTipFont = _setupTooltipFont
         };
         Difficulty.AddState(null, "gfx/ui/start_button_level1.png", "gfx/ui/start_button_level1_down.png", "gfx/ui/start_button_level1_down.png", "@newburn?14");
         Difficulty.AddState(null, "gfx/ui/start_button_level2.png", "gfx/ui/start_button_level2_down.png", "gfx/ui/start_button_level2_down.png", "@newburn?15");
         Difficulty.AddState(null, "gfx/ui/start_button_level3.png", "gfx/ui/start_button_level3_down.png", "gfx/ui/start_button_level3_down.png", "@newburn?16");
+        Difficulty.ToolTipFont = null;
         Windows += Difficulty;
+
+        Windows += _difficultyTooltip = new TooltipWindow(app)
+        {
+            // Fan outward from the setup row: match the right edges.
+            Position = new Vector2(132, 145),
+            HorizontalAlignment = PositionAlignment.Right,
+            VerticalAlignment = PositionAlignment.Right,
+            FixedSize = new Vector2(128, 52),
+            Layer = 30
+        };
+        _difficultyTooltip.Hide();
 
         // mode
         GameMode = new(app)
         {
             Position = new(145, 149),
-            ToolTipFont = new GuiFont(BurntimeClassic.FontName,
-                BurntimeClassic.LightGray) { Borders = TextBorders.Screen },
-            Prompts = { { InputAction.Primary, "@prompts?9" } }
+            ToolTipFont = _setupTooltipFont
         };
         GameMode.AddState(null, "gfx/ui/start_button_remake.png", "gfx/ui/start_button_remake_down.png", "gfx/ui/start_button_remake_down.png", "@newburn?110");
         GameMode.AddState(null, "gfx/ui/start_button_original.png", "gfx/ui/start_button_original_down.png", "gfx/ui/start_button_original_down.png", "@newburn?105");
+        GameMode.ToolTipFont = null;
         Windows += GameMode;
+
+        Windows += _gameModeTooltip = new TooltipWindow(app)
+        {
+            Position = new Vector2(161, 145),
+            HorizontalAlignment = PositionAlignment.Center,
+            VerticalAlignment = PositionAlignment.Right,
+            FixedSize = new Vector2(128, 52),
+            Layer = 30
+        };
+        _gameModeTooltip.Hide();
 
         // ai
         AiPlayers = new(app)
         {
             Position = new(190, 149),
-            ToolTipFont = new GuiFont(BurntimeClassic.FontName,
-                BurntimeClassic.LightGray) { Borders = TextBorders.Screen },
-            Prompts = { { InputAction.Primary, "@prompts?9" } }
+            ToolTipFont = _setupTooltipFont
         };
         AiPlayers.AddState(null, "gfx/ui/start_button_ai.png", "gfx/ui/start_button_ai_down.png", "gfx/ui/start_button_ai_down.png", "@newburn?109");
         AiPlayers.AddState(null, "gfx/ui/start_button_amiga.png", "gfx/ui/start_button_amiga_down.png", "gfx/ui/start_button_amiga_down.png", "@newburn?108");
         AiPlayers.AddState(null, "gfx/ui/start_button_noai.png", "gfx/ui/start_button_noai_down.png", "gfx/ui/start_button_noai_down.png", "@newburn?13");
+        AiPlayers.ToolTipFont = null;
         Windows += AiPlayers;
+
+        Windows += _aiTooltip = new TooltipWindow(app)
+        {
+            // Match the left edges, mirroring the difficulty tooltip.
+            Position = new Vector2(190, 145),
+            VerticalAlignment = PositionAlignment.Right,
+            FixedSize = new Vector2(128, 52),
+            Layer = 30
+        };
+        _aiTooltip.Hide();
 
     }
 
@@ -257,7 +291,7 @@ public class MenuScene : Scene
             Image = "pngsheet@gfx/ui/start_buttons.png?0?112x24",
             DownImage = "pngsheet@gfx/ui/start_buttons.png?1?112x24",
             Size = new Vector2(104, 24),
-            Font = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.Gray),
+            Font = new GuiFont(BurntimeClassic.FontName, ClassicColors.Gray),
             HoverFont = _selectedNameFont,
             TextHorizontalAlign = TextAlignment.Center,
             TextVerticalAlign = VerticalTextAlignment.Center,
@@ -623,6 +657,83 @@ public class MenuScene : Scene
     public override void OnUpdate(float elapsed)
     {
         UpdateSetupSelection();
+        bool showUIHints = app is not BurntimeClassic classic || classic.ShowUIHints;
+        GuiFont? legacyTooltipFont = showUIHints ? null : _setupTooltipFont;
+        Difficulty.ToolTipFont = legacyTooltipFont;
+        GameMode.ToolTipFont = legacyTooltipFont;
+        AiPlayers.ToolTipFont = legacyTooltipFont;
+        if (!showUIHints)
+        {
+            _aiTooltip.Hide();
+            _gameModeTooltip.Hide();
+            _difficultyTooltip.Hide();
+            return;
+        }
+        UpdateAiTooltip();
+        UpdateGameModeTooltip();
+        UpdateDifficultyTooltip();
+    }
+
+    void UpdateDifficultyTooltip()
+    {
+        bool show = Difficulty.IsHover || Difficulty.IsKeyboardSelected;
+        if (!show)
+        {
+            if (_difficultyTooltip.IsVisible)
+                _difficultyTooltip.Hide();
+            return;
+        }
+
+        SetSetupTooltip(_difficultyTooltip, 9 + Difficulty.State);
+    }
+
+    void UpdateGameModeTooltip()
+    {
+        bool show = GameMode.IsHover || GameMode.IsKeyboardSelected;
+        if (!show)
+        {
+            if (_gameModeTooltip.IsVisible)
+                _gameModeTooltip.Hide();
+            return;
+        }
+
+        SetSetupTooltip(_gameModeTooltip, GameMode.State == 1 ? 5 : 4);
+    }
+
+    void UpdateAiTooltip()
+    {
+        bool show = AiPlayers.IsHover || AiPlayers.IsKeyboardSelected;
+        if (!show)
+        {
+            _aiTooltip.Hide();
+            return;
+        }
+
+        int section = AiPlayers.State switch
+        {
+            1 => 1,
+            2 => 2,
+            _ => 0
+        };
+        SetSetupTooltip(_aiTooltip, section);
+    }
+
+    void SetSetupTooltip(TooltipWindow tooltip, int section)
+    {
+        string[] content = app.ResourceManager.GetStrings($"tooltip?s{section}");
+        if (content.Length < 3)
+        {
+            tooltip.Hide();
+            return;
+        }
+        tooltip.Header = content[0];
+        tooltip.Text = string.Join('\n', content[1..^1]
+            .Where(line => !string.IsNullOrEmpty(line)));
+        tooltip.Prompt = new InputPrompt(InputAction.Primary, content[^1])
+            { KeyboardControl = new Key(SystemKey.Enter) };
+        tooltip.RefreshLayout();
+        if (!tooltip.IsVisible)
+            tooltip.Show();
     }
 
     void ActivateSetupSelection()

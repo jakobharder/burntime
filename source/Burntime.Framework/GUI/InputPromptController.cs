@@ -258,28 +258,28 @@ public sealed class InputPromptController
 
     public InputPromptLayout Resolve()
     {
-        if (_scenePrompts.IsSuppressed)
-            return new InputPromptLayout([], [], []);
-
         bool mouseInput = _app.LastInputMode == InputMode.Mouse;
         List<InputPrompt> scenePrompts = [];
         Dictionary<InputPromptContextRole, List<ContextCandidate>> candidates = [];
 
-        foreach (InputPromptEntry entry in _scenePrompts.Entries)
+        if (!_scenePrompts.IsSuppressed)
         {
-            if (entry.IsInline)
-                continue;
-
-            InputPrompt? activePrompt = entry.Resolve();
-            if (!mouseInput)
+            foreach (InputPromptEntry entry in _scenePrompts.Entries)
             {
-                if (activePrompt.HasValue)
-                    scenePrompts.Add(activePrompt.Value);
-                continue;
-            }
+                if (entry.IsInline)
+                    continue;
 
-            AddEntryContextCandidates(entry, activePrompt, candidates,
-                ownerIsActive: true, mouseInput, isProjectedScene: true);
+                InputPrompt? activePrompt = entry.Resolve();
+                if (!mouseInput)
+                {
+                    if (activePrompt.HasValue)
+                        scenePrompts.Add(activePrompt.Value);
+                    continue;
+                }
+
+                AddEntryContextCandidates(entry, activePrompt, candidates,
+                    ownerIsActive: true, mouseInput, isProjectedScene: true);
+            }
         }
 
         Window? inputRoot = _app.SceneManager.InputWindow;
@@ -355,24 +355,27 @@ public sealed class InputPromptController
     void AddInlinePrompts(Window window, List<InputPromptInlineEntry> prompts,
         bool mouseInput)
     {
-        if (!window.IsVisible || window.Prompts.IsSuppressed)
+        if (!window.IsVisible)
             return;
 
-        Vector2 ownerPosition = window.PositionOnScreen - _scene.PositionOnScreen;
-        foreach (InputPromptEntry entry in window.Prompts.Entries)
+        if (!window.Prompts.IsSuppressed)
         {
-            if (!entry.IsInline)
-                continue;
-            InputPrompt? prompt = entry.Resolve();
-            if (!prompt.HasValue)
-                continue;
-            if (mouseInput && prompt.Value.MouseControl is null or MouseButton.None)
-                continue;
+            Vector2 ownerPosition = window.PositionOnScreen - _scene.PositionOnScreen;
+            foreach (InputPromptEntry entry in window.Prompts.Entries)
+            {
+                if (!entry.IsInline)
+                    continue;
+                InputPrompt? prompt = entry.Resolve();
+                if (!prompt.HasValue)
+                    continue;
+                if (mouseInput && prompt.Value.MouseControl is null or MouseButton.None)
+                    continue;
 
-            prompts.Add(new InputPromptInlineEntry(prompt.Value,
-                ownerPosition + entry.Position!.Value,
-                entry.HorizontalAlignment, entry.VerticalAlignment,
-                entry.ShowBackground, entry.HorizontalPadding, entry.Separator));
+                prompts.Add(new InputPromptInlineEntry(prompt.Value,
+                    ownerPosition + entry.Position!.Value,
+                    entry.HorizontalAlignment, entry.VerticalAlignment,
+                    entry.ShowBackground, entry.HorizontalPadding, entry.Separator));
+            }
         }
 
         if (window is Container container)

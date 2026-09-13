@@ -44,10 +44,10 @@ namespace Burntime.Remaster
         {
             Size = app.Engine.Resolution.Game;
 
-            _standardFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(92, 92, 148));
+            _standardFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.HudText);
             _playerFont = new GuiFont(BurntimeClassic.FontName, PixelColor.White);
-            _warningFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(252, 180, 56));
-            _promptFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray);
+            _warningFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.HudWarning);
+            _promptFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.LightGray);
 
             Windows += _uiElement1 = new Image(App)
             {

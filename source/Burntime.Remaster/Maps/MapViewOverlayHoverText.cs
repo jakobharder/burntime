@@ -53,7 +53,7 @@ class MapViewOverlayHoverText : IMapViewOverlay
     public MapViewOverlayHoverText(Module App)
     {
         resMan = App.ResourceManager;
-        textBars = new GuiTextBars(resMan);
+        textBars = new GuiTextBars(App);
     }
 
     public void MouseMoveOverlay(Vector2 Position)
@@ -80,7 +80,7 @@ class MapViewOverlayHoverText : IMapViewOverlay
         {
             if (mapState.Hover.WorldLocation != null)
                 DrawWorldLocationText(textTarget, mapState.Hover,
-                    Offset - new Vector2(0, topMargin), 1);
+                    Offset - new Vector2(0, topMargin), 1, showOwnershipFlag: true);
             else if (mapState.Hover.Character != null)
                 DrawCharacterText(textTarget, mapState.Hover,
                     Offset - new Vector2(0, topMargin), 1);
@@ -103,7 +103,7 @@ class MapViewOverlayHoverText : IMapViewOverlay
                     continue;
 
                 var info = new MapViewHoverInfo(resMan.GetString(entrance.TitleId),
-                    entrance.Area.Center, BurntimeClassic.LightGray)
+                    entrance.Area.Center, ClassicColors.LightGray)
                 {
                     WorldLocation = location
                 };
@@ -126,8 +126,8 @@ class MapViewOverlayHoverText : IMapViewOverlay
 
                 MapViewHoverInfo info = entrancesBlocked
                     ? new MapViewHoverInfo(resMan.GetString("newburn?103"), entrance.Area.Center,
-                        BurntimeClassic.LightGray, room)
-                    : new MapViewHoverInfo(room, resMan, BurntimeClassic.LightGray);
+                        ClassicColors.LightGray, room)
+                    : new MapViewHoverInfo(room, resMan, ClassicColors.LightGray);
                 DrawEntranceText(textTarget, info, Offset - new Vector2(0, topMargin), 0.7f,
                     showInventoryHint: false);
             }
@@ -160,24 +160,44 @@ class MapViewOverlayHoverText : IMapViewOverlay
     }
 
     internal void DrawWorldLocationText(RenderTarget target, MapViewHoverInfo info, Vector2 offset,
-        float alpha)
+        float alpha, bool showOwnershipFlag = false)
     {
-        PixelColor color = info.WorldLocation?.ControllingPlayer?.Color ?? info.Color;
+        Player? controllingPlayer = info.WorldLocation?.ControllingPlayer;
+        bool isCity = info.WorldLocation?.IsCity == true;
+        ISprite? ownershipFlag = showOwnershipFlag && !isCity
+            ? controllingPlayer?.Flag.Object
+            : null;
+        PixelColor locationColor = isCity && controllingPlayer != null
+            ? controllingPlayer.Color
+            : info.Color;
+        int foodPerDay = info.WorldLocation?.GetFoodProductionRate().FoodPerDay ?? 0;
+        bool hasVisited = player?.HasVisited(info.WorldLocation) == true;
+        ISprite? dangerMarker = hasVisited ? info.WorldLocation?.Danger?.Type switch
+        {
+            "gas" => textBars.GasMarker,
+            "radiation" => textBars.RadiationMarker,
+            _ => null
+        } : null;
 
         if (info.WorldLocation?.Player != player)
         {
-            textBars.Draw(target, info.Position + offset, info.Title, color, alpha,
-                System.Array.Empty<GuiTextBar>());
+            int baseWater = info.WorldLocation?.Source.BaseWater ?? 0;
+            bool showResourceInfo = hasVisited && !info.WorldLocation!.IsCity;
+            textBars.Draw(target, info.Position + offset, info.Title, locationColor, alpha,
+                showResourceInfo
+                    ? new[] { new GuiTextBar(GuiTextBarType.BlueBar, baseWater) }
+                    : System.Array.Empty<GuiTextBar>(), dangerMarker,
+                ownershipFlag, showBackground: true);
             return;
         }
 
-        int foodPerDay = info.WorldLocation.GetFoodProductionRate().FoodPerDay;
         List<GuiTextBar> bars = new(4);
         if (foodPerDay > 0)
             bars.Add(new GuiTextBar(GuiTextBarType.RedBar, foodPerDay));
         AddTrapIcons(bars, info.WorldLocation);
         bars.Add(new GuiTextBar(GuiTextBarType.BlueBar, info.WorldLocation.Source.Water));
-        textBars.Draw(target, info.Position + offset, info.Title, color, alpha, bars);
+        textBars.Draw(target, info.Position + offset, info.Title, locationColor, alpha, bars,
+            dangerMarker, ownershipFlag, showBackground: true);
     }
 
     internal void DrawEntranceText(RenderTarget target, MapViewHoverInfo info, Vector2 offset, float alpha,

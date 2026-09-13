@@ -12,8 +12,8 @@ sealed partial class InputPromptOverlay
     sealed class Row : Window
     {
         const int VerticalPadding = 2;
-        static readonly PixelColor HudColor = new(144, 160, 212);
-        static readonly PixelColor OptionsColor = new(240, 120, 32);
+        static readonly PixelColor HudColor = ClassicColors.HudTextHover;
+        static readonly PixelColor OptionsColor = ClassicColors.OptionsRedHover;
         string _separator = "   ";
 
         readonly GuiFont _font;
@@ -54,12 +54,12 @@ sealed partial class InputPromptOverlay
             {
                 InputPromptColorScheme.Hud => HudColor,
                 InputPromptColorScheme.Options => OptionsColor,
-                _ => BurntimeClassic.LightGray
+                _ => ClassicColors.LightGray
             };
             PixelColor glyphColor = colors switch
             {
                 InputPromptColorScheme.Hud => HudColor,
-                InputPromptColorScheme.Muted => BurntimeClassic.LightGray,
+                InputPromptColorScheme.Muted => ClassicColors.LightGray,
                 InputPromptColorScheme.Options => OptionsColor,
                 _ => PixelColor.White
             };
@@ -113,7 +113,7 @@ sealed partial class InputPromptOverlay
 
         public override void OnRender(RenderTarget target)
         {
-            if (app is BurntimeClassic classic && !classic.ShowInputPrompts)
+            if (app is BurntimeClassic classic && !classic.ShowUIHints)
                 return;
 
             if (app.LastInputMode is not (InputMode.Mouse or InputMode.Keyboard or InputMode.Gamepad))

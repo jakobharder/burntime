@@ -23,8 +23,30 @@ internal static class TableCombat
             ((ClassicGame)character.Container.Root).ItemTypes.UnarmedDamage;
     }
 
+    internal static Item? BestDefense(Character character)
+    {
+        Item? selected = character.Protection != null &&
+            character.Items.Contains(character.Protection)
+            ? character.Protection
+            : null;
+        return character.Items.FindBestDefense(selected);
+    }
+
     internal static int ProtectionPercent(Character character) =>
-        Math.Clamp(character.Items.FindBestDefense(character.Protection)?.DefenseValue ?? 0, 0, 100);
+        Math.Clamp(BestDefense(character)?.DefenseValue ?? 0, 0, 100);
+
+    internal static void SelectLoadout(Character character, bool armour)
+    {
+        if (character.Class is CharClass.Trader or CharClass.Mutant or CharClass.Dog)
+            return;
+
+        character.SelectOriginalWeapon();
+        if (armour)
+            character.Protection = BestDefense(character);
+        else if (character.Protection != null &&
+            !character.Items.Contains(character.Protection))
+            character.Protection = null;
+    }
 
     internal static CombatPreview Preview(Character character, GameSettings settings, bool armour)
     {
@@ -34,6 +56,23 @@ internal static class TableCombat
         int protection = armour ? ProtectionPercent(character) : 0;
         return preview with { Defense = protection > 0 ? protection : null };
     }
+
+    internal static CombatPreview EquippedPreview(Character character,
+        GameSettings settings, bool armour)
+    {
+        var preview = RuleFormulas.OriginalCombatPreview(
+            DamageValues(character, character.Weapon, settings),
+            character.CombatExperience(settings), settings.CombatTierWidth);
+        int protection = armour
+            ? Math.Clamp(character.Protection?.DefenseValue ?? 0, 0, 100)
+            : 0;
+        return preview with { Defense = protection > 0 ? protection : null };
+    }
+
+    internal static CombatPreview WeaponPreview(Character character, Item weapon,
+        GameSettings settings) => RuleFormulas.OriginalCombatPreview(
+            DamageValues(character, weapon, settings),
+            character.CombatExperience(settings), settings.CombatTierWidth);
 
     internal static float Strength(Character character, GameSettings settings, bool detailed, bool armour)
     {
@@ -59,7 +98,7 @@ internal static class TableCombat
             attacker.UseOriginalWeapon(weapon);
         if (armour && defender != null)
         {
-            defender.Protection = defender.Items.FindBestDefense(defender.Protection);
+            defender.Protection = BestDefense(defender);
             damage = RuleFormulas.ApplyArmour(damage, ProtectionPercent(defender));
         }
         return damage;

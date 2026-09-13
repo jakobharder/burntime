@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 using Burntime.Platform;
@@ -33,6 +34,13 @@ namespace Burntime.Remaster.Scenes
         GuiImage doctorImage;
         readonly Button exitButton;
         readonly InputPromptHandle exitPrompt;
+        readonly TooltipWindow productionTooltip;
+        const int ProductionTooltipHeaderIndex = 65;
+        const int ProductionTooltipEntryIndex = 66;
+        const int ProductionTooltipNoneIndex = 67;
+        const int ProductionTooltipPromptIndex = 68;
+        const int ProductionTooltipPreviousIndex = 73;
+        const int ProductionTooltipNextIndex = 74;
 
         public InfoScene(Module App)
             : base(App)
@@ -81,9 +89,20 @@ namespace Burntime.Remaster.Scenes
             production = new ItemWindow(App);
             production.Position = new Vector2(225, 105);
             production.ItemID = "";
-            production.LeftClickEvent += OnProductionLeft;
-            production.RightClickEvent += OnProductionRight;
+            production.ShowHoverText = false;
+            production.LeftClickEvent += NextProduction;
+            production.RightClickEvent += PreviousProduction;
             Windows += production;
+
+            Windows += productionTooltip = new TooltipWindow(App)
+            {
+                Position = new Vector2(225, 137),
+                HorizontalAlignment = PositionAlignment.Right,
+                VerticalAlignment = PositionAlignment.Right,
+                MinimumWidth = 100,
+                Layer = 40
+            };
+            productionTooltip.Hide();
 
             grid = new ItemGridWindow(App);
             grid.Position = new Vector2(137, 105);
@@ -92,7 +111,7 @@ namespace Burntime.Remaster.Scenes
             Windows += grid;
 
             titleFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(156, 156, 156), new PixelColor(76, 32, 4));
-            font = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.Gray, new PixelColor(92, 92, 96));
+            font = new GuiFont(BurntimeClassic.FontName, ClassicColors.Gray, new PixelColor(92, 92, 96));
 
             items = new SortedList<string, int>();
 
@@ -103,24 +122,6 @@ namespace Burntime.Remaster.Scenes
                 horizontalAlignment: PositionAlignment.Left,
                 verticalAlignment: PositionAlignment.Center,
                 showBackground: false, horizontalPadding: 2);
-            production.Prompts.Add(
-                new InputPrompt(InputAction.MoveLeft, "")
-                {
-                    GamepadControl = GamepadControl.DPadLeft,
-                    MouseControl = MouseButton.Right
-                }, new Vector2(-2, 35), () => productionID >= 0,
-                PositionAlignment.Right, PositionAlignment.Right,
-                showBackground: false, horizontalPadding: 2);
-            production.Prompts.Add(
-                new InputPrompt(InputAction.MoveRight, "")
-                {
-                    GamepadControl = GamepadControl.DPadRight,
-                    MouseControl = MouseButton.Left
-                }, new Vector2(34, 35),
-                () => productionID >= 0,
-                PositionAlignment.Left, PositionAlignment.Right,
-                showBackground: false, horizontalPadding: 2);
-
             fighterImage = "syssze.raw?32";
             doctorImage = "syssze.raw?16";
             technicianImage = "syssze.raw?48";
@@ -251,6 +252,88 @@ namespace Burntime.Remaster.Scenes
             UpdateCampNPCs();
         }
 
+        public override void OnUpdate(float elapsed)
+        {
+            UpdateProductionTooltip();
+        }
+
+        void UpdateProductionTooltip()
+        {
+            bool show = productionID >= 0 &&
+                (production.IsMouseHovered || app.LastInputMode != InputMode.Mouse);
+            if (!show)
+            {
+                if (productionTooltip.IsVisible)
+                    productionTooltip.Hide();
+                return;
+            }
+
+            BurntimeClassic classic = app as BurntimeClassic;
+            Location location = classic.Game.World.Locations[classic.InfoCity];
+            if (location.Production == null)
+            {
+                productionTooltip.Hide();
+                return;
+            }
+
+            Production[] allowedProductions = location.ValidProductions.ToArray();
+            string[] entries = allowedProductions.Select(production =>
+            {
+                string[] tools = location.Rooms.SelectMany(room => room.Items)
+                    .Concat(production.AllowInventory
+                        ? location.CampNPC.SelectMany(npc => npc.Items)
+                        : Enumerable.Empty<Item>())
+                    .Where(item => item.Type.Production == production)
+                    .GroupBy(item => item.ID)
+                    .Select(group => group.Count() > 1
+                        ? $"{group.First().Title} x{group.Count()}"
+                        : group.First().Title)
+                    .ToArray();
+                string toolList = tools.Length > 0
+                    ? string.Join("/", tools)
+                    : app.ResourceManager.GetString("tooltip",
+                        ProductionTooltipNoneIndex);
+                TextHelper entryText = new(app, "tooltip");
+                entryText.AddArgument("{product}", production.Produce.Title);
+                entryText.AddArgument("{tools}", toolList);
+                return entryText.Get(ProductionTooltipEntryIndex);
+            })
+                .Where(line => line.Length > 0)
+                .ToArray();
+            productionTooltip.Header = app.ResourceManager.GetString("tooltip",
+                ProductionTooltipHeaderIndex);
+            productionTooltip.Text = string.Join('\n', entries);
+            if (app.LastInputMode == InputMode.Mouse)
+            {
+                productionTooltip.Prompt = new InputPrompt(
+                    InputAction.Secondary,
+                    app.ResourceManager.GetString("tooltip",
+                        ProductionTooltipPreviousIndex))
+                {
+                    MouseControl = MouseButton.Right
+                };
+                productionTooltip.SecondaryPrompt = new InputPrompt(
+                    InputAction.Primary,
+                    app.ResourceManager.GetString("tooltip",
+                        ProductionTooltipNextIndex))
+                {
+                    MouseControl = MouseButton.Left
+                };
+            }
+            else
+            {
+                productionTooltip.Prompt = new InputPrompt(
+                    InputPattern.HorizontalNavigation,
+                    app.ResourceManager.GetString("tooltip",
+                        ProductionTooltipPromptIndex));
+                productionTooltip.SecondaryPrompt = null;
+            }
+            productionTooltip.Status = null;
+            productionTooltip.RefreshLayout();
+            if (!productionTooltip.IsVisible)
+                productionTooltip.Show();
+        }
+
         int offset = 0;
         private void RefreshItems()
         {
@@ -342,13 +425,13 @@ namespace Burntime.Remaster.Scenes
 
             if (action.IsLeft())
             {
-                OnProductionRight();
+                PreviousProduction();
                 return true;
             }
 
             if (action.IsRight())
             {
-                OnProductionLeft();
+                NextProduction();
                 return true;
             }
 
@@ -384,7 +467,7 @@ namespace Burntime.Remaster.Scenes
             RefreshItems();
         }
 
-        void OnProductionLeft()
+        void NextProduction()
         {
             // TODO move to logic
             BurntimeClassic classic = app as BurntimeClassic;
@@ -400,7 +483,7 @@ namespace Burntime.Remaster.Scenes
             }
         }
 
-        void OnProductionRight()
+        void PreviousProduction()
         {
             // TODO move to logic
             BurntimeClassic classic = app as BurntimeClassic;

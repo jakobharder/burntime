@@ -42,13 +42,15 @@ public readonly struct FontInlineRun
     public ISprite? Sprite { get; }
     public int Advance { get; }
     public int VerticalOffset { get; }
+    public PixelColor? Color { get; }
 
-    public FontInlineRun(string text)
+    public FontInlineRun(string text, PixelColor? color = null)
     {
         Text = text;
         Sprite = null;
         Advance = 0;
         VerticalOffset = 0;
+        Color = color;
     }
 
     public FontInlineRun(ISprite sprite, int? advance = null, int verticalOffset = 0)
@@ -57,6 +59,7 @@ public readonly struct FontInlineRun
         Sprite = sprite;
         Advance = advance ?? sprite.Width;
         VerticalOffset = verticalOffset;
+        Color = null;
     }
 }
 
@@ -75,7 +78,8 @@ public sealed class FontResource
 {
     public ISprite Sprite { get; private set; } = null!;
     public IReadOnlyDictionary<char, CharInfo> CharInfo { get; private set; } = new Dictionary<char, CharInfo>();
-    public IReadOnlyDictionary<string, int> Kerning { get; private set; } = new Dictionary<string, int>();
+    public IReadOnlyDictionary<string, float> Kerning { get; private set; } =
+        new Dictionary<string, float>();
     public int Offset { get; private set; }
     public int Height { get; private set; }
     public bool PostFilter { get; private set; }
@@ -91,7 +95,8 @@ public sealed class FontResource
         return true;
     }
 
-    public void Load(ISprite sprite, Dictionary<char, CharInfo> charInfo, Dictionary<string, int> kerning,
+    public void Load(ISprite sprite, Dictionary<char, CharInfo> charInfo,
+        Dictionary<string, float> kerning,
         int offset, int height, bool postFilter)
     {
         Sprite = sprite;
@@ -146,11 +151,13 @@ public class Font
 
     /// <summary>
     /// Draws one aligned line containing text and sprites. Positioning and border
-    /// correction apply to the complete line, including overlapping sprites.
+    /// correction use each run's layout advance.
     /// </summary>
     public void DrawInline(RenderTarget target, Vector2 position,
         IReadOnlyList<FontInlineRun> runs, TextAlignment align = TextAlignment.Left,
-        VerticalTextAlignment verticalAlign = VerticalTextAlignment.Center, float alpha = 1)
+        VerticalTextAlignment verticalAlign = VerticalTextAlignment.Center, float alpha = 1,
+        PixelColor? backgroundColor = null, int backgroundPaddingLeft = 0,
+        int backgroundPaddingRight = 0, int backgroundPaddingVertical = 0)
     {
         if (!IsLoaded)
             _resourceManager.LoadFont(this);
@@ -158,27 +165,32 @@ public class Font
             return;
 
         float advance = 0;
-        float width = 0;
         int height = GetHeight();
         for (int i = 0; i < runs.Count; i++)
         {
             FontInlineRun run = runs[i];
             if (run.Text != null)
-            {
-                float textWidth = GetWidthF(run.Text);
-                width = System.Math.Max(width, advance + textWidth);
-                advance += textWidth;
-            }
+                advance += (int)System.Math.Ceiling(GetWidthF(run.Text));
             else if (run.Sprite != null)
-            {
-                width = System.Math.Max(width, advance + run.Sprite.Width);
                 advance += run.Advance;
-                height = System.Math.Max(height,
-                    run.Sprite.Height + System.Math.Abs(run.VerticalOffset) * 2);
-            }
         }
+        float width = advance;
 
         Vector2f origin = ResolvePosition(target, position, width, height, align, verticalAlign);
+        int layoutLeft = (int)System.Math.Round(origin.x);
+        origin.x = layoutLeft;
+        if (backgroundColor is PixelColor background)
+        {
+            int left = layoutLeft - backgroundPaddingLeft;
+            int right = layoutLeft + (int)System.Math.Ceiling(width) +
+                backgroundPaddingRight;
+            int top = (int)System.Math.Floor(origin.y) - backgroundPaddingVertical;
+            int bottom = (int)System.Math.Ceiling(origin.y + height) +
+                backgroundPaddingVertical;
+            target.RenderRect(new Vector2(left, top),
+                new Vector2(right - left, bottom - top), background,
+                postFilter: Resource.PostFilter);
+        }
         float cursor = origin.x;
         PixelColor color = GetDrawColor(alpha);
         target.Layer++;
@@ -187,16 +199,23 @@ public class Font
             FontInlineRun run = runs[i];
             if (run.Text != null)
             {
+                PixelColor runColor = run.Color is PixelColor overrideColor
+                    ? new PixelColor((int)(overrideColor.a * alpha), overrideColor.r,
+                        overrideColor.g, overrideColor.b)
+                    : color;
                 DrawInlineText(target, new Vector2f(cursor,
-                    origin.y + (height - GetHeight()) / 2f), run.Text, color);
+                    origin.y + (height - GetHeight()) / 2f), run.Text, runColor);
                 cursor += GetWidthF(run.Text);
             }
             else if (run.Sprite != null)
             {
-                int spriteY = (int)System.Math.Round(origin.y +
-                    (height - run.Sprite.Height) / 2f + run.VerticalOffset);
-                target.DrawSprite(new Vector2((int)System.Math.Round(cursor), spriteY),
-                    run.Sprite, alpha);
+                float spriteY = origin.y +
+                    (height - run.Sprite.Height) / 2f + run.VerticalOffset;
+                Vector2f spritePosition = new(cursor, spriteY);
+                if (Resource.Sprite.LinearFiltering)
+                    spritePosition = target.SnapToPhysicalPixels(spritePosition);
+                target.DrawSpriteF(spritePosition,
+                    run.Sprite, alpha, postFilter: Resource.PostFilter);
                 cursor += run.Advance;
             }
         }
@@ -359,9 +378,11 @@ public class Font
         return new ParsedText(rendered.ToString(), blinkingCharacters);
     }
 
-    int GetKerningOverlap(char previous, char current)
+    float GetKerningOverlap(char previous, char current)
     {
-        return Resource.Kerning.TryGetValue($"{previous}{current}", out int amount) ? amount : 0;
+        return Resource.Kerning.TryGetValue($"{previous}{current}", out float amount)
+            ? amount
+            : 0;
     }
 
     float DrawChar(RenderTarget target, char ch, Vector2f pos, PixelColor color)

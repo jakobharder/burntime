@@ -44,11 +44,11 @@ namespace Burntime.Remaster.GUI
 
             _menuEntries = new List<MenuItem>();
 
-            _defaultFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(108, 116, 168));
+            _defaultFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.MenuText);
             _defaultFont.Borders = TextBorders.Screen;
-            _focusFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
+            _focusFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.MenuTextHover);
             _focusFont.Borders = TextBorders.Screen;
-            PixelColor promptColor = new(144, 160, 212);
+            PixelColor promptColor = ClassicColors.HudTextHover;
             GuiFont promptFont = new(BurntimeClassic.FontName, promptColor)
             {
                 Borders = TextBorders.Screen
@@ -130,7 +130,7 @@ namespace Burntime.Remaster.GUI
             InputControlLabel alternatePrimaryControl = InputControlLabel.Empty;
             if (AlternatePrimaryAction != InputAction.None &&
                 app.LastInputMode is (InputMode.Keyboard or InputMode.Gamepad) &&
-                (app is not BurntimeClassic classic || classic.ShowInputPrompts))
+                (app is not BurntimeClassic classic || classic.ShowUIHints))
             {
                 alternatePrimaryControl = InputControlDisplay.Resolve(app,
                     app.LastInputMode, AlternatePrimaryAction);
@@ -139,7 +139,7 @@ namespace Burntime.Remaster.GUI
                 ? InputMode.Gamepad
                 : InputMode.Keyboard;
             bool showShortcuts = app is not BurntimeClassic promptOwner ||
-                promptOwner.ShowInputPrompts;
+                promptOwner.ShowUIHints;
 
             if (showShortcuts && _menuEntries.Exists(
                 entry => entry.Shortcut.Action != InputAction.None))

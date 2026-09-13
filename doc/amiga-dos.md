@@ -83,7 +83,7 @@ Original DOS exempts **all computer-controlled employees**, including stationed
 guards (German `0x6ffd..0x7002`). Original Amiga exempts active computer-player
 parties; stationed employees process hazards normally. The Remaster currently
 uses the active-party exemption for both: the DOS discrepancy remains pending. Amiga AI active parties additionally bypass
-daily water processing. Extended AI does not collect dropped or room items when
+daily water processing. Modern AI does not collect dropped or room items when
 any traveller would fail the binary check, although it may still resupply water.
 
 ## Experience and recruitment
@@ -161,7 +161,9 @@ room. A stationed NPC's weapon is not also a food trap. Output, map indicators
 and AI tool counts share this policy; loading a save refreshes the flag from
 its selected rules config. The flag remains available for custom rules.
 
-Output first feeds stationed employees below food 9, one point at a time. Remaining points enter the camp accumulator. Each time it reaches the selected food's cost, the cost is removed and a physical item is created. Fractional progress survives rounds. All three Remaster rulesets cap production at six stored items of the selected food type, as in the originals. Food of other types does not count against this cap. Amiga counts the selected product at `0x77d4..0x77da` and checks the limit at `0x8492`; DOS counts the selected title through `0x2588` and checks six at `0x4f9a` and the other product branches. A full room or exhausted global item pool also blocks creation.
+DOS output first visits each stationed employee once and gives one point to each employee below food 9, until the day's output is exhausted. Remaining points enter the camp accumulator. Amiga does not feed employees from production: its entire output enters the accumulator. Each time the accumulator reaches the selected food's cost, the cost is removed and a physical item is created. Fractional progress survives rounds. All built-in Remaster rules cap production at six stored items of the selected food type, as in the originals. Food of other types does not count against this cap. Amiga counts the selected product at `0x77d4..0x77da` and checks the limit at `0x8492`; DOS counts the selected title through `0x2588` and checks six at `0x4f9a` and the other product branches. A full room or exhausted global item pool also blocks creation.
+
+Daily food consumption is separate from production. When an original NPC needs food, both DOS and Amiga select the available item with the lowest positive food value. The Remaster applies that selection to every rules profile. A stationed NPC checks its own inventory first and only checks camp storage when its inventory contains no food. A travelling NPC checks the entire travelling group's inventory and never camp storage. This preserves more valuable food but may consume a small item without completely filling the NPC.
 
 ### Water
 
@@ -301,7 +303,7 @@ A doctor accepts food only. Let `P` be its total food points:
 | DOS | Add `4 * P`; if result is at least 95, set health to 96 |
 | Amiga | Add `3 * P`, capped at 95 |
 
-Remaster intentionally simplifies the DOS saturation behavior to a cap of 95, matching Amiga. Treatment never lowers existing health above that cap, and empty payment leaves health unchanged. Doctor factors and caps are configured in each rules folder’s `gamesettings.txt`; payment uses `heal` values in `items.txt`.
+Remaster intentionally simplifies the DOS saturation behavior to a cap of 95, matching Amiga. Treatment never lowers existing health above that cap, and empty payment leaves health unchanged. Doctor factors and caps are configured in each rules folder’s `game.txt`; payment uses `heal` values in `items.txt`.
 
 One maggot/rat/snake/meat therefore heals 12/20/28/36 on DOS and 9/15/21/27 on Amiga. Treatment affects the selected character.
 
@@ -461,7 +463,7 @@ Everything else specified above is shared unless its section says otherwise.
 ## Rules resources and save compatibility
 
 Each `rules/dos`, `rules/amiga` and `rules/extended` folder owns its
-`gamesettings.txt`, `trader.txt`, `items.txt` and `production.txt`.
+`game.txt`, `trader.txt`, `items.txt` and `production.txt`.
 Amiga's single-snake-trap output is defined by `amount=0 4 5` in its file.
 
 Legacy saved resource IDs `items@items_original.txt` and `items@items.txt`
@@ -472,7 +474,7 @@ production objects or camp accumulators, including saves from before the move.
 
 ### Configurable rule values in Remaster
 
-Each `rules/{dos,amiga,extended}/gamesettings.txt` sets difficulty-specific
+Each `rules/{dos,amiga,extended}/game.txt` sets difficulty-specific
 `barter_factor`, doctor `healing_factor`/`health_cap`, original combat
 `experience_tier_width`, and hazard damage per second/immune face IDs.
 Doctor item healing values stay 12/20/28/36; DOS and Extended multiply by 1,
@@ -482,17 +484,17 @@ The original `items.txt` files store `damage` as 16 space-separated integers:
 four equiprobable rolls for each of four ascending XP tiers. The unnamed root
 section holds unarmed damage without creating a selectable weapon. Extended uses the same vectors, including the rifle vector for pistols and the legacy one-shot rifle. `weapon_priority` preserves automatic weapon
 preference independently of the damage vector; absent priorities use the scalar
-or average damage. Extended clothing reduces rolled damage by 5% (sweater), 10% (pants), 20% (leather jacket), or 25% (steel helmet); only the strongest carried item applies. Defence does not scale with XP. Successful hits retain at least one damage, while zero rifle rolls remain misses. Local and Extended-AI off-screen combat share this formula. Rule settings are cached per game and reloaded after loading
+or average damage. Extended clothing reduces rolled damage by 5% (sweater), 10% (pants), 20% (leather jacket), or 25% (steel helmet); only the strongest carried item applies. Defence does not scale with XP. Successful hits retain at least one damage, while zero rifle rolls remain misses. Local and Modern-AI off-screen combat share this formula. Rule settings are cached per game and reloaded after loading
 a save; item resource IDs and legacy path aliases are unchanged.
 
-Remaster starts every boss at 37 XP, independent of difficulty, configured under `[players]` in each rules folder’s `gamesettings.txt`. Original AI retains its template inventory and health. This applies to new games; subsequent XP recalculation still follows the selected rules.
+Remaster starts every boss at 37 XP, independent of difficulty, configured under `[players]` in each rules folder’s `game.txt`. Original AI retains its template inventory and health. This applies to new games; subsequent XP recalculation still follows the selected rules.
 
 
 ### Legacy settings aliases
 
 `GameSettings` resolves `gamesettings_original.txt` to
-`rules/dos/gamesettings.txt`, and `gamesettings_extended.txt` to
-`rules/extended/gamesettings.txt`. The duplicate legacy files have been removed;
+`rules/dos/game.txt`, and `gamesettings_extended.txt` to
+`rules/extended/game.txt`. The duplicate legacy files have been removed;
 the rules-folder files are the sole source of settings. Canonical paths pass
 through unchanged. This is a loader alias, like the legacy item-file mapping.
 
@@ -509,12 +511,11 @@ with an instance counter: two-bullet graphics represent 2–6 rounds, the option
 type. Inventory tooltips display the exact remaining/capacity count.
 
 The existing serialized `Item.ammo` field stores remaining ammunition. Older saves
-preserve their remaining shots: the old Extended rifle first stage becomes two
-rounds, its `item_loaded_rifle_1` stage becomes one, and old pistols retain one.
-DOS/Amiga counters remain unchanged. The legacy rifle ID is a compatibility alias;
+retain their stored counters; `item_loaded_rifle_1` is migrated to the canonical
+rifle type. The legacy rifle ID remains a loading-only compatibility alias, while
 new items and reloads use the canonical six-round type.
 
-DOS and Amiga original AI strategic routines do not consume ammunition. Extended
+DOS and Amiga original AI strategic routines do not consume ammunition. Modern
 AI strategic combat does, using the selected rules' weapon definitions. Thus AI
 profile determines off-screen consumption, while the ruleset determines capacity.
 
@@ -526,7 +527,7 @@ consistency. Its four tier rows are `4 7 9 11`, `6 9 12 15`, `9 12 16 18`, and
 minimums and lower maximums. This is a balance starting point, not a guarantee
 of equal effectiveness against every target.
 
-Extended AI counts pistols and rifles together for firearm purchasing limits:
+Modern AI counts pistols and rifles together for firearm purchasing limits:
 Easy and Normal allow one firearm-carrying group member, Hard has no fixed cap.
 Mixed rifle/pistol purchases in one trade also share the pending firearm count.
 Acquired weapons are retained even when above the purchasing preference.

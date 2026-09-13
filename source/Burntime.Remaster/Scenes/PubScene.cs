@@ -38,8 +38,8 @@ namespace Burntime.Remaster.Scenes
             exitButton = new Button(app);
             exitButton.Position = new Vector2(25, 183);
             exitButton.Text = app.ResourceManager.GetString("burn?354");
-            exitButton.Font = new GuiFont(BurntimeClassic.FontName, new PixelColor(92, 92, 148));
-            exitButton.HoverFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(144, 160, 212));
+            exitButton.Font = new GuiFont(BurntimeClassic.FontName, ClassicColors.HudText);
+            exitButton.HoverFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.HudTextHover);
             exitButton.Command += OnButtonExit;
             exitButton.SetTextOnly();
             Windows += exitButton;
@@ -47,8 +47,8 @@ namespace Burntime.Remaster.Scenes
             actionButton = new Button(app);
             actionButton.Position = new Vector2(116, 183);
             actionButton.Text = app.ResourceManager.GetString("burn?414");
-            actionButton.Font = new GuiFont(BurntimeClassic.FontName, new PixelColor(92, 92, 148));
-            actionButton.HoverFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(144, 160, 212));
+            actionButton.Font = new GuiFont(BurntimeClassic.FontName, ClassicColors.HudText);
+            actionButton.HoverFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.HudTextHover);
             actionButton.Command += OnButtonDrink;
             actionButton.SetTextOnly();
             Windows += actionButton;
@@ -65,7 +65,7 @@ namespace Burntime.Remaster.Scenes
             inventory.Grid.Prompts.Add(InputAction.Primary, "@prompts?36",
                 () => CanMoveFocusedItem(inventory.Grid));
 
-            font = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray);
+            font = new GuiFont(BurntimeClassic.FontName, ClassicColors.LightGray);
             keyboardNavigation = new InventoryKeyboardNavigation(inventory, grid, OnButtonDrink, OnButtonExit);
             inventory.Grid.MouseFocusChanged += keyboardNavigation.FocusFromMouse;
             grid.MouseFocusChanged += keyboardNavigation.FocusFromMouse;

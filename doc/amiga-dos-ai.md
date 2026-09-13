@@ -62,7 +62,7 @@ after conflict or an unproductive neutral visit.
 Human-relative limits use a shared progress benchmark. The strongest living
 human is used while any human remains. Otherwise, each AI compares itself with
 the strongest living AI opponent. A sole survivor has no relative restriction.
-Amiga and Extended use this fallback; DOS has no equivalent relative target.
+Amiga and Modern use this fallback; DOS has no equivalent relative target.
 
 ## Recruitment and garrisons
 
@@ -122,7 +122,7 @@ The AI does not maintain food, water, and recovery through the same economy as a
 - Original DOS exempts all AI employees from daily hazards, including guards.
   Amiga exempts active parties only. Remaster currently applies the active-party
   exemption to every profile, leaving a DOS fidelity mismatch for guards.
-- Under DOS or Amiga rules, Extended AI collects no dropped or room items when
+- Under DOS or Amiga rules, Modern AI collects no dropped or room items when
   any active-party member lacks complete hazard protection. Water resupply is
   still allowed.
 - Every Amiga AI employee receives ordinary +2 healing from health 50; this is
@@ -137,7 +137,7 @@ These shortcuts prevent routine starvation and recovery logistics from stopping 
 
 ## Combat
 
-DOS and Amiga AI conflicts are resolved off-screen by private strategic routines. They are not repetitions of the visible on-map attack animation and damage-table sequence. Their profiles own both the recovered damage shortcut and encounter tactics such as pairing, retaliation, exchange limits and withdrawal, regardless of the selected game rules. Extended AI instead uses the active rules profile for combat damage.
+DOS and Amiga AI conflicts are resolved off-screen by private strategic routines. They are not repetitions of the visible on-map attack animation and damage-table sequence. Their profiles own both the recovered damage shortcut and encounter tactics such as pairing, retaliation, exchange limits and withdrawal, regardless of the selected game rules. Modern AI instead uses the active rules profile for combat damage.
 
 Strategic combat still considers actual character health, experience, and weapons, and deaths persist. However:
 
@@ -213,12 +213,12 @@ Difficulty does not select starting experience or starting items in the examined
 
 Boss experience is subsequently recalculated by the selected rules and may replace the initial value. Difficulty does not select between these templates.
 
-The Remaster assigns these two templates alternately to every DOS or Amiga AI slot, independent of player number and rules selection. All profiles take their initial boss XP from the selected rules’ gamesettings.txt (37). Extended AI retains its Easy-derived inventory of meat, bottle, full canteen and two knives. Disabled slots receive no starting state.
+The Remaster assigns these two templates alternately to every DOS or Amiga AI slot, independent of player number and rules selection. All profiles take their initial boss XP from the selected rules’ game.txt (37). Modern AI retains its Easy-derived inventory of meat, bottle, full canteen and two knives. Disabled slots receive no starting state.
 
 ## Remaster implementation
 
 The DOS and Amiga profiles use separate serializable controller loops behind a
-shared original-AI utility base. They do not call the Extended planner,
+shared original-AI utility base. They do not call the Modern planner,
 trading, construction or reserve systems. The implementation:
 
 - use small, separate DOS and Amiga controller loops with shared utilities;
@@ -232,6 +232,6 @@ trading, construction or reserve systems. The implementation:
   difficulty margins, employee/garrison limits, and strategic damage;
 - permit a different AI profile for every player slot, including mixed headless simulations.
 
-The game-setup selector remains a convenient default for every computer slot. Headless simulation accepts four explicit profiles with `--ai-profiles dos,amiga,extended,none`; these selections are stored in the save and restored independently.
+The game-setup selector remains a convenient default for every computer slot. Headless simulation accepts four explicit profiles with `--ai-profiles dos,amiga,modern,none`; these selections are stored in the save and restored independently.
 
-Extended AI pays the same barter and doctor rates as the human player, using the selected rule set’s gamesettings.txt and world difficulty. Its city supply aid and the original profiles’ free supply/healing grants remain profile-specific.
+Modern AI pays the same barter and doctor rates as the human player, using the selected rule set’s game.txt and world difficulty. Its city supply aid and the original profiles’ free supply/healing grants remain profile-specific.

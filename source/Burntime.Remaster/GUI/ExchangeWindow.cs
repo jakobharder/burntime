@@ -58,7 +58,7 @@ namespace Burntime.Remaster.GUI
             grid.RightClickItemEvent += OnRightClickItem;
             Windows += grid;
 
-            font = new GuiFont(BurntimeClassic.FontName, new PixelColor(128, 136, 192));
+            font = new GuiFont(BurntimeClassic.FontName, ClassicColors.InventoryText);
             font.Borders = TextBorders.Screen;
         }
 
@@ -71,9 +71,9 @@ namespace Burntime.Remaster.GUI
             PixelColor color;
             switch (exchangeResult)
             {
-                case ExchangeResult.Ok: color = new PixelColor(0, 156, 0); break;
-                case ExchangeResult.Ng: color = new PixelColor(208, 0, 0); break;
-                default: color = new PixelColor(72, 72, 116); break;
+                case ExchangeResult.Ok: color = ClassicColors.StatusSuccess; break;
+                case ExchangeResult.Ng: color = ClassicColors.StatusFailure; break;
+                default: color = ClassicColors.StatusInactive; break;
             }
 
             Target.RenderRect(new Vector2(10, 7), new Vector2(12, 5), color);

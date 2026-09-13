@@ -185,7 +185,7 @@ namespace Burntime.Framework
             if (MouseImage != null && RenderMouse && MouseInputVisible)
             {
                 target.Layer = 255;
-                target.DrawSprite(DeviceManager.Mouse.Position, MouseImage);
+                target.DrawSprite(DeviceManager.Mouse.Position + new Vector2(0, -1), MouseImage);
             }
         }
 

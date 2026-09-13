@@ -81,7 +81,7 @@ internal class OptionsSettingsPage : Container
             IsTextOnly = true
         };
         Windows += _promptsToggle = new Button(app,
-            () => BurntimeClassic.Instance.CyclePromptVisibilityMode())
+            () => BurntimeClassic.Instance.CycleUIHintVisibilityMode())
         {
             Font = _fonts.Green,
             HoverFont = _fonts.Orange,
@@ -201,8 +201,8 @@ internal class OptionsSettingsPage : Container
             ControllerGlyphMode.Switch => "@controller?4",
             _ => "@controller?0"
         };
-        _promptsToggle.Text = BurntimeClassic.Instance.PromptVisibility ==
-            PromptVisibilityMode.Hide ? "@prompt_mode?1" : "@prompt_mode?0";
+        _promptsToggle.Text = BurntimeClassic.Instance.UIHintVisibility ==
+            UIHintVisibilityMode.Hide ? "@prompt_mode?1" : "@prompt_mode?0";
         _languageToggle.Text = BurntimeClassic.Instance.LanguageSelection switch
         {
             LanguageMode.English => "@language_mode?1",

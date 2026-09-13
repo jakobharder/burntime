@@ -1,6 +1,7 @@
 ﻿using Burntime.Framework;
 using Burntime.Framework.GUI;
 using Burntime.Platform;
+using Burntime.Platform.Graphics;
 using Burntime.Platform.IO;
 using Burntime.Remaster;
 using Burntime.Remaster.Logic;
@@ -83,8 +84,6 @@ internal class OptionsSavesPage : Container
     readonly Button _save;
     readonly Button _delete;
     readonly Button _hintText;
-    readonly Button _upIndicator;
-    readonly Button _downIndicator;
 
     const int VISIBLE_SAVE_COUNT = 6;
     const int LIST_X = 38;
@@ -93,6 +92,10 @@ internal class OptionsSavesPage : Container
     // the same rightmost pixel of the black content area.
     const int LIST_WIDTH = 122;
     const int ROW_HEIGHT = 10;
+    const int SCROLLBAR_X = LIST_X + LIST_WIDTH + 2;
+    const int SCROLLBAR_WIDTH = 2;
+    const int SCROLLBAR_HEIGHT = VISIBLE_SAVE_COUNT * ROW_HEIGHT - 3;
+    const int MIN_THUMB_HEIGHT = 10;
 
     readonly SaveRowButton[] _saveRows = new SaveRowButton[VISIBLE_SAVE_COUNT];
     readonly Button[] _actionButtons;
@@ -166,25 +169,46 @@ internal class OptionsSavesPage : Container
         // hover details above their strip so stale action pixels cannot cover them.
         _hintText.Layer += 2;
 
-        Windows += _upIndicator = new Button(app, () => ScrollList(-1))
-        {
-            Font = _fonts.Green,
-            HoverFont = _fonts.Orange,
-            Position = new Vector2(LIST_X + LIST_WIDTH + 2, LIST_Y),
-            Text = "<",
-            IsTextOnly = true
-        };
-        Windows += _downIndicator = new Button(app, () => ScrollList(1))
-        {
-            Font = _fonts.Green,
-            HoverFont = _fonts.Orange,
-            Position = new Vector2(LIST_X + LIST_WIDTH + 2, LIST_Y + (VISIBLE_SAVE_COUNT - 1) * ROW_HEIGHT),
-            Text = ">",
-            IsTextOnly = true
-        };
-
         _actionButtons = new[] { _load, _save, _delete };
         CreateSaveRows();
+    }
+
+    public override void OnRender(RenderTarget target)
+    {
+        int maximumOffset = System.Math.Max(0, EntryCount - VISIBLE_SAVE_COUNT);
+        if (maximumOffset <= 0)
+            return;
+
+        int thumbHeight = System.Math.Max(MIN_THUMB_HEIGHT,
+            SCROLLBAR_HEIGHT * VISIBLE_SAVE_COUNT / EntryCount);
+        int thumbY = LIST_Y + (SCROLLBAR_HEIGHT - thumbHeight) * _scrollOffset /
+            maximumOffset;
+        target.RenderRect(new Vector2(SCROLLBAR_X, LIST_Y),
+            new Vector2(SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT),
+            new PixelColor(80, 108, 116, 168));
+        target.RenderRect(new Vector2(SCROLLBAR_X, thumbY),
+            new Vector2(SCROLLBAR_WIDTH, thumbHeight),
+            ClassicColors.OptionsGreen);
+    }
+
+    public override bool OnMouseClick(Vector2 position, MouseButton button)
+    {
+        if (button != MouseButton.Left || EntryCount <= VISIBLE_SAVE_COUNT ||
+            position.x < SCROLLBAR_X - 2 ||
+            position.x >= SCROLLBAR_X + SCROLLBAR_WIDTH + 2 ||
+            position.y < LIST_Y || position.y >= LIST_Y + SCROLLBAR_HEIGHT)
+            return false;
+
+        int maximumOffset = EntryCount - VISIBLE_SAVE_COUNT;
+        int thumbHeight = System.Math.Max(MIN_THUMB_HEIGHT,
+            SCROLLBAR_HEIGHT * VISIBLE_SAVE_COUNT / EntryCount);
+        int thumbY = LIST_Y + (SCROLLBAR_HEIGHT - thumbHeight) * _scrollOffset /
+            maximumOffset;
+        if (position.y < thumbY)
+            ScrollList(-1);
+        else if (position.y >= thumbY + thumbHeight)
+            ScrollList(1);
+        return true;
     }
 
     public override bool OnMouseWheel(Vector2 position, int delta)
@@ -593,9 +617,6 @@ internal class OptionsSavesPage : Container
             GuiFont normalFont = saveInfo?.IsValid == false ? _fonts.Disabled : _fonts.Green;
             button.Font = entryIndex == _markedIndex ? _fonts.Blue : normalFont;
         }
-
-        _upIndicator.IsVisible = _scrollOffset > 0;
-        _downIndicator.IsVisible = _scrollOffset + VISIBLE_SAVE_COUNT < EntryCount;
     }
 
     void UpdateMetadataPreload()

@@ -48,6 +48,8 @@ static class Program
         Run("profile parsing", GameDefinitionsTests.ProfileParsingCases());
         Run("rule registry", GameDefinitionsTests.RuleRegistryCases());
         Run("resolution scaling", ResolutionTests.ResolutionCases());
+        Run("tooltip text substitution", TooltipTextTests.SubstitutionCases());
+        Run("construction feedback", ConstructionFeedbackTests.AvailabilityCases());
 
         Console.WriteLine($"Rule formulas: {passed} passed, {failed} failed.");
         return failed == 0 ? 0 : 1;

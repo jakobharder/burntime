@@ -100,9 +100,9 @@ namespace Burntime.Remaster.GUI
             face.Layer = this.Layer + 6;
             Windows += face;
 
-            font = new GuiFont(BurntimeClassic.FontName, new PixelColor(128, 136, 192));
+            font = new GuiFont(BurntimeClassic.FontName, ClassicColors.InventoryText);
             font.Borders = TextBorders.Screen;
-            nameFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
+            nameFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.MenuTextHover);
             nameFont.Borders = TextBorders.Screen;
 
             pageName = "";
@@ -214,15 +214,26 @@ namespace Burntime.Remaster.GUI
 
             if (activePage != null)
             {
+                RefreshCombatLoadout();
                 for (int i = activePage.Offset; i < activePage.Character.Items.Count && grid.Count < 6; i++)
                     grid.Add(activePage.Character.Items[i]);
-                if (activePage.Character.Weapon != null)
-                    grid.Selection.Add(activePage.Character.Weapon);
-                if (activePage.Character.Protection != null)
-                    grid.Selection.Add(activePage.Character.Protection);
 
                 face.FaceID = activePage.Character.FaceID;
             }
+        }
+
+        public void RefreshCombatLoadout()
+        {
+            if (activePage == null)
+                return;
+
+            ((ClassicGame)activePage.Character.Container.Root).RuleBook
+                .SelectCombatLoadout(activePage.Character);
+            grid.Selection.Clear();
+            if (activePage.Character.Weapon != null)
+                grid.Selection.Add(activePage.Character.Weapon);
+            if (activePage.Character.Protection != null)
+                grid.Selection.Add(activePage.Character.Protection);
         }
 
         public override void OnRender(RenderTarget Target)
@@ -243,7 +254,7 @@ namespace Burntime.Remaster.GUI
             txt.AddArgument("|D", activePage.Character.Food);
 
             var combat = ((ClassicGame)activePage.Character.Container.Root).RuleBook
-                .GetCombatPreview(activePage.Character);
+                .GetEquippedCombatPreview(activePage.Character);
             txt.AddArgument("{defense}", combat.Defense ?? 0);
             txt.AddArgument("{damage}", combat.Minimum == combat.Maximum
                 ? combat.Minimum.ToString() : $"{combat.Minimum}-{combat.Maximum}");

@@ -225,6 +225,15 @@ internal sealed class GameRules
     public CombatPreview GetCombatPreview(Character character) =>
         TableCombat.Preview(character, Settings, UsesArmour);
 
+    public CombatPreview GetEquippedCombatPreview(Character character) =>
+        TableCombat.EquippedPreview(character, Settings, UsesArmour);
+
+    public CombatPreview GetWeaponPreview(Character character, Item weapon) =>
+        TableCombat.WeaponPreview(character, weapon, Settings);
+
+    public void SelectCombatLoadout(Character character) =>
+        TableCombat.SelectLoadout(character, UsesArmour);
+
     public float CalculateStrategicStrength(Character character, bool detailed) =>
         TableCombat.Strength(character, Settings, detailed, UsesArmour);
 

@@ -21,10 +21,10 @@ namespace Burntime.Platform.Graphics
         public bool PostFilter { get; private set; }
 
         public Dictionary<char, CharInfo> CharInfo { get { return charInfo; } }
-        public Dictionary<string, int> Kerning { get { return kerning; } }
+        public Dictionary<string, float> Kerning { get { return kerning; } }
 
         Dictionary<char, CharInfo> charInfo;
-        Dictionary<string, int> kerning = [];
+        Dictionary<string, float> kerning = [];
 
         byte[] image;
         int stride;
@@ -60,18 +60,14 @@ namespace Burntime.Platform.Graphics
             glyphHeight = height;
 
             charInfo = new Dictionary<char, CharInfo>();
-            kerning = new Dictionary<string, int>();
+            kerning = new Dictionary<string, float>();
 
-            for (int amount = 1; config[""].ContainsKey("kerning" + amount); amount++)
+            AddKerning(config[""], "kerning0.5", 0.5f);
+            for (int amount = 1;
+                config[""].ContainsKey("kerning" + amount); amount++)
             {
                 string key = "kerning" + amount;
-                foreach (string pair in config[""].Get(key).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
-                {
-                    if (pair.Length != 2)
-                        throw new System.IO.InvalidDataException($"{key} entries must be two-character pairs.");
-
-                    kerning[pair] = -amount;
-                }
+                AddKerning(config[""], key, amount);
             }
 
             for (int line = 0; line < lines; line++)
@@ -123,6 +119,22 @@ namespace Burntime.Platform.Graphics
             image = decoded.BgraData;
             stride = decoded.Width * 4;
             file.Close();
+        }
+
+        void AddKerning(ConfigSection section, string key, float amount)
+        {
+            if (!section.ContainsKey(key))
+                return;
+
+            foreach (string pair in section.Get(key).Split((char[]?)null,
+                StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (pair.Length != 2)
+                    throw new System.IO.InvalidDataException(
+                        $"{key} entries must be two-character pairs.");
+
+                kerning[pair] = -amount;
+            }
         }
 
         public void Render(System.IO.Stream stream, int stride)

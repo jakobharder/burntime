@@ -187,8 +187,10 @@ static class TableCombatTests
             fighter.Items = manager.Create<ItemList>();
             fighter.Class = CharClass.Mercenary;
             fighter.Experience = 50;
-            fighter.Items.Add(TestItem(manager, "item_knife", damage: 25,
-                damageValues: ReadDamage("item_knife", RuleSet.Extended)));
+            var knife = TestItem(manager, "item_knife", damage: 25,
+                damageValues: ReadDamage("item_knife", RuleSet.Extended));
+            fighter.Items.Add(knife);
+            fighter.Weapon = knife;
             var rules = new GameRules(RuleSet.Extended);
             var preview = rules.GetCombatPreview(fighter);
             Equal(new CombatPreview(12, 20, null), preview, "damage range; zero defence hidden");
@@ -200,8 +202,51 @@ static class TableCombatTests
             preview = rules.GetCombatPreview(fighter);
             Equal<int?>(20, preview.Defense, "strongest clothing, without stacking");
             Equal(sweater, fighter.Protection, "preview does not change equipment");
+            var equipped = rules.GetEquippedCombatPreview(fighter);
+            Equal(new CombatPreview(12, 20, 5), equipped,
+                "equipped preview uses selected weapon and protection only");
             fighter.Experience = 0;
             Equal<int?>(20, rules.GetCombatPreview(fighter).Defense, "armour independent of XP");
+            return 0;
+        });
+        yield return Int("inventory loadout selects safe fallbacks and preserves firearms", 0, () =>
+        {
+            var manager = new Burntime.Framework.States.StateManager(null!);
+            var fighter = manager.Create(() => new Burntime.Remaster.Logic.Character());
+            var player = manager.Create<Burntime.Remaster.Logic.Player>(new object[] { 0 });
+            player.Type = PlayerType.Human;
+            fighter.Player = player;
+            fighter.Items = manager.Create<ItemList>();
+            fighter.Class = CharClass.Mercenary;
+            var rifle = TestItem(manager, "item_loaded_rifle", damage: 55, ammo: 6,
+                damageValues: ReadDamage("item_loaded_rifle", RuleSet.Extended));
+            var knife = TestItem(manager, "item_knife", damage: 25,
+                damageValues: ReadDamage("item_knife", RuleSet.Extended));
+            fighter.Items.Add(rifle);
+            fighter.Items.Add(knife);
+            var rules = new GameRules(RuleSet.Extended);
+
+            rules.SelectCombatLoadout(fighter);
+            Equal(knife, fighter.Weapon, "automatic selection avoids ammunition");
+
+            fighter.Weapon = rifle;
+            rules.SelectCombatLoadout(fighter);
+            Equal(rifle, fighter.Weapon, "selected firearm remains active");
+
+            var sweater = TestItem(manager, "sweater", defense: 5);
+            var jacket = TestItem(manager, "jacket", defense: 20);
+            fighter.Items.Add(sweater);
+            fighter.Items.Add(jacket);
+            rules.SelectCombatLoadout(fighter);
+            Equal(jacket, fighter.Protection, "best carried defense is selected");
+
+            fighter.Items.Remove(jacket);
+            rules.SelectCombatLoadout(fighter);
+            Equal(sweater, fighter.Protection, "stored defense is replaced");
+
+            fighter.Items.Remove(rifle);
+            rules.SelectCombatLoadout(fighter);
+            Equal(knife, fighter.Weapon, "stored firearm falls back to melee");
             return 0;
         });
         yield return Int("Extended local and off-screen damage share rolls and armour", 0, () =>

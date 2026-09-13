@@ -52,7 +52,10 @@ public interface IEngine
     void RenderRect(Vector2 pos, Vector2 size, PixelColor color, bool postFilter = false);
     void RenderLine(Vector2 start, Vector2 end, PixelColor color);
 
-    void RenderSprite(ISprite sprite, Vector2 pos, float alpha = 1);
+    void RenderSprite(ISprite sprite, Vector2 pos, float alpha = 1,
+        bool postFilter = false);
+    void RenderSpriteF(ISprite sprite, Vector2f pos, float alpha = 1,
+        bool postFilter = false);
     void RenderSprite(ISprite sprite, Vector2 pos, Vector2 srcPos, int srcWidth, int srcHeight, PixelColor color);
     void RenderSpriteF(ISprite sprite, Vector2f pos, Vector2 srcPos, int srcWidth,
         int srcHeight, PixelColor color, bool postFilter = false,

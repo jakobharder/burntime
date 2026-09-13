@@ -1,0 +1,76 @@
+Modern AI
+Strategic remaster AI.
+Plans camps and combat.
+Change Mode
+}#
+Amiga AI
+Original Amiga AI.
+Keeps its limitations.
+Change Mode
+}#
+No AI
+Unused slots stay empty.
+Human players only.
+Change Mode
+}#
+Knife
+Damage {damage}}
+Equip
+Unequip
+}#
+Extended mode
+Expanded items and trade.
+Revised survival/combat.
+}
+Change Mode
+}#
+Classic mode
+Original items and economy.
+Original survival/combat.
+}
+Change Mode
+}#
+Food {food}}
+Water {water}}
+}#
+Defense {defense}%}
+Gas protection {gas}%}
+Radiation protection {radiation}%}
+}#
+Yield: {food} days of food ({product})}
+Capacity {water}}
+Full
+Can build {recipe}}
+Can build ???
+Can build ??? x{count}}
+Can build ...
+Needs Technician
+Place in room
+Unsuitable camp
+}#
+Easy
+More supplies and finds.
+Better trading odds.
+Change Difficulty
+}#
+Normal
+Standard supplies, finds,
+and trading odds.
+Change Difficulty
+}#
+Hard
+Fewer supplies and finds.
+Worse trading odds.
+Change Difficulty
+}#
+Food Production
+{product}: {tools}}
+None
+Change
+Group is full
+Not enough water
+Needs materials
+Needs ammunition
+Previous
+Next
+}#

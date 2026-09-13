@@ -145,6 +145,10 @@ namespace Burntime.Remaster.Logic
         protected StateLink<Location> destination;
         protected StateLink<Location> previousLocation;
 
+        // Indexed by the immutable world-location ID. Optional for legacy saves.
+        [System.Runtime.Serialization.OptionalField]
+        bool[]? visitedLocations;
+
         protected DataID<ISprite> flag;
         public DataID<ISprite> Flag
         {
@@ -229,6 +233,7 @@ namespace Burntime.Remaster.Logic
         protected override void InitInstance(object[] parameter)
         {
             group = container.Create<Group>();
+            visitedLocations = [];
             Party.RangeFilterValue = 50;
             refreshScrollPosition = true;
             refreshMapScrollPosition = true;
@@ -243,7 +248,64 @@ namespace Burntime.Remaster.Logic
         public Location Location
         {
             get { return city; }
-            set { city = value; }
+            set
+            {
+                city = value;
+                if (value != null)
+                    MarkVisited(value);
+            }
+        }
+
+        public bool HasVisited(Location location)
+        {
+            EnsureVisitedLocations();
+            return location.Id >= 0 && location.Id < visitedLocations!.Length &&
+                visitedLocations[location.Id];
+        }
+
+        void MarkVisited(Location location)
+        {
+            EnsureVisitedLocations();
+            if (location.Id >= 0 && location.Id < visitedLocations!.Length)
+                visitedLocations[location.Id] = true;
+        }
+
+        void EnsureVisitedLocations()
+        {
+            ClassicWorld? world = (Container.Root as ClassicGame)?.World;
+            if (world == null)
+                return;
+
+            bool isLegacySave = visitedLocations == null;
+            int locationCount = world.Locations.Count;
+            if (visitedLocations == null || visitedLocations.Length != locationCount)
+            {
+                bool[] replacement = new bool[locationCount];
+                if (visitedLocations != null)
+                    Array.Copy(visitedLocations, replacement,
+                        System.Math.Min(visitedLocations.Length, replacement.Length));
+                visitedLocations = replacement;
+            }
+
+            if (!isLegacySave)
+                return;
+
+            // Older saves have no exploration history. Preserve only the local
+            // knowledge implied by camps, adjacent routes, and the current position.
+            foreach (Location camp in world.Locations.Where(location => location.Player == this))
+            {
+                MarkVisitedWithoutMigration(camp);
+                foreach (Location neighbor in camp.Neighbors)
+                    MarkVisitedWithoutMigration(neighbor);
+            }
+            if (Location != null)
+                MarkVisitedWithoutMigration(Location);
+        }
+
+        void MarkVisitedWithoutMigration(Location location)
+        {
+            if (location.Id >= 0 && location.Id < visitedLocations!.Length)
+                visitedLocations[location.Id] = true;
         }
 
         public Location Destination

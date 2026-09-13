@@ -498,7 +498,8 @@ public sealed class MusicPlayback : IMusic
                     if (next == null)
                         continue;
 
-                    _music = Music.LoopableSong.FromFileName(next, _repeat);
+                    _music = Music.LoopableSong.FromFileName(next, _repeat,
+                        fade: _isMapPlaylistPlayback && _continueWithMapPlaylist);
                     if (_music is null)
                         continue;
 

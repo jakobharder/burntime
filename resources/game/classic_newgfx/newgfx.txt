@@ -134,6 +134,7 @@ ges_29.ani=pngani@gfx/faces/geometry_true/ges_29.png
 gst.raw=pngsheet@gfx/items/gst2.png?{0}?60x72
 
 pngsheet@gfx/ui/info_counter.png=pngsheet@gfx/ui/info_counter.png?{0}?15x27
+pngsheet@gfx/ui/font_icons.png=pngsheet@gfx/ui/font_icons.png?{0}?22x27
 
 [newgfx_native]
 ' Graphics only used in remastered mode

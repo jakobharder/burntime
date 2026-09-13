@@ -58,6 +58,8 @@ namespace Burntime.Remaster
         bool characterCycleLatched;
         float characterCycleDebounce;
         float attackCooldownRemaining;
+        Character? pendingAttackTarget;
+        readonly ManualWindow manualWindow;
 
         public LocationScene(Module App)
             : base(App)
@@ -108,9 +110,13 @@ namespace Burntime.Remaster
             dialog.WindowShow += new EventHandler(dialog_WindowShow);
             Windows += dialog;
 
-            Windows += new InputPromptOverlay(app, Prompts,
+            InputPromptOverlay promptOverlay = new(app, Prompts,
                 InputPromptColorScheme.Hud);
-            Prompts.SuppressWhen(() => dialog.IsVisible || menu.IsVisible);
+            Windows += promptOverlay;
+            promptOverlay.Layer = cursorAni.Layer - 3;
+            Windows += manualWindow = new ManualWindow(app, Size);
+            Prompts.SuppressWhen(() => dialog.IsVisible || menu.IsVisible ||
+                manualWindow.IsVisible);
             Prompts.Add(new InputPrompt(InputAction.Back, "...")
             {
                 MouseControl = MouseButton.Right
@@ -158,6 +164,7 @@ namespace Burntime.Remaster
             base.OnResizeScreen(reload);
 
             Size = app.Engine.Resolution.Game;
+            manualWindow?.CenterIn(Size);
             view.Size = new Vector2(Size.x - 32, Size.y - 40);
             dialog.Position = view.Position + (view.Size - dialog.Size) / 2 - new Vector2(0, 10);
             gui.SetMapRenderArea(view, Size);
@@ -228,7 +235,7 @@ namespace Burntime.Remaster
                 }
                 else
                 {
-                    MoveCharacter(targetCharacter);
+                    MoveCharacter(targetCharacter, targetCharacter);
                 }
             }
         }
@@ -444,6 +451,7 @@ namespace Burntime.Remaster
             UpdateInteractionCursor();
 
             bool showInteractionMode = app.MouseInputVisible && !dialog.IsVisible &&
+                !manualWindow.IsVisible &&
                 ShouldShowMouseInteractionCursor();
             if (cursorAni.IsVisible != showInteractionMode)
                 cursorAni.IsVisible = showInteractionMode;
@@ -452,7 +460,7 @@ namespace Burntime.Remaster
             {
                 cursorAni.Position = app.DeviceManager.Mouse.Position + new Vector2(8, 11);
 
-                if (app.MouseInputVisible)
+                if (app.MouseInputVisible && !manualWindow.IsVisible)
                 {
                     var layer = Target.Layer;
                     Target.Layer = gui.Layer - 1;
@@ -803,6 +811,7 @@ namespace Burntime.Remaster
         protected override void OnActivateScene(object parameter)
         {
             interactionMode = LocationInteractionMode.Auto;
+            pendingAttackTarget = null;
             nextTurnHoldTime = 0;
             nextTurnTriggered = false;
             cameraPanActive = false;
@@ -945,6 +954,7 @@ namespace Burntime.Remaster
 
             AddLine("@burn?361", () => app.SceneManager.SetScene("OptionsScene"),
                 new(InputAction.Options));
+            AddLine("@manualui?5", manualWindow.Open);
             AddLine("@burn?357", OnMenuTurn, new(InputAction.NextTurn) { Hold = true });
 
             menu.Show(position, view.Boundings, openedByMouse);
@@ -1202,6 +1212,7 @@ namespace Burntime.Remaster
             MapEntrance entrance = loc.Map.Entrances[Number];
 
             EntranceObject entranceObject = new EntranceObject(entrance, Number);
+            pendingAttackTarget = null;
             EnsureAutomaticPath(charOverlay.SelectedCharacter);
             charOverlay.SelectedCharacter.Mind.MoveToObject(new InteractionObject(entranceObject,
                 loc.Rooms[Number].EntryCondition, this));
@@ -1211,13 +1222,15 @@ namespace Burntime.Remaster
 
         public void OnMouseClickMap(Vector2 position, MouseButton button)
         {
+            pendingAttackTarget = null;
             EnsureAutomaticPath(charOverlay.SelectedCharacter);
             charOverlay.SelectedCharacter.Mind.MoveToObject(null);
             charOverlay.SelectedCharacter.Path.MoveTo = position;
         }
 
-        void MoveCharacter(IMapObject obj)
+        void MoveCharacter(IMapObject obj, Character? attackTarget = null)
         {
+            pendingAttackTarget = attackTarget;
             EnsureAutomaticPath(charOverlay.SelectedCharacter);
             charOverlay.SelectedCharacter.Mind.MoveToObject(new InteractionObject(obj, this));
         }
@@ -1235,6 +1248,14 @@ namespace Burntime.Remaster
             else if (obj is Character)
             {
                 Character ch = (Character)obj;
+                bool isPendingAttack = ch == pendingAttackTarget;
+                pendingAttackTarget = null;
+
+                if (isPendingAttack)
+                {
+                    TryAttack(actor, ch);
+                    return true;
+                }
 
                 if (view.Player.Party.Contains(ch) || ch.Player == view.Player)
                 {

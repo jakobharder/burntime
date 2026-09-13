@@ -42,12 +42,22 @@ public class RenderTarget
         _engine.RenderSprite(sprite, pos + _rc.Position + Offset);
     }
 
-    public void DrawSprite(Vector2 pos, ISprite sprite, float alpha)
+    public void DrawSprite(Vector2 pos, ISprite sprite, float alpha,
+        bool postFilter = false)
     {
         if (sprite == null)
             return;
 
-        _engine.RenderSprite(sprite, pos + _rc.Position + Offset, alpha);
+        _engine.RenderSprite(sprite, pos + _rc.Position + Offset, alpha, postFilter);
+    }
+
+    public void DrawSpriteF(Vector2f pos, ISprite sprite, float alpha,
+        bool postFilter = false)
+    {
+        if (sprite == null)
+            return;
+
+        _engine.RenderSpriteF(sprite, pos + _rc.Position + Offset, alpha, postFilter);
     }
 
     public void DrawSprite(Vector2 pos, ISprite sprite, Rect srcRect)

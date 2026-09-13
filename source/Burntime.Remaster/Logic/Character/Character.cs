@@ -545,11 +545,25 @@ namespace Burntime.Remaster.Logic
 
         internal Item? FindOriginalWeapon(bool allowUnloadedRifle = false)
         {
-            Item? selected = Weapon;
+            Item? selected = Weapon != null && Items.Contains(Weapon)
+                ? Weapon
+                : null;
             if (selected?.DamageValue == 0 &&
                 !(allowUnloadedRifle && selected.ID == "item_unloaded_rifle"))
                 selected = null;
-            selected = Items.FindBestWeapon(selected);
+            if (selected == null)
+            {
+                // Firearms are an explicit ammunition-use choice for human
+                // players. AI weapon policy continues to manage its own ammo.
+                selected = Player?.Type == PlayerType.Human
+                    ? Items.Where(item => item.DamageValue > 0 &&
+                        !item.ConsumesAmmo)
+                        .OrderBy(item => item.Type.WeaponPriority)
+                        .LastOrDefault()
+                    : Items.FindBestWeapon();
+            }
+            else
+                selected = Items.FindBestWeapon(selected);
             if (allowUnloadedRifle && selected == null)
                 selected = Items.FirstOrDefault(item => item.ID == "item_unloaded_rifle");
             return selected;

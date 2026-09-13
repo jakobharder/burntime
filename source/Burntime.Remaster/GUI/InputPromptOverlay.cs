@@ -131,7 +131,7 @@ sealed partial class InputPromptOverlay : Container
         {
             if (!_inlineRows.TryGetValue(key, out Row? row))
             {
-                Windows += row = new Row(app, _colors,
+                row = new Row(app, _colors,
                     _controller.PreferredPrimaryKeyboardControl)
                 {
                     HorizontalAlignment = key.HorizontalAlignment,
@@ -140,6 +140,8 @@ sealed partial class InputPromptOverlay : Container
                     HorizontalPadding = key.HorizontalPadding,
                     Separator = key.Separator
                 };
+                Windows += row;
+                row.Layer = 199;
                 _inlineRows.Add(key, row);
             }
             Vector2 scenePosition = Parent?.PositionOnScreen ?? Vector2.Zero;

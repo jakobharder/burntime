@@ -23,7 +23,7 @@ namespace Burntime.Remaster
         German
     }
 
-    public enum PromptVisibilityMode
+    public enum UIHintVisibilityMode
     {
         Full = 0,
         Less = 1,
@@ -52,9 +52,6 @@ namespace Burntime.Remaster
         public static bool IsSupportedSavegameVersion(string? version) =>
             version == SavegameVersion || version == PreviousSavegameVersion;
         public static string FontName = "font.txt";
-
-        public static readonly PixelColor LightGray = new(212, 212, 212);
-        public static readonly PixelColor Gray = new(184, 184, 184);
 
         private static string? _version;
         public static string Version
@@ -107,8 +104,8 @@ namespace Burntime.Remaster
 
         public bool ChooseLanguageOnStart { get; set; }
         public LanguageMode LanguageSelection { get; private set; } = LanguageMode.Auto;
-        public PromptVisibilityMode PromptVisibility { get; private set; } = PromptVisibilityMode.Full;
-        public bool ShowInputPrompts => PromptVisibility != PromptVisibilityMode.Hide;
+        public UIHintVisibilityMode UIHintVisibility { get; private set; } = UIHintVisibilityMode.Full;
+        public bool ShowUIHints => UIHintVisibility != UIHintVisibilityMode.Hide;
 
         public override void Start()
         {
@@ -159,10 +156,10 @@ namespace Burntime.Remaster
                 UserSettings.Save("user.txt");
             Engine.ControllerGlyphMode = ParseControllerGlyphMode(
                 UserSettings[""].GetString("controller_glyphs"));
-            PromptVisibility = (PromptVisibilityMode)System.Math.Clamp(
+            UIHintVisibility = (UIHintVisibilityMode)System.Math.Clamp(
                 UserSettings[""].GetInt("prompts"),
-                (int)PromptVisibilityMode.Full,
-                (int)PromptVisibilityMode.Hide);
+                (int)UIHintVisibilityMode.Full,
+                (int)UIHintVisibilityMode.Hide);
             KeyboardBindings.Load(Settings);
             GamepadBindings.Load(Settings);
             LanguageSelection = ParseLanguageMode(UserSettings[""].GetString("language"));
@@ -253,7 +250,7 @@ namespace Burntime.Remaster
             UserSettings[""].Set("newgfx", IsNewGfx);
             UserSettings[""].Set("language", FormatLanguageMode(LanguageSelection));
             UserSettings[""].Set("controller_glyphs", FormatControllerGlyphMode(Engine.ControllerGlyphMode));
-            UserSettings[""].Set("prompts", (int)PromptVisibility);
+            UserSettings[""].Set("prompts", (int)UIHintVisibility);
             UserSettings.Save("user.txt");
         }
 
@@ -269,11 +266,11 @@ namespace Burntime.Remaster
             };
         }
 
-        public void CyclePromptVisibilityMode()
+        public void CycleUIHintVisibilityMode()
         {
-            PromptVisibility = PromptVisibility == PromptVisibilityMode.Hide
-                ? PromptVisibilityMode.Full
-                : PromptVisibilityMode.Hide;
+            UIHintVisibility = UIHintVisibility == UIHintVisibilityMode.Hide
+                ? UIHintVisibilityMode.Full
+                : UIHintVisibilityMode.Hide;
         }
 
         static ControllerGlyphMode ParseControllerGlyphMode(string value) =>
@@ -378,6 +375,7 @@ namespace Burntime.Remaster
         }
 
         public int PreviousPlayerId = -1;
+        public bool ShowManualOnNextWorldMap;
         public bool NewGui = false;
 
         public override bool IsNewGfx

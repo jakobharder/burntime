@@ -11,3 +11,7 @@ pngsheet@gfx/ui/input_glyphs_playstation.png=pngsheet@gfx/ui/input_glyphs_playst
 pngsheet@gfx/ui/input_glyphs_steam.png=pngsheet@gfx/ui/input_glyphs_steam2x.png?{0}?44x44
 pngsheet@gfx/ui/input_glyphs_switch.png=pngsheet@gfx/ui/input_glyphs_switch2x.png?{0}?44x44
 gfx/ui/input_glyphs_hold.png=gfx/ui/input_glyphs_hold2x.png
+
+[font_icons]
+sprite_scale=1x1
+pngsheet@gfx/ui/font_icons.png=pngsheet@gfx/ui/font2x_icons.png?{0}?44x54

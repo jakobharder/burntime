@@ -131,7 +131,10 @@ namespace Burntime.Remaster.Logic.Generation
             container.Synchronize(false); // DEBUG
 
             if (startServer)
+            {
+                app.ShowManualOnNextWorldMap = true;
                 app.Server.Run();
+            }
         }
 
         void AddPlayer(ClassicGame game, NewGameInfo Info, Burntime.Data.BurnGfx.Save.SaveGame gamdat, GameSettings settings)
@@ -539,6 +542,7 @@ namespace Burntime.Remaster.Logic.Generation
 
         public bool LoadGame(string filename, bool startServer = true)
         {
+            app.ShowManualOnNextWorldMap = false;
             if (container == null)
                 container = new Burntime.Framework.States.StateManager(app.ResourceManager);
 

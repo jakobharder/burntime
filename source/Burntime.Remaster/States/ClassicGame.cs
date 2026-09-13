@@ -80,9 +80,24 @@ namespace Burntime.Remaster
         [System.Runtime.Serialization.OptionalField]
         string? ruleSet;
 
+        // Optional so saves created before tooltip recipe discovery remain valid.
+        [System.Runtime.Serialization.OptionalField]
+        string[]? knownConstructionResults;
+
         public RuleSet Rules => GameDefinitions.ParseRules(ruleSet);
         public GameFeature Features => GameDefinitions.Get(Rules).Features;
         public bool HasFeature(GameFeature feature) => Features.HasFlag(feature);
+
+        internal bool IsConstructionKnown(string result) =>
+            knownConstructionResults?.Contains(result) == true;
+
+        internal void RememberConstruction(string result)
+        {
+            if (string.IsNullOrEmpty(result) || IsConstructionKnown(result))
+                return;
+            knownConstructionResults = (knownConstructionResults ?? []).Append(result)
+                .ToArray();
+        }
 
         [NonSerialized]
         GameRules? ruleBook;
@@ -270,30 +285,5 @@ namespace Burntime.Remaster
         }
 
         public bool CheatsEnabled { get; set; }
-    }
-
-    [Serializable]
-    public class ClassicWorld : World
-    {
-        public Player ActivePlayerObj
-        {
-            get { if (ActivePlayer == -1) return null; else return Players[ActivePlayer]; }
-        }
-
-        public Location ActiveLocationObj
-        {
-            get { if (ActivePlayer == -1) return null; else return Players[ActivePlayer].Location; }
-        }
-
-        [NonSerialized]
-        public Character SelectedCharacter;
-
-        [NonSerialized]
-        Trader activeTraderObj;
-        public Trader ActiveTraderObj
-        {
-            get { return activeTraderObj; }
-            set { activeTraderObj = value; }
-        }
     }
 }

@@ -35,7 +35,7 @@ namespace Burntime.Remaster.GUI
             : base(App)
         {
             Size = new Vector2(32, 32);
-            font = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
+            font = new GuiFont(BurntimeClassic.FontName, ClassicColors.MenuTextHover);
             font.Borders = TextBorders.Screen;
             text = null;
         }
@@ -125,7 +125,9 @@ namespace Burntime.Remaster.GUI
             if (item != null) RefreshItem();
             base.OnRender(Target);
 
-            if (ShowHoverText && GetTopMostItem() == this && text != null)
+            bool showLegacyHoverText = ShowHoverText ||
+                app is BurntimeClassic classic && !classic.ShowUIHints;
+            if (showLegacyHoverText && GetTopMostItem() == this && text != null)
             {
                 Target.Layer += 5;
                 RenderTarget bigger = Target.GetSubBuffer(new Rect(-50, -50, 132, 132));
