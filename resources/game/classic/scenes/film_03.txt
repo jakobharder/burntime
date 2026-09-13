@@ -1,6 +1,7 @@
 [image]
 background=film_03.pac
 animations=0
+frame=yes
 
 [music]
 song=death

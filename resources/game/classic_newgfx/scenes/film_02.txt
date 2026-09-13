@@ -1,6 +1,7 @@
 [image]
 background=gfx/backgrounds/film2.png
 animations=0
+frame=yes
 sprite_scale=1.875x2.25
 
 [music]

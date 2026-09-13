@@ -1,6 +1,18 @@
 [image]
 background=film_08.pac
 animations=1
+frame=no
+
+[music]
+song=church
+loop=true
+
+[subtitles]
+text=burn
+first=590
+count=9
+speed=0.25
+position=160x185
 
 [animation0]
 image=film_08.ani??p

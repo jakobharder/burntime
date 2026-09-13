@@ -50,10 +50,12 @@ namespace Burntime.Remaster.Scenes
 
             if (news != null)
             {
-                if (news is DeathNews)
-                    app.SceneManager.SetScene("DeathScene", (news as DeathNews).Name);
-                else if (news is VictoryNews)
-                    app.SceneManager.SetScene("VictoryScene", (news as VictoryNews));
+                if (news is DeathNews death)
+                    classic.SetImageScene("scenes/death.txt", subtitleArgument: death.Name,
+                        finishClient: true);
+                else if (news is VictoryNews victory)
+                    classic.SetImageScene("scenes/victory.txt", subtitleArgument: victory.Name,
+                        finishClient: true);
             }
             else
             {

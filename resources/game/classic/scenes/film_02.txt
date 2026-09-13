@@ -1,6 +1,7 @@
 [image]
 background=film_02.pac
 animations=0
+frame=yes
 
 [music]
 song=ruin

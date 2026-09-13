@@ -1,6 +1,19 @@
 [image]
 background=film_00.pac
 animations=4
+frame=no
+
+[music]
+song=death
+loop=true
+
+[subtitles]
+text=burn
+first=600
+count=9
+speed=0.05
+position=160x185
+argument=|A
 
 [animation0]
 image=film_00.ani?0-10?p

@@ -10,14 +10,11 @@ using System.Collections.Generic;
 
 namespace Burntime.Remaster
 {
-    public enum ActionAfterImageScene
-    {
-        None,
-        Trader,
-        Doctor,
-        Pub,
-        Restaurant
-    }
+    public sealed record ImageSceneRequest(
+        string Resource,
+        string NextScene = null,
+        string SubtitleArgument = null,
+        bool FinishClient = false);
 
     public enum LanguageMode
     {
@@ -371,9 +368,14 @@ namespace Burntime.Remaster
         public int InfoCity = -1;
         public int InventoryBackground = -1;
         public Room InventoryRoom = null;
-        public String ImageScene = null;
         public PickItemList PickItems = null;
-        public ActionAfterImageScene ActionAfterImageScene = ActionAfterImageScene.None;
+
+        public void SetImageScene(string imageScene, string sceneAfterImage = null,
+            string subtitleArgument = null, bool finishClient = false)
+        {
+            SceneManager.SetScene("ImageScene", new ImageSceneRequest(
+                imageScene, sceneAfterImage, subtitleArgument, finishClient));
+        }
 
         public int PreviousPlayerId = -1;
         public bool NewGui = false;

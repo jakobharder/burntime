@@ -1308,24 +1308,19 @@ namespace Burntime.Remaster
                     app.SceneManager.SetScene("InventoryScene", charOverlay.SelectedCharacter);
                     break;
                 case RoomType.Trader:
-                    classic.ImageScene = null;
-                    classic.ActionAfterImageScene = ActionAfterImageScene.Trader;
                     classic.Game.World.ActiveTraderObj = classic.Game.World.ActiveLocationObj.LocalTrader;
-                    switch (entrance.Background)
-                    {
-                        case 0x0D: classic.ImageScene = "scenes/film_10.txt"; break;
-                        case 0x11: classic.ImageScene = "scenes/film_05.txt"; break;
-                    }
-                    if (classic.ImageScene != null)
-                        app.SceneManager.SetScene("ImageScene");
+                    if (entrance.Background == 0x0D)
+                        classic.SetImageScene("scenes/film_10.txt", "TraderScene");
+                    else if (entrance.Background == 0x11)
+                        classic.SetImageScene("scenes/film_05.txt", "TraderScene");
+                    else
+                        app.SceneManager.SetScene("TraderScene");
                     break;
                 case RoomType.Pub:
                     classic.InventoryBackground = entrance.Background;
                     if (entrance.Background == 14)
                     {
-                        classic.ImageScene = "scenes/film_06.txt";
-                        classic.ActionAfterImageScene = ActionAfterImageScene.Pub;
-                        app.SceneManager.SetScene("ImageScene");
+                        classic.SetImageScene("scenes/film_06.txt", "PubScene");
                     }
                     else
                         app.SceneManager.SetScene("PubScene");
@@ -1338,21 +1333,20 @@ namespace Burntime.Remaster
                     app.SceneManager.SetScene("DoctorScene");
                     break;
                 case RoomType.Church:
-                    app.SceneManager.SetScene("ChurchScene");
+                    classic.SetImageScene("scenes/church.txt");
                     break;
                 case RoomType.Scene:
-                    classic.ImageScene = null;
-                    classic.ActionAfterImageScene = ActionAfterImageScene.None;
+                    string imageScene = null;
                     switch (entrance.Background)
                     {
                         case 0x0A:
                         case 0x0B:
-                        case 0x0C: classic.ImageScene = "scenes/film_" + (entrance.Background - 8).ToString("D2") + ".txt"; break;
-                        case 0x10: classic.ImageScene = "scenes/film_08.txt"; break;
-                        case 0x12: classic.ImageScene = "scenes/film_09.txt"; break;
+                        case 0x0C: imageScene = "scenes/film_" + (entrance.Background - 8).ToString("D2") + ".txt"; break;
+                        case 0x10: imageScene = "scenes/film_08.txt"; break;
+                        case 0x12: imageScene = "scenes/film_09.txt"; break;
                     }
-                    if (classic.ImageScene != null)
-                        app.SceneManager.SetScene("ImageScene");
+                    if (imageScene != null)
+                        classic.SetImageScene(imageScene);
                     break;
             }
 

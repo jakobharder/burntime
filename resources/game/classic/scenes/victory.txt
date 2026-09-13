@@ -1,6 +1,19 @@
 [image]
 background=film_01.pac
 animations=3
+frame=no
+
+[music]
+song=victory
+loop=true
+
+[subtitles]
+text=burn
+first=608
+count=50
+speed=0.2
+position=160x185
+argument=|A
 
 [animation0]
 image=film_01.ani?0-21?p

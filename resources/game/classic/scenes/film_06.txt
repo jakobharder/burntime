@@ -1,6 +1,7 @@
 [image]
 background=film_06.pac
 animations=2
+frame=yes
 
 [music]
 song=pub

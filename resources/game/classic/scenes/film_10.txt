@@ -1,6 +1,7 @@
 [image]
 background=film_10.pac
 animations=1
+frame=yes
 
 [music]
 song=sounds/trader.ogg
