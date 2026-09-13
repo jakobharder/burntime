@@ -19,7 +19,7 @@ namespace Burntime.Remaster.AI
     /// so v1.0.4 saves deserialize with the default value.
     /// </summary>
     [Serializable]
-    class ClassicAiState : Burntime.Framework.States.AiState
+    class ClassicAiState : Burntime.Framework.States.AiState, IGameAiState
     {
         protected enum Mode
         {
@@ -300,6 +300,14 @@ namespace Burntime.Remaster.AI
         // The serialized itemPool field name is retained for pre-rename save compatibility.
         internal AiSettings Configuration => settings;
         internal int Difficulty => settings.Difficulty;
+
+        AiProfile IGameAiState.Profile => AiProfile.Modern;
+        int IGameAiState.Difficulty => Difficulty;
+        int? IGameAiState.NaturalHealingThreshold => null;
+        void IGameAiState.Turn() => Turn();
+        void IGameAiState.InitAfterLoad() => InitAfterLoad();
+        void IGameAiState.InitializeNewGamePlayer(
+            Burntime.Data.BurnGfx.Save.SaveGame source) => InitializeNewGamePlayer(source);
         internal int SlumpMaterialGrantsUsed
         {
             get => slumpMaterialGrantsUsed;

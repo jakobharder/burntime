@@ -4,6 +4,7 @@ using System.Linq;
 using Burntime.Framework;
 using Burntime.Framework.States;
 using Burntime.Remaster.Logic;
+using Burntime.Remaster.Logic.Generation;
 
 namespace Burntime.Remaster.AI;
 
@@ -12,7 +13,7 @@ namespace Burntime.Remaster.AI;
 /// DOS and Amiga each implement their own turn loop.
 /// </summary>
 [Serializable]
-internal abstract class OriginalAiState : Burntime.Framework.States.AiState
+internal abstract class OriginalAiState : Burntime.Framework.States.AiState, IGameAiState
 {
     protected enum Mode
     {
@@ -29,7 +30,8 @@ internal abstract class OriginalAiState : Burntime.Framework.States.AiState
     protected int wait;
 
     protected virtual int MaximumGroupSize => 5;
-    protected abstract string ProfileLabel { get; }
+    protected abstract AiProfile Profile { get; }
+    protected virtual int? NaturalHealingThreshold => null;
     protected virtual bool HasRecruitmentCapacity => Player.Group.Count < MaximumGroupSize;
     protected abstract bool CanRecruit(Character candidate);
     protected abstract void RecoverGroup(bool arrived);
@@ -59,6 +61,14 @@ internal abstract class OriginalAiState : Burntime.Framework.States.AiState
     internal ClassicGame RootGame => (ClassicGame)container.Root;
     internal Location Current => Player.Location;
     internal int OwnedCampCount => AiStateOperations.OwnedCampCount(RootGame, Player);
+
+    AiProfile IGameAiState.Profile => Profile;
+    int IGameAiState.Difficulty => Difficulty;
+    int? IGameAiState.NaturalHealingThreshold => NaturalHealingThreshold;
+    void IGameAiState.Turn() => Turn();
+    void IGameAiState.InitAfterLoad() => InitAfterLoad();
+    void IGameAiState.InitializeNewGamePlayer(
+        Burntime.Data.BurnGfx.Save.SaveGame source) => InitializeNewGamePlayer(source);
 
     internal virtual void InitAfterLoad()
     {
@@ -118,6 +128,7 @@ internal abstract class OriginalAiState : Burntime.Framework.States.AiState
         mode = Mode.LookForNextCamp;
         Player.Travel(destination);
         AiTelemetry.Report(Player,
-            $"travels toward {destination.Title} using original {ProfileLabel} AI");
+            $"travels toward {destination.Title} using original " +
+            $"{Profile.ToString().ToLowerInvariant()} AI");
     }
 }

@@ -16,64 +16,46 @@ internal static class AiStateOperations
 
     internal static bool Turn(AiState? state)
     {
-        switch (state)
-        {
-            case OriginalAiState original:
-                original.Turn();
-                return true;
-            case ClassicAiState modern:
-                modern.Turn();
-                return true;
-            default:
-                return false;
-        }
+        if (state is not IGameAiState ai)
+            return false;
+        ai.Turn();
+        return true;
     }
 
     internal static void InitAfterLoad(AiState? state)
     {
-        if (state is OriginalAiState original)
-            original.InitAfterLoad();
-        else if (state is ClassicAiState modern)
-            modern.InitAfterLoad();
+        if (state is IGameAiState ai)
+            ai.InitAfterLoad();
     }
 
     internal static void InitializeNewGamePlayer(
         AiState? state,
         Burntime.Data.BurnGfx.Save.SaveGame source)
     {
-        if (state is OriginalAiState original)
-            original.InitializeNewGamePlayer(source);
-        else if (state is ClassicAiState modern)
-            modern.InitializeNewGamePlayer(source);
+        if (state is IGameAiState ai)
+            ai.InitializeNewGamePlayer(source);
     }
 
     internal static bool TryGetDifficulty(AiState? state, out int difficulty)
     {
-        if (state is OriginalAiState original)
+        if (state is IGameAiState ai)
         {
-            difficulty = original.Difficulty;
-            return true;
-        }
-        if (state is ClassicAiState modern)
-        {
-            difficulty = modern.Difficulty;
+            difficulty = ai.Difficulty;
             return true;
         }
         difficulty = 0;
         return false;
     }
 
-    internal static AiProfile GetProfile(Player player) => player.AiState switch
-    {
-        DosAiState => AiProfile.Dos,
-        AmigaAiState => AiProfile.Amiga,
-        ClassicAiState => AiProfile.Modern,
-        _ when player.Type == PlayerType.Ai && player.IsDead => AiProfile.None,
-        _ => AiProfile.Modern
-    };
+    internal static AiProfile GetProfile(Player player) =>
+        player.AiState is IGameAiState ai
+            ? ai.Profile
+            : player.Type == PlayerType.Ai && player.IsDead
+                ? AiProfile.None
+                : AiProfile.Modern;
 
     internal static int? GetNaturalHealingThreshold(AiState? state) =>
-        state is AmigaAiState ? 50 : null;
+        state is IGameAiState ai ? ai.NaturalHealingThreshold : null;
 
     internal static IEnumerable<Character> GetCampDefenders(
         Location location, Player? attacker, IEnumerable<Player> opponents)

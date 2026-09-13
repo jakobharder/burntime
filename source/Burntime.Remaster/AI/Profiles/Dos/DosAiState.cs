@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using Burntime.Framework;
 using Burntime.Remaster.Logic.Rules;
+using Burntime.Remaster.Logic.Generation;
 
 namespace Burntime.Remaster.AI;
 
@@ -12,7 +13,7 @@ namespace Burntime.Remaster.AI;
 [Serializable]
 internal sealed class DosAiState : OriginalAiState
 {
-    protected override string ProfileLabel => "dos";
+    protected override AiProfile Profile => AiProfile.Dos;
     int ConflictBudget => new[] { 2, 4, 6 }[Difficulty];
 
     protected override bool CanRecruit(Logic.Character candidate) => true;

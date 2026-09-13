@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using Burntime.Framework;
 using Burntime.Remaster.Logic.Rules;
+using Burntime.Remaster.Logic.Generation;
 
 namespace Burntime.Remaster.AI;
 
@@ -12,7 +13,8 @@ namespace Burntime.Remaster.AI;
 [Serializable]
 internal sealed class AmigaAiState : OriginalAiState
 {
-    protected override string ProfileLabel => "amiga";
+    protected override AiProfile Profile => AiProfile.Amiga;
+    protected override int? NaturalHealingThreshold => 50;
 
     // The original player record stores the day of the last completed trip;
     // its route filter relaxes after three stationary days. OptionalField
