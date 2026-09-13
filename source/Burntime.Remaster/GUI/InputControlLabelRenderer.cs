@@ -91,6 +91,7 @@ sealed class InputControlLabelRenderer
             }
 
             ISprite glyph;
+            PixelColor glyphTint = _glyphTint;
             int sourceSize = _app.Engine.OutputFiltering == OutputFiltering.Xbr2
                 ? GlyphSourceSize2x
                 : GlyphSourceSize;
@@ -101,10 +102,14 @@ sealed class InputControlLabelRenderer
             else
             {
                 int index = (int)part.Glyph - 1;
-                int family = (int)_app.Engine.InputGlyphs.LabelStyle;
+                GamepadLabelStyle labelStyle = _app.Engine.InputGlyphs.LabelStyle;
+                int family = (int)labelStyle;
                 glyph = _glyphs[family][index];
+                if ((labelStyle is GamepadLabelStyle.Xbox or GamepadLabelStyle.PlayStation) &&
+                    part.Glyph is >= InputGlyph.FaceSouth and <= InputGlyph.FaceNorth)
+                    glyphTint = PixelColor.White;
             }
-            DrawGlyph(target, new Vector2(x, position.y), glyph, sourceSize);
+            DrawGlyph(target, new Vector2(x, position.y), glyph, sourceSize, glyphTint);
             x += GlyphWidth;
         }
         string suffix = brackets ? "]" : "";
@@ -121,10 +126,11 @@ sealed class InputControlLabelRenderer
         int sourceSize = _app.Engine.OutputFiltering == OutputFiltering.Xbr2
             ? GlyphSourceSize2x
             : GlyphSourceSize;
-        DrawGlyph(target, position, _holdGlyph, sourceSize);
+        DrawGlyph(target, position, _holdGlyph, sourceSize, _glyphTint);
     }
 
-    void DrawGlyph(RenderTarget target, Vector2 position, ISprite glyph, int sourceSize)
+    void DrawGlyph(RenderTarget target, Vector2 position, ISprite glyph, int sourceSize,
+        PixelColor tint)
     {
         if (glyph.Touch())
             glyph.Resolution = GlyphResolution * GlyphSourceSize / sourceSize;
@@ -134,7 +140,7 @@ sealed class InputControlLabelRenderer
                 position.y + (_font.GetHeight() - GlyphHeight) / 2 +
                 (_app.IsNewGfx ? 0.5f : 0)),
             new Rect(Vector2.Zero, new Vector2(sourceSize, sourceSize)),
-            _glyphTint,
+            tint,
             postFilter: true, directToFramebuffer: !_app.IsNewGfx);
     }
 

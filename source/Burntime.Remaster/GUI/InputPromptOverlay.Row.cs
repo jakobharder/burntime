@@ -13,7 +13,7 @@ sealed partial class InputPromptOverlay
     {
         const int VerticalPadding = 2;
         static readonly PixelColor HudColor = new(144, 160, 212);
-        static readonly PixelColor OptionsColor = new(190, 77, 12);
+        static readonly PixelColor OptionsColor = new(240, 120, 32);
         string _separator = "   ";
 
         readonly GuiFont _font;
