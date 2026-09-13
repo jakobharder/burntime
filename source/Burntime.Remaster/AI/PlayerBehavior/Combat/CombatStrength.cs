@@ -11,7 +11,7 @@ internal static class CombatStrength
         ((ClassicGame)character.Container.Root).RuleBook.CalculateStrategicStrength(
             character, detailed);
 
-    public static float Attacker(Player player) => player.Group
+    public static float Attacker(Player player) => player.Party
         .Where(character => !character.IsDead)
         .Sum(Fighter);
 

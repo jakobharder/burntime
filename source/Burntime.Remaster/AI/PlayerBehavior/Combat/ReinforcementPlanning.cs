@@ -21,11 +21,11 @@ internal static partial class ReinforcementPlanning
                 AttackPlanning.RequiredAttackGroupSize(
                     state, state.StrategicTarget, policy));
         }
-        bool demobilizingSurplus = state.Player.Group.Count > activeGroupLimit;
+        bool demobilizingSurplus = state.Player.Party.Count > activeGroupLimit;
         if (camp != null && !CanSupportAdditionalGuard(
             state, camp, CampEconomy.LivingGuardCount(camp, state.Player)))
             camp = null;
-        if (camp != null && state.Player.Group.Count > 1)
+        if (camp != null && state.Player.Party.Count > 1)
         {
             // Deliver the normal second traveller, then recruit or recall its
             // replacement only if another concrete personnel task needs one.

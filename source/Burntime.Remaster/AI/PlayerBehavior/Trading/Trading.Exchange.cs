@@ -35,9 +35,9 @@ internal static partial class Trading
         TradePlan nextPlan = Plan(allowStrategicPurchase: true);
         if (nextPlan != null)
         {
-            int capacity = state.Player.Group.Sum(character => character.Items.MaxCount);
-            int cargo = capacity - state.Player.Group.GetFreeSlotCount();
-            float sellableValue = state.Player.Group.SelectMany(character => character.Items)
+            int capacity = state.Player.Party.Sum(character => character.Items.MaxCount);
+            int cargo = capacity - state.Player.Party.GetFreeSlotCount();
+            float sellableValue = state.Player.Party.SelectMany(character => character.Items)
                 .Where(item => CanSell(state, item))
                 .Sum(item => item.TradeValue);
             string visit = state.Current.IsCity
@@ -68,7 +68,7 @@ internal static partial class Trading
                 trader.Items.Remove(target);
             foreach (TradeAsset offer in plan.Offers.Where(offer => !offer.FromPool))
             {
-                Character owner = state.Player.Group
+                Character owner = state.Player.Party
                     .FirstOrDefault(character => character.Items == offer.Owner);
                 if (owner?.Weapon == offer.Item)
                     owner.Weapon = null;
@@ -117,7 +117,7 @@ internal static partial class Trading
 
         if (AiTelemetry.Sink != null &&
             trader.Items.Any(item => ShoppingPriority(state, item) > 0) &&
-            state.Player.Group.SelectMany(character => character.Items).Any(item => CanSell(state, item)))
+            state.Player.Party.SelectMany(character => character.Items).Any(item => CanSell(state, item)))
         {
             string signature = trader.Name;
             TradeFailureState failure = Trading.LastReportedTradeFailure.GetOrCreateValue(state.Player);
@@ -180,7 +180,7 @@ internal static partial class Trading
             .Select(candidate => candidate.Item)
             .Take(3))
         {
-            List<TradeAsset> allCandidates = state.Player.Group
+            List<TradeAsset> allCandidates = state.Player.Party
                 .SelectMany(character => character.Items
                     .Select(item => new TradeAsset(character.Items, item, false)))
                 .Where(asset => CanSell(state, asset.Item!))
@@ -190,18 +190,18 @@ internal static partial class Trading
                 .ThenBy(asset => asset.Item == null ? 3 : SalePriority(asset.Item))
                 .ToList();
             List<TradeAsset> offers = new();
-            int remainingFoodInventory = state.Player.Group.GetFoodInInventory();
+            int remainingFoodInventory = state.Player.Party.GetFoodInInventory();
             int requiredFoodInventory = state.Current.IsCity && state.OwnedCampCount > 0
                 ? RecoveryServices.RequiredReturnFoodInventory(state)
-                : Math.Max(0, needs.DesiredPortableFood - state.Player.Group.GetFoodReserve());
-            int remainingWaterInventory = state.Player.Group.GetWaterInInventory();
+                : Math.Max(0, needs.DesiredPortableFood - state.Player.Party.GetFoodReserve());
+            int remainingWaterInventory = state.Player.Party.GetWaterInInventory();
             int requiredWaterInventory = state.Current.IsCity && state.OwnedCampCount > 0
                 ? RecoveryServices.RequiredReturnWaterInventory(state)
                 : 0;
             int acquiredWaterCapacity = AiItemPool.WaterContainerCapacity(target.Type);
             int remainingWaterCapacity = Trading.PortableWaterSupply(state) + acquiredWaterCapacity +
                 temporaryPoolAssets.Sum(asset => AiItemPool.WaterContainerCapacity(asset.Type));
-            int remainingMeleeWeapons = state.Player.Group.SelectMany(character => character.Items)
+            int remainingMeleeWeapons = state.Player.Party.SelectMany(character => character.Items)
                 .Count(item => item.DamageValue > 0 && !AiItemPool.IsFirearm(item.Type));
             Dictionary<string, int> remainingMaterials = Trading.ConstructionMaterials
                 .ToDictionary(itemId => itemId, itemId => PortableMaterialCount(state, itemId));
@@ -279,7 +279,7 @@ internal static partial class Trading
             int reservedLeaderSlots = GroupInventory.MissingLeaderRoleSlotsAfter(
                 state, removedLeaderItems, addedPortableItems);
             bool canStoreTarget = neededPortableSlots <=
-                state.Player.Group.GetFreeSlotCount() + freedPortableSlots - reservedLeaderSlots;
+                state.Player.Party.GetFreeSlotCount() + freedPortableSlots - reservedLeaderSlots;
             bool compressesCargo = strategicPurchase || offers.Count >= 2;
             float receivedUtility = targets.Sum(item => AcquisitionUtilityValue(state, item));
             bool avoidsSevereWaste = receivedUtility >= barterBudget * 0.65f;

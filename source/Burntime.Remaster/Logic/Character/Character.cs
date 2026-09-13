@@ -78,12 +78,12 @@ namespace Burntime.Remaster.Logic
         // some helper attributes
         public bool IsWithBoss
         {
-            get { if (Player == null) return false; return Player.Group.Contains(this); }
+            get { if (Player == null) return false; return Player.Party.Contains(this); }
         }
 
         public bool IsStationed
         {
-            get { if (Player == null) return false; return !Player.Group.Contains(this); }
+            get { if (Player == null) return false; return !Player.Party.Contains(this); }
         }
 
         public bool IsHuman
@@ -354,7 +354,7 @@ namespace Burntime.Remaster.Logic
 
         public void JoinCamp()
         {
-            Player.Group.Remove(this);
+            Player.Party.Remove(this);
             Location = Player.Location;
             Location.Player = Player;
             Position = Location.EntryPoint;
@@ -372,7 +372,7 @@ namespace Burntime.Remaster.Logic
                 Location.Player = null;
 
             if (Player != null)
-                Player.Group.Add(this);
+                Player.Party.Add(this);
 
             Location = null;
             Mind = container.Create<AI.FellowerMind>(new object[] { this, Player.Character });
@@ -389,7 +389,7 @@ namespace Burntime.Remaster.Logic
         void Hire(Player boss, bool waivePayment, bool initializeRecruit)
         {
             Location = null;
-            boss.Group.Add(this);
+            boss.Party.Add(this);
             Player = boss;
 
             if (SetBodyId != -1 && boss.BodyColorSet != -1)
@@ -419,7 +419,7 @@ namespace Burntime.Remaster.Logic
             if (location == null)
             {
                 Location = Player.Location;
-                Player.Group.Remove(this);
+                Player.Party.Remove(this);
             }
             else
             {
@@ -511,7 +511,7 @@ namespace Burntime.Remaster.Logic
                 return;
 
             var attackingGroup = (Player != null && Player.Character == this && !Player.SingleMode)
-                ? Player.Group.ToArray()
+                ? Player.Party.ToArray()
                 : new Character[] { this };
 
             foreach (var attacker in attackingGroup)
@@ -649,7 +649,7 @@ namespace Burntime.Remaster.Logic
         }
 
         internal bool HasLocalDoctor => IsWithBoss
-            ? Player.Group.Any(member => !member.IsDead && member.Class == CharClass.Doctor)
+            ? Player.Party.Any(member => member.Class == CharClass.Doctor)
             : Location?.CampNPC.Any(member => !member.IsDead &&
                 member.Class == CharClass.Doctor && member.Player == Player) == true;
 
@@ -806,7 +806,7 @@ namespace Burntime.Remaster.Logic
             }
 
             Player activePlayer = container.Root.CurrentPlayer as Player;
-            bool isActiveGroup = activePlayer?.Group.Contains(this) == true;
+            bool isActiveGroup = activePlayer?.Party.Contains(this) == true;
             bool isPlayerControlled = activePlayer?.SelectedCharacter == this || Mind is AI.PlayerControlledMind;
             Path.Speed = isActiveGroup || isPlayerControlled
                 ? CONTROLLED_WALK_SPEED
@@ -933,9 +933,9 @@ namespace Burntime.Remaster.Logic
 
         public ICharacterCollection GetGroup()
         {
-            if (Player != null && Player.Group.Contains(this))
+            if (Player != null && Player.Party.Contains(this))
             {
-                return Player.Group;
+                return Player.Party;
             }
 
             return this;

@@ -63,7 +63,7 @@ static class LocationTests
                 var boss = manager.Create<HazardPlayer>(new object[] { 0 });
                 var follower = manager.Create<HazardCharacter>();
                 follower.Player = boss;
-                boss.Group.Add(follower);
+                boss.Party.Add(follower);
                 follower.Location = camp;
                 follower.Position = camp.EntryPoint;
                 if (hasNpcPosition)

@@ -119,7 +119,7 @@ namespace Burntime.Remaster
             var txt = new TextHelper(app, "newburn");
             Vector2 nutrition = new(Size.x / 2 - 97, Size.y - 17);
 
-            var playerGroup = game.World.ActivePlayerObj.Group;
+            var playerGroup = game.World.ActivePlayerObj.Party;
             var currentLocation = game.World.ActiveLocationObj;
             int totalWaterReserve = playerGroup.GetLowestWaterWithInventory();
             int totalFoodReserve = playerGroup.GetLowestFoodWithInventory();

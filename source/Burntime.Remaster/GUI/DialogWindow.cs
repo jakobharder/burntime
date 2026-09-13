@@ -256,7 +256,7 @@ namespace Burntime.Remaster
                 case ConversationActionType.Trade:
                     Hide();
                     classic.Game.World.ActiveTraderObj = character as Trader;
-                    classic.Game.World.ActivePlayerObj.Group.IgnoreRangeFilter =
+                    classic.Game.World.ActivePlayerObj.Party.IgnoreRangeFilter =
                         !classic.Game.World.ActivePlayerObj.SingleMode;
                     app.SceneManager.SetScene("TraderScene");
                     break;
@@ -406,7 +406,7 @@ namespace Burntime.Remaster
             Player boss = classic.Game.World.ActivePlayerObj;
 
             character.Hire(boss);
-            boss.SelectGroup(boss.Group);
+            boss.SelectGroup(boss.Party);
         }
     }
 }

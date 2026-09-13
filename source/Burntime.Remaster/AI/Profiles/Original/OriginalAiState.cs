@@ -32,7 +32,7 @@ internal abstract class OriginalAiState : Burntime.Framework.States.AiState, IGa
     protected virtual int MaximumGroupSize => 5;
     protected abstract AiProfile Profile { get; }
     protected virtual int? NaturalHealingThreshold => null;
-    protected virtual bool HasRecruitmentCapacity => Player.Group.Count < MaximumGroupSize;
+    protected virtual bool HasRecruitmentCapacity => Player.Party.Count < MaximumGroupSize;
     protected abstract bool CanRecruit(Character candidate);
     protected abstract void RecoverGroup(bool arrived);
     protected abstract void PrepareRecruit(Character recruit);

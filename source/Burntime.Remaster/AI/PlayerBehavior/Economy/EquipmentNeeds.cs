@@ -40,7 +40,7 @@ internal sealed class EquipmentNeeds
         bool firearm = AiItemPool.IsFirearm(type);
         int wanted = recipients.Count(character =>
         {
-            if (firearm && !state.Player.Group.Contains(character))
+            if (firearm && !state.Player.Party.Contains(character))
                 return false;
             Item? current = armour ? character.Items.FindBestDefense() : character.Items.FindBestWeapon();
             if (character.Items.IsFull && current == null)
@@ -48,7 +48,7 @@ internal sealed class EquipmentNeeds
             if (armour ? (current?.DefenseValue ?? 0) >= type.DefenseValue :
                 (current?.Type.WeaponPriority ?? 0) >= type.WeaponPriority)
                 return false;
-            if (firearm && !EquipmentPlanning.CanAssignFirearm(character, state.Player.Group.ToArray(), type, policy))
+            if (firearm && !EquipmentPlanning.CanAssignFirearm(character, state.Player.Party.ToArray(), type, policy))
                 return false;
             // An unarmed character needs a basic weapon. Better equipment and
             // firearms are optional opportunities, with stronger Easy restraint.
@@ -59,7 +59,7 @@ internal sealed class EquipmentNeeds
         });
         if (firearm && policy.FirearmLimit >= 0)
             wanted = Math.Min(wanted, Math.Max(0, policy.FirearmLimit -
-                state.Player.Group.Count(character => character.Items.Any(item => AiItemPool.IsFirearm(item.Type)))));
+                state.Player.Party.Count(character => character.Items.Any(item => AiItemPool.IsFirearm(item.Type)))));
         int reserve = state.Reserve.GetContents().Where(entry => entry.Type == type).Sum(entry => entry.Count);
         int spare = recipients.Sum(character => character.Items.Count(item => item.Type == type &&
             item != (armour ? character.Items.FindBestDefense() : character.Items.FindBestWeapon())));

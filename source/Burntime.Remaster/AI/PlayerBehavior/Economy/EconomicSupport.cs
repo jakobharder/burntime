@@ -167,7 +167,7 @@ internal static class EconomicSupport
         int pooled = state.Reserve.GetContents()
             .Where(entry => AdvancedTrapIds.Contains(entry.Type.ID))
             .Sum(entry => entry.Count);
-        int carried = state.Player.Group.SelectMany(character => character.Items)
+        int carried = state.Player.Party.SelectMany(character => character.Items)
             .Count(item => AdvancedTrapIds.Contains(item.ID));
         int established = state.RootGame.World.Locations
             .Where(location => location.Player == state.Player)

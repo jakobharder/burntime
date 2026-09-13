@@ -116,7 +116,7 @@ namespace Burntime.Remaster.Logic
                 conv.Choices[1].Text = ResourceManager.GetString("burn?492");
             }
             else if (Parent.Class != CharClass.Mutant && Parent.Class != CharClass.Dog && boss.IsPlayerCharacter && file != 510
-                && boss.Player.Group.Count < Logic.Group.MAX_PEOPLE)
+                && boss.Player.Party.Count < Logic.Group.MAX_PEOPLE)
             {
                 conv.Choices[0].Action = new ConversationAction(ConversationActionType.Talk);
                 conv.Choices[0].Text = ResourceManager.GetString("burn?492");
@@ -158,7 +158,7 @@ namespace Burntime.Remaster.Logic
                 conv.Choices[1].Action = new ConversationAction(ConversationActionType.Talk);
                 conv.Choices[1].Text = ResourceManager.GetString("burn?492");
             }
-            else if (Parent.Class != CharClass.Mutant && Parent.Class != CharClass.Dog && boss.IsPlayerCharacter && file != 510 && boss.Player.Group.Count < 5)
+            else if (Parent.Class != CharClass.Mutant && Parent.Class != CharClass.Dog && boss.IsPlayerCharacter && file != 510 && boss.Player.Party.Count < 5)
             {
                 conv.Choices[0].Action = new ConversationAction(ConversationActionType.Talk);
                 conv.Choices[0].Text = ResourceManager.GetString("burn?492");

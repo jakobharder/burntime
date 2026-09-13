@@ -65,7 +65,7 @@ internal static class AiStateOperations
                 enemies.Contains(character.Player) && !character.IsDead)
             .Concat(enemies.Where(opponent => !opponent.IsDead && !opponent.IsTraveling &&
                     opponent.Location == location)
-                .SelectMany(opponent => opponent.Group.Where(character => !character.IsDead)))
+                .SelectMany(opponent => opponent.Party))
             .Distinct();
     }
 

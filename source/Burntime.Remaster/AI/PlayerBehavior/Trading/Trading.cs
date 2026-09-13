@@ -21,7 +21,7 @@ internal static partial class Trading
         // camp before considering ordinary trader visits; otherwise a harmless
         // low-score round trip can repeatedly replace the next settlement leg.
         if (territorialTarget is { IsCity: false, Player: null } &&
-            state.HasSettlementPlan && state.Player.Group.Count > 1)
+            state.HasSettlementPlan && state.Player.Party.Count > 1)
             return;
 
         // Once attack preparation has started, personnel assembly and movement

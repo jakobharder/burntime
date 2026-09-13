@@ -167,16 +167,20 @@ namespace Burntime.Remaster.Logic
             set
             {
                 if (character != null)
-                    Group.Remove(character);
+                    Party.Remove(character);
                 character = value;
                 if (character != null)
-                    Group.Insert(0, character);
+                    Party.Insert(0, character);
                 selectedCharacter = character;
             }
         }
 
         StateLink<Group> group;
-        public Group Group
+        /// <summary>
+        /// The player's living accompanying characters, including the leader.
+        /// Dead characters are removed immediately.
+        /// </summary>
+        public Group Party
         {
             get { return group; }
             set { group = value; }
@@ -225,7 +229,7 @@ namespace Burntime.Remaster.Logic
         protected override void InitInstance(object[] parameter)
         {
             group = container.Create<Group>();
-            Group.RangeFilterValue = 50;
+            Party.RangeFilterValue = 50;
             refreshScrollPosition = true;
             refreshMapScrollPosition = true;
             index = (int)parameter[0];
@@ -279,12 +283,12 @@ namespace Burntime.Remaster.Logic
                 return;
             }
 
-            for (int i = 0; i < Group.Count; i++)
+            for (int i = 0; i < Party.Count; i++)
             {
-                if (Group[i].Position == -Vector2.One)
-                    Group[i].Position = new Vector2(Location.EntryPoint);
+                if (Party[i].Position == -Vector2.One)
+                    Party[i].Position = new Vector2(Location.EntryPoint);
 
-                Group[i].Update(elapsed);
+                Party[i].Update(elapsed);
             }
         }
 
@@ -316,19 +320,19 @@ namespace Burntime.Remaster.Logic
             if (days <= 0)
                 return;
 
-            SelectGroup(Group);
+            SelectGroup(Party);
             RefreshScrollPosition = true;
             RefreshMapScrollPosition = true;
 
-            foreach (Character character in Group)
+            foreach (Character character in Party)
             {
                 character.Position = destination.EntryPoint;
                 character.Path.MoveTo = character.Position;
             }
-            for (int i = 1; i < Group.Count; i++)
+            for (int i = 1; i < Party.Count; i++)
             {
-                Group[i].Position = destination.GetEntryPosition(i);
-                Group[i].Path.MoveTo = Group[i].Position;
+                Party[i].Position = destination.GetEntryPosition(i);
+                Party[i].Path.MoveTo = Party[i].Position;
             }
 
             remainingTravelDays = days;

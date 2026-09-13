@@ -57,7 +57,7 @@ internal sealed record AiDecision(
                 // weapon when available. Normalize only the travelling party;
                 // do not repeat all local trading and empire maintenance.
                 GroupManagement.MaintainGroupEquipment(state);
-                if (player.Group.Contains(recruit) && NextStep != null &&
+                if (player.Party.Contains(recruit) && NextStep != null &&
                     player.CanTravel(state.Current, NextStep))
                 {
                     GroupManagement.PrepareCampWaterReservesForDeparture(state);
@@ -70,7 +70,7 @@ internal sealed record AiDecision(
                 return AiActionResult.ContinuePlanning;
 
             case AiAction.ReleaseFollower:
-                int initialGroupSize = player.Group.Count;
+                int initialGroupSize = player.Party.Count;
                 Recruitment.MarkSurvivalRelease(state);
                 Location? recovery;
                 do
@@ -119,7 +119,7 @@ internal sealed record AiDecision(
                     }
                     recovery = RecoveryServices.FindDestination(state, requireReachable: true);
                 }
-                while (recovery == null && player.Group.Count > 1 &&
+                while (recovery == null && player.Party.Count > 1 &&
                     !RecoveryServices.CanRecoverLocallyForTravel(state));
 
                 recovery = RecoveryServices.FindDestination(state, requireReachable: true);
@@ -141,7 +141,7 @@ internal sealed record AiDecision(
                             : $"departs toward {recovery!.Title} after reducing the group to a survivable size");
                     return AiActionResult.EndTurn;
                 }
-                return player.Group.Count != initialGroupSize
+                return player.Party.Count != initialGroupSize
                     ? AiActionResult.ContinuePlanning
                     : AiActionResult.StateUnchanged;
 
@@ -226,11 +226,11 @@ internal sealed record AiDecision(
                     : AiActionResult.ContinuePlanning;
 
             case AiAction.EmergencyEscape:
-                string[] released = player.Group
+                string[] released = player.Party
                     .Where(character => character != player.Character)
                     .Select(character => character.Name)
                     .ToArray();
-                foreach (Character follower in player.Group
+                foreach (Character follower in player.Party
                     .Where(character => character != player.Character)
                     .ToArray())
                     follower.Dismiss();

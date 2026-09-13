@@ -381,7 +381,7 @@ internal static class CampManagement
 
         int portableCapacity = Trading.PortableWaterCapacity(state);
         bool reusableReserve = CampEconomy.NeedsReusableWaterReserve(camp);
-        var container = state.Player.Group
+        var container = state.Player.Party
             .SelectMany(character => character.Items
                 .Where(item => AiItemPool.IsWaterContainer(item.Type))
                 .Select(item => new { Character = character, Item = item }))
@@ -456,7 +456,7 @@ internal static class CampManagement
             CampEconomy.DesiredProductionToolCount(state, camp, best))
             return false;
 
-        bool carried = state.Player.Group.SelectMany(character => character.Items)
+        bool carried = state.Player.Party.SelectMany(character => character.Items)
             .Any(item => item.Type.Production == best);
         bool pooled = state.Reserve.GetContents()
             .Any(entry => entry.Count > 0 && entry.Type.Production == best);
@@ -487,7 +487,7 @@ internal static class CampManagement
             return;
 
         List<IItemCollection> sources = Trading.GetLocalItemSources(state, camp).ToList();
-        IEnumerable<Character> builders = state.Player.Group
+        IEnumerable<Character> builders = state.Player.Party
             .Concat(camp.CampNPC.Where(npc => npc.Player == state.Player))
             .Where(character => !character.IsDead);
         foreach (Character builder in builders)
@@ -563,7 +563,7 @@ internal static class CampManagement
             {
                 if (stock <= reserve)
                     break;
-                if (state.Player.Group.GetFreeSlotCount() <= Trading.CargoSpaceReserve(state))
+                if (state.Player.Party.GetFreeSlotCount() <= Trading.CargoSpaceReserve(state))
                 {
                     if (!CargoManagement.TryReplaceCargo(
                         state, item, out Item replaced, out Character replacementCarrier))
@@ -615,7 +615,7 @@ internal static class CampManagement
             .ToArray();
         foreach (var candidate in candidates)
         {
-            if (state.Player.Group.GetFreeSlotCount() <= Trading.CargoSpaceReserve(state))
+            if (state.Player.Party.GetFreeSlotCount() <= Trading.CargoSpaceReserve(state))
             {
                 if (!CargoManagement.TryReplaceCargo(
                     state, candidate.Item, out Item replaced, out Character replacementCarrier))

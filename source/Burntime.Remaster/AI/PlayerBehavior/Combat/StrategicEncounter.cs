@@ -16,9 +16,9 @@ internal static class StrategicEncounter
     internal static Result Fight(ClassicGame game, Player attacker, Player defenderOwner,
         IReadOnlyCollection<Character> defenders, bool fightToDeath)
     {
-        Character[] originalAttackers = attacker.Group.Where(character => !character.IsDead).ToArray();
+        Character[] originalAttackers = attacker.Party.ToArray();
         var startingHealth = originalAttackers.ToDictionary(character => character, character => character.Health);
-        HashSet<Character> visitingParty = defenders.Where(defenderOwner.Group.Contains).ToHashSet();
+        HashSet<Character> visitingParty = defenders.Where(defenderOwner.Party.Contains).ToHashSet();
         bool defendingPartyDisengaged = false;
         IEnumerable<Character> LivingDefenders() => defenders.Where(character => !character.IsDead &&
             (!defendingPartyDisengaged || !visitingParty.Contains(character)));
@@ -37,11 +37,11 @@ internal static class StrategicEncounter
             if (!LivingDefenders().Any() || attacker.Character.IsDead)
                 break;
             if (!fightToDeath && (NeedsWithdrawal(game, attacker.Character, null, AttackingBossSafetyHealth) ||
-                !attacker.Group.Any(character => character != attacker.Character && !character.IsDead)))
+                !attacker.Party.Any(character => character != attacker.Character)))
                 return new(true, defendingPartyDisengaged);
 
             int defendersBeforeRound = LivingDefenders().Count();
-            foreach (Character fighter in attacker.Group.Where(character => !character.IsDead).ToArray())
+            foreach (Character fighter in attacker.Party.ToArray())
             {
                 if (fighter.IsDead || attacker.Character.IsDead)
                     break;

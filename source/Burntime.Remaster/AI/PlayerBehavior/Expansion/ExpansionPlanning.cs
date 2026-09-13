@@ -160,7 +160,7 @@ internal static partial class ExpansionPlanning
             // target so recruitment and equipment planning can prepare it, but
             // do not send a solo leader there when nobody can establish the camp
             // on arrival. This also prevents unsupported loot/recovery dead ends.
-            if (context.Player.Group.Count <= 1)
+            if (context.Player.Party.Count <= 1)
                 return;
             RouteFinder.Route? route = RouteFinder.Find(
                 context.Player, context.Current, plan.Target);
@@ -215,7 +215,7 @@ internal static partial class ExpansionPlanning
         if (neutralCamps.Length == 0)
             return false;
 
-        bool carried = state.Player.Group.SelectMany(character => character.Items)
+        bool carried = state.Player.Party.SelectMany(character => character.Items)
             .Any(item => item.Type.Production != null && neutralCamps.Any(location =>
                 location.ValidProductions.Contains(item.Type.Production)));
         bool pooled = neutralCamps.Any(location => state.Reserve.HasTrap(state.AvailableProducts(location)));
@@ -240,7 +240,7 @@ internal static partial class ExpansionPlanning
         // Establishing the camp stations one group member. A directly connected
         // owned camp may support the remaining travellers while the new holding
         // acquires its own compatible production tool.
-        int travellers = System.Math.Max(1, state.Player.Group.Count - 1);
+        int travellers = System.Math.Max(1, state.Player.Party.Count - 1);
         for (int index = 0; index < location.Neighbors.Count; index++)
         {
             if (location.WayLengths[index] <= 0)
@@ -269,7 +269,7 @@ internal static partial class ExpansionPlanning
         if (EconomicSupport.AdvancedTrapCoverage(state) < 0.5f &&
             EconomicSupport.HasPooledAdvancedTrap(state))
             return false;
-        int portableTools = state.Reserve.ProductionToolCount + state.Player.Group
+        int portableTools = state.Reserve.ProductionToolCount + state.Player.Party
             .SelectMany(character => character.Items)
             .Count(item => item.Type.Production != null);
         return portableTools <= 1;
@@ -495,7 +495,7 @@ internal static partial class ExpansionPlanning
         if (location.Danger == null)
             return true;
 
-        return state.Player.Group.All(character => character.Items.Any(item =>
+        return state.Player.Party.All(character => character.Items.Any(item =>
             item.Type.GetProtection(location.Danger.Type) != null));
     }
 
@@ -685,7 +685,7 @@ internal static partial class ExpansionPlanning
         Location target,
         RouteFinder.Route route)
     {
-        if (context.Player.Group.Count == 1)
+        if (context.Player.Party.Count == 1)
         {
             // Target selection comes before recruitment planning. Do not invent a
             // zero-reserve local recruit here: keeping the target lets recruitment
@@ -860,7 +860,7 @@ internal static partial class ExpansionPlanning
     }
 
     static bool HasPortableCompatibleProduction(ClassicAiState state, Location location) =>
-        state.Player.Group.SelectMany(character => character.Items)
+        state.Player.Party.SelectMany(character => character.Items)
             .Any(item => item.Type.Production != null &&
                 location.ValidProductions.Contains(item.Type.Production)) ||
         state.Reserve.GetContents().Any(entry => entry.Count > 0 &&
@@ -899,7 +899,7 @@ internal static partial class ExpansionPlanning
             return true;
 
         Location step = route.NextStep;
-        if (step.Player != null || step.IsCity || context.Player.Group.Count <= 1 ||
+        if (step.Player != null || step.IsCity || context.Player.Party.Count <= 1 ||
             !state.CanClaim(step))
             return false;
         RouteFinder.Route? leg = RouteFinder.Find(context.Player, context.Current, step);

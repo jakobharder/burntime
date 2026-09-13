@@ -315,7 +315,7 @@ internal sealed class GameRules
     {
         if (character.IsWithBoss)
         {
-            foreach (Character member in character.Player.Group)
+            foreach (Character member in character.Player.Party)
                 foreach (Item item in member.Items)
                     yield return (member.Items, item);
             yield break;

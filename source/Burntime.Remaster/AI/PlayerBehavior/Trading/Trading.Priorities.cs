@@ -108,7 +108,7 @@ internal static partial class Trading
     {
         if (needs.PlannedSettlementPaymentType == item.Type)
             return false;
-        if (state.Player.Group.Any(character => character.Weapon == item || character.Protection == item ||
+        if (state.Player.Party.Any(character => character.Weapon == item || character.Protection == item ||
             character.Items.FindBestDefense() == item))
             return false;
         if (item.Type.Production != null &&
@@ -122,14 +122,14 @@ internal static partial class Trading
             int requiredFoodInventory = state.Current.IsCity && state.OwnedCampCount > 0
                 ? RecoveryServices.RequiredReturnFoodInventory(state)
                 : Math.Max(0, needs.DesiredPortableFood -
-                    state.Player.Group.GetFoodReserve());
-            if (state.Player.Group.GetFoodInInventory() - item.FoodValue < requiredFoodInventory)
+                    state.Player.Party.GetFoodReserve());
+            if (state.Player.Party.GetFoodInInventory() - item.FoodValue < requiredFoodInventory)
                 return false;
         }
         if (AiItemPool.IsWaterContainer(item.Type))
         {
             if (state.Current.IsCity && state.OwnedCampCount > 0 && item.WaterValue > 0 &&
-                state.Player.Group.GetWaterInInventory() - item.WaterValue <
+                state.Player.Party.GetWaterInInventory() - item.WaterValue <
                     RecoveryServices.RequiredReturnWaterInventory(state))
                 return false;
             int remainingCapacity = Trading.PortableWaterCapacity(state) +
@@ -144,7 +144,7 @@ internal static partial class Trading
         if (needs.IsPolicyAttackWeapon(item.Type) &&
             needs.MeleeWeaponStock <= needs.MeleeWeaponQuota)
             return false;
-        if (item.ID == "item_ammunition" && state.Player.Group.Any(character =>
+        if (item.ID == "item_ammunition" && state.Player.Party.Any(character =>
             character.Items.Any(weapon => AiItemPool.IsFirearm(weapon.Type))))
             return false;
         if (Trading.ConstructionMaterials.Contains(item.ID) &&
@@ -180,7 +180,7 @@ internal static partial class Trading
         if (!AiTurnContext.For(state).Needs.CanBuy(target.Type) ||
             AiItemPool.Accepts(target.Type) || target.TradeValue <= 0)
             return false;
-        Item[] lowerValueGoods = state.Player.Group.SelectMany(character => character.Items)
+        Item[] lowerValueGoods = state.Player.Party.SelectMany(character => character.Items)
             .Where(item => CanSell(state, item) && item.ID != target.ID &&
                 item.TradeValue > 0 && item.TradeValue < target.TradeValue)
             .OrderBy(item => item.TradeValue)
@@ -204,7 +204,7 @@ internal static partial class Trading
 
     internal static bool NeedsTravelOrDefenseWeapons(ClassicAiState state)
     {
-        IEnumerable<Character> travellers = state.Player.Group.Where(character => !character.IsDead);
+        IEnumerable<Character> travellers = state.Player.Party;
         IEnumerable<Character> guards = state.RootGame.World.Locations
             .Where(location => location.Player == state.Player && ReinforcementPlanning.IsThreatened(state, location))
             .SelectMany(location => location.CampNPC.Where(npc => npc.Player == state.Player));
@@ -270,7 +270,7 @@ internal static partial class Trading
     }
 
     internal static int GlobalProtectionStock(ClassicAiState state) => state.Reserve.ProtectionCount +
-        state.Player.Group.SelectMany(character => character.Items)
+        state.Player.Party.SelectMany(character => character.Items)
             .Count(item => AiItemPool.IsHazardProtection(item.Type));
 
     internal static bool NeedsBetterWaterContainers(ClassicAiState state, ItemType offered)
@@ -325,6 +325,6 @@ internal static partial class Trading
 
     internal static int PortableMaterialCount(ClassicAiState state, string itemId) =>
         state.Reserve.GetConstructionMaterialCount(itemId) +
-        state.Player.Group.SelectMany(character => character.Items).Count(item => item.ID == itemId);
+        state.Player.Party.SelectMany(character => character.Items).Count(item => item.ID == itemId);
 
 }

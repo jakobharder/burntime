@@ -44,7 +44,7 @@ internal static partial class Recruitment
         Player player = state.Player;
         bool generatedPaymentAllowed = context.Current.IsCity &&
             policy.AllowGeneratedRecruitPaymentInCities;
-        if (target == null && state.OwnedCampCount == 0 && player.Group.Count == 1)
+        if (target == null && state.OwnedCampCount == 0 && player.Party.Count == 1)
         {
             Location? firstCampWaypoint = FindFirstCampWaypoint(state, context, policy);
             AiTurnController.AddTravelCandidate(
@@ -54,7 +54,7 @@ internal static partial class Recruitment
                     : $"advance to viable first-camp waypoint {firstCampWaypoint.Title}");
         }
         bool hasCommittedSettler = target is { IsCity: false, Player: null } &&
-            player.Group.Count > 1;
+            player.Party.Count > 1;
         Location? reinforcementCamp = hasCommittedSettler
             ? null
             : ReinforcementPlanning.FindBestCampForReinforcement(
@@ -64,15 +64,15 @@ internal static partial class Recruitment
             : ReinforcementPlanning.SustainableGarrisonTarget(
                 reinforcementCamp, policy.CriticalGarrisonTarget);
         bool needsSettler = target is { IsCity: false, Player: null } &&
-            player.Group.Count == 1;
+            player.Party.Count == 1;
         bool needsGarrisonFollower = reinforcementCamp != null &&
-            player.Group.Count == 1;
+            player.Party.Count == 1;
         bool standingFollowerSupported =
             EmpireFoodSurplus(state) >= StandingGroupFoodSurplus;
         int desiredGroupSize = standingFollowerSupported
             ? context.DesiredGroupSize
             : 1;
-        bool needsFollower = player.Group.Count < context.DesiredGroupSize &&
+        bool needsFollower = player.Party.Count < context.DesiredGroupSize &&
             (needsSettler || needsGarrisonFollower || standingFollowerSupported);
 
         if (!shouldVisitTrader &&
@@ -260,7 +260,7 @@ internal static partial class Recruitment
     {
         Location? target = state.StrategicTarget;
         if (!state.HasSettlementPlan || target == null || target.Player != null ||
-            state.Player.Group.Count != 1)
+            state.Player.Party.Count != 1)
             return false;
 
         RouteFinder.Route? direct = RouteFinder.Find(state.Player, context.Current, target);
@@ -325,7 +325,7 @@ internal static partial class Recruitment
         bool hasRoundTripSupplies = TravelSupplies.HasSettlementRoundTripSupplies(
             state.Player, outbound, returnRoute, paymentFood, paymentWater);
         bool canRefillAtSettlement = CampEconomy.CanProvisionGroupWater(
-            target, state.Player.Group.Count);
+            target, state.Player.Party.Count);
         if (!hasRoundTripSupplies && !(canRefillAtSettlement &&
             TravelSupplies.HasSettlementRoundTripFood(
                 state.Player, outbound, returnRoute)))
@@ -336,7 +336,7 @@ internal static partial class Recruitment
             2110 - outbound.Days,
             target,
             outbound.NextStep,
-            state.OwnedCampCount == 0 && state.Player.Group.Count == 1
+            state.OwnedCampCount == 0 && state.Player.Party.Count == 1
                 ? $"pick up free first settler {recruit.Recruit.Name} at {target.Title}, then establish the camp"
                 : $"hire {recruit.Recruit.Name} at {target.Title} with the reserved requested item, then establish the camp"));
         return true;
@@ -495,7 +495,7 @@ internal static partial class Recruitment
             .FirstOrDefault(item => item != null);
         return target.ValidProductions.Any(production =>
         {
-            int toolCount = state.Player.Group
+            int toolCount = state.Player.Party
                 .SelectMany(character => character.Items)
                 .Concat(recruit.Items)
                 .Count(item => item.Type.Production == production && item != exactPayment);
@@ -513,7 +513,7 @@ internal static partial class Recruitment
         .Where(camp => camp.Player == context.Player &&
             CampEconomy.CanProvisionFood(camp) &&
             CampEconomy.CanProvisionGroupWater(
-                camp, context.Player.Group.Count))
+                camp, context.Player.Party.Count))
         .Select(camp => RouteFinder.Find(context.Player, start, camp))
         .Where(route => route != null)
         .OrderBy(route => route!.Days)
@@ -521,10 +521,10 @@ internal static partial class Recruitment
 
     internal static ItemType? PlannedFutureSettlementPaymentType(ClassicAiState state)
     {
-        if (state.OwnedCampCount == 0 && state.Player.Group.Count == 1)
+        if (state.OwnedCampCount == 0 && state.Player.Party.Count == 1)
             return null;
 
-        Location? target = state.HasSettlementPlan && state.Player.Group.Count == 1
+        Location? target = state.HasSettlementPlan && state.Player.Party.Count == 1
             ? state.StrategicTarget
             : null;
         if (target == null || target.IsCity || target.Player != null)
@@ -551,7 +551,7 @@ internal static partial class Recruitment
         Player player = state.Player;
         int travelGroupSize = context.DesiredGroupSize;
         int attackGroupSize = AttackPlanning.RequiredAttackGroupSize(state, target, policy);
-        if (player.Group.Count < travelGroupSize)
+        if (player.Party.Count < travelGroupSize)
         {
             if (CanRecallFollower(state, policy.CriticalGarrisonTarget))
             {
@@ -570,7 +570,7 @@ internal static partial class Recruitment
         }
 
         if (attackGroupSize <= travelGroupSize ||
-            player.Group.Count >= attackGroupSize)
+            player.Party.Count >= attackGroupSize)
             return new RecruitmentNeeds(null);
 
         int stagingTarget = attackGroupSize - travelGroupSize + 1;
@@ -771,13 +771,13 @@ internal static partial class Recruitment
 
         Character recruit = plan.Recruit;
         (int recruitFood, int recruitWater) = ProjectedRecruitReserves();
-        bool projectedCritical = context.Player.Group.Any(character =>
+        bool projectedCritical = context.Player.Party.Any(character =>
                 character.Health < 40 || character.Food <= 3 || character.Water <= 2) ||
             recruit.Health < 40 || recruitFood <= 3 || recruitWater <= 2;
         if (!projectedCritical)
             return plan;
 
-        int projectedGroupSize = context.Player.Group.Count + 1;
+        int projectedGroupSize = context.Player.Party.Count + 1;
         if (context.Current.Player == context.Player &&
             CampEconomy.FoodSurplusPerDay(context.Current) > projectedGroupSize &&
             CampEconomy.WaterSurplusPerDay(context.Current) > projectedGroupSize)
@@ -829,7 +829,7 @@ internal static partial class Recruitment
             .Where(location => location.Player == state.Player && location != state.Current &&
                 CampEconomy.CanProvisionFood(location) &&
                 CampEconomy.CanProvisionGroupWater(
-                    location, state.Player.Group.Count + 1))
+                    location, state.Player.Party.Count + 1))
             .Select(location => new
             {
                 Location = location,

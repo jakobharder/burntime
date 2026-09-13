@@ -73,7 +73,7 @@ internal sealed class StrategicNeeds
         this.state = state;
         Player player = state.Player;
         equipment = new EquipmentNeeds(state);
-        Item[] portableItems = player.Group.SelectMany(character => character.Items).ToArray();
+        Item[] portableItems = player.Party.SelectMany(character => character.Items).ToArray();
         (ItemType Type, int Count)[] poolItems = state.Reserve.GetContents().ToArray();
 
         PlannedSettlementPaymentType = Recruitment.PlannedFutureSettlementPaymentType(state);
@@ -81,8 +81,8 @@ internal sealed class StrategicNeeds
         HasAttackPlan = state.HasAttackPlan;
         AttackWaterNeeded = state.HasAttackPlan && Trading.NeedsAttackWaterPreparation(state);
         MissionHazard = state.StrategicTarget?.Danger?.Type;
-        ImmediateFoodNeeded = player.Group.Any(character => character.Food <= 3);
-        ImmediateWaterNeeded = player.Group.Any(character => character.Water <= 2);
+        ImmediateFoodNeeded = player.Party.Any(character => character.Food <= 3);
+        ImmediateWaterNeeded = player.Party.Any(character => character.Water <= 2);
         PortableFood = Trading.PortableFoodSupply(state);
         DesiredPortableFood = Trading.DesiredPortableFood(state);
         PortableWaterCapacity = Trading.PortableWaterCapacity(state) +
@@ -143,7 +143,7 @@ internal sealed class StrategicNeeds
             .SelectMany(room => room.Items)
             .Concat(camp.CampNPC
                 .Where(character => character.Player == player &&
-                    !player.Group.Contains(character))
+                    !player.Party.Contains(character))
                 .SelectMany(character => character.Items))
             .Concat(camp.Items)))
             Add(globalItemStock, item.ID);

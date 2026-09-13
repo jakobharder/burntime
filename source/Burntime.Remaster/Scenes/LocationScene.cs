@@ -179,7 +179,7 @@ namespace Burntime.Remaster
                 if (dialog.Result == ConversationActionType.Yes)
                 {
                     charOverlay.SelectedCharacter.Dismiss();
-                    view.Player.SelectGroup(view.Player.Group);
+                    view.Player.SelectGroup(view.Player.Party);
                 }
             }
             else if (dialog.Type == ConversationType.Abandon)
@@ -545,7 +545,7 @@ namespace Burntime.Remaster
             }
 
             if (charOverlay.SelectedCharacter.IsDead)
-                view.Player.SelectGroup(view.Player.Group);
+                view.Player.SelectGroup(view.Player.Party);
         }
 
         GuiString? GetDirectInteractionPrompt()
@@ -565,7 +565,7 @@ namespace Burntime.Remaster
                             ? "@prompts?41"
                             : "@prompts?31";
                     if (hoveredCharacter.Class != CharClass.Dog &&
-                        !view.Player.Group.Contains(hoveredCharacter))
+                        !view.Player.Party.Contains(hoveredCharacter))
                         return "@prompts?34";
                 }
                 return null;
@@ -582,7 +582,7 @@ namespace Burntime.Remaster
                 if (primaryTarget.Player == view.Player)
                     return "@prompts?31";
                 if (primaryTarget.Class != CharClass.Dog &&
-                    !view.Player.Group.Contains(primaryTarget))
+                    !view.Player.Party.Contains(primaryTarget))
                     return "@prompts?34";
             }
             return null;
@@ -628,7 +628,7 @@ namespace Burntime.Remaster
 
         bool CanShowCharacterPrompts() =>
             app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad &&
-            view.Player.Group.Count > 1;
+            view.Player.Party.Count > 1;
 
         bool CanShowGroupActionsPrompt() =>
             CanShowCharacterPrompts();
@@ -651,7 +651,7 @@ namespace Burntime.Remaster
 
         void SelectAdjacentGroupCharacter(int direction)
         {
-            var group = view.Player.Group;
+            var group = view.Player.Party;
             if (group.Count <= 1)
                 return;
 
@@ -828,7 +828,7 @@ namespace Burntime.Remaster
             view.Location.PlaceUnpositionedResidents();
             view.Player = game.World.ActivePlayerObj;
             RecoverUnwalkableCharacters(view.Location, view.Player);
-            view.Player.Group.IgnoreRangeFilter = false;
+            view.Player.Party.IgnoreRangeFilter = false;
             lastSelectedCharacter = view.Player.SelectedCharacter;
 
             if (view.Player.RefreshScrollPosition)
@@ -857,7 +857,7 @@ namespace Burntime.Remaster
         static void RecoverUnwalkableCharacters(Location location, Player player)
         {
             var mask = location.Map.Mask;
-            foreach (Character character in location.Characters.Concat(player.Group).Distinct())
+            foreach (Character character in location.Characters.Concat(player.Party).Distinct())
             {
                 if (character.IsDead)
                     continue;
@@ -952,11 +952,11 @@ namespace Burntime.Remaster
 
         bool HasGroupMenuCommands() =>
             charOverlay.SelectedCharacter != null &&
-            (view.Player.Group.Count > 1 || charOverlay.SelectedCharacter != view.Player.Character);
+            (view.Player.Party.Count > 1 || charOverlay.SelectedCharacter != view.Player.Character);
 
         void AddGroupMenuLines(Action<GuiString, Action> addLine)
         {
-            if (view.Player.Group.Count > 1)
+            if (view.Player.Party.Count > 1)
             {
                 if (!view.Player.SingleMode)
                     addLine("@burn?358", OnMenuSingle);
@@ -967,9 +967,9 @@ namespace Burntime.Remaster
             if (charOverlay.SelectedCharacter != view.Player.Character)
             {
                 addLine("@burn?363", OnMenuDismiss);
-                if (view.Player.Group.Contains(charOverlay.SelectedCharacter))
+                if (view.Player.Party.Contains(charOverlay.SelectedCharacter))
                     addLine("@burn?364", OnMenuMakeCamp);
-                else if (view.Player.Group.Count < Logic.Group.MAX_PEOPLE)
+                else if (view.Player.Party.Count < Logic.Group.MAX_PEOPLE)
                     addLine("@burn?365", OnMenuLeaveCamp);
             }
         }
@@ -1061,7 +1061,7 @@ namespace Burntime.Remaster
             if (charOverlay.SelectedCharacter.IsDead)
                 return;
 
-            view.Player.Group.IgnoreRangeFilter = false;
+            view.Player.Party.IgnoreRangeFilter = false;
             charOverlay.SelectedCharacter.CancelAction();
 
             BurntimeClassic classic = app as BurntimeClassic;
@@ -1101,7 +1101,7 @@ namespace Burntime.Remaster
         public void OnMenuAll()
         {
             // set group selection to complete player group
-            view.Player.SelectGroup(view.Player.Group);
+            view.Player.SelectGroup(view.Player.Party);
         }
 
         public void OnMenuSingle()
@@ -1120,7 +1120,7 @@ namespace Burntime.Remaster
             }
 
             charOverlay.SelectedCharacter.Dismiss();
-            view.Player.SelectGroup(view.Player.Group);
+            view.Player.SelectGroup(view.Player.Party);
         }
 
         public void OnMenuMakeCamp()
@@ -1150,7 +1150,7 @@ namespace Burntime.Remaster
 
         void SelectBossAfterGarrison()
         {
-            view.Player.SelectGroup(view.Player.Group);
+            view.Player.SelectGroup(view.Player.Party);
         }
 
         public void OnMenuLeaveCamp()
@@ -1236,14 +1236,14 @@ namespace Burntime.Remaster
             {
                 Character ch = (Character)obj;
 
-                if (view.Player.Group.Contains(ch) || ch.Player == view.Player)
+                if (view.Player.Party.Contains(ch) || ch.Player == view.Player)
                 {
                     return true;
                 }
                 else if (interactionMode != LocationInteractionMode.Fight ||
                     view.Location.IsCity)
                 {
-                    if (ch.Class != CharClass.Dog && !view.Player.Group.Contains(ch))
+                    if (ch.Class != CharClass.Dog && !view.Player.Party.Contains(ch))
                     {
                         dialog.SetCharacter(actor, ch);
                         dialog.Show();
@@ -1255,7 +1255,7 @@ namespace Burntime.Remaster
                 }
                 else
                 {
-                    if (!view.Player.Group.Contains(ch))
+                    if (!view.Player.Party.Contains(ch))
                     {
                         TryAttack(actor, ch);
 
@@ -1291,7 +1291,7 @@ namespace Burntime.Remaster
             if (view.Location.AreEntrancesBlockedFor(view.Player))
                 return true;
 
-            view.Player.Group.IgnoreRangeFilter = !view.Player.SingleMode;
+            view.Player.Party.IgnoreRangeFilter = !view.Player.SingleMode;
             charOverlay.SelectedCharacter.CancelAction();
 
             switch (entrance.RoomType)

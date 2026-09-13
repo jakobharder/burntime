@@ -194,9 +194,9 @@ namespace Burntime.Remaster.Scenes
                 }
             }
 
-            for (int i = 0; i < world.ActivePlayerObj.Group.Count; i++)
+            for (int i = 0; i < world.ActivePlayerObj.Party.Count; i++)
             {
-                switch (world.ActivePlayerObj.Group[i].Class)
+                switch (world.ActivePlayerObj.Party[i].Class)
                 {
                     case CharClass.Mercenary: fighter++; break;
                     case CharClass.Doctor: doctor++; break;

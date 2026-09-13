@@ -27,7 +27,7 @@ internal sealed class EconomyObservation
     }
 
     IEnumerable<Character> Characters => game.World.AllCharacters
-        .Concat(game.World.Players.SelectMany(player => player.Group))
+        .Concat(game.World.Players.SelectMany(player => player.Party))
         .Concat(game.World.Players.Select(player => player.Character)).Distinct();
 
     internal void BeforeAction()
@@ -107,7 +107,7 @@ internal sealed class EconomyObservation
             return new
             {
                 Player = player.Index, Alive = !player.IsDead, Camps = camps,
-                GroupSize = player.Group.Count(character => !character.IsDead),
+                GroupSize = player.Party.Count,
                 CampFoodWithdrawn = withdrawals.GetValueOrDefault(player),
                 SupplyDamage = supplyDamage.Length,
                 SupplyDeaths = supplyDamage.Count(entry => entry.Key.IsDead),

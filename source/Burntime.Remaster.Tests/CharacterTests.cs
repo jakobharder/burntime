@@ -32,12 +32,12 @@ static class CharacterTests
             doctor.Player = owner;
             doctor.Health = 100;
             doctor.Class = CharClass.Doctor;
-            owner.Group.Add(doctor);
+            owner.Party.Add(doctor);
             Equal(false, patient.HasLocalDoctor, "boss's distant doctor cannot heal camp employees");
-            owner.Group.Add(patient);
+            owner.Party.Add(patient);
             Equal(true, patient.HasLocalDoctor, "travelling party shares its doctor");
-            owner.Group.Remove(patient);
-            owner.Group.Remove(doctor);
+            owner.Party.Remove(patient);
+            owner.Party.Remove(doctor);
             camp.Characters.Add(doctor);
             Equal(true, patient.HasLocalDoctor, "camp doctor heals same-owner employees");
             doctor.Player = otherOwner;
@@ -46,7 +46,7 @@ static class CharacterTests
             doctor.Health = 0;
             Equal(false, patient.HasLocalDoctor, "dead doctor does not heal patient");
             doctor.Health = 100;
-            owner.Group.Add(patient);
+            owner.Party.Add(patient);
             Equal(false, patient.HasLocalDoctor, "camp doctor does not join visiting party treatment");
             return 0;
         });

@@ -96,15 +96,12 @@ static class AiStateOperationsTests
             camp.Characters.Add(guard);
             var boss = manager.Create(() => new HazardCharacter());
             boss.Player = owner; boss.Health = 100;
-            owner.Group.Add(boss);
+            owner.Party.Add(boss);
             var visitingBoss = manager.Create(() => new HazardCharacter());
             visitingBoss.Player = visitor; visitingBoss.Health = 100;
-            visitor.Group.Add(visitingBoss);
-            var dead = manager.Create(() => new HazardCharacter());
-            dead.Player = owner; dead.Health = 0;
-            owner.Group.Add(dead);
+            visitor.Party.Add(visitingBoss);
             var dos = Burntime.Remaster.AI.AiStateOperations.GetCampDefenders(camp, attacker, new[] { owner }).ToArray();
-            Equal(true, dos.SequenceEqual(new[] { guard, boss }), "DOS includes stationed guard and present owner, excludes dead members");
+            Equal(true, dos.SequenceEqual(new[] { guard, boss }), "DOS includes stationed guard and present owner");
             Equal(true, Burntime.Remaster.AI.CombatStrength.Defenders(camp).SequenceEqual(dos),
                 "Modern roster includes the owner party, not unrelated visitors");
             var amiga = Burntime.Remaster.AI.AiStateOperations.GetCampDefenders(camp, attacker, new[] { attacker, owner, visitor }).ToArray();

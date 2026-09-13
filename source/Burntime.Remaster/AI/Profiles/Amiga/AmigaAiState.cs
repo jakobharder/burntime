@@ -101,7 +101,7 @@ internal sealed class AmigaAiState : OriginalAiState
 
     internal static void OffsetDailyWaterConsumption(Logic.Player player)
     {
-        foreach (Logic.Character character in player.Group.Where(character => !character.IsDead))
+        foreach (Logic.Character character in player.Party)
             character.Water = character.MaxWater;
     }
 
@@ -185,7 +185,7 @@ internal sealed class AmigaAiState : OriginalAiState
         if (stationed >= GarrisonTarget)
             return false;
 
-        Logic.Character? guard = Player.Group.Skip(1)
+        Logic.Character? guard = Player.Party.Skip(1)
             .FirstOrDefault(character => !character.IsDead);
         if (guard == null)
             return false;
@@ -311,7 +311,7 @@ internal sealed class AmigaAiState : OriginalAiState
             player.PreviousLocation.Player != player;
         int food = leftHostileCamp ? 3 : 9;
         int health = leftHostileCamp ? 20 : arrivedInCity ? 30 : 0;
-        foreach (Logic.Character character in player.Group)
+        foreach (Logic.Character character in player.Party)
         {
             if (player.Location.Player == null || player.Location.Player == player)
                 character.Food = System.Math.Min(9, character.Food + food);
@@ -369,7 +369,7 @@ internal sealed class AmigaAiState : OriginalAiState
         }
 
         int normalPairCounter = new[] { 3, 4, 6 }[Difficulty];
-        foreach (Logic.Character attacker in Player.Group.Where(character => !character.IsDead).ToArray())
+        foreach (Logic.Character attacker in Player.Party.ToArray())
         {
             bool advanceToNextAttacker = false;
             foreach (Logic.Character defender in defenders.Where(character => !character.IsDead))

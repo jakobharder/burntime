@@ -16,19 +16,19 @@ internal static class TravelSupplies
             System.Math.Max(0, hostileTarget ? (route.Days - 1) : 0);
         int waterRequired = route.Days +
             System.Math.Max(0, hostileTarget ? route.Days : 0);
-        int[] food = player.Group.Select(character => character.Food).ToArray();
-        int[] water = player.Group.Select(character => character.Water).ToArray();
+        int[] food = player.Party.Select(character => character.Food).ToArray();
+        int[] water = player.Party.Select(character => character.Water).ToArray();
         return Group.GetLowestAfterDistribution(food,
-                System.Math.Max(0, player.Group.GetFoodInInventory() - unavailableFood)) >= foodRequired &&
+                System.Math.Max(0, player.Party.GetFoodInInventory() - unavailableFood)) >= foodRequired &&
             Group.GetLowestAfterDistribution(water,
-                System.Math.Max(0, player.Group.GetWaterInInventory() - unavailableWater)) >= waterRequired;
+                System.Math.Max(0, player.Party.GetWaterInInventory() - unavailableWater)) >= waterRequired;
     }
 
     public static bool HasSettlementRoundTripFood(
         Player player,
         RouteFinder.Route outbound,
         RouteFinder.Route returnRoute) =>
-        player.Group.GetLowestFoodWithInventory() >= outbound.Days + returnRoute.Days;
+        player.Party.GetLowestFoodWithInventory() >= outbound.Days + returnRoute.Days;
 
     public static bool HasSettlementRoundTripSupplies(
         Player player,
@@ -38,12 +38,12 @@ internal static class TravelSupplies
         int unavailableWater = 0)
     {
         int required = outbound.Days + returnRoute.Days;
-        int[] food = player.Group.Select(character => character.Food).ToArray();
-        int[] water = player.Group.Select(character => character.Water).ToArray();
+        int[] food = player.Party.Select(character => character.Food).ToArray();
+        int[] water = player.Party.Select(character => character.Water).ToArray();
         return Group.GetLowestAfterDistribution(food,
-                System.Math.Max(0, player.Group.GetFoodInInventory() - unavailableFood)) >= required &&
+                System.Math.Max(0, player.Party.GetFoodInInventory() - unavailableFood)) >= required &&
             Group.GetLowestAfterDistribution(water,
-                System.Math.Max(0, player.Group.GetWaterInInventory() - unavailableWater)) >= required;
+                System.Math.Max(0, player.Party.GetWaterInInventory() - unavailableWater)) >= required;
     }
 
     public static bool HasStagedRecruitSettlementSupplies(
@@ -57,18 +57,18 @@ internal static class TravelSupplies
         int unavailableFood,
         int unavailableWater)
     {
-        if (player.Group.Count != 1)
+        if (player.Party.Count != 1)
             return false;
 
         Character leader = player.Character;
         return HasStagedRecruitStat(
                 leader.Food, leader.MaxFood,
-                player.Group.GetFoodInInventory() - unavailableFood,
+                player.Party.GetFoodInInventory() - unavailableFood,
                 toCity.Days, onward.Days, settlementReturn.Days,
                 cityMinimum, recruitFood) &&
             HasStagedRecruitStat(
                 leader.Water, leader.MaxWater,
-                player.Group.GetWaterInInventory() - unavailableWater,
+                player.Party.GetWaterInInventory() - unavailableWater,
                 toCity.Days, onward.Days, settlementReturn.Days,
                 cityMinimum, recruitWater);
     }
@@ -84,18 +84,18 @@ internal static class TravelSupplies
         int unavailableWater,
         int soloFoodReturnDays = 0)
     {
-        if (player.Group.Count != 1)
+        if (player.Party.Count != 1)
             return false;
 
         Character leader = player.Character;
         return HasStagedRecruitStat(
                 leader.Food, leader.MaxFood,
-                player.Group.GetFoodInInventory() - unavailableFood,
+                player.Party.GetFoodInInventory() - unavailableFood,
                 toStop.Days, onward.Days, soloFoodReturnDays,
                 arrivalMinimum, recruitFood) &&
             HasStagedRecruitStat(
                 leader.Water, leader.MaxWater,
-                player.Group.GetWaterInInventory() - unavailableWater,
+                player.Party.GetWaterInInventory() - unavailableWater,
                 toStop.Days, onward.Days, returnDays: 0,
                 arrivalMinimum, recruitWater);
     }
@@ -108,17 +108,17 @@ internal static class TravelSupplies
         int unavailableFood,
         int unavailableWater)
     {
-        if (player.Group.Count != 1)
+        if (player.Party.Count != 1)
             return false;
 
         Character leader = player.Character;
         return HasStagingReturnStat(
                 leader.Food, leader.MaxFood,
-                player.Group.GetFoodInInventory() - unavailableFood,
+                player.Party.GetFoodInInventory() - unavailableFood,
                 toCity.Days, returnRoute.Days, cityMinimum) &&
             HasStagingReturnStat(
                 leader.Water, leader.MaxWater,
-                player.Group.GetWaterInInventory() - unavailableWater,
+                player.Party.GetWaterInInventory() - unavailableWater,
                 toCity.Days, returnRoute.Days, cityMinimum);
     }
 
@@ -142,12 +142,12 @@ internal static class TravelSupplies
             int waterRequired = route.Days +
                 System.Math.Max(0, hostileTarget ? route.Days : 0);
             int foodAvailable = Group.GetLowestAfterDistribution(
-                player.Group.Select(character => character.Food).ToArray(),
-                player.Group.GetFoodInInventory());
+                player.Party.Select(character => character.Food).ToArray(),
+                player.Party.GetFoodInInventory());
             int waterAvailable = Group.GetLowestAfterDistribution(
-                player.Group.Select(character => character.Water).ToArray(),
-                player.Group.GetWaterInInventory());
-            int reserveBuildingSurplus = player.Group.Count + 1;
+                player.Party.Select(character => character.Water).ToArray(),
+                player.Party.GetWaterInInventory());
+            int reserveBuildingSurplus = player.Party.Count + 1;
 
             // An owned stop may break a long route into legs only when it can
             // rebuild whichever reserve the group lacks. Merely feeding the
@@ -171,15 +171,15 @@ internal static class TravelSupplies
         // A human player may deliberately arrive hungry, thirsty, or wounded
         // when a real recovery facility is the destination. Never approve a
         // route expected to kill even the weakest current group member.
-        return player.Group.Min(character => character.Health) > expectedDamage;
+        return player.Party.Min(character => character.Health) > expectedDamage;
     }
 
     public static int ExpectedRecoveryRouteDamage(Player player, RouteFinder.Route route)
     {
         int foodShortageDays = System.Math.Max(0,
-            route.Days - player.Group.GetLowestFoodWithInventory());
+            route.Days - player.Party.GetLowestFoodWithInventory());
         int waterShortageDays = System.Math.Max(0,
-            route.Days - player.Group.GetLowestWaterWithInventory());
+            route.Days - player.Party.GetLowestWaterWithInventory());
         return (foodShortageDays + waterShortageDays) * 25;
     }
 
@@ -188,22 +188,22 @@ internal static class TravelSupplies
         Location current,
         RouteFinder.Route route)
     {
-        if (!player.Group.Any(character => character.Water == 0))
+        if (!player.Party.Any(character => character.Water == 0))
             return false;
 
         int routeWaterShortageDays = System.Math.Max(0,
-            route.Days - player.Group.GetLowestWaterWithInventory());
+            route.Days - player.Party.GetLowestWaterWithInventory());
 
         int residentConsumption = current.Player == null
             ? 0
             : CampEconomy.LivingGuardCount(current, current.Player);
         int dailyWaterSurplus = System.Math.Max(0,
             (current.Source?.Water ?? 0) - residentConsumption);
-        int localWater = player.Group.GetWaterInInventory() +
+        int localWater = player.Party.GetWaterInInventory() +
             CampEconomy.StoredWaterValue(current) +
             (current.Source?.Reserve ?? 0) +
             dailyWaterSurplus * route.Days;
-        int[] localReserves = player.Group.Select(character => character.Water).ToArray();
+        int[] localReserves = player.Party.Select(character => character.Water).ToArray();
         int waitWaterShortageDays = System.Math.Max(0, route.Days -
             Group.GetLowestAfterDistribution(localReserves, localWater));
 
@@ -226,7 +226,7 @@ internal static class TravelSupplies
         if (route.NextStep.Player != player && !route.NextStep.IsCity)
             return false;
         RouteFinder.Route? firstLeg = RouteFinder.Find(player, start, route.NextStep);
-        int projectedGroupSize = player.Group.Count + 1;
+        int projectedGroupSize = player.Party.Count + 1;
         bool sustainableWaypoint = route.NextStep.IsCity ||
             CampEconomy.FoodSurplusPerDay(route.NextStep) >= projectedGroupSize &&
             CampEconomy.CanProvisionGroupWater(
@@ -246,10 +246,10 @@ internal static class TravelSupplies
         int returnDays,
         int unavailableFood = 0)
     {
-        if (player.Group.Count != 1)
+        if (player.Party.Count != 1)
             return true;
         int available = player.Character.Food + recruitFood +
-            System.Math.Max(0, player.Group.GetFoodInInventory() - unavailableFood);
+            System.Math.Max(0, player.Party.GetFoodInInventory() - unavailableFood);
         return available >= outbound.Days * 2 + returnDays;
     }
 
@@ -264,16 +264,16 @@ internal static class TravelSupplies
         // A settler recruited for a concrete camp departs with the leader on the
         // hiring turn, just as a human group can. The first normal consumption is
         // therefore already represented by the first day of the route.
-        int[] food = player.Group.Select(character => character.Food)
+        int[] food = player.Party.Select(character => character.Food)
             .Append(recruitFood)
             .ToArray();
-        int[] water = player.Group.Select(character => character.Water)
+        int[] water = player.Party.Select(character => character.Water)
             .Append(recruitWater)
             .ToArray();
         return Group.GetLowestAfterDistribution(food,
-                System.Math.Max(0, player.Group.GetFoodInInventory() - unavailableFood)) >= route.Days &&
+                System.Math.Max(0, player.Party.GetFoodInInventory() - unavailableFood)) >= route.Days &&
             Group.GetLowestAfterDistribution(water,
-                System.Math.Max(0, player.Group.GetWaterInInventory() - unavailableWater)) >= route.Days;
+                System.Math.Max(0, player.Party.GetWaterInInventory() - unavailableWater)) >= route.Days;
     }
 
     /// <summary>
@@ -293,12 +293,12 @@ internal static class TravelSupplies
         int unavailableWater)
     {
         return HasStagedRecruitCityReturnStat(
-                player.Group.Select(character => character.Food).ToArray(),
-                player.Group.GetFoodInInventory() - unavailableFood,
+                player.Party.Select(character => character.Food).ToArray(),
+                player.Party.GetFoodInInventory() - unavailableFood,
                 toCity.Days, returnRoute.Days, cityMinimum, recruitFood) &&
             HasStagedRecruitCityReturnStat(
-                player.Group.Select(character => character.Water).ToArray(),
-                player.Group.GetWaterInInventory() - unavailableWater,
+                player.Party.Select(character => character.Water).ToArray(),
+                player.Party.GetWaterInInventory() - unavailableWater,
                 toCity.Days, returnRoute.Days, cityMinimum, recruitWater);
     }
 

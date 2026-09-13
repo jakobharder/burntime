@@ -46,7 +46,7 @@ internal static partial class Trading
 
     internal static bool HasConstructionComponent(ClassicAiState state, string itemId) =>
         state.Reserve.GetConstructionMaterialCount(itemId) > 0 ||
-        state.Player.Group.SelectMany(character => character.Items).Any(item => item.ID == itemId);
+        state.Player.Party.SelectMany(character => character.Items).Any(item => item.ID == itemId);
 
     internal static IEnumerable<ConstructionOpportunity> CompleteUsefulConstructionOpportunities(
         ClassicAiState state) => UsefulConstructionOpportunities(state)
@@ -204,7 +204,7 @@ internal static partial class Trading
 
     internal static IEnumerable<IItemCollection> GetLocalItemSources(ClassicAiState state, Location camp)
     {
-        foreach (Character character in state.Player.Group)
+        foreach (Character character in state.Player.Party)
             yield return character.Items;
         foreach (Character character in camp.CampNPC.Where(npc => npc.Player == state.Player))
             yield return character.Items;

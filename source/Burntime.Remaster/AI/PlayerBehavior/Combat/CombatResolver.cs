@@ -19,7 +19,7 @@ internal static class CombatResolver
 
         List<Character> originalDefenders = CombatStrength.Defenders(location)
             .ToList();
-        List<Character> originalAttackers = attacker.Group.Where(character => !character.IsDead).ToList();
+        List<Character> originalAttackers = attacker.Party.ToList();
         Dictionary<Character, Item[]> carriedBeforeCombat = originalAttackers
             .ToDictionary(character => character, character => character.Items.ToArray());
         float initialAttackerStrength = CombatStrength.Attacker(attacker);
@@ -28,7 +28,7 @@ internal static class CombatResolver
         DefenseIntelligence.UpdateKnowledgeFromEncounter(state, location, originalDefenders);
         AiTelemetry.Report(attacker,
             $"attacks {defenderOwner.Name}'s camp at {location.Title}: " +
-            $"{attacker.Group.Count} attackers against {originalDefenders.Count} defenders");
+            $"{attacker.Party.Count} attackers against {originalDefenders.Count} defenders");
 
         var encounter = StrategicEncounter.Fight(state.RootGame, attacker, defenderOwner,
             originalDefenders, fightToDeath);
@@ -48,13 +48,13 @@ internal static class CombatResolver
         state.CollectCombatLoot(ownDrops);
 
         Character[] survivingDefenders = originalDefenders.Where(character => !character.IsDead &&
-            (!encounter.DefendingPartyDisengaged || !defenderOwner.Group.Contains(character))).ToArray();
+            (!encounter.DefendingPartyDisengaged || !defenderOwner.Party.Contains(character))).ToArray();
         bool defendersDefeated = survivingDefenders.Length == 0;
         DefenseIntelligence.UpdateKnowledgeFromEncounter(state, location, survivingDefenders);
         if (defendersDefeated)
         {
             state.LastChanceAttackTarget = null;
-            Character? guard = attacker.Group
+            Character? guard = attacker.Party
                 .Where(character => character != attacker.Character && !character.IsDead)
                 .OrderBy(character => CombatStrength.Fighter(character))
                 .FirstOrDefault();

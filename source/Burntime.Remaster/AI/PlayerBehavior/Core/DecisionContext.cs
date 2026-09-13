@@ -29,7 +29,7 @@ internal sealed class DecisionContext
         {
             Player = player,
             Current = state.Current,
-            Group = player.Group.ToArray(),
+            Group = player.Party.ToArray(),
             CriticalSupplies = critical,
             SafeLocation = safe,
             DesiredGroupSize = policy.GroupSize,

@@ -186,7 +186,7 @@ static class ProductionPolicyTests
             var player = m.Create<HazardPlayer>(new object[] { 0 }); player.Location = camp;
             var first = m.Create<HazardCharacter>(); first.Player = player; first.Location = camp;
             var second = m.Create<HazardCharacter>(); second.Player = player; second.Location = camp;
-            player.Group.Add(first); player.Group.Add(second);
+            player.Party.Add(first); player.Party.Add(second);
             Item groupHigh = TestItem(m, "group_high", food: 9);
             Item groupLow = TestItem(m, "group_low", food: 5);
             first.Items.Add(groupHigh); second.Items.Add(groupLow);

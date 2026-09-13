@@ -35,14 +35,14 @@ internal static class CampDelivery
             knownRoute: assessment.DeliveryRoute);
     }
 
-    static bool CarriesPump(ClassicAiState state) => state.Player.Group
+    static bool CarriesPump(ClassicAiState state) => state.Player.Party
         .SelectMany(character => character.Items)
         .Any(Trading.IsPump);
 
     static bool CarriesSpareWaterContainer(ClassicAiState state)
     {
         int portableCapacity = Trading.PortableWaterCapacity(state);
-        return state.Player.Group.SelectMany(character => character.Items)
+        return state.Player.Party.SelectMany(character => character.Items)
             .Where(item => AiItemPool.IsWaterContainer(item.Type))
             .Any(item => portableCapacity - AiItemPool.WaterContainerCapacity(item.Type) >=
                 Trading.DesiredWaterContainerCapacity(state));

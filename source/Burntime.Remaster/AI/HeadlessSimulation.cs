@@ -422,7 +422,7 @@ public static class HeadlessSimulation
                 events.Add($"{prefix} left ground items due to unavailable storage: {FormatItems(leftBehind)}.");
         }
 
-        Character[] currentGroup = player.Group.ToArray();
+        Character[] currentGroup = player.Party.ToArray();
         Character[] hired = currentGroup.Where(character => !before.Group.Contains(character)).ToArray();
         foreach (Character character in hired)
         {
@@ -549,9 +549,9 @@ public static class HeadlessSimulation
 
             report.AppendLine($"- {PlayerLabel(player)}: {state}, {travel}, {camps} camps " +
                 $"({establishedCamps} well established), " +
-                $"group {player.Group.Count}, defenders {defenders}, " +
+                $"group {player.Party.Count}, defenders {defenders}, " +
                 $"health {player.Character.Health}, food {player.Character.Food}, water {player.Character.Water}");
-            foreach (Character member in player.Group)
+            foreach (Character member in player.Party)
             {
                 report.AppendLine($"  - {CharacterLabel(member)}: health {member.Health}, food {member.Food}, " +
                     $"water {member.Water}, inventory {FormatItems(member.Items)}");
@@ -723,7 +723,7 @@ public static class HeadlessSimulation
 
     static string FormatGroupState(Player player)
     {
-        string members = string.Join("; ", player.Group.Select(character =>
+        string members = string.Join("; ", player.Party.Select(character =>
             $"{character.Name}: H{character.Health}/F{character.Food}/W{character.Water}, " +
             $"items [{FormatItems(character.Items)}]"));
         return $"{PlayerLabel(player)} group at {LocationLabel(player.Location)}: {members}.";
@@ -772,7 +772,7 @@ public static class HeadlessSimulation
         public static DecisionSnapshot Capture(Player player)
         {
             Item[] groundItems = player.Location.Items.ToArray();
-            Character[] group = player.Group.ToArray();
+            Character[] group = player.Party.ToArray();
             return new DecisionSnapshot
             {
                 Location = player.Location,

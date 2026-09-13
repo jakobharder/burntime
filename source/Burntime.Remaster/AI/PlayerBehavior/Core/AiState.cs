@@ -226,9 +226,9 @@ namespace Burntime.Remaster.AI
                 return;
 
             ItemType meatType = RootGame.ItemTypes["item_meat"];
-            int foodCapacity = Player.Group.Sum(character => character.MaxFood - character.Food);
+            int foodCapacity = Player.Party.Sum(character => character.MaxFood - character.Food);
             bool canConsume = foodCapacity >= meatType.FoodValue;
-            bool canCarry = Player.Group.Any(character =>
+            bool canCarry = Player.Party.Any(character =>
                 GroupInventory.CanCarryCargo(this, character, meatType));
             bool canStoreAtOwnedCamp = CurrentLocation.Player == Player &&
                 CampManagement.CanStoreItemInCamp(CurrentLocation, meatType);
@@ -248,7 +248,7 @@ namespace Burntime.Remaster.AI
             string destination;
             if (canConsume)
             {
-                Player.Group.Eat(null, meat.FoodValue);
+                Player.Party.Eat(null, meat.FoodValue);
                 CurrentLocation.Items.Remove(meat);
                 destination = "immediately consumed by the travelling group";
             }
@@ -314,7 +314,7 @@ namespace Burntime.Remaster.AI
             set => slumpMaterialGrantsUsed = value;
         }
         internal int OwnedCampCount => AiStateOperations.OwnedCampCount(RootGame, Player);
-        internal bool CanCollectLocalLoot => Player.Group
+        internal bool CanCollectLocalLoot => Player.Party
             .Where(character => !character.IsDead)
             .All(character => RootGame.RuleBook.PassesDailyHazardCheck(character));
         internal AiStateOperations.ProgressBenchmark ProgressBenchmark =>
@@ -451,7 +451,7 @@ namespace Burntime.Remaster.AI
         }
 
         internal bool CanClaim(Location location) => CanCreateCamp(location);
-        internal bool CanStationCamp() => Player.Group.Count > 1 || CanRecruit(allowGeneratedPayment: CurrentLocation.IsCity);
+        internal bool CanStationCamp() => Player.Party.Count > 1 || CanRecruit(allowGeneratedPayment: CurrentLocation.IsCity);
         internal bool HasHireableNpc() => CanHireNpc();
         internal sealed record RecruitmentPlan(
             Character Recruit,
@@ -495,7 +495,7 @@ namespace Burntime.Remaster.AI
 
         RecruitmentPlan CreateRecruitmentPlan(Character recruit, bool allowGeneratedPayment)
         {
-            if (OwnedCampCount == 0 && Player.Group.Count == 1)
+            if (OwnedCampCount == 0 && Player.Party.Count == 1)
                 return new RecruitmentPlan(recruit, IsFunded: true, 0, 0);
 
             Item exactPayment = recruit.HireItems
@@ -524,12 +524,12 @@ namespace Burntime.Remaster.AI
             Character candidate = GetHireableNpc(
                 requireAffordable: true,
                 allowGeneratedPayment: allowGeneratedPayment);
-            if (candidate == null || Player.Group.Count >= Group.MAX_PEOPLE)
+            if (candidate == null || Player.Party.Count >= Group.MAX_PEOPLE)
                 return false;
             return true;
         }
         internal bool ShouldReserveSettlerPayment => CurrentLocation.IsCity && HasSettlementPlan &&
-            Player.Group.Count == 1 && GetHireableCandidates().Any(candidate =>
+            Player.Party.Count == 1 && GetHireableCandidates().Any(candidate =>
                 CanFundRecruit(candidate, allowGeneratedPayment: true));
         internal string[] AvailableProducts(Location location) => GetAvailableProducts(location);
 
@@ -558,7 +558,7 @@ namespace Burntime.Remaster.AI
 
         internal Character ReleaseFollowerForSurvival()
         {
-            Character follower = Player.Group
+            Character follower = Player.Party
                 .Where(character => character != Player.Character)
                 .OrderBy(character => character.Health)
                 .ThenBy(character => character.Water)
@@ -570,7 +570,7 @@ namespace Burntime.Remaster.AI
 
         internal Character DismissSurplusFollower()
         {
-            Character follower = Player.Group
+            Character follower = Player.Party
                 .Where(character => character != Player.Character)
                 .OrderBy(character => character.Class switch
                 {
@@ -590,12 +590,12 @@ namespace Burntime.Remaster.AI
 
         internal Character StationSurplusFollower()
         {
-            if (!IsHome || Player.Group.Count <= 1)
+            if (!IsHome || Player.Party.Count <= 1)
                 return null;
             int guards = CampEconomy.LivingGuardCount(CurrentLocation, Player);
             if (!ReinforcementPlanning.CanSupportAdditionalGuard(this, CurrentLocation, guards))
                 return null;
-            Character npc = Player.Group
+            Character npc = Player.Party
                 .Where(character => character != Player.Character)
                 .OrderBy(character => character.Class switch
                 {
@@ -615,7 +615,7 @@ namespace Burntime.Remaster.AI
         bool PreserveTravelSuppliesBeforeStationing(Character follower)
         {
             const int minimumTravelDays = 5;
-            Character[] remaining = Player.Group
+            Character[] remaining = Player.Party
                 .Where(character => character != follower)
                 .ToArray();
             if (remaining.Length == 0)
@@ -699,14 +699,14 @@ namespace Burntime.Remaster.AI
 
         internal Character StationTradeFollower()
         {
-            if (!IsHome || Player.Group.Count <= 2)
+            if (!IsHome || Player.Party.Count <= 2)
                 return null;
             int guards = CampEconomy.LivingGuardCount(CurrentLocation, Player);
             int garrisonLimit = AiPolicy.ForDifficulty(Difficulty).CriticalGarrisonTarget;
             if (guards >= garrisonLimit ||
                 !ReinforcementPlanning.CanSupportAdditionalGuard(this, CurrentLocation, guards))
                 return null;
-            Character npc = Player.Group
+            Character npc = Player.Party
                 .Where(character => character != Player.Character)
                 .OrderBy(character => character.Items.Sum(item => item.TradeValue))
                 .ThenBy(character => CombatStrength.Fighter(character))
@@ -752,8 +752,8 @@ namespace Burntime.Remaster.AI
 
         internal Character SelectCampNpc()
         {
-            if (Player.Group.Count > 1)
-                return Player.Group[1];
+            if (Player.Party.Count > 1)
+                return Player.Party[1];
 
             return CanHireNpc() ? HireNpc(allowGeneratedPayment: CurrentLocation.IsCity) : null;
         }
@@ -822,7 +822,7 @@ namespace Burntime.Remaster.AI
             // A failed city remains unproductive, but it must not suppress every
             // other hostile opportunity forever. Retry the wider strategic
             // picture after a short economic/relocation window.
-            bool recruitmentReady = Player.Group.Count > attackRecruitmentGroupSize ||
+            bool recruitmentReady = Player.Party.Count > attackRecruitmentGroupSize ||
                 Current.IsCity && Recruitment.HasSafeLocalRecruit(this, policy) ||
                 RootGame.World.Day >= attackRecruitmentDeferredUntilDay;
             if (recruitmentReady)
@@ -837,7 +837,7 @@ namespace Burntime.Remaster.AI
             recruitmentFailureTheaterAnchor = location;
             DeferAttackPlan(location, policy);
             attackRecruitmentDeferred = true;
-            attackRecruitmentGroupSize = Player.Group.Count;
+            attackRecruitmentGroupSize = Player.Party.Count;
             attackRecruitmentDeferredUntilDay = RootGame.World.Day + 20;
         }
 
@@ -1045,7 +1045,7 @@ namespace Burntime.Remaster.AI
             int required = Trading.DesiredWaterContainerCapacity(this);
             while (Trading.PortableWaterCapacity(this) < required)
             {
-                Character carrier = Player.Group.FirstOrDefault(character => !character.Items.IsFull &&
+                Character carrier = Player.Party.FirstOrDefault(character => !character.Items.IsFull &&
                     !HasWaterContainer(character));
                 if (carrier == null)
                     return;
@@ -1202,7 +1202,7 @@ namespace Burntime.Remaster.AI
         private Item FindCompatibleGroupProduction(Location location)
         {
             string[] products = GetAvailableProducts(location);
-            return Player.Group.SelectMany(character => character.Items)
+            return Player.Party.SelectMany(character => character.Items)
                 .Where(item => item.Type.Production != null && products.Contains(item.Type.Production.Produce.ID))
                 .OrderByDescending(item => item.Type.Production.Produce.FoodValue)
                 .FirstOrDefault();
@@ -1213,7 +1213,7 @@ namespace Burntime.Remaster.AI
             Item item = FindCompatibleGroupProduction(location);
             if (item == null)
                 return null;
-            Character owner = Player.Group.First(character => character.Items.Contains(item));
+            Character owner = Player.Party.First(character => character.Items.Contains(item));
             owner.Items.Remove(item);
             return item;
         }
@@ -1311,8 +1311,8 @@ namespace Burntime.Remaster.AI
 
         Character HireNpc(Character ch, bool allowGeneratedPayment)
         {
-            bool freeFirstRecruit = OwnedCampCount == 0 && Player.Group.Count == 1;
-            if (ch == null || Player.Group.Count >= Group.MAX_PEOPLE ||
+            bool freeFirstRecruit = OwnedCampCount == 0 && Player.Party.Count == 1;
+            if (ch == null || Player.Party.Count >= Group.MAX_PEOPLE ||
                 !GetHireableCandidates().Contains(ch) ||
                 (!freeFirstRecruit && !CanFundRecruit(ch, allowGeneratedPayment)))
                 return null;
@@ -1392,7 +1392,7 @@ namespace Burntime.Remaster.AI
             // Exact requested items carried by the leader are handled before this
             // method, so equipment and construction reserves never fund substitutes.
             int remainingFood = Trading.PortableFoodSupply(this);
-            List<RecruitmentAsset> candidates = Player.Group
+            List<RecruitmentAsset> candidates = Player.Party
                 .SelectMany(character => character.Items
                     .Where(item => item.FoodValue > 0)
                     .Select(item => new RecruitmentAsset(
@@ -1477,10 +1477,10 @@ namespace Burntime.Remaster.AI
         {
             if (item.FoodValue <= 0)
                 return false;
-            if (Player.Group.Any(character => character.Weapon == item || character.Protection == item))
+            if (Player.Party.Any(character => character.Weapon == item || character.Protection == item))
                 return false;
             if (portable &&
-                remainingFood - item.FoodValue < Player.Group.Count * 3)
+                remainingFood - item.FoodValue < Player.Party.Count * 3)
                 return false;
             return item.TradeValue > 0;
         }

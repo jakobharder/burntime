@@ -19,12 +19,9 @@ static class AiPreparationRecoveryTests
             var m = new StateManager(null!);
             var player = m.Create<HazardPlayer>(new object[] { 0 });
             var boss = m.Create<HazardCharacter>(); boss.Player = player; player.Character = boss;
-            var follower = m.Create<HazardCharacter>(); follower.Player = player; player.Group.Add(follower);
-            var deadFollower = m.Create<HazardCharacter>(); deadFollower.Player = player;
-            deadFollower.Health = 0; player.Group.Add(deadFollower);
+            var follower = m.Create<HazardCharacter>(); follower.Player = player; player.Party.Add(follower);
             boss.Water = 0;
             follower.Water = follower.MaxWater;
-            deadFollower.Water = 0;
             var ai = m.Create<AmigaAiState>(new object[]
                 { player, new AiSettings { Difficulty = 0 } });
 
@@ -36,7 +33,6 @@ static class AiPreparationRecoveryTests
                 "default healing policy");
             Equal(boss.MaxWater, boss.Water, "maximum travel reserve");
             Equal(follower.MaxWater, follower.Water, "maximum respected");
-            Equal(0, deadFollower.Water, "dead follower ignored");
             return 0;
         });
 
@@ -53,10 +49,10 @@ static class AiPreparationRecoveryTests
                 to.Player = hostileDestination ? enemy : city ? null : player;
                 player.Location = to; player.SetPrevious(from);
                 var boss = m.Create<HazardCharacter>(); boss.Player = player; player.Character = boss;
-                var follower = m.Create<HazardCharacter>(); follower.Player = player; player.Group.Add(follower);
-                foreach (var member in player.Group) { member.Health = 48; member.Food = 0; member.Water = 5; }
+                var follower = m.Create<HazardCharacter>(); follower.Player = player; player.Party.Add(follower);
+                foreach (var member in player.Party) { member.Health = 48; member.Food = 0; member.Water = 5; }
                 AmigaAiState.ApplyArrivalRecovery(player);
-                foreach (var member in player.Group)
+                foreach (var member in player.Party)
                 {
                     Equal(hostileDestination ? 0 : city && hostileOrigin ? 3 : 9, member.Food, "food branch");
                     Equal(city ? hostileOrigin ? 68 : 78 : 48, member.Health, "healing is city-only");
@@ -64,7 +60,7 @@ static class AiPreparationRecoveryTests
                 }
                 // Repeated grant remains capped, including on followers.
                 AmigaAiState.ApplyArrivalRecovery(player);
-                foreach (var member in player.Group)
+                foreach (var member in player.Party)
                     Equal(hostileDestination ? 0 : city && hostileOrigin ? 6 : 9, member.Food, "food cap");
                 return 0;
             });
@@ -131,9 +127,9 @@ static class AiPreparationRecoveryTests
             var policy = AiPolicy.ForDifficulty(1);
             DefenseIntelligence.UpdateKnowledge(ai);
             game.World.Day = 300;
-            player.Group.Add(EncounterFighter(m, player, 100, 100));
+            player.Party.Add(EncounterFighter(m, player, 100, 100));
             Equal(2, AttackPlanning.RequiredAttackGroupSize(ai, camp, policy), "strong pair can prepare without a third body");
-            var follower = player.Group[1];
+            var follower = player.Party[1];
             var strongWeapon = follower.Items[0];
             follower.Items.Clear();
             follower.Items.Add(TestItem(m, "item_knife", damage: 1, damageValues: new[] { 1 }));

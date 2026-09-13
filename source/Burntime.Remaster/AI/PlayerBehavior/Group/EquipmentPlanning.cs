@@ -8,7 +8,7 @@ namespace Burntime.Remaster.AI;
 internal static class EquipmentPlanning
 {
     internal static IEnumerable<Character> Recipients(ClassicAiState state) =>
-        state.Player.Group.Where(character => !character.IsDead)
+        state.Player.Party
             .Concat(state.RootGame.World.Locations.Where(camp => camp.Player == state.Player &&
                     ReinforcementPlanning.CalculateIsThreatened(state, camp))
                 .SelectMany(camp => camp.CampNPC.Where(character => character.Player == state.Player && !character.IsDead))
@@ -94,7 +94,7 @@ internal static class EquipmentPlanning
     {
         AiPolicy policy = AiPolicy.ForDifficulty(state.Difficulty);
         Character[] recipients = Recipients(state).ToArray();
-        DistributeFirearms(state.Player.Group.Where(character => !character.IsDead).ToArray(), policy);
+        DistributeFirearms(state.Player.Party.ToArray(), policy);
         foreach (Character character in recipients)
         {
             // Ammunition remains a physical item and is consumed by the normal
@@ -105,7 +105,7 @@ internal static class EquipmentPlanning
                 Item? ammunition = character.Items.FirstOrDefault(item => item.ID == "item_ammunition");
                 if (ammunition == null && !character.Items.IsFull)
                 {
-                    Character? donor = state.Player.Group.FirstOrDefault(member => member != character && member.Location == character.Location &&
+                    Character? donor = state.Player.Party.FirstOrDefault(member => member != character && member.Location == character.Location &&
                         !member.Items.Any(item => AiItemPool.IsFirearm(item.Type)) &&
                         member.Items.Any(item => item.ID == "item_ammunition"));
                     ammunition = donor?.Items.First(item => item.ID == "item_ammunition");

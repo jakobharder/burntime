@@ -37,7 +37,7 @@ internal static class RuleFormulas
             .ToArray();
         int foodOutput = camps.Sum(location => location.GetFoodProductionRate().FoodPerDay);
         int waterOutput = camps.Sum(location => location.Source.Water);
-        int employees = player.Group.Count + camps.Sum(location =>
+        int employees = player.Party.Count + camps.Sum(location =>
             location.CampNPC.Count(character => character.Player == player && !character.IsDead));
         return AmigaBossExperience(foodOutput, waterOutput, employees);
     }

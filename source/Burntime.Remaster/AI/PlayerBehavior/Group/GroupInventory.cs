@@ -13,7 +13,7 @@ internal static class GroupInventory
         if (SatisfiesMissingLeaderRole(leader, item) && CanCarryCargo(state, leader, item))
             return leader;
 
-        return state.Player.Group.FirstOrDefault(character => CanCarryCargo(state, character, item));
+        return state.Player.Party.FirstOrDefault(character => CanCarryCargo(state, character, item));
     }
 
     internal static bool CanCarryCargo(
@@ -84,7 +84,7 @@ internal static class GroupInventory
             if (displaced == null)
                 return;
 
-            Character? follower = state.Player.Group
+            Character? follower = state.Player.Party
                 .Where(character => character != leader && !character.Items.IsFull)
                 .OrderBy(character => character.Items.Count)
                 .FirstOrDefault();
@@ -124,14 +124,14 @@ internal static class GroupInventory
         if (leader.Items.Any(role) || leader.Items.IsFull)
             return;
 
-        Item? item = state.Player.Group
+        Item? item = state.Player.Party
             .Where(character => character != leader)
             .SelectMany(character => character.Items)
             .Where(role)
             .OrderByDescending(roleValue)
             .ThenByDescending(item => item.TradeValue)
             .FirstOrDefault();
-        Character? owner = item == null ? null : state.Player.Group
+        Character? owner = item == null ? null : state.Player.Party
             .First(character => character.Items.Contains(item));
         Room? room = null;
         if (item == null && state.CanCollectLocalLoot &&
@@ -193,10 +193,10 @@ internal static class GroupInventory
         Location current = state.Current;
         bool consumed = false;
         ItemType? reservedPayment = Recruitment.PlannedFutureSettlementPaymentType(state);
-        while (player.Character.Food <= 5 || player.Group.Any(character =>
+        while (player.Character.Food <= 5 || player.Party.Any(character =>
             character != player.Character && character.Food <= 3))
         {
-            List<(IItemCollection Owner, Item Food)> candidates = player.Group
+            List<(IItemCollection Owner, Item Food)> candidates = player.Party
                 .SelectMany(character => character.Items
                     .Where(item => item.FoodValue > 0 &&
                         reservedPayment != item.Type)
@@ -220,23 +220,23 @@ internal static class GroupInventory
                 .FirstOrDefault();
             if (candidate.Food == null)
                 break;
-            int foodCapacity = player.Group.Sum(character => character.MaxFood - character.Food);
+            int foodCapacity = player.Party.Sum(character => character.MaxFood - character.Food);
             if (candidate.Food.FoodValue > foodCapacity)
                 break;
-            player.Group.Eat(null, candidate.Food.FoodValue);
+            player.Party.Eat(null, candidate.Food.FoodValue);
             candidate.Owner.Remove(candidate.Food);
             consumed = true;
         }
 
-        while (player.Group.Any(character => character.Water <= 2))
+        while (player.Party.Any(character => character.Water <= 2))
         {
-            Item water = player.Group.SelectMany(character => character.Items)
+            Item water = player.Party.SelectMany(character => character.Items)
                 .Where(item => item.WaterValue > 0 && item.Type != reservedPayment)
                 .OrderByDescending(item => item.WaterValue)
                 .FirstOrDefault();
             if (water == null)
                 break;
-            player.Group.Drink(null, water.WaterValue);
+            player.Party.Drink(null, water.WaterValue);
             water.Type = water.Type.Empty;
             consumed = true;
         }
@@ -245,7 +245,7 @@ internal static class GroupInventory
 
     internal static void RemoveAdviceItems(ClassicAiState state)
     {
-        IEnumerable<IItemCollection> inventories = state.Player.Group
+        IEnumerable<IItemCollection> inventories = state.Player.Party
             .Select(character => (IItemCollection)character.Items)
             .Concat(state.RootGame.World.Locations
                 .Where(location => location.Player == state.Player)

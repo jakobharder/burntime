@@ -119,7 +119,7 @@ class MapViewOverlayNearbyAction : IMapViewOverlay
         var characters = new HashSet<Character>();
         foreach (Character character in location.Characters)
             characters.Add(character);
-        foreach (Character character in player.Group)
+        foreach (Character character in player.Party)
             characters.Add(character);
 
         foreach (Character character in characters)
@@ -127,7 +127,7 @@ class MapViewOverlayNearbyAction : IMapViewOverlay
             if (character == selectedCharacter || character.IsDead ||
                 character.IsPlayerCharacter && character.Player.IsDead ||
                 app.LastInputMode is (InputMode.Keyboard or InputMode.Gamepad) &&
-                player.Group.Contains(character))
+                player.Party.Contains(character))
                 continue;
 
             float distance = (character.Position - selectedCharacter.Position).Length;
@@ -183,7 +183,7 @@ class MapViewOverlayNearbyAction : IMapViewOverlay
     {
         if (character.Player != null)
         {
-            return character.Player.Group.Contains(character)
+            return character.Player.Party.Contains(character)
                 ? character.Player.Color
                 : character.Player.ColorDark;
         }

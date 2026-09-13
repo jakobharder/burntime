@@ -18,7 +18,7 @@ internal static class Construction
         if (wanted.Length == 0)
             return;
 
-        List<IItemCollection> sources = state.Player.Group
+        List<IItemCollection> sources = state.Player.Party
             .Select(character => (IItemCollection)character.Items)
             .ToList();
         Item result = state.RootGame.Constructions.TryConstructAny(
@@ -44,7 +44,7 @@ internal static class Construction
                     .Where(item => character.Weapon != item && character.Protection != item)
                     .Select(item => ((IItemCollection)character.Items, item))));
         }
-        available.AddRange(state.Player.Group
+        available.AddRange(state.Player.Party
             .SelectMany(character => character.Items
                 .Where(item => character.Weapon != item && character.Protection != item)
                 .Select(item => ((IItemCollection)character.Items, item))));

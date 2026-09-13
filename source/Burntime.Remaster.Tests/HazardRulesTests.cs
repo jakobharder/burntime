@@ -72,7 +72,7 @@ static class HazardRulesTests
                 Equal(1, character.DeathCalls, "stationed AI dies at daily check");
                 character.Health = 100;
                 character.DeathCalls = 0;
-                owner.Group.Add(character);
+                owner.Party.Add(character);
                 HazardRules.ApplyDaily(character);
                 Equal(100, character.Health, "active AI party skips daily check");
 

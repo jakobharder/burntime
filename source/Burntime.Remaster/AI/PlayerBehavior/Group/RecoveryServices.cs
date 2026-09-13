@@ -34,7 +34,7 @@ internal static class RecoveryServices
 
         int food = 0;
         int water = 0;
-        foreach (Character character in state.Player.Group)
+        foreach (Character character in state.Player.Party)
         {
             if (character == state.Player.Character && state.OwnedCampCount == 0)
                 continue;
@@ -60,11 +60,11 @@ internal static class RecoveryServices
         // already owns. This keeps long city corridors viable without creating
         // inventory or turning the city into an indefinite source of supplies.
         Item[] refilled = refillContainers
-            ? state.Player.Group.GetEmptyWaterItems()
+            ? state.Player.Party.GetEmptyWaterItems()
             .Select(entry => entry.Item)
             .OrderByDescending(item =>
                 AiItemPool.WaterContainerCapacity(item.Type))
-            .Take(state.Player.Group.Count)
+            .Take(state.Player.Party.Count)
             .ToArray()
             : Array.Empty<Item>();
         foreach (Item item in refilled)
@@ -83,7 +83,7 @@ internal static class RecoveryServices
         if (!HasDoctor(state.Current))
             return;
 
-        foreach (Character patient in player.Group
+        foreach (Character patient in player.Party
             .Where(character => character.Health <= 40)
             .OrderBy(character => character.Health))
         {
@@ -104,10 +104,10 @@ internal static class RecoveryServices
     }
 
     internal static int RequiredReturnFoodInventory(ClassicAiState state) =>
-        state.Player.Group.Sum(character => Math.Max(0, ReturnTripSupply - character.Food));
+        state.Player.Party.Sum(character => Math.Max(0, ReturnTripSupply - character.Food));
 
     internal static int RequiredReturnWaterInventory(ClassicAiState state) =>
-        state.Player.Group.Sum(character => Math.Max(0, ReturnTripSupply - character.Water));
+        state.Player.Party.Sum(character => Math.Max(0, ReturnTripSupply - character.Water));
 
     internal enum TripMode
     {
@@ -120,9 +120,9 @@ internal static class RecoveryServices
         NeedsCityRecoveryStaging(state);
 
     internal static bool NeedsRecovery(Player player, int waterDays) =>
-        player.Group.Any(character => character.Health < 40) ||
-        player.Group.GetLowestFoodWithInventory() <= 3 ||
-        player.Group.GetLowestWaterWithInventory() <= waterDays;
+        player.Party.Any(character => character.Health < 40) ||
+        player.Party.GetLowestFoodWithInventory() <= 3 ||
+        player.Party.GetLowestWaterWithInventory() <= waterDays;
 
     internal static Location? FindDestination(
         ClassicAiState state,
@@ -130,13 +130,13 @@ internal static class RecoveryServices
         TripMode tripMode = TripMode.Normal)
     {
         Player player = state.Player;
-        bool needsFood = player.Group.GetLowestFoodWithInventory() <= 3;
-        bool needsWater = player.Group.GetLowestWaterWithInventory() <=
+        bool needsFood = player.Party.GetLowestFoodWithInventory() <= 3;
+        bool needsWater = player.Party.GetLowestWaterWithInventory() <=
             AiPolicy.ForDifficulty(state.Difficulty).RecoveryWaterDays;
-        bool needsDoctor = player.Group.Any(character => character.Health <= 40);
-        bool starvationEmergency = player.Group.Any(character => character.Food <= 1);
-        bool dehydrated = player.Group.Any(character => character.Water == 0);
-        bool canPayDoctor = player.Group
+        bool needsDoctor = player.Party.Any(character => character.Health <= 40);
+        bool starvationEmergency = player.Party.Any(character => character.Food <= 1);
+        bool dehydrated = player.Party.Any(character => character.Water == 0);
+        bool canPayDoctor = player.Party
             .SelectMany(character => character.Items)
             .Any(item => item.HealValue > 0);
 
@@ -193,8 +193,8 @@ internal static class RecoveryServices
         if (CanSustainLocally(state))
             return false;
 
-        return state.Player.Group.Any(character => character.Food <= 1) ||
-            state.Player.Group.Any(character => character.Water == 0);
+        return state.Player.Party.Any(character => character.Food <= 1) ||
+            state.Player.Party.Any(character => character.Water == 0);
     }
 
     internal static bool NeedsCityRecoveryStaging(ClassicAiState state)
@@ -209,7 +209,7 @@ internal static class RecoveryServices
         return !state.RootGame.World.Locations
             .Where(location => location.Player == player &&
                 CampEconomy.CanProvisionFood(location) &&
-                CampEconomy.CanProvisionGroupWater(location, player.Group.Count))
+                CampEconomy.CanProvisionGroupWater(location, player.Party.Count))
             .Select(location => RouteFinder.Find(player, state.Current, location))
             .Any(route => route != null && TravelSupplies.HasRouteSupplies(
                 player, route, hostileTarget: false));
@@ -218,8 +218,8 @@ internal static class RecoveryServices
     internal static Location? FindLastChanceDestination(ClassicAiState state)
     {
         Player player = state.Player;
-        bool starving = player.Group.Any(character => character.Food <= 1);
-        bool dehydrated = player.Group.Any(character => character.Water == 0);
+        bool starving = player.Party.Any(character => character.Food <= 1);
+        bool dehydrated = player.Party.Any(character => character.Water == 0);
         if (!starving && !dehydrated)
             return null;
 
@@ -254,12 +254,12 @@ internal static class RecoveryServices
     {
         Player player = state.Player;
         Location current = state.Current;
-        bool needsFood = player.Group.Any(character => character.Food <= 3);
-        bool needsWater = player.Group.Any(character => character.Water <= 2);
+        bool needsFood = player.Party.Any(character => character.Food <= 3);
+        bool needsWater = player.Party.Any(character => character.Water <= 2);
         bool hasFood = !needsFood || current.Player == player &&
-            CampEconomy.FoodSurplusPerDay(current) >= player.Group.Count;
+            CampEconomy.FoodSurplusPerDay(current) >= player.Party.Count;
         bool hasWater = !needsWater || current.Player == player &&
-            CampEconomy.WaterSurplusPerDay(current) >= player.Group.Count;
+            CampEconomy.WaterSurplusPerDay(current) >= player.Party.Count;
         return hasFood && hasWater;
     }
 
@@ -270,12 +270,12 @@ internal static class RecoveryServices
         if (current.Player != player)
             return false;
 
-        bool needsFood = player.Group.Any(character => character.Food <= 3);
-        bool needsWater = player.Group.Any(character => character.Water <= 2);
+        bool needsFood = player.Party.Any(character => character.Food <= 3);
+        bool needsWater = player.Party.Any(character => character.Water <= 2);
         bool canBuildFood = !needsFood ||
-            CampEconomy.FoodSurplusPerDay(current) > player.Group.Count;
+            CampEconomy.FoodSurplusPerDay(current) > player.Party.Count;
         bool canBuildWater = !needsWater ||
-            CampEconomy.WaterSurplusPerDay(current) > player.Group.Count;
+            CampEconomy.WaterSurplusPerDay(current) > player.Party.Count;
         return canBuildFood && canBuildWater;
     }
 
@@ -286,16 +286,16 @@ internal static class RecoveryServices
 
         Player player = state.Player;
         Location current = state.Current;
-        bool needsFood = player.Group.Any(character => character.Food <= 3);
-        bool needsWater = player.Group.Any(character => character.Water <= 2);
+        bool needsFood = player.Party.Any(character => character.Food <= 3);
+        bool needsWater = player.Party.Any(character => character.Water <= 2);
         bool neighboringFoodSupport = Enumerable.Range(0, current.Neighbors.Count)
             .Any(index => current.WayLengths[index] > 0 &&
                 current.Neighbors[index].Player == player &&
                 CampEconomy.FoodSurplusPerDay(current.Neighbors[index]) > 0);
         bool canBuildFood = !needsFood || neighboringFoodSupport ||
-            CampEconomy.FoodSurplusPerDay(current) > player.Group.Count;
+            CampEconomy.FoodSurplusPerDay(current) > player.Party.Count;
         bool canBuildWater = !needsWater ||
-            CampEconomy.WaterSurplusPerDay(current) > player.Group.Count;
+            CampEconomy.WaterSurplusPerDay(current) > player.Party.Count;
         return canBuildFood && canBuildWater;
     }
 
@@ -313,10 +313,10 @@ internal static class RecoveryServices
 
         // Production must do more than feed the visiting group while it waits;
         // only the excess can build the reserve needed for the journey home.
-        bool canBuildFoodReserve = foodSurplus > player.Group.Count;
+        bool canBuildFoodReserve = foodSurplus > player.Party.Count;
         bool hasReturnFood = CanCoverReturnRoute(
-            player.Group.Select(character => character.Food).ToArray(),
-            player.Group.GetFoodInInventory(),
+            player.Party.Select(character => character.Food).ToArray(),
+            player.Party.GetFoodInInventory(),
             outbound.Days,
             returnRoute.Days,
             destinationStock: 0,
@@ -326,10 +326,10 @@ internal static class RecoveryServices
         int waterSurplus = !destination.IsCity
             ? CampEconomy.WaterSurplusPerDay(destination)
             : 0;
-        bool canBuildWaterReserve = waterSurplus > player.Group.Count;
+        bool canBuildWaterReserve = waterSurplus > player.Party.Count;
         bool hasReturnWater = CanCoverReturnRoute(
-            player.Group.Select(character => character.Water).ToArray(),
-            player.Group.GetWaterInInventory(),
+            player.Party.Select(character => character.Water).ToArray(),
+            player.Party.GetWaterInInventory(),
             outbound.Days,
             returnRoute.Days,
             destinationStock: 0,
@@ -378,7 +378,7 @@ internal static class RecoveryServices
             CampEconomy.FoodSurplusPerDay(location) > 0;
         if (needsFood)
         {
-            if (producingCampFood || citySupplyAid && player.Group.Any(character => character.Food < CityMinimum))
+            if (producingCampFood || citySupplyAid && player.Party.Any(character => character.Food < CityMinimum))
                 score += starving ? 10 : 3;
         }
 
@@ -387,7 +387,7 @@ internal static class RecoveryServices
         if (needsWater)
         {
             if (replenishingLocalWater || citySupplyAid &&
-                (player.Group.Any(character => character.Water < CityMinimum) || player.Group.GetEmptyWaterItems().Any()))
+                (player.Party.Any(character => character.Water < CityMinimum) || player.Party.GetEmptyWaterItems().Any()))
                 score += dehydrated ? 10 : 1;
         }
         if (needsDoctor)
@@ -430,7 +430,7 @@ internal static class RecoveryServices
         if (destination.IsCity && state.OwnedCampCount > 0)
             return HasSafeOnwardRecovery(state, destination, outbound);
         if (destination.Player == player && CampEconomy.CanProvisionFood(destination) &&
-            CampEconomy.CanProvisionGroupWater(destination, player.Group.Count))
+            CampEconomy.CanProvisionGroupWater(destination, player.Party.Count))
             return true;
         return HasSafeOnwardRecovery(state, destination, outbound);
     }
@@ -444,7 +444,7 @@ internal static class RecoveryServices
         return state.RootGame.World.Locations
             .Where(location => location != destination && location.Player == player &&
                 CampEconomy.CanProvisionFood(location) &&
-                CampEconomy.CanProvisionGroupWater(location, player.Group.Count))
+                CampEconomy.CanProvisionGroupWater(location, player.Party.Count))
             .Select(location => RouteFinder.Find(player, destination, location))
             .Where(route => route != null)
             .Any(onward => CanProvisionReturnTrip(
@@ -455,7 +455,7 @@ internal static class RecoveryServices
         .Any(entrance => entrance.RoomType == RoomType.Doctor) == true;
 
     internal static bool NeedsDoctorPayment(ClassicAiState state) =>
-        state.Player.Group.Any(character => character.Health <= 40) &&
+        state.Player.Party.Any(character => character.Health <= 40) &&
         HasDoctor(state.Current);
 
     static Payment[] BuildDoctorPayment(
@@ -463,7 +463,7 @@ internal static class RecoveryServices
         int needed,
         float benefit)
     {
-        List<Payment> candidates = state.Player.Group
+        List<Payment> candidates = state.Player.Party
             .SelectMany(character => character.Items.Select(item =>
                 new Payment(character.Items, item,
                     Trading.CanSell(state, item))))

@@ -60,7 +60,7 @@ namespace Burntime.Remaster.Maps
                 PixelColor color;
                 if (hoveredChar.Player != null)
                 {
-                    if (hoveredChar.Player.Group.Contains(hoveredChar))
+                    if (hoveredChar.Player.Party.Contains(hoveredChar))
                         color = hoveredChar.Player.Color;
                     else
                         color = hoveredChar.Player.ColorDark;
@@ -104,8 +104,8 @@ namespace Burntime.Remaster.Maps
 
                 if (_currentPlayer != null)
                 {
-                    for (int i = 0; i < _currentPlayer.Group.Count; i++)
-                        characters.Add(_currentPlayer.Group[i]);
+                    for (int i = 0; i < _currentPlayer.Party.Count; i++)
+                        characters.Add(_currentPlayer.Party[i]);
                 }
 
                 if (RenderShadow)
@@ -178,14 +178,14 @@ namespace Burntime.Remaster.Maps
 
             if (_currentPlayer != null)
             {
-                for (int i = 0; i < _currentPlayer.Group.Count; i++)
+                for (int i = 0; i < _currentPlayer.Party.Count; i++)
                 {
-                    Vector2 distance = _currentPlayer.Group[i].Position - position;
+                    Vector2 distance = _currentPlayer.Party[i].Position - position;
                     // align to bottom center
-                    distance.y -= _currentPlayer.Group[i].Body.Object.Height / 2;
+                    distance.y -= _currentPlayer.Party[i].Body.Object.Height / 2;
 
                     if (distance.Length < 10)
-                        obj = _currentPlayer.Group[i];
+                        obj = _currentPlayer.Party[i];
                 }
             }
 

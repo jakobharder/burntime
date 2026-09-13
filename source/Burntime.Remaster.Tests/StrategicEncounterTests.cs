@@ -23,7 +23,7 @@ static class StrategicEncounterTests
                 var (game, attacker, defender, manager) = EncounterPlayers(RuleSet.Extended);
                 var guard = EncounterFighter(manager, defender, 100, 1);
                 var follower = EncounterFighter(manager, attacker, startingHealth, 10);
-                attacker.Group.Add(follower);
+                attacker.Party.Add(follower);
                 var result = Burntime.Remaster.AI.StrategicEncounter.Fight(game, attacker, defender, new[] { guard }, false);
                 Equal(89, guard.Health, "injured follower gets its attack; boss exchange alone does not cause withdrawal");
                 Equal(startingHealth - 1, follower.Health, "new retaliation damage triggers safety rule");
@@ -36,7 +36,7 @@ static class StrategicEncounterTests
             var weakGuard = EncounterFighter(manager, defender, 2, 1);
             var otherGuard = EncounterFighter(manager, defender, 100, 1);
             var follower = EncounterFighter(manager, attacker, 30, 10);
-            attacker.Group.Add(follower);
+            attacker.Party.Add(follower);
             var result = Burntime.Remaster.AI.StrategicEncounter.Fight(game, attacker, defender,
                 new[] { weakGuard, otherGuard }, false);
             Equal(true, weakGuard.IsDead, "raid can make progress despite old injury");
@@ -52,7 +52,7 @@ static class StrategicEncounterTests
                 var (game, attacker, defender, manager) = EncounterPlayers(rule);
                 var guard = EncounterFighter(manager, defender, 100, 60);
                 var follower = EncounterFighter(manager, attacker, 100, 1);
-                attacker.Group.Add(follower);
+                attacker.Party.Add(follower);
                 var result = Burntime.Remaster.AI.StrategicEncounter.Fight(game, attacker, defender,
                     new[] { guard }, false);
                 Equal(40, attacker.Character.Health, "boss receives immediate retaliation");
@@ -66,7 +66,7 @@ static class StrategicEncounterTests
                 var (game, attacker, defender, manager) = EncounterPlayers(rule);
                 attacker.Character.Items.Clear();
                 attacker.Character.Items.Add(TestItem(manager, "item_knife", damage: 40, damageValues: new[] { 40 }));
-                attacker.Group.Add(EncounterFighter(manager, attacker, 100, 1));
+                attacker.Party.Add(EncounterFighter(manager, attacker, 100, 1));
                 var result = Burntime.Remaster.AI.StrategicEncounter.Fight(game, attacker, defender,
                     new[] { defender.Character }, false);
                 Equal(true, result.DefendingPartyDisengaged, "party disengages before a hit could cross 65");
@@ -89,7 +89,7 @@ static class StrategicEncounterTests
                 var (game, attacker, defender, manager) = EncounterPlayers(rule);
                 defender.Character.Health = 65;
                 var guard = EncounterFighter(manager, defender, 100, 60);
-                attacker.Group.Add(EncounterFighter(manager, attacker, 100, 1));
+                attacker.Party.Add(EncounterFighter(manager, attacker, 100, 1));
                 var result = Burntime.Remaster.AI.StrategicEncounter.Fight(game, attacker, defender,
                     new[] { guard, defender.Character }, false);
                 Equal(true, result.DefendingPartyDisengaged, "low-health boss disengages");

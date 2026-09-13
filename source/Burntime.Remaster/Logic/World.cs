@@ -108,9 +108,9 @@ namespace Burntime.Remaster.Logic
                             }
                         }
 
-                        for (int j = 1; j < Players[i].Group.Count; j++)
+                        for (int j = 1; j < Players[i].Party.Count; j++)
                         {
-                            Players[i].Group[j].Dismiss();
+                            Players[i].Party[j].Dismiss();
                         }
 
                         Players[i].IsDead = true;
@@ -127,8 +127,8 @@ namespace Burntime.Remaster.Logic
 
                 if (!Players[i].IsDead)
                 {
-                    for (int j = 0; j < Players[i].Group.Count; j++)
-                        Players[i].Group[j].Turn();
+                    for (int j = 0; j < Players[i].Party.Count; j++)
+                        Players[i].Party[j].Turn();
                 }
             }
 
