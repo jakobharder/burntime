@@ -31,7 +31,6 @@ namespace Burntime.Remaster
 
         const int PICKUP_DISTANCE = 20;
         const float NEXT_TURN_HOLD_TIME = 0.6f;
-        const float ATTACK_COOLDOWN_TIME = 0.5f;
         const float CHARACTER_NAME_ANNOUNCEMENT_TIME = 1.5f;
         const float CHARACTER_CYCLE_DEBOUNCE_TIME = 0.15f;
 
@@ -57,8 +56,7 @@ namespace Burntime.Remaster
         bool cursorShowsFight;
         bool characterCycleLatched;
         float characterCycleDebounce;
-        float attackCooldownRemaining;
-        Character? pendingAttackTarget;
+        LocalCombatEncounter? combatEncounter;
         readonly ManualWindow manualWindow;
 
         public LocationScene(Module App)
@@ -113,7 +111,6 @@ namespace Burntime.Remaster
             InputPromptOverlay promptOverlay = new(app, Prompts,
                 InputPromptColorScheme.Hud);
             Windows += promptOverlay;
-            promptOverlay.Layer = cursorAni.Layer - 3;
             Windows += manualWindow = new ManualWindow(app, Size);
             Prompts.SuppressWhen(() => dialog.IsVisible || menu.IsVisible ||
                 manualWindow.IsVisible);
@@ -223,31 +220,26 @@ namespace Burntime.Remaster
 
         void AttackCharacter(Character targetCharacter)
         {
-            if (view.Location.IsCity || attackCooldownRemaining > 0)
+            if (view.Location.IsCity)
                 return;
 
             // only if not player owned
             if (view.Player != targetCharacter.Player)
-            {
-                if (30 > (charOverlay.SelectedCharacter.Position - targetCharacter.Position).Length)
-                {
-                    TryAttack(charOverlay.SelectedCharacter, targetCharacter);
-                }
-                else
-                {
-                    MoveCharacter(targetCharacter, targetCharacter);
-                }
-            }
+                TryAttack(charOverlay.SelectedCharacter, targetCharacter);
         }
 
         bool TryAttack(Character attacker, Character defender)
         {
-            if (attackCooldownRemaining > 0)
+            if (attacker.IsDead || defender.IsDead || view.Location.IsCity)
+                return false;
+            if (combatEncounter != null && !combatEncounter.IsComplete)
                 return false;
 
-            attacker.Attack(defender);
-            attacker.CancelAction();
-            attackCooldownRemaining = ATTACK_COOLDOWN_TIME;
+            IEnumerable<Character> attackers = attacker.Player != null &&
+                attacker.Player.Character == attacker && !attacker.Player.SingleMode
+                ? attacker.Player.Party.ToArray()
+                : new[] { attacker };
+            combatEncounter = new LocalCombatEncounter(attackers, defender);
             return true;
         }
 
@@ -506,8 +498,6 @@ namespace Burntime.Remaster
 
         public override void OnUpdate(float Elapsed)
         {
-            attackCooldownRemaining = System.Math.Max(0,
-                attackCooldownRemaining - Elapsed);
             characterCycleDebounce = System.Math.Max(0, characterCycleDebounce - Elapsed);
             if (characterCycleLatched &&
                 !app.IsInputActionDown(InputAction.LeftArea) &&
@@ -534,6 +524,9 @@ namespace Burntime.Remaster
 
             game.World.ActiveLocationObj.Update(Elapsed);
             game.World.ActivePlayerObj.Update(Elapsed);
+            combatEncounter?.Update(Elapsed);
+            if (combatEncounter?.IsComplete == true)
+                combatEncounter = null;
 
             if (app.MouseInputVisible)
                 followSelectedCharacter = false;
@@ -549,6 +542,7 @@ namespace Burntime.Remaster
             if (game.World.Time <= 0 || game.World.ActivePlayerObj.IsDead)
             {
                 app.ActiveClient.Finish();
+                app.SceneManager.BlendMusicThroughNextBridge();
                 app.SceneManager.SetScene("WaitScene");
             }
 
@@ -612,6 +606,9 @@ namespace Burntime.Remaster
 
         bool CanShowFightPrompt()
         {
+            if (combatEncounter != null && !combatEncounter.IsComplete)
+                return false;
+
             if (app.LastInputMode == InputMode.Mouse)
             {
                 return (interactionMode is LocationInteractionMode.Auto or
@@ -779,6 +776,12 @@ namespace Burntime.Remaster
 
             if (direction != Vector2.Zero)
             {
+                // A held direction is sampled after discrete input. Do not let
+                // an arrow key or gamepad stick cancel an attack accepted
+                // earlier in this same frame, or evade its owed retaliation.
+                if (selectedCharacter.IsCommittedToCombat)
+                    return false;
+                combatEncounter?.CancelOffense();
                 if (selectedCharacter.Path is not PathFinding.ManualPath)
                 {
                     selectedCharacter.CancelAction();
@@ -811,7 +814,8 @@ namespace Burntime.Remaster
         protected override void OnActivateScene(object parameter)
         {
             interactionMode = LocationInteractionMode.Auto;
-            pendingAttackTarget = null;
+            combatEncounter?.Cancel();
+            combatEncounter = null;
             nextTurnHoldTime = 0;
             nextTurnTriggered = false;
             cameraPanActive = false;
@@ -883,6 +887,8 @@ namespace Burntime.Remaster
 
         protected override void OnInactivateScene()
         {
+            combatEncounter?.Cancel();
+            combatEncounter = null;
             view.Player?.SelectedCharacter?.CancelAction();
             manuallyMovedCharacter = null;
             app.RenderMouse = true;
@@ -1182,6 +1188,7 @@ namespace Burntime.Remaster
 
         public void OnMenuTurn()
         {
+            app.SceneManager.BlendMusicThroughNextBridge();
             app.SceneManager.SetScene("WaitScene");
             app.SceneManager.BlockBlendIn();
             app.ActiveClient.Finish();
@@ -1212,7 +1219,7 @@ namespace Burntime.Remaster
             MapEntrance entrance = loc.Map.Entrances[Number];
 
             EntranceObject entranceObject = new EntranceObject(entrance, Number);
-            pendingAttackTarget = null;
+            combatEncounter?.CancelOffense();
             EnsureAutomaticPath(charOverlay.SelectedCharacter);
             charOverlay.SelectedCharacter.Mind.MoveToObject(new InteractionObject(entranceObject,
                 loc.Rooms[Number].EntryCondition, this));
@@ -1222,15 +1229,14 @@ namespace Burntime.Remaster
 
         public void OnMouseClickMap(Vector2 position, MouseButton button)
         {
-            pendingAttackTarget = null;
+            combatEncounter?.CancelOffense();
             EnsureAutomaticPath(charOverlay.SelectedCharacter);
             charOverlay.SelectedCharacter.Mind.MoveToObject(null);
             charOverlay.SelectedCharacter.Path.MoveTo = position;
         }
 
-        void MoveCharacter(IMapObject obj, Character? attackTarget = null)
+        void MoveCharacter(IMapObject obj)
         {
-            pendingAttackTarget = attackTarget;
             EnsureAutomaticPath(charOverlay.SelectedCharacter);
             charOverlay.SelectedCharacter.Mind.MoveToObject(new InteractionObject(obj, this));
         }
@@ -1248,15 +1254,6 @@ namespace Burntime.Remaster
             else if (obj is Character)
             {
                 Character ch = (Character)obj;
-                bool isPendingAttack = ch == pendingAttackTarget;
-                pendingAttackTarget = null;
-
-                if (isPendingAttack)
-                {
-                    TryAttack(actor, ch);
-                    return true;
-                }
-
                 if (view.Player.Party.Contains(ch) || ch.Player == view.Player)
                 {
                     return true;

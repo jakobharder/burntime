@@ -23,6 +23,7 @@ static class Program
         Run("recovery and frontier equipment", EquipmentPlanningTests.RecoveryAndEquipmentCases());
         Run("strategic encounters", StrategicEncounterTests.StrategicEncounterCases());
         Run("local combat lifecycle", CombatResolverTests.LocalCombatCases());
+        Run("local combat encounters", CombatResolverTests.EncounterCases());
         Run("doctor locality", CharacterTests.DoctorLocalityCases());
         Run("combat experience", RuleFormulasTests.CombatExperienceCases());
         Run("experience tiers", RuleFormulasTests.ExperienceTierCases());
@@ -147,12 +148,14 @@ static class Program
     }
 
     internal static Item TestItem(Burntime.Framework.States.StateManager manager,
-        string id, int food = 0, int damage = 0, int heal = 0, float trade = 0, int[]? damageValues = null, int ammo = 0, int defense = 0)
+        string id, int food = 0, int damage = 0, int heal = 0, float trade = 0,
+        int[]? damageValues = null, int ammo = 0, int defense = 0, int attackRange = 0)
     {
         var data = new Burntime.Remaster.Logic.Data.ItemTypeData
         {
             DataName = id, FoodValue = food, DamageValue = damage, HealValue = heal, TradeValue = trade,
             DamageValues = damageValues ?? Array.Empty<int>(), AmmoValue = ammo, DefenseValue = defense,
+            AttackRange = attackRange,
             Class = Array.Empty<string>(), Protection = Array.Empty<string>()
         };
         var type = manager.Create<Burntime.Remaster.Logic.ItemType>(data);

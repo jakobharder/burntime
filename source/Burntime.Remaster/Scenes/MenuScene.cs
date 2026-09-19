@@ -913,6 +913,8 @@ public class MenuScene : Scene
             return;
 
         app.Engine.BlendOverlay.FadeOut();
+        if (BurntimeClassic.Instance.MapMusicMode == MapMusicMode.Keep)
+            app.Engine.Music.PlayPlaylist();
 
         GameCreation creation = new GameCreation(app as BurntimeClassic);
 

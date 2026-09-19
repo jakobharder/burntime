@@ -63,6 +63,14 @@ namespace Burntime.Remaster.Logic
         float fleeTimeRemaining;
         [NonSerialized]
         Vector2 fleeDestination;
+        [NonSerialized]
+        Character fleeFromCharacter;
+        [NonSerialized]
+        Character combatApproachTarget;
+        [NonSerialized]
+        float combatApproachRange;
+        [NonSerialized]
+        bool combatHold;
 
         const float WALK_SPEED = 35;
         const float CONTROLLED_WALK_SPEED = 50;
@@ -74,6 +82,10 @@ namespace Burntime.Remaster.Logic
         // Vertical facing covers 65 degrees to either side of the vertical axis,
         // leaving a 25-degree cone around each horizontal direction.
         const float VERTICAL_FACING_MIN_SLOPE = 0.46630767f; // tan(25 degrees)
+
+        internal bool IsFleeing => fleeTimeRemaining > 0;
+        internal bool IsHeldForCombat => combatHold;
+        internal bool IsCommittedToCombat => combatHold || combatApproachTarget != null;
 
         // some helper attributes
         public bool IsWithBoss
@@ -498,9 +510,121 @@ namespace Burntime.Remaster.Logic
             Mind.MoveToObject(null);
         }
 
-        public bool IsInAttackRange(Character target)
+        internal float AttackRange
         {
-            return (Position - target.Position).Length < 30;
+            get
+            {
+                // Amiga uses a short innate range for mutants and a wider
+                // autonomous range for dogs/traders. Inventory-using characters
+                // take the range from the weapon selected by normal combat.
+                if (Class == CharClass.Mutant)
+                    return 16;
+                if (Class is CharClass.Dog or CharClass.Trader)
+                    return 24;
+
+                Item? selected = Items == null ? null : FindOriginalWeapon();
+                return selected?.Type.AttackRange > 0
+                    ? selected.Type.AttackRange
+                    : 16;
+            }
+        }
+
+        public bool IsInAttackRange(Character target) =>
+            IsInAttackRange(target, AttackRange);
+
+        internal bool IsInAttackRange(Character target, float range)
+        {
+            Vector2f difference = Position - target.Position;
+            return difference.x * difference.x + difference.y * difference.y <= range * range;
+        }
+
+        internal void BeginCombatApproach(Character target, float range)
+        {
+            // A new attack starts a new exchange. Do not let the retreat from
+            // the previous exchange override this approach for several seconds;
+            // the encounter will start a fresh flee after all new responses.
+            fleeTimeRemaining = 0;
+            fleeFromCharacter = null;
+            fleeDestination = Position;
+            combatHold = false;
+            combatApproachTarget = target;
+            combatApproachRange = range;
+            Mind?.MoveToObject(null);
+            if (Path == null || Path is PathFinding.ManualPath)
+            {
+                Path = container.Create<PathFinding.ComplexPath>();
+                Path.MoveTo = Position;
+            }
+
+            // Replace an existing formation or autonomous route immediately.
+            // Subsequent updates can track a moving target without replanning
+            // every frame.
+            if (Path is PathFinding.ComplexPath complexPath)
+                complexPath.UpdateMovingTarget(target.Position, forceRepath: true);
+            else
+                Path.MoveTo = target.Position;
+        }
+
+        internal void ClearCombatApproach(Character target)
+        {
+            if (combatApproachTarget != target)
+                return;
+
+            combatApproachTarget = null;
+            combatApproachRange = 0;
+            Path?.Stop(Position);
+        }
+
+        internal void HoldForCombat()
+        {
+            fleeTimeRemaining = 0;
+            fleeFromCharacter = null;
+            fleeDestination = Position;
+            combatApproachTarget = null;
+            combatApproachRange = 0;
+            combatHold = true;
+            Mind?.MoveToObject(null);
+            Path?.Stop(Position);
+        }
+
+        internal void ReleaseCombatHold()
+        {
+            combatHold = false;
+        }
+
+        void UpdateCombatApproach()
+        {
+            Character target = combatApproachTarget;
+            if (target == null)
+                return;
+            if (target.IsDead || target.Location != Location)
+            {
+                ClearCombatApproach(target);
+                return;
+            }
+
+            if (IsInAttackRange(target, combatApproachRange))
+            {
+                Path?.Stop(Position);
+                return;
+            }
+
+            if (Path is PathFinding.ComplexPath complexPath)
+                complexPath.UpdateMovingTarget(target.Position, forceRepath: false);
+            else if (Path != null)
+                Path.MoveTo = target.Position;
+        }
+
+        internal bool ResolveSingleAttack(Character defender, bool useAmmo = true)
+        {
+            if (IsDead || defender.IsDead)
+                return false;
+
+            Root.RuleBook.DealAttackDamage(this, defender, useAmmo);
+            container.Notify(new AttackEvent(this, defender));
+            if (defender.Player?.AiState is AI.ClassicAiState strategicAi)
+                strategicAi.RecordAttack(this, defender);
+            return true;
         }
 
         public void Attack(Character defender, bool defendWithAmmo = true)
@@ -594,7 +718,9 @@ namespace Burntime.Remaster.Logic
             }
         }
 
-        void FleeFrom(Character attacker)
+        internal void BeginFleeFrom(Character attacker) => FleeFrom(attacker);
+
+        Vector2 FindFleeDestination(Character attacker)
         {
             Vector2f direction = Position - attacker.Position;
             if (direction.Length < 0.1f)
@@ -607,35 +733,44 @@ namespace Burntime.Remaster.Logic
 
             Vector2 destination = Position + (Vector2)(direction * FLEE_DISTANCE);
             Location? location = Location ?? Player?.Location;
-            if (location is not null && !location.Map.Mask.IsWalkableMapPosition(destination))
+            if (location is null || location.Map.Mask.IsWalkableMapPosition(destination))
+                return destination;
+
+            // Try nearby escape angles when the direct route ends outside the
+            // walkable map. Prefer continuing generally away from the attacker.
+            float[] angles = { 45, -45, 90, -90, 135, -135, 180 };
+            foreach (float angle in angles)
             {
-                // Try nearby escape angles when the direct route ends outside the
-                // walkable map. Prefer continuing generally away from the attacker.
-                float[] angles = { 45, -45, 90, -90 };
-                foreach (float angle in angles)
+                float radians = angle * (float)System.Math.PI / 180;
+                float cos = (float)System.Math.Cos(radians);
+                float sin = (float)System.Math.Sin(radians);
+                Vector2f alternative = new(
+                    direction.x * cos - direction.y * sin,
+                    direction.x * sin + direction.y * cos);
+                Vector2 candidate = Position + (Vector2)(alternative * FLEE_DISTANCE);
+                if (location.Map.Mask.IsWalkableMapPosition(candidate))
                 {
-                    float radians = angle * (float)System.Math.PI / 180;
-                    float cos = (float)System.Math.Cos(radians);
-                    float sin = (float)System.Math.Sin(radians);
-                    Vector2f alternative = new(
-                        direction.x * cos - direction.y * sin,
-                        direction.x * sin + direction.y * cos);
-                    Vector2 candidate = Position + (Vector2)(alternative * FLEE_DISTANCE);
-                    if (location.Map.Mask.IsWalkableMapPosition(candidate))
-                    {
-                        destination = candidate;
-                        break;
-                    }
+                    return candidate;
                 }
             }
 
+            return Position;
+        }
+
+        void FleeFrom(Character attacker)
+        {
+            Vector2 destination = FindFleeDestination(attacker);
             if (destination == Position)
                 return;
 
-            Mind.MoveToObject(null);
-            if (Path is PathFinding.ManualPath)
+            Mind?.MoveToObject(null);
+            combatHold = false;
+            combatApproachTarget = null;
+            combatApproachRange = 0;
+            if (Path == null || Path is PathFinding.ManualPath)
                 Path = container.Create<PathFinding.ComplexPath>();
             Path.MoveTo = destination;
+            fleeFromCharacter = attacker;
             fleeDestination = destination;
             fleeTimeRemaining = FLEE_DURATION;
         }
@@ -835,7 +970,8 @@ namespace Burntime.Remaster.Logic
                 Path.Speed = FLEE_SPEED;
 
             bool isHovered = Location?.HoverCharacter == this;
-            bool isInTalkingDistance = IsHuman && !isActiveGroup && !isPlayerControlled &&
+            bool isInTalkingDistance = !combatHold && combatApproachTarget == null &&
+                fleeTimeRemaining <= 0 && IsHuman && !isActiveGroup && !isPlayerControlled &&
                 activePlayer?.SelectedCharacter != null &&
                 activePlayer.Location == Location &&
                 (activePlayer.SelectedCharacter.Position - Position).Length < TALKING_DISTANCE;
@@ -850,10 +986,11 @@ namespace Burntime.Remaster.Logic
             if (proximityPauseRemaining > 0)
             {
                 proximityPauseRemaining = System.Math.Max(0, proximityPauseRemaining - elapsed);
-                if (!isFleeing)
+                if (!isFleeing && combatApproachTarget == null)
                     Path.Speed = 0;
             }
-            if (isHovered && !isFleeing && !isActiveGroup && !isPlayerControlled)
+            if (isHovered && !isFleeing && combatApproachTarget == null &&
+                !isActiveGroup && !isPlayerControlled)
                 Path.Speed = 0;
 
             Vector2 old = new Vector2(position);
@@ -864,15 +1001,38 @@ namespace Burntime.Remaster.Logic
                 return;
             }
 
-            Mind.Process(elapsed);
+            // Combat movement owns the character until its strike is resolved.
+            // In particular, FellowerMind must not restore formation movement,
+            // and CreatureMind must not deliver an additional autonomous hit.
+            if (combatApproachTarget == null && fleeTimeRemaining <= 0 && !combatHold)
+                Mind.Process(elapsed);
+
+            // A local combat order temporarily takes precedence over formation
+            // following and ordinary autonomous movement. Fleeing is applied
+            // afterwards and therefore remains the final movement authority.
+            UpdateCombatApproach();
 
             if (fleeTimeRemaining > 0)
             {
                 fleeTimeRemaining = System.Math.Max(0, fleeTimeRemaining - elapsed);
-                if ((fleeDestination - Position).Length <= 2)
-                    fleeTimeRemaining = 0;
+                if (fleeTimeRemaining <= 0)
+                {
+                    fleeFromCharacter = null;
+                    Path.Stop(Position);
+                }
                 else
+                {
+                    // Reaching one segment does not end the retreat. Continue
+                    // choosing walkable destinations until the flee timer ends.
+                    if ((fleeDestination - Position).Length <= 4 &&
+                        fleeFromCharacter != null)
+                    {
+                        Vector2 nextDestination = FindFleeDestination(fleeFromCharacter);
+                        if (nextDestination != Position)
+                            fleeDestination = nextDestination;
+                    }
                     Path.MoveTo = fleeDestination;
+                }
             }
 
             Location loc = Location;

@@ -40,6 +40,7 @@ namespace Burntime.Remaster.Logic.Data
         public int ExperienceValue;
         public int DamageValue;
         public int? WeaponPriority;
+        public int AttackRange;
         public int[] DamageValues = Array.Empty<int>();
         public int DefenseValue;
         public int AmmoValue;

@@ -63,18 +63,21 @@ full=item_full_wineskin
 class=weapon trap
 burngfx=10
 weapon_priority=25
+attack_range=15
 damage=9 11 14 16 10 13 16 18 12 14 17 20 14 16 18 20
 
 [item_axe]
 class=weapon rare
 burngfx=11
 weapon_priority=33
+attack_range=20
 damage=9 11 15 20 9 12 17 22 10 14 19 25 13 17 21 25
 
 [item_pitchfork]
 class=weapon rare
 burngfx=12
 weapon_priority=38
+attack_range=28
 damage=4 7 10 20 5 8 11 21 6 9 12 25 9 12 16 25
 
 [item_loaded_rifle]
@@ -82,6 +85,7 @@ image_last_round=gfx/rifle.png
 class=weapon nodrop
 burngfx=13
 weapon_priority=55
+attack_range=32
 damage=0 6 14 15 0 10 17 20 5 13 19 25 8 16 25 40
 empty=item_unloaded_rifle
 ammo=6
@@ -309,6 +313,7 @@ value=150
 ammo=6
 empty=item_unloaded_pistol
 weapon_priority=55
+attack_range=32
 damage=4 7 9 11 6 9 12 15 9 12 16 18 13 18 22 26
 
 [item_unloaded_pistol]

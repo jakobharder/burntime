@@ -114,7 +114,6 @@ namespace Burntime.Remaster
             InputPromptOverlay promptOverlay = new(app, Prompts,
                 InputPromptColorScheme.Hud);
             Windows += promptOverlay;
-            promptOverlay.Layer = _cursorAni.Layer - 3;
             Windows += _manualWindow = new ManualWindow(app, Size);
             Prompts.SuppressWhen(() => _dialog.IsVisible || menu.IsVisible ||
                 _manualWindow.IsVisible);
@@ -384,6 +383,7 @@ namespace Burntime.Remaster
             if (game.World.Time <= 0)
             {
                 app.ActiveClient.Finish();
+                app.SceneManager.BlendMusicThroughNextBridge();
                 app.SceneManager.SetScene("WaitScene");
             }
 
@@ -1083,6 +1083,7 @@ namespace Burntime.Remaster
 
         public void OnMenuTurn()
         {
+            app.SceneManager.BlendMusicThroughNextBridge();
             app.SceneManager.SetScene("WaitScene");
             app.SceneManager.BlockBlendIn();
             app.ActiveClient.Finish();

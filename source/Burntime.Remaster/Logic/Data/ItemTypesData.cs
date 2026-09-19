@@ -104,6 +104,7 @@ namespace Burntime.Remaster.Logic.Data
                     throw new InvalidOperationException($"Invalid damage vector for {section.Name}: expected one value or four tiers of four rolls.");
                 type.DamageValue = section.Name == "" || type.DamageValues.Length == 0 ? 0 : (int)type.DamageValues.Average();
                 type.WeaponPriority = section.ContainsKey("weapon_priority") ? section.GetInt("weapon_priority") : null;
+                type.AttackRange = section.GetInt("attack_range");
                 type.Protection = section.GetStrings("protection");
                 type.Production = "";
                 type.Full = section.GetString("full");

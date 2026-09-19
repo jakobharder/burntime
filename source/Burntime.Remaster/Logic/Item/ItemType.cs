@@ -93,6 +93,7 @@ namespace Burntime.Remaster.Logic
         public int ExperienceValue => data.Object.ExperienceValue;
         public int DamageValue => data.Object.DamageValue;
         public int WeaponPriority => data.Object.WeaponPriority ?? DamageValue;
+        public int AttackRange => data.Object.AttackRange;
         public int[] DamageValues => data.Object.DamageValues;
         public int DefenseValue => data.Object.DefenseValue;
         public int AmmoValue => data.Object.AmmoValue;

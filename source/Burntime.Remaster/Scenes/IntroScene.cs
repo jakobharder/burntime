@@ -237,7 +237,6 @@ namespace Burntime.Remaster.Scenes
 
         private void NextScene()
         {
-            app.Engine.MusicBlend = true;
             app.SceneManager.SetScene("MenuScene");
         }
     }
