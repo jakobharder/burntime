@@ -117,7 +117,7 @@ namespace Burntime.Remaster.Scenes
             if (oldSpeed == 0)
                 oldSpeed = app.Engine.BlendOverlay.Speed;
 
-            app.Engine.Music.Volume = 0;
+            app.Engine.Music.SceneVolume = 0;
             app.Engine.BlendOverlay.Speed = 0.9f;
 
             app.Engine.MusicBlend = false;

@@ -454,11 +454,11 @@ public class RenderDevice : IDisposable
         if (!renderTextAfterXbr)
             BlendOverlay.Render(_spriteBatch);
         if (_engine.MusicSilenced)
-            _engine.Music.Volume = 0;
+            _engine.Music.SceneVolume = 0;
         else if (_engine.MusicBlend)
-            _engine.Music.Volume = _engine.MusicVolume * (1 - BlendOverlay.BlendState);
+            _engine.Music.SceneVolume = 1 - BlendOverlay.BlendState;
         else
-            _engine.Music.Volume = _engine.MusicVolume;
+            _engine.Music.SceneVolume = 1;
 
         if (_renderEntities != null)
         {

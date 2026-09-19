@@ -5,6 +5,7 @@ public interface IMusic
     bool Enabled { get; set; }
     bool IsMuted { get; set; }
     float Volume { get; set; }
+    float SceneVolume { get; set; }
     string? Playing { get; }
 
     bool CanPlay(string songName);
