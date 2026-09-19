@@ -1,0 +1,106 @@
+#EROBERUNG
+Um zu gewinnen, musst du die fünf Städte kontrollieren.
+Erobere dafür alle benachbarten Orte.
+In Städten kannst du rekrutieren, handeln
+und dich heilen lassen.
+@city
+#ERSTE SCHRITTE
+Rekrutiere jemanden und gründe dein erstes Lager.
+Finde einen Techniker und sammle Material für eine
+Rattenfalle, um Nahrung und Handelsware zu sammeln.
+@flag
+}#
+#TÄGLICHER BEDARF
+Jeder braucht täglich 1 Nahrung und 1 Wasser.
+Ohne Nahrung oder Wasser gehen 25 Gesundheit verloren.
+Sichere deine Versorgung mit eigenen Lagern.
+
+#WASSER
+Fülle leere Behälter an Wasserquellen auf.
+Größere Behälter fassen mehr Wasser.
+@supply-example|item_water_bottle
+#NAHRUNG
+Baue Fallen in Lagern für eine stetige
+Nahrungsproduktion.
+Lagere Nahrung für Handel und Rekrutierung.
+@supply-example|item_rats
+#GEFAHREN
+Die Ortsinfo zeigt Gefahren durch Gas und Strahlung.
+Schütze dich vor Gas und Strahlung,
+bevor du einen Ort betrittst.
+@supply-example|item_gas_mask
+}#
+#REKRUTIERUNG
+Sprich mit Überlebenden und bringe ihnen,
+was sie verlangen.
+Nimm Rekruten mit oder gründe mit ihnen ein Lager.
+
+#TECHNIKER
+Techniker bauen Fallen und Ausrüstung.
+@technician
+Lass einen Techniker Material untersuchen,
+um Baupläne zu entdecken.
+Kombiniere die benötigten Materialien,
+um den Gegenstand zu bauen.
+@construction|item_rat_trap
+#ARZT
+Über 70 Gesundheit erholt sich eine Person
+um 2 pro Tag.
+Mit einem Arzt sind es ab 50 Gesundheit 4 pro Tag.
+@doctor
+#SÖLDNER
+Die EP-Stufe von 1 bis 4 bestimmt den Waffenschaden.
+@tiers
+Bei Söldnern zählen alle EP,
+bei anderen Berufen die Hälfte.
+@mercenary
+}#
+#VERTEIDIGUNG
+Mehr Gefolgsleute stärken die Lagerverteidigung.
+#NAHRUNGSPRODUKTION
+Wähle aus, welche Nahrung das Lager produzieren soll.
+Lege bis zu zwei passende Werkzeuge oder Fallen
+im Lager ab.
+@production|item_rat_trap|item_rats
+#WASSERPRODUKTION
+Platziere eine Pumpe direkt in der Wasserquelle.
+Es kann immer nur eine Pumpe aktiv sein.
+@entry|item_industrial_pump
+}#
+#WAFFEN
+Waffen erhöhen den Schaden deiner Gefolgsleute.
+Mit mehr EP richten alle Waffen mehr Schaden an.
+@entry|item_knife
+#SCHUSSWAFFEN
+Schusswaffen richten hohen Schaden an,
+benötigen aber Munition.
+Kombiniere eine ungeladene Schusswaffe
+mit Munition, um sie zu laden.
+@entry|item_loaded_rifle
+@extended-only-begin
+#SCHUTZ
+Schutzkleidung verringert erlittenen Schaden.
+@entry|item_steel_helmet
+@extended-only-end
+}#
+Schaden S1: |A-|B / S4: |C-|D
+Tagesertrag: Nahrung für |A-|B Tage
+Wasser/Tag bei Quellwert 2: 2 / |B
+Gasschutz: |A%  Strahlenschutz: |B%
+|M
+Gefundene Ausrüstung
+benötigt Munition
+Nahrungswert: |A
+Wasserwert: |A
+Verteidigung: |A%
+Bietet Gasschutz.
+Enthält |A Tagesrationen.
+Liefert |A Tagesrationen.
+|A Nahrung pro Tag mit 1 Falle
+|A Nahrung pro Tag mit |B Fallen
+Verringert Schaden um |A%.
+Erzeugt |A Wasser pro Tag
+an einer |B-Wasser-Quelle
+|A-|B Schaden auf Stufe 1
+|A-|B Schaden auf Stufe 4
+}#

@@ -55,7 +55,7 @@ to get in there.}
 |D - day |J - |C
 Scaling SHARP
 Scaling SMOOTH
-toggle in-game with Alt+Enter
+toggle with Alt+Enter
 Map Music NONE
 Map Music KEEP
 Map Music LIST
@@ -107,7 +107,7 @@ Classic rules
 Amiga rules
 DOS AI players
 Amiga AI players
-Modern AI players
+Remaster AI players
 Extended rules
 Damage {damage}}
 Def. {defense}%}

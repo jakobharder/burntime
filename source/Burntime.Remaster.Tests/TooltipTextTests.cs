@@ -23,49 +23,49 @@ static class TooltipTextTests
         values.AddArgument("{food}", 7);
         values.AddArgument("{water}", 5);
         yield return new("food value", "Food 7",
-            () => values.Get(32));
-        yield return new("water value", "Water 5",
             () => values.Get(33));
+        yield return new("water value", "Water 5",
+            () => values.Get(34));
 
         TextHelper recipe = new(resources, "tooltip");
         recipe.AddArgument("{recipe}", "Rat Trap");
         yield return new("known recipe", "Can build Rat Trap",
-            () => recipe.Get(42));
+            () => recipe.Get(43));
 
         TextHelper unknown = new(resources, "tooltip");
         unknown.AddArgument("{count}", 2);
         yield return new("unknown recipe count", "Can build ??? x2",
-            () => unknown.Get(44));
+            () => unknown.Get(45));
 
         TextHelper trap = new(resources, "tooltip");
         trap.AddArgument("{food}", 3);
         yield return new("trap production", "Yields 3 food daily",
-            () => trap.Get(39));
+            () => trap.Get(40));
 
         TextHelper capacity = new(resources, "tooltip");
         capacity.AddArgument("{water}", 5);
         yield return new("container capacity", "Capacity 5",
-            () => capacity.Get(40));
+            () => capacity.Get(41));
 
         TextHelper production = new(resources, "tooltip");
         production.AddArgument("{product}", "Maggots");
         production.AddArgument("{tools}", "Knife/Axe/Pitchfork");
         yield return new("production overview", "Maggots: Knife/Axe/Pitchfork",
-            () => production.Get(66));
+            () => production.Get(67));
         yield return new("production heading", "Food Production",
-            () => production.Get(65));
+            () => production.Get(66));
         yield return new("group supplied", "Group is full",
-            () => production.Get(69));
-        yield return new("refill blocked", "Not enough water",
             () => production.Get(70));
-        yield return new("construction blocked", "Needs materials",
+        yield return new("refill blocked", "Not enough water",
             () => production.Get(71));
-        yield return new("reload blocked", "Needs ammunition",
+        yield return new("construction blocked", "Needs materials",
             () => production.Get(72));
-        yield return new("previous production", "Previous",
+        yield return new("reload blocked", "Needs ammunition",
             () => production.Get(73));
-        yield return new("next production", "Next",
+        yield return new("previous production", "Previous",
             () => production.Get(74));
+        yield return new("next production", "Next",
+            () => production.Get(75));
     }
 
     sealed class TestResourceManager : ResourceManagerBase

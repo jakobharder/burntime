@@ -82,4 +82,14 @@ needs ammunition
 Food value: |A
 Water value: |A
 Defense: |A%
+Provides gas protection.
+Carries |A daily portions.
+Provides |A daily portions.
+|A food per day with 1 trap
+|A food per day with |B traps
+Prevents |A% damage.
+Produces |A water per day
+at a |B-water source
+|A-|B damage at tier 1
+|A-|B damage at tier 4
 }#

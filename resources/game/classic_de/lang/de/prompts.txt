@@ -40,3 +40,4 @@ Kämpfen
 Lagern
 Abwählen
 Inventar
+Falle auswählen

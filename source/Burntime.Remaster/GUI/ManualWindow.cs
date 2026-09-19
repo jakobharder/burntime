@@ -466,17 +466,18 @@ public sealed class ManualWindow : Container
             return true;
 
         ItemType item = game.ItemTypes[id];
+        string[] labels = app.ResourceManager.GetStrings(LabelsResource);
         string description;
         if (id == "item_gas_mask")
         {
-            description = "Provides gas protection.";
+            description = labels[10];
         }
         else
         {
             int value = item.WaterValue > 0 ? item.WaterValue : item.FoodValue;
             description = item.WaterValue > 0
-                ? $"Carries {value} daily portions."
-                : $"Provides {value} daily portions.";
+                ? labels[11].Replace("|A", value.ToString())
+                : labels[12].Replace("|A", value.ToString());
         }
 
         ISprite sprite = app.ResourceManager.GetImage(item.Sprite);
@@ -675,9 +676,11 @@ public sealed class ManualWindow : Container
         int one = tool.Production.GetRate(1, 1).FoodPerDay;
         int maximum = tool.Production.GetRate(
             tool.Production.MaxToolCount, 1).FoodPerDay;
-        string firstLine = $"{one} food per day with 1 trap";
-        string secondLine = $"{maximum} food per day with " +
-            $"{tool.Production.MaxToolCount} traps";
+        string[] labels = app.ResourceManager.GetStrings(LabelsResource);
+        string firstLine = labels[13].Replace("|A", one.ToString());
+        string secondLine = labels[14]
+            .Replace("|A", maximum.ToString())
+            .Replace("|B", tool.Production.MaxToolCount.ToString());
         ISprite toolSprite = app.ResourceManager.GetImage(tool.Sprite);
         int textWidth = System.Math.Max(_titleFont.GetWidth(tool.Title),
             System.Math.Max(_textFont.GetWidth(firstLine),
@@ -768,16 +771,18 @@ public sealed class ManualWindow : Container
     (string Statistic, string Detail) GetContextItemText(ItemType item,
         Constructions.ConstructionInfo? recipe)
     {
+        string[] labels = app.ResourceManager.GetStrings(LabelsResource);
         if (item.DefenseValue > 0)
-            return ($"Prevents {item.DefenseValue}% damage.", string.Empty);
+            return (labels[15].Replace("|A", item.DefenseValue.ToString()),
+                string.Empty);
         if (item.ID is "item_hand_pump" or "item_industrial_pump")
         {
             const int sourceOutput = 2;
             int output = BurntimeClassic.Instance.Game.RuleBook.CalculateWaterOutput(
                 sourceOutput, item.ID == "item_hand_pump",
                 item.ID == "item_industrial_pump");
-            return ($"Produces {output} water per day",
-                $"at a {sourceOutput}-water source");
+            return (labels[16].Replace("|A", output.ToString()),
+                labels[17].Replace("|B", sourceOutput.ToString()));
         }
         if (item.DamageValues.Length == 0)
             return (GetEquipmentStatistic(item),
@@ -789,8 +794,12 @@ public sealed class ManualWindow : Container
             item.DamageValues, 0, tierWidth);
         CombatPreview last = RuleFormulas.OriginalCombatPreview(
             item.DamageValues, tierWidth * 3, tierWidth);
-        return ($"{first.Minimum}-{first.Maximum} damage at tier 1",
-            $"{last.Minimum}-{last.Maximum} damage at tier 4");
+        return (labels[18]
+                .Replace("|A", first.Minimum.ToString())
+                .Replace("|B", first.Maximum.ToString()),
+            labels[19]
+                .Replace("|A", last.Minimum.ToString())
+                .Replace("|B", last.Maximum.ToString()));
     }
 
     void RenderScrollBar(RenderTarget target, int offset, int maximum,

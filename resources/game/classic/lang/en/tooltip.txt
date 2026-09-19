@@ -1,4 +1,4 @@
-Modern AI
+Remaster AI
 Properly plays the game.
 Receives minor advantages.
 Change to Amiga AI
@@ -11,7 +11,7 @@ Change to No AI
 No AI
 Play without computer
 controlled enemies.
-Change to Modern AI
+Change to Remaster AI
 }#
 Knife
 Damage {damage}}

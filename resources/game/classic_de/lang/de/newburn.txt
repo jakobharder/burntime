@@ -55,7 +55,7 @@ um dort reinzukommen.}
 |D - Tag |J - |C
 Skalierung SCHARF
 Skalierung WEICH
-im Spiel mit Alt+Enter wechseln
+mit Alt+Enter wechseln
 
 
 
@@ -107,7 +107,7 @@ Klassische Regeln
 Amiga-Regeln
 DOS-Computerspieler
 Amiga-Computerspieler
-Moderne Computerspieler
+Remaster-Computerspieler
 Erweiterte Regeln
 Schaden {damage}}
 Vert. {defense}%}

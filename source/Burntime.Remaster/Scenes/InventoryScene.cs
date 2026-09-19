@@ -14,25 +14,25 @@ namespace Burntime.Remaster.Scenes
     class InventoryScene : Scene
     {
         const int KnifeDamageTextIndex = 16;
-        const int FoodValueTextIndex = 32;
-        const int WaterValueTextIndex = 33;
-        const int DefenseTextIndex = 35;
-        const int GasProtectionTextIndex = 36;
-        const int RadiationProtectionTextIndex = 37;
-        const int TrapProductionTextIndex = 39;
-        const int WaterCapacityTextIndex = 40;
-        const int RecipeTextIndex = 42;
-        const int UnknownRecipeTextIndex = 43;
-        const int UnknownRecipeCountTextIndex = 44;
-        const int MoreRecipesTextIndex = 45;
-        const int NeedsTechnicianTextIndex = 46;
-        const int PlaceInRoomTextIndex = 47;
-        const int UnsuitableCampTextIndex = 48;
-        const int GroupFullTextIndex = 69;
-        const int NotEnoughWaterTextIndex = 70;
-        const int NeedsMaterialsTextIndex = 71;
-        const int NeedsAmmunitionTextIndex = 72;
-        const int SelectedTrapTextIndex = 76;
+        const int FoodValueTextIndex = 33;
+        const int WaterValueTextIndex = 34;
+        const int DefenseTextIndex = 36;
+        const int GasProtectionTextIndex = 37;
+        const int RadiationProtectionTextIndex = 38;
+        const int TrapProductionTextIndex = 40;
+        const int WaterCapacityTextIndex = 41;
+        const int RecipeTextIndex = 43;
+        const int UnknownRecipeTextIndex = 44;
+        const int UnknownRecipeCountTextIndex = 45;
+        const int MoreRecipesTextIndex = 46;
+        const int NeedsTechnicianTextIndex = 47;
+        const int PlaceInRoomTextIndex = 48;
+        const int UnsuitableCampTextIndex = 49;
+        const int GroupFullTextIndex = 70;
+        const int NotEnoughWaterTextIndex = 71;
+        const int NeedsMaterialsTextIndex = 72;
+        const int NeedsAmmunitionTextIndex = 73;
+        const int SelectedTrapTextIndex = 77;
         const int MaxRecipeLines = 3;
 
         public override bool UseDiagonalGamepadNavigation => true;

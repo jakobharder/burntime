@@ -1,0 +1,79 @@
+Remaster-KI
+Spielt das Spiel regulär.
+Erhält kleine Vorteile.
+Zur Amiga-KI wechseln
+}#
+Amiga-KI
+Originale Amiga-KI.
+Schummelt ziemlich stark.
+Zu ohne KI wechseln
+}#
+Ohne KI
+Ohne computergesteuerte
+Gegner spielen.
+Zur Remaster-KI wechseln
+}#
+Messer
+Schaden {damage}}
+Ausrüsten
+Ablegen
+}#
+Erweiterter Modus
+Erweitertes Respawn-System.
+Kleidung verringert Schaden.
+Nahrung am Boden verdirbt.
+}
+Zum klassischen Modus
+}#
+Klassischer Modus
+Originalgetreue Mischung der
+DOS- und Amiga-Versionen.
+}
+Zum erweiterten Modus
+}#
+Nahrung {food}}
+Wasser {water}}
+}#
+Verteidigung {defense}%}
+Gasschutz {gas}%}
+Strahlenschutz {radiation}%}
+}#
+Erzeugt täglich {food} Nahrung}
+Kapazität {water}}
+Voll
+Kann {recipe} bauen}
+Kann ??? bauen
+Kann ??? x{count} bauen}
+Kann ... bauen
+Techniker benötigt
+Im Raum ablegen
+Ungeeignetes Lager
+}#
+Einfach
+Mehr Vorräte und Funde.
+Bessere Handelschancen.
+Zu Normal wechseln
+}#
+Normal
+Normale Vorräte, Funde
+und Handelschancen.
+Zu Schwer wechseln
+}#
+Schwer
+Weniger Vorräte und Funde.
+Schlechtere Handelschancen.
+Zu Einfach wechseln
+}#
+Nahrungsproduktion
+{product}: {tools}}
+Keine
+Ändern
+Gruppe ist voll
+Nicht genug Wasser
+Material benötigt
+Munition benötigt
+Zurück
+Weiter
+Automatisch
+Ausgewählte Falle
+}#

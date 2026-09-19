@@ -35,13 +35,13 @@ namespace Burntime.Remaster.Scenes
         readonly Button exitButton;
         readonly InputPromptHandle exitPrompt;
         readonly TooltipWindow productionTooltip;
-        const int ProductionTooltipHeaderIndex = 65;
-        const int ProductionTooltipEntryIndex = 66;
-        const int ProductionTooltipNoneIndex = 67;
-        const int ProductionTooltipPromptIndex = 68;
-        const int ProductionTooltipPreviousIndex = 73;
-        const int ProductionTooltipNextIndex = 74;
-        const int ProductionTooltipAutomaticIndex = 75;
+        const int ProductionTooltipHeaderIndex = 66;
+        const int ProductionTooltipEntryIndex = 67;
+        const int ProductionTooltipNoneIndex = 68;
+        const int ProductionTooltipPromptIndex = 69;
+        const int ProductionTooltipPreviousIndex = 74;
+        const int ProductionTooltipNextIndex = 75;
+        const int ProductionTooltipAutomaticIndex = 76;
         bool productionTooltipDismissed;
 
         public InfoScene(Module App)
