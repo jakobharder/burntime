@@ -143,7 +143,7 @@ sealed class InputControlLabelRenderer
                 (_app.IsNewGfx ? 0.5f : 0)),
             new Rect(Vector2.Zero, new Vector2(sourceSize, sourceSize)),
             tint,
-            postFilter: true);
+            postFilter: true, directToFramebuffer: !_app.IsNewGfx);
     }
 
     static int GetKeyboardAtlasIndex(KeyboardGlyph glyph)

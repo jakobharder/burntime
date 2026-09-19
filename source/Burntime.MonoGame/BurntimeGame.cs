@@ -924,13 +924,14 @@ namespace Burntime.MonoGame
         }
 
         public void RenderSprite(ISprite sprite, Platform.Vector2 pos, float alpha = 1,
-            bool postFilter = false)
+            bool postFilter = false, bool directToFramebuffer = false)
         {
-            RenderSpriteF(sprite, (Platform.Vector2f)pos, alpha, postFilter);
+            RenderSpriteF(sprite, (Platform.Vector2f)pos, alpha, postFilter,
+                directToFramebuffer);
         }
 
         public void RenderSpriteF(ISprite sprite, Platform.Vector2f pos, float alpha = 1,
-            bool postFilter = false)
+            bool postFilter = false, bool directToFramebuffer = false)
         {
             if (sprite is not MonoGame.Graphics.Sprite nativeSprite || !nativeSprite.Touch()) return;
 
@@ -944,7 +945,8 @@ namespace Burntime.MonoGame
                 Color = new Color(alpha, alpha, alpha, alpha),
                 Factor = nativeSprite.Resolution,
                 LinearFiltering = nativeSprite.LinearFiltering,
-                PostFilter = postFilter
+                PostFilter = postFilter,
+                DirectToFramebuffer = directToFramebuffer
             };
 
             if (sprite.Animation != null && sprite.Animation.Progressive && nativeSprite.Frames != null)
@@ -962,7 +964,8 @@ namespace Burntime.MonoGame
                 Position = new Vector3(pos.x, pos.y, CalcZ(Layer)),
                 Factor = nativeSprite.Resolution,
                 LinearFiltering = nativeSprite.LinearFiltering,
-                PostFilter = postFilter
+                PostFilter = postFilter,
+                DirectToFramebuffer = directToFramebuffer
             };
             RenderDevice.AddEntity(entity2);
         }
