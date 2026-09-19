@@ -726,6 +726,7 @@ internal class OptionsSavesPage : Container
     {
         string? selectedFile = SelectedSave?.FileName;
         string? focusedFile = GetSaveAtEntry(_saveFocusIndex)?.FileName;
+        int scrollOffset = _scrollOffset;
 
         _saves.Sort((left, right) =>
         {
@@ -741,7 +742,11 @@ internal class OptionsSavesPage : Container
         if (focusedFile is not null)
             _saveFocusIndex = FindEntry(focusedFile);
 
-        EnsureFocusVisible();
+        if (HasFocus && app.LastInputMode != InputMode.Mouse)
+            EnsureFocusVisible();
+        else
+            _scrollOffset = System.Math.Clamp(scrollOffset, 0,
+                System.Math.Max(0, EntryCount - VISIBLE_SAVE_COUNT));
         RefreshVisibleRows();
         UpdateKeyboardFocus();
     }
