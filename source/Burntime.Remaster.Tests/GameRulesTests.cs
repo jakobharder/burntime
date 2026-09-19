@@ -89,6 +89,25 @@ static class GameRulesTests
                 Equal(rule == RuleSet.Extended ? 12 : 0,
                     rules.Settings.Respawn.CitySpawnThreshold,
                     "configured city spawn threshold");
+                Equal(rule == RuleSet.Extended ? 10 : 0,
+                    rules.Settings.DroppedFoodDecayInterval,
+                    "dropped food decay is enabled only in extended mode");
+                var decayLocation = manager.Create<Location>();
+                decayLocation.Id = 2;
+                var junk = TestItem(manager, "junk");
+                var firstFood = TestItem(manager, "food-a", food: 3);
+                var secondFood = TestItem(manager, "food-b", food: 6);
+                decayLocation.Items.Add(junk);
+                decayLocation.Items.Add(firstFood);
+                decayLocation.Items.Add(secondFood);
+                GameRules.ProcessDroppedFoodDecay(decayLocation, day: 7, interval: 10);
+                Equal(3, decayLocation.Items.Count, "food remains before its location cycle");
+                GameRules.ProcessDroppedFoodDecay(decayLocation, day: 8, interval: 10);
+                Equal(2, decayLocation.Items.Count, "one food decays on its location cycle");
+                Equal(true, decayLocation.Items.Any(item => item == junk),
+                    "non-food ground items do not decay");
+                Equal(true, decayLocation.Items.Any(item => item == secondFood),
+                    "only one ground food decays per cycle");
                 Equal(true, rules.AcceptTrade(payment, demand, 0), "equal offer accepted on easy");
                 Equal(false, rules.AcceptTrade(payment, demand, 2), "equal offer rejected on hard");
                 Equal(16,
@@ -123,11 +142,11 @@ static class GameRulesTests
                     for (int location = 0; location < 3; location++)
                     {
                         int dueDays = Enumerable.Range(1, interval * 2)
-                            .Count(day => CharacterRespawn.IsLocationCycleDue(day, location, interval));
+                            .Count(day => LocationCycle.IsDue(day, location, interval));
                         Equal(2, dueDays, "location cycle runs once per interval");
                     }
                     Equal(false,
-                        CharacterRespawn.IsLocationCycleDue(1, 0, 0),
+                        LocationCycle.IsDue(1, 0, 0),
                         "disabled location cycle never runs");
                 }
                 return 0;

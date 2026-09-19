@@ -456,6 +456,10 @@ public class Location : StateObject, IUpdateable, ITurnable
                     Source.RefillItem(item);
         }
 
+        // Per-location cycle keeps cleanup deterministic without adding save state.
+        ClassicGame game = (ClassicGame)Container.Root;
+        game.RuleBook.ProcessDroppedFoodDecay(this, game.World.Day);
+
         Source.EndTurn();
     }
 

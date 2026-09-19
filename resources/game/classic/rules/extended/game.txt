@@ -13,6 +13,7 @@ food_production = dos_feed_then_store
 survival = remaster_supply_pool
 service_value = remaster_nutrition
 combat = remaster_armour
+dropped_food_decay_interval = 10
 start_experience = 37
 healing_factor = 1
 health_cap = 95

@@ -172,6 +172,19 @@ internal sealed class GameRules
         location.ProduceFood(available);
     }
 
+    public void ProcessDroppedFoodDecay(Location location, int day) =>
+        ProcessDroppedFoodDecay(location, day, Settings.DroppedFoodDecayInterval);
+
+    internal static void ProcessDroppedFoodDecay(Location location, int day, int interval)
+    {
+        if (!LocationCycle.IsDue(day, location.Id, interval))
+            return;
+
+        Item? food = location.Items.FirstOrDefault(item => item.FoodValue > 0);
+        if (food != null)
+            location.Items.Remove(food);
+    }
+
     public int CalculateBossExperience(Player player, ClassicGame game) =>
         RuleFormulas.BossExperience(Settings.BossExperienceRule, player, game);
 

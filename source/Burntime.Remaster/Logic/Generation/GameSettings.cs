@@ -158,6 +158,8 @@ class GameSettings
     public float DoctorHealingFactor => config["rules"].GetFloat("healing_factor");
     public int DoctorHealthCap => config["rules"].GetInt("health_cap");
     public int CombatTierWidth => config["rules"].GetInt("experience_tier_width");
+    public int DroppedFoodDecayInterval =>
+        Math.Max(0, config["rules"].GetInt("dropped_food_decay_interval"));
     public string[] FightClasses => config["rules"].GetStrings("fight_class");
     public int[] GetTraderAttack(int difficultyLevel) =>
         config[Math.Clamp(difficultyLevel, 0, 2).ToString()].GetInts("trader_attack");

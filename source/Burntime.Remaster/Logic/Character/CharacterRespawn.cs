@@ -1,6 +1,7 @@
 ﻿using Burntime.Framework.States;
 using System;
 using System.Linq;
+using Burntime.Remaster.Logic.Rules;
 
 namespace Burntime.Remaster.Logic;
 
@@ -221,7 +222,7 @@ public sealed class CharacterRespawn : StateObject
         World world = ((ClassicGame)container.Root).World;
         foreach (Location location in world.Locations)
         {
-            if (!IsLocationCycleDue(world.Day, location.Id, npcRespawn))
+            if (!LocationCycle.IsDue(world.Day, location.Id, npcRespawn))
                 continue;
 
             RespawnObject? pending = respawnList.FirstOrDefault(respawn =>
@@ -230,11 +231,6 @@ public sealed class CharacterRespawn : StateObject
                 Spawn(pending);
         }
     }
-
-    internal static bool IsLocationCycleDue(int day, int locationId, int interval) =>
-        interval > 0 && LocationTurn(day, locationId) % interval == 0;
-
-    internal static int LocationTurn(int day, int locationId) => day + locationId;
 
     static bool IsOrdinaryNpc(Character character) =>
         character.Class is CharClass.Mercenary or CharClass.Technician or CharClass.Doctor;
@@ -248,7 +244,7 @@ public sealed class CharacterRespawn : StateObject
 
         Character character = respawn.Character;
         World world = ((ClassicGame)container.Root).World;
-        int locationTurn = LocationTurn(world.Day, respawn.Location.Id);
+        int locationTurn = LocationCycle.Turn(world.Day, respawn.Location.Id);
         (character.NameId, nameDonor.Character.NameId) =
             (nameDonor.Character.NameId, character.NameId);
 
