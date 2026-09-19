@@ -152,6 +152,40 @@ static class ProductionPolicyTests
             }
             return 0;
         });
+        yield return Int("automatic production upgrades while manual production stays pinned", 0, () =>
+        {
+            var m = new StateManager(null!);
+            var game = m.Create<ClassicGame>(); m.Root = game;
+            var camp = m.Create<Location>(); camp.Rooms = m.CreateLinkList<Room>();
+            var room = m.Create<Room>(); camp.Rooms.Add(room);
+            camp.Player = m.Create<HazardPlayer>(new object[] { 0 });
+
+            var rats = m.Create(() => new Production(2, new[] { 0, 2, 5 },
+                Array.Empty<int>(), TestItem(m, "item_rats", food: 5).Type, 0));
+            var snakes = m.Create(() => new Production(1, new[] { 0, 3 },
+                Array.Empty<int>(), TestItem(m, "item_snake", food: 7).Type, 1));
+            game.Productions.Add(rats); game.Productions.Add(snakes);
+            camp.AvailableProducts = new[] { 0, 1 };
+
+            var ratTrap = TestItem(m, "item_rat_trap"); ratTrap.Type.Production = rats;
+            var snakeTrap = TestItem(m, "item_snake_trap"); snakeTrap.Type.Production = snakes;
+            room.Items.Add(ratTrap); room.Items.Add(snakeTrap);
+
+            Equal(true, camp.IsProductionAutomatic, "automatic is the default");
+            camp.RefreshFoodProductionSelection();
+            Equal(snakes, camp.Production, "automatic selection chooses the higher yield");
+
+            camp.SelectProduction(snakes);
+            room.Items.Add(m.Create<Item>(ratTrap.Type));
+            camp.RefreshFoodProductionSelection();
+            Equal(snakes, camp.Production, "manual selection remains pinned while productive");
+
+            room.Items.Remove(snakeTrap);
+            camp.RefreshFoodProductionSelection();
+            Equal(true, camp.IsProductionAutomatic, "unproductive manual selection returns to automatic");
+            Equal(rats, camp.Production, "automatic fallback selects the productive traps");
+            return 0;
+        });
         yield return Int("stationed NPC prefers its lowest-value inventory food before storage", 0, () =>
         {
             var m = new StateManager(null!);

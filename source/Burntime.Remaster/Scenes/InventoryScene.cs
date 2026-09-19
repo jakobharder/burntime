@@ -32,6 +32,7 @@ namespace Burntime.Remaster.Scenes
         const int NotEnoughWaterTextIndex = 70;
         const int NeedsMaterialsTextIndex = 71;
         const int NeedsAmmunitionTextIndex = 72;
+        const int SelectedTrapTextIndex = 76;
         const int MaxRecipeLines = 3;
 
         public override bool UseDiagonalGamepadNavigation => true;
@@ -173,7 +174,8 @@ namespace Burntime.Remaster.Scenes
         {
             Item? focused = source?.FocusedItem;
             if (focused == null || !TryGetItemTooltip(focused, isInInventory,
-                out string text, out InputPrompt? prompt, out GuiString? status))
+                out string text, out InputPrompt? prompt, out GuiString? status,
+                out bool statusIsSuccess))
             {
                 if (tooltip.IsVisible)
                     tooltip.Hide();
@@ -193,17 +195,19 @@ namespace Burntime.Remaster.Scenes
             tooltip.Text = text;
             tooltip.Prompt = prompt;
             tooltip.Status = status;
+            tooltip.StatusIsSuccess = statusIsSuccess;
             tooltip.RefreshLayout();
             if (!tooltip.IsVisible)
                 tooltip.Show();
         }
 
         bool TryGetItemTooltip(Item focused, bool isInInventory, out string text,
-            out InputPrompt? prompt, out GuiString? status)
+            out InputPrompt? prompt, out GuiString? status, out bool statusIsSuccess)
         {
             List<string> lines = [];
             prompt = GetItemPrompt(focused, isInInventory);
             status = null;
+            statusIsSuccess = false;
             ClassicGame game = app.GameState as ClassicGame;
             BurntimeClassic classic = app as BurntimeClassic;
             var recipes = game.Constructions.Recipes.Where(recipe =>
@@ -260,7 +264,6 @@ namespace Burntime.Remaster.Scenes
             if (focused.Type.Production is Production production)
             {
                 TextHelper trapText = new(app, "tooltip");
-                trapText.AddArgument("{product}", production.Produce.Title);
                 trapText.AddArgument("{food}", production.GetRate(1, 1).FoodPerDay);
                 lines.Add(trapText.Get(TrapProductionTextIndex));
 
@@ -304,6 +307,15 @@ namespace Burntime.Remaster.Scenes
                             : $"@tooltip?{NeedsMaterialsTextIndex}";
                     }
                 }
+            }
+
+            if (!isInInventory && classic.InventoryRoom != null &&
+                focused.Type.Production != null &&
+                game.World.ActiveLocationObj.Production == focused.Type.Production)
+            {
+                prompt = null;
+                status = $"@tooltip?{SelectedTrapTextIndex}";
+                statusIsSuccess = true;
             }
 
             text = string.Join('\n', lines);
@@ -414,6 +426,21 @@ namespace Burntime.Remaster.Scenes
                 return new(InputAction.Secondary,
                     isEquipped ? "@prompts?22" : "@prompts?21");
             }
+
+            if (!isInInventory && classic.InventoryRoom != null &&
+                selectedItem.Type.Production is Production production)
+            {
+                if (!classic.Game.World.ActiveLocationObj.ValidProductions.Contains(production))
+                    return null;
+                return classic.Game.World.ActiveLocationObj.Production == production
+                    ? null
+                    : new(InputAction.Action, "@prompts?42");
+            }
+
+            // Production tools have dedicated placement/selection behavior and
+            // never use the generic construction inspection action.
+            if (selectedItem.Type.Production != null)
+                return null;
 
             IItemCollection? roomItems = classic.InventoryRoom != null
                 ? classic.InventoryRoom.Items
@@ -669,6 +696,9 @@ namespace Burntime.Remaster.Scenes
                 classic.InventoryRoom.Items.Add(item);
                 inventory.ActiveCharacter.Items.Remove(item);
 
+                if (item.Type.Production != null)
+                    classic.Game.World.ActiveLocationObj.RefreshFoodProductionSelection();
+
                 // fill up empty bottles
                 if (classic.InventoryRoom.IsWaterSource)
                     classic.Game.World.ActiveLocationObj.Source.RefillItem(item);
@@ -764,6 +794,10 @@ namespace Burntime.Remaster.Scenes
                 if (inventory.ActiveCharacter.Protection != null)
                     inventory.Grid.Selection.Add(inventory.ActiveCharacter.Protection);
             }
+            else if (item.Type.Production != null)
+            {
+                // Production tools have no generic inspection action.
+            }
             else //if (inventory.ActiveCharacter.Class == CharClass.Technician)
             {
                 IItemCollection right = (classic.InventoryRoom == null) ? (IItemCollection)classic.PickItems : classic.InventoryRoom.Items;
@@ -786,11 +820,15 @@ namespace Burntime.Remaster.Scenes
 
             if (classic.InventoryRoom != null)
             {
-                inventory.ActiveCharacter.Items.Add(state as Item);
-                classic.InventoryRoom.Items.Remove(state as Item);
+                Item item = (Item)state;
+                inventory.ActiveCharacter.Items.Add(item);
+                classic.InventoryRoom.Items.Remove(item);
 
-                inventory.Grid.Add(state as Item);
-                grid.Remove(state as Item);
+                if (item.Type.Production != null)
+                    classic.Game.World.ActiveLocationObj.RefreshFoodProductionSelection();
+
+                inventory.Grid.Add(item);
+                grid.Remove(item);
             }
             else if (classic.PickItems != null)
             {
@@ -812,9 +850,22 @@ namespace Burntime.Remaster.Scenes
             BurntimeClassic classic = app as BurntimeClassic;
             Item item = state as Item;
             IItemCollection right = (classic.InventoryRoom == null) ? (IItemCollection)classic.PickItems : classic.InventoryRoom.Items;
-            
+
+            if (item.Type.Production is Production production)
+            {
+                if (classic.InventoryRoom != null)
+                {
+                    Location location = classic.Game.World.ActiveLocationObj;
+                    if (location.ValidProductions.Contains(production))
+                    {
+                        location.SelectProduction(production);
+                        if (!classic.ShowUIHints)
+                            ShowTrapSelectedDialog(production);
+                    }
+                }
+            }
             // eat
-            if (item.FoodValue != 0)
+            else if (item.FoodValue != 0)
             {
                 int left = group.Eat(leader, item.FoodValue);
 
@@ -863,6 +914,15 @@ namespace Burntime.Remaster.Scenes
             }
 
             EnsureNonEmptyArea();
+        }
+
+        void ShowTrapSelectedDialog(Production production)
+        {
+            TextHelper text = new(app, "dialogs");
+            text.AddArgument("|P", production.Produce.Title);
+            dialog.SetCharacter(inventory.ActiveCharacter,
+                Conversation.Simple(text, 0));
+            dialog.Show();
         }
 
         void RememberConstruction(Construction inspected)

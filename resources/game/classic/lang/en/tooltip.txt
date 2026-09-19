@@ -37,7 +37,7 @@ Defense {defense}%}
 Gas protection {gas}%}
 Radiation protection {radiation}%}
 }#
-Yield: {food} days of food ({product})}
+Yields {food} food daily}
 Capacity {water}}
 Full
 Can build {recipe}}
@@ -73,4 +73,6 @@ Needs materials
 Needs ammunition
 Previous
 Next
+Automatic
+Selected trap
 }#

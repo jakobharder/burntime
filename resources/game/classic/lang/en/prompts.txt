@@ -40,3 +40,4 @@ Fight
 Store
 Unselect
 Inventory
+Select trap

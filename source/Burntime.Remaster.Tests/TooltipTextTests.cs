@@ -38,9 +38,8 @@ static class TooltipTextTests
             () => unknown.Get(44));
 
         TextHelper trap = new(resources, "tooltip");
-        trap.AddArgument("{product}", "Rats");
         trap.AddArgument("{food}", 3);
-        yield return new("trap production", "Yield: 3 days of food (Rats)",
+        yield return new("trap production", "Yields 3 food daily",
             () => trap.Get(39));
 
         TextHelper capacity = new(resources, "tooltip");

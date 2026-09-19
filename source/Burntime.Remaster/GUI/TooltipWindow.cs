@@ -15,12 +15,13 @@ public sealed class TooltipWindow : Window
 {
     const int HorizontalPadding = 5;
     const int VerticalPadding = 4;
-    const int LineGap = 2;
+    const int SectionGap = 4;
     const int StatusPromptGap = 6;
 
     readonly GuiFont _headerFont;
     readonly GuiFont _textFont;
     readonly GuiFont _statusFont;
+    readonly GuiFont _successFont;
     readonly InputControlLabelRenderer _controlRenderer;
     string _language = string.Empty;
     InputMode _inputMode = InputMode.None;
@@ -36,6 +37,7 @@ public sealed class TooltipWindow : Window
     public InputPrompt? Prompt { get; set; }
     public InputPrompt? SecondaryPrompt { get; set; }
     public GuiString? Status { get; set; }
+    public bool StatusIsSuccess { get; set; }
     public int MinimumWidth { get; set; }
     public Vector2? FixedSize { get; set; }
     public PixelColor BackgroundColor { get; set; } = new(128, 0, 0, 0);
@@ -49,6 +51,8 @@ public sealed class TooltipWindow : Window
             ClassicColors.LightGray) { Borders = TextBorders.None };
         _statusFont = new GuiFont(BurntimeClassic.FontName,
             ClassicColors.HudTextAccent) { Borders = TextBorders.None };
+        _successFont = new GuiFont(BurntimeClassic.FontName,
+            ClassicColors.StatusSuccess) { Borders = TextBorders.None };
         _controlRenderer = new InputControlLabelRenderer(app, _textFont,
             brackets: false, bracketTextControls: false);
         RefreshLayout();
@@ -103,13 +107,13 @@ public sealed class TooltipWindow : Window
             height += _headerFont.GetRect(0, 0, header).Height;
         if (header.Length > 0 &&
             (text.Length > 0 || statusWidth > 0 || _promptGroupWidth > 0))
-            height += LineGap;
+            height += SectionGap;
         if (text.Length > 0)
             height += _textFont.GetRect(0, 0, text).Height;
         if (_promptGroupWidth > 0 || status.Length > 0)
         {
             if (text.Length > 0)
-                height += LineGap;
+                height += SectionGap;
             height += System.Math.Max(status.Length > 0 ? _statusFont.GetHeight() : 0,
                 _promptGroupWidth > 0 ? _textFont.GetHeight() : 0);
         }
@@ -134,6 +138,7 @@ public sealed class TooltipWindow : Window
         string header = Header ?? string.Empty;
         string text = Text ?? string.Empty;
         string status = Status ?? string.Empty;
+        int statusWidth = _statusFont.GetRect(0, 0, status).Width;
         int y = VerticalPadding;
         if (header.Length > 0)
         {
@@ -141,7 +146,7 @@ public sealed class TooltipWindow : Window
                 TextAlignment.Left, VerticalTextAlignment.Top);
             y += _headerFont.GetRect(0, 0, header).Height;
             if (text.Length > 0 || status.Length > 0 || _promptGroupWidth > 0)
-                y += LineGap;
+                y += SectionGap;
         }
 
         if (text.Length > 0)
@@ -152,13 +157,21 @@ public sealed class TooltipWindow : Window
         }
 
         if (status.Length > 0 || _promptGroupWidth > 0)
-            y += text.Length > 0 ? LineGap : 0;
+            y += text.Length > 0 ? SectionGap : 0;
+        int footerWidth = statusWidth +
+            (statusWidth > 0 && _promptGroupWidth > 0 ? StatusPromptGap : 0) +
+            _promptGroupWidth;
+        int promptX = Size.x - HorizontalPadding - footerWidth;
         if (status.Length > 0)
-            _statusFont.DrawText(target, new Vector2(HorizontalPadding, y), status,
+        {
+            GuiFont statusFont = StatusIsSuccess ? _successFont : _statusFont;
+            statusFont.DrawText(target, new Vector2(promptX, y), status,
                 TextAlignment.Left, VerticalTextAlignment.Top);
+            promptX += statusWidth +
+                (_promptGroupWidth > 0 ? StatusPromptGap : 0);
+        }
         if (_promptGroupWidth == 0)
             return;
-        int promptX = Size.x - HorizontalPadding - _promptGroupWidth;
         if (_promptWidth > 0 && Prompt is InputPrompt prompt)
         {
             _controlRenderer.Draw(target, new Vector2(promptX, y),

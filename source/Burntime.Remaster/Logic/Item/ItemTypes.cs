@@ -57,6 +57,12 @@ namespace Burntime.Remaster.Logic
         internal int GetOriginalTitleId(ItemType type) =>
             0x33 + Array.IndexOf(data.Object.BurnGfxIDs, type.ID);
 
+        internal void ClearProductionAssociations()
+        {
+            foreach (ItemType type in types)
+                type.Production = null;
+        }
+
         /// <summary>
         /// Generate several items
         /// </summary>

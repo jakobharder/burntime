@@ -350,14 +350,31 @@ namespace Burntime.Remaster.Logic.Generation
             ConfigFile file = new ConfigFile();
             if (!file.Open(GameDefinitions.Get(game.Rules).ProductionPath))
                 throw new InvalidOperationException("Could not load production settings.");
+
+            var settings = new List<(ConfigSection Section, Production Production)>();
             foreach (ConfigSection section in file.GetAllSections())
             {
                 if (section.Name == "" || !game.ItemTypes.Contains(section.Name))
                     continue;
                 Production production = game.ItemTypes[section.Name].Production;
                 if (production != null)
-                    production.ApplySettings(section.GetInt("maxcombination"),
-                        section.GetInts("amount"), section.GetInts("amount2"), section.GetBool("allow_inventory"));
+                    settings.Add((section, production));
+            }
+
+            // Production links are serialized for save compatibility, but their
+            // associations are balancing data. Remove links retained from older
+            // production files before applying the current definitions.
+            game.ItemTypes.ClearProductionAssociations();
+            foreach ((ConfigSection section, Production production) in settings)
+            {
+                production.ApplySettings(section.GetInt("maxcombination"),
+                    section.GetInts("amount"), section.GetInts("amount2"),
+                    section.GetBool("allow_inventory"));
+                game.ItemTypes[section.Name].Production = production;
+
+                foreach (string alternative in section.GetStrings("alternatives"))
+                    if (game.ItemTypes.Contains(alternative))
+                        game.ItemTypes[alternative].Production = production;
             }
         }
 

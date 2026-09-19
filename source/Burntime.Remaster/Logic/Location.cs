@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 using Burntime.Data.BurnGfx;
 using Burntime.Framework;
 using Burntime.Framework.States;
@@ -280,10 +281,28 @@ public class Location : StateObject, IUpdateable, ITurnable
     float productionState = 0; // accumulated food value
     public int NPCFoodProduction; // [unused]
 
+    // Missing in older saves means automatic selection, which is also the default.
+    [OptionalField]
+    bool manualProductionSelection;
+
+    public bool IsProductionAutomatic => !manualProductionSelection;
+
     public Production? Production
     {
         get => production?.Object;
         set => production = value;
+    }
+
+    public void SelectProduction(Production production)
+    {
+        Production = production;
+        manualProductionSelection = true;
+    }
+
+    public Production.Rate SelectAutomaticFoodProduction()
+    {
+        manualProductionSelection = false;
+        return AutoSelectFoodProduction(onlyIfCurrentProducesNothing: false);
     }
 
     /// <summary>
@@ -356,6 +375,15 @@ public class Location : StateObject, IUpdateable, ITurnable
         return info;
     }
 
+    public Production.Rate RefreshFoodProductionSelection()
+    {
+        Production.Rate current = GetFoodProductionRate();
+        if (manualProductionSelection && current.FoodPerDay > 0)
+            return current;
+
+        return SelectAutomaticFoodProduction();
+    }
+
     internal void ProduceFood(int foodValue)
     {
         int stockedFood = GetCurrentProductionStockCount();
@@ -413,7 +441,7 @@ public class Location : StateObject, IUpdateable, ITurnable
         Source.BeginTurn();
 
         // produce food
-        var production = AutoSelectFoodProduction(onlyIfCurrentProducesNothing: true);
+        var production = RefreshFoodProductionSelection();
         ((ClassicGame)Container.Root).RuleBook.ProcessFoodProduction(this, production);
 
         // turn npcs

@@ -41,6 +41,8 @@ namespace Burntime.Remaster.Scenes
         const int ProductionTooltipPromptIndex = 68;
         const int ProductionTooltipPreviousIndex = 73;
         const int ProductionTooltipNextIndex = 74;
+        const int ProductionTooltipAutomaticIndex = 75;
+        bool productionTooltipDismissed;
 
         public InfoScene(Module App)
             : base(App)
@@ -199,6 +201,7 @@ namespace Burntime.Remaster.Scenes
 
             int city = classic.InfoCity;
             Location loc = classic.Game.World.Locations[city];
+            productionTooltipDismissed = false;
 
             Music = loc.Danger?.Type switch
             {
@@ -216,16 +219,20 @@ namespace Burntime.Remaster.Scenes
 
             if (loc.Production != null)
             {
-                for (int i = 0; i < loc.AvailableProducts.Length; i++)
+                productionID = -1;
+                if (!loc.IsProductionAutomatic)
                 {
-                    if (loc.Production.ID == loc.AvailableProducts[i])
+                    for (int i = 0; i < loc.AvailableProducts.Length; i++)
                     {
-                        productionID = i;
-                        break;
+                        if (loc.Production.ID == loc.AvailableProducts[i])
+                        {
+                            productionID = i;
+                            break;
+                        }
                     }
                 }
 
-                production.ItemID = classic.Game.Productions[loc.AvailableProducts[productionID]].Produce.ID;
+                production.ItemID = loc.Production.Produce.ID;
             }
             else
             {
@@ -259,7 +266,7 @@ namespace Burntime.Remaster.Scenes
 
         void UpdateProductionTooltip()
         {
-            bool show = productionID >= 0 &&
+            bool show = !productionTooltipDismissed && production.ItemID != "" &&
                 (production.IsMouseHovered || app.LastInputMode != InputMode.Mouse);
             if (!show)
             {
@@ -303,21 +310,22 @@ namespace Burntime.Remaster.Scenes
             productionTooltip.Header = app.ResourceManager.GetString("tooltip",
                 ProductionTooltipHeaderIndex);
             productionTooltip.Text = string.Join('\n', entries);
+            productionTooltip.Status = location.IsProductionAutomatic
+                ? app.ResourceManager.GetString("tooltip", ProductionTooltipAutomaticIndex)
+                : null;
             if (app.LastInputMode == InputMode.Mouse)
             {
                 productionTooltip.Prompt = new InputPrompt(
-                    InputAction.Secondary,
-                    app.ResourceManager.GetString("tooltip",
-                        ProductionTooltipPreviousIndex))
-                {
-                    MouseControl = MouseButton.Right
-                };
-                productionTooltip.SecondaryPrompt = new InputPrompt(
                     InputAction.Primary,
-                    app.ResourceManager.GetString("tooltip",
-                        ProductionTooltipNextIndex))
+                    app.ResourceManager.GetString("tooltip", ProductionTooltipNextIndex))
                 {
                     MouseControl = MouseButton.Left
+                };
+                productionTooltip.SecondaryPrompt = new InputPrompt(
+                    InputAction.Secondary,
+                    app.ResourceManager.GetString("tooltip", ProductionTooltipPreviousIndex))
+                {
+                    MouseControl = MouseButton.Right
                 };
             }
             else
@@ -328,7 +336,6 @@ namespace Burntime.Remaster.Scenes
                         ProductionTooltipPromptIndex));
                 productionTooltip.SecondaryPrompt = null;
             }
-            productionTooltip.Status = null;
             productionTooltip.RefreshLayout();
             if (!productionTooltip.IsVisible)
                 productionTooltip.Show();
@@ -425,13 +432,20 @@ namespace Burntime.Remaster.Scenes
 
             if (action.IsLeft())
             {
-                PreviousProduction();
+                NextProduction();
                 return true;
             }
 
             if (action.IsRight())
             {
-                NextProduction();
+                PreviousProduction();
+                return true;
+            }
+
+            if (action == InputAction.Primary)
+            {
+                productionTooltipDismissed = true;
+                productionTooltip.Hide();
                 return true;
             }
 
@@ -474,12 +488,13 @@ namespace Burntime.Remaster.Scenes
             int city = classic.InfoCity;
 
             Location loc = classic.Game.World.Locations[city];
-            if (productionID >= 0 && productionID + 1 < loc.AvailableProducts.Length &&
+            if (productionID + 1 < loc.AvailableProducts.Length &&
                 loc.AvailableProducts[productionID + 1] >= 0)
             {
                 productionID++;
-                loc.Production = classic.Game.Productions[loc.AvailableProducts[productionID]];
+                loc.SelectProduction(classic.Game.Productions[loc.AvailableProducts[productionID]]);
                 production.ItemID = loc.Production.Produce.ID;
+                productionTooltipDismissed = false;
             }
         }
 
@@ -490,11 +505,20 @@ namespace Burntime.Remaster.Scenes
             int city = classic.InfoCity;
 
             Location loc = classic.Game.World.Locations[city];
-            if (productionID > 0 && productionID < loc.AvailableProducts.Length)
+            if (productionID == 0)
+            {
+                productionID = -1;
+                loc.SelectAutomaticFoodProduction();
+                if (loc.Production != null)
+                    production.ItemID = loc.Production.Produce.ID;
+                productionTooltipDismissed = false;
+            }
+            else if (productionID > 0 && productionID < loc.AvailableProducts.Length)
             {
                 productionID--;
-                loc.Production = classic.Game.Productions[loc.AvailableProducts[productionID]];
+                loc.SelectProduction(classic.Game.Productions[loc.AvailableProducts[productionID]]);
                 production.ItemID = loc.Production.Produce.ID;
+                productionTooltipDismissed = false;
             }
         }
     }
