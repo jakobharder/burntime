@@ -128,7 +128,14 @@ public class MapView : Window
     float scrollSpeed = 70;
 
     Vector2f border = new Vector2f();
+    bool mouseEdgeScrollArmed = true;
     int entrance = -1;
+
+    public void RequireMouseEdgeScrollReentry()
+    {
+        border = Vector2f.Zero;
+        mouseEdgeScrollArmed = false;
+    }
 
     public int ActiveEntrance
     {
@@ -234,6 +241,15 @@ public class MapView : Window
         border.y -= (position.y > Size.y - Margin) ? 1 : 0;
         border.y += (position.y < BigMargin) ? 1 : 0;
         border.y -= (position.y > Size.y - BigMargin) ? 1 : 0;
+
+        if (!mouseEdgeScrollArmed)
+        {
+            mouseEdgeScrollArmed = position.x >= BigMargin &&
+                position.x <= Size.x - BigMargin &&
+                position.y >= BigMargin && position.y <= Size.y - BigMargin;
+            if (!mouseEdgeScrollArmed)
+                border = Vector2f.Zero;
+        }
 
         bool found = false;
         for (int i = 0; i < map.Entrances.Length; i++)

@@ -115,6 +115,8 @@ namespace Burntime.Remaster
                 InputPromptColorScheme.Hud);
             Windows += promptOverlay;
             Windows += _manualWindow = new ManualWindow(app, Size);
+            _manualWindow.WindowShow += (_, _) => view.RequireMouseEdgeScrollReentry();
+            _manualWindow.WindowHide += (_, _) => view.RequireMouseEdgeScrollReentry();
             Prompts.SuppressWhen(() => _dialog.IsVisible || menu.IsVisible ||
                 _manualWindow.IsVisible);
             Prompts.Add(new InputPrompt(InputAction.Back, "...")

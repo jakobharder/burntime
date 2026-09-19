@@ -104,7 +104,6 @@ public sealed class ManualWindow : Container
 
     void ExitFromButton()
     {
-        app.Engine.CenterMouse();
         Hide();
     }
 
