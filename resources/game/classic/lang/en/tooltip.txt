@@ -1,17 +1,17 @@
 Modern AI
-Strategic remaster AI.
-Plans camps and combat.
-Change Mode
+Properly plays the game.
+Receives minor advantages.
+Change to Amiga AI
 }#
 Amiga AI
 Original Amiga AI.
-Keeps its limitations.
-Change Mode
+Quite cheaty actually.
+Change to No AI
 }#
 No AI
-Unused slots stay empty.
-Human players only.
-Change Mode
+Play without computer
+controlled enemies.
+Change to Modern AI
 }#
 Knife
 Damage {damage}}
@@ -19,18 +19,17 @@ Equip
 Unequip
 }#
 Extended mode
-Expanded items and trade.
-Revised survival/combat.
+Expanded respawn system.
+Clothing reduces damage.
+Dropped food decays over time.
 }
-Change Mode
+Change to Classic Mode
 }#
 Classic mode
-Experience the original.
-
-This mode is a mixture of DOS and Amiga
-with items, economy and combat being close.
+Faithful blend of the original
+DOS and Amiga implementations.
 }
-Change Mode
+Change to Extended Mode
 }#
 Food {food}}
 Water {water}}
@@ -53,17 +52,17 @@ Unsuitable camp
 Easy
 More supplies and finds.
 Better trading odds.
-Change Difficulty
+Change to Normal
 }#
 Normal
 Standard supplies, finds,
 and trading odds.
-Change Difficulty
+Change to Hard
 }#
 Hard
 Fewer supplies and finds.
 Worse trading odds.
-Change Difficulty
+Change to Easy
 }#
 Food Production
 {product}: {tools}}

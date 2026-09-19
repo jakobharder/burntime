@@ -39,6 +39,7 @@ public sealed class TooltipWindow : Window
     public GuiString? Status { get; set; }
     public bool StatusIsSuccess { get; set; }
     public int MinimumWidth { get; set; }
+    public int FixedWidth { get; set; }
     public Vector2? FixedSize { get; set; }
     public PixelColor BackgroundColor { get; set; } = new(128, 0, 0, 0);
 
@@ -118,9 +119,10 @@ public sealed class TooltipWindow : Window
                 _promptGroupWidth > 0 ? _textFont.GetHeight() : 0);
         }
 
-        Size = FixedSize ?? new Vector2(
-            System.Math.Max(MinimumWidth, contentWidth + HorizontalPadding * 2),
-            height);
+        int width = FixedWidth > 0
+            ? FixedWidth
+            : System.Math.Max(MinimumWidth, contentWidth + HorizontalPadding * 2);
+        Size = FixedSize ?? new Vector2(width, height);
         MoveInsideScreen();
         _language = app.Language;
         _inputMode = app.LastInputMode;

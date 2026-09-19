@@ -230,7 +230,7 @@ public class MenuScene : Scene
             Position = new Vector2(132, 145),
             HorizontalAlignment = PositionAlignment.Right,
             VerticalAlignment = PositionAlignment.Right,
-            FixedSize = new Vector2(128, 52),
+            FixedWidth = 128,
             Layer = 30
         };
         _difficultyTooltip.Hide();
@@ -251,7 +251,7 @@ public class MenuScene : Scene
             Position = new Vector2(161, 145),
             HorizontalAlignment = PositionAlignment.Center,
             VerticalAlignment = PositionAlignment.Right,
-            FixedSize = new Vector2(128, 52),
+            FixedWidth = 160,
             Layer = 30
         };
         _gameModeTooltip.Hide();
@@ -273,7 +273,7 @@ public class MenuScene : Scene
             // Match the left edges, mirroring the difficulty tooltip.
             Position = new Vector2(190, 145),
             VerticalAlignment = PositionAlignment.Right,
-            FixedSize = new Vector2(128, 52),
+            FixedWidth = 132,
             Layer = 30
         };
         _aiTooltip.Hide();
