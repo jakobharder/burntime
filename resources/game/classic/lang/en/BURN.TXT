@@ -48,64 +48,64 @@ Trader}
 }
 }
 }
-maggots}
-rats}
-snake}
-meat}
-water bottle}
-bottle}
-full canteen}
-empty canteen}
-full wineskin}
-empty wineskin}
-knife}
-axe}
-pitchfork}
-loaded rifle}
-unloaded rifle}
-mine}
-rat trap}
-trap}
-snake trap}
-hand pump}
-industrial pump}
-mine detector}
-two-way radio}
-broken pump}
-spare parts}
-defective mine detector}
-defective two-way radio}
-electrical odds-and-ends}
-batteries}
+Maggots}
+Rats}
+Snake}
+Meat}
+Water bottle}
+Bottle}
+Full canteen}
+Empty canteen}
+Full wineskin}
+Empty wineskin}
+Knife}
+Axe}
+Pitchfork}
+Loaded rifle}
+Unloaded rifle}
+Mine}
+Rat trap}
+Trap}
+Snake trap}
+Hand pump}
+Industrial pump}
+Mine detector}
+Two-way radio}
+Broken pump}
+Spare parts}
+Defective mine detector}
+Defective two-way radio}
+Electrical odds-and-ends}
+Batteries}
 LCD-display}
-wire}
-woodpile}
-screws}
-tin}
-spring}
-hose}
-rags}
-iron pipe}
-ammunition}
-gas mask}
-protective suit}
-gloves}
-protective overall}
-boots}
-rope}
-iron bars}
-bones}
-skull}
-gas canister}
-gold}
-tools}
-bible}
-fur}
-leather jacket}
-tires}
-steel helmet}
-sweater}
-pants}
+Wire}
+Woodpile}
+Screws}
+Tin}
+Spring}
+Hose}
+Rags}
+Iron pipe}
+Ammunition}
+Gas mask}
+Protective suit}
+Gloves}
+Protective overall}
+Boots}
+Rope}
+Iron bars}
+Bones}
+Skull}
+Gas canister}
+Gold}
+Tools}
+Bible}
+Fur}
+Leather jacket}
+Tires}
+Steel helmet}
+Sweater}
+Pants}
 }
 }
 maggots}
