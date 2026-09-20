@@ -172,7 +172,7 @@ class MapViewOverlayHoverText : IMapViewOverlay
             : info.Color;
         int foodPerDay = info.WorldLocation?.GetFoodProductionRate().FoodPerDay ?? 0;
         bool hasVisited = player?.HasVisited(info.WorldLocation) == true;
-        bool hasRadio = game != null && player != null && RadioIntel.HasRadio(game, player);
+        bool hasRadio = player != null && RadioIntel.HasRadio(player);
         string? dangerIcon = hasVisited || hasRadio ? info.WorldLocation?.Danger?.Type switch
         {
             "gas" => FontIcons.Toxic,
@@ -188,7 +188,7 @@ class MapViewOverlayHoverText : IMapViewOverlay
             if (showResourceInfo)
                 radioBars.Add(new GuiTextBar(GuiTextBarType.BlueBar, baseWater));
             if (game != null && player != null &&
-                RadioIntel.IsAvailable(game, player, info.WorldLocation!))
+                RadioIntel.IsAvailable(player, info.WorldLocation!))
             {
                 RadioReport report = RadioIntel.Create(game, player, info.WorldLocation!);
                 radioBars.Add(new GuiTextBar(GuiTextBarType.Dots, report.Defenders));

@@ -193,14 +193,18 @@ internal sealed class GameRules
 
     public void TurnEmployedCharacter(Character character, int? naturalHealingThreshold = null)
     {
+        bool skipSupplies = !character.IsWithBoss || !character.Player.IsTraveling;
+        skipSupplies = skipSupplies &&
+            character.HasItemFunction(ItemFunction.RestingSustenance);
+
         if (Settings.SurvivalRule == SurvivalRule.RemasterSupplyPool)
         {
-            character.TurnExtendedEmployed(naturalHealingThreshold);
+            character.TurnExtendedEmployed(naturalHealingThreshold, skipSupplies);
             HazardRules.ApplyDaily(character);
             return;
         }
 
-        TurnOriginalEmployed(character, naturalHealingThreshold);
+        TurnOriginalEmployed(character, naturalHealingThreshold, skipSupplies);
     }
 
     public bool PassesDailyHazardCheck(Character character) => HazardRules.PassesDailyCheck(character);
@@ -266,7 +270,8 @@ internal sealed class GameRules
     static int OriginalServiceValue(IItemCollection payment) =>
         RuleFormulas.OriginalServiceValue(payment.Select(item => item.TradeValue));
 
-    static void TurnOriginalEmployed(Character character, int? naturalHealingThreshold)
+    static void TurnOriginalEmployed(Character character, int? naturalHealingThreshold,
+        bool skipSupplies)
     {
         bool doctorAvailable = character.HasLocalDoctor;
 
@@ -275,7 +280,7 @@ internal sealed class GameRules
         if (character.Health >= threshold)
             character.Health += doctorAvailable ? 4 : 2;
 
-        if (!ConsumeWater(character))
+        if (!skipSupplies && !ConsumeWater(character))
         {
             character.Water = 0;
             character.Health -= 25;
@@ -283,7 +288,7 @@ internal sealed class GameRules
                 return;
         }
 
-        if (!ConsumeFood(character))
+        if (!skipSupplies && !ConsumeFood(character))
         {
             character.Food = 0;
             character.Health -= 25;

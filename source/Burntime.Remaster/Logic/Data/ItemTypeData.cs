@@ -44,6 +44,7 @@ namespace Burntime.Remaster.Logic.Data
         public int[] DamageValues = Array.Empty<int>();
         public int DefenseValue;
         public int AmmoValue;
+        public ItemFunction Functions;
 
         public string Empty;
         public string Full;

@@ -174,7 +174,7 @@ namespace Burntime.Remaster
                 app.SceneManager.SetScene("InfoScene");
                 return true;
             }
-            if (!RadioIntel.IsAvailable(game, player, location))
+            if (!RadioIntel.IsAvailable(player, location))
                 return false;
 
             ShowRadioReport(game, player, location);
@@ -991,9 +991,8 @@ namespace Burntime.Remaster
 
         bool CanShowInfo(Logic.Player player, Logic.Location location)
         {
-            ClassicGame game = app.GameState as ClassicGame;
             return CanShowCampInfo(player, location) ||
-                RadioIntel.IsAvailable(game, player, location);
+                RadioIntel.IsAvailable(player, location);
         }
 
         static bool CanShowCampInfo(Logic.Player player, Logic.Location location) =>

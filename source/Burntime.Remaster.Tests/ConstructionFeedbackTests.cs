@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Burntime.Framework.States;
 using Burntime.Platform.IO;
 using Burntime.Remaster.Logic;
@@ -12,6 +13,22 @@ static class ConstructionFeedbackTests
 {
     internal static IEnumerable<Case<int>> AvailabilityCases()
     {
+        yield return Int("metal detector recipe uses repair electronics without LCD", 0, () =>
+        {
+            ConfigFile config = new();
+            config.Open(System.IO.File.OpenRead(ResourceFile("construction.txt")));
+            Constructions constructions = new(config);
+            var recipe = constructions.Recipes.Single(candidate =>
+                candidate.Result == "item_mine_detector");
+
+            Equal(ItemFunction.MetalDetection, recipe.RequiredFunction,
+                "extended function gate");
+            Equal("item_defective_mine_detector item_electrical_odds_and_ends item_batteries",
+                string.Join(' ', recipe.Items), "materials");
+            Equal(false, recipe.Items.Contains("item_lcd_display"), "LCD omitted");
+            return 0;
+        });
+
         yield return Int("reload reports missing ammunition and becomes available", 0, () =>
         {
             ConfigFile config = new();

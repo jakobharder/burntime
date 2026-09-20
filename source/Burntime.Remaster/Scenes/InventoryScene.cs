@@ -33,6 +33,10 @@ namespace Burntime.Remaster.Scenes
         const int NeedsMaterialsTextIndex = 72;
         const int NeedsAmmunitionTextIndex = 73;
         const int SelectedTrapTextIndex = 77;
+        const int RemoteIntelTextIndex = 79;
+        const int RestingSustenanceTextIndex = 80;
+        const int CreatureDeterrentTextIndex = 81;
+        const int MetalDetectionTextIndex = 82;
         const int MaxRecipeLines = 3;
 
         public override bool UseDiagonalGamepadNavigation => true;
@@ -220,7 +224,7 @@ namespace Burntime.Remaster.Scenes
             statusIsSuccess = false;
             ClassicGame game = app.GameState as ClassicGame;
             BurntimeClassic classic = app as BurntimeClassic;
-            var recipes = game.Constructions.Recipes.Where(recipe =>
+            var recipes = game.Constructions.GetRecipes(game).Where(recipe =>
                 recipe.Items.Contains(focused.ID) || recipe.Tools.Contains(focused.ID))
                 .ToArray();
 
@@ -290,6 +294,7 @@ namespace Burntime.Remaster.Scenes
             }
 
             AddProtectionLines(focused, lines);
+            AddFunctionLines(focused, lines);
             AddRecipeLines(recipes, lines);
 
             bool needsTechnician = recipes.Length > 0 &&
@@ -355,6 +360,18 @@ namespace Burntime.Remaster.Scenes
                 lines.Add(protectionText.Get(RadiationProtectionTextIndex));
             }
 
+        }
+
+        void AddFunctionLines(Item focused, List<string> lines)
+        {
+            if (focused.Type.HasFunction(ItemFunction.RemoteIntel))
+                lines.Add(app.ResourceManager.GetString("tooltip", RemoteIntelTextIndex));
+            if (focused.Type.HasFunction(ItemFunction.RestingSustenance))
+                lines.Add(app.ResourceManager.GetString("tooltip", RestingSustenanceTextIndex));
+            if (focused.Type.HasFunction(ItemFunction.CreatureDeterrent))
+                lines.Add(app.ResourceManager.GetString("tooltip", CreatureDeterrentTextIndex));
+            if (focused.Type.HasFunction(ItemFunction.MetalDetection))
+                lines.Add(app.ResourceManager.GetString("tooltip", MetalDetectionTextIndex));
         }
 
         void AddRecipeLines(Constructions.ConstructionInfo[] recipes,

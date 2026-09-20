@@ -18,22 +18,23 @@ static class RadioIntelTests
         yield return Int("defense rating is capped", 4, () => RadioIntel.ThreatLevel(500));
         yield return Int("radio availability follows carrier, target and rules", 0, () =>
         {
-            var (game, player, _, manager) = EncounterPlayers(RuleSet.Extended);
+            var (_, player, _, manager) = EncounterPlayers(RuleSet.Extended);
             var target = manager.Create<Location>();
-            player.Character.Items.Add(TestItem(manager, "item_two_way_radio"));
-            Equal(true, RadioIntel.IsAvailable(game, player, target),
+            player.Character.Items.Add(TestItem(manager, "item_two_way_radio",
+                functions: ItemFunction.RemoteIntel));
+            Equal(true, RadioIntel.IsAvailable(player, target),
                 "carried extended radio reports remote camp");
             target.Player = player;
-            Equal(false, RadioIntel.IsAvailable(game, player, target),
+            Equal(false, RadioIntel.IsAvailable(player, target),
                 "owned camp keeps normal info");
             target.Player = null;
             target.IsCity = true;
-            Equal(false, RadioIntel.IsAvailable(game, player, target),
+            Equal(false, RadioIntel.IsAvailable(player, target),
                 "cities do not receive camp reports");
-            var (classic, classicPlayer, _, classicManager) = EncounterPlayers(RuleSet.Classic);
+            var (_, classicPlayer, _, classicManager) = EncounterPlayers(RuleSet.Classic);
             var classicTarget = classicManager.Create<Location>();
             classicPlayer.Character.Items.Add(TestItem(classicManager, "item_two_way_radio"));
-            Equal(false, RadioIntel.IsAvailable(classic, classicPlayer, classicTarget),
+            Equal(false, RadioIntel.IsAvailable(classicPlayer, classicTarget),
                 "classic radio remains unchanged");
             return 0;
         });

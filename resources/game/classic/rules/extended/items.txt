@@ -119,12 +119,16 @@ class=nodrop
 burngfx=20
 
 [item_mine_detector]
-class=nodrop
+class=nodrop utility
 burngfx=21
+title=@newburn?113
+text=@newburn?114
+function=metal_detection
 
 [item_two_way_radio]
-class=nodrop
+class=nodrop utility
 burngfx=22
+function=remote_intel
 
 [item_broken_pump]
 class=pump_parts
@@ -137,6 +141,8 @@ burngfx=24
 [item_defective_mine_detector]
 class=special rare
 burngfx=25
+title=@newburn?115
+text=@newburn?116
 
 [item_defective_two_way_radio]
 class=special rare
@@ -222,12 +228,14 @@ class=useless
 burngfx=45
 
 [item_bones]
-class=useless
+class=utility
 burngfx=46
+function=creature_deterrent
 
 [item_skull]
-class=useless
+class=utility
 burngfx=47
+function=creature_deterrent
 
 [item_gas_canister]
 class=useless rare
@@ -242,8 +250,9 @@ class=special
 burngfx=50
 
 [item_bible]
-class=useless rare
+class=utility rare
 burngfx=51
+function=resting_sustenance
 
 [item_fur]
 class=useless

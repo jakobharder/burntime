@@ -32,6 +32,7 @@ static class Program
         Run("doctor healing", RuleFormulasTests.DoctorCases());
         Run("configured rules", GameRulesTests.ConfiguredRuleCases());
         Run("radio intelligence", RadioIntelTests.RadioCases());
+        Run("item functions", ItemFunctionTests.FunctionCases());
         Run("restaurant and pub value", RuleFormulasTests.ServiceValueCases());
         Run("original barter", RuleFormulasTests.BarterCases());
         Run("original defenders", AiStateOperationsTests.DefenderCases());
@@ -151,13 +152,14 @@ static class Program
 
     internal static Item TestItem(Burntime.Framework.States.StateManager manager,
         string id, int food = 0, int damage = 0, int heal = 0, float trade = 0,
-        int[]? damageValues = null, int ammo = 0, int defense = 0, int attackRange = 0)
+        int[]? damageValues = null, int ammo = 0, int defense = 0, int attackRange = 0,
+        ItemFunction functions = ItemFunction.None)
     {
         var data = new Burntime.Remaster.Logic.Data.ItemTypeData
         {
             DataName = id, FoodValue = food, DamageValue = damage, HealValue = heal, TradeValue = trade,
             DamageValues = damageValues ?? Array.Empty<int>(), AmmoValue = ammo, DefenseValue = defense,
-            AttackRange = attackRange,
+            AttackRange = attackRange, Functions = functions,
             Class = Array.Empty<string>(), Protection = Array.Empty<string>()
         };
         var type = manager.Create<Burntime.Remaster.Logic.ItemType>(data);

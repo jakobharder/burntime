@@ -77,3 +77,7 @@ Weiter
 Automatisch
 Ausgewählte Falle
 }#
+Meldet entfernte Lager und Gefahren}
+Der Mensch lebt nicht vom Brot allein.}
+Kreaturen scheinen es nicht zu mögen.}
+Kann auf Reisen Munition aufspüren.}

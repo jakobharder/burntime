@@ -77,3 +77,7 @@ Next
 Automatic
 Selected trap
 }#
+Reports remote camps and hazards}
+Man does not live by bread alone.}
+Creatures don't seem to like it.}
+May uncover ammunition while travelling.}

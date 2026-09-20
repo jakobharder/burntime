@@ -606,7 +606,7 @@ public sealed class ManualWindow : Container
         Vector2 position, int availableWidth)
     {
         ClassicGame game = BurntimeClassic.Instance.Game;
-        Constructions.ConstructionInfo? recipe = game.Constructions.Recipes
+        Constructions.ConstructionInfo? recipe = game.Constructions.GetRecipes(game)
             .FirstOrDefault(candidate => candidate.Result == item.ID);
         (string statistic, string detail) = GetContextItemText(item, recipe);
         bool normalDetail = item.DamageValues.Length > 0 ||
@@ -707,7 +707,7 @@ public sealed class ManualWindow : Container
         if (!game.ItemTypes.Contains(resultId))
             return true;
 
-        Constructions.ConstructionInfo? recipe = game.Constructions.Recipes
+        Constructions.ConstructionInfo? recipe = game.Constructions.GetRecipes(game)
             .FirstOrDefault(candidate => candidate.Result == resultId);
         if (recipe is null)
             return true;

@@ -111,3 +111,7 @@ Remaster-Computerspieler
 Erweiterte Regeln
 Schaden {damage}}
 Vert. {defense}%}
+Metalldetektor}
+einen Metalldetektor}
+defekter Metalldetektor}
+einen defekten Metalldetektor}

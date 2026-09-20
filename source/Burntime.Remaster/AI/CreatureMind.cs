@@ -1,6 +1,7 @@
 ﻿using System;
 using Burntime.Remaster.Logic;
 using Burntime.Platform;
+using System.Linq;
 
 namespace Burntime.Remaster.AI
 {
@@ -28,6 +29,12 @@ namespace Burntime.Remaster.AI
 
             ClassicGame game = (ClassicGame)container.Root;
             bool canAttack = !Owner.Location.IsCity;
+
+            if (attack?.HasItemFunction(ItemFunction.CreatureDeterrent) == true)
+            {
+                attack = null;
+                Owner.Path.MoveTo = Owner.Position;
+            }
 
             // Fighting is disabled in cities, so cancel an approach there.
             if (!canAttack && attack != null)
@@ -70,16 +77,17 @@ namespace Burntime.Remaster.AI
                 else
                 {
                     Player player = (Player)container.Root.CurrentPlayer;
-                    Character sel = player.SelectedCharacter;
+                    Character? target = SelectAttackTarget(player, Owner.Position);
 
-                    if (player.Location == Owner.Location && (sel.Position - Owner.Position).Length < 200)
+                    if (target != null && player.Location == Owner.Location &&
+                        (target.Position - Owner.Position).Length < 200)
                     {
                         // attack with a chance of 33%
                         if (Burntime.Platform.Math.Random.Next() % 3 == 0)
                         {
                             tryToAttack = 0;
-                            attack = sel;
-                            Owner.Path.MoveTo = sel.Position;
+                            attack = target;
+                            Owner.Path.MoveTo = target.Position;
                         }
 
                         // wait 3 ~ 7 seconds for next possible attack
@@ -118,6 +126,21 @@ namespace Burntime.Remaster.AI
                 }
             }
         }
+
+        internal static Character? SelectAttackTarget(Player player, Vector2 position)
+        {
+            Character? selected = player.SelectedCharacter;
+            if (CanAttack(selected))
+                return selected;
+
+            return player.Party.Where(CanAttack)
+                .OrderBy(character => (character.Position - position).Length)
+                .FirstOrDefault();
+        }
+
+        static bool CanAttack(Character? character) => character != null &&
+            !character.IsDead &&
+            !character.HasItemFunction(ItemFunction.CreatureDeterrent);
 
         public override void RequestToTalk()
         {

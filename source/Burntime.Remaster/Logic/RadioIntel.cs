@@ -18,13 +18,12 @@ internal readonly record struct RadioReport(
 
 internal static class RadioIntel
 {
-    internal static bool HasRadio(ClassicGame game, Player player) =>
-        game.RuleBook.Settings.RadioReport &&
+    internal static bool HasRadio(Player player) =>
         player.Party.Any(character => !character.IsDead &&
-            character.Items.Any(item => item.ID == "item_two_way_radio"));
+            character.HasItemFunction(ItemFunction.RemoteIntel));
 
-    internal static bool IsAvailable(ClassicGame game, Player player, Location location) =>
-        HasRadio(game, player) && !location.IsCity && location != player.Location &&
+    internal static bool IsAvailable(Player player, Location location) =>
+        HasRadio(player) && !location.IsCity && location != player.Location &&
         location.Player != player;
 
     internal static RadioReport Create(ClassicGame game, Player viewer, Location location)

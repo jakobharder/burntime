@@ -111,3 +111,7 @@ Remaster AI players
 Extended rules
 Damage {damage}}
 Def. {defense}%}
+metal detector}
+a metal detector}
+defective metal detector}
+a defective metal detector}

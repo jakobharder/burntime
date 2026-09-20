@@ -169,7 +169,10 @@ namespace Burntime.Remaster.Scenes
 
             font.DrawText(target, new Vector2(224, 86), txt[406], TextAlignment.Left, VerticalTextAlignment.Top);
 
-            txt.AddArgument("|J", loc.GetFoodProductionRate().FoodPerDay);
+            Production.Rate production = loc.GetFoodProductionRate();
+            txt.AddArgument("|J", production.MaintenanceBonus > 0
+                ? $"{production.FoodPerDay - production.MaintenanceBonus}+{production.MaintenanceBonus}"
+                : production.FoodPerDay.ToString());
             txt.AddArgument("|D", loc.Source.Water);
 
             font.DrawText(target, new Vector2(265, 117), txt[421], TextAlignment.Left, VerticalTextAlignment.Top);

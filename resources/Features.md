@@ -12,6 +12,9 @@
 | Combat | Weapon damage table by tier (every 25 XP) | =Classic; clothing reduces damage |
 | Defense | - | Best clothing reduces damage by 5–25%; no XP bonus |
 | Two-way radio | Trade item | While carried, reveals hazards and reports personnel, defense and production at non-owned camps |
+| Metal detector | Trade item | While carried, has a 1% chance per travel day to uncover ammunition after a journey |
+| Bible | Trade item | Its carrier uses no food or water while staying at one location; travel still consumes supplies |
+| Skull or bones | Trade item | Dogs and mutants avoid attacking its carrier |
 | One snake trap | 4 food points/day | =Classic |
 | Doctor: one meat | +36 health; treatment tops out at 95 | =Classic |
 | Natural healing | 2 health/day from 70; doctor gives 4/day from 50 | =Classic; a doctor also stabilizes supplied characters below 50 by 1/day |

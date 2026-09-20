@@ -95,9 +95,19 @@ static class GameRulesTests
                 Equal(rule == RuleSet.Extended ? 1 : 0,
                     rules.Settings.DoctorStabilization,
                     "doctor stabilization is enabled only in extended mode");
+                Equal(0,
+                    rules.Settings.TechnicianFoodBonus,
+                    "technician maintenance is disabled");
                 Equal(rule == RuleSet.Extended,
-                    rules.Settings.RadioReport,
-                    "radio reports are enabled only in extended mode");
+                    config["item_two_way_radio"].GetStrings("function").Contains("remote_intel"),
+                    "radio reports are enabled by the extended item definition");
+                Equal(rule == RuleSet.Extended,
+                    config["item_bible"].GetStrings("function").Contains("resting_sustenance"),
+                    "Bible sustenance is enabled by the extended item definition");
+                foreach (string item in new[] { "item_skull", "item_bones" })
+                    Equal(rule == RuleSet.Extended,
+                        config[item].GetStrings("function").Contains("creature_deterrent"),
+                        $"{item} deterrent is enabled by the extended item definition");
                 var decayLocation = manager.Create<Location>();
                 decayLocation.Id = 2;
                 var junk = TestItem(manager, "junk");

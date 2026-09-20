@@ -348,7 +348,13 @@ public class Location : StateObject, IUpdateable, ITurnable
         if (Player is null || production is null)
             return new Production.Rate();
 
-        return production.GetRate(GetProductionToolCount(production), CampNPC.Count());
+        int maintenanceBonus = !IsCity && CampNPC.Any(character =>
+            character.Player == Player && character.IsStationed && !character.IsDead &&
+            character.Class == CharClass.Technician)
+            ? ((ClassicGame)Container.Root).RuleBook.Settings.TechnicianFoodBonus
+            : 0;
+        return production.GetRate(GetProductionToolCount(production), CampNPC.Count(),
+            maintenanceBonus);
     }
 
     public int GetProductionToolCount(Production production) => Rooms

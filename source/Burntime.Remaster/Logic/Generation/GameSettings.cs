@@ -159,7 +159,8 @@ class GameSettings
     public int DoctorHealthCap => config["rules"].GetInt("health_cap");
     public int DoctorStabilization =>
         Math.Max(0, config["rules"].GetInt("doctor_stabilization"));
-    public bool RadioReport => config["rules"].GetBool("radio_report");
+    public int TechnicianFoodBonus =>
+        Math.Max(0, config["rules"].GetInt("technician_food_bonus"));
     public int CombatTierWidth => config["rules"].GetInt("experience_tier_width");
     public int DroppedFoodDecayInterval =>
         Math.Max(0, config["rules"].GetInt("dropped_food_decay_interval"));

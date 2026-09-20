@@ -367,6 +367,7 @@ namespace Burntime.Remaster.Logic
                 {
                     Location = destination;
                     destination = null;
+                    MetalDetectorScavenging.TryDiscoverAmmunition(this, travelDays);
                 }
             }
         }

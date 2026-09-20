@@ -8,6 +8,16 @@ using System.Collections.Generic;
 
 namespace Burntime.Remaster.Logic
 {
+    [Flags]
+    public enum ItemFunction
+    {
+        None = 0,
+        RemoteIntel = 1,
+        RestingSustenance = 2,
+        CreatureDeterrent = 4,
+        MetalDetection = 8
+    }
+
     [Serializable]
     public class ItemType : StateObject
     {
@@ -97,6 +107,9 @@ namespace Burntime.Remaster.Logic
         public int[] DamageValues => data.Object.DamageValues;
         public int DefenseValue => data.Object.DefenseValue;
         public int AmmoValue => data.Object.AmmoValue;
+        public ItemFunction Functions => data.Object.Functions;
+
+        public bool HasFunction(ItemFunction function) => Functions.HasFlag(function);
 
         public ItemType Empty
         {

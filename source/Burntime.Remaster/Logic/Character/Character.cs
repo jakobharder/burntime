@@ -214,6 +214,8 @@ namespace Burntime.Remaster.Logic
 
         public int GetFoodInInventory() => Items.OfType<Item>().Sum(x => x.FoodValue);
         public int GetWaterInInventory() => Items.OfType<Item>().Sum(x => x.WaterValue);
+        internal bool HasItemFunction(ItemFunction function) =>
+            Items?.Any(item => item.Type.HasFunction(function)) == true;
         #endregion
 
         protected override void InitInstance(object[] parameter)
@@ -802,11 +804,11 @@ namespace Burntime.Remaster.Logic
             : Location?.CampNPC.Any(member => !member.IsDead &&
                 member.Class == CharClass.Doctor && member.Player == Player) == true;
 
-        internal void TurnExtendedEmployed(int? naturalHealingThreshold)
+        internal void TurnExtendedEmployed(int? naturalHealingThreshold, bool skipSupplies)
         {
             ICharacterCollection group = GetGroup();
 
-            if (Food == 0)
+            if (!skipSupplies && Food == 0)
             {
                 Item? item = FindAccessibleFood(out IItemCollection? owner);
                 if (item != null && owner != null)
@@ -817,7 +819,7 @@ namespace Burntime.Remaster.Logic
             }
 
             // npc is with boss
-            if (IsWithBoss)
+            if (!skipSupplies && IsWithBoss)
             {
                 if (Water == 0)
                 {
@@ -829,7 +831,7 @@ namespace Burntime.Remaster.Logic
                     }
                 }
             }
-            else // npc is stationed
+            else if (!skipSupplies) // npc is stationed
             {
                 Location.Source.Reserve = group.Drink(null, Location.Source.Reserve);
                 if (Water == 0)
@@ -861,10 +863,13 @@ namespace Burntime.Remaster.Logic
 
             if (health > 100)
                 health = 100;
-            if (Food == 0)
-                health -= 25;
-            if (Water == 0)
-                health -= 25;
+            if (!skipSupplies)
+            {
+                if (Food == 0)
+                    health -= 25;
+                if (Water == 0)
+                    health -= 25;
+            }
 
             if (health <= 0)
             {
@@ -872,12 +877,15 @@ namespace Burntime.Remaster.Logic
                 return;
             }
 
-            Food--;
-            if (Food < 0)
-                Food = 0;
-            Water--;
-            if (Water < 0)
-                Water = 0;
+            if (!skipSupplies)
+            {
+                Food--;
+                if (Food < 0)
+                    Food = 0;
+                Water--;
+                if (Water < 0)
+                    Water = 0;
+            }
         }
 
         void ResetStationedMind()

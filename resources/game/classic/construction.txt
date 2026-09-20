@@ -30,6 +30,13 @@ dialog=508
 main_items=item_defective_two_way_radio
 class=technician
 
+[item_mine_detector]
+items=item_defective_mine_detector item_electrical_odds_and_ends item_batteries
+dialog=508
+main_items=item_defective_mine_detector
+class=technician
+requires_function=metal_detection
+
 [item_protective_suit]
 items=item_protective_overall item_gas_mask item_gloves item_boots
 dialog=506

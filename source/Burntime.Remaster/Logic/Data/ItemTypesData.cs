@@ -95,6 +95,17 @@ namespace Burntime.Remaster.Logic.Data
 
                 type.LastRoundSprite = section.GetString("image_last_round");
                 type.Class = section.GetStrings("class");
+                foreach (string function in section.GetStrings("function"))
+                {
+                    string name = string.Concat(function.Split(new[] { '_', '-' },
+                        StringSplitOptions.RemoveEmptyEntries).Select(part =>
+                            char.ToUpperInvariant(part[0]) + part[1..]));
+                    if (Enum.TryParse(name, out ItemFunction value) && Enum.IsDefined(value))
+                        type.Functions |= value;
+                    else
+                        Burntime.Platform.Log.Warning(
+                            $"Unknown item function '{function}' on {section.Name}.");
+                }
 
                 type.FoodValue = section.GetInt("food");
                 type.WaterValue = section.GetInt("water");

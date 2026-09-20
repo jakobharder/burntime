@@ -152,6 +152,43 @@ static class ProductionPolicyTests
             }
             return 0;
         });
+        foreach (RuleSet rule in Enum.GetValues<RuleSet>())
+            yield return Int($"{rule} technician maintenance bonus", 0, () =>
+            {
+                var m = new StateManager(null!);
+                var game = m.Create<ClassicGame>(); m.Root = game; game.SetRules(rule);
+                var camp = m.Create<Location>(); camp.Rooms = m.CreateLinkList<Room>();
+                var room = m.Create<Room>(); camp.Rooms.Add(room);
+                var player = m.Create<HazardPlayer>(new object[] { 0 }); camp.Player = player;
+                var food = TestItem(m, "food", food: 3).Type;
+                var production = m.Create(() => new Production(1, new[] { 0, 3 },
+                    new[] { 0, 3 }, food, 0));
+                var tool = TestItem(m, "tool"); tool.Type.Production = production;
+                room.Items.Add(tool); camp.Production = production;
+
+                var technician = m.Create<HazardCharacter>();
+                technician.Player = player; technician.Class = CharClass.Technician;
+                camp.Characters.Add(technician);
+
+                int expectedBonus = game.RuleBook.Settings.TechnicianFoodBonus;
+                Production.Rate rate = camp.GetFoodProductionRate();
+                Equal(3 + expectedBonus, rate.FoodPerDay, "configured total output");
+                Equal(expectedBonus, rate.MaintenanceBonus, "reported maintenance contribution");
+
+                var second = m.Create<HazardCharacter>();
+                second.Player = player; second.Class = CharClass.Technician;
+                camp.Characters.Add(second);
+                Equal(3 + expectedBonus, camp.GetFoodProductionRate().FoodPerDay,
+                    "multiple technicians do not stack");
+
+                camp.IsCity = true;
+                Equal(3, camp.GetFoodProductionRate().FoodPerDay, "cities receive no bonus");
+                camp.IsCity = false; room.Items.Remove(tool);
+                rate = camp.GetFoodProductionRate();
+                Equal(0, rate.FoodPerDay, "maintenance cannot create production");
+                Equal(0, rate.MaintenanceBonus, "inactive production reports no bonus");
+                return 0;
+            });
         yield return Int("automatic production upgrades while manual production stays pinned", 0, () =>
         {
             var m = new StateManager(null!);

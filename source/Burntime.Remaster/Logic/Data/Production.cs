@@ -10,6 +10,7 @@ public sealed class Production : StateObject
     {
         public float ItemDropInterval;
         public int FoodPerDay;
+        public int MaintenanceBonus;
         public bool IsCampStarving;
     }
 
@@ -41,14 +42,16 @@ public sealed class Production : StateObject
         ProductionPerDay2Person = perDayDouble.Length == 0 ? perDay : perDayDouble;
     }
 
-    public Rate GetRate(int toolCount, int npcCount)
+    public Rate GetRate(int toolCount, int npcCount, int maintenanceBonus = 0)
     {
         int trapCount = Math.Min(toolCount, MaxCombination);
+        int foodPerDay = (npcCount >= 2) ? ProductionPerDay2Person[trapCount] : ProductionPerDay[trapCount];
 
         var info = new Rate()
         {
-            FoodPerDay = (npcCount >= 2) ? ProductionPerDay2Person[trapCount] : ProductionPerDay[trapCount]
+            MaintenanceBonus = foodPerDay > 0 ? Math.Max(0, maintenanceBonus) : 0
         };
+        info.FoodPerDay = foodPerDay + info.MaintenanceBonus;
 
         int remainingPerDay = info.FoodPerDay - npcCount;
         if (remainingPerDay > 0)
