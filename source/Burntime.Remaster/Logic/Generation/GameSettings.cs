@@ -157,6 +157,8 @@ class GameSettings
     public int GetBarterFactor(int level) => config[Math.Clamp(level, 0, 2).ToString()].GetInt("barter_factor");
     public float DoctorHealingFactor => config["rules"].GetFloat("healing_factor");
     public int DoctorHealthCap => config["rules"].GetInt("health_cap");
+    public int DoctorStabilization =>
+        Math.Max(0, config["rules"].GetInt("doctor_stabilization"));
     public int CombatTierWidth => config["rules"].GetInt("experience_tier_width");
     public int DroppedFoodDecayInterval =>
         Math.Max(0, config["rules"].GetInt("dropped_food_decay_interval"));

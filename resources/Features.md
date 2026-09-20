@@ -13,6 +13,7 @@
 | Defense | - | Best clothing reduces damage by 5–25%; no XP bonus |
 | One snake trap | 4 food points/day | =Classic |
 | Doctor: one meat | +36 health; treatment tops out at 95 | =Classic |
+| Natural healing | 2 health/day from 70; doctor gives 4/day from 50 | =Classic; a doctor also stabilizes supplied characters below 50 by 1/day |
 | Barter: your offer's value on Easy / Normal / Hard | 100% / 90% / 80% | =Classic |
 | Trader stock | Frequent, broad original restocking | Randomized stock |
 | Gas and radiation | Damage over time; unprotected characters also die at the daily check | =Classic |

@@ -31,6 +31,7 @@ internal sealed class LocalCombatEncounter
 
     readonly Character defender;
     readonly List<AttackOrder> attacks = new();
+    readonly HashSet<Character> completedAttackers = new();
     readonly Queue<AttackOrder> retaliationQueue = new();
     AttackOrder? retaliation;
     Character? fleeFrom;
@@ -113,6 +114,7 @@ internal sealed class LocalCombatEncounter
             attacks.Remove(order);
             if (attacked && !order.Defender.IsDead)
             {
+                completedAttackers.Add(attacker);
                 attacker.HoldForCombat();
                 EnqueueRetaliation(attacker);
             }
@@ -198,6 +200,15 @@ internal sealed class LocalCombatEncounter
     {
         foreach (AttackOrder order in attacks.ToArray())
             RemoveAttack(order);
+    }
+
+    internal bool ReleaseAfterCompletedAttack(Character attacker)
+    {
+        if (!completedAttackers.Contains(attacker))
+            return false;
+
+        attacker.ReleaseCombatHold();
+        return true;
     }
 
     internal void Cancel()

@@ -11,7 +11,7 @@ namespace Burntime.Remaster.Maps;
 class MapViewOverlayNearbyAction : IMapViewOverlay
 {
     const int ItemRange = 20;
-    const int CharacterRange = 30;
+    const int CharacterRange = 35;
 
     readonly Module app;
     readonly MapViewOverlayHoverText hoverText;

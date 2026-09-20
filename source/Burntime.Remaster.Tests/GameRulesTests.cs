@@ -92,6 +92,9 @@ static class GameRulesTests
                 Equal(rule == RuleSet.Extended ? 10 : 0,
                     rules.Settings.DroppedFoodDecayInterval,
                     "dropped food decay is enabled only in extended mode");
+                Equal(rule == RuleSet.Extended ? 1 : 0,
+                    rules.Settings.DoctorStabilization,
+                    "doctor stabilization is enabled only in extended mode");
                 var decayLocation = manager.Create<Location>();
                 decayLocation.Id = 2;
                 var junk = TestItem(manager, "junk");

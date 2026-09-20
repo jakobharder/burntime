@@ -61,6 +61,10 @@ internal static class RuleFormulas
         int? thresholdOverride = null) =>
         doctorAvailable ? 50 : thresholdOverride ?? 70;
 
+    internal static int DoctorStabilizationHealing(
+        int health, bool doctorAvailable, bool supplied, int amount) =>
+        doctorAvailable && supplied && health < 50 ? amount : 0;
+
     internal static int OriginalServiceValue(IEnumerable<float> tradeValues) =>
         (int)tradeValues.Sum();
 

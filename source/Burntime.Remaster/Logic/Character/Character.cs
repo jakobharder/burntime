@@ -851,7 +851,12 @@ namespace Burntime.Remaster.Logic
             bool doctorAvailable = HasLocalDoctor;
             int healingThreshold = RuleFormulas.NaturalHealingThreshold(
                 doctorAvailable, naturalHealingThreshold);
-            if (health >= healingThreshold)
+            int stabilization = RuleFormulas.DoctorStabilizationHealing(
+                Health, doctorAvailable, Food > 0 && Water > 0,
+                Root.RuleBook.Settings.DoctorStabilization);
+            if (stabilization > 0)
+                health += stabilization;
+            else if (health >= healingThreshold)
                 health += doctorAvailable ? 4 : 2;
 
             if (health > 100)

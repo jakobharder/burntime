@@ -780,10 +780,14 @@ namespace Burntime.Remaster
             {
                 // A held direction is sampled after discrete input. Do not let
                 // an arrow key or gamepad stick cancel an attack accepted
-                // earlier in this same frame, or evade its owed retaliation.
+                // earlier in this same frame. Once its strike has resolved, a
+                // character may move without cancelling the rest of the group.
+                bool completedAttack =
+                    combatEncounter?.ReleaseAfterCompletedAttack(selectedCharacter) == true;
                 if (selectedCharacter.IsCommittedToCombat)
                     return false;
-                combatEncounter?.CancelOffense();
+                if (!completedAttack)
+                    combatEncounter?.CancelOffense();
                 if (selectedCharacter.Path is not PathFinding.ManualPath)
                 {
                     selectedCharacter.CancelAction();

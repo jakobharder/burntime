@@ -122,6 +122,14 @@ static class RuleFormulasTests
             () => RuleFormulas.NaturalHealingThreshold(doctorAvailable: false, thresholdOverride: 50));
         yield return Int("doctor lowers natural healing threshold to 50", 50,
             () => RuleFormulas.NaturalHealingThreshold(doctorAvailable: true));
+        yield return Int("doctor stabilizes supplied patient below 50", 1,
+            () => RuleFormulas.DoctorStabilizationHealing(49, doctorAvailable: true, supplied: true, 1));
+        yield return Int("doctor does not stabilize patient at 50", 0,
+            () => RuleFormulas.DoctorStabilizationHealing(50, doctorAvailable: true, supplied: true, 1));
+        yield return Int("doctor needs patient supplies to stabilize", 0,
+            () => RuleFormulas.DoctorStabilizationHealing(49, doctorAvailable: true, supplied: false, 1));
+        yield return Int("patient needs a doctor to stabilize", 0,
+            () => RuleFormulas.DoctorStabilizationHealing(49, doctorAvailable: false, supplied: true, 1));
         foreach (float factor in new[] { 1f, 0.75f })
         foreach (int health in new[] { 94, 95, 96, 100 })
         {

@@ -123,6 +123,44 @@ static class CombatResolverTests
             return 0;
         });
 
+        yield return Int("completed attacker can move while the group finishes", 0, () =>
+        {
+            var manager = new Burntime.Framework.States.StateManager(null!);
+            var game = manager.Create(() => new ClassicGame());
+            manager.Root = game;
+            game.SetRules(RuleSet.Dos);
+
+            HazardCharacter Fighter(string id)
+            {
+                var fighter = manager.Create(() => new HazardCharacter());
+                fighter.Class = CharClass.Mercenary;
+                fighter.Health = 100;
+                fighter.Items = manager.Create<ItemList>();
+                fighter.Path = manager.Create<Burntime.Remaster.PathFinding.SimplePath>();
+                fighter.Items.Add(TestItem(manager, id, damage: 1,
+                    damageValues: new[] { 1 }, attackRange: 16));
+                return fighter;
+            }
+
+            HazardCharacter boss = Fighter("boss_knife");
+            HazardCharacter follower = Fighter("follower_knife");
+            HazardCharacter defender = Fighter("defender_knife");
+            follower.Position = new Burntime.Platform.Vector2(100, 0);
+            var encounter = new LocalCombatEncounter(new[] { boss, follower }, defender);
+
+            encounter.Update(0);
+            Equal(99, defender.Health, "boss attacks while follower approaches");
+            Equal(true, encounter.ReleaseAfterCompletedAttack(boss),
+                "completed boss may leave combat hold");
+            Equal(false, boss.IsCommittedToCombat, "boss movement is released");
+
+            follower.Position = defender.Position;
+            encounter.Update(0);
+            Equal(98, defender.Health, "follower attack remains active");
+            Equal(99, boss.Health, "boss still receives queued retaliation");
+            return 0;
+        });
+
         yield return Int("new encounter stops the defender's previous flee", 0, () =>
         {
             var manager = new Burntime.Framework.States.StateManager(null!);

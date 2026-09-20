@@ -102,6 +102,16 @@ namespace Burntime.Remaster.Scenes
             base.OnResizeScreen(reload);
 
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+            UpdateWaterSourceGridBackground();
+        }
+
+        void UpdateWaterSourceGridBackground()
+        {
+            BurntimeClassic classic = app as BurntimeClassic;
+            if (grid != null && classic.InventoryRoom?.IsWaterSource == true)
+                grid.BackgroundColor = app.IsNewGfx
+                    ? new PixelColor(128, 0, 0, 0)
+                    : null;
         }
 
         void dialog_WindowHide(object? sender, EventArgs e)
@@ -509,8 +519,7 @@ namespace Burntime.Remaster.Scenes
                 grid.Position = new Vector2(160, classic.InventoryRoom.IsWaterSource ? 128 : 20);
                 grid.Spacing = new Vector2(4, 4);
                 grid.Grid = new Vector2(4, classic.InventoryRoom.IsWaterSource ? 2 : 5);
-                if (app.IsNewGfx && classic.InventoryRoom.IsWaterSource)
-                    grid.BackgroundColor = new PixelColor(128, 0, 0, 0);
+                UpdateWaterSourceGridBackground();
                 grid.Layer++;
                 grid.LeftClickItemEvent += OnLeftClickItemRoom;
                 grid.RightClickItemEvent += OnRightClickItemRoom;
