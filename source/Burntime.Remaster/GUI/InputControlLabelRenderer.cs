@@ -13,7 +13,7 @@ sealed class InputControlLabelRenderer
     const int KeyboardAtlasRows = 5;
 
     // Keep controller glyphs in the same source-pixel coordinate system as
-    // highres-font.txt. This cancels the game's non-square ratio correction,
+    // font-highres.txt. This cancels the game's non-square ratio correction,
     // so circles and squares retain their intended proportions on screen.
     static readonly Vector2f GlyphResolution = new(1.0f / 1.875f, 1.0f / 2.25f);
     static readonly int GlyphWidth = (int)System.Math.Round(GlyphSourceSize * GlyphResolution.x);

@@ -163,16 +163,73 @@ namespace Burntime.Remaster
         bool TryShowLocationInfo(int locationNumber)
         {
             ClassicGame game = app.GameState as ClassicGame;
-            if (locationNumber < 0 || locationNumber >= game.World.Locations.Count ||
-                !CanShowInfo(game.World.ActivePlayerObj,
-                    game.World.Locations[locationNumber]))
-            {
+            if (locationNumber < 0 || locationNumber >= game.World.Locations.Count)
                 return false;
-            }
 
-            BurntimeClassic.Instance.InfoCity = locationNumber;
-            app.SceneManager.SetScene("InfoScene");
+            Logic.Player player = game.World.ActivePlayerObj;
+            Logic.Location location = game.World.Locations[locationNumber];
+            if (CanShowCampInfo(player, location))
+            {
+                BurntimeClassic.Instance.InfoCity = locationNumber;
+                app.SceneManager.SetScene("InfoScene");
+                return true;
+            }
+            if (!RadioIntel.IsAvailable(game, player, location))
+                return false;
+
+            ShowRadioReport(game, player, location);
             return true;
+        }
+
+        void ShowRadioReport(ClassicGame game, Logic.Player player, Logic.Location location)
+        {
+            RadioReport report = RadioIntel.Create(game, player, location);
+            TextHelper text = new(app, "radio");
+            text.AddArgument("{location}", location.Title);
+            text.AddArgument("{count}", report.Defenders);
+            text.AddArgument("{bosses}", report.Bosses);
+            text.AddArgument("{mercenaries}", report.Mercenaries);
+            text.AddArgument("{technicians}", report.Technicians);
+            text.AddArgument("{doctors}", report.Doctors);
+            text.AddArgument("{food}", report.Food);
+            text.AddArgument("{water}", report.Water);
+
+            List<string> lines = [text.Get(0)];
+            if (report.Defenders == 0)
+            {
+                lines.Add(text.Get(1));
+            }
+            else
+            {
+                lines.Add(text.Get(2));
+                if (report.Bosses > 0)
+                    lines.Add(text.Get(3));
+                if (report.Mercenaries > 0)
+                    lines.Add(text.Get(4));
+                if (report.Technicians > 0)
+                    lines.Add(text.Get(5));
+                if (report.Doctors > 0)
+                    lines.Add(text.Get(6));
+                text.AddArgument("{threat}", text.Get(7 + report.Threat));
+                lines.Add(text.Get(7));
+            }
+            lines.Add(text.Get(12));
+
+            Conversation conversation = new()
+            {
+                Text = lines.ToArray(),
+                Choices = new ConversationChoice[3]
+                {
+                    new(),
+                    new(),
+                    new() {
+                        Action = new ConversationAction(ConversationActionType.Exit),
+                        Text = app.ResourceManager.GetString("newburn?45")
+                    }
+                }
+            };
+            _dialog.SetCharacter(player.Character, conversation);
+            _dialog.Show();
         }
 
         void ShowContextMenu(Vector2 position, bool openedByMouse)
@@ -934,9 +991,13 @@ namespace Burntime.Remaster
 
         bool CanShowInfo(Logic.Player player, Logic.Location location)
         {
-            return !location.IsCity &&
-                (location == player.Location || location.Player == player);
+            ClassicGame game = app.GameState as ClassicGame;
+            return CanShowCampInfo(player, location) ||
+                RadioIntel.IsAvailable(game, player, location);
         }
+
+        static bool CanShowCampInfo(Logic.Player player, Logic.Location location) =>
+            !location.IsCity && (location == player.Location || location.Player == player);
 
         void SetKeyboardSelection(int locationNumber)
         {

@@ -22,9 +22,13 @@ namespace Burntime.Platform.Graphics
 
         public Dictionary<char, CharInfo> CharInfo { get { return charInfo; } }
         public Dictionary<string, float> Kerning { get { return kerning; } }
+        public IReadOnlyDictionary<char, FontSpriteInfo> Indicators => indicators;
+        public IReadOnlyDictionary<char, FontSpriteInfo> Icons => icons;
 
         Dictionary<char, CharInfo> charInfo;
         Dictionary<string, float> kerning = [];
+        Dictionary<char, FontSpriteInfo> indicators = [];
+        Dictionary<char, FontSpriteInfo> icons = [];
 
         byte[] image;
         int stride;
@@ -61,6 +65,8 @@ namespace Burntime.Platform.Graphics
 
             charInfo = new Dictionary<char, CharInfo>();
             kerning = new Dictionary<string, float>();
+            indicators = ReadSpriteInfo(config[""], "indicator");
+            icons = ReadSpriteInfo(config[""], "icon");
 
             AddKerning(config[""], "kerning0.5", 0.5f);
             for (int amount = 1;
@@ -119,6 +125,32 @@ namespace Burntime.Platform.Graphics
             image = decoded.BgraData;
             stride = decoded.Width * 4;
             file.Close();
+        }
+
+        static Dictionary<char, FontSpriteInfo> ReadSpriteInfo(
+            ConfigSection config, string prefix)
+        {
+            Dictionary<char, FontSpriteInfo> result = [];
+            string image = config.Get(prefix + "_image");
+            string codes = config.Get(prefix + "_codes");
+            Vector2 size = config.GetVector2(prefix + "_size");
+            int[] starts = config.GetInts(prefix + "_starts");
+            int[] counts = config.GetInts(prefix + "_counts");
+            int[] widths = config.GetInts(prefix + "_widths");
+            int count = System.Math.Min(codes?.Length ?? 0,
+                System.Math.Min(starts.Length,
+                    System.Math.Min(counts.Length, widths.Length)));
+            if (string.IsNullOrEmpty(image) || size.x <= 0 || size.y <= 0)
+                return result;
+
+            for (int i = 0; i < count; i++)
+            {
+                if (counts[i] <= 0 || widths[i] < 0)
+                    continue;
+                result[codes[i]] = new FontSpriteInfo(image, size, starts[i],
+                    counts[i], widths[i]);
+            }
+            return result;
         }
 
         void AddKerning(ConfigSection section, string key, float amount)

@@ -1,3 +1,3 @@
 [fonts]
 sprite_scale=1x1
-font.txt=font2x.txt
+font.txt=font-xbr2.txt

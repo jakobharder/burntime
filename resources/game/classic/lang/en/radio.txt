@@ -1,0 +1,13 @@
+Radio report: {location}}
+No defenders reported.
+Defenders: {count}}
+Leaders: {bosses}}
+Mercenaries: {mercenaries}}
+Technicians: {technicians}}
+Doctors: {doctors}}
+Defense: {threat}}
+low
+moderate
+high
+extreme
+Food {food}/day, water {water}/day}

@@ -18,6 +18,7 @@ start_experience = 37
 healing_factor = 1
 health_cap = 95
 doctor_stabilization = 1
+radio_report = yes
 experience_tier_width = 25
 fight_class = fighter trader
 gas_damage_per_second = 0.5

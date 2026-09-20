@@ -31,6 +31,7 @@ static class Program
         Run("recruitment", RuleFormulasTests.RecruitmentCases());
         Run("doctor healing", RuleFormulasTests.DoctorCases());
         Run("configured rules", GameRulesTests.ConfiguredRuleCases());
+        Run("radio intelligence", RadioIntelTests.RadioCases());
         Run("restaurant and pub value", RuleFormulasTests.ServiceValueCases());
         Run("original barter", RuleFormulasTests.BarterCases());
         Run("original defenders", AiStateOperationsTests.DefenderCases());
@@ -49,6 +50,7 @@ static class Program
         Run("profile parsing", GameDefinitionsTests.ProfileParsingCases());
         Run("rule registry", GameDefinitionsTests.RuleRegistryCases());
         Run("resolution scaling", ResolutionTests.ResolutionCases());
+        Run("font indicators", FontIndicatorTests.IndicatorCases());
         Run("tooltip text substitution", TooltipTextTests.SubstitutionCases());
         Run("construction feedback", ConstructionFeedbackTests.AvailabilityCases());
 

@@ -29,7 +29,7 @@ internal class LanguageScene : Scene
             Borders = TextBorders.None
         };
 
-        _hintFont = new GuiFont("highres-font.txt", new PixelColor(128, 128, 128)) { Borders = Platform.Graphics.TextBorders.None };
+        _hintFont = new GuiFont("font-highres.txt", new PixelColor(128, 128, 128)) { Borders = Platform.Graphics.TextBorders.None };
 
         Windows += _german = new Button(app, () => SelectLanguage("de"))
         {

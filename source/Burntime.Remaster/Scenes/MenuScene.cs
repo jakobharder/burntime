@@ -81,9 +81,9 @@ public class MenuScene : Scene
         Size = new Vector2(320, 200);
         Position = (base.app.Engine.Resolution.Game - base.Size) / 2;
 
-        GuiFont buttonFont = new GuiFont("gfx/ui/start_font.txt", PixelColor.Transparent);
+        GuiFont buttonFont = new GuiFont("font-start.txt", PixelColor.Transparent);
         _selectedNameFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.HudTextHover);
-        _playerFont = new GuiFont("gfx/ui/start_font_player.txt", PixelColor.Transparent);
+        _playerFont = new GuiFont("font-start-player.txt", PixelColor.Transparent);
         _copyrightFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.Gray) { Borders = TextBorders.None };
         _infoFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.Gray/*new PixelColor(135, 140, 145)*/) { Borders = TextBorders.None };
         _setupTooltipFont = new GuiFont(BurntimeClassic.FontName,

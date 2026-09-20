@@ -80,6 +80,10 @@ public sealed class FontResource
     public IReadOnlyDictionary<char, CharInfo> CharInfo { get; private set; } = new Dictionary<char, CharInfo>();
     public IReadOnlyDictionary<string, float> Kerning { get; private set; } =
         new Dictionary<string, float>();
+    public IReadOnlyDictionary<char, FontSpriteResource> Indicators { get; private set; } =
+        new Dictionary<char, FontSpriteResource>();
+    public IReadOnlyDictionary<char, FontSpriteResource> Icons { get; private set; } =
+        new Dictionary<char, FontSpriteResource>();
     public int Offset { get; private set; }
     public int Height { get; private set; }
     public bool PostFilter { get; private set; }
@@ -97,11 +101,15 @@ public sealed class FontResource
 
     public void Load(ISprite sprite, Dictionary<char, CharInfo> charInfo,
         Dictionary<string, float> kerning,
+        Dictionary<char, FontSpriteResource> indicators,
+        Dictionary<char, FontSpriteResource> icons,
         int offset, int height, bool postFilter)
     {
         Sprite = sprite;
         CharInfo = charInfo;
         Kerning = kerning;
+        Indicators = indicators;
+        Icons = icons;
         Offset = offset;
         Height = height;
         PostFilter = postFilter;
@@ -116,12 +124,34 @@ public sealed class FontResource
     }
 }
 
+public sealed class FontSpriteResource
+{
+    readonly ISprite[] frames;
+
+    public int Advance { get; }
+
+    public FontSpriteResource(ISprite[] frames, int advance)
+    {
+        this.frames = frames;
+        Advance = advance;
+    }
+
+    public ISprite GetFrame(int value) =>
+        frames[System.Math.Clamp(value, 0, frames.Length - 1)];
+}
+
 public class Font
 {
     // Inline text markup: {x blinks x, while {{ renders a literal opening brace.
+    // ~ followed by an indicator code and decimal value selects an indicator frame.
     const char BlinkMarker = '{';
 
-    readonly record struct ParsedText(string Text, HashSet<int> BlinkingCharacters);
+    const char IndicatorMarker = '~';
+    const char IndicatorPlaceholder = '\ufffc';
+
+    readonly record struct ParsedIndicator(FontSpriteResource Resource, int Value);
+    readonly record struct ParsedText(string Text, HashSet<int> BlinkingCharacters,
+        Dictionary<int, ParsedIndicator> Indicators);
 
     public FontInfo Info;
 
@@ -245,7 +275,7 @@ public class Font
             }
 
             offset.x = position.x;
-            float lineWidth = GetWidthFPlain(str);
+            float lineWidth = GetWidthFPlain(str, parsed, characterIndex);
             Vector2f resolved = ResolvePosition(target, offset, lineWidth, GetHeight(),
                 align, verticalAlign);
             float renderX = resolved.x;
@@ -265,6 +295,15 @@ public class Font
             char[] charray = str.ToCharArray();
             foreach (char ch in charray)
             {
+                if (parsed.Indicators.TryGetValue(characterIndex,
+                    out ParsedIndicator indicator))
+                {
+                    renderX += DrawIndicator(target, indicator,
+                        new Vector2f(renderX, renderY), color.a / 255f);
+                    previous = '\0';
+                    characterIndex++;
+                    continue;
+                }
                 char current = translateChar(ch);
                 float kerningOffset = previous == '\0' ? 0 : GetKerningOverlap(previous, current);
                 renderX += kerningOffset;
@@ -340,6 +379,13 @@ public class Font
             char ch = parsed.Text[i];
             if (ch == '\n')
                 continue;
+            if (parsed.Indicators.TryGetValue(i, out ParsedIndicator indicator))
+            {
+                renderX += DrawIndicator(target, indicator,
+                    new Vector2f(renderX, renderY), color.a / 255f);
+                previous = '\0';
+                continue;
+            }
             char current = translateChar(ch);
             if (previous != '\0')
                 renderX += GetKerningOverlap(previous, current);
@@ -352,14 +398,43 @@ public class Font
         }
     }
 
-    static ParsedText ParseText(string text)
+    ParsedText ParseText(string text)
     {
         StringBuilder rendered = new(text.Length);
         HashSet<int> blinkingCharacters = new();
+        Dictionary<int, ParsedIndicator> indicators = new();
 
         for (int i = 0; i < text.Length; i++)
         {
             char current = text[i];
+            if (Resource.Icons.TryGetValue(current, out FontSpriteResource? icon))
+            {
+                indicators[rendered.Length] = new ParsedIndicator(icon, 0);
+                rendered.Append(IndicatorPlaceholder);
+                continue;
+            }
+            if (current == IndicatorMarker && i + 2 < text.Length &&
+                Resource.Indicators.TryGetValue(text[i + 1],
+                    out FontSpriteResource? indicator))
+            {
+                int digit = i + 2;
+                int value = 0;
+                while (digit < text.Length && char.IsAsciiDigit(text[digit]))
+                {
+                    int next = text[digit] - '0';
+                    value = value > (int.MaxValue - next) / 10
+                        ? int.MaxValue
+                        : value * 10 + next;
+                    digit++;
+                }
+                if (digit > i + 2)
+                {
+                    indicators[rendered.Length] = new ParsedIndicator(indicator, value);
+                    rendered.Append(IndicatorPlaceholder);
+                    i = digit - 1;
+                    continue;
+                }
+            }
             if (current != BlinkMarker)
             {
                 rendered.Append(current);
@@ -375,7 +450,19 @@ public class Font
             rendered.Append(escaped);
         }
 
-        return new ParsedText(rendered.ToString(), blinkingCharacters);
+        return new ParsedText(rendered.ToString(), blinkingCharacters, indicators);
+    }
+
+    float DrawIndicator(RenderTarget target, ParsedIndicator indicator,
+        Vector2f position, float alpha)
+    {
+        ISprite sprite = indicator.Resource.GetFrame(indicator.Value);
+        float y = position.y + (GetHeight() - sprite.Height) / 2f;
+        Vector2f spritePosition = new(position.x, y);
+        if (sprite.LinearFiltering)
+            spritePosition = target.SnapToPhysicalPixels(spritePosition);
+        target.DrawSpriteF(spritePosition, sprite, alpha, postFilter: Resource.PostFilter);
+        return indicator.Resource.Advance;
     }
 
     float GetKerningOverlap(char previous, char current)
@@ -399,15 +486,17 @@ public class Font
         if (!IsLoaded)
             _resourceManager.LoadFont(this);
 
-        str = ParseText(str).Text;
+        ParsedText parsed = ParseText(str);
+        str = parsed.Text;
         Rect rc = new Rect(x, y, 0, 0);
         char last = '\n';
         char previous = '\0';
         float width = 0;
 
         char[] charray = str.ToCharArray();
-        foreach (char ch in charray)
+        for (int characterIndex = 0; characterIndex < charray.Length; characterIndex++)
         {
+            char ch = charray[characterIndex];
             if (last == '\n')
             {
                 rc.Height += (int)(GetHeight() - Resource.Offset);
@@ -418,6 +507,14 @@ public class Font
 
             if (ch != '\n')
             {
+                if (parsed.Indicators.TryGetValue(characterIndex,
+                    out ParsedIndicator indicator))
+                {
+                    width += indicator.Resource.Advance;
+                    previous = '\0';
+                    last = ch;
+                    continue;
+                }
                 char current = translateChar(ch);
                 CharInfo info = Resource.CharInfo[current];
                 if (previous != '\0')
@@ -445,16 +542,26 @@ public class Font
         if (!IsLoaded)
             _resourceManager.LoadFont(this);
 
-        return GetWidthFPlain(ParseText(text).Text);
+        ParsedText parsed = ParseText(text);
+        return GetWidthFPlain(parsed.Text, parsed, 0);
     }
 
-    float GetWidthFPlain(string text)
+    float GetWidthFPlain(string text, ParsedText? parsed = null, int startIndex = 0)
     {
         float width = 0;
         char previous = '\0';
         char[] charray = text.ToCharArray();
-        foreach (char ch in charray)
+        for (int i = 0; i < charray.Length; i++)
         {
+            char ch = charray[i];
+            if (parsed is ParsedText parsedText &&
+                parsedText.Indicators.TryGetValue(startIndex + i,
+                    out ParsedIndicator indicator))
+            {
+                width += indicator.Resource.Advance;
+                previous = '\0';
+                continue;
+            }
             char current = translateChar(ch);
             CharInfo info = Resource.CharInfo[current];
             if (previous != '\0')

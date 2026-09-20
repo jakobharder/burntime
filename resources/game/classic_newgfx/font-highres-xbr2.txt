@@ -1,4 +1,16 @@
-image=highres-font2x.png
+image=font-highres-xbr2.png
+indicator_image=font-indicators.png
+indicator_size=8x12
+indicator_codes=brd
+indicator_starts=0 15 30
+indicator_counts=15 15 5
+indicator_widths=4 4 2
+icon_image=font-icons.png
+icon_size=12x12
+icon_codes=⚠☢☠
+icon_starts=0 1 2
+icon_counts=1 1 1
+icon_widths=13 13 13
 scale=1.875x2.25
 multiplier=2
 post_filter=true

@@ -1,4 +1,4 @@
-﻿image=gfx/ui/start_font.png
+﻿image=font-start.png
 offset=0
 lines=1
 height=8

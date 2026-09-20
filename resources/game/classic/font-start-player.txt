@@ -1,4 +1,4 @@
-﻿image=gfx/ui/start_font_player.png
+﻿image=font-start-player.png
 offset=0
 lines=1
 height=12

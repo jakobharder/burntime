@@ -567,17 +567,13 @@ public sealed class ManualWindow : Container
         for (int tier = 0; tier < 4; tier++)
         {
             int x = 6 + tier * 68;
-            target.DrawSprite(new Vector2(x, y - 2), GetTierSprite(tier + 1));
             string range = tier == 3 ? $"{tier * width}+" :
                 $"{tier * width}-{(tier + 1) * width - 1}";
-            _textFont.DrawText(target, new Vector2(x + 10, y), range,
+            _textFont.DrawText(target, new Vector2(x, y), $"~d{tier + 1} {range}",
                 TextAlignment.Left, VerticalTextAlignment.Top);
         }
         return true;
     }
-
-    ISprite GetTierSprite(int tier) => app.ResourceManager.GetImage(
-        $"pngsheet@gfx/ui/info_counter.png?{30 + tier}?8x12");
 
     bool TryRenderContextItem(RenderTarget target, string line, int y)
     {
@@ -617,12 +613,15 @@ public sealed class ManualWindow : Container
             item.ID is "item_hand_pump" or "item_industrial_pump";
         GuiFont detailFont = normalDetail ? _textFont : _mutedFont;
         ISprite sprite = app.ResourceManager.GetImage(item.Sprite);
-        int tierMarkerWidth = item.DamageValues.Length > 0
-            ? GetTierSprite(1).Width + 2
-            : 0;
+        string statisticText = item.DamageValues.Length > 0
+            ? $"{statistic} ~d1"
+            : statistic;
+        string detailText = item.DamageValues.Length > 0
+            ? $"{detail} ~d4"
+            : detail;
         int textWidth = System.Math.Max(_titleFont.GetWidth(item.Title),
-            System.Math.Max(_textFont.GetWidth(statistic) + tierMarkerWidth,
-                detailFont.GetWidth(detail) + tierMarkerWidth));
+            System.Math.Max(_textFont.GetWidth(statisticText),
+                detailFont.GetWidth(detailText)));
         int blockWidth = sprite.Width + 3 + textWidth;
         position.x += System.Math.Max(0, (availableWidth - blockWidth) / 2);
 
@@ -630,29 +629,28 @@ public sealed class ManualWindow : Container
         DrawItem(target, item, position, ref ignored);
 
         Vector2 textPosition = new(position.x + sprite.Width + 3, position.y + 1);
+        int availableTextWidth = availableWidth - sprite.Width - 3;
+        string fittedStatistic = item.DamageValues.Length > 0
+            ? FitText(_textFont, statistic,
+                availableTextWidth - _textFont.GetWidth(" ~d1")) + " ~d1"
+            : FitText(_textFont, statistic, availableTextWidth);
+        string fittedDetail = item.DamageValues.Length > 0
+            ? FitText(detailFont, detail,
+                availableTextWidth - detailFont.GetWidth(" ~d4")) + " ~d4"
+            : FitText(detailFont, detail, availableTextWidth);
         _titleFont.DrawText(target, textPosition,
-            FitText(_titleFont, item.Title, availableWidth - sprite.Width - 3), TextAlignment.Left,
+            FitText(_titleFont, item.Title, availableTextWidth), TextAlignment.Left,
             VerticalTextAlignment.Top);
 
         _textFont.DrawText(target,
             new Vector2(textPosition.x, textPosition.y + 11),
-            FitText(_textFont, statistic, availableWidth - sprite.Width - 3),
+            fittedStatistic,
             TextAlignment.Left, VerticalTextAlignment.Top);
 
         detailFont.DrawText(target,
             new Vector2(textPosition.x, textPosition.y + 22),
-            FitText(detailFont, detail, availableWidth - sprite.Width - 3),
+            fittedDetail,
             TextAlignment.Left, VerticalTextAlignment.Top);
-
-        if (item.DamageValues.Length > 0)
-        {
-            int markerX = textPosition.x + _textFont.GetWidth(statistic) + 2;
-            target.DrawSprite(new Vector2(markerX, textPosition.y + 9),
-                GetTierSprite(1));
-            markerX = textPosition.x + detailFont.GetWidth(detail) + 2;
-            target.DrawSprite(new Vector2(markerX, textPosition.y + 20),
-                GetTierSprite(4));
-        }
     }
 
     bool TryRenderProductionLine(RenderTarget target, string line, int y)

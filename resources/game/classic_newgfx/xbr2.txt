@@ -1,7 +1,7 @@
 [fonts]
 sprite_scale=1x1
-font.txt=highres-font2x.txt
-highres-font.txt=highres-font2x.txt
+font.txt=font-highres-xbr2.txt
+font-highres.txt=font-highres-xbr2.txt
 
 [input_glyphs]
 sprite_scale=1x1
@@ -12,6 +12,6 @@ pngsheet@gfx/ui/input_glyphs_steam.png=pngsheet@gfx/ui/input_glyphs_steam2x.png?
 pngsheet@gfx/ui/input_glyphs_switch.png=pngsheet@gfx/ui/input_glyphs_switch2x.png?{0}?44x44
 gfx/ui/input_glyphs_hold.png=gfx/ui/input_glyphs_hold2x.png
 
-[font_icons]
+[font-icons]
 sprite_scale=1x1
-pngsheet@gfx/ui/font_icons.png=pngsheet@gfx/ui/font2x_icons.png?{0}?44x54
+pngsheet@font-icons.png=pngsheet@font-icons-xbr2.png?{0}?44x54
