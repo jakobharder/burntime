@@ -108,6 +108,8 @@ namespace Burntime.Remaster.Logic
         public int DefenseValue => data.Object.DefenseValue;
         public int AmmoValue => data.Object.AmmoValue;
         public ItemFunction Functions => data.Object.Functions;
+        public string TraderWorldGroup => data.Object.TraderWorldGroup;
+        public int TraderWorldLimit => data.Object.TraderWorldLimit;
 
         public bool HasFunction(ItemFunction function) => Functions.HasFlag(function);
 

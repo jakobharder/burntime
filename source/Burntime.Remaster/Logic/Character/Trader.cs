@@ -42,6 +42,7 @@ namespace Burntime.Remaster.Logic
 
         public void AddRefreshItem(ItemType Type, int Rate)
         {
+            Rate = System.Math.Max(1, Rate);
             itemRefreshRange += Rate;
             TraderItemRefreshItem item = container.Create<TraderItemRefreshItem>();
             item.Rate = Rate;
@@ -49,22 +50,24 @@ namespace Burntime.Remaster.Logic
             itemRefreshs.Add(item);
         }
 
-        internal void RefreshAssortment(IEnumerable<ItemType> types)
+        internal void RefreshAssortment(IEnumerable<(ItemType Type, int Rate)> types)
         {
-            ItemType[] assortment = types.ToArray();
+            (ItemType Type, int Rate)[] assortment = types
+                .Select(entry => (entry.Type, System.Math.Max(1, entry.Rate)))
+                .ToArray();
             TraderItemRefreshItem[] saved = itemRefreshs.ToArray();
-            itemRefreshRange = assortment.Length;
+            itemRefreshRange = 0;
             for (int i = 0; i < assortment.Length; i++)
             {
                 if (i < saved.Length)
                 {
-                    saved[i].Type = assortment[i];
-                    saved[i].Rate = 1;
+                    saved[i].Type = assortment[i].Type;
+                    saved[i].Rate = assortment[i].Rate;
+                    itemRefreshRange += assortment[i].Rate;
                 }
                 else
                 {
-                    itemRefreshRange--;
-                    AddRefreshItem(assortment[i], 1);
+                    AddRefreshItem(assortment[i].Type, assortment[i].Rate);
                 }
             }
             foreach (var removed in saved.Skip(assortment.Length))
@@ -174,10 +177,15 @@ namespace Burntime.Remaster.Logic
 
             for (int i = 0; i < remove && Items.Count > 0; i++)
             {
-                int item = Platform.Math.Random.Next(Items.Count);
+                Item[] removable = Items
+                    .Where(CanRemoveFromStock)
+                    .ToArray();
+                if (removable.Length == 0)
+                    break;
+                Item item = removable[Platform.Math.Random.Next(removable.Length)];
 
-                Burntime.Platform.Log.Debug("trader remove: " + Items[item]);
-                Items.Remove(Items[item]);
+                Burntime.Platform.Log.Debug("trader remove: " + item);
+                Items.Remove(item);
             }
 
             for (int i = 0; i < add && Items.Count < _maxStockItemCount; i++)
@@ -193,7 +201,7 @@ namespace Burntime.Remaster.Logic
 
         protected virtual ItemType GetNextItem()
         {
-            var itemTypes = new List<string>();
+            var itemTypes = new List<TraderItemRefreshItem>();
 
             // list up all item types not yet in inventory
             foreach (TraderItemRefreshItem item in itemRefreshs)
@@ -201,13 +209,12 @@ namespace Burntime.Remaster.Logic
                 if (!Items.Contains(item.Type.Object.ID) &&
                     !(Root.Rules == Burntime.Remaster.Logic.Generation.RuleSet.Extended &&
                       AI.AiItemPool.IsFirearm(item.Type.Object) &&
-                      Items.Any(stock => AI.AiItemPool.IsFirearm(stock.Type))))
+                      Items.Any(stock => AI.AiItemPool.IsFirearm(stock.Type))) &&
+                    IsBelowTraderWorldLimit(item.Type.Object, Root.World.AllItems))
                 {
-                    itemTypes.Add(item.Type.Object.ID);
+                    itemTypes.Add(item);
                 }
             }
-
-            ClassicGame game = container.Root as ClassicGame;
 
             // no more item types to choose from
             if (itemTypes.Count == 0)
@@ -215,12 +222,44 @@ namespace Burntime.Remaster.Logic
             // only one item type, skip randomizer
             else if (itemTypes.Count == 1)
             {
-                return game.ItemTypes[itemTypes[0]];
+                return itemTypes[0].Type.Object;
             }
 
-            // get random item type
-            return game.ItemTypes[itemTypes[Platform.Math.Random.Next() % itemTypes.Count]];
+            int totalRate = itemTypes.Sum(item => System.Math.Max(1, item.Rate));
+            int index = SelectWeightedIndex(
+                itemTypes.Select(item => item.Rate).ToArray(),
+                Platform.Math.Random.Next(totalRate));
+            return itemTypes[index].Type.Object;
         }
+
+        internal static int SelectWeightedIndex(IReadOnlyList<int> rates, int selection)
+        {
+            for (int i = 0; i < rates.Count; i++)
+            {
+                selection -= System.Math.Max(1, rates[i]);
+                if (selection < 0)
+                    return i;
+            }
+            return System.Math.Max(0, rates.Count - 1);
+        }
+
+        internal static bool IsBelowTraderWorldLimit(ItemType type, IEnumerable<Item> allItems)
+        {
+            if (type.TraderWorldLimit <= 0)
+                return true;
+
+            string group = string.IsNullOrEmpty(type.TraderWorldGroup)
+                ? type.ID
+                : type.TraderWorldGroup;
+            int count = allItems.Count(item =>
+                (string.IsNullOrEmpty(item.Type.TraderWorldGroup)
+                    ? item.Type.ID
+                    : item.Type.TraderWorldGroup) == group);
+            return count < type.TraderWorldLimit;
+        }
+
+        internal static bool CanRemoveFromStock(Item item) =>
+            item.Type.TraderWorldLimit <= 0;
 
         private ClassicGame Root => (ClassicGame)Container.Root;
     }

@@ -20,6 +20,7 @@ internal static class CargoManagement
             .Where(entry => !reservedWeapons.Contains(entry.Item) &&
                 !reservedWater.Contains(entry.Item) &&
                 !AiItemPool.IsWaterContainer(entry.Item.Type) &&
+                !entry.Item.Type.HasFunction(ItemFunction.RestingSustenance) &&
                 !Trading.IsPump(entry.Item))
             .Where(entry => entry.Item.Type.Production == null ||
                 !camp.ValidProductions.Contains(entry.Item.Type.Production))
@@ -156,6 +157,8 @@ internal static class CargoManagement
             return 9000 + Trading.ProductionTradePriority(item.Type.Production);
         if (AiItemPool.IsHazardProtection(item.Type) && Trading.NeedsDangerProtection(state, item.Type))
             return 8000 + item.TradeValue;
+        if (item.Type.HasFunction(ItemFunction.RestingSustenance))
+            return 7500 + item.TradeValue;
         // Food value is also slot efficiency. Once cheap maggots and rats have
         // been eaten, prefer compact meat and snakes over similarly valued cargo
         // without making food untouchable economic capital.

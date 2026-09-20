@@ -5,6 +5,8 @@ namespace Burntime.Remaster.AI;
 
 internal static class CampEconomy
 {
+    // World location IDs are zero-based. Reststop is location 26 in the map data.
+    internal const int ReststopLocationId = 25;
     // A source producing three units per day can sustain a useful garrison and
     // still refill travel containers. This is the strategic threshold for a
     // camp with reliable water, rather than merely any water at all.
@@ -48,13 +50,13 @@ internal static class CampEconomy
 
     public static int FoodSurplusPerDay(Location camp)
     {
-        int guards = camp.Player == null ? 0 : LivingGuardCount(camp, camp.Player);
+        int guards = camp.Player == null ? 0 : SupplyConsumingGuardCount(camp, camp.Player);
         return camp.GetFoodProductionRate().FoodPerDay - guards;
     }
 
     public static int WaterSurplusPerDay(Location camp)
     {
-        int guards = camp.Player == null ? 0 : LivingGuardCount(camp, camp.Player);
+        int guards = camp.Player == null ? 0 : SupplyConsumingGuardCount(camp, camp.Player);
         return (camp.Source?.Water ?? 0) - guards;
     }
 
@@ -84,7 +86,7 @@ internal static class CampEconomy
         int production = camp.Source?.Water ?? 0;
         int residentConsumption = camp.Player == null
             ? 0
-            : LivingGuardCount(camp, camp.Player);
+            : SupplyConsumingGuardCount(camp, camp.Player);
         if (production >= residentConsumption + groupSize)
             return true;
 
@@ -104,13 +106,37 @@ internal static class CampEconomy
 
     public static bool NeedsReusableWaterReserve(Location camp, int groupSize = 2)
     {
-        int residents = camp.Player == null ? 0 : LivingGuardCount(camp, camp.Player);
+        int residents = camp.Player == null ? 0 : SupplyConsumingGuardCount(camp, camp.Player);
         int production = camp.Source?.Water ?? 0;
         return production > residents && production < residents + System.Math.Max(1, groupSize);
     }
 
     public static bool IsAcceptableFirstCamp(Location camp) =>
         HasAdvancedFoodPotential(camp) || HasRatFoodPotential(camp);
+
+    public static bool IsReststop(Location location) =>
+        location.Id == ReststopLocationId;
+
+    public static bool HasPortableRestingSustenance(ClassicAiState state) =>
+        state.Player.Party.Any(character => character.Items.Any(item =>
+            item.Type.HasFunction(ItemFunction.RestingSustenance)));
+
+    public static bool HasStoredRestingSustenance(ClassicAiState state) =>
+        state.RootGame.World.Locations
+            .Where(location => location.Player == state.Player)
+            .Any(location => location.Rooms.SelectMany(room => room.Items)
+                .Concat(location.CampNPC
+                    .Where(guard => guard.Player == state.Player && !guard.IsDead)
+                    .SelectMany(guard => guard.Items))
+                .Any(item => item.Type.HasFunction(ItemFunction.RestingSustenance)));
+
+    public static bool CanFoundWithRestingSustenance(
+        ClassicAiState state,
+        Location location) =>
+        IsReststop(location) && !location.IsCity && (location.Source?.Water ?? 0) >= 1 &&
+        (HasPortableRestingSustenance(state) ||
+            state.Player.Party.GetFreeSlotCount() > 0 &&
+            HasStoredRestingSustenance(state));
 
     public static bool CanSustainCamp(Location camp)
     {
@@ -182,6 +208,10 @@ internal static class CampEconomy
 
     public static int LivingGuardCount(Location camp, Player player) =>
         camp.CampNPC.Count(npc => npc.Player == player && !npc.IsDead);
+
+    static int SupplyConsumingGuardCount(Location camp, Player player) =>
+        camp.CampNPC.Count(npc => npc.Player == player && !npc.IsDead &&
+            !npc.HasItemFunction(ItemFunction.RestingSustenance));
 
     public static int ProductionToolCount(Location camp, Production production) =>
         camp.GetProductionToolCount(production);

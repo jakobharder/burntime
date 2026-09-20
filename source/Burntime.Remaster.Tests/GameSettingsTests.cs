@@ -25,6 +25,39 @@ static class GameSettingsTests
         yield return Generation("negative values", "-2 -1", 0, 0, new[] { "food" }, new[] { "rare" });
         yield return Generation("invalid minimum", "x 3", 1, 3, new[] { "food" }, new[] { "rare" });
         yield return Generation("invalid maximum", "3 x", 3, 3, new[] { "food" }, new[] { "rare" });
+
+        yield return Int("repairable finds become progressively risk-gated", 0, () =>
+        {
+            var settings = new GameSettings("classic:rules/extended/game.txt");
+            string[] pools =
+            {
+                "random_items_room",
+                "random_items_closed_room",
+                "random_items_danger_location"
+            };
+            bool[][] expected =
+            {
+                new[] { true, true, true },
+                new[] { false, true, true },
+                new[] { false, false, true }
+            };
+
+            for (int difficulty = 0; difficulty < expected.Length; difficulty++)
+            {
+                settings.SetDifficulty(difficulty);
+                for (int pool = 0; pool < pools.Length; pool++)
+                {
+                    GameSettings.ItemGeneration generation =
+                        settings.GetItemGeneration(pools[pool]);
+                    bool allowsRepairable = generation.Include.Contains("repairable") &&
+                        !generation.Exclude.Contains("repairable") &&
+                        !generation.Exclude.Contains("rare");
+                    Equal(expected[difficulty][pool], allowsRepairable,
+                        $"difficulty {difficulty}, {pools[pool]}");
+                }
+            }
+            return 0;
+        });
     }
 
     static Case<int> Generation(

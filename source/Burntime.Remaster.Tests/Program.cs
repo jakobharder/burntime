@@ -39,6 +39,7 @@ static class Program
         Run("water output", RuleFormulasTests.WaterOutputCases());
         Run("original regression cases", OriginalRulesRegressionTests.OriginalRegressionCases());
         Run("original stock and cleanup", OriginalStockTests.OriginalStockCases());
+        Run("weighted trader distribution", TraderDistributionTests.DistributionCases());
         Run("locations", LocationTests.LocationCases());
         Run("production policy and compatibility", ProductionPolicyTests.ProductionPolicyCases());
         Run("configured ammunition lifecycle", ProductionPolicyTests.AmmunitionLifecycleCases());
@@ -153,13 +154,15 @@ static class Program
     internal static Item TestItem(Burntime.Framework.States.StateManager manager,
         string id, int food = 0, int damage = 0, int heal = 0, float trade = 0,
         int[]? damageValues = null, int ammo = 0, int defense = 0, int attackRange = 0,
-        ItemFunction functions = ItemFunction.None)
+        ItemFunction functions = ItemFunction.None, string traderWorldGroup = "",
+        int traderWorldLimit = 0)
     {
         var data = new Burntime.Remaster.Logic.Data.ItemTypeData
         {
             DataName = id, FoodValue = food, DamageValue = damage, HealValue = heal, TradeValue = trade,
             DamageValues = damageValues ?? Array.Empty<int>(), AmmoValue = ammo, DefenseValue = defense,
             AttackRange = attackRange, Functions = functions,
+            TraderWorldGroup = traderWorldGroup, TraderWorldLimit = traderWorldLimit,
             Class = Array.Empty<string>(), Protection = Array.Empty<string>()
         };
         var type = manager.Create<Burntime.Remaster.Logic.ItemType>(data);

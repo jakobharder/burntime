@@ -14,6 +14,7 @@ internal readonly record struct TerritorialPlan(
 internal static partial class ExpansionPlanning
 {
     const int FirstCampRouteDayPenalty = 100;
+    const int RestingSustenanceCampBonus = 600;
 
     public static void CancelSettlementAtHostileWaypoint(
         ClassicAiState state,
@@ -65,7 +66,10 @@ internal static partial class ExpansionPlanning
                 state.StartAttackPlan(target!, policy);
             }
             else
-                state.SetSettlementTarget(target);
+            {
+                if (!state.SetSettlementTarget(target))
+                    target = null;
+            }
         }
 
         return new TerritorialPlan(
@@ -374,7 +378,7 @@ internal static partial class ExpansionPlanning
                 if (location.Player == null && context.NeutralExpansionAllowed &&
                     !IsOccupiedByOtherBoss(state, location) &&
                     state.CanClaim(location) && HasTravellingHazardProtection(state, location) &&
-                    CampEconomy.HasFoodProductionPotential(location))
+                    CanSustainCandidate(state, location))
                 {
                     // Standing at a viable site does not make it free when a
                     // settler still has to be recruited elsewhere. Compare it
@@ -453,7 +457,7 @@ internal static partial class ExpansionPlanning
                 !TerritorialTargetDeferrals.IsDeferred(state, location) &&
                 state.CanClaim(location) &&
                 HasTravellingHazardProtection(state, location) &&
-                CampEconomy.HasFoodProductionPotential(location))
+                CanSustainCandidate(state, location))
             .Select(location => new
             {
                 Location = location,
@@ -470,10 +474,10 @@ internal static partial class ExpansionPlanning
         // deliberately allowed when it is the only feasible opening, because
         // owning a modest camp is still better than starving in a city forever.
         bool hasPreferred = candidates.Any(candidate =>
-            CampEconomy.IsAcceptableFirstCamp(candidate.Location));
+            IsPreferredFirstSettlement(state, candidate.Location));
         Location? target = candidates
             .Where(candidate => !hasPreferred ||
-                CampEconomy.IsAcceptableFirstCamp(candidate.Location))
+                IsPreferredFirstSettlement(state, candidate.Location))
             .OrderByDescending(candidate =>
                 NeutralTargetScore(state, policy, candidate.Location) -
                 (candidate.Route?.Days ?? 0) * FirstCampRouteDayPenalty)
@@ -482,13 +486,21 @@ internal static partial class ExpansionPlanning
             .FirstOrDefault();
 
         AiTelemetry.Report(context.Player, target == null
-            ? "first-settlement plan found no reachable neutral food-producing camp"
+            ? "first-settlement plan found no reachable sustainable neutral camp"
             : $"first-settlement plan selected {target.Title}" +
-                (CampEconomy.IsAcceptableFirstCamp(target)
+                (IsPreferredFirstSettlement(state, target)
                     ? ""
                     : " as a last-resort food camp"));
         return target;
     }
+
+    internal static bool CanSustainCandidate(ClassicAiState state, Location location) =>
+        CampEconomy.CanSustainCamp(location) ||
+        CampEconomy.CanFoundWithRestingSustenance(state, location);
+
+    static bool IsPreferredFirstSettlement(ClassicAiState state, Location location) =>
+        CampEconomy.IsAcceptableFirstCamp(location) ||
+        CampEconomy.CanFoundWithRestingSustenance(state, location);
 
     internal static bool HasTravellingHazardProtection(ClassicAiState state, Location location)
     {
@@ -647,17 +659,17 @@ internal static partial class ExpansionPlanning
     static bool IsSuitableCurrentClaim(ClassicAiState state, DecisionContext context)
     {
         if (IsOccupiedByOtherBoss(state, context.Current) ||
-            !CampEconomy.HasFoodProductionPotential(context.Current))
+            !CanSustainCandidate(state, context.Current))
             return false;
 
         // Do not consume a committed settler at a barren intermediate stop. It
         // must remain with the travelling group unless the waypoint can support
         // the new guard as a real camp while the expedition continues onward.
         if (state.HasSettlementPlan && state.StrategicTarget != context.Current &&
-            !CampEconomy.CanSustainCamp(context.Current))
+            !CanSustainCandidate(state, context.Current))
             return false;
 
-        if (HasOwnedCamp(state) || CampEconomy.IsAcceptableFirstCamp(context.Current))
+        if (HasOwnedCamp(state) || IsPreferredFirstSettlement(state, context.Current))
             return true;
 
         // A maggot-only site remains a last-resort first camp, but never wins while
@@ -761,12 +773,19 @@ internal static partial class ExpansionPlanning
             state.StrategicTarget != null && state.StrategicTarget != location)
             return 2300;
         return 1050 + CampEconomy.TerritorialValue(location) * 0.5f +
+            RestingSustenanceScore(state, location) +
             UnclaimedPocketScore(state, location);
     }
 
     static float NeutralTargetScore(ClassicAiState state, AiPolicy policy, Location location) =>
         policy.NeutralTargetScore + CampEconomy.TerritorialValue(location) +
+        RestingSustenanceScore(state, location) +
         (CampEconomy.ConnectsOwnedCamps(location, state.Player) ? 900 : 0);
+
+    static int RestingSustenanceScore(ClassicAiState state, Location location) =>
+        CampEconomy.CanFoundWithRestingSustenance(state, location)
+            ? RestingSustenanceCampBonus
+            : 0;
 
     static int NeutralFrontierScore(ClassicAiState state, Location location)
     {
@@ -799,7 +818,7 @@ internal static partial class ExpansionPlanning
             HasPortableCompatibleProduction(state, location);
         int earlyProductionDeployment = deploysEarlyProduction ? 900 : 0;
         int earlyNetworkOpening = deploysEarlyProduction
-            ? EarlyNetworkOpeningScore(location)
+            ? EarlyNetworkOpeningScore(state, location)
             : 0;
         return locality + cityAccess + earlyAdvancedFood + earlyProductionDeployment +
             earlyNetworkOpening;
@@ -812,7 +831,7 @@ internal static partial class ExpansionPlanning
         // Keep this bonus below the value of a high-food/high-water camp and a
         // ready cheap attack; it is a tie-breaker toward connected territory,
         // not permission to stretch through a poor route.
-        if (!CampEconomy.CanSustainCamp(location) ||
+        if (!CanSustainCandidate(state, location) ||
             DistanceFromOwnedTerritory(state, location, maximum: 2) == int.MaxValue)
             return 0;
 
@@ -821,7 +840,8 @@ internal static partial class ExpansionPlanning
             .Select(index => location.Neighbors[index])
             .Where(neighbor => neighbor.Player != state.Player &&
                 !AttackPlanning.IsHostile(neighbor, state.Player))
-            .Count(neighbor => HasForwardSustainableNeutral(location, neighbor, state.Player));
+            .Count(neighbor => HasForwardSustainableNeutral(
+                state, location, neighbor, state.Player));
         return forwardDirections switch
         {
             0 => 0,
@@ -830,7 +850,11 @@ internal static partial class ExpansionPlanning
         };
     }
 
-    static bool HasForwardSustainableNeutral(Location origin, Location firstStep, Player player)
+    static bool HasForwardSustainableNeutral(
+        ClassicAiState state,
+        Location origin,
+        Location firstStep,
+        Player player)
     {
         const int maximumForwardHops = 2;
         Queue<(Location Location, int Hops)> queue = new();
@@ -841,7 +865,7 @@ internal static partial class ExpansionPlanning
         while (queue.Count > 0)
         {
             (Location location, int hops) = queue.Dequeue();
-            if (location.Player == null && CampEconomy.CanSustainCamp(location))
+            if (location.Player == null && CanSustainCandidate(state, location))
                 return true;
             if (hops >= maximumForwardHops ||
                 AttackPlanning.IsHostile(location, player))
@@ -867,7 +891,7 @@ internal static partial class ExpansionPlanning
             entry.Type.Production != null &&
             location.ValidProductions.Contains(entry.Type.Production));
 
-    static int EarlyNetworkOpeningScore(Location location)
+    static int EarlyNetworkOpeningScore(ClassicAiState state, Location location)
     {
         // A safe city-side camp remains useful, but a neighboring camp that opens
         // another sustainable neutral frontier is the stronger network seed. Keep
@@ -876,7 +900,7 @@ internal static partial class ExpansionPlanning
             .Count(index => location.WayLengths[index] > 0 &&
                 !location.Neighbors[index].IsCity &&
                 location.Neighbors[index].Player == null &&
-                CampEconomy.CanSustainCamp(location.Neighbors[index]));
+                CanSustainCandidate(state, location.Neighbors[index]));
         return System.Math.Min(outwardFrontiers, 2) * 180;
     }
 

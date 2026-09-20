@@ -291,6 +291,9 @@ internal sealed class StrategicNeeds
 
     public bool CanBuy(ItemType type, int pendingCount = 0)
     {
+        if (type.HasFunction(ItemFunction.RestingSustenance))
+            return GlobalItemCount(type) + pendingCount < 1;
+
         // Assigned equipment is not a stock budget. Keep only the existing cap
         // on unused pooled items, and never let upgrade preferences block tools
         // or essential protection.
@@ -312,7 +315,8 @@ internal sealed class StrategicNeeds
 
     public bool IsStrategic(ItemType type)
     {
-        if (PlannedSettlementPaymentType == type ||
+        if (type.HasFunction(ItemFunction.RestingSustenance) && GlobalItemCount(type) < 1 ||
+            PlannedSettlementPaymentType == type ||
             type.HealValue > 0 && DoctorPaymentNeeded ||
             AiItemPool.IsWaterContainer(type) &&
                 (ImmediateWaterNeeded || AttackWaterNeeded ||

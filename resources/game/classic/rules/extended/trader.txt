@@ -1,69 +1,68 @@
 [trader]
+'Optional :weight values make staples common without guaranteeing stock.
+'Weights used here: 5-6 staple, 3-4 common, 2 specialist, 1 rare.
 'Mad Marty, Neu Sandez area
-179=item_meat item_knife item_loaded_rifle item_snake_trap item_broken_pump item_hose item_protective_overall
+179=item_meat:5 item_bottle:3 item_knife:4 item_loaded_rifle:1 item_snake_trap:2 item_broken_pump:2 item_hose:2 item_screws:2 item_protective_overall:1 item_defective_mine_detector:1
 
 'Chuck, Sana area
-180=item_meat item_batteries item_wire item_screws item_rags item_boots item_tools item_rope
-'180=item_meat item_batteries item_wire item_screws item_rags item_boots item_tools
+180=item_meat:5 item_bottle:3 item_empty_canteen:2 item_batteries:1 item_wire:3 item_screws:2 item_rags:2 item_boots:2 item_tools:1 item_rope:1
 
 'Jack the Nepper, Stove Vent area
-181=item_snake item_meat item_empty_canteen item_knife item_axe item_snake_trap item_wire item_woodpile item_ammunition
+181=item_snake:3 item_meat:5 item_bottle:3 item_empty_canteen:3 item_knife:3 item_axe:2 item_snake_trap:2 item_wire:2 item_woodpile:2 item_rags:2 item_ammunition:1 item_defective_two_way_radio:1
 
 'Sharky, Dead Wood area
-182=item_meat item_empty_canteen item_pitchfork item_woodpile item_screws item_gas_mask item_tools
+182=item_meat:5 item_bottle:3 item_empty_canteen:3 item_pitchfork:3 item_woodpile:2 item_screws:2 item_hose:2 item_rags:2 item_gas_mask:1 item_tools:1 item_ammunition:1
 
 'Lester, Hard Mens Dead area
-183=item_meat item_empty_wineskin item_axe item_snake_trap item_screws item_tin item_spring
+183=item_meat:5 item_bottle:3 item_empty_wineskin:2 item_axe:3 item_snake_trap:2 item_wire:2 item_screws:2 item_tin:2 item_spring:2 item_gloves:1
 
 'Wolf, Right End area
-184=item_meat item_pitchfork item_wire item_gloves item_leather_jacket item_sweater item_pants
+184=item_meat:5 item_bottle:3 item_empty_canteen:2 item_pitchfork:3 item_wire:2 item_rags:2 item_gloves:2 item_leather_jacket:1 item_sweater:2 item_pants:2
 
 'Ralf Gier, Snake Hills area
-185=item_snake item_meat item_empty_canteen item_pitchfork item_woodpile item_screws item_tin item_gas_mask item_rope
-'185=item_snake item_meat item_empty_canteen item_pitchfork item_woodpile item_screws item_tin item_gas_mask
+185=item_snake:3 item_meat:5 item_bottle:3 item_empty_canteen:3 item_knife:2 item_pitchfork:3 item_woodpile:2 item_screws:2 item_tin:2 item_hose:2 item_gas_mask:1 item_rope:1
 
 'Holger, Sherwood area
-186=item_meat item_empty_canteen item_knife item_broken_pump item_screws item_tin item_boots
+186=item_meat:5 item_bottle:3 item_empty_canteen:3 item_knife:3 item_broken_pump:2 item_batteries:1 item_wire:2 item_screws:2 item_tin:2 item_rags:2 item_boots:2
 
 'Zocker Joe, Kloster area
-187=item_snake item_meat item_empty_wineskin item_axe item_snake_trap item_batteries item_wire item_protective_overall item_rope
-'187=item_snake item_meat item_empty_wineskin item_axe item_snake_trap item_batteries item_wire item_protective_overall
+187=item_snake:3 item_meat:5 item_bottle:3 item_empty_wineskin:2 item_axe:3 item_snake_trap:2 item_batteries:1 item_wire:2 item_screws:2 item_protective_overall:1 item_rope:1
 
 'Django, Raststätte area
-188=item_meat item_axe item_batteries item_wire item_screws item_rags item_protective_suit
+188=item_meat:5 item_bottle:3 item_empty_canteen:2 item_axe:3 item_batteries:1 item_wire:2 item_screws:2 item_rags:2 item_hose:2 item_ammunition:1 item_protective_suit:1
 
 'Don Camillo, Paradise Camp area
-189=item_meat item_knife item_electrical_odds_and_ends item_wire item_screws item_tin item_iron_pipe
+189=item_meat:5 item_bottle:3 item_empty_canteen:2 item_knife:3 item_electrical_odds_and_ends:1 item_wire:2 item_screws:2 item_tin:2 item_iron_pipe:2 item_tools:1 item_bible:1
 
 'John, Nirvana area
-190=item_snake item_meat item_empty_wineskin item_pitchfork item_snake_trap item_spare_parts item_hose item_iron_pipe
+190=item_snake:3 item_meat:5 item_bottle:3 item_empty_wineskin:2 item_knife:2 item_pitchfork:3 item_snake_trap:2 item_spare_parts:2 item_hose:2 item_iron_pipe:2 item_defective_two_way_radio:1
 
 'Monkey, Dead Wood area
-191=item_snake item_meat item_knife item_woodpile item_screws item_hose item_rags item_gas_mask
+191=item_snake:3 item_meat:5 item_bottle:3 item_empty_canteen:2 item_knife:3 item_woodpile:2 item_screws:2 item_tin:2 item_hose:2 item_rags:2 item_gas_mask:1
 
 'Kaiser, One Man's Heaven area
-192=item_meat item_knife item_broken_pump item_wire item_woodpile item_tin item_hose
+192=item_meat:5 item_bottle:3 item_empty_canteen:2 item_knife:3 item_broken_pump:2 item_wire:2 item_woodpile:2 item_tin:2 item_hose:2 item_tools:1
 
 'Trademan, Acit Town area
-193=item_meat item_water_bottle item_empty_wineskin item_pitchfork item_spare_parts item_wire item_woodpile item_rags item_iron_pipe
+193=item_meat:5 item_bottle:3 item_water_bottle:2 item_empty_canteen:2 item_empty_wineskin:2 item_pitchfork:3 item_spare_parts:2 item_electrical_odds_and_ends:1 item_wire:2 item_woodpile:2 item_rags:2 item_iron_pipe:2 item_ammunition:1
 
 'Black Eye, Gold Town area
-194=item_snake item_meat item_empty_wineskin item_axe item_wire item_woodpile item_rags item_gold item_tools
+194=item_snake:3 item_meat:5 item_bottle:3 item_empty_canteen:2 item_empty_wineskin:2 item_axe:3 item_wire:2 item_woodpile:2 item_rags:2 item_gold:1 item_tools:1 item_defective_mine_detector:1
 
 'Iceman, Lost Hope area
-195=item_meat item_knife item_industrial_pump item_broken_pump item_wire item_woodpile item_tin item_spring
+195=item_meat:5 item_bottle:3 item_empty_canteen:2 item_knife:3 item_industrial_pump:1 item_broken_pump:2 item_electrical_odds_and_ends:1 item_wire:2 item_woodpile:2 item_tin:2 item_spring:2 item_ammunition:1
 
 'Donald
-196=item_meat item_bottle item_empty_canteen item_empty_wineskin item_knife item_broken_pump item_wire
+196=item_meat:6 item_bottle:5 item_empty_canteen:3 item_empty_wineskin:2 item_knife:4 item_broken_pump:2 item_wire:3 item_screws:2 item_rags:2 item_ammunition:1
 
 'Mark
-197=item_meat item_empty_wineskin item_knife item_wire item_spring item_hose item_gloves
+197=item_meat:6 item_bottle:5 item_empty_canteen:3 item_empty_wineskin:2 item_knife:4 item_wire:3 item_screws:2 item_spring:2 item_hose:2 item_gloves:1
 
 'Willy
-198=item_meat item_empty_wineskin item_pitchfork item_spare_parts item_hose item_iron_pipe item_gas_mask
+198=item_meat:6 item_bottle:5 item_empty_canteen:3 item_empty_wineskin:2 item_knife:3 item_pitchfork:3 item_spare_parts:2 item_wire:2 item_hose:2 item_iron_pipe:2 item_gas_mask:1 item_ammunition:1
 
 'Ivan: pistol replaces the rifle slot; total firearm availability is unchanged.
-199=item_meat item_knife item_axe item_loaded_pistol item_woodpile item_ammunition item_tools
+199=item_meat:6 item_bottle:5 item_empty_canteen:3 item_knife:4 item_axe:3 item_loaded_pistol:1 item_wire:2 item_woodpile:2 item_screws:2 item_rags:2 item_ammunition:1 item_tools:1
 
 'Steelman
-200=item_meat item_empty_wineskin item_knife item_screws item_tin item_spring item_gas_mask
+200=item_meat:6 item_bottle:5 item_empty_canteen:3 item_empty_wineskin:2 item_knife:4 item_wire:2 item_screws:3 item_rags:2 item_tin:2 item_spring:2 item_gas_mask:1

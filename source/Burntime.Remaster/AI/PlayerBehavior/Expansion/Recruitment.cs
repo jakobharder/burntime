@@ -207,10 +207,11 @@ internal static partial class Recruitment
             .Select(index => context.Current.Neighbors[index])
             .Where(waypoint => !waypoint.IsCity && waypoint.Player == null &&
                 !ExpansionPlanning.IsOccupiedByOtherBoss(state, waypoint) &&
-                CampEconomy.IsAcceptableFirstCamp(waypoint) &&
+                (CampEconomy.IsAcceptableFirstCamp(waypoint) ||
+                    CampEconomy.CanFoundWithRestingSustenance(state, waypoint)) &&
                 state.CanClaim(waypoint) &&
                 ExpansionPlanning.HasTravellingHazardProtection(state, waypoint) &&
-                CampEconomy.CanSustainCamp(waypoint))
+                ExpansionPlanning.CanSustainCandidate(state, waypoint))
             .Select(waypoint => new
             {
                 Waypoint = waypoint,

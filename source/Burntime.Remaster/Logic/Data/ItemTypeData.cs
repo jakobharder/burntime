@@ -45,6 +45,8 @@ namespace Burntime.Remaster.Logic.Data
         public int DefenseValue;
         public int AmmoValue;
         public ItemFunction Functions;
+        public string TraderWorldGroup = "";
+        public int TraderWorldLimit;
 
         public string Empty;
         public string Full;

@@ -123,14 +123,14 @@ namespace Burntime.Remaster
             {
                 MouseControl = MouseButton.Right
             });
-            view.Prompts.Add(new InputPrompt(InputAction.Secondary, "@prompts?27")
-            {
-                MouseControl = MouseButton.Left
-            }, CanPromptInfoModeClick);
-            view.Prompts.Add(new InputPrompt(InputAction.Secondary, "@prompts?27")
-            {
-                MouseControl = MouseButton.Right
-            }, CanPromptInfo);
+            view.Prompts.AddDynamic(
+                () => GetLocationInfoPrompt(MouseButton.Left),
+                LocationInfoPrompt("@prompts?27", MouseButton.Left),
+                LocationInfoPrompt("@prompts?43", MouseButton.Left));
+            view.Prompts.AddDynamic(
+                () => GetLocationInfoPrompt(MouseButton.Right),
+                LocationInfoPrompt("@prompts?27", MouseButton.Right),
+                LocationInfoPrompt("@prompts?43", MouseButton.Right));
             view.Prompts.AddDynamic(InputPromptPosition.Primary,
                 GetEnterOrTravelPrompt,
                 new InputPrompt(InputAction.Primary, "@prompts?26"),
@@ -487,14 +487,6 @@ namespace Burntime.Remaster
                 PromptLocationNumber < game.World.Locations.Count;
         }
 
-        bool CanPromptInfoModeClick()
-        {
-            ClassicGame game = app.GameState as ClassicGame;
-            return app.LastInputMode == InputMode.Mouse && _infoMode &&
-                HasValidPromptLocation() &&
-                CanShowInfo(game.World.ActivePlayerObj, PromptLocation);
-        }
-
         InputPrompt? GetEnterOrTravelPrompt()
         {
             if (CanPromptEnter())
@@ -593,16 +585,43 @@ namespace Burntime.Remaster
                 player.CanTravel(player.Location, PromptLocation);
         }
 
-        bool CanPromptInfo()
+        bool CanPromptLocationInfo(MouseButton mouseButton)
         {
             if (!HasValidPromptLocation())
                 return false;
-            if (app.LastInputMode == InputMode.Mouse && _infoMode)
+
+            if (app.LastInputMode == InputMode.Mouse)
+            {
+                MouseButton expectedButton = _infoMode
+                    ? MouseButton.Left
+                    : MouseButton.Right;
+                if (mouseButton != expectedButton)
+                    return false;
+            }
+            else if (!IsPromptNavigationInput)
+            {
                 return false;
-            return (app.LastInputMode == InputMode.Mouse || IsPromptNavigationInput) &&
-                CanShowInfo((app.GameState as ClassicGame).World.ActivePlayerObj,
-                    PromptLocation);
+            }
+
+            ClassicGame game = app.GameState as ClassicGame;
+            return CanShowInfo(game.World.ActivePlayerObj, PromptLocation);
         }
+
+        InputPrompt? GetLocationInfoPrompt(MouseButton mouseButton)
+        {
+            if (!CanPromptLocationInfo(mouseButton))
+                return null;
+
+            ClassicGame game = app.GameState as ClassicGame;
+            string label = RadioIntel.IsAvailable(
+                game.World.ActivePlayerObj, PromptLocation)
+                ? "@prompts?43"
+                : "@prompts?27";
+            return LocationInfoPrompt(label, mouseButton);
+        }
+
+        static InputPrompt LocationInfoPrompt(string label, MouseButton mouseButton) =>
+            new(InputAction.Secondary, label) { MouseControl = mouseButton };
 
         bool CanTravelToHoveredLocation()
         {
@@ -781,7 +800,7 @@ namespace Burntime.Remaster
             if (app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad &&
                 action == InputAction.Secondary)
             {
-                if (CanPromptInfo())
+                if (CanPromptLocationInfo(MouseButton.Right))
                     TryShowLocationInfo(_keyboardSelection.LocationNumber);
                 return true;
             }

@@ -302,7 +302,10 @@ static class ProductionPolicyTests
             config.Open(System.IO.File.OpenRead(ResourceFile("rules/extended/trader.txt")));
             int rifles = 0, pistols = 0;
             for (int id = 179; id <= 200; id++) {
-                var stock = config["trader"].GetStrings(id.ToString());
+                var stock = config["trader"].GetStrings(id.ToString())
+                    .Select(TraderAssortmentSetting.Parse)
+                    .Select(item => item.ItemId)
+                    .ToArray();
                 int r = stock.Count(item => item == "item_loaded_rifle");
                 int p = stock.Count(item => item == "item_loaded_pistol");
                 Equal(true, r + p <= 1, "at most one gun slot per seller");
@@ -310,9 +313,11 @@ static class ProductionPolicyTests
             }
             Equal(1, rifles, "one rifle seller remains");
             Equal(1, pistols, "one pistol seller replaces second rifle seller");
-            Equal(true, config["trader"].GetStrings("179").Contains("item_loaded_rifle"), "Marty keeps rifle");
-            Equal(true, config["trader"].GetStrings("199").Contains("item_loaded_pistol"), "Ivan stocks pistol");
-            Equal(7, config["trader"].GetStrings("199").Length, "Ivan assortment size unchanged");
+            Equal(true, config["trader"].GetStrings("179").Select(TraderAssortmentSetting.Parse)
+                .Any(item => item.ItemId == "item_loaded_rifle"), "Marty keeps rifle");
+            Equal(true, config["trader"].GetStrings("199").Select(TraderAssortmentSetting.Parse)
+                .Any(item => item.ItemId == "item_loaded_pistol"), "Ivan stocks pistol");
+            Equal(12, config["trader"].GetStrings("199").Length, "Ivan assortment expanded");
             return 0;
         });
         yield return Int("pistol trades damage for consistency at equal priority", 0, () =>

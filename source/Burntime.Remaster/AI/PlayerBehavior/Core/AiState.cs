@@ -291,11 +291,15 @@ namespace Burntime.Remaster.AI
             }
         }
         internal bool HasSettlementPlan => strategicTargetWasNeutral && StrategicTarget != null;
-        internal void SetSettlementTarget(Location location)
+        internal bool SetSettlementTarget(Location location)
         {
+            if (location != null && CampEconomy.IsReststop(location) &&
+                !CampManagement.PrepareReststopSettlement(this))
+                return false;
             headedLocation = location;
             attackPlanUntilDay = 0;
             strategicTargetWasNeutral = location != null;
+            return true;
         }
         // The serialized itemPool field name is retained for pre-rename save compatibility.
         internal AiSettings Configuration => settings;
@@ -1129,6 +1133,7 @@ namespace Burntime.Remaster.AI
             // join camp
             npc.JoinCamp();
             CampManagement.UnloadGarrisonBelongings(this, CurrentLocation, npc);
+            CampManagement.EquipReststopCaretaker(this, CurrentLocation, npc);
 
             // Production tools must be installed in a room. A guard's carried
             // weapon is not evidence that camp production is equipped.
@@ -1176,7 +1181,8 @@ namespace Burntime.Remaster.AI
             // Threatened camps still require real equipment before expansion.
             bool hasProductionTool = Reserve.HasTrap(GetAvailableProducts(location)) ||
                 FindCompatibleGroupProduction(location) != null;
-            if (!hasProductionTool && !ExpansionPlanning.CanBootstrapCamp(this, location))
+            if (!hasProductionTool && !ExpansionPlanning.CanBootstrapCamp(this, location) &&
+                !CampEconomy.CanFoundWithRestingSustenance(this, location))
                 return false;
 
             // in case of hazards

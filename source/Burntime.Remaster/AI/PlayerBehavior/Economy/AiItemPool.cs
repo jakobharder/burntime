@@ -36,6 +36,8 @@ namespace Burntime.Remaster.AI
                 IsWaterContainer(type) || type.DefenseValue > 0);
         }
 
+        static int MaximumCount(ItemType type) => MaximumItemsPerType;
+
         internal static bool IsWaterContainer(ItemType type) =>
             (type.Empty != null && type.WaterValue > 0) ||
             (type.Full != null && type.Full.WaterValue > 0);
@@ -97,7 +99,7 @@ namespace Burntime.Remaster.AI
             if (!Accepts(item.Type))
                 return false;
 
-            return InsertUnchecked(item.Type, MaximumItemsPerType);
+            return InsertUnchecked(item.Type, MaximumCount(item.Type));
         }
 
         /// <summary>
@@ -124,7 +126,7 @@ namespace Burntime.Remaster.AI
             if (!Accepts(type))
                 return false;
 
-            return InsertUnchecked(type, MaximumItemsPerType);
+            return InsertUnchecked(type, MaximumCount(type));
         }
 
         /// <summary>
@@ -163,7 +165,9 @@ namespace Burntime.Remaster.AI
             int removed = 0;
             foreach (PoolItem item in items)
             {
-                int maximum = Accepts(item.Type) || IsFirearm(item.Type) ? MaximumItemsPerType : 1;
+                int maximum = Accepts(item.Type) || IsFirearm(item.Type)
+                    ? MaximumCount(item.Type)
+                    : 1;
                 if (item.Count <= maximum)
                     continue;
                 removed += item.Count - maximum;
@@ -228,6 +232,18 @@ namespace Burntime.Remaster.AI
                 "item_full_canteen", "item_empty_canteen",
                 "item_water_bottle", "item_bottle") != null;
         }
+
+        // Compatibility path for saves created while resting-sustenance items
+        // were accepted into this abstract reserve. New copies remain physical.
+        internal Item GetRestingSustenance()
+        {
+            PoolItem item = items.FirstOrDefault(candidate => candidate.Count > 0 &&
+                candidate.Type.HasFunction(ItemFunction.RestingSustenance));
+            return item != null ? Take(item) : null;
+        }
+
+        internal bool HasRestingSustenance() => items.Any(item => item.Count > 0 &&
+            item.Type.HasFunction(ItemFunction.RestingSustenance));
 
         /// <summary>
         /// Get best available food production item.

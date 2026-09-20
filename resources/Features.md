@@ -13,13 +13,13 @@
 | Defense | - | Best clothing reduces damage by 5–25%; no XP bonus |
 | Two-way radio | Trade item | While carried, reveals hazards and reports personnel, defense and production at non-owned camps |
 | Metal detector | Trade item | While carried, has a 1% chance per travel day to uncover ammunition after a journey |
-| Bible | Trade item | Its carrier uses no food or water while staying at one location; travel still consumes supplies |
+| Bible | Trade item | Its carrier uses no food or water while staying at one location; travel still consumes supplies. Remaster AI preserves one and can use it to establish Reststop with a self-sufficient caretaker |
 | Skull or bones | Trade item | Dogs and mutants avoid attacking its carrier |
 | One snake trap | 4 food points/day | =Classic |
 | Doctor: one meat | +36 health; treatment tops out at 95 | =Classic |
 | Natural healing | 2 health/day from 70; doctor gives 4/day from 50 | =Classic; a doctor also stabilizes supplied characters below 50 by 1/day |
 | Barter: your offer's value on Easy / Normal / Hard | 100% / 90% / 80% | =Classic |
-| Trader stock | Frequent, broad original restocking | Randomized stock |
+| Trader stock | Frequent, broad original restocking | Weighted, rotating stock from broad local assortments; scarce utilities respect world-wide limits |
 | Gas and radiation | Damage over time; unprotected characters also die at the daily check | =Classic |
 | Industrial pump at a source producing 3 water/day | 6 water/day | 8 water/day |
 | Extra items | - | Pistol, paper helmet |

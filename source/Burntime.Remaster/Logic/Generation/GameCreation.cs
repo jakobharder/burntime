@@ -32,6 +32,23 @@ namespace Burntime.Remaster.Logic.Generation
         Blue
     }
 
+    readonly record struct TraderAssortmentSetting(string ItemId, int Rate)
+    {
+        public static TraderAssortmentSetting Parse(string value)
+        {
+            int separator = value.LastIndexOf(':');
+            if (separator <= 0)
+                return new TraderAssortmentSetting(value, 1);
+
+            string itemId = value[..separator];
+            if (int.TryParse(value[(separator + 1)..], out int rate) && rate > 0)
+                return new TraderAssortmentSetting(itemId, rate);
+
+            Log.Warning($"Invalid trader assortment weight '{value}'; using weight 1.");
+            return new TraderAssortmentSetting(itemId, 1);
+        }
+    }
+
     class GameCreation
     {
         BurntimeClassic app;
@@ -339,9 +356,14 @@ namespace Burntime.Remaster.Logic.Generation
                 throw new InvalidOperationException("Could not load trader settings.");
             foreach (Trader trader in game.World.AllCharacters.OfType<Trader>())
             {
-                string[] items = file["trader"].GetStrings(trader.TraderId.ToString());
+                TraderAssortmentSetting[] items = file["trader"]
+                    .GetStrings(trader.TraderId.ToString())
+                    .Select(TraderAssortmentSetting.Parse)
+                    .Where(item => game.ItemTypes.Contains(item.ItemId))
+                    .ToArray();
                 if (items.Length > 0)
-                    trader.RefreshAssortment(items.Select(id => game.ItemTypes[id]));
+                    trader.RefreshAssortment(items.Select(item =>
+                        (game.ItemTypes[item.ItemId], item.Rate)));
             }
         }
 
@@ -523,9 +545,19 @@ namespace Burntime.Remaster.Logic.Generation
                 {
                     Trader trader = (Trader)game.World.AllCharacters[i];
 
-                    string[] items = traderItems["trader"].GetStrings(trader.TraderId.ToString());
-                    foreach (string item in items)
-                        trader.AddRefreshItem(game.ItemTypes[item], 1);
+                    TraderAssortmentSetting[] items = traderItems["trader"]
+                        .GetStrings(trader.TraderId.ToString())
+                        .Select(TraderAssortmentSetting.Parse)
+                        .ToArray();
+                    foreach (TraderAssortmentSetting item in items)
+                    {
+                        if (!game.ItemTypes.Contains(item.ItemId))
+                        {
+                            Log.Warning($"Unknown trader assortment item '{item.ItemId}'.");
+                            continue;
+                        }
+                        trader.AddRefreshItem(game.ItemTypes[item.ItemId], item.Rate);
+                    }
 
                     game.RuleBook.InitializeTraderInventory(trader);
                 }

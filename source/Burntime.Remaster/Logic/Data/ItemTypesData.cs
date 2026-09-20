@@ -123,6 +123,8 @@ namespace Burntime.Remaster.Logic.Data
                 type.AmmoValue = section.GetInt("ammo");
                 type.DefenseValue = section.GetInt("defense");
                 type.Fluff = section.Get("fluff");
+                type.TraderWorldGroup = section.GetString("trader_world_group");
+                type.TraderWorldLimit = Math.Max(0, section.GetInt("trader_world_limit"));
 
                 if (section.Name != "" && (type.Protection.Length > 0 || type.DamageValue > 0 || type.DefenseValue > 0))
                 {

@@ -74,6 +74,9 @@ internal static partial class Trading
                 needs.MaterialDemandBreadth(type.ID) * 30 + type.TradeValue;
         if (IsPump(type) && needs.PumpStock < needs.PumpQuota)
             return 2400 + (type.ID == "item_industrial_pump" ? 20 : 0);
+        if (type.HasFunction(ItemFunction.RestingSustenance) &&
+            needs.GlobalItemCount(type) < 1)
+            return 2300 + type.TradeValue;
         if (waterContainer && needs.CampWaterContainerShortfall > 0)
             return (needs.HasCriticalCampWaterContainerShortfall ? 2700 : 1700) +
                 AiItemPool.WaterContainerCapacity(type);
@@ -106,6 +109,9 @@ internal static partial class Trading
 
     static bool CanSell(ClassicAiState state, StrategicNeeds needs, Item item)
     {
+        if (item.Type.HasFunction(ItemFunction.RestingSustenance) &&
+            needs.GlobalItemCount(item.Type) <= 1)
+            return false;
         if (needs.PlannedSettlementPaymentType == item.Type)
             return false;
         if (state.Player.Party.Any(character => character.Weapon == item || character.Protection == item ||

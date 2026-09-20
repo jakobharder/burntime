@@ -74,7 +74,9 @@ internal static class CampManagement
         Item[] belongings = npc.Items
             .Where(item => item.DamageValue <= 0 &&
                 !item.Type.IsClass("weapon") &&
-                !item.Type.IsClass("protection"))
+                !item.Type.IsClass("protection") &&
+                !(CampEconomy.IsReststop(camp) &&
+                    item.Type.HasFunction(ItemFunction.RestingSustenance)))
             .ToArray();
         int unloaded = 0;
         foreach (Item item in belongings)
@@ -236,6 +238,128 @@ internal static class CampManagement
 
         RedistributeCampProductionTools(state, camps);
         StockCampWaterContainers(state, camps);
+        MaterializeLegacyRestingSustenance(state, camps);
+
+        Location? reststop = camps.FirstOrDefault(CampEconomy.IsReststop);
+        if (reststop != null)
+            EquipReststopCaretaker(state, reststop);
+    }
+
+    static void MaterializeLegacyRestingSustenance(
+        ClassicAiState state,
+        IReadOnlyCollection<Location> camps)
+    {
+        if (!state.Reserve.HasRestingSustenance())
+            return;
+
+        Location? storage = camps.FirstOrDefault(camp => camp == state.Current &&
+            !CampEconomy.IsReststop(camp) && camp.Rooms.Any(room => !room.Items.IsFull)) ??
+            camps.FirstOrDefault(camp => !CampEconomy.IsReststop(camp) &&
+                camp.Rooms.Any(room => !room.Items.IsFull));
+        Character? carrier = storage == null
+            ? state.Player.Party.FirstOrDefault(character => !character.Items.IsFull)
+            : null;
+        if (storage == null && carrier == null)
+            return;
+
+        Item item = state.Reserve.GetRestingSustenance();
+        if (item == null)
+            return;
+        if (storage != null)
+            StoreItemInCamp(storage, item, reserveProductionCapacity: false);
+        else
+            carrier!.Items.Add(item);
+    }
+
+    internal static bool PrepareReststopSettlement(ClassicAiState state)
+    {
+        if (CampEconomy.HasPortableRestingSustenance(state))
+            return true;
+
+        var stored = state.RootGame.World.Locations
+            .Where(camp => camp.Player == state.Player && !CampEconomy.IsReststop(camp))
+            .SelectMany(camp => camp.Rooms.SelectMany(room => room.Items.Select(item =>
+                (Owner: (IItemCollection)room.Items, Item: item))))
+            .Concat(state.RootGame.World.Locations
+                .Where(camp => camp.Player == state.Player && !CampEconomy.IsReststop(camp))
+                .SelectMany(camp => camp.CampNPC
+                    .Where(guard => guard.Player == state.Player && !guard.IsDead)
+                    .SelectMany(guard => guard.Items.Select(item =>
+                        (Owner: (IItemCollection)guard.Items, Item: item)))))
+            .FirstOrDefault(entry =>
+                entry.Item.Type.HasFunction(ItemFunction.RestingSustenance));
+        if (stored.Item == null)
+            return false;
+
+        Character? carrier = GroupInventory.FindCargoCarrier(state, stored.Item);
+        if (carrier == null)
+            return false;
+
+        stored.Owner.Remove(stored.Item);
+        if (!carrier.Items.Add(stored.Item))
+        {
+            stored.Owner.Add(stored.Item);
+            return false;
+        }
+
+        AiTelemetry.Report(state.Player,
+            $"allocated {stored.Item.ID} from camp storage for the Reststop expedition");
+        return true;
+    }
+
+    internal static bool EquipReststopCaretaker(
+        ClassicAiState state,
+        Location camp,
+        Character? preferredGuard = null)
+    {
+        if (!CampEconomy.IsReststop(camp) || camp.Player != state.Player)
+            return false;
+
+        Character[] guards = camp.CampNPC
+            .Where(guard => guard.Player == state.Player && !guard.IsDead)
+            .ToArray();
+        if (guards.Any(guard => guard.HasItemFunction(ItemFunction.RestingSustenance)))
+            return true;
+
+        Character? caretaker = preferredGuard != null && guards.Contains(preferredGuard)
+            ? preferredGuard
+            : guards.FirstOrDefault();
+        if (caretaker == null)
+            return false;
+
+        UnloadGarrisonBelongings(state, camp, caretaker);
+        if (caretaker.Items.IsFull)
+            return false;
+
+        Room? storedIn = camp.Rooms.FirstOrDefault(room => room.Items.Any(item =>
+            item.Type.HasFunction(ItemFunction.RestingSustenance)));
+        Item? sustenance = storedIn?.Items.FirstOrDefault(item =>
+            item.Type.HasFunction(ItemFunction.RestingSustenance));
+        if (sustenance != null)
+            storedIn!.Items.Remove(sustenance);
+        else
+            sustenance = state.Reserve.GetRestingSustenance();
+
+        if (sustenance == null)
+        {
+            var carried = state.Player.Party
+                .SelectMany(character => character.Items.Select(item =>
+                    (Character: character, Item: item)))
+                .FirstOrDefault(entry =>
+                    entry.Item.Type.HasFunction(ItemFunction.RestingSustenance));
+            if (carried.Item != null)
+            {
+                carried.Character.Items.Remove(carried.Item);
+                sustenance = carried.Item;
+            }
+        }
+
+        if (sustenance == null || !caretaker.Items.Add(sustenance))
+            return false;
+
+        AiTelemetry.Report(state.Player,
+            $"entrusted {sustenance.ID} to the Reststop caretaker");
+        return true;
     }
 
     static void RedistributeCampProductionTools(
@@ -372,6 +496,33 @@ internal static class CampManagement
             CollectProducedSurplus(state, camp);
             CollectStoredTradeGoods(state, camp, depositedWaterReserve);
         }
+
+        StageRestingSustenance(state, camp);
+    }
+
+    static void StageRestingSustenance(ClassicAiState state, Location camp)
+    {
+        if (CampEconomy.IsReststop(camp) ||
+            state.HasSettlementPlan && state.StrategicTarget != null &&
+            CampEconomy.IsReststop(state.StrategicTarget))
+            return;
+
+        var carried = state.Player.Party
+            .SelectMany(character => character.Items.Select(item =>
+                (Character: character, Item: item)))
+            .FirstOrDefault(entry =>
+                entry.Item.Type.HasFunction(ItemFunction.RestingSustenance));
+        if (carried.Item == null)
+            return;
+
+        carried.Character.Items.Remove(carried.Item);
+        if (!StoreItemInCamp(camp, carried.Item, reserveProductionCapacity: false))
+        {
+            carried.Character.Items.Add(carried.Item);
+            return;
+        }
+        AiTelemetry.Report(state.Player,
+            $"secured {carried.Item.ID} in camp storage until Reststop can be settled");
     }
 
     static Item? StockCriticalWaterContainerFromGroup(ClassicAiState state, Location camp)
