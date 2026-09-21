@@ -101,7 +101,6 @@ namespace Burntime.Remaster.Scenes
                 Position = new Vector2(225, 137),
                 HorizontalAlignment = PositionAlignment.Right,
                 VerticalAlignment = PositionAlignment.Right,
-                MinimumWidth = 100,
                 Layer = 40
             };
             productionTooltip.Hide();

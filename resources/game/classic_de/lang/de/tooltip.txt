@@ -41,10 +41,10 @@ Strahlenschutz {radiation}%}
 Erzeugt täglich {food} Nahrung}
 Kapazität {water}}
 Voll
-Kann {recipe} bauen}
-Kann ??? bauen
-Kann ??? x{count} bauen}
-Kann ... bauen
+Benötigt für {recipe}}
+Benötigt für ???
+Benötigt für ??? x{count}}
+Benötigt für ...
 Techniker benötigt
 Im Raum ablegen
 Ungeeignetes Lager
@@ -75,7 +75,7 @@ Munition benötigt
 Zurück
 Weiter
 Automatisch
-Ausgewählte Falle
+Aktive Falle
 }#
 Meldet entfernte Lager und Gefahren}
 Der Mensch lebt nicht vom Brot allein.}

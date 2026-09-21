@@ -29,12 +29,12 @@ static class TooltipTextTests
 
         TextHelper recipe = new(resources, "tooltip");
         recipe.AddArgument("{recipe}", "Rat Trap");
-        yield return new("known recipe", "Can build Rat Trap",
+        yield return new("known recipe", "Needed for Rat Trap",
             () => recipe.Get(43));
 
         TextHelper unknown = new(resources, "tooltip");
         unknown.AddArgument("{count}", 2);
-        yield return new("unknown recipe count", "Can build ??? x2",
+        yield return new("unknown recipe count", "Needed for ??? x2",
             () => unknown.Get(45));
 
         TextHelper trap = new(resources, "tooltip");
@@ -66,6 +66,8 @@ static class TooltipTextTests
             () => production.Get(74));
         yield return new("next production", "Next",
             () => production.Get(75));
+        yield return new("active trap", "Active trap",
+            () => production.Get(77));
     }
 
     sealed class TestResourceManager : ResourceManagerBase

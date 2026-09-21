@@ -41,10 +41,10 @@ Radiation protection {radiation}%}
 Yields {food} food daily}
 Capacity {water}}
 Full
-Can build {recipe}}
-Can build ???
-Can build ??? x{count}}
-Can build ...
+Needed for {recipe}}
+Needed for ???
+Needed for ??? x{count}}
+Needed for ...
 Needs Technician
 Place in room
 Unsuitable camp
@@ -75,7 +75,7 @@ Needs ammunition
 Previous
 Next
 Automatic
-Selected trap
+Active trap
 }#
 Reports remote camps and hazards}
 Man does not live by bread alone.}

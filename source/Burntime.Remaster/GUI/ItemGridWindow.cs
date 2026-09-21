@@ -21,10 +21,12 @@ namespace Burntime.Remaster.GUI
         ItemList selection;
         ISprite maskSprite;
         ISprite selectionSprite;
+        ISprite focusSprite;
         GuiFont selectionFont;
         int focusIndex = -1;
         Vector2? lastFocusPosition;
         public bool FocusVisible { get; set; }
+        public bool ShowFocusIndicator { get; set; }
         public PixelColor? BackgroundColor { get; set; }
         public event Action<ItemGridWindow> MouseFocusChanged;
         public event Action<ItemGridWindow, Vector2> FocusEmptied;
@@ -105,6 +107,7 @@ namespace Burntime.Remaster.GUI
         {
             maskSprite = App.ResourceManager.GetImage("gfx/grid.png");
             selectionSprite = App.ResourceManager.GetImage("inv.raw?3");
+            focusSprite = App.ResourceManager.GetImage("gfx/item_focus.png");
             selectionFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.MenuTextHover);
             selectionFont.Borders = TextBorders.Screen;
         }
@@ -149,12 +152,18 @@ namespace Burntime.Remaster.GUI
             {
                 Target.Layer += 5;
                 Vector2 itemPosition = itemWindows[focusIndex].Position;
-                RenderTarget bigger = Target.GetSubBuffer(new Rect(itemPosition - new Vector2(50, 50), new Vector2(132, 132)));
-                string label = showUIHints
-                    ? ">"
-                    : itemWindows[focusIndex].TooltipText ?? "";
-                selectionFont.DrawText(bigger, new Vector2(66, 41), label,
-                    TextAlignment.Center, VerticalTextAlignment.Top);
+                if (ShowFocusIndicator && showUIHints)
+                    Target.DrawSprite(itemPosition, focusSprite);
+                else
+                {
+                    RenderTarget bigger = Target.GetSubBuffer(new Rect(
+                        itemPosition - new Vector2(50, 50), new Vector2(132, 132)));
+                    string label = showUIHints
+                        ? ">"
+                        : itemWindows[focusIndex].TooltipText ?? "";
+                    selectionFont.DrawText(bigger, new Vector2(66, 41), label,
+                        TextAlignment.Center, VerticalTextAlignment.Top);
+                }
                 Target.Layer -= 5;
             }
         }

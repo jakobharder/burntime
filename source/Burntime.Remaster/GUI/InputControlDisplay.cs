@@ -95,6 +95,26 @@ static class InputControlDisplay
         return InputControlLabel.Empty;
     }
 
+    public static InputControlLabel Resolve(Module app, InputMode inputMode,
+        InputPrompt? prompt, Key? preferredPrimaryKeyboardControl = null)
+    {
+        if (prompt is not InputPrompt value)
+            return InputControlLabel.Empty;
+
+        InputPattern pattern = inputMode is InputMode.Keyboard or InputMode.Mouse
+            ? value.KeyboardPattern ?? value.Pattern
+            : value.Pattern;
+        if (pattern != InputPattern.None)
+            return ResolvePattern(app, inputMode, pattern);
+
+        Key? keyboardControl = value.KeyboardControl ??
+            (value.Action == InputAction.Primary
+                ? preferredPrimaryKeyboardControl
+                : null);
+        return Resolve(app, inputMode, value.Action, keyboardControl,
+            value.GamepadControl, value.EffectiveMouseControl);
+    }
+
     static InputControlLabel KeyboardPair(KeyboardGlyph first, KeyboardGlyph second,
         KeyboardGlyph modifier = KeyboardGlyph.None)
     {

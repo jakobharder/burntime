@@ -150,7 +150,8 @@ sealed partial class InputPromptOverlay
 
         public int MeasurePrompt(InputPrompt prompt)
         {
-            InputControlLabel control = ResolveControl(prompt, app.LastInputMode);
+            InputControlLabel control = InputControlDisplay.Resolve(app,
+                app.LastInputMode, prompt, _preferredPrimaryKeyboardControl);
             if (control.IsEmpty)
                 return 0;
             return _controlRenderer.Measure(control, prompt.Label, labelFirst: true);
@@ -168,7 +169,8 @@ sealed partial class InputPromptOverlay
             foreach (RowPrompt rowPrompt in _prompts)
             {
                 InputPrompt prompt = rowPrompt.Prompt;
-                InputControlLabel control = ResolveControl(prompt, _inputMode);
+                InputControlLabel control = InputControlDisplay.Resolve(app,
+                    _inputMode, prompt, _preferredPrimaryKeyboardControl);
                 if (control.IsEmpty)
                     continue;
 
@@ -212,21 +214,6 @@ sealed partial class InputPromptOverlay
 
             _backgroundLeft = left - HorizontalPadding;
             _backgroundWidth = right - left + HorizontalPadding * 2;
-        }
-
-        InputControlLabel ResolveControl(InputPrompt prompt, InputMode inputMode)
-        {
-            InputPattern pattern = inputMode is InputMode.Keyboard or InputMode.Mouse
-                ? prompt.KeyboardPattern ?? prompt.Pattern
-                : prompt.Pattern;
-            return pattern != InputPattern.None
-                ? InputControlDisplay.ResolvePattern(app, inputMode, pattern)
-                : InputControlDisplay.Resolve(app, inputMode, prompt.Action,
-                    prompt.KeyboardControl ?? (prompt.Action == InputAction.Primary
-                        ? _preferredPrimaryKeyboardControl
-                        : null),
-                    prompt.GamepadControl,
-                    prompt.EffectiveMouseControl);
         }
     }
 }

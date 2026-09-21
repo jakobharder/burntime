@@ -176,7 +176,8 @@ namespace Burntime.Remaster.Scenes
             {
                 HorizontalAlignment = horizontalAlignment,
                 VerticalAlignment = PositionAlignment.Right,
-                MinimumWidth = 100,
+                HeaderFont = new GuiFont(BurntimeClassic.FontName,
+                    ClassicColors.MenuTextHover) { Borders = TextBorders.None },
                 Layer = 40
             };
             tooltip.Hide();
@@ -531,6 +532,7 @@ namespace Burntime.Remaster.Scenes
 
                 grid = new ItemGridWindow(app);
                 grid.UnifiedSelection = true;
+                grid.ShowFocusIndicator = true;
                 grid.LockPositions = true;
                 grid.DoubleLayered = !classic.InventoryRoom.IsWaterSource;
                 grid.Position = new Vector2(160, classic.InventoryRoom.IsWaterSource ? 128 : 20);
@@ -560,6 +562,7 @@ namespace Burntime.Remaster.Scenes
                 
                 grid = new ItemGridWindow(app);
                 grid.UnifiedSelection = true;
+                grid.ShowFocusIndicator = true;
                 grid.Position = new Vector2(170, 10);
                 grid.Spacing = new Vector2(2, 2);
                 grid.Grid = new Vector2(4, 5);

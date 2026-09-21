@@ -1,4 +1,3 @@
-using System;
 using Burntime.Framework;
 using Burntime.Framework.GUI;
 using Burntime.Platform;
@@ -7,7 +6,7 @@ using Burntime.Platform.Graphics;
 namespace Burntime.Remaster;
 
 /// <summary>
-/// A small anchored information panel with an optional heading and input prompt.
+/// A small anchored information panel with optional heading, status and prompts.
 /// Text may contain explicit newlines; wrapping is intentionally controlled by
 /// the localized resource so translators can choose suitable line breaks.
 /// </summary>
@@ -16,42 +15,32 @@ public sealed class TooltipWindow : Window
     const int HorizontalPadding = 5;
     const int VerticalPadding = 4;
     const int SectionGap = 4;
-    const int StatusPromptGap = 6;
+    const int TextLineAdvance = 10;
 
-    readonly GuiFont _headerFont;
     readonly GuiFont _textFont;
     readonly GuiFont _statusFont;
     readonly GuiFont _successFont;
     readonly InputControlLabelRenderer _controlRenderer;
-    string _language = string.Empty;
-    InputMode _inputMode = InputMode.None;
-    int _glyphRevision = -1;
-    InputControlLabel _promptControl;
-    InputControlLabel _secondaryPromptControl;
-    int _promptWidth;
-    int _secondaryPromptWidth;
-    int _promptGroupWidth;
 
     public GuiString? Header { get; set; }
+    public GuiFont HeaderFont { get; set; }
     public GuiString? Text { get; set; }
     public InputPrompt? Prompt { get; set; }
     public InputPrompt? SecondaryPrompt { get; set; }
     public GuiString? Status { get; set; }
     public bool StatusIsSuccess { get; set; }
-    public int MinimumWidth { get; set; }
-    public int FixedWidth { get; set; }
-    public Vector2? FixedSize { get; set; }
+    public int MinimumWidth { get; set; } = 100;
     public PixelColor BackgroundColor { get; set; } = new(128, 0, 0, 0);
 
     public TooltipWindow(Module app)
         : base(app)
     {
-        _headerFont = new GuiFont(BurntimeClassic.FontName,
+        HeaderFont = new GuiFont(BurntimeClassic.FontName,
             ClassicColors.HudTextHover) { Borders = TextBorders.None };
         _textFont = new GuiFont(BurntimeClassic.FontName,
             ClassicColors.LightGray) { Borders = TextBorders.None };
         _statusFont = new GuiFont(BurntimeClassic.FontName,
-            ClassicColors.HudTextAccent) { Borders = TextBorders.None };
+            ClassicColors.DialogText) { Borders = TextBorders.None };
         _successFont = new GuiFont(BurntimeClassic.FontName,
             ClassicColors.StatusSuccess) { Borders = TextBorders.None };
         _controlRenderer = new InputControlLabelRenderer(app, _textFont,
@@ -59,74 +48,39 @@ public sealed class TooltipWindow : Window
         RefreshLayout();
     }
 
-    public override void OnUpdate(float elapsed)
-    {
-        if (_language != app.Language || _inputMode != app.LastInputMode ||
-            _glyphRevision != app.Engine.InputGlyphs.Revision)
-            RefreshLayout();
-    }
-
     public void RefreshLayout()
     {
+        const int FontHeight = 8;
+
         string header = Header ?? string.Empty;
         string text = Text ?? string.Empty;
         string status = Status ?? string.Empty;
-        int statusWidth = _statusFont.GetRect(0, 0, status).Width;
-        int contentWidth = System.Math.Max(_headerFont.GetRect(0, 0, header).Width,
-            _textFont.GetRect(0, 0, text).Width);
+        bool hasHeader = header.Length > 0;
+        bool hasText = text.Length > 0;
+        bool hasStatus = status.Length > 0;
+        Rect textBounds = hasText ? _textFont.GetRect(0, 0, text) : default;
+        int statusWidth = MeasureWidth(_statusFont, status);
+        int contentWidth = System.Math.Max(MeasureWidth(HeaderFont, header),
+            textBounds.Width);
 
-        _promptControl = default;
-        _promptWidth = 0;
-        if (Prompt is InputPrompt prompt)
-        {
-            _promptControl = ResolveControl(prompt, app.LastInputMode);
-            if (!_promptControl.IsEmpty)
-                _promptWidth = _controlRenderer.Measure(_promptControl, prompt.Label);
-        }
+        bool hasPrompts = Prompt is { IsEmpty: false } ||
+            SecondaryPrompt is { IsEmpty: false };
+        bool hasFooter = hasStatus || hasPrompts;
 
-        _secondaryPromptControl = default;
-        _secondaryPromptWidth = 0;
-        if (SecondaryPrompt is InputPrompt secondaryPrompt)
-        {
-            _secondaryPromptControl = ResolveControl(secondaryPrompt, app.LastInputMode);
-            if (!_secondaryPromptControl.IsEmpty)
-                _secondaryPromptWidth = _controlRenderer.Measure(
-                    _secondaryPromptControl, secondaryPrompt.Label);
-        }
+        contentWidth = System.Math.Max(contentWidth, statusWidth);
 
-        _promptGroupWidth = _promptWidth +
-            (_promptWidth > 0 && _secondaryPromptWidth > 0 ? StatusPromptGap : 0) +
-            _secondaryPromptWidth;
+        int sectionCount = (hasHeader ? 1 : 0) + (hasText ? 1 : 0) +
+            (hasFooter ? 1 : 0);
+        int height = VerticalPadding * 2 +
+            (hasHeader ? TextLineAdvance : 0) + textBounds.Height +
+            (hasFooter ? FontHeight : 0) +
+            (hasStatus && hasPrompts ? TextLineAdvance : 0) +
+            System.Math.Max(0, sectionCount - 1) * SectionGap;
 
-        int footerWidth = statusWidth +
-            (statusWidth > 0 && _promptGroupWidth > 0 ? StatusPromptGap : 0) +
-            _promptGroupWidth;
-        contentWidth = System.Math.Max(contentWidth, footerWidth);
-
-        int height = VerticalPadding * 2;
-        if (header.Length > 0)
-            height += _headerFont.GetRect(0, 0, header).Height;
-        if (header.Length > 0 &&
-            (text.Length > 0 || statusWidth > 0 || _promptGroupWidth > 0))
-            height += SectionGap;
-        if (text.Length > 0)
-            height += _textFont.GetRect(0, 0, text).Height;
-        if (_promptGroupWidth > 0 || status.Length > 0)
-        {
-            if (text.Length > 0)
-                height += SectionGap;
-            height += System.Math.Max(status.Length > 0 ? _statusFont.GetHeight() : 0,
-                _promptGroupWidth > 0 ? _textFont.GetHeight() : 0);
-        }
-
-        int width = FixedWidth > 0
-            ? FixedWidth
-            : System.Math.Max(MinimumWidth, contentWidth + HorizontalPadding * 2);
-        Size = FixedSize ?? new Vector2(width, height);
+        int width = System.Math.Max(MinimumWidth,
+            contentWidth + HorizontalPadding * 2);
+        Size = new Vector2(width, height);
         MoveInsideScreen();
-        _language = app.Language;
-        _inputMode = app.LastInputMode;
-        _glyphRevision = app.Engine.InputGlyphs.Revision;
     }
 
     public override void OnRender(RenderTarget target)
@@ -134,20 +88,21 @@ public sealed class TooltipWindow : Window
         if (app is BurntimeClassic classic && !classic.ShowUIHints)
             return;
 
-        RefreshLayout();
         target.RenderRect(Vector2.Zero, Size, BackgroundColor);
 
         string header = Header ?? string.Empty;
         string text = Text ?? string.Empty;
         string status = Status ?? string.Empty;
-        int statusWidth = _statusFont.GetRect(0, 0, status).Width;
+        bool hasPrompts = Prompt is { IsEmpty: false } ||
+            SecondaryPrompt is { IsEmpty: false };
+        bool hasFooter = status.Length > 0 || hasPrompts;
         int y = VerticalPadding;
         if (header.Length > 0)
         {
-            _headerFont.DrawText(target, new Vector2(HorizontalPadding, y), header,
+            HeaderFont.DrawText(target, new Vector2(HorizontalPadding, y), header,
                 TextAlignment.Left, VerticalTextAlignment.Top);
-            y += _headerFont.GetRect(0, 0, header).Height;
-            if (text.Length > 0 || status.Length > 0 || _promptGroupWidth > 0)
+            y += TextLineAdvance;
+            if (text.Length > 0 || hasFooter)
                 y += SectionGap;
         }
 
@@ -158,64 +113,48 @@ public sealed class TooltipWindow : Window
             y += _textFont.GetRect(0, 0, text).Height;
         }
 
-        if (status.Length > 0 || _promptGroupWidth > 0)
-            y += text.Length > 0 ? SectionGap : 0;
-        int footerWidth = statusWidth +
-            (statusWidth > 0 && _promptGroupWidth > 0 ? StatusPromptGap : 0) +
-            _promptGroupWidth;
-        int promptX = Size.x - HorizontalPadding - footerWidth;
+        if (text.Length > 0 && hasFooter)
+            y += SectionGap;
         if (status.Length > 0)
         {
             GuiFont statusFont = StatusIsSuccess ? _successFont : _statusFont;
-            statusFont.DrawText(target, new Vector2(promptX, y), status,
-                TextAlignment.Left, VerticalTextAlignment.Top);
-            promptX += statusWidth +
-                (_promptGroupWidth > 0 ? StatusPromptGap : 0);
+            statusFont.DrawText(target,
+                new Vector2(Size.x - HorizontalPadding, y), status,
+                TextAlignment.Right, VerticalTextAlignment.Top);
+            y += TextLineAdvance;
         }
-        if (_promptGroupWidth == 0)
+        if (!hasPrompts)
             return;
-        if (_promptWidth > 0 && Prompt is InputPrompt prompt)
+
+        InputControlLabel promptControl = InputControlDisplay.Resolve(app,
+            app.LastInputMode, Prompt);
+        InputControlLabel secondaryPromptControl = InputControlDisplay.Resolve(app,
+            app.LastInputMode, SecondaryPrompt);
+        bool hasPrompt = !promptControl.IsEmpty;
+        bool hasSecondaryPrompt = !secondaryPromptControl.IsEmpty;
+        if (hasSecondaryPrompt && SecondaryPrompt is InputPrompt secondaryPrompt)
         {
-            _controlRenderer.Draw(target, new Vector2(promptX, y),
-                _promptControl, prompt.Label);
-            promptX += _promptWidth +
-                (_secondaryPromptWidth > 0 ? StatusPromptGap : 0);
+            int x = hasPrompt ? HorizontalPadding : Size.x - HorizontalPadding;
+            _controlRenderer.Draw(target, new Vector2(x, y),
+                secondaryPromptControl, secondaryPrompt.Label,
+                alignment: hasPrompt ? TextAlignment.Left : TextAlignment.Right);
         }
-        if (_secondaryPromptWidth > 0 && SecondaryPrompt is InputPrompt secondaryPrompt)
-            _controlRenderer.Draw(target, new Vector2(promptX, y),
-                _secondaryPromptControl, secondaryPrompt.Label);
+        if (hasPrompt && Prompt is InputPrompt prompt)
+            _controlRenderer.Draw(target,
+                new Vector2(Size.x - HorizontalPadding, y),
+                promptControl, prompt.Label, alignment: TextAlignment.Right);
     }
 
-    InputControlLabel ResolveControl(InputPrompt prompt, InputMode inputMode)
-    {
-        InputPattern pattern = inputMode is InputMode.Keyboard or InputMode.Mouse
-            ? prompt.KeyboardPattern ?? prompt.Pattern
-            : prompt.Pattern;
-        return pattern != InputPattern.None
-            ? InputControlDisplay.ResolvePattern(app, inputMode, pattern)
-            : InputControlDisplay.Resolve(app, inputMode, prompt.Action,
-                prompt.KeyboardControl, prompt.GamepadControl,
-                prompt.EffectiveMouseControl);
-    }
+    static int MeasureWidth(GuiFont font, string text) =>
+        text.Length > 0 ? font.GetWidth(text) : 0;
 
     void MoveInsideScreen()
     {
         if (Parent == null)
             return;
 
-        Vector2 anchorOnScreen = PositionOnScreen;
-        Vector2 topLeft = anchorOnScreen + Boundings.Position - Position;
-        Vector2 correction = Vector2.Zero;
-        Vector2 screen = app.Engine.Resolution.Game;
-        if (topLeft.x < 0)
-            correction.x = -topLeft.x;
-        else if (topLeft.x + Size.x > screen.x)
-            correction.x = screen.x - topLeft.x - Size.x;
-        if (topLeft.y < 0)
-            correction.y = -topLeft.y;
-        else if (topLeft.y + Size.y > screen.y)
-            correction.y = screen.y - topLeft.y - Size.y;
-        if (correction != Vector2.Zero)
-            Position += correction;
+        Vector2 alignmentOffset = Boundings.Position - Position;
+        Vector2 screenPosition = -Parent.PositionOnScreen - alignmentOffset;
+        MoveInside(new Rect(screenPosition, app.Engine.Resolution.Game));
     }
 }

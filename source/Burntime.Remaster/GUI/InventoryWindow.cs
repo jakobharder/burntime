@@ -125,6 +125,7 @@ namespace Burntime.Remaster.GUI
             Windows += grid = new ItemGridWindow(App)
             {
                 UnifiedSelection = true,
+                ShowFocusIndicator = true,
                 LockPositions = true,
                 Position = new Vector2(side ? 9 : 19, side ? 72 : 83) + basePos,
                 Spacing = new Vector2(4, side ? 16 : 5),
