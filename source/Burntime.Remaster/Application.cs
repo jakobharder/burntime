@@ -14,7 +14,8 @@ namespace Burntime.Remaster
         string Resource,
         string NextScene = null,
         string SubtitleArgument = null,
-        bool FinishClient = false);
+        bool FinishClient = false,
+        object? NextSceneParameter = null);
 
     public enum LanguageMode
     {
@@ -367,11 +368,22 @@ namespace Burntime.Remaster
         public Room InventoryRoom = null;
         public PickItemList PickItems = null;
 
-        public void SetImageScene(string imageScene, string sceneAfterImage = null,
+        public void SetScene(string scene, object? parameter = null,
+            string? introScene = null)
+        {
+            if (introScene == null)
+                SceneManager.SetScene(scene, parameter);
+            else
+                SceneManager.SetScene("ImageScene", new ImageSceneRequest(
+                    introScene, scene, NextSceneParameter: parameter));
+        }
+
+        public void SetImageScene(string imageScene,
             string subtitleArgument = null, bool finishClient = false)
         {
             SceneManager.SetScene("ImageScene", new ImageSceneRequest(
-                imageScene, sceneAfterImage, subtitleArgument, finishClient));
+                imageScene, SubtitleArgument: subtitleArgument,
+                FinishClient: finishClient));
         }
 
         public int PreviousPlayerId = -1;

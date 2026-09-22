@@ -1334,27 +1334,24 @@ namespace Burntime.Remaster
                 case RoomType.Trader:
                     classic.Game.World.ActiveTraderObj = classic.Game.World.ActiveLocationObj.LocalTrader;
                     if (entrance.Background == 0x0D)
-                        classic.SetImageScene("scenes/film_10.txt", "TraderScene");
+                        classic.SetScene("TraderScene", introScene: "scenes/film_10.txt");
                     else if (entrance.Background == 0x11)
-                        classic.SetImageScene("scenes/film_05.txt", "TraderScene");
+                        classic.SetScene("TraderScene", introScene: "scenes/film_05.txt");
                     else
-                        app.SceneManager.SetScene("TraderScene");
+                        classic.SetScene("TraderScene");
                     break;
                 case RoomType.Pub:
-                    classic.InventoryBackground = entrance.Background;
                     if (entrance.Background == 14)
-                    {
-                        classic.SetImageScene("scenes/film_06.txt", "PubScene");
-                    }
+                        classic.SetScene("ServiceScene", entrance,
+                            introScene: "scenes/film_06.txt");
                     else
-                        app.SceneManager.SetScene("PubScene");
+                        classic.SetScene("ServiceScene", entrance);
                     break;
                 case RoomType.Restaurant:
-                    classic.InventoryBackground = entrance.Background;
-                    app.SceneManager.SetScene("RestaurantScene");
+                    classic.SetScene("ServiceScene", entrance);
                     break;
                 case RoomType.Doctor:
-                    app.SceneManager.SetScene("DoctorScene");
+                    classic.SetScene("ServiceScene", entrance);
                     break;
                 case RoomType.Church:
                     classic.SetImageScene("scenes/church.txt");

@@ -118,7 +118,8 @@ namespace Burntime.Remaster.Scenes
                 app.ActiveClient.Finish();
 
             if (!string.IsNullOrEmpty(request.NextScene))
-                app.SceneManager.SetScene(request.NextScene, true);
+                app.SceneManager.SetScene(request.NextScene, true,
+                    request.NextSceneParameter);
             else
                 app.SceneManager.PreviousScene();
         }
