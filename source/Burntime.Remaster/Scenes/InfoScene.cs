@@ -35,6 +35,7 @@ namespace Burntime.Remaster.Scenes
         readonly Button exitButton;
         readonly InputPromptHandle exitPrompt;
         readonly TooltipWindow productionTooltip;
+        readonly ItemGridTooltip itemTooltip;
         const int ProductionTooltipHeaderIndex = 66;
         const int ProductionTooltipEntryIndex = 67;
         const int ProductionTooltipNoneIndex = 68;
@@ -110,6 +111,10 @@ namespace Burntime.Remaster.Scenes
             grid.Spacing = new Vector2(0, 6);
             grid.Grid = new Vector2(1, 2);
             Windows += grid;
+            itemTooltip = new ItemGridTooltip(app,
+                () => (app as BurntimeClassic)?.SelectedCharacter);
+            itemTooltip.AddGrid(grid);
+            Windows += itemTooltip.Window;
 
             titleFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(156, 156, 156), new PixelColor(76, 32, 4));
             font = new GuiFont(BurntimeClassic.FontName, ClassicColors.Gray, new PixelColor(92, 92, 96));
@@ -264,6 +269,7 @@ namespace Burntime.Remaster.Scenes
         public override void OnUpdate(float elapsed)
         {
             UpdateProductionTooltip();
+            itemTooltip.Update();
         }
 
         void UpdateProductionTooltip()

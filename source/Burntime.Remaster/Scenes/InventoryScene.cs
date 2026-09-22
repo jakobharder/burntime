@@ -13,18 +13,6 @@ namespace Burntime.Remaster.Scenes
 {
     class InventoryScene : Scene
     {
-        const int KnifeDamageTextIndex = 16;
-        const int FoodValueTextIndex = 33;
-        const int WaterValueTextIndex = 34;
-        const int DefenseTextIndex = 36;
-        const int GasProtectionTextIndex = 37;
-        const int RadiationProtectionTextIndex = 38;
-        const int TrapProductionTextIndex = 40;
-        const int WaterCapacityTextIndex = 41;
-        const int RecipeTextIndex = 43;
-        const int UnknownRecipeTextIndex = 44;
-        const int UnknownRecipeCountTextIndex = 45;
-        const int MoreRecipesTextIndex = 46;
         const int NeedsTechnicianTextIndex = 47;
         const int PlaceInRoomTextIndex = 48;
         const int UnsuitableCampTextIndex = 49;
@@ -33,11 +21,6 @@ namespace Burntime.Remaster.Scenes
         const int NeedsMaterialsTextIndex = 72;
         const int NeedsAmmunitionTextIndex = 73;
         const int SelectedTrapTextIndex = 77;
-        const int RemoteIntelTextIndex = 79;
-        const int RestingSustenanceTextIndex = 80;
-        const int CreatureDeterrentTextIndex = 81;
-        const int MetalDetectionTextIndex = 82;
-        const int MaxRecipeLines = 3;
 
         public override bool UseDiagonalGamepadNavigation => true;
 
@@ -51,8 +34,7 @@ namespace Burntime.Remaster.Scenes
         ICharacterCollection group;
         Character leader;
         bool roomAreaActive;
-        readonly TooltipWindow inventoryTooltip;
-        readonly TooltipWindow roomTooltip;
+        readonly ItemGridTooltip itemTooltip;
 
         public InventoryScene(Module app)
             : base(app)
@@ -70,8 +52,8 @@ namespace Burntime.Remaster.Scenes
             AddGridPrompts(inventory.Grid, true);
             Windows += inventory;
 
-            Windows += inventoryTooltip = CreateItemTooltip(PositionAlignment.Left);
-            Windows += roomTooltip = CreateItemTooltip(PositionAlignment.Right);
+            itemTooltip = new ItemGridTooltip(app, () => inventory.ActiveCharacter);
+            Windows += itemTooltip.Window;
 
             exitButton = new Button(app);
             exitButton.Position = new Vector2(25, 183);
@@ -166,91 +148,22 @@ namespace Burntime.Remaster.Scenes
         {
             ClassicGame game = app.GameState as ClassicGame;
             game.World.Update(elapsed);
-            UpdateItemTooltip(inventoryTooltip, inventory.Grid, isInInventory: true);
-            UpdateItemTooltip(roomTooltip, grid, isInInventory: false);
+            itemTooltip.Update();
         }
 
-        TooltipWindow CreateItemTooltip(PositionAlignment horizontalAlignment)
+        ItemTooltipDetails GetItemTooltipDetails(Item focused, bool isInInventory)
         {
-            TooltipWindow tooltip = new(app)
-            {
-                HorizontalAlignment = horizontalAlignment,
-                VerticalAlignment = PositionAlignment.Right,
-                HeaderFont = new GuiFont(BurntimeClassic.FontName,
-                    ClassicColors.MenuTextHover) { Borders = TextBorders.None },
-                Layer = 40
-            };
-            tooltip.Hide();
-            return tooltip;
-        }
-
-        void UpdateItemTooltip(TooltipWindow tooltip, ItemGridWindow? source,
-            bool isInInventory)
-        {
-            Item? focused = source?.FocusedItem;
-            if (focused == null || !TryGetItemTooltip(focused, isInInventory,
-                out string text, out InputPrompt? prompt, out GuiString? status,
-                out bool statusIsSuccess))
-            {
-                if (tooltip.IsVisible)
-                    tooltip.Hide();
-                return;
-            }
-
-            Vector2? focus = source!.FocusPosition;
-            if (!focus.HasValue)
-                return;
-            Vector2 scenePosition = PositionOnScreen;
-            int edgeX = isInInventory
-                ? source.PositionOnScreen.x - scenePosition.x + source.Size.x
-                : source.PositionOnScreen.x - scenePosition.x;
-            tooltip.Position = new Vector2(edgeX,
-                focus.Value.y - scenePosition.y + 16);
-            tooltip.Header = focused.TooltipText;
-            tooltip.Text = text;
-            tooltip.Prompt = prompt;
-            tooltip.Status = status;
-            tooltip.StatusIsSuccess = statusIsSuccess;
-            tooltip.RefreshLayout();
-            if (!tooltip.IsVisible)
-                tooltip.Show();
-        }
-
-        bool TryGetItemTooltip(Item focused, bool isInInventory, out string text,
-            out InputPrompt? prompt, out GuiString? status, out bool statusIsSuccess)
-        {
-            List<string> lines = [];
-            prompt = GetItemPrompt(focused, isInInventory);
-            status = null;
-            statusIsSuccess = false;
+            InputPrompt? prompt = GetItemPrompt(focused, isInInventory);
+            GuiString? status = null;
+            bool statusIsSuccess = false;
             ClassicGame game = app.GameState as ClassicGame;
             BurntimeClassic classic = app as BurntimeClassic;
             var recipes = game.Constructions.GetRecipes(game).Where(recipe =>
                 recipe.Items.Contains(focused.ID) || recipe.Tools.Contains(focused.ID))
                 .ToArray();
 
-            if (focused.Type.DamageValues.Length > 0)
-            {
-                var damage = game.RuleBook.GetWeaponPreview(
-                    inventory.ActiveCharacter, focused);
-                string range = damage.Minimum == damage.Maximum
-                    ? damage.Minimum.ToString()
-                    : $"{damage.Minimum}-{damage.Maximum}";
-                TextHelper damageText = new(app, "tooltip");
-                damageText.AddArgument("{damage}", range);
-                lines.Add(damageText.Get(KnifeDamageTextIndex));
-            }
-
             if (focused.FoodValue > 0 || focused.WaterValue > 0)
             {
-                TextHelper valueText = new(app, "tooltip");
-                valueText.AddArgument("{food}", focused.FoodValue);
-                valueText.AddArgument("{water}", focused.WaterValue);
-                if (focused.FoodValue > 0)
-                    lines.Add(valueText.Get(FoodValueTextIndex));
-                if (focused.WaterValue > 0)
-                    lines.Add(valueText.Get(WaterValueTextIndex));
-
                 bool canConsume = focused.FoodValue > 0 &&
                     CanSupplyGroup(character => character.Food < character.MaxFood) ||
                     focused.WaterValue > 0 &&
@@ -265,9 +178,6 @@ namespace Burntime.Remaster.Scenes
             int capacity = focused.Type.Full?.WaterValue ?? 0;
             if (focused.WaterValue == 0 && capacity > 0)
             {
-                TextHelper capacityText = new(app, "tooltip");
-                capacityText.AddArgument("{water}", capacity);
-                lines.Add(capacityText.Get(WaterCapacityTextIndex));
                 if (isInInventory && classic.InventoryRoom?.IsWaterSource == true &&
                     game.World.ActiveLocationObj.Source.Reserve < capacity)
                 {
@@ -278,10 +188,6 @@ namespace Burntime.Remaster.Scenes
 
             if (focused.Type.Production is Production production)
             {
-                TextHelper trapText = new(app, "tooltip");
-                trapText.AddArgument("{food}", production.GetRate(1, 1).FoodPerDay);
-                lines.Add(trapText.Get(TrapProductionTextIndex));
-
                 if (!focused.IsSelectable &&
                     (isInInventory || classic.InventoryRoom == null))
                 {
@@ -293,10 +199,6 @@ namespace Burntime.Remaster.Scenes
                     status = $"@tooltip?{UnsuitableCampTextIndex}";
                 }
             }
-
-            AddProtectionLines(focused, lines);
-            AddFunctionLines(focused, lines);
-            AddRecipeLines(recipes, lines);
 
             bool needsTechnician = recipes.Length > 0 &&
                 !recipes.Any(recipe => recipe.Classes[(int)inventory.ActiveCharacter.Class]);
@@ -334,74 +236,7 @@ namespace Burntime.Remaster.Scenes
                 statusIsSuccess = true;
             }
 
-            text = string.Join('\n', lines);
-            // The header still identifies items without additional statistics.
-            return true;
-        }
-
-        void AddProtectionLines(Item focused, List<string> lines)
-        {
-            TextHelper protectionText = new(app, "tooltip");
-            if (focused.DefenseValue > 0)
-            {
-                protectionText.AddArgument("{defense}", focused.DefenseValue);
-                lines.Add(protectionText.Get(DefenseTextIndex));
-            }
-
-            int gas = (int)((focused.Type.GetProtection("gas")?.Rate ?? 0) * 100);
-            int radiation = (int)((focused.Type.GetProtection("radiation")?.Rate ?? 0) * 100);
-            if (gas > 0)
-            {
-                protectionText.AddArgument("{gas}", gas);
-                lines.Add(protectionText.Get(GasProtectionTextIndex));
-            }
-            if (radiation > 0)
-            {
-                protectionText.AddArgument("{radiation}", radiation);
-                lines.Add(protectionText.Get(RadiationProtectionTextIndex));
-            }
-
-        }
-
-        void AddFunctionLines(Item focused, List<string> lines)
-        {
-            if (focused.Type.HasFunction(ItemFunction.RemoteIntel))
-                lines.Add(app.ResourceManager.GetString("tooltip", RemoteIntelTextIndex));
-            if (focused.Type.HasFunction(ItemFunction.RestingSustenance))
-                lines.Add(app.ResourceManager.GetString("tooltip", RestingSustenanceTextIndex));
-            if (focused.Type.HasFunction(ItemFunction.CreatureDeterrent))
-                lines.Add(app.ResourceManager.GetString("tooltip", CreatureDeterrentTextIndex));
-            if (focused.Type.HasFunction(ItemFunction.MetalDetection))
-                lines.Add(app.ResourceManager.GetString("tooltip", MetalDetectionTextIndex));
-        }
-
-        void AddRecipeLines(Constructions.ConstructionInfo[] recipes,
-            List<string> lines)
-        {
-            ClassicGame game = app.GameState as ClassicGame;
-            var known = recipes.Where(recipe => game.IsConstructionKnown(recipe.Result))
-                .GroupBy(recipe => recipe.Result).Select(group => group.First()).ToArray();
-            int unknown = recipes.Select(recipe => recipe.Result).Distinct().Count() - known.Length;
-            bool moreKnown = known.Length > MaxRecipeLines;
-            int knownLimit = unknown > 0 || moreKnown
-                ? MaxRecipeLines - 1
-                : MaxRecipeLines;
-            foreach (var recipe in known.Take(knownLimit))
-            {
-                TextHelper recipeText = new(app, "tooltip");
-                recipeText.AddArgument("{recipe}", game.ItemTypes[recipe.Result].Title);
-                lines.Add(recipeText.Get(RecipeTextIndex));
-            }
-            if (unknown == 1)
-                lines.Add(app.ResourceManager.GetString("tooltip", UnknownRecipeTextIndex));
-            else if (unknown > 1)
-            {
-                TextHelper unknownText = new(app, "tooltip");
-                unknownText.AddArgument("{count}", unknown);
-                lines.Add(unknownText.Get(UnknownRecipeCountTextIndex));
-            }
-            else if (moreKnown)
-                lines.Add(app.ResourceManager.GetString("tooltip", MoreRecipesTextIndex));
+            return new(prompt, status, statusIsSuccess);
         }
 
         bool CanTransferSelectedItem(ItemGridWindow source)
@@ -515,6 +350,9 @@ namespace Burntime.Remaster.Scenes
                 Windows -= grid;
                 grid = null;
             }
+            itemTooltip.ClearGrids();
+            itemTooltip.AddGrid(inventory.Grid, ItemTooltipSide.Right,
+                item => GetItemTooltipDetails(item, true));
 
             if (classic.InventoryRoom != null)
             {
@@ -546,6 +384,8 @@ namespace Burntime.Remaster.Scenes
                 grid.FocusEmptied += OnFocusEmptied;
                 AddGridPrompts(grid, false);
                 Windows += grid;
+                itemTooltip.AddGrid(grid, ItemTooltipSide.Left,
+                    item => GetItemTooltipDetails(item, false));
 
                 grid.Add(classic.InventoryRoom.Items);
 
@@ -573,6 +413,8 @@ namespace Burntime.Remaster.Scenes
                 grid.FocusEmptied += OnFocusEmptied;
                 AddGridPrompts(grid, false);
                 Windows += grid;
+                itemTooltip.AddGrid(grid, ItemTooltipSide.Left,
+                    item => GetItemTooltipDetails(item, false));
 
                 grid.Add(classic.PickItems);
             }

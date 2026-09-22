@@ -20,6 +20,7 @@ namespace Burntime.Remaster.Scenes
         readonly Button actionButton;
         readonly InputPromptHandle actionPrompt;
         readonly Image doctorAnimation;
+        readonly ItemGridTooltip itemTooltip;
         string[]? responseText;
         MapEntrance? entrance;
         RoomType serviceType;
@@ -80,6 +81,11 @@ namespace Burntime.Remaster.Scenes
 
             inventory.Grid.Prompts.Add(InputAction.Primary, "@prompts?36",
                 () => CanMoveFocusedItem(inventory.Grid));
+
+            itemTooltip = new ItemGridTooltip(app, () => inventory.ActiveCharacter);
+            itemTooltip.AddGrid(inventory.Grid, ItemTooltipSide.Right);
+            itemTooltip.AddGrid(offer, ItemTooltipSide.Left);
+            Windows += itemTooltip.Window;
 
             font = new GuiFont(BurntimeClassic.FontName, ClassicColors.LightGray);
             keyboardNavigation = new InventoryKeyboardNavigation(
@@ -156,6 +162,8 @@ namespace Burntime.Remaster.Scenes
         }
 
         public override bool OnInputAction(InputAction action) => keyboardNavigation.Handle(action);
+
+        public override void OnUpdate(float elapsed) => itemTooltip.Update();
 
         public override void OnRender(RenderTarget target)
         {

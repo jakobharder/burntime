@@ -29,6 +29,7 @@ class TraderScene : Scene
     ExchangeWindow exchangeTop;
     ExchangeWindow exchangeBottom;
     ItemGridWindow temporarySpace;
+    readonly ItemGridTooltip itemTooltip;
     KeyboardArea keyboardArea;
     Vector2? keyboardMousePosition;
 
@@ -99,6 +100,14 @@ class TraderScene : Scene
         temporarySpace.FocusEmptied += OnFocusEmptied;
         temporarySpace.Prompts.Add(InputAction.Primary, "@prompts?14");
         Windows += temporarySpace;
+
+        itemTooltip = new ItemGridTooltip(app, () => inventory.ActiveCharacter);
+        itemTooltip.AddGrid(inventory.Grid);
+        itemTooltip.AddGrid(inventoryTrader.Grid);
+        itemTooltip.AddGrid(exchangeTop.Grid);
+        itemTooltip.AddGrid(exchangeBottom.Grid);
+        itemTooltip.AddGrid(temporarySpace);
+        Windows += itemTooltip.Window;
 
         Windows += new InputPromptOverlay(app, Prompts,
             InputPromptColorScheme.Hud);
@@ -181,6 +190,8 @@ class TraderScene : Scene
 
         PositionElements();
     }
+
+    public override void OnUpdate(float elapsed) => itemTooltip.Update();
 
     public override void OnRender(RenderTarget Target)
     {

@@ -32,6 +32,19 @@ namespace Burntime.Remaster.GUI
         public event Action<ItemGridWindow, Vector2> FocusEmptied;
 
         bool unifiedSelection;
+        bool showHoverText = true;
+        public bool ShowHoverText
+        {
+            get => showHoverText;
+            set
+            {
+                showHoverText = value;
+                if (itemWindows != null)
+                    foreach (ItemWindow itemWindow in itemWindows)
+                        itemWindow.ShowHoverText = value && !unifiedSelection;
+            }
+        }
+
         public bool UnifiedSelection
         {
             get { return unifiedSelection; }
@@ -41,7 +54,7 @@ namespace Burntime.Remaster.GUI
                 if (itemWindows != null)
                 {
                     foreach (ItemWindow itemWindow in itemWindows)
-                        itemWindow.ShowHoverText = !value;
+                        itemWindow.ShowHoverText = showHoverText && !value;
                 }
             }
         }
@@ -597,7 +610,7 @@ namespace Burntime.Remaster.GUI
                     itemWindows[index].LeftClickEvent += OnLeftClickItem;
                     itemWindows[index].RightClickEvent += OnRightClickItem;
                     itemWindows[index].Position = p * (size + spacing);
-                    itemWindows[index].ShowHoverText = !UnifiedSelection;
+                    itemWindows[index].ShowHoverText = ShowHoverText && !UnifiedSelection;
                     Windows += itemWindows[index];
                     itemWindows[index].Layer = this.Layer + 1;
                 }
@@ -611,7 +624,7 @@ namespace Burntime.Remaster.GUI
                         itemWindows[index].LeftClickEvent += OnLeftClickItem;
                         itemWindows[index].RightClickEvent += OnRightClickItem;
                         itemWindows[index].Position = p * (size + spacing) + size / 2;
-                        itemWindows[index].ShowHoverText = !UnifiedSelection;
+                        itemWindows[index].ShowHoverText = ShowHoverText && !UnifiedSelection;
                         Windows += itemWindows[index];
                         itemWindows[index].Layer = this.Layer + 2;
                     }
