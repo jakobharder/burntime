@@ -14,6 +14,7 @@ namespace Burntime.Remaster.AI;
 public sealed class HeadlessSimulationOptions
 {
     public int Turns { get; init; } = 100;
+    public bool WeakFrontierTest { get; init; }
     public int Difficulty { get; init; } = 2;
     public int[]? AiDifficulties { get; init; }
     public AiProfile[]? AiProfiles { get; init; }
@@ -34,6 +35,10 @@ public static class HeadlessSimulation
 {
     public static string Run(BurntimeClassic app, HeadlessSimulationOptions options)
     {
+        if (options.WeakFrontierTest && (options.LoadGamePath != null ||
+            options.Rules != RuleSet.Extended || options.AI != AiProfile.Modern ||
+            options.Difficulty < 1 || options.AiProfiles != null || options.AiDifficulties != null))
+            throw new ArgumentException("Weak frontier requires a new Extended/Modern game on Normal or Hard without slot overrides.");
         if (options.Turns < 1)
             throw new ArgumentOutOfRangeException(nameof(options.Turns), "Turn count must be positive.");
         if (options.Difficulty is < 0 or > 2)
@@ -77,9 +82,11 @@ public static class HeadlessSimulation
         }
 
         ClassicGame game = (ClassicGame)app.Server.World;
+        WeakFrontierScenario? frontier = options.WeakFrontierTest ? new(game, options.Difficulty) : null;
         if (options.AssertSmokeInvariants)
             AssertConfiguration(game, options);
         List<string> events = new();
+        AttackPlanObservation plans = new();
         List<DeathObservation> deaths = new();
         bool[] initialCharacterDeaths = game.World.Players
             .Select(player => player.Character.IsDead)
@@ -99,6 +106,8 @@ public static class HeadlessSimulation
             events.Add($"Turn {activeTurn}: {PlayerLabel(eventPlayer)} {message}.");
             economy.Observe(eventPlayer, activeTurn, message);
         };
+        AiTelemetry.AttackPlanStarted = (player, target) =>
+            plans.Record(player.Index, target.Id, game.World.Day);
         AiTelemetry.EventSink = (eventPlayer, telemetryEvent) =>
         {
             if (telemetryEvent == AiTelemetryEvent.DosMaintenanceBlockedByConflict)
@@ -128,7 +137,9 @@ public static class HeadlessSimulation
 
                     Stopwatch playerTimer = Stopwatch.StartNew();
                     observation?.BeforeAction();
+                    frontier?.BeforeAction();
                     AiStateOperations.Turn(player.AiState);
+                    frontier?.AfterAction(player);
                     observation?.AfterAction(turn);
                     observation?.AfterFoodCollection();
                     playerMilliseconds.Add(
@@ -193,8 +204,10 @@ public static class HeadlessSimulation
                 timings.Add((turn, aiMilliseconds, worldMilliseconds,
                     turnTimer.ElapsedMilliseconds, string.Join(", ", playerMilliseconds)));
                 completedTurns = turn;
+                if (frontier?.HasProgress == true)
+                    break;
                 winner = game.CheckWinner() as Player;
-                if (winner is not null && observation == null)
+                if (winner is not null && observation == null && frontier == null)
                     break;
 
                 Player[] survivors = game.World.Players
@@ -211,19 +224,25 @@ public static class HeadlessSimulation
         {
             AiTelemetry.Sink = null;
             AiTelemetry.EventSink = null;
+            AiTelemetry.AttackPlanStarted = null;
         }
 
         if (options.EconomyReportPath is not null)
             observation!.Write(options.EconomyReportPath, options);
 
-        if (options.SaveGamePath is not null)
-            creation.SaveGame(options.SaveGamePath);
+        if (options.SaveGamePath is not null && !creation.SaveGame(options.SaveGamePath))
+            throw new InvalidOperationException($"Could not save simulation to '{options.SaveGamePath}'.");
 
         if (options.AssertSmokeInvariants)
             AssertSmokeInvariants(game, options, completedTurns, deaths,
                 initialCharacterDeaths);
 
-        return BuildReport(game, options, completedTurns, winner, events, economy, timings);
+        string report = BuildReport(game, options, completedTurns, winner, events, economy, timings)
+            + "\nRepeated attack plans (review only; restarts can be legitimate)\n"
+            + plans.Describe();
+        if (frontier != null && !frontier.HasProgress)
+            throw new InvalidOperationException($"Weak frontier: no damage or capture after {completedTurns} turns.\n{report}");
+        return report;
     }
 
     static void AssertConfiguration(ClassicGame game, HeadlessSimulationOptions options)

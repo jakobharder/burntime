@@ -564,7 +564,7 @@ namespace Burntime.Remaster.Logic.Generation
             }
         }
 
-        public void SaveGame(string filename)
+        public bool SaveGame(string filename)
         {
             Burntime.Framework.SaveGame game = new Burntime.Framework.SaveGame(filename, "classic", BurntimeClassic.SavegameVersion);
             try
@@ -582,6 +582,15 @@ namespace Burntime.Remaster.Logic.Generation
                     throw new InvalidOperationException("No game state is available to save.");
                 saveContainer.Root.UpdateSaveHint();
                 saveContainer.Save(game.Stream);
+                if (game.Commit())
+                    return true;
+                Log.Warning($"Could not replace save game '{filename}'.");
+                return false;
+            }
+            catch (Exception exception)
+            {
+                Log.Warning($"Could not save game '{filename}': {exception.Message}");
+                return false;
             }
             finally
             {

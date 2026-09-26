@@ -46,6 +46,7 @@ internal static class HeadlessSimulationCommand
             string report = HeadlessSimulation.Run(app, new HeadlessSimulationOptions
             {
                 Turns = parsed.Turns,
+                WeakFrontierTest = parsed.WeakFrontierTest,
                 Difficulty = parsed.Difficulty,
                 AiDifficulties = parsed.AiDifficulties,
                 AiProfiles = parsed.AiProfiles,
@@ -83,7 +84,7 @@ internal static class HeadlessSimulationCommand
                 "[--save-at-end PATH] [--report PATH] [--rules dos|amiga|classic|extended] " +
                 "[--ai none|dos|amiga|modern] " +
                 "[--ai-profiles dos,amiga,modern,none] [--smoke-test] " +
-                "[--early-death-turn N] [--economy-report PATH]");
+                "[--early-death-turn N] [--economy-report PATH] [--weak-frontier-test]");
             return 2;
         }
         catch (Exception exception)
@@ -142,6 +143,9 @@ internal static class HeadlessSimulationCommand
                 case "--ai-profiles":
                     result.AiProfiles = ParseAiProfiles(
                         NextValue(args, ref index, argument));
+                    break;
+                case "--weak-frontier-test":
+                    result.WeakFrontierTest = true;
                     break;
                 case "--smoke-test":
                     result.AssertSmokeInvariants = true;
@@ -236,6 +240,7 @@ internal static class HeadlessSimulationCommand
         public string? LoadSavePath { get; set; }
         public string? SaveAtEndPath { get; set; }
         public bool AssertSmokeInvariants { get; set; }
+        public bool WeakFrontierTest { get; set; }
         public int EarlyDeathTurn { get; set; } = 60;
         public RuleSet Rules { get; set; } = RuleSet.Dos;
         public AiProfile AI { get; set; } = AiProfile.Modern;

@@ -20,6 +20,9 @@ internal static class CombatResolver
         List<Character> originalDefenders = CombatStrength.Defenders(location)
             .ToList();
         List<Character> originalAttackers = attacker.Party.ToList();
+        var defenderHealth = originalDefenders.ToDictionary(character => character, character => character.Health);
+        var attackingForce = AttackRetryMemory.Force.Capture(originalAttackers, attacker.Character);
+        var defendingForce = AttackRetryMemory.Force.Capture(originalDefenders);
         Dictionary<Character, Item[]> carriedByDefenders = originalDefenders
             .ToDictionary(character => character, character => character.Items.ToArray());
         Dictionary<Character, Item[]> carriedBeforeCombat = originalAttackers
@@ -52,6 +55,15 @@ internal static class CombatResolver
         Character[] survivingDefenders = originalDefenders.Where(character => !character.IsDead &&
             (!encounter.DefendingPartyDisengaged || !defenderOwner.Party.Contains(character))).ToArray();
         bool defendersDefeated = survivingDefenders.Length == 0;
+        int damageDealt = originalDefenders.Sum(character =>
+            System.Math.Max(0, defenderHealth[character] - System.Math.Max(0, character.Health)));
+        int killed = originalDefenders.Count(character => character.IsDead);
+        var retry = AttackRetryMemory.For(attacker).Record(location, defenderOwner,
+            attackingForce, defendingForce, killed, defendersDefeated);
+        AiTelemetry.Report(attacker,
+            $"combat outcome at {location.Title}: {damageDealt} damage this encounter, {killed} defenders killed; " +
+            $"{retry.Comparison}; " +
+            (retry.Blocked ? "further attempts deferred until forces change" : "retry remains subject to readiness"));
         DefenseIntelligence.UpdateKnowledgeFromEncounter(state, location, survivingDefenders);
         if (defendersDefeated)
         {
@@ -89,8 +101,7 @@ internal static class CombatResolver
             state.StrategicTarget = null;
             if (!fightToDeath)
                 state.LastChanceAttackTarget = null;
-            bool madeProgress = survivingDefenders.Length < originalDefenders.Count ||
-                survivingDefenders.Any(character => character.Health < 100);
+            bool madeProgress = killed > 0 || damageDealt > 0;
             state.RecordFailedAttack(location, originalAttackers.Count, initialAttackerStrength,
                 initialDefenderStrength, AiPolicy.ForDifficulty(state.Difficulty),
                 madeProgress);
@@ -114,8 +125,8 @@ internal static class CombatResolver
                 attacker.Travel(retreat);
                 AiTelemetry.Report(attacker,
                     tacticalWithdrawal && madeProgress
-                    ? $"withdrew from {location.Title} after reducing the defense to " +
-                        $"{survivingDefenders.Length}, toward {safeLocation?.Title ?? retreat.Title} via {retreat.Title}"
+                    ? $"withdrew from {location.Title} after dealing {damageDealt} damage; " +
+                        $"{survivingDefenders.Length} defenders remain, toward {safeLocation?.Title ?? retreat.Title} via {retreat.Title}"
                     : $"retreated from {location.Title} toward " +
                     $"{safeLocation?.Title ?? retreat.Title} via {retreat.Title} before risking the leader");
             }

@@ -2,22 +2,55 @@
 
 ## [Unreleased]
 
-- Behavior
-  - Automatically select all after hiring an NPC
-  - Improve group following into attacks, rooms and traders
-  - Place produced food preferrably next to the trap
-  - Make attacked people flee a bit
-  - Apply previous dog/mutant changes to existing saves
+### Changes
 
-- New
-  - Show food/trap/water infos on entrances and locations
-  - Show travel days on world map
-  - Alt/LT shortcut to show all entrances
-  - Music on maps; change mode in options
+- Game rules and AI
+  - Reworked Classic mode using gameplay rules from the original DOS and Amiga versions
+  - Added original Amiga AI as an alternative to Remaster AI
+  - Aligned combat damage, experience, hiring, healing, production and trading with the original mechanics
+  - Reworked NPC respawning with staggered location cycles; Extended mode replenishes cities first
+  - Improved Remaster AI equipment, supplies, camp management and combat loot collection
+  - Remaster AI now defers repeated unsuccessful attacks until its forces improve, the target's defenses weaken or ownership changes
 
-- Input
-  - Polished input, prompts
-  - Added option to hide prompts
+- Extended mode
+  - Two-way radios reveal hazards and report personnel, defenses and production at remote camps
+  - Metal detectors can uncover ammunition while travelling and can be repaired by technicians
+  - Carrying a Bible removes food and water needs while staying at one location; travel still consumes supplies
+  - Remaster AI can use a Bible to establish a self-sufficient caretaker at Reststop
+  - Skulls and bones deter dogs and mutants from attacking their carrier
+  - Doctors now slowly stabilize supplied characters below 50 health
+  - Food left on the ground decays over time
+  - Rebalanced trader assortments and the availability of rare utility items
+
+- Combat and camp management
+  - Improved group attacks, retaliation and fleeing, with longer-reach weapons striking first
+  - Automatically select all party members after hiring an NPC
+  - Improved group following into attacks, rooms and traders
+  - Added automatic and manual food production selection, including selection directly from traps in rooms
+  - Update food production when tools are placed or removed, and preferably place produced food next to the trap
+
+- Interface and controls
+  - Added an in-game manual
+  - Added game setup tooltips explaining modes, AI and difficulty
+  - Added item tooltips throughout inventory, trading and service screens, including damage, reach, protection, supplies and construction hints
+  - Show food, trap and water information on entrances and locations, and travel days on the world map
+  - Added city reports showing surrounding camp ownership and progress toward victory
+  - Added Alt/LT shortcut to show all entrances
+  - Added nearby target cycling with Tab, Shift+Tab and the right trigger
+  - Polished input, contextual prompts, HUD and hover text placement
+  - Added option to hide prompts and tooltips
+
+- Graphics and audio
+  - Remastered restaurant scenes and their animations
+  - Improved font rendering, supply indicators and keyboard/gamepad glyphs
+  - Added music on maps, with smooth track transitions and mode selection in options
+
+### Fixes
+
+- Preserve existing save files if saving fails
+- Fixed party members overlapping or getting stuck when entering locations
+- Fixed save/load list scroll position resetting after selection changes
+- Apply previous dog and mutant changes to existing saves
 
 ## 1.1 (2026-09-04)
 

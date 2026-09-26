@@ -6,7 +6,7 @@ Zur Amiga-KI wechseln
 Amiga-KI
 Originale Amiga-KI.
 Schummelt ziemlich stark.
-Zu ohne KI wechseln
+KI ausschalten
 }#
 Ohne KI
 Ohne computergesteuerte
@@ -46,7 +46,7 @@ Benötigt für ???
 Benötigt für ??? x{count}}
 Benötigt für ...
 Techniker benötigt
-Im Raum ablegen
+In einem Raum ablegen
 Ungeeignetes Lager
 }#
 Einfach
@@ -82,11 +82,11 @@ Der Mensch lebt nicht vom Brot allein.}
 Kreaturen scheinen es nicht zu mögen.}
 Kann auf Reisen Munition aufspüren.}
 Mit Munition laden}
-Lädt: {weapons}}
+Munition für: {weapons}}
 Gewehr}
 Pistole}
 Reichweite: {reach}}
-Nah}
+Kurz}
 Mittel}
 Lang}
 Fern}

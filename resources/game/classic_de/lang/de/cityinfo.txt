@@ -1,0 +1,5 @@
+Du hältst {camps} von {neighbors} umliegenden Lagern.
+Halte alle Lager für die Stadtkontrolle.
+Kontrollierte Städte: {cities} von {total}.
+Halte zum Sieg alle {total} Städte zugleich.
+Du kontrollierst diese Stadt.

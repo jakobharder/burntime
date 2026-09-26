@@ -5,14 +5,17 @@ In Städten kannst du rekrutieren, handeln
 und dich heilen lassen.
 @city
 #ERSTE SCHRITTE
-Rekrutiere jemanden und gründe dein erstes Lager.
+Rekrutiere jemanden und gründe mit ihm
+dein erstes Lager.
 Finde einen Techniker und sammle Material für eine
-Rattenfalle, um Nahrung und Handelsware zu sammeln.
+Rattenfalle. Sie liefert dir regelmäßig Nahrung,
+die du auch eintauschen kannst.
 @flag
 }#
 #TÄGLICHER BEDARF
 Jeder braucht täglich 1 Nahrung und 1 Wasser.
-Ohne Nahrung oder Wasser verliert man 25 Lebenspunkte.
+Fehlen Nahrung oder Wasser, verliert man dafür
+jeweils 25 Lebenspunkte pro Tag.
 Sichere deine Versorgung mit eigenen Lagern.
 
 #WASSER
@@ -20,9 +23,10 @@ Fülle leere Behälter an Wasserquellen auf.
 Größere Behälter fassen mehr Wasser.
 @supply-example|item_water_bottle
 #NAHRUNG
-Baue Fallen in Lagern für eine stetige
-Nahrungsproduktion.
-Lagere Nahrung für Handel und Rekrutierung.
+Stelle Fallen in deinen Lagern auf,
+um regelmäßig Nahrung zu erhalten.
+Bewahre überschüssige Nahrung zum Handeln
+und Anwerben auf.
 @supply-example|item_rats
 #GEFAHREN
 Die Ortsinfo zeigt Gefahren durch Gas und Strahlung.
@@ -31,7 +35,7 @@ bevor du einen Ort betrittst.
 @supply-example|item_gas_mask
 }#
 #REKRUTIERUNG
-Sprich mit Überlebenden und bringe ihnen,
+Sprich mit den Leuten und bringe ihnen,
 was sie verlangen.
 Nimm Rekruten mit oder gründe mit ihnen ein Lager.
 
@@ -44,16 +48,16 @@ Kombiniere die benötigten Materialien,
 um den Gegenstand zu bauen.
 @construction|item_rat_trap
 #ARZT
-Wer mehr als 70 Lebenspunkte hat,
-regeneriert 2 pro Tag.
-Mit einem Arzt sind es ab 50
-Lebenspunkten 4 pro Tag.
+Ab 70 Lebenspunkten erhält man täglich
+2 Lebenspunkte zurück. Mit einem Arzt sind es
+ab 50 Lebenspunkten täglich 4.
 @doctor
 #SÖLDNER
-Die EP-Stufe von 1 bis 4 bestimmt den Waffenschaden.
+Erfahrungspunkte (EP) bestimmen die Waffenstufe.
+Sie reicht von 1 bis 4 und bestimmt den Schaden.
 @tiers
-Bei Söldnern zählen alle EP,
-bei anderen Berufen die Hälfte.
+Für die Waffenstufe zählen die EP bei Söldnern voll,
+bei anderen Berufen nur zur Hälfte.
 @mercenary
 }#
 #VERTEIDIGUNG
@@ -88,7 +92,7 @@ Schutzkleidung verringert erlittenen Schaden.
 }#
 Schaden S1: |A-|B / S4: |C-|D
 Tagesertrag: Nahrung für |A-|B Tage
-Wasser/Tag bei Quellwert 2: 2 / |B
+Wasser/Tag bei Grundertrag 2: 2 / |B
 Gasschutz: |A%  Strahlenschutz: |B%
 |M
 Gefundene Ausrüstung
@@ -102,8 +106,8 @@ Liefert |A Tagesrationen.
 |A Nahrung pro Tag mit 1 Falle
 |A Nahrung pro Tag mit |B Fallen
 Verringert Schaden um |A%.
-Erzeugt |A Wasser pro Tag
-an einer |B-Wasser-Quelle
+Fördert täglich |A Wasser
+aus einer Quelle mit Grundertrag |B
 |A-|B Schaden auf Stufe 1
 |A-|B Schaden auf Stufe 4
 }#

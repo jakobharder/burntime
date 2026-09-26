@@ -7,6 +7,8 @@ on:
       - "source/**"
       - "scripts/savegame-test.sh"
       - "scripts/ai-economy*"
+      - "scripts/ai-smoke-test.sh"
+      - "scripts/rules-test.sh"
       - "tests/ai-economy/**"
       - "tests/savegames/**"
       - "resources/licenses/**"
@@ -62,7 +64,7 @@ jobs:
         path: burntime-linux-x64.tar.gz
 
   economy:
-    name: Extended AI economy
+    name: AI checks
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -74,6 +76,17 @@ jobs:
         dotnet-version: '10.0.x'
     - name: Test economic development and resilience
       run: bash scripts/ai-economy-test.sh
+    - name: Test gameplay rules and diagnostics
+      run: bash scripts/rules-test.sh
+    - name: Test AI simulations and frontier response
+      run: bash scripts/ai-smoke-test.sh
+    - name: Upload AI simulation diagnostics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ai-smoke-results
+        path: artifacts/ai-smoke-test/results
+        if-no-files-found: ignore
     - name: Upload economy diagnostics
       if: always()
       uses: actions/upload-artifact@v4

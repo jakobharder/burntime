@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Burntime.Data.BurnGfx;
 using Burntime.Framework;
 using Burntime.Framework.GUI;
@@ -168,6 +169,11 @@ namespace Burntime.Remaster
 
             Logic.Player player = game.World.ActivePlayerObj;
             Logic.Location location = game.World.Locations[locationNumber];
+            if (location.IsCity)
+            {
+                ShowCityReport(game, player, location);
+                return true;
+            }
             if (CanShowCampInfo(player, location))
             {
                 BurntimeClassic.Instance.InfoCity = locationNumber;
@@ -179,6 +185,20 @@ namespace Burntime.Remaster
 
             ShowRadioReport(game, player, location);
             return true;
+        }
+
+        void ShowCityReport(ClassicGame game, Logic.Player player, Logic.Location location)
+        {
+            TextHelper text = new(app, "cityinfo");
+            text.AddArgument("{camps}", location.Neighbors.Count(neighbor => neighbor.Player == player));
+            text.AddArgument("{neighbors}", location.Neighbors.Count);
+            text.AddArgument("{cities}", game.World.Locations.Count(city =>
+                city.IsCity && city.ControllingPlayer == player));
+            text.AddArgument("{total}", game.World.Locations.Count(city => city.IsCity));
+
+            ShowReport(player, [text.Get(0),
+                text.Get(location.ControllingPlayer == player ? 4 : 1),
+                text.Get(2), text.Get(3)]);
         }
 
         void ShowRadioReport(ClassicGame game, Logic.Player player, Logic.Location location)
@@ -215,9 +235,14 @@ namespace Burntime.Remaster
             }
             lines.Add(text.Get(12));
 
+            ShowReport(player, lines.ToArray());
+        }
+
+        void ShowReport(Logic.Player player, string[] lines)
+        {
             Conversation conversation = new()
             {
-                Text = lines.ToArray(),
+                Text = lines,
                 Choices = new ConversationChoice[3]
                 {
                     new(),
@@ -733,11 +758,7 @@ namespace Burntime.Remaster
 
             if (action == InputAction.LocationInfo)
             {
-                if (!game.World.ActiveLocationObj.IsCity)
-                {
-                    (app as BurntimeClassic).InfoCity = game.World.ActivePlayerObj.Location;
-                    app.SceneManager.SetScene("InfoScene");
-                }
+                TryShowLocationInfo(game.World.ActivePlayerObj.Location.Id);
                 return true;
             }
 
@@ -1010,7 +1031,7 @@ namespace Burntime.Remaster
 
         bool CanShowInfo(Logic.Player player, Logic.Location location)
         {
-            return CanShowCampInfo(player, location) ||
+            return location.IsCity || CanShowCampInfo(player, location) ||
                 RadioIntel.IsAvailable(player, location);
         }
 

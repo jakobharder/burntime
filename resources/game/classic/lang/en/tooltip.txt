@@ -1,5 +1,5 @@
 Remaster AI
-Properly plays the game.
+Plays the game normally.
 Receives minor advantages.
 Change to Amiga AI
 }#
@@ -46,7 +46,7 @@ Needed for ???
 Needed for ??? x{count}}
 Needed for ...
 Needs Technician
-Place in room
+Place in a room
 Unsuitable camp
 }#
 Easy
@@ -82,7 +82,7 @@ Man does not live by bread alone.}
 Creatures don't seem to like it.}
 May uncover ammunition while travelling.}
 Load with ammunition}
-Loads: {weapons}}
+Ammo for: {weapons}}
 rifle}
 pistol}
 Reach: {reach}}

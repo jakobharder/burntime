@@ -834,7 +834,8 @@ internal class OptionsSavesPage : Container
         bool createManualSave = IsCreateSelected || selectedSave?.IsAutosave == true;
         string fileName = createManualSave ? GetNextSaveFileName() : selectedSave!.FileName;
         var creation = new GameCreation(app as BurntimeClassic);
-        creation.SaveGame("saves/" + fileName);
+        if (!creation.SaveGame("saves/" + fileName))
+            return;
 
         RefreshSaveGames(fileName);
     }

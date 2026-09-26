@@ -303,6 +303,7 @@ public class FileSystem
 
     static public bool AddFile(FilePath path) => vfs.AddFile(path);
     static public bool RemoveFile(FilePath path) => vfs.RemoveFile(path);
+    static public bool ReplaceFile(FilePath source, FilePath target) => vfs.ReplaceFile(source, target);
     static public bool IsPackageLoaded(string package) => vfs.ExistsMount(package);
     static public void Clear() => vfs.UnmountAll();
 

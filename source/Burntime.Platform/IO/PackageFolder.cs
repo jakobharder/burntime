@@ -134,6 +134,31 @@ class PackageFolder : IPackage
         return true;
     }
 
+    public bool ReplaceFile(FilePath sourcePath, FilePath targetPath)
+    {
+        if (!dicFiles.TryGetValue(sourcePath.PathWithoutPackage, out string source))
+            return false;
+
+        string target = dicFiles.TryGetValue(targetPath.PathWithoutPackage, out string existing)
+            ? existing : targetPath.PathWithoutPackage;
+        try
+        {
+            // Save temporaries are siblings of their destination. Rename on the
+            // same filesystem replaces the file without first deleting it.
+            System.IO.File.Move(System.IO.Path.Combine(path, subPath, source),
+                System.IO.Path.Combine(path, subPath, target), overwrite: true);
+        }
+        catch (Exception exception)
+        {
+            Log.Warning($"Could not replace '{target}': {exception.Message}");
+            return false;
+        }
+
+        dicFiles.Remove(sourcePath.PathWithoutPackage);
+        dicFiles[targetPath.PathWithoutPackage] = target;
+        return true;
+    }
+
     public bool RemoveFolder(FilePath filePath)
     {
         try

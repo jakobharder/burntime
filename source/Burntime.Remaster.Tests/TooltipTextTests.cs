@@ -74,12 +74,12 @@ static class TooltipTextTests
         yield return new("unloaded firearm", "Load with ammunition",
             () => loading.Get(83));
         yield return new("ammunition compatibility",
-            "Loads: rifle / pistol",
+            "Ammo for: rifle / pistol",
             () => loading.Get(84));
 
         TextHelper reach = new(resources, "tooltip");
         reach.AddArgument("{reach}", resources.GetString("tooltip", 90));
-        yield return new("weapon reach", "Reach: Long - strikes first vs. shorter",
+        yield return new("weapon reach", "Reach: Long",
             () => reach.Get(87));
     }
 

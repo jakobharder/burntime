@@ -784,6 +784,7 @@ namespace Burntime.Remaster.AI
             headedLocation = location;
             strategicTargetWasNeutral = false;
             attackPlanUntilDay = RootGame.World.Day + policy.AttackPlanTurns;
+            AiTelemetry.AttackPlanStarted?.Invoke(Player, location);
             DefenseEstimate defense = DefenseIntelligence.Estimate(this, location);
             int attackGroupSize = AttackPlanning.RequiredAttackGroupSize(this, location, policy);
             AiTelemetry.Report(Player,
@@ -869,7 +870,7 @@ namespace Burntime.Remaster.AI
             failedAttackerStrength = attackerStrength;
             failedDefenderStrength = defenderStrength;
             AiTelemetry.Report(Player, madeProgress
-                ? $"learned the reduced defense at {location.Title} and may return after recovering"
+                ? $"dealt damage at {location.Title}; a retry must establish whether that damage survives recovery"
                 : $"will reconsider {location.Title} only after recruiting, re-equipping, or weakening its defenders");
         }
 

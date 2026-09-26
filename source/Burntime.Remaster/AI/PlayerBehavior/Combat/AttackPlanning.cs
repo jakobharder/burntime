@@ -225,7 +225,8 @@ internal static class AttackPlanning
         Location target,
         AiPolicy policy)
     {
-        if (!IsHostile(target, state.Player))
+        if (!IsHostile(target, state.Player) ||
+            !AttackRetryMemory.For(state.Player).CanRetry(state.Player, target))
             return false;
         if (target.Player?.Type != PlayerType.Human || state.IsRetaliatingAgainst(target.Player))
             return true;

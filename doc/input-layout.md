@@ -33,6 +33,8 @@
 | `ShowEntrances` | Hold Alt | Hold Left Trigger | Maps |
 | `LeftArea` | Shift+Left | Left shoulder | Previous character/page |
 | `RightArea` | Shift+Right | Right shoulder | Next character/page |
+| `PreviousTarget` | Shift+Tab | — | Previous nearby target |
+| `NextTarget` | Tab | Right trigger | Next nearby target |
 
 On the location map, `Action` (Q/Y) fights and `Secondary` (F/X) opens the
 available group actions.
@@ -71,7 +73,6 @@ Releasing gamepad/keyboard camera input on maps returns the camera to the contro
 
 ## Location interaction mode
 
-- Auto is the scene-local default and is restored whenever the location scene activates. Left click keeps the normal interaction, while right click fights a hovered fightable character instead of opening the actions menu.
-- Auto does not show the mouth or fight animation beside the mouse cursor.
-- C changes Auto to Fight, then toggles between Fight and Talk. It does not return to Auto.
-- In Auto, a fightable hover shows Talk on left click and Fight on right click. The actions-menu prompt is hidden while right click is assigned to Fight.
+- Talk is the scene-local default and is restored whenever the location scene activates.
+- Right click always opens the actions menu. C and the menu toggle left click between Talk and Fight.
+- Auto remains implemented but is currently not entered by the location scene.

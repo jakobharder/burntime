@@ -74,3 +74,24 @@ scripts/ai-economy-test.sh
 
 See [economy test checks and mutation tests](../tests/ai-economy/README.md) for thresholds,
 coverage rules, smaller development runs and failure reports.
+
+### Player-experience checks
+
+Included in `scripts/ai-smoke-test.sh`, using the same simulation build.
+
+Six short weak-frontier scenarios (Normal/Hard, seeds 29/71/123) use Extended
+rules and the ordinary Modern AI. A supplied, armed party starts at a productive,
+garrisoned camp with a one-day route to a weak hostile camp and no reachable
+neutral expansion. Within ten turns it must damage a defender during its own
+action or capture the camp. Daily starvation does not count. No attack plan is
+forced. This checks response to a clear opportunity, not campaign balance.
+
+Reports and failure timelines go to `artifacts/ai-smoke-test/results`.
+To run one case, use `scripts/ai-simulate.sh --weak-frontier-test --rules extended
+--difficulty normal --seed 29 --turns 10` (on one line).
+
+All headless reports also summarize targets with at least three attack-plan
+starts within sixty game days. These are review-only signals, not assertions:
+read the timeline to distinguish legitimate preparation or renewed attacks from
+unproductive cancellations. Counts come from actual plan-start events rather
+than parsing log text. The observer is runtime-only and does not affect saves.
