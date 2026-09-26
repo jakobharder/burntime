@@ -14,7 +14,7 @@ internal enum ItemTooltipSide { Left, Right, Auto }
 
 internal readonly record struct ItemTooltipDetails(
     InputPrompt? Prompt = null, GuiString? Status = null,
-    bool StatusIsSuccess = false);
+    bool StatusIsSuccess = false, bool StatusIsMuted = false);
 
 // The popup belongs to the scene, not the grid: grids clip their children.
 internal sealed class ItemGridTooltip
@@ -110,6 +110,7 @@ internal sealed class ItemGridTooltip
         Window.Prompt = details.Prompt;
         Window.Status = details.Status;
         Window.StatusIsSuccess = details.StatusIsSuccess;
+        Window.StatusIsMuted = details.StatusIsMuted;
         Window.RefreshLayout();
         if (!Window.IsVisible)
             Window.Show();

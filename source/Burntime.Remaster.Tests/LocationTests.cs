@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Burntime.Data.BurnGfx;
 using Burntime.Framework.States;
 using Burntime.Platform;
@@ -36,6 +37,32 @@ static class LocationTests
             for (int i = 0; i < Group.MAX_PEOPLE; i++)
                 Equal(entry + offsets[i], location.GetEntryPosition(i),
                     $"member {i} arrival position");
+            return 0;
+        });
+
+        yield return Int("joining a camp preserves the follower position", 0, () =>
+        {
+            var manager = new StateManager(null!);
+            var camp = manager.Create<Location>();
+            camp.EntryPoint = new Vector2(16, 16);
+            var player = manager.Create<HazardPlayer>(new object[] { 0 });
+            player.Location = camp;
+            var leader = manager.Create<HazardCharacter>();
+            leader.Player = player;
+            player.Character = leader;
+            var follower = manager.Create<HazardCharacter>();
+            follower.Player = player;
+            player.Party.Add(follower);
+            var position = new Vector2(72, 48);
+            follower.Position = position;
+
+            follower.JoinCamp();
+
+            Equal(position, follower.Position, "stationed position");
+            Equal(position, follower.Path.MoveTo, "stationed path target");
+            Equal(false, player.Party.Contains(follower), "removed from travelling party");
+            Equal(true, camp.CampNPC.Contains(follower), "added to camp");
+            Equal(player, camp.Player, "camp owner");
             return 0;
         });
 

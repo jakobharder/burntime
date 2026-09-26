@@ -54,7 +54,7 @@ static class TooltipTextTests
             () => production.Get(67));
         yield return new("production heading", "Food Production",
             () => production.Get(66));
-        yield return new("group supplied", "Group is full",
+        yield return new("group supplied", "Everyone is supplied",
             () => production.Get(70));
         yield return new("refill blocked", "Not enough water",
             () => production.Get(71));

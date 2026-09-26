@@ -1161,24 +1161,19 @@ namespace Burntime.Remaster
                     dialog.Show();
                 }
                 else
-                {
-                    charOverlay.SelectedCharacter.JoinCamp();
-                    SelectBossAfterGarrison();
-                }
+                    GarrisonSelectedCharacter();
             }
             else
             {
-                charOverlay.SelectedCharacter.JoinCamp();
-                SelectBossAfterGarrison();
-
-                view.Location.Player = view.Player;
-                BurntimeClassic.Instance.Engine.Music.PlaySound("sounds/camp.ogg");
+                GarrisonSelectedCharacter();
             }
         }
 
-        void SelectBossAfterGarrison()
+        void GarrisonSelectedCharacter()
         {
+            charOverlay.SelectedCharacter.JoinCamp();
             view.Player.SelectGroup(view.Player.Party);
+            app.Engine.Music.PlaySound("sounds/camp.ogg");
         }
 
         public void OnMenuLeaveCamp()

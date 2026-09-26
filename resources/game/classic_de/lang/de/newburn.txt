@@ -56,12 +56,12 @@ um dort reinzukommen.}
 Skalierung SCHARF
 Skalierung WEICH
 mit Alt+Enter wechseln
-
-
-
-
-
-
+Karte STILLE
+Karte MUSIK WEITER
+Karte ZUFALLSMUSIK
+Auf Karten bleibt es still
+Die aktuelle Musik läuft weiter
+Zufällige Titel aus der Playlist
 
 
 

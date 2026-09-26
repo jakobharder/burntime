@@ -68,7 +68,7 @@ Nahrungsproduktion
 {product}: {tools}}
 Keine
 Ändern
-Gruppe ist voll
+Alle sind versorgt
 Nicht genug Wasser
 Material benötigt
 Munition benötigt
@@ -85,7 +85,7 @@ Mit Munition laden}
 Lädt: {weapons}}
 Gewehr}
 Pistole}
-Reichweite: {reach}
+Reichweite: {reach}}
 Nah}
 Mittel}
 Lang}

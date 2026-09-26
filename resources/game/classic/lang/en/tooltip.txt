@@ -68,7 +68,7 @@ Food Production
 {product}: {tools}}
 None
 Change
-Group is full
+Everyone is supplied
 Not enough water
 Needs materials
 Needs ammunition

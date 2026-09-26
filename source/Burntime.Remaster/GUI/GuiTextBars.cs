@@ -11,10 +11,12 @@ enum GuiTextBarType
 {
     RedBar,
     Dots,
-    BlueBar
+    BlueBar,
+    CampNpcs
 }
 
-readonly record struct GuiTextBar(GuiTextBarType Type, int Value);
+readonly record struct GuiTextBar(GuiTextBarType Type, int Value,
+    bool SeparatorAfter = false);
 
 /// <summary>
 /// Draws centered map labels followed by compact counter bars.
@@ -73,6 +75,7 @@ sealed class GuiTextBars
         {
             GuiTextBarType.RedBar => 'r',
             GuiTextBarType.Dots => 'd',
+            GuiTextBarType.CampNpcs => 'n',
             _ => 'b'
-        }}{bar.Value}";
+        }}{bar.Value}{(bar.SeparatorAfter ? " " : "")}";
 }

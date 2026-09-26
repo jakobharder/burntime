@@ -1,10 +1,10 @@
 ﻿image=font.png
 indicator_image=font-indicators.png
 indicator_size=8x12
-indicator_codes=brd
-indicator_starts=0 15 30
-indicator_counts=15 15 5
-indicator_widths=4 4 2
+indicator_codes=brdn
+indicator_starts=0 15 30 45
+indicator_counts=15 15 5 5
+indicator_widths=4 4 2 3
 icon_image=font-icons.png
 icon_size=12x12
 icon_codes=⚠☢☠

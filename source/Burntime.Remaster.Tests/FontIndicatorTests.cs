@@ -18,6 +18,20 @@ static class FontIndicatorTests
             return processor.Indicators['d'].FrameCount;
         });
 
+        yield return Int("font config defines camp NPC indicator width", 3, () =>
+        {
+            FontProcessorTxt processor = new();
+            processor.Process("font.txt");
+            return processor.Indicators['n'].Advance;
+        });
+
+        yield return Int("font config defines camp NPC maximum", 5, () =>
+        {
+            FontProcessorTxt processor = new();
+            processor.Process("font.txt");
+            return processor.Indicators['n'].FrameCount;
+        });
+
         yield return Int("font config maps radiation icon", 1, () =>
         {
             FontProcessorTxt processor = new();
@@ -32,7 +46,8 @@ static class FontIndicatorTests
             {
                 FontProcessorTxt processor = new();
                 processor.Process(file);
-                if (processor.Indicators.ContainsKey('d') && processor.Icons.ContainsKey('☢'))
+                if (processor.Indicators.ContainsKey('d') &&
+                    processor.Indicators.ContainsKey('n') && processor.Icons.ContainsKey('☢'))
                     loaded++;
             }
             return loaded;

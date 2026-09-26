@@ -159,6 +159,7 @@ namespace Burntime.Remaster.Scenes
             InputPrompt? prompt = GetItemPrompt(focused, isInInventory);
             GuiString? status = null;
             bool statusIsSuccess = false;
+            bool statusIsMuted = false;
             ClassicGame game = app.GameState as ClassicGame;
             BurntimeClassic classic = app as BurntimeClassic;
             var recipes = game.Constructions.GetRecipes(game).Where(recipe =>
@@ -175,6 +176,7 @@ namespace Burntime.Remaster.Scenes
                 {
                     prompt = null;
                     status = $"@tooltip?{GroupFullTextIndex}";
+                    statusIsMuted = true;
                 }
             }
 
@@ -186,6 +188,7 @@ namespace Burntime.Remaster.Scenes
                 {
                     prompt = null;
                     status = $"@tooltip?{NotEnoughWaterTextIndex}";
+                    statusIsMuted = false;
                 }
             }
 
@@ -195,11 +198,13 @@ namespace Burntime.Remaster.Scenes
                     (isInInventory || classic.InventoryRoom == null))
                 {
                     status = $"@tooltip?{PlaceInRoomTextIndex}";
+                    statusIsMuted = false;
                 }
                 else if (!focused.IsSelectable &&
                     !game.World.ActiveLocationObj.ValidProductions.Contains(production))
                 {
                     status = $"@tooltip?{UnsuitableCampTextIndex}";
+                    statusIsMuted = false;
                 }
             }
 
@@ -209,6 +214,7 @@ namespace Burntime.Remaster.Scenes
             if (needsTechnician && !focused.IsSelectable)
             {
                 status = $"@tooltip?{NeedsTechnicianTextIndex}";
+                statusIsMuted = false;
             }
             else if (!focused.IsSelectable)
             {
@@ -227,6 +233,7 @@ namespace Burntime.Remaster.Scenes
                         status = onlyNeedsAmmunition
                             ? $"@tooltip?{NeedsAmmunitionTextIndex}"
                             : $"@tooltip?{NeedsMaterialsTextIndex}";
+                        statusIsMuted = false;
                     }
                 }
             }
@@ -238,9 +245,10 @@ namespace Burntime.Remaster.Scenes
                 prompt = null;
                 status = $"@tooltip?{SelectedTrapTextIndex}";
                 statusIsSuccess = true;
+                statusIsMuted = false;
             }
 
-            return new(prompt, status, statusIsSuccess);
+            return new(prompt, status, statusIsSuccess, statusIsMuted);
         }
 
         bool CanTransferSelectedItem(ItemGridWindow source)
@@ -380,7 +388,6 @@ namespace Burntime.Remaster.Scenes
 
                 grid = new ItemGridWindow(app);
                 grid.UnifiedSelection = true;
-                grid.ShowFocusIndicator = true;
                 grid.LockPositions = true;
                 grid.DoubleLayered = !classic.InventoryRoom.IsWaterSource;
                 grid.Position = new Vector2(160, classic.InventoryRoom.IsWaterSource ? 128 : 20);
@@ -412,7 +419,6 @@ namespace Burntime.Remaster.Scenes
                 
                 grid = new ItemGridWindow(app);
                 grid.UnifiedSelection = true;
-                grid.ShowFocusIndicator = true;
                 grid.Position = new Vector2(170, 10);
                 grid.Spacing = new Vector2(2, 2);
                 grid.Grid = new Vector2(4, 5);

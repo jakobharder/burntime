@@ -19,6 +19,7 @@ public sealed class TooltipWindow : Window
 
     readonly GuiFont _textFont;
     readonly GuiFont _statusFont;
+    readonly GuiFont _mutedStatusFont;
     readonly GuiFont _successFont;
     readonly InputControlLabelRenderer _controlRenderer;
 
@@ -28,6 +29,7 @@ public sealed class TooltipWindow : Window
     public InputPrompt? Prompt { get; set; }
     public InputPrompt? SecondaryPrompt { get; set; }
     public GuiString? Status { get; set; }
+    public bool StatusIsMuted { get; set; }
     public bool StatusIsSuccess { get; set; }
     public int MinimumWidth { get; set; } = 100;
     public PixelColor BackgroundColor { get; set; } = new(128, 0, 0, 0);
@@ -41,6 +43,8 @@ public sealed class TooltipWindow : Window
             ClassicColors.LightGray) { Borders = TextBorders.None };
         _statusFont = new GuiFont(BurntimeClassic.FontName,
             ClassicColors.DialogText) { Borders = TextBorders.None };
+        _mutedStatusFont = new GuiFont(BurntimeClassic.FontName,
+            ClassicColors.StatusInactive) { Borders = TextBorders.None };
         _successFont = new GuiFont(BurntimeClassic.FontName,
             ClassicColors.StatusSuccess) { Borders = TextBorders.None };
         _controlRenderer = new InputControlLabelRenderer(app, _textFont,
@@ -126,7 +130,8 @@ public sealed class TooltipWindow : Window
             y += SectionGap;
         if (status.Length > 0)
         {
-            GuiFont statusFont = StatusIsSuccess ? _successFont : _statusFont;
+            GuiFont statusFont = StatusIsSuccess ? _successFont :
+                StatusIsMuted ? _mutedStatusFont : _statusFont;
             statusFont.DrawText(target,
                 new Vector2(Size.x - HorizontalPadding, y), status,
                 TextAlignment.Right, VerticalTextAlignment.Top);
@@ -146,12 +151,14 @@ public sealed class TooltipWindow : Window
             int x = hasPrompt ? HorizontalPadding : Size.x - HorizontalPadding;
             _controlRenderer.Draw(target, new Vector2(x, y),
                 secondaryPromptControl, secondaryPrompt.Label,
-                alignment: hasPrompt ? TextAlignment.Left : TextAlignment.Right);
+                alignment: hasPrompt ? TextAlignment.Left : TextAlignment.Right,
+                labelFirst: true);
         }
         if (hasPrompt && Prompt is InputPrompt prompt)
             _controlRenderer.Draw(target,
                 new Vector2(Size.x - HorizontalPadding, y),
-                promptControl, prompt.Label, alignment: TextAlignment.Right);
+                promptControl, prompt.Label, alignment: TextAlignment.Right,
+                labelFirst: true);
     }
 
     static int MeasureWidth(GuiFont font, string text) =>
@@ -163,7 +170,8 @@ public sealed class TooltipWindow : Window
             return 0;
         InputControlLabel control = InputControlDisplay.Resolve(app,
             app.LastInputMode, value);
-        return control.IsEmpty ? 0 : _controlRenderer.Measure(control, value.Label);
+        return control.IsEmpty ? 0 : _controlRenderer.Measure(control, value.Label,
+            labelFirst: true);
     }
 
     void MoveInsideScreen()

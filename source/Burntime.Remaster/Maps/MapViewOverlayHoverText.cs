@@ -184,17 +184,22 @@ class MapViewOverlayHoverText : IMapViewOverlay
         {
             int baseWater = info.WorldLocation?.Source.BaseWater ?? 0;
             bool showResourceInfo = hasVisited && !info.WorldLocation!.IsCity;
-            List<GuiTextBar> radioBars = new(3);
-            if (showResourceInfo)
-                radioBars.Add(new GuiTextBar(GuiTextBarType.BlueBar, baseWater));
+            List<GuiTextBar> radioBars = new(4);
             if (game != null && player != null &&
                 RadioIntel.IsAvailable(player, info.WorldLocation!))
             {
                 RadioReport report = RadioIntel.Create(game, player, info.WorldLocation!);
-                radioBars.Add(new GuiTextBar(GuiTextBarType.Dots, report.Defenders));
-                if (report.Threat > 0)
-                    radioBars.Add(new GuiTextBar(GuiTextBarType.RedBar, report.Threat));
+                if (report.Defenders > 0)
+                    radioBars.Add(new GuiTextBar(
+                        GuiTextBarType.CampNpcs, report.Defenders,
+                        SeparatorAfter: true));
+                if (report.Food > 0)
+                    radioBars.Add(new GuiTextBar(GuiTextBarType.RedBar, report.Food));
+                AddTrapIcons(radioBars, info.WorldLocation);
+                radioBars.Add(new GuiTextBar(GuiTextBarType.BlueBar, report.Water));
             }
+            else if (showResourceInfo)
+                radioBars.Add(new GuiTextBar(GuiTextBarType.BlueBar, baseWater));
             textBars.Draw(target, info.Position + offset, info.Title, locationColor, alpha,
                 radioBars, dangerIcon,
                 ownershipFlag, showBackground: true);
@@ -202,12 +207,13 @@ class MapViewOverlayHoverText : IMapViewOverlay
         }
 
         List<GuiTextBar> bars = new(4);
-        if (foodPerDay > 0)
-            bars.Add(new GuiTextBar(GuiTextBarType.RedBar, foodPerDay));
         int npcCount = info.WorldLocation.CampNPC.Count(character =>
             character.Player == player && !character.IsDead);
         if (npcCount > 0)
-            bars.Add(new GuiTextBar(GuiTextBarType.Dots, npcCount));
+            bars.Add(new GuiTextBar(GuiTextBarType.CampNpcs, npcCount,
+                SeparatorAfter: true));
+        if (foodPerDay > 0)
+            bars.Add(new GuiTextBar(GuiTextBarType.RedBar, foodPerDay));
         AddTrapIcons(bars, info.WorldLocation);
         bars.Add(new GuiTextBar(GuiTextBarType.BlueBar, info.WorldLocation.Source.Water));
         textBars.Draw(target, info.Position + offset, info.Title, locationColor, alpha, bars,

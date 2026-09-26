@@ -371,7 +371,6 @@ namespace Burntime.Remaster.Logic
             Player.Party.Remove(this);
             Location = Player.Location;
             Location.Player = Player;
-            Position = Location.EntryPoint;
             Mind = container.Create<AI.SimpleMind>(new object[] { this });
             Path = container.Create<PathFinding.SimplePath>();
             Path.MoveTo = Position;
