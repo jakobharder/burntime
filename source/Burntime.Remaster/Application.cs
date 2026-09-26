@@ -53,6 +53,7 @@ namespace Burntime.Remaster
         public static bool IsSupportedSavegameVersion(string? version) =>
             version == SavegameVersion || version == PreviousSavegameVersion;
         public static string FontName = "font.txt";
+        public string VersionLabel { get; set; } = Version;
 
         private static string? _version;
         public static string Version

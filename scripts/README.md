@@ -95,3 +95,11 @@ starts within sixty game days. These are review-only signals, not assertions:
 read the timeline to distinguish legitimate preparation or renewed attacks from
 unproductive cancellations. Counts come from actual plan-start events rather
 than parsing log text. The observer is runtime-only and does not affect saves.
+
+### Rendered scene baselines
+
+`scripts/visual-test.sh` captures and compares classic, newgfx, and classic with
+UI hints off (`classic-no-hints`) using
+real graphics and resource loading. It writes actual images and an HTML diff
+report on every run. Use `scripts/visual-accept.sh` to promote reviewed images.
+See [visual test setup and baseline workflow](../tests/visual/README.md).

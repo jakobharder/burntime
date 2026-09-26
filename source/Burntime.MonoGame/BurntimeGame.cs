@@ -31,6 +31,7 @@ namespace Burntime.MonoGame
         BlendOverlayBase IEngine.BlendOverlay => RenderDevice?.BlendOverlay;
 
         BurntimeClassic _burntimeApp;
+        internal VisualTestRunner? VisualTest { get; set; }
         internal bool UseRemasteredGraphics => _burntimeApp?.IsNewGfx ?? true;
         internal void RefreshResourceReplacements() =>
             _burntimeApp?.RefreshResourceReplacements();
@@ -237,7 +238,9 @@ namespace Burntime.MonoGame
         protected override void Initialize()
         {
             string logPath = "log.txt";
-            if (OperatingSystem.IsMacOS())
+            if (VisualTest != null)
+                logPath = System.IO.Path.Combine(VisualTest.OutputDirectory, "resources.log");
+            else if (OperatingSystem.IsMacOS())
             {
                 string logDirectory = System.IO.Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -267,7 +270,7 @@ namespace Burntime.MonoGame
 
             ConfigFile cfg = new();
             cfg.Open("classic:settings.txt");
-            Log.DebugOut = cfg["engine"].GetBool("debug");
+            Log.DebugOut = VisualTest != null || cfg["engine"].GetBool("debug");
 
             _burntimeApp = new();
             _burntimeApp.ChooseLanguageOnStart = _chooseLanguage;
@@ -377,6 +380,9 @@ namespace Burntime.MonoGame
 
             Log.Info("Start resource manager thread...");
             ResourceManager.Run();
+
+            if (VisualTest != null)
+                return;
 
             Log.Info("Start game thread...");
             _gameThread.Start((Platform.GameTime gameTime) =>
@@ -813,6 +819,13 @@ namespace Burntime.MonoGame
 
         protected override void Update(Microsoft.Xna.Framework.GameTime gameTime)
         {
+            if (VisualTest != null)
+            {
+                VisualTest.Update(this, _burntimeApp);
+                RenderDevice.Update();
+                base.Update(gameTime);
+                return;
+            }
             lock (_inputGlyphSync)
                 _steamInputGlyphs?.RunFrame();
             HandleMouseInput();
@@ -835,7 +848,8 @@ namespace Burntime.MonoGame
             GraphicsDevice.Clear(Color.Black);
 
             UpdateFpsCounter();
-            RenderDevice.Render((float)gameTime.ElapsedGameTime.TotalSeconds);
+            RenderDevice.Render(VisualTest != null ? 1f / 60 : (float)gameTime.ElapsedGameTime.TotalSeconds);
+            VisualTest?.Capture(this);
 
             base.Draw(gameTime);
         }
@@ -855,6 +869,8 @@ namespace Burntime.MonoGame
 
         void IEngine.CenterMouse()
         {
+            if (VisualTest != null)
+                return;
             if (_burntimeApp.RenderMouse && _burntimeApp.MouseInputVisible && IsActive)
             {
                 var center = Resolution.Native / 2;
@@ -936,7 +952,7 @@ namespace Burntime.MonoGame
             if (sprite is not MonoGame.Graphics.Sprite nativeSprite || !nativeSprite.Touch()) return;
 
             long now = System.Diagnostics.Stopwatch.GetTimestamp();
-            if (now - nativeSprite.Frame.TimeStamp < (long)(Stopwatch.Frequency / popInSpeed) && popInSpeed != 0)
+            if (VisualTest == null && now - nativeSprite.Frame.TimeStamp < (long)(Stopwatch.Frequency / popInSpeed) && popInSpeed != 0)
                 alpha *= (now - nativeSprite.Frame.TimeStamp) / (float)Stopwatch.Frequency * popInSpeed;
 
             Graphics.SpriteEntity entity = new()
@@ -992,7 +1008,7 @@ namespace Burntime.MonoGame
             };
 
             long now = System.Diagnostics.Stopwatch.GetTimestamp();
-            if (now - nativeSprite.Frame.TimeStamp < (long)(Stopwatch.Frequency / popInSpeed) && popInSpeed != 0)
+            if (VisualTest == null && now - nativeSprite.Frame.TimeStamp < (long)(Stopwatch.Frequency / popInSpeed) && popInSpeed != 0)
             {
                 entity.Color.A *= (byte)System.Math.Min(255, (now - nativeSprite.Frame.TimeStamp) / (float)Stopwatch.Frequency * popInSpeed);
                 entity.Color.R *= (byte)System.Math.Min(255, (now - nativeSprite.Frame.TimeStamp) / (float)Stopwatch.Frequency * popInSpeed);

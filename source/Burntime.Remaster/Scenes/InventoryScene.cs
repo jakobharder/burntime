@@ -80,7 +80,8 @@ namespace Burntime.Remaster.Scenes
             Windows += new InputPromptOverlay(app, Prompts,
                 InputPromptColorScheme.Hud);
             Prompts.SuppressWhen(() => dialog.IsVisible);
-            Prompts.Add(InputAction.Back, "@prompts?17");
+            exitButton.Prompts.Add(InputAction.Back, "",
+                new Vector2(exitButton.Size.x + 2, -2));
             Prompts.Add(InputPattern.HorizontalPaging, "@prompts?30",
                 () => inventory.PageCount > 1);
         }

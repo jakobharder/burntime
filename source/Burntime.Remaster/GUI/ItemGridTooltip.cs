@@ -43,7 +43,7 @@ internal sealed class ItemGridTooltip
     {
         this.app = app;
         this.viewer = viewer;
-        Window = new TooltipWindow(app)
+        Window = new TooltipWindow(app, neutralPalette: true)
         {
             VerticalAlignment = PositionAlignment.Right,
             HeaderFont = new GuiFont(BurntimeClassic.FontName,

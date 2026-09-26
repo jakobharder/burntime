@@ -2,6 +2,12 @@
 using Burntime;
 using System;
 
+if (args.Contains("--visual-test"))
+{
+    Environment.ExitCode = Burntime.MonoGame.VisualTestRunner.Run(args);
+    return;
+}
+
 #if !(DEBUG)
     AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CustomExceptionHandler.OnThreadException);
 #endif

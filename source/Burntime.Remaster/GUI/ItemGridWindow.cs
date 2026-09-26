@@ -20,8 +20,8 @@ namespace Burntime.Remaster.GUI
         IItemCollection mask;
         ItemList selection;
         ISprite maskSprite;
-        ISprite selectionSprite;
-        ISprite focusSprite;
+        readonly ISprite focusSprite;
+        readonly ISprite equippedSprite;
         GuiFont selectionFont;
         int focusIndex = -1;
         Vector2? lastFocusPosition;
@@ -118,8 +118,8 @@ namespace Burntime.Remaster.GUI
             : base(App)
         {
             maskSprite = App.ResourceManager.GetImage("gfx/grid.png");
-            selectionSprite = App.ResourceManager.GetImage("inv.raw?3");
-            focusSprite = App.ResourceManager.GetImage("gfx/item_focus.png");
+            focusSprite = App.ResourceManager.GetImage("gfx/ui/item_focus.png");
+            equippedSprite = App.ResourceManager.GetImage("gfx/ui/item_equipped.png");
             selectionFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.MenuTextHover);
             selectionFont.Borders = TextBorders.Screen;
         }
@@ -151,7 +151,7 @@ namespace Burntime.Remaster.GUI
                 {
                     if (gridPositions[i] >= 0 && gridPositions[i] < items.Count &&
                         selection.Contains(items[gridPositions[i]]))
-                        Target.DrawSprite(itemWindows[i].Position, selectionSprite);
+                        Target.DrawSprite(itemWindows[i].Position, equippedSprite);
                 }
 
 

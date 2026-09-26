@@ -22,6 +22,7 @@ public sealed class TooltipWindow : Window
     readonly GuiFont _mutedStatusFont;
     readonly GuiFont _successFont;
     readonly InputControlLabelRenderer _controlRenderer;
+    readonly int _extraWidth;
 
     public GuiString? Header { get; set; }
     public GuiFont HeaderFont { get; set; }
@@ -34,20 +35,24 @@ public sealed class TooltipWindow : Window
     public int MinimumWidth { get; set; } = 100;
     public PixelColor BackgroundColor { get; set; } = new(128, 0, 0, 0);
 
-    public TooltipWindow(Module app)
+    public TooltipWindow(Module app, bool neutralPalette = false)
         : base(app)
     {
         HeaderFont = new GuiFont(BurntimeClassic.FontName,
-            ClassicColors.HudTextHover) { Borders = TextBorders.None };
+            neutralPalette ? ClassicColors.LightGray : ClassicColors.HudTextHover) { Borders = TextBorders.None };
         _textFont = new GuiFont(BurntimeClassic.FontName,
             ClassicColors.LightGray) { Borders = TextBorders.None };
         _statusFont = new GuiFont(BurntimeClassic.FontName,
-            ClassicColors.DialogText) { Borders = TextBorders.None };
+            neutralPalette ? ClassicColors.LightGray : ClassicColors.DialogText) { Borders = TextBorders.None };
         _mutedStatusFont = new GuiFont(BurntimeClassic.FontName,
-            ClassicColors.StatusInactive) { Borders = TextBorders.None };
+            neutralPalette ? ClassicColors.LightGray : ClassicColors.StatusInactive) { Borders = TextBorders.None };
         _successFont = new GuiFont(BurntimeClassic.FontName,
-            ClassicColors.StatusSuccess) { Borders = TextBorders.None };
-        _controlRenderer = new InputControlLabelRenderer(app, _textFont,
+            neutralPalette ? ClassicColors.LightGray : ClassicColors.StatusSuccess) { Borders = TextBorders.None };
+        // Leave a visible indent for right-aligned status, even when it is the longest line.
+        _extraWidth = neutralPalette ? _textFont.GetWidth("MM") : 0;
+        var promptFont = new GuiFont(BurntimeClassic.FontName,
+            ClassicColors.LightGray) { Borders = TextBorders.None };
+        _controlRenderer = new InputControlLabelRenderer(app, promptFont,
             brackets: false, bracketTextControls: false);
         RefreshLayout();
     }
@@ -92,6 +97,8 @@ public sealed class TooltipWindow : Window
 
         int width = System.Math.Max(MinimumWidth,
             contentWidth + HorizontalPadding * 2);
+        if (_extraWidth > 0)
+            width = System.Math.Min(width + _extraWidth, app.Engine.Resolution.Game.x);
         Size = new Vector2(width, height);
         MoveInsideScreen();
     }

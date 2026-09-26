@@ -2,6 +2,7 @@
 
 public class Log
 {
+    static readonly object sync = new();
     public static StreamWriter? File { get; private set; }
     public static bool DebugOut;
 
@@ -15,6 +16,7 @@ public class Log
 
     static public void Info(String str)
     {
+        lock (sync)
         if (File != null)
         {
             File.WriteLine("[info] " + str);
@@ -24,6 +26,7 @@ public class Log
 
     static public void Warning(String str)
     {
+        lock (sync)
         if (File != null)
         {
             File.WriteLine("[warning] " + str);
@@ -33,6 +36,7 @@ public class Log
 
     static public void Debug(String str)
     {
+        lock (sync)
         if (File != null && DebugOut)
         {
             File.WriteLine("[debug] " + str);

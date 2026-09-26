@@ -401,7 +401,7 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
 
         target.Layer += 10;
         red.DrawText(target, new Vector2(6, 6) - target.ScreenOffset,
-            BurntimeClassic.Version, TextAlignment.Left, VerticalTextAlignment.Top);
+            ((BurntimeClassic)app).VersionLabel, TextAlignment.Left, VerticalTextAlignment.Top);
         target.Layer -= 10;
 
         base.OnRender(target);
