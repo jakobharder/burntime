@@ -25,7 +25,7 @@ namespace Burntime.Remaster.Scenes
         public ImageScene(Module App)
             : base(App)
         {
-            subtitleFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(72, 72, 76));
+            subtitleFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.LightGray);
         }
 
         protected override void OnActivateScene(object parameter)

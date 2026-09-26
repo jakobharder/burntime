@@ -1383,8 +1383,7 @@ namespace Burntime.Remaster
 
                 var sprite = (GuiImage)"burngfxani@syssze.raw?208-213";
                 sprite.Animation.Speed = 20;
-                view.Particles.Add(new StaticAnimationParticle(sprite, eventArgs.Attacker.Position));
-                view.Particles.Add(new StaticAnimationParticle(sprite.Clone(), eventArgs.Defender.Position));
+                view.Particles.Add(new StaticAnimationParticle(sprite, eventArgs.Defender.Position));
 
                 // play sounds only for human player interactions
                 if (eventArgs.Attacker.Player?.Type != PlayerType.Human &&

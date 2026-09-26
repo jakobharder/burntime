@@ -19,6 +19,8 @@ static class Program
         Run("transactional saves", SaveGameTests.SaveCases());
         Run("repeated attack plans", AttackPlanObservationTests.Cases());
         Run("lasting combat progress", AttackRetryMemoryTests.Cases());
+        Run("territorial enclosure", LastChanceCombatTests.Cases());
+        Run("last rival victory offer", LastRivalVictoryTests.Cases());
         Run("AI preparation and Amiga recovery", AiPreparationRecoveryTests.AiPreparationRecoveryCases());
         Run("economy observations", EconomyObservationTests.EconomyObservationCases());
         Run("DOS conflict attrition", HeadlessSimulationTests.DosConflictAttritionCases());

@@ -70,6 +70,7 @@ namespace Burntime.Framework.Network
     class GameServerObject
     {
         bool stop = false;
+        bool gameOver;
         
         WorldState world;
         StateManager container;
@@ -93,7 +94,6 @@ namespace Burntime.Framework.Network
         public void Run()
         {
             Thread.CurrentThread.Name = "GameServer";
-            bool gameOver = false;
 
             // Local clients share the server state and need lifecycle maintenance,
             // but not multiplayer snapshots or incremental change records.
@@ -200,7 +200,8 @@ namespace Burntime.Framework.Network
                         if (world.Player[Clients[i].Player].IsDead && Clients[i].State != GameClientState.Dead)
                         {
                             Clients[i].Die();
-                            news.Enqueue(new DeathNews(world.Player[Clients[i].Player].Name));
+                            lock (news)
+                                news.Enqueue(new DeathNews(world.Player[Clients[i].Player].Name));
                         }
                         else if (world.Player[Clients[i].Player].IsTraveling)
                         {
@@ -221,14 +222,8 @@ namespace Burntime.Framework.Network
                         break;
 
                     // check for any victory
-                    PlayerState winner = world.CheckWinner();
-                    if (winner != null)
-                    {
-                        news.Clear();
-                        news.Enqueue(new VictoryNews(winner));
-                        gameOver = true;
+                    if (CheckVictory())
                         break;
-                    }
 
                     if (!localGame)
                         container.Synchronize(false);
@@ -250,17 +245,36 @@ namespace Burntime.Framework.Network
             serverStop.Set();
         }
 
+        // Also called while the server is waiting for a human's victory choice.
+        public bool CheckVictory()
+        {
+            lock (news)
+            {
+                if (gameOver)
+                    return true;
+                PlayerState winner = world.CheckWinner();
+                if (winner == null)
+                    return false;
+
+                news.Clear();
+                news.Enqueue(new VictoryNews(winner));
+                gameOver = true;
+                Stop();
+                return true;
+            }
+        }
+
         public ITurnNews PopNews()
         {
-            if (news.Count == 0)
-                return null;
-
-            return news.Dequeue();
+            lock (news)
+                return news.Count == 0 ? null : news.Dequeue();
         }
     }
 
     public class GameServer : IGameServer
     {
+        public bool CheckVictory() => serverObj.CheckVictory();
+
         GameServerObject serverObj;
         Thread serverThread;
         AI.AIControl aiControl;

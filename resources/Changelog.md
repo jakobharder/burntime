@@ -5,6 +5,7 @@
 ### Changes
 
 - Game rules and AI
+  - After defeating the last rival, choose to claim victory immediately or continue until you control all cities
   - Reworked Classic mode using gameplay rules from the original DOS and Amiga versions
   - Added original Amiga AI as an alternative to Remaster AI
   - Aligned combat damage, experience, hiring, healing, production and trading with the original mechanics

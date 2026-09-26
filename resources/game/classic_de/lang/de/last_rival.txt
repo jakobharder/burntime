@@ -1,0 +1,5 @@
+Dein letzter Gegner ist besiegt.
+Jetzt gewinnen oder erst
+alle {total} Städte kontrollieren?
+Das reicht
+Ich bringe es zu Ende

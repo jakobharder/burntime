@@ -19,7 +19,7 @@ internal static class LastChanceCombat
             return ExecuteAssault(state, target!);
 
         state.LastChanceAttackTarget = null;
-        TerritorialEscape escape = FindTerritorialEscape(state, maximumHops: 2);
+        TerritorialEscape escape = FindTerritorialEscape(state);
         if (escape.HasEscape || escape.BlockingHostiles.Count == 0)
             return false;
 
@@ -83,22 +83,21 @@ internal static class LastChanceCombat
         return true;
     }
 
-    static TerritorialEscape FindTerritorialEscape(
-        ClassicAiState state,
-        int maximumHops)
+    internal static TerritorialEscape FindTerritorialEscape(ClassicAiState state)
     {
         Player player = state.Player;
         Location current = state.Current;
-        Queue<(Location Location, int Hops)> frontier = new();
+        Queue<Location> frontier = new();
         HashSet<Location> visited = new() { current };
         HashSet<Location> blockingHostiles = new();
-        bool hasOpenFrontier = false;
-        frontier.Enqueue((current, 0));
+        frontier.Enqueue(current);
 
-        while (frontier.TryDequeue(out var candidate))
+        // Search the complete reachable pocket. A longer neutral corridor or
+        // loop is not an escape unless it leads to a friendly or viable camp;
+        // holdings beyond hostile territory cannot help this travelling party.
+        while (frontier.TryDequeue(out Location? location))
         {
-            Location location = candidate.Location;
-            if (IsTerritorialEscape(state, location, candidate.Hops == 0))
+            if (IsTerritorialEscape(state, location, location == current))
                 return new TerritorialEscape(true, blockingHostiles.ToArray());
 
             for (int index = 0; index < location.Neighbors.Count; index++)
@@ -110,7 +109,7 @@ internal static class LastChanceCombat
                 // Only the first edge is subject to the player's current travel
                 // restriction (notably retreating from a hostile camp). Beyond
                 // it this is a territorial graph check, not a supply projection.
-                if (candidate.Hops == 0 && !player.CanTravel(current, neighbor))
+                if (location == current && !player.CanTravel(current, neighbor))
                     continue;
                 if (AttackPlanning.IsHostile(neighbor, player))
                 {
@@ -118,19 +117,11 @@ internal static class LastChanceCombat
                     continue;
                 }
                 if (visited.Add(neighbor))
-                {
-                    if (candidate.Hops < maximumHops)
-                        frontier.Enqueue((neighbor, candidate.Hops + 1));
-                    else
-                        // The bounded search found a non-hostile continuation.
-                        // It cannot prove that enemy ownership cuts the player
-                        // off, so normal strategy must remain in control.
-                        hasOpenFrontier = true;
-                }
+                    frontier.Enqueue(neighbor);
             }
         }
 
-        return new TerritorialEscape(hasOpenFrontier, blockingHostiles.ToArray());
+        return new TerritorialEscape(false, blockingHostiles.ToArray());
     }
 
     static bool IsTerritorialEscape(
@@ -152,7 +143,7 @@ internal static class LastChanceCombat
         return !isCurrent || state.CanStationCamp();
     }
 
-    readonly record struct TerritorialEscape(
+    internal readonly record struct TerritorialEscape(
         bool HasEscape,
         IReadOnlyCollection<Location> BlockingHostiles);
 }

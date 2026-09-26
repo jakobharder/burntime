@@ -19,9 +19,9 @@ Equip
 Unequip
 }#
 Extended mode
-Expanded respawn system.
-Clothing reduces damage.
-Dropped food decays over time.
+New items and uses for old ones.
+Dogs and mutants respawn.
+Food left on the ground decays.
 }
 Change to Classic Mode
 }#

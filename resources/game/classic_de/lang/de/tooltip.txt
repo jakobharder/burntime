@@ -19,8 +19,8 @@ Ausrüsten
 Ablegen
 }#
 Erweiterter Modus
-Erweitertes Respawn-System.
-Kleidung verringert Schaden.
+Neue Gegenstände und Funktionen.
+Hunde und Mutanten kehren zurück.
 Nahrung am Boden verdirbt.
 }
 Zum klassischen Modus

@@ -190,15 +190,14 @@ namespace Burntime.Remaster
         void ShowCityReport(ClassicGame game, Logic.Player player, Logic.Location location)
         {
             TextHelper text = new(app, "cityinfo");
-            text.AddArgument("{camps}", location.Neighbors.Count(neighbor => neighbor.Player == player));
+            text.AddArgument("{missing}", location.Neighbors.Count(neighbor => neighbor.Player != player));
             text.AddArgument("{neighbors}", location.Neighbors.Count);
-            text.AddArgument("{cities}", game.World.Locations.Count(city =>
-                city.IsCity && city.ControllingPlayer == player));
             text.AddArgument("{total}", game.World.Locations.Count(city => city.IsCity));
 
-            ShowReport(player, [text.Get(0),
-                text.Get(location.ControllingPlayer == player ? 4 : 1),
-                text.Get(2), text.Get(3)]);
+            bool controlled = location.ControllingPlayer == player;
+            ShowReport(player, [text.Get(controlled ? 3 : 0),
+                text.Get(controlled ? 4 : 1),
+                text.Get(2)], textLinesPerPage: 3);
         }
 
         void ShowRadioReport(ClassicGame game, Logic.Player player, Logic.Location location)
@@ -238,7 +237,7 @@ namespace Burntime.Remaster
             ShowReport(player, lines.ToArray());
         }
 
-        void ShowReport(Logic.Player player, string[] lines)
+        void ShowReport(Logic.Player player, string[] lines, int textLinesPerPage = 2)
         {
             Conversation conversation = new()
             {
@@ -253,7 +252,7 @@ namespace Burntime.Remaster
                     }
                 }
             };
-            _dialog.SetCharacter(player.Character, conversation);
+            _dialog.SetCharacter(player.Character, conversation, textLinesPerPage: textLinesPerPage);
             _dialog.Show();
         }
 
