@@ -13,6 +13,7 @@ public sealed class KeyboardBindings : IKeyboardBindings
 
     static readonly (string Setting, string DefaultControls, InputAction Action)[] definitions =
     {
+        ("setup_notes", "f1", InputAction.SetupNotes),
         ("move_up", "up", InputAction.MoveUp),
         ("move_down", "down", InputAction.MoveDown),
         ("move_left", "left", InputAction.MoveLeft),
@@ -44,6 +45,7 @@ public sealed class KeyboardBindings : IKeyboardBindings
     {
         Dictionary<string, Key> result = new(StringComparer.OrdinalIgnoreCase)
         {
+            ["f1"] = new Key(SystemKey.F1),
             ["space"] = new Key(' '),
             ["backspace"] = new Key('\b'),
             ["enter"] = new Key(SystemKey.Enter),

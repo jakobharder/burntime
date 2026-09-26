@@ -62,21 +62,21 @@ Karte ZUFALLSMUSIK
 Auf Karten bleibt es still
 Die aktuelle Musik läuft weiter
 Zufällige Titel aus der Playlist
+Bring mir Essen, dann
+versorge ich deine Wunden.
 
+Mehr kann ich nicht
+für dich tun.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+Dafür kann ich dich
+etwas zusammenflicken.
+(+|E Leben)
+Dafür bringe ich dich
+wieder auf die Beine.
+(+|E Leben)
+Dafür mache ich dich
+wieder richtig fit.
+(+|E Leben)
 
 
 

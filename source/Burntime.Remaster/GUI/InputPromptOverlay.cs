@@ -39,10 +39,10 @@ sealed partial class InputPromptOverlay : Container
         Layer = 199;
 
         Windows += _sceneRow = new Row(app, colors,
-            _controller.PreferredPrimaryKeyboardControl);
+            _controller.PreferredPrimaryKeyboardControl, smallFont: true);
         _sceneRow.AnchorToScreenBottomLeft();
         Windows += _contextRow = new Row(app, colors,
-            _controller.PreferredPrimaryKeyboardControl);
+            _controller.PreferredPrimaryKeyboardControl, smallFont: true);
         _contextRow.AnchorToScreenBottomRight();
     }
 

@@ -17,6 +17,7 @@ namespace Burntime.Platform.Graphics
         public Vector2 Size { get { return size; } }
         public int Offset { get { return offset; } }
         public int GlyphHeight { get { return glyphHeight; } }
+        public int LineHeight { get; private set; }
         public Vector2f Factor { get { return factor; } }
         public bool PostFilter { get; private set; }
 
@@ -42,7 +43,8 @@ namespace Burntime.Platform.Graphics
             config.Open(FileSystem.GetFile(id.File));
 
             int lines = config[""].GetInt("lines");
-            int height = config[""].GetInt("height");
+            float sourceHeight = config[""].GetFloat("height");
+            LineHeight = config[""].GetInt("line_height");
             offset = config[""].GetInt("offset");
             Vector2f scale = config[""].GetVector2f("scale", Vector2f.One);
             PostFilter = config[""].GetBool("post_filter", false);
@@ -60,7 +62,7 @@ namespace Burntime.Platform.Graphics
 
             // Round at the base export scale first. Higher-resolution atlases are
             // exact integer multiples of that rasterization.
-            height = (int)System.Math.Round(height * scale.y) * multiplier;
+            int height = (int)System.Math.Round(sourceHeight * scale.y) * multiplier;
             glyphHeight = height;
 
             charInfo = new Dictionary<char, CharInfo>();
@@ -68,20 +70,18 @@ namespace Burntime.Platform.Graphics
             indicators = ReadSpriteInfo(config[""], "indicator");
             icons = ReadSpriteInfo(config[""], "icon");
 
-            AddKerning(config[""], "kerning0.5", 0.5f);
-            for (int amount = 1;
-                config[""].ContainsKey("kerning" + amount); amount++)
-            {
-                string key = "kerning" + amount;
-                AddKerning(config[""], key, amount);
-            }
+            foreach (var entry in config[""].Values)
+                if (entry.Key.StartsWith("kerning") &&
+                    float.TryParse(entry.Key[7..], System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out float amount) && amount > 0)
+                    AddKerning(config[""], entry.Key, amount);
 
             for (int line = 0; line < lines; line++)
             {
 
                 // read character info
                 string sequence = config[""].Get("char" + line);
-                int[] widths = config[""].GetInts("width" + line);
+                float[] widths = config[""].GetFloats("width" + line);
                 float[] renderWidths = config[""].GetFloats("renderwidth" + line);
                 char[] chars = sequence.ToCharArray();
 
@@ -97,7 +97,7 @@ namespace Burntime.Platform.Graphics
 
                     CharInfo info = new CharInfo();
                     info.pos = pos;
-                    info.width = widths[i];
+                    info.width = (int)System.Math.Round(widths[i]);
                     info.renderWidth = renderWidths.Length == 0
                         ? widths[i]
                         : renderWidths[i] * 2 / scale.x;
@@ -108,7 +108,8 @@ namespace Burntime.Platform.Graphics
                     info.imgWidth = renderWidths.Length == 0
                         ? end - pos
                         : (int)System.Math.Round(info.renderWidth / factor.x);
-                    info.spritePos = new Vector2(pos, line * height);
+                    info.spritePos = new Vector2(pos, config[""].ContainsKey("atlas_y" + line)
+                        ? config[""].GetInt("atlas_y" + line) : line * height);
 
                     if (charInfo.ContainsKey(chars[i]))
                         charInfo.Remove(chars[i]);
@@ -124,6 +125,12 @@ namespace Burntime.Platform.Graphics
             size = new Vector2(decoded.Width, decoded.Height);
             image = decoded.BgraData;
             stride = decoded.Width * 4;
+            foreach (char character in new List<char>(charInfo.Keys))
+            {
+                CharInfo glyph = charInfo[character];
+                glyph.imgHeight = System.Math.Max(0, System.Math.Min(glyph.imgHeight, size.y - glyph.spritePos.y));
+                charInfo[character] = glyph;
+            }
             file.Close();
         }
 

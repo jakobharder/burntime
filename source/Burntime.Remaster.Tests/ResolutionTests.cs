@@ -27,6 +27,7 @@ static class ResolutionTests
         {
             Resolution resolution = CreateResolution(new Vector2(1280, 800));
             Equal(1.5f, resolution.OutputScale, "800p output scale");
+            Equal(new Vector2(853, 533), resolution.BackBuffer, "800p internal target");
             Equal(new Vector2(455, 237), resolution.Game, "800p game resolution");
             return 0;
         });

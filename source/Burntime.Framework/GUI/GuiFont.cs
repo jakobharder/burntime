@@ -55,6 +55,8 @@ namespace Burntime.Framework.GUI
             return font.GetWidth(text);
         }
 
+        public int LineHeight => font.LineHeight;
+
         public int GetHeight()
         {
             return font.GetHeight();

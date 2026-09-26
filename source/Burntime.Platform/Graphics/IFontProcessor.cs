@@ -21,6 +21,7 @@ namespace Burntime.Platform.Resource
         IReadOnlyDictionary<char, FontSpriteInfo> Icons { get; }
         int Offset { get; }
         int GlyphHeight { get; }
+        int LineHeight => 0;
         Vector2f Factor { get; }
         bool PostFilter { get; }
 

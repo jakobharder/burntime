@@ -16,6 +16,7 @@ sealed partial class InputPromptOverlay
         static readonly PixelColor OptionsColor = ClassicColors.OptionsRedHover;
         string _separator = "   ";
 
+        readonly bool _smallFont;
         readonly GuiFont _font;
         readonly InputControlLabelRenderer _controlRenderer;
         readonly Key _preferredPrimaryKeyboardControl;
@@ -46,9 +47,10 @@ sealed partial class InputPromptOverlay
 
         public Row(Module app,
             InputPromptColorScheme colors,
-            Key preferredPrimaryKeyboardControl)
+            Key preferredPrimaryKeyboardControl, bool smallFont = false)
             : base(app)
         {
+            _smallFont = smallFont;
             _preferredPrimaryKeyboardControl = preferredPrimaryKeyboardControl;
             PixelColor textColor = colors switch
             {
@@ -63,7 +65,7 @@ sealed partial class InputPromptOverlay
                 InputPromptColorScheme.Options => OptionsColor,
                 _ => PixelColor.White
             };
-            _font = new GuiFont(BurntimeClassic.FontName, textColor)
+            _font = new GuiFont(smallFont ? "font-small.txt" : BurntimeClassic.FontName, textColor)
             {
                 Borders = TextBorders.None
             };
@@ -141,7 +143,7 @@ sealed partial class InputPromptOverlay
                 PromptDisplay display = _display[i];
                 if (display.IsVisible)
                 {
-                    _controlRenderer.Draw(target, new Vector2(x, VerticalPadding), display.Control,
+                    _controlRenderer.Draw(target, new Vector2(x, VerticalPadding + (_smallFont ? _controlRenderer.TextOffset : 0)), display.Control,
                         display.Label, alignment: TextAlignment.Right, labelFirst: true);
                 }
                 x -= display.ReservedWidth + separatorWidth;
@@ -191,7 +193,7 @@ sealed partial class InputPromptOverlay
             _glyphRevision = app.Engine.InputGlyphs.Revision;
             Size = new Vector2(
                 width + HorizontalPadding * 2,
-                _font.GetHeight() + VerticalPadding * 2);
+                (_smallFont ? _controlRenderer.LineHeight : _font.GetHeight()) + VerticalPadding * 2);
             UpdateBackgroundBounds();
         }
 

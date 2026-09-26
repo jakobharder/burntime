@@ -56,7 +56,8 @@ failure, not ignored or approved by updating images.
 
 ## Determinism and coverage
 
-The suite fixes the window at 1280x800, uses nearest-point output, English,
+The suite uses Steam Deck test mode at 1280x800, with production xBR2 output for
+newgfx and nearest-point output for classic variants, English,
 keyboard prompts, seeded generation, disabled music, and an isolated user folder
 inside each run. It never reads or writes the player's settings or saves. The
 options screen uses a constant version label so a new commit does not cause a
@@ -72,12 +73,12 @@ Captured pixels are made opaque without changing their RGB values: the backbuffe
 has already composited translucent UI, so PNG viewers must not blend it a second time.
 
 `source/Burntime.Remaster/VisualTestScenes.cs` contains the ordered, deliberately
-small fixture list: menu, options, world map, location, inventory, room, trader,
+fixture list: menu in keyboard and mouse modes, all three setup-notes pages, options, world map, field manual, location, inventory, room, trader,
 doctor, pub, restaurant, information, statistics, church, and return to the map.
-Options opens the settings page. Doctor offers a snake, pub offers an empty
+Options opens the settings page. Doctor offers a snake with patient health at 30, pub offers an empty
 bottle, and restaurant offers a knife using normal navigation and Space/Enter
 actions. Offers are returned and inventory order restored before leaving each
-fixture; the service is not purchased.
+fixture, and patient health is restored; the service is not purchased.
 Add scenarios there using normal scene activation and known game state. No
 serialized state fields or save fixtures are needed.
 
@@ -92,3 +93,25 @@ Test the comparer and acceptance safeguards without opening the game:
 ```sh
 artifacts/visual-build/venv/bin/python -m unittest discover -s tests/visual -p 'test_*.py'
 ```
+
+## Setup notes
+
+Game setup opens Notes with the global Notes prompt (F1 / gamepad View by default).
+`resources/game/classic/lang/en/setupnotes.txt` contains its tab labels, comparison
+with the originals, and credits. Patch Notes reads the embedded
+`resources/Changelog.md` directly: edit that changelog and rebuild, with no second
+copy to maintain. The small renderer supports the changelog's headings and bullets
+and wraps text to the manual width. Patch notes currently use the changelog's English.
+
+The setup-notes fixture opens the modal through physical F1 and gamepad View input,
+and the menu-mouse capture checks that the Notes shortcut stays visible in mouse mode.
+
+Newgfx captures use production xBR2 by default, including the smaller setup-notes
+body font. The viewport is 455x237 logical pixels, with an 853x533 internal target,
+a 1706x1066 xBR2 pass, and 1280x800 output. Older point-filtered newgfx baselines
+need explicit review and replacement. `--native-filter` additionally enables
+normal game filtering for classic variants; it is redundant for newgfx.
+The tests still use keyboard prompts and fixed Xbox glyph settings, not live
+Steam Deck input detection, and desktop GPU captures are not hardware certification.
+Font descriptors define `line_height` in logical pixels; setup body text uses
+`font-small.txt`, while headings and controls retain the regular font.

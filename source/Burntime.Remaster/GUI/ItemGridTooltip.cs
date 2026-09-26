@@ -14,7 +14,8 @@ internal enum ItemTooltipSide { Left, Right, Auto }
 
 internal readonly record struct ItemTooltipDetails(
     InputPrompt? Prompt = null, GuiString? Status = null,
-    bool StatusIsSuccess = false, bool StatusIsMuted = false);
+    bool StatusIsSuccess = false, bool StatusIsMuted = false,
+    InputPrompt? SecondaryPrompt = null);
 
 // The popup belongs to the scene, not the grid: grids clip their children.
 internal sealed class ItemGridTooltip
@@ -45,7 +46,8 @@ internal sealed class ItemGridTooltip
         this.viewer = viewer;
         Window = new TooltipWindow(app, neutralPalette: true)
         {
-            VerticalAlignment = PositionAlignment.Right,
+            VerticalAlignment = PositionAlignment.Left,
+            StackPrompts = true,
             HeaderFont = new GuiFont(BurntimeClassic.FontName,
                 ClassicColors.MenuTextHover) { Borders = TextBorders.None },
             Layer = 40
@@ -103,11 +105,12 @@ internal sealed class ItemGridTooltip
         Vector2 parentPosition = Window.Parent.PositionOnScreen;
         int edgeX = grid.PositionOnScreen.x - parentPosition.x +
             (side == ItemTooltipSide.Right ? grid.Size.x : 0);
-        Window.Position = new Vector2(edgeX, focus.Value.y - parentPosition.y + 16);
+        Window.Position = new Vector2(edgeX, focus.Value.y - parentPosition.y - 16);
         Window.Header = item.TooltipText;
         Window.Text = BuildItemFacts(item);
         ItemTooltipDetails details = source.Details?.Invoke(item) ?? default;
         Window.Prompt = details.Prompt;
+        Window.SecondaryPrompt = details.SecondaryPrompt;
         Window.Status = details.Status;
         Window.StatusIsSuccess = details.StatusIsSuccess;
         Window.StatusIsMuted = details.StatusIsMuted;

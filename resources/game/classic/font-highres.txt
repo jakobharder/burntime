@@ -1,4 +1,5 @@
-﻿image=font-highres.png
+﻿line_height=11
+image=font-highres.png
 indicator_image=font-indicators.png
 indicator_size=8x12
 indicator_codes=brdn

@@ -34,7 +34,8 @@ public enum InputAction
     WorldMap,
     ShowEntrances,
     PreviousTarget,
-    NextTarget
+    NextTarget,
+    SetupNotes
 }
 
 public static class InputActionDirections

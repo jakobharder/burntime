@@ -29,6 +29,11 @@ sealed class InputControlLabelRenderer
         new GuiImage[KeyboardAtlasColumns * KeyboardAtlasRows];
     readonly GuiImage _holdGlyph;
 
+    // Callers laying out a full prompt row can keep the original glyph size
+    // while centering shorter text within that row.
+    public int LineHeight => System.Math.Max(_font.LineHeight, GlyphHeight);
+    public int TextOffset => (LineHeight - _font.GetHeight()) / 2;
+
     public int HoldGlyphWidth => GlyphWidth;
 
     public InputControlLabelRenderer(Module app, GuiFont font, bool brackets = true,

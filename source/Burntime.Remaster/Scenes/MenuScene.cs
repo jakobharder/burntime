@@ -48,6 +48,7 @@ public class MenuScene : Scene
     readonly Button _loadButton;
     readonly Button _startButton;
     readonly Button _exitButton;
+    readonly GUI.ManualWindow _setupNotes;
     readonly TooltipWindow _aiTooltip;
     readonly TooltipWindow _gameModeTooltip;
     readonly TooltipWindow _difficultyTooltip;
@@ -181,6 +182,14 @@ public class MenuScene : Scene
 
         Windows += new InputPromptOverlay(app, Prompts,
             InputPromptColorScheme.Default);
+
+        Windows += _setupNotes = new GUI.ManualWindow(app, new Vector2(320, 200), setupNotes: true);
+        Prompts.Add(new InputPrompt(InputAction.SetupNotes, "@setupnotes?3")
+        {
+            GamepadControl = GamepadControl.View,
+            ShowInMouseMode = true
+        }, () => !_setupNotes.IsVisible);
+        Prompts.SuppressWhen(() => _setupNotes.IsVisible);
 
         // player names
         conversionTable = new Burntime.Platform.IO.ConfigFile();
@@ -455,6 +464,10 @@ public class MenuScene : Scene
     {
         switch (action)
         {
+            case InputAction.WorldMap:
+            case InputAction.SetupNotes:
+                _setupNotes.Open();
+                return true;
             case InputAction.LeftArea:
                 if (_setupSelection == SetupSelection.Player && CurrentPlayerEnabled)
                     MoveCurrentPlayerFace(-1);
@@ -947,6 +960,7 @@ public class MenuScene : Scene
 
     protected override void OnActivateScene(object parameter)
     {
+        _setupNotes.Hide();
         _currentPlayer = 0;
         _setupSelection = SetupSelection.Player;
         PlayerOneSlide.Stop();

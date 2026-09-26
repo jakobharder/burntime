@@ -62,20 +62,20 @@ Map Music LIST
 maps stay silent
 scene music continues
 randomized playlist
+Bring me food, and
+I'll treat your wounds.
 
+There's nothing more
+I can do for you.
 
+For that I can patch
+you up a little. (+|E HP)
 
+For that I can get you
+back on your feet. (+|E HP)
 
-
-
-
-
-
-
-
-
-
-
+For that I can fix
+you up properly. (+|E HP)
 
 
 

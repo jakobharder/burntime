@@ -13,24 +13,27 @@ public sealed class VisualTestScenes(BurntimeClassic app)
 {
     public static readonly string[] Names =
     [
-        "menu", "options", "map", "location", "inventory", "room",
+        "menu", "menu-mouse", "setup-notes", "setup-versus-original", "setup-credits", "options", "map", "manual", "location", "inventory", "room",
         "trader", "doctor", "pub", "restaurant", "info", "statistics",
         "church", "map-return"
     ];
 
     bool gameCreated;
     Item[]? serviceItems;
+    int serviceHealth;
 
     public void Open(string name)
     {
+        app.LastInputMode = InputMode.Keyboard;
         if (serviceItems != null)
         {
             Press(InputAction.Back); // Return the uncommitted offer through the normal exit action.
             for (int i = 0; i < serviceItems.Length; i++)
                 app.SelectedCharacter.Items[i] = serviceItems[i];
+            app.SelectedCharacter.Health = serviceHealth;
             serviceItems = null;
         }
-        if (name is not ("menu" or "options") && !gameCreated)
+        if (name is not ("menu" or "menu-mouse" or "setup-notes" or "setup-versus-original" or "setup-credits" or "options") && !gameCreated)
         {
             Platform.Math.SetRandomSeed(123);
             new GameCreation(app).CreateNewGame(new NewGameInfo
@@ -48,14 +51,39 @@ public sealed class VisualTestScenes(BurntimeClassic app)
         switch (name)
         {
             case "menu": app.SetScene("MenuScene"); break;
+            case "menu-mouse":
+                app.LastInputMode = InputMode.Mouse;
+                break;
+            case "setup-notes":
+                // Exercise physical shortcuts, not just their semantic action.
+                app.DeviceManager.VKeyPress(SystemKey.F1);
+                app.Process(0);
+                break;
+            case "setup-versus-original":
+                Press(InputAction.Back);
+                app.DeviceManager.GamepadControlPress(GamepadControl.View);
+                app.Process(0);
+                Press(InputAction.RightArea);
+                break;
+            case "setup-credits":
+                Press(InputAction.RightArea);
+                break;
+            case "manual":
+                app.ShowManualOnNextWorldMap = true;
+                app.SetScene("MapScene");
+                break;
             case "options":
+                Press(InputAction.Back); // Close setup notes before leaving the menu.
                 app.SetScene("OptionsScene");
                 Press(InputAction.RightArea); // Saves -> jukebox -> settings.
                 Press(InputAction.RightArea);
                 break;
             case "map":
             case "map-return": app.SetScene("MapScene"); break;
-            case "location": app.SetScene("LocationScene"); break;
+            case "location":
+                Press(InputAction.Back); // Close the field manual before leaving the map.
+                app.SetScene("LocationScene");
+                break;
             case "inventory":
             case "room":
                 app.InventoryBackground = name == "room" ? 0 : -1;
@@ -70,6 +98,9 @@ public sealed class VisualTestScenes(BurntimeClassic app)
             case "pub":
             case "restaurant":
                 serviceItems = app.SelectedCharacter.Items.Cast<Item>().ToArray();
+                serviceHealth = app.SelectedCharacter.Health;
+                if (name == "doctor")
+                    app.SelectedCharacter.Health = 30; // Injured patient: preview the snake's healing.
                 app.SetScene("ServiceScene", new MapEntrance
                 {
                     RoomType = name == "doctor" ? RoomType.Doctor :

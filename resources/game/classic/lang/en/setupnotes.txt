@@ -1,0 +1,57 @@
+Patch Notes
+Versus Original
+Credits
+Notes
+}#
+#GAME RULES
+Classic follows DOS rules. Amiga uses the original Amiga balance, including its healing, combat and supply rules.
+Extended adds equipment effects, food decay and other survival mechanics.
+
+#COMPUTER OPPONENTS
+AI is selected separately from game rules.
+DOS and Amiga AI follow the original behavior. Remaster AI adds supply, equipment and camp management. AI can also be disabled.
+
+#CONTROLS AND INTERFACE
+- Keyboard and gamepad controls
+- Contextual prompts and item tooltips
+- In-game manual and autosaves
+- Treatment preview at doctors
+UI hints can be disabled in Settings.
+
+#GRAPHICS AND MUSIC
+Original and remastered graphics use the same game rules.
+DOS, Amiga and remastered music can be selected independently in Settings.
+
+#FIXES AND CHANGES
+Original bugs are not all preserved. See Patch Notes for individual fixes and gameplay changes.
+}#
+#BURNTIME REMASTER
+Development and remaster: Jakob Harder
+Spanish translation: German Jakob
+Contributions: Krystian Rabe, Felix Stolle, Chris1982, graysonwall, Shadow, Maschine and Memento.
+
+#THE ORIGINAL GAME - MAX DESIGN
+Idea and concept: Wilfried Reiter, Albert Lasser and Martin Lasser
+Programming: Albert Lasser and Wilfried Reiter
+Graphics: Martin Lasser and Wilfried Reiter
+Music and sound: Hannes Seifert
+Handbook: Johann Schilcher and John WooD (JoWooD)
+Cover and packaging: Robert Pils
+Testing: Michael Schuetter, Manfred Bertl and Dieter Bernauer
+Coffee and customer care: Elisabeth Lasser
+Translation: Patricia Spella
+Special thanks: Greenpeace
+
+#THANK YOU
+Thanks to Martin Lasser, Wilfried Reiter and Hannes Seifert for allowing use of the original graphics and music. This community project is not affiliated with Max Design or the original developers.
+
+#LIBRARIES AND ASSETS
+MonoGame, NVorbis and StbImageSharp
+Pixel-art scaling: xBR-lv2 by Hyllian
+Input glyphs adapted from Kenney's Input Prompts (CC0).
+See the bundled third-party notices for license details.
+
+#COMMUNITY
+github.com/jakobharder/burntime
+burntime.org
+}#

@@ -38,7 +38,10 @@ Offer
 Take
 Fight
 Store
-Unselect
+Take back
 Inventory
 Select trap
 Radio
+Put back
+Put away
+Take back

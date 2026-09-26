@@ -102,7 +102,7 @@ namespace Burntime.Platform.Resource
                     LoadFontSprites(processor.Icons, processor.Factor);
 
                 resource.Load(sprite, processor.CharInfo, processor.Kerning, indicators, icons,
-                    processor.Offset, processor.GlyphHeight, processor.PostFilter);
+                    processor.Offset, processor.GlyphHeight, processor.PostFilter, processor.LineHeight);
                 if (isNewResource)
                     fonts.Add(info, resource);
 

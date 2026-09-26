@@ -16,10 +16,11 @@ namespace Burntime.Remaster.GUI;
 /// </summary>
 public sealed class ManualWindow : Container
 {
-    const int PageCount = 5;
-    const int TabWidth = 56;
+    readonly bool _setupNotes;
+    int PageCount => _setupNotes ? 3 : 5;
+    int TabWidth => _setupNotes ? 93 : 56;
     const int TabsLeft = 10;
-    const int TextLineHeight = 11;
+    int TextLineHeight => _textFont.LineHeight;
     const int FooterHeight = 30;
     const string LabelsResource = "manual?s5";
 
@@ -41,23 +42,25 @@ public sealed class ManualWindow : Container
     readonly GuiFont _titleFont;
     readonly GuiFont _textFont;
     readonly GuiFont _mutedFont;
+    readonly GuiFont _detailFont;
+    readonly InputControlLabelRenderer _exitControlRenderer;
     readonly GuiFont _selectedFont;
     readonly TextHelper _uiText;
     readonly Button _exitButton;
-    readonly Button _nextButton;
     InputPromptHandle? _exitPrompt;
-    InputPromptHandle? _nextPagePrompt;
     ISprite? _goalFlag;
     ISprite? _goalCity;
     bool _restoreRenderMouse;
     bool _hasRenderMouseOverride;
     int _page;
     int _hoveredPage = -1;
-    readonly int[] _textScroll = new int[PageCount];
+    readonly int[] _textScroll;
 
-    public ManualWindow(Module app, Vector2 hostSize)
+    public ManualWindow(Module app, Vector2 hostSize, bool setupNotes = false)
         : base(app)
     {
+        _setupNotes = setupNotes;
+        _textScroll = new int[PageCount];
         Size = new Vector2(300, hostSize.y);
         Position = new Vector2((hostSize.x - Size.x) / 2, 0);
         // Map HUD elements reach layer 60. Keep the complete modal above them.
@@ -68,9 +71,11 @@ public sealed class ManualWindow : Container
 
         _titleFont = new GuiFont(BurntimeClassic.FontName,
             ClassicColors.DialogText) { Borders = TextBorders.None };
-        _textFont = new GuiFont(BurntimeClassic.FontName,
+        _textFont = new GuiFont("font-small.txt",
             ClassicColors.LightGray) { Borders = TextBorders.None };
         _mutedFont = new GuiFont(BurntimeClassic.FontName,
+            ClassicColors.MenuText) { Borders = TextBorders.None };
+        _detailFont = new GuiFont("font-small.txt",
             ClassicColors.MenuText) { Borders = TextBorders.None };
         _selectedFont = new GuiFont(BurntimeClassic.FontName,
             ClassicColors.MenuTextHover) { Borders = TextBorders.None };
@@ -78,15 +83,8 @@ public sealed class ManualWindow : Container
 
         _exitButton = CreateButton(_uiText[6], Hide);
         Windows += _exitButton;
-        _nextButton = CreateButton(_uiText[7], () => MovePage(1));
-        Windows += _nextButton;
-
-        _exitPrompt = Prompts.Add(new InputPrompt(InputAction.Back, "")
-        {
-            MouseControl = MouseButton.Right
-        },
-            Vector2.Zero, showBackground: false, horizontalPadding: 0);
-        _nextPagePrompt = Prompts.Add(new InputPrompt(InputAction.Primary, ""),
+        _exitControlRenderer = new InputControlLabelRenderer(app, _exitButton.Font, brackets: false);
+        _exitPrompt = Prompts.Add(new InputPrompt(InputAction.Back, ""),
             Vector2.Zero, showBackground: false, horizontalPadding: 0);
         PositionFooter();
     }
@@ -121,15 +119,16 @@ public sealed class ManualWindow : Container
 
     void PositionFooter()
     {
-        const int horizontalMargin = 25;
         int y = Size.y - 17;
-        _exitButton.Position = new Vector2(horizontalMargin, y);
-        _nextButton.Position = new Vector2(
-            Size.x - horizontalMargin - _nextButton.Size.x, y);
+        // Include the inline key/controller glyph when centering the exit control.
+        var control = InputControlDisplay.Resolve(app, app.LastInputMode,
+            new InputPrompt(InputAction.Back, ""));
+        int promptWidth = control.IsEmpty || app.LastInputMode == InputMode.Mouse ||
+            (app is BurntimeClassic classic && !classic.ShowUIHints)
+            ? 0 : _exitControlRenderer.Measure(control) + 2;
+        _exitButton.Position = new Vector2((Size.x - _exitButton.Size.x - promptWidth) / 2, y);
         _exitPrompt?.UpdatePosition(_exitButton.Position +
             new Vector2(_exitButton.Size.x + 2, -2));
-        _nextPagePrompt?.UpdatePosition(_nextButton.Position +
-            new Vector2(_nextButton.Size.x + 2, -2));
     }
 
     public void Open()
@@ -160,6 +159,7 @@ public sealed class ManualWindow : Container
 
     public override void OnRender(RenderTarget target)
     {
+        PositionFooter();
         target.RenderRect(Vector2.Zero, Size, new PixelColor(176, 0, 0, 0),
             postFilter: true);
         for (int i = 0; i < PageCount; i++)
@@ -168,7 +168,8 @@ public sealed class ManualWindow : Container
                 i == _hoveredPage ? _titleFont : _mutedFont;
             font.DrawText(target,
                 new Vector2(TabsLeft + TabWidth * i + TabWidth / 2, 8),
-                _uiText[i], TextAlignment.Center, VerticalTextAlignment.Top);
+                _setupNotes ? app.ResourceManager.GetString($"setupnotes?{i}") : _uiText[i],
+                TextAlignment.Center, VerticalTextAlignment.Top);
         }
 
         RenderTextPage(target);
@@ -176,7 +177,12 @@ public sealed class ManualWindow : Container
 
     void RenderTextPage(RenderTarget target)
     {
-        string[] lines = app.ResourceManager.GetStrings($"manual?s{_page}");
+        string[] lines = _setupNotes
+            ? (_page == 0 ? SetupPatchNotes.Read() :
+                app.ResourceManager.GetStrings($"setupnotes?s{_page}"))
+            : app.ResourceManager.GetStrings($"manual?s{_page}");
+        if (_setupNotes)
+            lines = WrapNotes(lines);
         List<ManualEntry> entries = BuildEntries(lines);
         int totalLineCount = entries.Sum(entry => entry.LineCount);
         int maximum = System.Math.Max(0, totalLineCount - VisibleLineCount);
@@ -200,11 +206,35 @@ public sealed class ManualWindow : Container
             VisibleLineCount, totalLineCount);
     }
 
+    string[] WrapNotes(string[] lines)
+    {
+        var wrapped = new List<string>();
+        foreach (string line in lines)
+        {
+            bool heading = line.StartsWith("#");
+            GuiFont font = heading ? _titleFont : _textFont;
+            string current = "";
+            foreach (string word in (heading ? line[1..] : line).Split(' '))
+            {
+                string next = current.Length == 0 ? word : current + " " + word;
+                if (current.Length > 0 && font.GetWidth(next) > Size.x - 30)
+                {
+                    wrapped.Add((heading ? "#" : "") + current);
+                    current = word;
+                }
+                else
+                    current = next;
+            }
+            wrapped.Add((heading ? "#" : "") + current);
+        }
+        return wrapped.ToArray();
+    }
+
     List<ManualEntry> BuildEntries(string[] lines)
     {
         var entries = new List<ManualEntry>();
         bool skipExtendedOnly = false;
-        bool useExtendedRules = BurntimeClassic.Instance.Game.Rules == RuleSet.Extended;
+        bool useExtendedRules = !_setupNotes && BurntimeClassic.Instance.Game.Rules == RuleSet.Extended;
         int lastContentLine = lines.Length - 1;
         while (lastContentLine >= 0 && lines[lastContentLine].Length == 0)
             lastContentLine--;
@@ -226,7 +256,18 @@ public sealed class ManualWindow : Container
 
             ManualEntry? entry = ParseEntry(line);
             if (entry != null)
+            {
+                if (_setupNotes && entry.Kind == ManualEntryKind.Heading)
+                {
+                    int previous = entries.Count - 1;
+                    while (previous >= 0 && entries[previous].Kind == ManualEntryKind.Text &&
+                        entries[previous].Payload.Length == 0)
+                        previous--;
+                    if (previous >= 0 && entries[previous].Kind == ManualEntryKind.Heading)
+                        entries.RemoveRange(previous + 1, entries.Count - previous - 1);
+                }
                 entries.Add(entry);
+            }
         }
 
         return entries;
@@ -261,7 +302,7 @@ public sealed class ManualWindow : Container
             return new(ManualEntryKind.Construction, line[14..],
                 ConstructionLineCount(line[14..]));
         if (line.StartsWith("#"))
-            return new(ManualEntryKind.Heading, line[1..], 2);
+            return new(ManualEntryKind.Heading, line[1..], PixelLineCount((_setupNotes ? 1 : 2) * _titleFont.LineHeight));
         return new(ManualEntryKind.Text, line, 1);
     }
 
@@ -307,7 +348,7 @@ public sealed class ManualWindow : Container
         return ItemLineCount(ids);
     }
 
-    static int PixelLineCount(int height) => System.Math.Max(1,
+    int PixelLineCount(int height) => System.Math.Max(1,
         (height + TextLineHeight - 1) / TextLineHeight);
 
     static string GetClassSpriteId(string source) => source switch
@@ -326,7 +367,7 @@ public sealed class ManualWindow : Container
                     TextAlignment.Left, VerticalTextAlignment.Top);
                 break;
             case ManualEntryKind.Heading:
-                int headingOffset = (2 * TextLineHeight - _titleFont.GetHeight()) / 2;
+                int headingOffset = (entry.LineCount * TextLineHeight - _titleFont.GetHeight()) / 2;
                 _titleFont.DrawText(target, new Vector2(6, y + headingOffset),
                     entry.Payload, TextAlignment.Left, VerticalTextAlignment.Top);
                 break;
@@ -475,7 +516,7 @@ public sealed class ManualWindow : Container
         (string statistic, string detail) = GetContextItemText(item, recipe);
         bool normalDetail = item.DamageValues.Length > 0 ||
             item.ID is "item_hand_pump" or "item_industrial_pump";
-        GuiFont detailFont = normalDetail ? _textFont : _mutedFont;
+        GuiFont detailFont = normalDetail ? _textFont : _detailFont;
         ISprite sprite = app.ResourceManager.GetImage(item.Sprite);
         string statisticText = item.DamageValues.Length > 0
             ? $"{statistic} ~d1"
@@ -506,12 +547,12 @@ public sealed class ManualWindow : Container
             VerticalTextAlignment.Top);
 
         _textFont.DrawText(target,
-            new Vector2(textPosition.x, textPosition.y + 11),
+            new Vector2(textPosition.x, textPosition.y + _titleFont.LineHeight),
             fittedStatistic,
             TextAlignment.Left, VerticalTextAlignment.Top);
 
         detailFont.DrawText(target,
-            new Vector2(textPosition.x, textPosition.y + 22),
+            new Vector2(textPosition.x, textPosition.y + _titleFont.LineHeight + _textFont.LineHeight),
             fittedDetail,
             TextAlignment.Left, VerticalTextAlignment.Top);
     }
@@ -743,17 +784,10 @@ public sealed class ManualWindow : Container
 
     public override bool OnMouseClick(Vector2 position, MouseButton button)
     {
-        if (button == MouseButton.Right)
-        {
-            Hide();
-            return true;
-        }
-
         if (button != MouseButton.Left)
             return true;
 
-        if (_exitButton.Boundings.PointInside(position) ||
-            _nextButton.Boundings.PointInside(position))
+        if (_exitButton.Boundings.PointInside(position))
             return true;
 
         if (position.y >= 2 && position.y < 22)
@@ -786,7 +820,7 @@ public sealed class ManualWindow : Container
     void MovePage(int direction) =>
         _page = (_page + direction + PageCount) % PageCount;
 
-    static int GetTabAt(Vector2 position)
+    int GetTabAt(Vector2 position)
     {
         if (position.y < 2 || position.y >= 22 || position.x < TabsLeft ||
             position.x >= TabsLeft + TabWidth * PageCount)

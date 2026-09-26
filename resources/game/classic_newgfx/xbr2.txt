@@ -1,6 +1,7 @@
 [fonts]
 sprite_scale=1x1
 font.txt=font-highres-xbr2.txt
+font-small.txt=font-small-highres.txt
 font-highres.txt=font-highres-xbr2.txt
 
 [input_glyphs]

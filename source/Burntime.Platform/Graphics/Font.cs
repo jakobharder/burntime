@@ -86,6 +86,7 @@ public sealed class FontResource
         new Dictionary<char, FontSpriteResource>();
     public int Offset { get; private set; }
     public int Height { get; private set; }
+    public int LineHeight { get; private set; }
     public bool PostFilter { get; private set; }
     public bool IsLoaded { get; private set; }
     public bool HasSystemCopy => Sprite?.HasSystemCopy ?? false;
@@ -103,7 +104,7 @@ public sealed class FontResource
         Dictionary<string, float> kerning,
         Dictionary<char, FontSpriteResource> indicators,
         Dictionary<char, FontSpriteResource> icons,
-        int offset, int height, bool postFilter)
+        int offset, int height, bool postFilter, int lineHeight = 0)
     {
         Sprite = sprite;
         CharInfo = charInfo;
@@ -112,6 +113,8 @@ public sealed class FontResource
         Icons = icons;
         Offset = offset;
         Height = height;
+        LineHeight = lineHeight > 0 ? lineHeight :
+            System.Math.Max(1, (int)(height * sprite.Resolution.y + offset));
         PostFilter = postFilter;
         IsLoaded = true;
     }
@@ -316,7 +319,7 @@ public class Font
                 characterIndex++;
             }
 
-            offset.y += (int)(GetHeight() - Resource.Offset);
+            offset.y += LineHeight;
             if (lineIndex < lines.Length - 1)
                 characterIndex++;
         }
@@ -499,7 +502,7 @@ public class Font
             char ch = charray[characterIndex];
             if (last == '\n')
             {
-                rc.Height += (int)(GetHeight() - Resource.Offset);
+                rc.Height += LineHeight;
                 rc.Width = System.Math.Max(rc.Width, (int)System.Math.Round(width));
                 width = 0;
                 previous = '\0';
@@ -572,6 +575,16 @@ public class Font
         }
 
         return width;
+    }
+
+    public int LineHeight
+    {
+        get
+        {
+            if (!IsLoaded)
+                _resourceManager.LoadFont(this);
+            return Resource.LineHeight;
+        }
     }
 
     public virtual int GetHeight()

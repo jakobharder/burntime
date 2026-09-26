@@ -25,10 +25,10 @@ internal sealed class VisualTestRunner(string outputDirectory)
     public static int Run(string[] args)
     {
         // Deliberately small private CLI; the Python script owns the user interface.
-        if (args.Length != 3 || args[0] != "--visual-test" ||
+        if (args.Length is < 3 or > 4 || (args.Length == 4 && args[3] != "--native-filter") || args[0] != "--visual-test" ||
             args[1] is not ("classic" or "newgfx" or "classic-no-hints"))
         {
-            Console.Error.WriteLine("Usage: Burntime --visual-test classic|newgfx|classic-no-hints OUTPUT_DIRECTORY");
+            Console.Error.WriteLine("Usage: Burntime --visual-test classic|newgfx|classic-no-hints OUTPUT_DIRECTORY [--native-filter]");
             return 2;
         }
         string output = Path.GetFullPath(args[2]);
@@ -43,8 +43,8 @@ internal sealed class VisualTestRunner(string outputDirectory)
         VisualTestRunner runner = new(output);
         try
         {
-            using BurntimeGame game = new(nearestPointOutputFiltering: true,
-                windowSizeOverride: new Platform.Vector2(1280, 800));
+            using BurntimeGame game = new(emulateSteamDeck: true,
+                nearestPointOutputFiltering: args[1] != "newgfx" && args.Length == 3);
             game.VisualTest = runner;
             game.Run();
             return runner.Complete ? 0 : 1;

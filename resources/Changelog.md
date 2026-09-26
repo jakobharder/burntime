@@ -34,6 +34,7 @@
   - Added an in-game manual
   - Added game setup tooltips explaining modes, AI and difficulty
   - Added item tooltips throughout inventory, trading and service screens, including damage, reach, protection, supplies and construction hints
+  - Doctors now preview how much health an offered payment will restore before treatment
   - Show food, trap and water information on entrances and locations, and travel days on the world map
   - Added city reports showing surrounding camp ownership and progress toward victory
   - Added Alt/LT shortcut to show all entrances

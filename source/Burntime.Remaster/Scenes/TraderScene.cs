@@ -98,15 +98,18 @@ class TraderScene : Scene
         temporarySpace.UnifiedSelection = true;
         temporarySpace.MouseFocusChanged += OnMouseFocusChanged;
         temporarySpace.FocusEmptied += OnFocusEmptied;
-        temporarySpace.Prompts.Add(InputAction.Primary, "@prompts?14");
+        temporarySpace.Prompts.HideInNewGfx = true;
+        temporarySpace.Prompts.Add(InputAction.Primary, "@prompts?46");
         Windows += temporarySpace;
 
         itemTooltip = new ItemGridTooltip(app, () => inventory.ActiveCharacter);
-        itemTooltip.AddGrid(inventory.Grid);
-        itemTooltip.AddGrid(inventoryTrader.Grid);
-        itemTooltip.AddGrid(exchangeTop.Grid);
-        itemTooltip.AddGrid(exchangeBottom.Grid);
-        itemTooltip.AddGrid(temporarySpace);
+        itemTooltip.AddGrid(inventory.Grid, details: _ => GetTradeTooltip(inventory.Grid, true));
+        itemTooltip.AddGrid(inventoryTrader.Grid, details: _ => GetTradeTooltip(inventoryTrader.Grid, false));
+        itemTooltip.AddGrid(exchangeTop.Grid, details: _ => GetTradeTooltip(exchangeTop.Grid, false));
+        itemTooltip.AddGrid(exchangeBottom.Grid, details: _ => GetTradeTooltip(exchangeBottom.Grid, true));
+        itemTooltip.AddGrid(temporarySpace, details: _ => app.IsNewGfx
+            ? new ItemTooltipDetails(new InputPrompt(InputAction.Primary, "@prompts?46")
+                { KeyboardControl = PreferredPrimaryKeyboardControl }) : default);
         Windows += itemTooltip.Window;
 
         Windows += new InputPromptOverlay(app, Prompts,
@@ -486,13 +489,27 @@ class TraderScene : Scene
             : InventorySide.Left);
     }
 
+    ItemTooltipDetails GetTradeTooltip(ItemGridWindow grid, bool playerSide)
+    {
+        GuiString? label = GetTradePrompt(grid, playerSide);
+        if (!app.IsNewGfx || label == null)
+            return default;
+        return new ItemTooltipDetails(
+            new InputPrompt(InputAction.Primary, label)
+                { KeyboardControl = PreferredPrimaryKeyboardControl },
+            SecondaryPrompt: CanShowMovePrompt(grid)
+                ? new InputPrompt(InputAction.Secondary, "@prompts?45") : null);
+    }
+
     void AddTradeGridPrompts(ItemGridWindow promptGrid, bool playerSide)
     {
+        promptGrid.Prompts.HideInNewGfx = true;
         promptGrid.Prompts.AddDynamic(InputAction.Primary,
             () => GetTradePrompt(promptGrid, playerSide),
-            "@prompts?40", "@prompts?31");
+            playerSide ? "@prompts?40" : "@prompts?44",
+            playerSide ? "@prompts?36" : "@prompts?37");
         if (promptGrid == inventory.Grid)
-            promptGrid.Prompts.Add(InputAction.Secondary, "@prompts?14",
+            promptGrid.Prompts.Add(InputAction.Secondary, "@prompts?45",
                 () => CanShowMovePrompt(promptGrid));
     }
 
@@ -501,8 +518,8 @@ class TraderScene : Scene
         if (source.FocusedItem == null)
             return null;
         return IsFocusedItemForTrade(source, playerSide)
-            ? "@prompts?40"
-            : "@prompts?31";
+            ? (playerSide ? "@prompts?40" : "@prompts?44")
+            : (playerSide ? "@prompts?36" : "@prompts?37");
     }
 
     bool IsFocusedItemForTrade(ItemGridWindow source, bool playerSide)

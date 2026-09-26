@@ -87,7 +87,7 @@ def run_tests(args):
         with (folder / "process.log").open("w") as log:
             try:
                 process = subprocess.run(["dotnet", str(BUILD / "app/Burntime.dll"),
-                                          "--visual-test", mode, str(actual)],
+                                          "--visual-test", mode, str(actual)] + (["--native-filter"] if args.native_filter else []),
                                          stdout=log, stderr=subprocess.STDOUT, timeout=240, cwd=ROOT)
                 if process.returncode:
                     errors.append(f"Game exited with code {process.returncode}; see process.log and actual/error.txt.")
@@ -152,6 +152,7 @@ def main():
     run = commands.add_parser("run")
     run.add_argument("--mode", choices=MODES + ["both", "all"], default="all")
     run.add_argument("--skip-build", action="store_true")
+    run.add_argument("--native-filter", action="store_true", help="Use normal game filtering for classic too (newgfx always uses xBR2)")
     run.add_argument("--output", type=Path, help="New, not-yet-existing run directory")
     run.add_argument("--baselines", type=Path, default=BASELINES)
     approval = commands.add_parser("accept")

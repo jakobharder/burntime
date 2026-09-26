@@ -1,3 +1,4 @@
+﻿line_height=11
 image=font-xbr2.png
 indicator_image=font-indicators.png
 indicator_size=8x12

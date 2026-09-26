@@ -31,6 +31,7 @@ namespace Burntime.Remaster.Scenes
         Character ActiveCharacter => inventory.ActiveCharacter;
         // The same leader scopes both the visible inventory pages and group services.
         Character serviceLeader = null!;
+        Character? doctorPatient;
         ICharacterCollection ServiceGroup => serviceLeader.GetGroup();
 
         public ServiceScene(Module app)
@@ -75,16 +76,20 @@ namespace Burntime.Remaster.Scenes
             offer.Spacing = new Vector2(4, 4);
             offer.Grid = new Vector2(4, 1);
             offer.LeftClickItemEvent += OnLeftClickItemOffer;
+            offer.Prompts.HideInNewGfx = true;
             offer.Prompts.Add(InputAction.Primary, "@prompts?37",
                 () => CanMoveFocusedItem(offer));
             Windows += offer;
 
+            inventory.Grid.Prompts.HideInNewGfx = true;
             inventory.Grid.Prompts.Add(InputAction.Primary, "@prompts?36",
                 () => CanMoveFocusedItem(inventory.Grid));
 
             itemTooltip = new ItemGridTooltip(app, () => inventory.ActiveCharacter);
-            itemTooltip.AddGrid(inventory.Grid, ItemTooltipSide.Right);
-            itemTooltip.AddGrid(offer, ItemTooltipSide.Left);
+            itemTooltip.AddGrid(inventory.Grid, ItemTooltipSide.Right,
+                _ => GetTransferTooltip(inventory.Grid, "@prompts?36"));
+            itemTooltip.AddGrid(offer, ItemTooltipSide.Left,
+                _ => GetTransferTooltip(offer, "@prompts?37"));
             Windows += itemTooltip.Window;
 
             font = new GuiFont(BurntimeClassic.FontName, ClassicColors.LightGray);
@@ -101,6 +106,12 @@ namespace Burntime.Remaster.Scenes
             Prompts.Add(InputPattern.HorizontalPaging, "@prompts?16",
                 () => inventory.PageCount > 1);
         }
+
+        ItemTooltipDetails GetTransferTooltip(ItemGridWindow source, GuiString label) =>
+            app.IsNewGfx && CanMoveFocusedItem(source)
+                ? new ItemTooltipDetails(new InputPrompt(InputAction.Primary, label)
+                    { KeyboardControl = PreferredPrimaryKeyboardControl })
+                : default;
 
         public override void OnResizeScreen(bool reload = false)
         {
@@ -159,11 +170,18 @@ namespace Burntime.Remaster.Scenes
             actionPrompt.UpdatePosition(new Vector2(actionButton.Size.x + 2, -2));
             actionButton.Show();
             serviceReady = true;
+            if (serviceType == RoomType.Doctor)
+                UpdateDoctorOfferText();
         }
 
         public override bool OnInputAction(InputAction action) => keyboardNavigation.Handle(action);
 
-        public override void OnUpdate(float elapsed) => itemTooltip.Update();
+        public override void OnUpdate(float elapsed)
+        {
+            itemTooltip.Update();
+            if (serviceReady && serviceType == RoomType.Doctor && doctorPatient != ActiveCharacter)
+                UpdateDoctorOfferText();
+        }
 
         public override void OnRender(RenderTarget target)
         {
@@ -185,7 +203,10 @@ namespace Burntime.Remaster.Scenes
         void OnOfferChanged()
         {
             if (serviceType == RoomType.Doctor)
+            {
+                UpdateDoctorOfferText();
                 return;
+            }
 
             lastAmount = -1;
             UpdateServiceText();
@@ -228,6 +249,31 @@ namespace Burntime.Remaster.Scenes
                 baseLine += 9;
 
             TextHelper text = new TextHelper(app, "burn");
+            text.AddArgument("|E", value);
+            responseText = new[] { text[baseLine], text[baseLine + 1], text[baseLine + 2] };
+        }
+
+        void UpdateDoctorOfferText()
+        {
+            doctorPatient = ActiveCharacter;
+            int health = ActiveCharacter.Health;
+            int result = Classic.Game.RuleBook.CalculateDoctorResult(health, offer);
+            int value = result - health;
+            int cap = Classic.Game.RuleBook.Settings.DoctorHealthCap;
+            int baseLine;
+
+            if (health >= cap)
+                baseLine = 67;
+            else if (offer.Count == 0)
+                baseLine = 64;
+            else if (result >= cap)
+                baseLine = 76;
+            else if (value >= 20 && result > 60)
+                baseLine = 73;
+            else
+                baseLine = 70;
+
+            TextHelper text = new(app, "newburn");
             text.AddArgument("|E", value);
             responseText = new[] { text[baseLine], text[baseLine + 1], text[baseLine + 2] };
         }

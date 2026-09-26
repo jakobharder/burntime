@@ -29,6 +29,7 @@ public readonly record struct InputPrompt
     public Key? KeyboardControl { get; init; }
     public GamepadControl? GamepadControl { get; init; }
     public MouseButton? MouseControl { get; init; }
+    public bool ShowInMouseMode { get; init; }
 
     public InputPrompt(InputAction action, GuiString label)
     {
@@ -51,10 +52,11 @@ public readonly record struct InputPrompt
         KeyboardPattern == other.KeyboardPattern &&
         Nullable.Equals(KeyboardControl, other.KeyboardControl) &&
         GamepadControl == other.GamepadControl &&
-        MouseControl == other.MouseControl;
+        MouseControl == other.MouseControl &&
+        ShowInMouseMode == other.ShowInMouseMode;
 
     public override int GetHashCode() => HashCode.Combine(Action, Pattern,
-        Label?.ID, KeyboardPattern, KeyboardControl, GamepadControl, MouseControl);
+        Label?.ID, KeyboardPattern, KeyboardControl, GamepadControl, MouseControl, ShowInMouseMode);
 
     public MouseButton? EffectiveMouseControl => MouseControl ??
         DefaultMouseControl(Action);
@@ -125,6 +127,7 @@ public sealed class InputPromptCollection : IEnumerable
 
     internal IReadOnlyList<InputPromptEntry> Entries => _entries;
     internal Window Owner { get; }
+    public bool HideInNewGfx { get; set; }
     internal bool IsSuppressed
     {
         get
@@ -249,13 +252,16 @@ public sealed class InputPromptController
         _scenePrompts = scenePrompts;
     }
 
+    bool IsSuppressed(InputPromptCollection prompts) => prompts.IsSuppressed ||
+        (prompts.HideInNewGfx && _app.IsNewGfx);
+
     public InputPromptLayout Resolve()
     {
         bool mouseInput = _app.LastInputMode == InputMode.Mouse;
         List<InputPrompt> scenePrompts = [];
         Dictionary<InputPromptPosition, List<ContextCandidate>> candidates = [];
 
-        if (!_scenePrompts.IsSuppressed)
+        if (!IsSuppressed(_scenePrompts))
         {
             foreach (InputPromptEntry entry in _scenePrompts.Entries)
             {
@@ -263,7 +269,7 @@ public sealed class InputPromptController
                     continue;
 
                 InputPrompt? activePrompt = entry.Resolve();
-                if (!mouseInput)
+                if (!mouseInput || activePrompt?.ShowInMouseMode == true)
                 {
                     if (activePrompt.HasValue)
                         scenePrompts.Add(activePrompt.Value);
@@ -325,7 +331,7 @@ public sealed class InputPromptController
         Dictionary<InputPromptPosition, List<ContextCandidate>> candidates,
         bool mouseInput, bool includeWindowPrompts = true)
     {
-        if (!window.IsVisible || window.Prompts.IsSuppressed)
+        if (!window.IsVisible || IsSuppressed(window.Prompts))
             return;
 
         if (includeWindowPrompts)
@@ -351,7 +357,7 @@ public sealed class InputPromptController
         if (!window.IsVisible)
             return;
 
-        if (!window.Prompts.IsSuppressed)
+        if (!IsSuppressed(window.Prompts))
         {
             Vector2 ownerPosition = window.PositionOnScreen - _scene.PositionOnScreen;
             foreach (InputPromptEntry entry in window.Prompts.Entries)

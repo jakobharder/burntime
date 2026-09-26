@@ -155,7 +155,7 @@ namespace Burntime.Remaster.Scenes
             itemTooltip.Update();
         }
 
-        ItemTooltipDetails GetItemTooltipDetails(Item focused, bool isInInventory)
+        ItemTooltipDetails GetItemTooltipDetails(Item focused, bool isInInventory, ItemGridWindow source)
         {
             InputPrompt? prompt = GetItemPrompt(focused, isInInventory);
             GuiString? status = null;
@@ -249,6 +249,16 @@ namespace Burntime.Remaster.Scenes
                 statusIsMuted = false;
             }
 
+            if (app.IsNewGfx)
+            {
+                InputPrompt? transfer = CanTransferSelectedItem(source)
+                    ? new InputPrompt(InputAction.Primary,
+                        isInInventory ? "@prompts?39" : "@prompts?37")
+                        { KeyboardControl = PreferredPrimaryKeyboardControl }
+                    : null;
+                return new(transfer, status, statusIsSuccess, statusIsMuted,
+                    SecondaryPrompt: prompt);
+            }
             return new(prompt, status, statusIsSuccess, statusIsMuted);
         }
 
@@ -263,6 +273,7 @@ namespace Burntime.Remaster.Scenes
 
         void AddGridPrompts(ItemGridWindow promptGrid, bool isInInventory)
         {
+            promptGrid.Prompts.HideInNewGfx = true;
             promptGrid.Prompts.Add(InputAction.Primary,
                 isInInventory ? "@prompts?39" : "@prompts?37",
                 () => CanTransferSelectedItem(promptGrid));
@@ -371,7 +382,7 @@ namespace Burntime.Remaster.Scenes
             }
             itemTooltip.ClearGrids();
             itemTooltip.AddGrid(inventory.Grid, ItemTooltipSide.Right,
-                item => GetItemTooltipDetails(item, true));
+                item => GetItemTooltipDetails(item, true, inventory.Grid));
 
             if (classic.InventoryRoom != null)
             {
@@ -403,7 +414,7 @@ namespace Burntime.Remaster.Scenes
                 AddGridPrompts(grid, false);
                 Windows += grid;
                 itemTooltip.AddGrid(grid, ItemTooltipSide.Left,
-                    item => GetItemTooltipDetails(item, false));
+                    item => GetItemTooltipDetails(item, false, grid));
 
                 grid.Add(classic.InventoryRoom.Items);
 
@@ -431,7 +442,7 @@ namespace Burntime.Remaster.Scenes
                 AddGridPrompts(grid, false);
                 Windows += grid;
                 itemTooltip.AddGrid(grid, ItemTooltipSide.Left,
-                    item => GetItemTooltipDetails(item, false));
+                    item => GetItemTooltipDetails(item, false, grid));
 
                 grid.Add(classic.PickItems);
             }

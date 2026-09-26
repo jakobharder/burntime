@@ -11,6 +11,33 @@ static class FontIndicatorTests
 {
     internal static IEnumerable<Case<int>> IndicatorCases()
     {
+        yield return Int("small font atlas crops fit with three-quarter-size advances", 1, () =>
+        {
+            FontProcessorTxt regular = new();
+            regular.Process("font-highres.txt");
+            FontProcessorTxt small = new();
+            Burntime.Platform.IO.FileSystem.AddPackage("small-font-test",
+                System.IO.Path.GetDirectoryName(ResourceFile("../classic_newgfx/font-small-highres.txt"))!);
+            try
+            {
+                small.Process("font-small-highres.txt");
+            }
+            finally
+            {
+                Burntime.Platform.IO.FileSystem.RemovePackage("small-font-test");
+            }
+            foreach (var (letter, glyph) in regular.CharInfo)
+            {
+                CharInfo reduced = small.CharInfo[letter];
+                if (reduced.spritePos.x < 0 || reduced.spritePos.y < 0 ||
+                    reduced.spritePos.x + reduced.imgWidth > small.Size.x ||
+                    reduced.spritePos.y + reduced.imgHeight > small.Size.y ||
+                    System.Math.Abs(glyph.renderWidth * 0.75f - reduced.renderWidth) > small.Factor.x + 0.001f)
+                    return 0;
+            }
+            return small.LineHeight == 9 && small.Factor == regular.Factor / 2 ? 1 : 0;
+        });
+
         yield return Int("font config defines dot maximum", 5, () =>
         {
             FontProcessorTxt processor = new();

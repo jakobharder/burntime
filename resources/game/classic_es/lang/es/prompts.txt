@@ -40,3 +40,8 @@ Luchar
 Guardar
 Deseleccionar
 Inventario
+
+
+Deseleccionar
+Mover
+Mover

@@ -1,0 +1,59 @@
+line_height=9
+image=font-small-highres.png
+indicator_image=font-indicators.png
+indicator_size=8x12
+indicator_codes=brdn
+indicator_starts=0 15 30 45
+indicator_counts=15 15 5 5
+indicator_widths=4 4 2 3
+icon_image=font-icons.png
+icon_size=12x12
+icon_codes=⚠☢☠
+icon_starts=0 1 2
+icon_counts=1 1 1
+icon_widths=13 13 13
+scale=3.75x4.5
+post_filter=true
+offset=-1
+
+
+kerning0.75=Fa Fä Fc Fd Fe Fg Fj Fm Fn Fo Fö Fp Fq Fr Fs Fu Fü Fv Fw Fx Fy Fz
+'kerning0.75=Sf St
+kerning1.5=Ta Tc Td Te Tg Tj Tm Tn To Tp Tq Tr Ts Tu Tv Tw Tx Ty Tz
+kerning0.75=Y, V, T, P, F, f, v, y,
+kerning1.5=r,
+kerning0.75="T; P; F; f; v; y; r;"
+kerning0.75=S? a? ä? b? c? e? g? k? l? m? n? o? ö? p? q? r? s? t? u? v? w? x? y? z?
+kerning0.75=Y. V. T. P. F. f. v. y. r.
+kerning0.75=lf
+kerning0.375=af äf cf ef kf of öf pf sf zf
+kerning0.75=fJ vJ yJ Pj Vj Yj VJ
+kerning1.5=rJ FJ PJ TJ
+kerning0.75=lt st
+kerning0.375=at ät ct et kt ot öt pt zt
+kerning0.75=Pa
+kerning0.375=ra re ro
+kerning0.375=ly
+lines=3
+height=9.6666667
+atlas_y0=0
+atlas_y1=44
+atlas_y2=87
+char0=" !""#$%&'()*+,-./0123456789:;<=>?@[\]^_`"
+//             ! " # $ % & ' ( ) * + , - . / 0 1 2 3 4 5 6 7 8 9 : ; < = > ? @ [ \ ] ^ _ `
+width0      =5.25 2.25 3.75 3.75 5.25 5.25 3.75 3 3.75 3.75 5.25 3.75 3 4.5 2.25 5.25 4.5 3 4.5 4.5 4.5 4.5 4.5 4.5 4.5 4.5 2.25 3.75 4.5 4.5 4.5 4.5 2.25 3 5.25 3 5.25 4.5 3
+renderwidth0=4.5 3 6 6 9 9 6 4.5 6 6 9 6 4.5 7.5 3 9 7.5 4.5 7.5 7.5 7.5 7.5 7.5 7.5 7.5 7.5 3 6 7.5 7.5 7.5 7.5 3 4.5 9 4.5 9 7.5 4.5
+y0=0
+
+' Letter cells measured from this PNG, including antialiasing and shadows.
+char1="ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+//           A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+width1=4.2666667 4.5333333 4.8 4.2666667 4.5333333 4.8 4.2666667 4.5333333 2.4 4.2666667 4.5333333 4 5.0666667 4.5333333 4.2666667 4.5333333 4.8 4.2666667 4.5333333 4.2666667 4.8 4.5333333 5.0666667 4.5333333 4.8 4
+renderwidth1=7.5 8 7.5 7.5 8 7.5 7.5 8 3 7.5 8 6 9 8 7.5 8 8 7.5 8 7.5 8 8 9 8 7.5 7.5
+y1=13
+
+char2="abcdefghijklmnopqrstuvwxyzüäÄöÖÜß"
+//           a b c d e f g h i j k l m n o p q r s t u v w x y z ü ä Ä ö Ö Ü ß
+width2=5.0666667 4.5333333 5.6 4.2666667 4.5333333 3.4666667 4.8 4.5333333 2.4 4.2666667 4.5333333 3.2 5.0666667 4.5333333 4.2666667 4.5333333 4.8 4.2666667 4.5333333 4 4.2666667 4.5333333 5.0666667 5.3333333 4.8 5.6 5.6 5.0666667 4.5333333 5.0666667 5.3333333 5.0666667 4.2666667
+renderwidth2=7.5 8 7.5 7.5 8 6 8 8 3 4.5 8 4.5 9 8 7.5 8 7.5 6 8 6 7.5 8 9 8 7.5 7.5 7.5 7.5 8 7.5 8 7.5 8
+y2=26

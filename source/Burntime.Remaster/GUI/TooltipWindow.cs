@@ -12,10 +12,10 @@ namespace Burntime.Remaster;
 /// </summary>
 public sealed class TooltipWindow : Window
 {
-    const int HorizontalPadding = 5;
-    const int VerticalPadding = 4;
-    const int SectionGap = 4;
-    const int TextLineAdvance = 10;
+    int HorizontalPadding => 5;
+    int TopPadding => 4;
+    int BottomPadding => app.IsNewGfx ? 2 : 4;
+    int SectionGap => app.IsNewGfx ? 2 : 4;
 
     readonly GuiFont _textFont;
     readonly GuiFont _statusFont;
@@ -28,6 +28,7 @@ public sealed class TooltipWindow : Window
     public GuiFont HeaderFont { get; set; }
     public GuiString? Text { get; set; }
     public InputPrompt? Prompt { get; set; }
+    public bool StackPrompts { get; set; }
     public InputPrompt? SecondaryPrompt { get; set; }
     public GuiString? Status { get; set; }
     public bool StatusIsMuted { get; set; }
@@ -40,17 +41,17 @@ public sealed class TooltipWindow : Window
     {
         HeaderFont = new GuiFont(BurntimeClassic.FontName,
             neutralPalette ? ClassicColors.LightGray : ClassicColors.HudTextHover) { Borders = TextBorders.None };
-        _textFont = new GuiFont(BurntimeClassic.FontName,
+        _textFont = new GuiFont("font-small.txt",
             ClassicColors.LightGray) { Borders = TextBorders.None };
-        _statusFont = new GuiFont(BurntimeClassic.FontName,
+        _statusFont = new GuiFont("font-small.txt",
             neutralPalette ? ClassicColors.LightGray : ClassicColors.DialogText) { Borders = TextBorders.None };
-        _mutedStatusFont = new GuiFont(BurntimeClassic.FontName,
+        _mutedStatusFont = new GuiFont("font-small.txt",
             neutralPalette ? ClassicColors.LightGray : ClassicColors.StatusInactive) { Borders = TextBorders.None };
-        _successFont = new GuiFont(BurntimeClassic.FontName,
+        _successFont = new GuiFont("font-small.txt",
             neutralPalette ? ClassicColors.LightGray : ClassicColors.StatusSuccess) { Borders = TextBorders.None };
         // Leave a visible indent for right-aligned status, even when it is the longest line.
         _extraWidth = neutralPalette ? _textFont.GetWidth("MM") : 0;
-        var promptFont = new GuiFont(BurntimeClassic.FontName,
+        var promptFont = new GuiFont("font-small.txt",
             ClassicColors.LightGray) { Borders = TextBorders.None };
         _controlRenderer = new InputControlLabelRenderer(app, promptFont,
             brackets: false, bracketTextControls: false);
@@ -59,8 +60,6 @@ public sealed class TooltipWindow : Window
 
     public void RefreshLayout()
     {
-        const int FontHeight = 8;
-
         string header = Header ?? string.Empty;
         string text = Text ?? string.Empty;
         string status = Status ?? string.Empty;
@@ -76,23 +75,33 @@ public sealed class TooltipWindow : Window
             SecondaryPrompt is { IsEmpty: false };
         bool hasFooter = hasStatus || hasPrompts;
 
+        int promptRows = hasPrompts ? 1 : 0;
         contentWidth = System.Math.Max(contentWidth, statusWidth);
         if (hasPrompts)
         {
             int promptWidth = MeasurePrompt(Prompt);
             int secondaryPromptWidth = MeasurePrompt(SecondaryPrompt);
-            int footerWidth = promptWidth + secondaryPromptWidth;
-            if (promptWidth > 0 && secondaryPromptWidth > 0)
-                footerWidth += 8;
+            int footerWidth;
+            if (StackPrompts)
+            {
+                footerWidth = System.Math.Max(promptWidth, secondaryPromptWidth);
+                promptRows = (promptWidth > 0 ? 1 : 0) + (secondaryPromptWidth > 0 ? 1 : 0);
+            }
+            else
+            {
+                footerWidth = promptWidth + secondaryPromptWidth;
+                if (promptWidth > 0 && secondaryPromptWidth > 0)
+                    footerWidth += 2 * SectionGap;
+            }
             contentWidth = System.Math.Max(contentWidth, footerWidth);
         }
 
         int sectionCount = (hasHeader ? 1 : 0) + (hasText ? 1 : 0) +
             (hasFooter ? 1 : 0);
-        int height = VerticalPadding * 2 +
-            (hasHeader ? TextLineAdvance : 0) + textBounds.Height +
-            (hasFooter ? FontHeight : 0) +
-            (hasStatus && hasPrompts ? TextLineAdvance : 0) +
+        int height = TopPadding + BottomPadding +
+            (hasHeader ? HeaderFont.LineHeight : 0) + TextHeight(text) +
+            (hasStatus ? _statusFont.LineHeight : 0) +
+            promptRows * _controlRenderer.LineHeight +
             System.Math.Max(0, sectionCount - 1) * SectionGap;
 
         int width = System.Math.Max(MinimumWidth,
@@ -116,12 +125,12 @@ public sealed class TooltipWindow : Window
         bool hasPrompts = Prompt is { IsEmpty: false } ||
             SecondaryPrompt is { IsEmpty: false };
         bool hasFooter = status.Length > 0 || hasPrompts;
-        int y = VerticalPadding;
+        int y = TopPadding;
         if (header.Length > 0)
         {
             HeaderFont.DrawText(target, new Vector2(HorizontalPadding, y), header,
                 TextAlignment.Left, VerticalTextAlignment.Top);
-            y += TextLineAdvance;
+            y += HeaderFont.LineHeight;
             if (text.Length > 0 || hasFooter)
                 y += SectionGap;
         }
@@ -130,7 +139,7 @@ public sealed class TooltipWindow : Window
         {
             _textFont.DrawText(target, new Vector2(HorizontalPadding, y), text,
                 TextAlignment.Left, VerticalTextAlignment.Top);
-            y += _textFont.GetRect(0, 0, text).Height;
+            y += TextHeight(text);
         }
 
         if (text.Length > 0 && hasFooter)
@@ -142,30 +151,51 @@ public sealed class TooltipWindow : Window
             statusFont.DrawText(target,
                 new Vector2(Size.x - HorizontalPadding, y), status,
                 TextAlignment.Right, VerticalTextAlignment.Top);
-            y += TextLineAdvance;
+            y += _statusFont.LineHeight;
         }
         if (!hasPrompts)
             return;
 
+        y += _controlRenderer.TextOffset;
         InputControlLabel promptControl = InputControlDisplay.Resolve(app,
             app.LastInputMode, Prompt);
         InputControlLabel secondaryPromptControl = InputControlDisplay.Resolve(app,
             app.LastInputMode, SecondaryPrompt);
         bool hasPrompt = !promptControl.IsEmpty;
         bool hasSecondaryPrompt = !secondaryPromptControl.IsEmpty;
+        int right = PromptRightEdge(hasSecondaryPrompt ? secondaryPromptControl : promptControl);
         if (hasSecondaryPrompt && SecondaryPrompt is InputPrompt secondaryPrompt)
         {
-            int x = hasPrompt ? HorizontalPadding : Size.x - HorizontalPadding;
-            _controlRenderer.Draw(target, new Vector2(x, y),
+            int secondaryY = y + (StackPrompts && hasPrompt ? _controlRenderer.LineHeight : 0);
+            _controlRenderer.Draw(target, new Vector2(right, secondaryY),
                 secondaryPromptControl, secondaryPrompt.Label,
-                alignment: hasPrompt ? TextAlignment.Left : TextAlignment.Right,
-                labelFirst: true);
+                alignment: TextAlignment.Right, labelFirst: true);
+            if (StackPrompts)
+            {
+                right = PromptRightEdge(promptControl);
+            }
+            else
+                right -= MeasurePrompt(SecondaryPrompt) + 2 * SectionGap;
         }
         if (hasPrompt && Prompt is InputPrompt prompt)
+        {
             _controlRenderer.Draw(target,
-                new Vector2(Size.x - HorizontalPadding, y),
-                promptControl, prompt.Label, alignment: TextAlignment.Right,
+                new Vector2(right, y),
+                promptControl, prompt.Label,
+                alignment: TextAlignment.Right,
                 labelFirst: true);
+        }
+    }
+
+    int TextHeight(string text) => text.Length == 0 ? 0 :
+        text.Split('\n').Length * _textFont.LineHeight;
+
+    int PromptRightEdge(InputControlLabel control)
+    {
+        // A trailing glyph needs less inset than text to look equally close to the edge.
+        bool endsWithGlyph = control.Parts.Count > 0 && control.Parts[^1].HasGlyph;
+        int padding = app.IsNewGfx && endsWithGlyph ? BottomPadding : HorizontalPadding;
+        return Size.x - padding;
     }
 
     static int MeasureWidth(GuiFont font, string text) =>

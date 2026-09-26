@@ -79,25 +79,28 @@ internal class OptionsSavesPage : Container
     }
 
     readonly OptionFonts _fonts;
+    readonly OptionFonts _rowFonts;
 
     readonly Button _load;
     readonly Button _save;
     readonly Button _delete;
     readonly Button _hintText;
 
-    const int VISIBLE_SAVE_COUNT = 6;
+    int VisibleSaveCount => app.IsNewGfx ? 7 : 6;
     const int LIST_X = 38;
     const int LIST_Y = 58;
     // The action strip spans x=40..160. Rows begin at x=38, so 122 reaches
     // the same rightmost pixel of the black content area.
     const int LIST_WIDTH = 122;
-    const int ROW_HEIGHT = 10;
+    int RowHeight => app.IsNewGfx ? _rowFonts.Green.LineHeight : 10;
     const int SCROLLBAR_X = LIST_X + LIST_WIDTH + 2;
     const int SCROLLBAR_WIDTH = 2;
-    const int SCROLLBAR_HEIGHT = VISIBLE_SAVE_COUNT * ROW_HEIGHT - 3;
+    int ScrollbarHeight => VisibleSaveCount * RowHeight - 3;
     const int MIN_THUMB_HEIGHT = 10;
 
-    readonly SaveRowButton[] _saveRows = new SaveRowButton[VISIBLE_SAVE_COUNT];
+    readonly SaveRowButton[] _saveRows;
+    int _rowHeight;
+    int _visibleSaveCount;
     readonly Button[] _actionButtons;
     readonly List<SaveInfo> _saves = new();
     readonly Dictionary<string, SaveInfo> _saveInfos = new(StringComparer.OrdinalIgnoreCase);
@@ -122,6 +125,14 @@ internal class OptionsSavesPage : Container
     public OptionsSavesPage(Module app, OptionFonts fonts) : base(app)
     {
         _fonts = fonts;
+        _rowFonts = new OptionFonts
+        {
+            Disabled = new GuiFont("font-small.txt", ClassicColors.OptionsDisabled) { Borders = TextBorders.None },
+            Green = new GuiFont("font-small.txt", ClassicColors.OptionsGreen) { Borders = TextBorders.None },
+            Blue = new GuiFont("font-small.txt", ClassicColors.OptionsBlueHover) { Borders = TextBorders.None },
+            Orange = new GuiFont("font-small.txt", ClassicColors.OptionsRedHover) { Borders = TextBorders.None }
+        };
+        _saveRows = new SaveRowButton[7];
         Size = new Vector2(320, 200);
 
         var saveButtons = new AutoAlignContainer(app)
@@ -175,16 +186,16 @@ internal class OptionsSavesPage : Container
 
     public override void OnRender(RenderTarget target)
     {
-        int maximumOffset = System.Math.Max(0, EntryCount - VISIBLE_SAVE_COUNT);
+        int maximumOffset = System.Math.Max(0, EntryCount - VisibleSaveCount);
         if (maximumOffset <= 0)
             return;
 
         int thumbHeight = System.Math.Max(MIN_THUMB_HEIGHT,
-            SCROLLBAR_HEIGHT * VISIBLE_SAVE_COUNT / EntryCount);
-        int thumbY = LIST_Y + (SCROLLBAR_HEIGHT - thumbHeight) * _scrollOffset /
+            ScrollbarHeight * VisibleSaveCount / EntryCount);
+        int thumbY = LIST_Y + (ScrollbarHeight - thumbHeight) * _scrollOffset /
             maximumOffset;
         target.RenderRect(new Vector2(SCROLLBAR_X, LIST_Y),
-            new Vector2(SCROLLBAR_WIDTH, SCROLLBAR_HEIGHT),
+            new Vector2(SCROLLBAR_WIDTH, ScrollbarHeight),
             new PixelColor(80, 108, 116, 168));
         target.RenderRect(new Vector2(SCROLLBAR_X, thumbY),
             new Vector2(SCROLLBAR_WIDTH, thumbHeight),
@@ -193,16 +204,16 @@ internal class OptionsSavesPage : Container
 
     public override bool OnMouseClick(Vector2 position, MouseButton button)
     {
-        if (button != MouseButton.Left || EntryCount <= VISIBLE_SAVE_COUNT ||
+        if (button != MouseButton.Left || EntryCount <= VisibleSaveCount ||
             position.x < SCROLLBAR_X - 2 ||
             position.x >= SCROLLBAR_X + SCROLLBAR_WIDTH + 2 ||
-            position.y < LIST_Y || position.y >= LIST_Y + SCROLLBAR_HEIGHT)
+            position.y < LIST_Y || position.y >= LIST_Y + ScrollbarHeight)
             return false;
 
-        int maximumOffset = EntryCount - VISIBLE_SAVE_COUNT;
+        int maximumOffset = EntryCount - VisibleSaveCount;
         int thumbHeight = System.Math.Max(MIN_THUMB_HEIGHT,
-            SCROLLBAR_HEIGHT * VISIBLE_SAVE_COUNT / EntryCount);
-        int thumbY = LIST_Y + (SCROLLBAR_HEIGHT - thumbHeight) * _scrollOffset /
+            ScrollbarHeight * VisibleSaveCount / EntryCount);
+        int thumbY = LIST_Y + (ScrollbarHeight - thumbHeight) * _scrollOffset /
             maximumOffset;
         if (position.y < thumbY)
             ScrollList(-1);
@@ -213,8 +224,8 @@ internal class OptionsSavesPage : Container
 
     public override bool OnMouseWheel(Vector2 position, int delta)
     {
-        var listBounds = new Rect(LIST_X, LIST_Y, LIST_WIDTH, VISIBLE_SAVE_COUNT * ROW_HEIGHT);
-        if (!listBounds.PointInside(position) || EntryCount <= VISIBLE_SAVE_COUNT)
+        var listBounds = new Rect(LIST_X, LIST_Y, LIST_WIDTH, VisibleSaveCount * RowHeight);
+        if (!listBounds.PointInside(position) || EntryCount <= VisibleSaveCount)
             return false;
 
         ScrollList(-System.Math.Sign(delta));
@@ -224,7 +235,7 @@ internal class OptionsSavesPage : Container
 
     bool ScrollList(int direction)
     {
-        int maximumOffset = System.Math.Max(0, EntryCount - VISIBLE_SAVE_COUNT);
+        int maximumOffset = System.Math.Max(0, EntryCount - VisibleSaveCount);
         int newOffset = System.Math.Clamp(_scrollOffset + direction, 0, maximumOffset);
         if (newOffset == _scrollOffset)
             return false;
@@ -333,10 +344,10 @@ internal class OptionsSavesPage : Container
     {
         if (_saveFocusIndex < _scrollOffset)
             _scrollOffset = _saveFocusIndex;
-        else if (_saveFocusIndex >= _scrollOffset + VISIBLE_SAVE_COUNT)
-            _scrollOffset = _saveFocusIndex - VISIBLE_SAVE_COUNT + 1;
+        else if (_saveFocusIndex >= _scrollOffset + VisibleSaveCount)
+            _scrollOffset = _saveFocusIndex - VisibleSaveCount + 1;
 
-        int maximumOffset = System.Math.Max(0, EntryCount - VISIBLE_SAVE_COUNT);
+        int maximumOffset = System.Math.Max(0, EntryCount - VisibleSaveCount);
         _scrollOffset = System.Math.Clamp(_scrollOffset, 0, maximumOffset);
     }
 
@@ -436,6 +447,7 @@ internal class OptionsSavesPage : Container
 
     public override void OnUpdate(float elapsed)
     {
+        RefreshRowLayout();
         UpdateMetadataPreload();
         UpdateKeyboardFocus();
         int hoveredEntry = HoveredEntryIndex;
@@ -594,7 +606,7 @@ internal class OptionsSavesPage : Container
         {
             int entryIndex = _scrollOffset + row;
             SaveRowButton button = _saveRows[row];
-            button.IsVisible = entryIndex < EntryCount;
+            button.IsVisible = row < VisibleSaveCount && entryIndex < EntryCount;
 
             if (!button.IsVisible)
                 continue;
@@ -614,8 +626,8 @@ internal class OptionsSavesPage : Container
                 button.Text = GetRowText(saveInfo, button.SecondaryText);
             }
 
-            GuiFont normalFont = saveInfo?.IsValid == false ? _fonts.Disabled : _fonts.Green;
-            button.Font = entryIndex == _markedIndex ? _fonts.Blue : normalFont;
+            GuiFont normalFont = saveInfo?.IsValid == false ? _rowFonts.Disabled : _rowFonts.Green;
+            button.Font = entryIndex == _markedIndex ? _rowFonts.Blue : normalFont;
         }
     }
 
@@ -665,7 +677,7 @@ internal class OptionsSavesPage : Container
 
     SaveInfo? FindNextMetadataToLoad()
     {
-        for (int row = 0; row < VISIBLE_SAVE_COUNT; row++)
+        for (int row = 0; row < VisibleSaveCount; row++)
         {
             SaveInfo? visible = GetSaveAtEntry(_scrollOffset + row);
             if (visible is { MetadataLoaded: false })
@@ -712,9 +724,9 @@ internal class OptionsSavesPage : Container
     string GetRowText(SaveInfo saveInfo, string timestamp)
     {
         string name = (saveInfo.Hints?.GetValueOrDefault("player") ?? saveInfo.DisplayName).ToUpperInvariant();
-        int availableWidth = LIST_WIDTH - _fonts.Green.GetWidth(timestamp) - 4;
+        int availableWidth = LIST_WIDTH - _rowFonts.Green.GetWidth(timestamp) - 4;
         string displayName = FormatDisplayName(name, saveInfo.IsAutosave);
-        while (name.Length > 1 && _fonts.Green.GetWidth(displayName) > availableWidth)
+        while (name.Length > 1 && _rowFonts.Green.GetWidth(displayName) > availableWidth)
         {
             name = name[..^1];
             displayName = FormatDisplayName(name, saveInfo.IsAutosave);
@@ -746,7 +758,7 @@ internal class OptionsSavesPage : Container
             EnsureFocusVisible();
         else
             _scrollOffset = System.Math.Clamp(scrollOffset, 0,
-                System.Math.Max(0, EntryCount - VISIBLE_SAVE_COUNT));
+                System.Math.Max(0, EntryCount - VisibleSaveCount));
         RefreshVisibleRows();
         UpdateKeyboardFocus();
     }
@@ -785,6 +797,24 @@ internal class OptionsSavesPage : Container
         return name;
     }
 
+    void RefreshRowLayout()
+    {
+        int height = RowHeight;
+        int count = VisibleSaveCount;
+        if (_rowHeight == height && _visibleSaveCount == count)
+            return;
+        _rowHeight = height;
+        _visibleSaveCount = count;
+        for (int i = 0; i < _saveRows.Length; i++)
+        {
+            _saveRows[i].Position = new Vector2(LIST_X, LIST_Y + i * height);
+            _saveRows[i].Size = new Vector2(LIST_WIDTH, height);
+        }
+        EnsureFocusVisible();
+        RefreshVisibleRows();
+        UpdateKeyboardFocus();
+    }
+
     void CreateSaveRows()
     {
         for (int i = 0; i < _saveRows.Length; i++)
@@ -792,11 +822,11 @@ internal class OptionsSavesPage : Container
             int row = i;
             _saveRows[i] = new SaveRowButton(app)
             {
-                Position = new Vector2(LIST_X, LIST_Y + i * ROW_HEIGHT),
-                Size = new Vector2(LIST_WIDTH, ROW_HEIGHT),
+                Position = new Vector2(LIST_X, LIST_Y + i * RowHeight),
+                Size = new Vector2(LIST_WIDTH, RowHeight),
                 Text = "",
-                Font = _fonts.Green,
-                HoverFont = _fonts.Orange,
+                Font = _rowFonts.Green,
+                HoverFont = _rowFonts.Orange,
                 TextHorizontalAlign = Platform.Graphics.TextAlignment.Left,
                 TextVerticalAlign = Platform.Graphics.VerticalTextAlignment.Top
             };
