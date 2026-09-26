@@ -30,6 +30,8 @@ namespace Burntime.Remaster.Scenes
         DialogWindow dialog;
         Button exitButton;
         Construction construction;
+        Character constructionCharacter;
+        IItemCollection constructionInventory;
         Item item;
         ICharacterCollection group;
         Character leader;
@@ -107,7 +109,8 @@ namespace Burntime.Remaster.Scenes
                 BurntimeClassic classic = app as BurntimeClassic;
                 IItemCollection right = (classic.InventoryRoom == null) ? (IItemCollection)classic.PickItems : classic.InventoryRoom.Items;
 
-                classic.Game.Constructions.Construct(construction, inventory.ActiveCharacter, right, item, classic.Game);
+                classic.Game.Constructions.Construct(construction, constructionInventory,
+                    right, item, classic.Game);
 
                 inventory.OnSelectPage();
 
@@ -201,7 +204,8 @@ namespace Burntime.Remaster.Scenes
             }
 
             bool needsTechnician = recipes.Length > 0 &&
-                !recipes.Any(recipe => recipe.Classes[(int)inventory.ActiveCharacter.Class]);
+                !group.Any(character => recipes.Any(recipe =>
+                    recipe.Classes[(int)character.Class]));
             if (needsTechnician && !focused.IsSelectable)
             {
                 status = $"@tooltip?{NeedsTechnicianTextIndex}";
@@ -310,10 +314,16 @@ namespace Burntime.Remaster.Scenes
                 : classic.PickItems;
             if (roomItems != null)
             {
+                Character inspector = GetConstructionInspector(selectedItem);
                 var availability = classic.Game.Constructions.EvaluateConstruction(
-                    inventory.ActiveCharacter, roomItems, selectedItem);
+                    inspector, inventory.ActiveCharacter.Items, roomItems, selectedItem);
                 if (availability.Recipe != null && availability.CanBuild)
-                    return new(InputAction.Secondary, "@prompts?20");
+                {
+                    bool loadsWeapon = selectedItem.Type.Loads.Contains(
+                        availability.Recipe.Result);
+                    return new(InputAction.Secondary,
+                        loadsWeapon ? "@prompts?3" : "@prompts?20");
+                }
             }
 
             return new(InputAction.Secondary, "@prompts?23");
@@ -672,11 +682,7 @@ namespace Burntime.Remaster.Scenes
             else //if (inventory.ActiveCharacter.Class == CharClass.Technician)
             {
                 IItemCollection right = (classic.InventoryRoom == null) ? (IItemCollection)classic.PickItems : classic.InventoryRoom.Items;
-                construction = classic.Game.Constructions.GetConstruction(inventory.ActiveCharacter, right, item);
-                RememberConstruction(construction);
-                this.item = item;
-                dialog.SetCharacter(inventory.ActiveCharacter, construction.Dialog);
-                dialog.Show();
+                InspectItem(item, right);
             }
 
             EnsureNonEmptyArea();
@@ -777,11 +783,7 @@ namespace Burntime.Remaster.Scenes
             }
             else //if (inventory.ActiveCharacter.Class == CharClass.Technician)
             {
-                construction = classic.Game.Constructions.GetConstruction(inventory.ActiveCharacter, right, item);
-                RememberConstruction(construction);
-                this.item = item;
-                dialog.SetCharacter(inventory.ActiveCharacter, construction.Dialog);
-                dialog.Show();
+                InspectItem(item, right);
             }
 
             EnsureNonEmptyArea();
@@ -793,6 +795,26 @@ namespace Burntime.Remaster.Scenes
             text.AddArgument("|P", production.Produce.Title);
             dialog.SetCharacter(inventory.ActiveCharacter,
                 Conversation.Simple(text, 0));
+            dialog.Show();
+        }
+
+        Character GetConstructionInspector(Item mainItem)
+        {
+            ClassicGame game = (ClassicGame)app.GameState;
+            return game.Constructions.SelectInspector(game, inventory.ActiveCharacter,
+                group, mainItem);
+        }
+
+        void InspectItem(Item inspectedItem, IItemCollection roomItems)
+        {
+            ClassicGame game = (ClassicGame)app.GameState;
+            constructionCharacter = GetConstructionInspector(inspectedItem);
+            constructionInventory = inventory.ActiveCharacter.Items;
+            construction = game.Constructions.GetConstruction(constructionCharacter,
+                constructionInventory, roomItems, inspectedItem);
+            RememberConstruction(construction);
+            item = inspectedItem;
+            dialog.SetCharacter(constructionCharacter, construction.Dialog);
             dialog.Show();
         }
 

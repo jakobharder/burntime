@@ -19,12 +19,24 @@ public sealed class ManualWindow : Container
     const int PageCount = 5;
     const int TabWidth = 56;
     const int TabsLeft = 10;
-    const int TextLinesPerChunk = 4;
     const int TextLineHeight = 11;
-    const int ChunkHeight = TextLinesPerChunk * TextLineHeight;
     const int FooterHeight = 30;
-    const string ImageContinuation = "@image-continuation";
     const string LabelsResource = "manual?s5";
+
+    enum ManualEntryKind
+    {
+        Text,
+        Heading,
+        Tiers,
+        ClassImage,
+        SupplyExample,
+        Goal,
+        ContextItem,
+        Production,
+        Construction
+    }
+
+    sealed record ManualEntry(ManualEntryKind Kind, string Payload, int LineCount);
 
     readonly GuiFont _titleFont;
     readonly GuiFont _textFont;
@@ -41,8 +53,7 @@ public sealed class ManualWindow : Container
     bool _hasRenderMouseOverride;
     int _page;
     int _hoveredPage = -1;
-    readonly int[] _textChunkScroll = new int[PageCount];
-    Vector2 _mousePosition = new(-1, -1);
+    readonly int[] _textScroll = new int[PageCount];
 
     public ManualWindow(Module app, Vector2 hostSize)
         : base(app)
@@ -65,7 +76,7 @@ public sealed class ManualWindow : Container
             ClassicColors.MenuTextHover) { Borders = TextBorders.None };
         _uiText = new TextHelper(app, "manualui");
 
-        _exitButton = CreateButton(_uiText[6], ExitFromButton);
+        _exitButton = CreateButton(_uiText[6], Hide);
         Windows += _exitButton;
         _nextButton = CreateButton(_uiText[7], () => MovePage(1));
         Windows += _nextButton;
@@ -80,12 +91,18 @@ public sealed class ManualWindow : Container
         PositionFooter();
     }
 
-    int ContentHeight => System.Math.Max(ChunkHeight,
+    int ContentHeight => System.Math.Max(TextLineHeight,
         Size.y - 24 - FooterHeight);
-    int FullyVisibleChunkCount => System.Math.Max(1, ContentHeight / ChunkHeight);
-    int RenderedChunkCount => System.Math.Max(1,
-        (ContentHeight + ChunkHeight - 1) / ChunkHeight);
-
+    int VisibleLineCount
+    {
+        get
+        {
+            int fontHeight = System.Math.Max(_titleFont.GetHeight(),
+                _textFont.GetHeight());
+            return System.Math.Max(1,
+                1 + (ContentHeight - 2 - fontHeight) / TextLineHeight);
+        }
+    }
     public void CenterIn(Vector2 hostSize)
     {
         Size = new Vector2(300, hostSize.y);
@@ -101,11 +118,6 @@ public sealed class ManualWindow : Container
             ClassicColors.HudTextHover),
         IsTextOnly = true
     };
-
-    void ExitFromButton()
-    {
-        Hide();
-    }
 
     void PositionFooter()
     {
@@ -123,7 +135,7 @@ public sealed class ManualWindow : Container
     public void Open()
     {
         _page = 0;
-        System.Array.Fill(_textChunkScroll, 0);
+        System.Array.Fill(_textScroll, 0);
         Show();
     }
 
@@ -160,69 +172,37 @@ public sealed class ManualWindow : Container
         }
 
         RenderTextPage(target);
-
-        // _mutedFont.DrawText(target, new Vector2(Size.x / 2, Size.y - 10),
-        //     _uiText[3],
-        //     TextAlignment.Center, VerticalTextAlignment.Top);
     }
 
     void RenderTextPage(RenderTarget target)
     {
         string[] lines = app.ResourceManager.GetStrings($"manual?s{_page}");
-        List<List<string>> chunks = BuildTextChunks(lines);
-        int maximum = System.Math.Max(0, chunks.Count - FullyVisibleChunkCount);
-        _textChunkScroll[_page] = System.Math.Clamp(_textChunkScroll[_page], 0, maximum);
+        List<ManualEntry> entries = BuildEntries(lines);
+        int totalLineCount = entries.Sum(entry => entry.LineCount);
+        int maximum = System.Math.Max(0, totalLineCount - VisibleLineCount);
+        _textScroll[_page] = System.Math.Clamp(_textScroll[_page], 0, maximum);
 
         RenderTarget content = target.GetSubBuffer(new Rect(10, 24,
             Size.x - 20, ContentHeight));
-        for (int row = 0; row < RenderedChunkCount; row++)
+        int line = 0;
+        foreach (ManualEntry entry in entries)
         {
-            int index = _textChunkScroll[_page] + row;
-            if (index >= chunks.Count)
-                break;
-            bool renderSpanningImage = row + 1 < RenderedChunkCount &&
-                index + 1 < chunks.Count;
-            RenderTextChunk(content, chunks[index], row * ChunkHeight + 2,
-                renderSpanningImage);
+            int entryStart = line;
+            int entryEnd = entryStart + entry.LineCount;
+            line = entryEnd;
+            if (entryStart < _textScroll[_page] ||
+                entryEnd > _textScroll[_page] + VisibleLineCount)
+                continue;
+            RenderEntry(content, entry,
+                2 + (entryStart - _textScroll[_page]) * TextLineHeight);
         }
-        RenderScrollBar(target, _textChunkScroll[_page], maximum,
-            ContentHeight, chunks.Count * ChunkHeight);
+        RenderScrollBar(target, _textScroll[_page], maximum,
+            VisibleLineCount, totalLineCount);
     }
 
-    List<List<string>> BuildTextChunks(string[] lines)
+    List<ManualEntry> BuildEntries(string[] lines)
     {
-        var chunks = new List<List<string>>();
-        var current = new List<string>();
-        int currentLineCount = 0;
-        void Flush()
-        {
-            if (current.Count == 0)
-                return;
-            chunks.Add(current);
-            current = new List<string>();
-            currentLineCount = 0;
-        }
-
-        void AddImage(string line, int lineCount)
-        {
-            int remainingLines = TextLinesPerChunk - currentLineCount;
-            if (currentLineCount > 0 && lineCount > remainingLines)
-            {
-                current.Add(line);
-                chunks.Add(current);
-                current = [];
-                currentLineCount = lineCount - remainingLines;
-                for (int i = 0; i < currentLineCount; i++)
-                    current.Add(ImageContinuation);
-                return;
-            }
-
-            current.Add(line);
-            currentLineCount += lineCount;
-            if (currentLineCount == TextLinesPerChunk)
-                Flush();
-        }
-
+        var entries = new List<ManualEntry>();
         bool skipExtendedOnly = false;
         bool useExtendedRules = BurntimeClassic.Instance.Game.Rules == RuleSet.Extended;
         int lastContentLine = lines.Length - 1;
@@ -244,226 +224,149 @@ public sealed class ManualWindow : Container
             if (skipExtendedOnly)
                 continue;
 
-            bool isClassChapter = line is "@mercenary" or "@technician" or "@doctor";
-            if (isClassChapter)
-            {
-                AddImage(line, 2);
-                continue;
-            }
-
-            bool isGoalImage = line == "@flag" || line == "@city";
-            if (isGoalImage)
-            {
-                AddImage(line, 2);
-                continue;
-            }
-
-            if (line.StartsWith("@supply-example|"))
-            {
-                AddImage(line, 3);
-                continue;
-            }
-
-            if (line.StartsWith("@entry|"))
-            {
-                string[] ids = line[7..].Split('|');
-                if (ids.Any(BurntimeClassic.Instance.Game.ItemTypes.Contains))
-                    AddImage(line, 3);
-                continue;
-            }
-
-            if (line.StartsWith("@production|"))
-            {
-                AddImage(line, 3);
-                continue;
-            }
-
-            if (line.StartsWith("@construction|"))
-            {
-                AddImage(line, 3);
-                continue;
-            }
-
-            bool isClass = line.StartsWith("@mercenary|") ||
-                line.StartsWith("@technician|") || line.StartsWith("@doctor|");
-            if (isClass)
-            {
-                if (currentLineCount + 2 > TextLinesPerChunk)
-                    Flush();
-                current.Add(line);
-                currentLineCount += 2;
-                if (currentLineCount == TextLinesPerChunk)
-                    Flush();
-                continue;
-            }
-            if (line.StartsWith("@foods|"))
-            {
-                Flush();
-                chunks.Add(new List<string> { line });
-                continue;
-            }
-            int lineCount = line.StartsWith("#") ? 2 : 1;
-            if (currentLineCount + lineCount > TextLinesPerChunk)
-                Flush();
-            current.Add(line);
-            currentLineCount += lineCount;
-            if (currentLineCount == TextLinesPerChunk)
-                Flush();
+            ManualEntry? entry = ParseEntry(line);
+            if (entry != null)
+                entries.Add(entry);
         }
 
-        Flush();
-        return chunks;
+        return entries;
     }
 
-    void RenderTextChunk(RenderTarget target, List<string> chunk, int y,
-        bool renderSpanningImage)
+    ManualEntry? ParseEntry(string line)
     {
-        if (chunk.Count == 1 && TryRenderClassImage(target, chunk[0], y))
-            return;
-        if (chunk.Count == 1 && TryRenderSupplyExample(target, chunk[0], y))
-            return;
-        if (chunk.Count == 1 && TryRenderGoalLine(target, chunk[0], y))
-            return;
-        if (chunk.Count == 1 && TryRenderFoodLine(target, chunk[0], y))
-            return;
-        if (chunk.Count == 1 && TryRenderTierLine(target, chunk[0], y))
-            return;
-        if (chunk.Count == 1 && TryRenderContextItem(target, chunk[0], y))
-            return;
-        if (chunk.Count == 1 && TryRenderProductionLine(target, chunk[0], y))
-            return;
-        int lineOffset = 0;
-        foreach (string entry in chunk)
+        if (line == "@tiers")
+            return new(ManualEntryKind.Tiers, string.Empty, 1);
+        if (line is "@mercenary" or "@technician" or "@doctor")
+            return new(ManualEntryKind.ClassImage, line,
+                SpriteLineCount(GetClassSpriteId(line)));
+        if (line is "@flag" or "@city")
+            return new(ManualEntryKind.Goal, line, GoalLineCount(line));
+        if (line.StartsWith("@supply-example|"))
+            return new(ManualEntryKind.SupplyExample, line[16..],
+                ItemLineCount([line[16..]]));
+        if (line.StartsWith("@entry|"))
         {
-            if (TryRenderTierLine(target, entry,
-                y + lineOffset * TextLineHeight))
-            {
-                lineOffset++;
-                continue;
-            }
+            string[] ids = line[7..].Split('|');
+            if (!ids.Any(BurntimeClassic.Instance.Game.ItemTypes.Contains))
+                return null;
+            return new(ManualEntryKind.ContextItem, line[7..], ItemLineCount(ids));
+        }
+        if (line.StartsWith("@production|"))
+        {
+            string[] ids = line[12..].Split('|');
+            return new(ManualEntryKind.Production, line[12..],
+                ItemLineCount(ids.Take(1)));
+        }
+        if (line.StartsWith("@construction|"))
+            return new(ManualEntryKind.Construction, line[14..],
+                ConstructionLineCount(line[14..]));
+        if (line.StartsWith("#"))
+            return new(ManualEntryKind.Heading, line[1..], 2);
+        return new(ManualEntryKind.Text, line, 1);
+    }
 
-            if (entry == ImageContinuation)
-            {
-                lineOffset++;
-                continue;
-            }
+    int ItemLineCount(IEnumerable<string> ids)
+    {
+        ClassicGame game = BurntimeClassic.Instance.Game;
+        int height = ids.Where(game.ItemTypes.Contains)
+            .Select(id => game.ItemTypes[id].Sprite)
+            .Where(sprite => !string.IsNullOrEmpty(sprite))
+            .Select(sprite => app.ResourceManager.GetImage(sprite).Height)
+            .DefaultIfEmpty(3 * TextLineHeight)
+            .Max();
+        return PixelLineCount(System.Math.Max(3 * TextLineHeight, height));
+    }
 
-            int imageLineCount = GetImageLineCount(entry);
-            if (imageLineCount > 0 &&
-                lineOffset + imageLineCount > TextLinesPerChunk &&
-                !renderSpanningImage)
-            {
-                lineOffset += imageLineCount;
-                continue;
-            }
+    int GoalLineCount(string source)
+    {
+        if (source == "@city")
+        {
+            _goalCity ??= app.ResourceManager.GetImage("gfx/ui/manual_city.png");
+            return PixelLineCount(_goalCity.Height);
+        }
 
-            if (TryRenderSupplyExample(target, entry,
-                y + lineOffset * TextLineHeight))
-            {
-                lineOffset += imageLineCount;
-                continue;
-            }
+        _goalFlag ??= BurntimeClassic.Instance.Game.World.ActivePlayerObj.Flag.Object.Clone();
+        int cropTop = System.Math.Max(0,
+            (int)System.MathF.Round(_goalFlag.Height / 36f));
+        int cropBottom = System.Math.Max(0,
+            (int)System.MathF.Round(_goalFlag.Height * 8f / 36f));
+        return PixelLineCount(_goalFlag.Height - cropTop - cropBottom);
+    }
 
-            if (TryRenderContextItem(target, entry,
-                y + lineOffset * TextLineHeight))
-            {
-                lineOffset += imageLineCount;
-                continue;
-            }
+    int SpriteLineCount(string spriteId) => PixelLineCount(
+        app.ResourceManager.GetImage(spriteId).Height);
 
-            if (TryRenderProductionLine(target, entry,
-                y + lineOffset * TextLineHeight))
-            {
-                lineOffset += imageLineCount;
-                continue;
-            }
+    int ConstructionLineCount(string resultId)
+    {
+        ClassicGame game = BurntimeClassic.Instance.Game;
+        Constructions.ConstructionInfo? recipe = game.Constructions.GetRecipes(game)
+            .FirstOrDefault(candidate => candidate.Result == resultId);
+        IEnumerable<string> ids = recipe == null
+            ? [resultId]
+            : recipe.Items.Append(resultId);
+        return ItemLineCount(ids);
+    }
 
-            if (TryRenderConstructionLine(target, entry,
-                y + lineOffset * TextLineHeight))
-            {
-                lineOffset += imageLineCount;
-                continue;
-            }
+    static int PixelLineCount(int height) => System.Math.Max(1,
+        (height + TextLineHeight - 1) / TextLineHeight);
 
-            if (TryRenderClassImage(target, entry,
-                y + lineOffset * TextLineHeight))
-            {
-                lineOffset += 2;
-                continue;
-            }
+    static string GetClassSpriteId(string source) => source switch
+    {
+        var value when value.StartsWith("@technician") => "syssze.raw?48",
+        var value when value.StartsWith("@doctor") => "syssze.raw?16",
+        _ => "syssze.raw?32"
+    };
 
-            if (TryRenderGoalLine(target, entry,
-                y + lineOffset * TextLineHeight))
-            {
-                lineOffset += 2;
-                continue;
-            }
-
-            if (TryRenderClassLine(target, entry,
-                y + lineOffset * TextLineHeight))
-            {
-                lineOffset += 2;
-                continue;
-            }
-
-            bool header = entry.StartsWith("#");
-            string line = header ? entry[1..] : entry;
-            if (header)
-            {
-                int headingHeight = 2 * TextLineHeight;
-                int headingOffset = (headingHeight - _titleFont.GetHeight()) / 2;
-                _titleFont.DrawText(target,
-                    new Vector2(6, y + lineOffset * TextLineHeight + headingOffset),
-                    line, TextAlignment.Left, VerticalTextAlignment.Top);
-                lineOffset += 2;
-            }
-            else
-            {
-                _textFont.DrawText(target,
-                    new Vector2(6, y + lineOffset * TextLineHeight), line,
+    void RenderEntry(RenderTarget target, ManualEntry entry, int y)
+    {
+        switch (entry.Kind)
+        {
+            case ManualEntryKind.Text:
+                _textFont.DrawText(target, new Vector2(6, y), entry.Payload,
                     TextAlignment.Left, VerticalTextAlignment.Top);
-                lineOffset++;
-            }
+                break;
+            case ManualEntryKind.Heading:
+                int headingOffset = (2 * TextLineHeight - _titleFont.GetHeight()) / 2;
+                _titleFont.DrawText(target, new Vector2(6, y + headingOffset),
+                    entry.Payload, TextAlignment.Left, VerticalTextAlignment.Top);
+                break;
+            case ManualEntryKind.Tiers:
+                RenderTierLine(target, y);
+                break;
+            case ManualEntryKind.ClassImage:
+                RenderClassImage(target, entry.Payload, y);
+                break;
+            case ManualEntryKind.SupplyExample:
+                RenderSupplyExample(target, entry.Payload, y);
+                break;
+            case ManualEntryKind.Goal:
+                RenderGoalLine(target, entry.Payload, entry.LineCount, y);
+                break;
+            case ManualEntryKind.ContextItem:
+                RenderContextItem(target, entry.Payload.Split('|'), y);
+                break;
+            case ManualEntryKind.Production:
+                RenderProductionLine(target, entry.Payload.Split('|'), y);
+                break;
+            case ManualEntryKind.Construction:
+                RenderConstructionLine(target, entry.Payload, y);
+                break;
         }
     }
 
-    static int GetImageLineCount(string line)
+    void RenderClassImage(RenderTarget target, string source, int y)
     {
-        if (line.StartsWith("@supply-example|") || line.StartsWith("@entry|") ||
-            line.StartsWith("@production|") || line.StartsWith("@construction|"))
-            return 3;
-        return line is "@flag" or "@city" or "@mercenary" or "@technician" or
-            "@doctor" ? 2 : 0;
-    }
-
-    bool TryRenderClassImage(RenderTarget target, string line, int y)
-    {
-        string spriteId = line switch
-        {
-            "@technician" => "syssze.raw?48",
-            "@doctor" => "syssze.raw?16",
-            "@mercenary" => "syssze.raw?32",
-            _ => string.Empty
-        };
-        if (spriteId.Length == 0)
-            return false;
-
+        string spriteId = GetClassSpriteId(source);
         ISprite sprite = app.ResourceManager.GetImage(spriteId);
         target.DrawSprite(new Vector2((Size.x - 20 - sprite.Width) / 2, y),
             sprite);
-        return true;
     }
 
-    bool TryRenderSupplyExample(RenderTarget target, string line, int y)
+    void RenderSupplyExample(RenderTarget target, string id, int y)
     {
-        const string prefix = "@supply-example|";
-        if (!line.StartsWith(prefix))
-            return false;
-
-        string id = line[prefix.Length..];
         ClassicGame game = BurntimeClassic.Instance.Game;
         if (!game.ItemTypes.Contains(id))
-            return true;
+            return;
 
         ItemType item = game.ItemTypes[id];
         string[] labels = app.ResourceManager.GetStrings(LabelsResource);
@@ -491,12 +394,11 @@ public sealed class ManualWindow : Container
             TextAlignment.Left, VerticalTextAlignment.Top);
         _textFont.DrawText(target, new Vector2(x + sprite.Width + 3, y + 15), description,
             TextAlignment.Left, VerticalTextAlignment.Top);
-        return true;
     }
 
-    bool TryRenderGoalLine(RenderTarget target, string line, int y)
+    void RenderGoalLine(RenderTarget target, string source, int lineCount, int y)
     {
-        if (line == "@flag")
+        if (source == "@flag")
         {
             _goalFlag ??= BurntimeClassic.Instance.Game.World.ActivePlayerObj.Flag.Object.Clone();
             int cropLeft = System.Math.Max(0,
@@ -510,22 +412,18 @@ public sealed class ManualWindow : Container
             int width = _goalFlag.Width - cropLeft - cropRight;
             int height = _goalFlag.Height - cropTop - cropBottom;
             int x = (Size.x - 20 - width) / 2;
-            int imageY = y + (2 * TextLineHeight - height) / 2;
+            int imageY = y + (lineCount * TextLineHeight - height) / 2;
             RenderTarget flagTarget = target.GetSubBuffer(
                 new Rect(x, imageY, width, height));
             flagTarget.DrawSprite(new Vector2(-cropLeft, -cropTop),
                 _goalFlag);
-            return true;
+            return;
         }
-
-        if (line != "@city")
-            return false;
 
         _goalCity ??= app.ResourceManager.GetImage("gfx/ui/manual_city.png");
         int cityX = (Size.x - 20 - _goalCity.Width) / 2;
-        int cityY = y + (2 * TextLineHeight - _goalCity.Height) / 2;
+        int cityY = y + (lineCount * TextLineHeight - _goalCity.Height) / 2;
         target.DrawSprite(new Vector2(cityX, cityY), _goalCity);
-        return true;
     }
 
     public override void OnUpdate(float elapsed)
@@ -534,35 +432,8 @@ public sealed class ManualWindow : Container
             _goalFlag?.Update(elapsed);
     }
 
-    bool TryRenderFoodLine(RenderTarget target, string line, int y)
+    void RenderTierLine(RenderTarget target, int y)
     {
-        const string prefix = "@foods|";
-        if (!line.StartsWith(prefix))
-            return false;
-
-        ClassicGame game = BurntimeClassic.Instance.Game;
-        string[] ids = line[prefix.Length..].Split('|');
-        for (int column = 0; column < ids.Length && column < 2; column++)
-        {
-            if (!game.ItemTypes.Contains(ids[column]))
-                continue;
-            ItemType item = game.ItemTypes[ids[column]];
-            int x = 6 + column * 139;
-            target.DrawSprite(new Vector2(x, y), app.ResourceManager.GetImage(item.Sprite));
-            _titleFont.DrawText(target, new Vector2(x + 35, y + 3), item.Title,
-                TextAlignment.Left, VerticalTextAlignment.Top);
-            string[] labels = app.ResourceManager.GetStrings(LabelsResource);
-            _textFont.DrawText(target, new Vector2(x + 35, y + 13),
-                labels[7].Replace("|A", item.FoodValue.ToString()),
-                TextAlignment.Left, VerticalTextAlignment.Top);
-        }
-        return true;
-    }
-
-    bool TryRenderTierLine(RenderTarget target, string line, int y)
-    {
-        if (line != "@tiers")
-            return false;
         int width = BurntimeClassic.Instance.Game.RuleBook.Settings.CombatTierWidth;
         for (int tier = 0; tier < 4; tier++)
         {
@@ -572,16 +443,10 @@ public sealed class ManualWindow : Container
             _textFont.DrawText(target, new Vector2(x, y), $"~d{tier + 1} {range}",
                 TextAlignment.Left, VerticalTextAlignment.Top);
         }
-        return true;
     }
 
-    bool TryRenderContextItem(RenderTarget target, string line, int y)
+    void RenderContextItem(RenderTarget target, string[] ids, int y)
     {
-        const string prefix = "@entry|";
-        if (!line.StartsWith(prefix))
-            return false;
-
-        string[] ids = line[prefix.Length..].Split('|');
         ClassicGame game = BurntimeClassic.Instance.Game;
         if (ids.Length > 1)
         {
@@ -591,15 +456,14 @@ public sealed class ManualWindow : Container
                     RenderCompactContextItem(target, game.ItemTypes[ids[column]],
                         new Vector2(column * 139, y), 139);
             }
-            return true;
+            return;
         }
 
         string id = ids[0];
         if (!game.ItemTypes.Contains(id))
-            return true;
+            return;
         RenderCompactContextItem(target, game.ItemTypes[id],
             new Vector2(0, y), target.Size.x);
-        return true;
     }
 
     void RenderCompactContextItem(RenderTarget target, ItemType item,
@@ -625,8 +489,7 @@ public sealed class ManualWindow : Container
         int blockWidth = sprite.Width + 3 + textWidth;
         position.x += System.Math.Max(0, (availableWidth - blockWidth) / 2);
 
-        string? ignored = null;
-        DrawItem(target, item, position, ref ignored);
+        target.DrawSprite(position, sprite);
 
         Vector2 textPosition = new(position.x + sprite.Width + 3, position.y + 1);
         int availableTextWidth = availableWidth - sprite.Width - 3;
@@ -653,23 +516,19 @@ public sealed class ManualWindow : Container
             TextAlignment.Left, VerticalTextAlignment.Top);
     }
 
-    bool TryRenderProductionLine(RenderTarget target, string line, int y)
+    void RenderProductionLine(RenderTarget target, string[] ids, int y)
     {
-        const string prefix = "@production|";
-        if (!line.StartsWith(prefix))
-            return false;
-        string[] ids = line[prefix.Length..].Split('|');
         if (ids.Length < 2)
-            return true;
+            return;
 
         ClassicGame game = BurntimeClassic.Instance.Game;
         if (!game.ItemTypes.Contains(ids[0]) ||
             !game.ItemTypes.Contains(ids[1]))
-            return true;
+            return;
 
         ItemType tool = game.ItemTypes[ids[0]];
         if (tool.Production is null)
-            return true;
+            return;
 
         int one = tool.Production.GetRate(1, 1).FoodPerDay;
         int maximum = tool.Production.GetRate(
@@ -693,24 +552,18 @@ public sealed class ManualWindow : Container
             TextAlignment.Left, VerticalTextAlignment.Top);
         _textFont.DrawText(target, new Vector2(textX, y + 23), secondLine,
             TextAlignment.Left, VerticalTextAlignment.Top);
-        return true;
     }
 
-    bool TryRenderConstructionLine(RenderTarget target, string line, int y)
+    void RenderConstructionLine(RenderTarget target, string resultId, int y)
     {
-        const string prefix = "@construction|";
-        if (!line.StartsWith(prefix))
-            return false;
-
-        string resultId = line[prefix.Length..];
         ClassicGame game = BurntimeClassic.Instance.Game;
         if (!game.ItemTypes.Contains(resultId))
-            return true;
+            return;
 
         Constructions.ConstructionInfo? recipe = game.Constructions.GetRecipes(game)
             .FirstOrDefault(candidate => candidate.Result == resultId);
         if (recipe is null)
-            return true;
+            return;
 
         List<ISprite> materials = recipe.Items
             .Where(game.ItemTypes.Contains)
@@ -739,32 +592,7 @@ public sealed class ManualWindow : Container
             target.DrawSprite(new Vector2(x, y), materials[i]);
             x += materials[i].Width;
         }
-        return true;
     }
-
-    bool TryRenderClassLine(RenderTarget target, string line, int y)
-    {
-        string spriteId = line switch
-        {
-            var value when value.StartsWith("@mercenary|") => "syssze.raw?32",
-            var value when value.StartsWith("@technician|") => "syssze.raw?48",
-            var value when value.StartsWith("@doctor|") => "syssze.raw?16",
-            _ => string.Empty
-        };
-        if (spriteId.Length == 0)
-            return false;
-
-        int separator = line.IndexOf('|');
-        target.DrawSprite(new Vector2(6, y), app.ResourceManager.GetImage(spriteId));
-        string[] description = line[(separator + 1)..].Split('|');
-        for (int i = 0; i < description.Length; i++)
-            (i == 0 ? _titleFont : _textFont).DrawText(target,
-                new Vector2(44, y + 3 + i * 10),
-                description[i], TextAlignment.Left, VerticalTextAlignment.Top);
-        return true;
-    }
-
-    sealed record ManualItem(ItemType Item, Constructions.ConstructionInfo? Recipe);
 
     (string Statistic, string Detail) GetContextItemText(ItemType item,
         Constructions.ConstructionInfo? recipe)
@@ -784,7 +612,7 @@ public sealed class ManualWindow : Container
         }
         if (item.DamageValues.Length == 0)
             return (GetEquipmentStatistic(item),
-                GetMaterialLine(new ManualItem(item, recipe)));
+                GetMaterialLine(recipe));
 
         ClassicGame game = BurntimeClassic.Instance.Game;
         int tierWidth = game.RuleBook.Settings.CombatTierWidth;
@@ -801,13 +629,13 @@ public sealed class ManualWindow : Container
     }
 
     void RenderScrollBar(RenderTarget target, int offset, int maximum,
-        int visibleUnits = 120, int totalUnits = 0)
+        int visibleLines, int totalLines)
     {
         if (maximum <= 0)
             return;
         int trackHeight = Size.y - FooterHeight - 28;
-        totalUnits = totalUnits > 0 ? totalUnits : visibleUnits + maximum;
-        int thumbHeight = System.Math.Max(10, trackHeight * visibleUnits / totalUnits);
+        int thumbHeight = System.Math.Max(10,
+            trackHeight * visibleLines / totalLines);
         int thumbY = 26 + (trackHeight - thumbHeight) * offset / maximum;
         target.RenderRect(new Vector2(290, 26), new Vector2(2, trackHeight),
             new PixelColor(80, 108, 116, 168));
@@ -815,19 +643,19 @@ public sealed class ManualWindow : Container
             new PixelColor(220, 240, 164, 56));
     }
 
-    string GetMaterialLine(ManualItem entry)
+    string GetMaterialLine(Constructions.ConstructionInfo? recipe)
     {
         string[] text = app.ResourceManager.GetStrings(LabelsResource);
-        if (entry.Recipe is null)
+        if (recipe is null)
             return string.Empty;
 
         ClassicGame game = BurntimeClassic.Instance.Game;
-        string materials = string.Join(" + ", entry.Recipe.Items.Select(id =>
+        string materials = string.Join(" + ", recipe.Items.Select(id =>
             game.ItemTypes[id].Title));
-        bool anyCharacter = entry.Recipe.Classes[(int)CharClass.Boss] &&
-            entry.Recipe.Classes[(int)CharClass.Mercenary] &&
-            entry.Recipe.Classes[(int)CharClass.Technician] &&
-            entry.Recipe.Classes[(int)CharClass.Doctor];
+        bool anyCharacter = recipe.Classes[(int)CharClass.Boss] &&
+            recipe.Classes[(int)CharClass.Mercenary] &&
+            recipe.Classes[(int)CharClass.Technician] &&
+            recipe.Classes[(int)CharClass.Doctor];
         return anyCharacter ? text[6] : text[4].Replace("|M", materials);
     }
 
@@ -880,21 +708,6 @@ public sealed class ManualWindow : Container
         }
 
         return string.Empty;
-    }
-
-    void DrawItem(RenderTarget target, ItemType item, Vector2 position,
-        ref string? hoveredTitle)
-    {
-        if (string.IsNullOrEmpty(item.Sprite))
-            return;
-
-        ISprite sprite = app.ResourceManager.GetImage(item.Sprite);
-        target.DrawSprite(position, sprite);
-        if (_mousePosition.x >= position.x && _mousePosition.x < position.x + 32 &&
-            _mousePosition.y >= position.y && _mousePosition.y < position.y + 32)
-        {
-            hoveredTitle = item.Title;
-        }
     }
 
     public override bool OnInputAction(InputAction action)
@@ -955,7 +768,6 @@ public sealed class ManualWindow : Container
 
     public override bool OnMouseMove(Vector2 position)
     {
-        _mousePosition = position;
         _hoveredPage = GetTabAt(position);
         return true;
     }
@@ -982,10 +794,6 @@ public sealed class ManualWindow : Container
         return (position.x - TabsLeft) / TabWidth;
     }
 
-    void MoveTextScroll(int direction)
-    {
-        if (_page < _textChunkScroll.Length)
-            _textChunkScroll[_page] = System.Math.Max(0,
-                _textChunkScroll[_page] + direction);
-    }
+    void MoveTextScroll(int direction) =>
+        _textScroll[_page] = System.Math.Max(0, _textScroll[_page] + direction);
 }

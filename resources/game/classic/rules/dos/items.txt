@@ -89,10 +89,12 @@ burngfx=13
 damage=0 6 14 15 0 10 17 20 5 13 19 25 8 16 25 40
 empty=item_unloaded_rifle
 ammo=6
+load_name=@tooltip?85
 
 [item_unloaded_rifle]
 class=weapon nodrop
 burngfx=14
+loads=item_loaded_rifle
 
 [item_mine]
 class=special rare
@@ -189,6 +191,7 @@ burngfx=37
 [item_ammunition]
 class=weapon
 burngfx=38
+loads=item_loaded_rifle
 
 [item_gas_mask]
 class=protection special rare

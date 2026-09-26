@@ -121,6 +121,8 @@ namespace Burntime.Remaster.Logic.Data
                 type.Full = section.GetString("full");
                 type.Empty = section.GetString("empty");
                 type.AmmoValue = section.GetInt("ammo");
+                type.Loads = section.GetStrings("loads");
+                type.LoadName = section.GetString("load_name");
                 type.DefenseValue = section.GetInt("defense");
                 type.Fluff = section.Get("fluff");
                 type.TraderWorldGroup = section.GetString("trader_world_group");

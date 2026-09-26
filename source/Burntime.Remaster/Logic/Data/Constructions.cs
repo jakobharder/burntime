@@ -99,6 +99,21 @@ namespace Burntime.Remaster.Logic.Interaction
         public IEnumerable<ConstructionInfo> GetRecipes(ClassicGame game) =>
             recipes.Where(recipe => IsAvailable(game, recipe));
 
+        public Character SelectInspector(ClassicGame game, Character current,
+            IEnumerable<Character> candidates, Item mainItem)
+        {
+            if (!constructions.TryGetValue(mainItem.ID, out List<ConstructionInfo>? matching))
+                return current;
+
+            bool CanInspect(Character character) => matching.Any(recipe =>
+                IsAvailable(game, recipe) && recipe.Classes[(int)character.Class]);
+
+            if (CanInspect(current))
+                return current;
+
+            return candidates.FirstOrDefault(CanInspect) ?? current;
+        }
+
         static bool IsAvailable(ClassicGame game, ConstructionInfo recipe) =>
             recipe.RequiredFunction == ItemFunction.None ||
             game.ItemTypes.Contains(recipe.Result) &&
@@ -172,8 +187,14 @@ namespace Burntime.Remaster.Logic.Interaction
         public ConstructionAvailability EvaluateConstruction(Character technician,
             IItemCollection roomItems, Item mainItem)
         {
+            return EvaluateConstruction(technician, technician.Items, roomItems, mainItem);
+        }
+
+        public ConstructionAvailability EvaluateConstruction(Character technician,
+            IItemCollection inventoryItems, IItemCollection roomItems, Item mainItem)
+        {
             ClassicGame game = (ClassicGame)technician.Container.Root;
-            ConstructionInfo? recipe = FindConstruction(game, technician.Items, roomItems,
+            ConstructionInfo? recipe = FindConstruction(game, inventoryItems, roomItems,
                 mainItem.Type, technician.Class, out bool canBuild);
             if (recipe == null)
                 return new(null, false, System.Array.Empty<string>());
@@ -181,7 +202,7 @@ namespace Burntime.Remaster.Logic.Interaction
             string[] missing = canBuild
                 ? System.Array.Empty<string>()
                 : recipe.Items.Concat(recipe.Tools)
-                    .Where(item => !technician.Items.Contains(item) &&
+                    .Where(item => !inventoryItems.Contains(item) &&
                         !roomItems.Contains(item))
                     .Distinct()
                     .ToArray();
@@ -190,16 +211,22 @@ namespace Burntime.Remaster.Logic.Interaction
 
         public void Construct(Construction construction, Character technician, IItemCollection roomItems, Item mainItem, ClassicGame world)
         {
-            IItemCollection insert = technician.Items;
-            if (!technician.Items.Contains(mainItem))
+            Construct(construction, technician.Items, roomItems, mainItem, world);
+        }
+
+        public void Construct(Construction construction, IItemCollection inventoryItems,
+            IItemCollection roomItems, Item mainItem, ClassicGame world)
+        {
+            IItemCollection insert = inventoryItems;
+            if (!inventoryItems.Contains(mainItem))
                 insert = roomItems;
 
             for (int i = 0; i < construction.construction.Items.Length; i++)
             {
-                Item item = technician.Items.Find(world.ItemTypes[construction.construction.Items[i]]);
+                Item item = inventoryItems.Find(world.ItemTypes[construction.construction.Items[i]]);
                 if (item != null)
                 {
-                    technician.Items.Remove(item);
+                    inventoryItems.Remove(item);
                 }
                 else
                 {
@@ -213,12 +240,18 @@ namespace Burntime.Remaster.Logic.Interaction
 
         public Construction GetConstruction(Character technician, IItemCollection roomItems, Item mainItem)
         {
+            return GetConstruction(technician, technician.Items, roomItems, mainItem);
+        }
+
+        public Construction GetConstruction(Character technician,
+            IItemCollection inventoryItems, IItemCollection roomItems, Item mainItem)
+        {
             int index = 3; // TODO
 
             bool canBuild = false;
 
             ClassicGame game = (ClassicGame)technician.Container.Root;
-            ConstructionInfo construction = FindConstruction(game, technician.Items, roomItems,
+            ConstructionInfo construction = FindConstruction(game, inventoryItems, roomItems,
                 mainItem.Type, technician.Class, out canBuild);
 
             Conversation conv = new Conversation();

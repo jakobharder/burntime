@@ -210,13 +210,6 @@ public sealed class InputPromptCollection : IEnumerable
     IEnumerator IEnumerable.GetEnumerator() => _entries.GetEnumerator();
 }
 
-enum InputPromptContextRole
-{
-    Primary,
-    Secondary,
-    Extended
-}
-
 public sealed class InputPromptHandle
 {
     readonly InputPromptEntry _entry;
@@ -260,7 +253,7 @@ public sealed class InputPromptController
     {
         bool mouseInput = _app.LastInputMode == InputMode.Mouse;
         List<InputPrompt> scenePrompts = [];
-        Dictionary<InputPromptContextRole, List<ContextCandidate>> candidates = [];
+        Dictionary<InputPromptPosition, List<ContextCandidate>> candidates = [];
 
         if (!_scenePrompts.IsSuppressed)
         {
@@ -288,14 +281,14 @@ public sealed class InputPromptController
                 inputRoot != _scene);
 
         List<InputPromptContextGroup> contextGroups = [];
-        bool hasExtended = candidates.ContainsKey(InputPromptContextRole.Extended);
+        bool hasExtended = candidates.ContainsKey(InputPromptPosition.Extended);
         // Navigation extends the secondary side of the row, while ordinary
         // context rows read primary then secondary from left to right.
-        InputPromptContextRole[] roleOrder = hasExtended
-            ? [InputPromptContextRole.Extended, InputPromptContextRole.Secondary,
-                InputPromptContextRole.Primary]
-            : [InputPromptContextRole.Primary, InputPromptContextRole.Secondary];
-        foreach (InputPromptContextRole role in roleOrder)
+        InputPromptPosition[] roleOrder = hasExtended
+            ? [InputPromptPosition.Extended, InputPromptPosition.Secondary,
+                InputPromptPosition.Primary]
+            : [InputPromptPosition.Primary, InputPromptPosition.Secondary];
+        foreach (InputPromptPosition role in roleOrder)
         {
             if (!candidates.TryGetValue(role,
                 out List<ContextCandidate>? slotCandidates))
@@ -329,7 +322,7 @@ public sealed class InputPromptController
         bool IsProjectedScene);
 
     void AddWindowContextCandidates(Window window,
-        Dictionary<InputPromptContextRole, List<ContextCandidate>> candidates,
+        Dictionary<InputPromptPosition, List<ContextCandidate>> candidates,
         bool mouseInput, bool includeWindowPrompts = true)
     {
         if (!window.IsVisible || window.Prompts.IsSuppressed)
@@ -385,7 +378,7 @@ public sealed class InputPromptController
 
     static void AddEntryContextCandidates(InputPromptEntry entry,
         InputPrompt? activePrompt,
-        Dictionary<InputPromptContextRole, List<ContextCandidate>> candidates,
+        Dictionary<InputPromptPosition, List<ContextCandidate>> candidates,
         bool ownerIsActive, bool mouseInput, bool isProjectedScene)
     {
         bool activeIsCandidate = false;
@@ -398,7 +391,7 @@ public sealed class InputPromptController
             if (mouseInput && !mouseControl.HasValue)
                 continue;
 
-            InputPromptContextRole role = mouseInput
+            InputPromptPosition role = mouseInput
                 ? RoleForMouse(mouseControl!.Value)
                 : ContextRole(entry, prompt);
             AddCandidate(candidates, role, new ContextCandidate(prompt,
@@ -413,7 +406,7 @@ public sealed class InputPromptController
         if (mouseInput && !activeMouseControl.HasValue)
             return;
 
-        InputPromptContextRole activeRole = mouseInput
+        InputPromptPosition activeRole = mouseInput
             ? RoleForMouse(activeMouseControl!.Value)
             : ContextRole(entry, active);
         AddCandidate(candidates, activeRole,
@@ -421,8 +414,8 @@ public sealed class InputPromptController
     }
 
     static void AddCandidate(
-        Dictionary<InputPromptContextRole, List<ContextCandidate>> candidates,
-        InputPromptContextRole role, ContextCandidate candidate)
+        Dictionary<InputPromptPosition, List<ContextCandidate>> candidates,
+        InputPromptPosition role, ContextCandidate candidate)
     {
         if (!candidates.TryGetValue(role,
             out List<ContextCandidate>? slotCandidates))
@@ -432,18 +425,13 @@ public sealed class InputPromptController
         slotCandidates.Add(candidate);
     }
 
-    static InputPromptContextRole ContextRole(InputPromptEntry entry,
-        InputPrompt prompt) => entry.ContextPosition switch
-        {
-            InputPromptPosition.Primary => InputPromptContextRole.Primary,
-            InputPromptPosition.Secondary => InputPromptContextRole.Secondary,
-            InputPromptPosition.Extended => InputPromptContextRole.Extended,
-            _ => prompt.Pattern != InputPattern.None
-                ? InputPromptContextRole.Extended
+    static InputPromptPosition ContextRole(InputPromptEntry entry,
+        InputPrompt prompt) => entry.ContextPosition ??
+            (prompt.Pattern != InputPattern.None
+                ? InputPromptPosition.Extended
                 : prompt.Action == InputAction.Primary
-                    ? InputPromptContextRole.Primary
-                    : InputPromptContextRole.Secondary
-        };
+                    ? InputPromptPosition.Primary
+                    : InputPromptPosition.Secondary);
 
     static MouseButton? ResolveMouseControl(InputPrompt prompt)
     {
@@ -451,10 +439,10 @@ public sealed class InputPromptController
         return control == MouseButton.None ? null : control;
     }
 
-    static InputPromptContextRole RoleForMouse(MouseButton button) => button switch
+    static InputPromptPosition RoleForMouse(MouseButton button) => button switch
     {
-        MouseButton.Left => InputPromptContextRole.Primary,
-        MouseButton.Right => InputPromptContextRole.Secondary,
-        _ => InputPromptContextRole.Extended
+        MouseButton.Left => InputPromptPosition.Primary,
+        MouseButton.Right => InputPromptPosition.Secondary,
+        _ => InputPromptPosition.Extended
     };
 }

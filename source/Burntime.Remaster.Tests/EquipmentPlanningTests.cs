@@ -28,6 +28,8 @@ static class EquipmentPlanningTests
                 Equal(level + 2, policy.RecoveryWaterDays, "harder AI plans recovery earlier");
                 Equal(new[] { 1f, 1.2f, 1.5f }[level], policy.TradeBenefit,
                     "difficulty AI trade benefit");
+                Equal(new[] { 0, 1, 3 }[level], policy.CombatLootLimit,
+                    "difficulty combat loot limit");
                 var manager = new Burntime.Framework.States.StateManager(null!);
                 var camp = manager.Create(() => new Burntime.Remaster.Logic.Location());
                 camp.Rooms = manager.CreateLinkList<Burntime.Remaster.Logic.Room>();
@@ -63,6 +65,24 @@ static class EquipmentPlanningTests
                 return 0;
             });
         }
+        yield return Int("combat loot keeps only the strongest gear up to the limit", 0, () =>
+        {
+            var manager = new Burntime.Framework.States.StateManager(null!);
+            Item food = TestItem(manager, "food", food: 9, trade: 100);
+            Item knife = TestItem(manager, "knife", damage: 10, trade: 5);
+            Item axe = TestItem(manager, "axe", damage: 20, trade: 10);
+            Item armour = TestItem(manager, "armour", defense: 25, trade: 20);
+
+            Item[] selected = Burntime.Remaster.AI.CombatResolver.SelectDefenderLoot(
+                new[] { food, knife, armour, axe }, 2).ToArray();
+            Equal(2, selected.Length, "normalised cap");
+            Equal(axe, selected[0], "strongest weapon first");
+            Equal(knife, selected[1], "weapons precede lower-priority armour");
+            Equal(false, selected.Contains(food), "supplies are not combat gear");
+            Equal(0, Burntime.Remaster.AI.CombatResolver.SelectDefenderLoot(
+                new[] { knife }, 0).Count(), "easy takes no gear");
+            return 0;
+        });
         yield return Int("physical firearm transfer preserves shots and melee", 0, () =>
         {
             var manager = new Burntime.Framework.States.StateManager(null!);

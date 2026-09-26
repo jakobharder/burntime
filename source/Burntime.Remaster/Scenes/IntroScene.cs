@@ -83,8 +83,7 @@ namespace Burntime.Remaster.Scenes
 
             view = new MapView(null, app);
             view.Enabled = false;
-            view.Position = new Vector2(16, 0);
-            view.Size = new Vector2(288, 160);
+            view.SetViewport(new Vector2(16, 0), new Vector2(288, 160));
             Windows += view;
 
             image = new Image(app);

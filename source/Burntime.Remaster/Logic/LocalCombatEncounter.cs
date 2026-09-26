@@ -20,6 +20,7 @@ internal sealed class LocalCombatEncounter
         internal readonly Character Defender;
         internal readonly float Range;
         internal float Elapsed;
+        internal bool DefenderAttacked;
 
         internal AttackOrder(Character attacker, Character defender, float range)
         {
@@ -102,6 +103,24 @@ internal sealed class LocalCombatEncounter
                 continue;
             }
 
+            // A defender with the longer-reaching weapon intercepts while the
+            // attacker closes. This is its one response for the exchange, not
+            // an additional attack before the normal retaliation.
+            float defenderRange = order.Defender.AttackRange;
+            if (!order.DefenderAttacked &&
+                WeaponReachRules.FromRange(defenderRange) >
+                    WeaponReachRules.FromRange(order.Range) &&
+                order.Defender.IsInAttackRange(attacker, defenderRange))
+            {
+                order.DefenderAttacked =
+                    order.Defender.ResolveSingleAttack(attacker);
+                if (!CanContinue(attacker, order.Defender))
+                {
+                    RemoveAttack(order);
+                    continue;
+                }
+            }
+
             if (!attacker.IsInAttackRange(order.Defender, order.Range))
             {
                 order.Elapsed += elapsed;
@@ -115,8 +134,16 @@ internal sealed class LocalCombatEncounter
             if (attacked && !order.Defender.IsDead)
             {
                 completedAttackers.Add(attacker);
-                attacker.HoldForCombat();
-                EnqueueRetaliation(attacker);
+                if (order.DefenderAttacked)
+                {
+                    attacker.ClearCombatApproach(order.Defender);
+                    fleeFrom = attacker;
+                }
+                else
+                {
+                    attacker.HoldForCombat();
+                    EnqueueRetaliation(attacker);
+                }
             }
             else
                 attacker.ClearCombatApproach(order.Defender);

@@ -58,5 +58,37 @@ static class ConstructionFeedbackTests
                 "no missing requirements");
             return 0;
         });
+
+        yield return Int("nearby technician inspects another group member's materials", 0, () =>
+        {
+            ConfigFile config = new();
+            config.Open(System.IO.File.OpenRead(ResourceFile("construction.txt")));
+            Constructions constructions = new(config);
+            StateManager manager = new(null!);
+            ClassicGame game = manager.Create(() => new ClassicGame());
+            manager.Root = game;
+            game.Constructions = constructions;
+
+            HazardCharacter boss = manager.Create(() => new HazardCharacter());
+            boss.Class = CharClass.Boss;
+            boss.Items = manager.Create<ItemList>();
+            HazardCharacter technician = manager.Create(() => new HazardCharacter());
+            technician.Class = CharClass.Technician;
+            technician.Items = manager.Create<ItemList>();
+            Item brokenPump = TestItem(manager, "item_broken_pump");
+            boss.Items.Add(brokenPump);
+            boss.Items.Add(TestItem(manager, "item_rags"));
+            boss.Items.Add(TestItem(manager, "item_hose"));
+            ItemList room = manager.Create<ItemList>();
+
+            Character inspector = constructions.SelectInspector(game, boss,
+                new Character[] { boss, technician }, brokenPump);
+            Equal(technician, inspector, "technician selected without changing item owner");
+            var availability = constructions.EvaluateConstruction(inspector,
+                boss.Items, room, brokenPump);
+            Equal("item_hand_pump", availability.Recipe?.Result, "technician recipe");
+            Equal(true, availability.CanBuild, "owner inventory supplies the materials");
+            return 0;
+        });
     }
 }

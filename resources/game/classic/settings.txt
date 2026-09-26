@@ -50,6 +50,7 @@ options        = menu
 world_map      = view
 left_area      = left_shoulder
 right_area     = right_shoulder
+cycle_target   = right_trigger
 inventory      = dpad_up
 statistics     = dpad_left
 info           = dpad_right

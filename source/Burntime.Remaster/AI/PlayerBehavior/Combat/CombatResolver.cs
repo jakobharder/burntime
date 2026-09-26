@@ -20,6 +20,8 @@ internal static class CombatResolver
         List<Character> originalDefenders = CombatStrength.Defenders(location)
             .ToList();
         List<Character> originalAttackers = attacker.Party.ToList();
+        Dictionary<Character, Item[]> carriedByDefenders = originalDefenders
+            .ToDictionary(character => character, character => character.Items.ToArray());
         Dictionary<Character, Item[]> carriedBeforeCombat = originalAttackers
             .ToDictionary(character => character, character => character.Items.ToArray());
         float initialAttackerStrength = CombatStrength.Attacker(attacker);
@@ -53,6 +55,14 @@ internal static class CombatResolver
         DefenseIntelligence.UpdateKnowledgeFromEncounter(state, location, survivingDefenders);
         if (defendersDefeated)
         {
+            Item[] defenderDrops = originalDefenders
+                .Where(character => character.IsDead)
+                .SelectMany(character => carriedByDefenders[character])
+                .Where(item => location.Items.Any(ground => ground == item))
+                .ToArray();
+            state.CollectCombatLoot(SelectDefenderLoot(defenderDrops,
+                AiPolicy.ForDifficulty(state.Difficulty).CombatLootLimit));
+
             state.LastChanceAttackTarget = null;
             Character? guard = attacker.Party
                 .Where(character => character != attacker.Character && !character.IsDead)
@@ -116,5 +126,13 @@ internal static class CombatResolver
             }
         }
     }
+
+    internal static IEnumerable<Item> SelectDefenderLoot(IEnumerable<Item> dropped, int limit) =>
+        dropped
+            .Where(item => EquipmentNeeds.IsEquipment(item.Type))
+            .OrderByDescending(item => item.Type.WeaponPriority)
+            .ThenByDescending(item => item.DefenseValue)
+            .ThenByDescending(item => item.TradeValue)
+            .Take(System.Math.Max(0, limit));
 
 }

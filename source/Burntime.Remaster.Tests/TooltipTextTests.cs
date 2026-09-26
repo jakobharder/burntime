@@ -68,6 +68,19 @@ static class TooltipTextTests
             () => production.Get(75));
         yield return new("active trap", "Active trap",
             () => production.Get(77));
+
+        TextHelper loading = new(resources, "tooltip");
+        loading.AddArgument("{weapons}", "rifle / pistol");
+        yield return new("unloaded firearm", "Load with ammunition",
+            () => loading.Get(83));
+        yield return new("ammunition compatibility",
+            "Loads: rifle / pistol",
+            () => loading.Get(84));
+
+        TextHelper reach = new(resources, "tooltip");
+        reach.AddArgument("{reach}", resources.GetString("tooltip", 90));
+        yield return new("weapon reach", "Reach: Long - strikes first vs. shorter",
+            () => reach.Get(87));
     }
 
     sealed class TestResourceManager : ResourceManagerBase

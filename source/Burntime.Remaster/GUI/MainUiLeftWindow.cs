@@ -114,8 +114,8 @@ namespace Burntime.Remaster
 
         public override void SetMapRenderArea(MapView mapView, Vector2 size)
         {
-            mapView.Position = new Vector2(66, 0);
-            mapView.Size = new Vector2(size.x - 66, size.y);
+            mapView.SetViewport(new Vector2(66, 0),
+                new Vector2(size.x - 66, size.y));
         }
 
         public override void OnRender(RenderTarget Target)

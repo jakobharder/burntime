@@ -39,6 +39,18 @@ static class GameRulesTests
                 var config = new Burntime.Platform.IO.ConfigFile();
                 config.Open(System.IO.File.OpenRead(ResourceFile(
                     new Burntime.Platform.Resource.ResourceID(GameDefinitions.Get(rule).ItemsPath).File)));
+                Equal("item_loaded_rifle",
+                    string.Join(' ', config["item_unloaded_rifle"].GetStrings("loads")),
+                    "unloaded rifle declares its loading result");
+                Equal(rule == RuleSet.Extended
+                        ? "item_loaded_rifle item_loaded_pistol"
+                        : "item_loaded_rifle",
+                    string.Join(' ', config["item_ammunition"].GetStrings("loads")),
+                    "ammunition declares compatible firearms");
+                if (rule == RuleSet.Extended)
+                    Equal("item_loaded_pistol",
+                        string.Join(' ', config["item_unloaded_pistol"].GetStrings("loads")),
+                        "unloaded pistol declares its loading result");
                 var manager = new Burntime.Framework.States.StateManager(null!);
                 var payment = manager.Create<ItemList>();
                 var meat = TestItem(manager, "item_meat", food: 9,

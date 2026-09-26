@@ -32,7 +32,9 @@ public enum InputAction
     Inventory,
     LocationInfo,
     WorldMap,
-    ShowEntrances
+    ShowEntrances,
+    PreviousTarget,
+    NextTarget
 }
 
 public static class InputActionDirections

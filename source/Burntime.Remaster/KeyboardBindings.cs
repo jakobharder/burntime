@@ -91,6 +91,11 @@ public sealed class KeyboardBindings : IKeyboardBindings
 
     public InputAction GetAction(Key key)
     {
+        if (key.IsVirtual && key.VirtualKey == SystemKey.Tab)
+            return (key.Modifier & ModifierKeys.Shift) != 0
+                ? InputAction.PreviousTarget
+                : InputAction.NextTarget;
+
         if (key.IsVirtual && (key.Modifier & ModifierKeys.Shift) != 0)
         {
             if (key.VirtualKey == SystemKey.Left)
@@ -127,6 +132,10 @@ public sealed class KeyboardBindings : IKeyboardBindings
             result.Add(new Key(SystemKey.Left, ModifierKeys.Shift));
         else if (action == InputAction.RightArea)
             result.Add(new Key(SystemKey.Right, ModifierKeys.Shift));
+        else if (action == InputAction.PreviousTarget)
+            result.Add(new Key(SystemKey.Tab, ModifierKeys.Shift));
+        else if (action == InputAction.NextTarget)
+            result.Add(new Key(SystemKey.Tab));
         return result;
     }
 

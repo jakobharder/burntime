@@ -378,8 +378,8 @@ HIGHSCORE}
 }
 }
 }
-Exper.: |A%}
-Condit.: |B%}
+XP: |A%}
+HP: |B%}
 LOAD}
 SAVE}
 DELETE}

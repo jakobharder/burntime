@@ -107,6 +107,9 @@ namespace Burntime.Remaster.Logic
         public int[] DamageValues => data.Object.DamageValues;
         public int DefenseValue => data.Object.DefenseValue;
         public int AmmoValue => data.Object.AmmoValue;
+        public string[] Loads => data.Object.Loads;
+        public string LoadName => string.IsNullOrEmpty(data.Object.LoadName)
+            ? Title : ResourceManager.GetString(data.Object.LoadName);
         public ItemFunction Functions => data.Object.Functions;
         public string TraderWorldGroup => data.Object.TraderWorldGroup;
         public int TraderWorldLimit => data.Object.TraderWorldLimit;

@@ -68,6 +68,15 @@ public sealed class TooltipWindow : Window
         bool hasFooter = hasStatus || hasPrompts;
 
         contentWidth = System.Math.Max(contentWidth, statusWidth);
+        if (hasPrompts)
+        {
+            int promptWidth = MeasurePrompt(Prompt);
+            int secondaryPromptWidth = MeasurePrompt(SecondaryPrompt);
+            int footerWidth = promptWidth + secondaryPromptWidth;
+            if (promptWidth > 0 && secondaryPromptWidth > 0)
+                footerWidth += 8;
+            contentWidth = System.Math.Max(contentWidth, footerWidth);
+        }
 
         int sectionCount = (hasHeader ? 1 : 0) + (hasText ? 1 : 0) +
             (hasFooter ? 1 : 0);
@@ -147,6 +156,15 @@ public sealed class TooltipWindow : Window
 
     static int MeasureWidth(GuiFont font, string text) =>
         text.Length > 0 ? font.GetWidth(text) : 0;
+
+    int MeasurePrompt(InputPrompt? prompt)
+    {
+        if (prompt is not { IsEmpty: false } value)
+            return 0;
+        InputControlLabel control = InputControlDisplay.Resolve(app,
+            app.LastInputMode, value);
+        return control.IsEmpty ? 0 : _controlRenderer.Measure(control, value.Label);
+    }
 
     void MoveInsideScreen()
     {

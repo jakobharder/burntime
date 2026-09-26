@@ -441,6 +441,14 @@ public class MapView : Window
         Scroll?.Invoke(this, new MapScrollArgs(_position));
     }
 
+    public void SetViewport(Vector2 position, Vector2 size)
+    {
+        Position = position;
+        Size = size;
+        if (ConstrainPosition())
+            Scroll?.Invoke(this, new MapScrollArgs(_position));
+    }
+
     public bool FollowWithinMiddleThird(Vector2 mapPosition, float elapsed)
     {
         if (map is null)

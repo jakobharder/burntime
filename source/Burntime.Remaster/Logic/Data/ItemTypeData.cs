@@ -44,6 +44,8 @@ namespace Burntime.Remaster.Logic.Data
         public int[] DamageValues = Array.Empty<int>();
         public int DefenseValue;
         public int AmmoValue;
+        public string[] Loads = Array.Empty<string>();
+        public string LoadName = "";
         public ItemFunction Functions;
         public string TraderWorldGroup = "";
         public int TraderWorldLimit;

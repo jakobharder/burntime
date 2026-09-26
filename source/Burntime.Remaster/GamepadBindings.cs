@@ -21,6 +21,7 @@ public sealed class GamepadBindings : IGamepadBindings
         ("world_map", "view", InputAction.WorldMap),
         ("left_area", "left_shoulder", InputAction.LeftArea),
         ("right_area", "right_shoulder", InputAction.RightArea),
+        ("cycle_target", "right_trigger", InputAction.NextTarget),
         ("inventory", "dpad_up", InputAction.Inventory),
         ("statistics", "dpad_left", InputAction.Statistics),
         ("info", "dpad_right", InputAction.LocationInfo),

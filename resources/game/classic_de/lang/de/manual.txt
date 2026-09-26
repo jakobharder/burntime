@@ -12,7 +12,7 @@ Rattenfalle, um Nahrung und Handelsware zu sammeln.
 }#
 #TÄGLICHER BEDARF
 Jeder braucht täglich 1 Nahrung und 1 Wasser.
-Ohne Nahrung oder Wasser gehen 25 Gesundheit verloren.
+Ohne Nahrung oder Wasser verliert man 25 Lebenspunkte.
 Sichere deine Versorgung mit eigenen Lagern.
 
 #WASSER
@@ -44,9 +44,10 @@ Kombiniere die benötigten Materialien,
 um den Gegenstand zu bauen.
 @construction|item_rat_trap
 #ARZT
-Über 70 Gesundheit erholt sich eine Person
-um 2 pro Tag.
-Mit einem Arzt sind es ab 50 Gesundheit 4 pro Tag.
+Wer mehr als 70 Lebenspunkte hat,
+regeneriert 2 pro Tag.
+Mit einem Arzt sind es ab 50
+Lebenspunkten 4 pro Tag.
 @doctor
 #SÖLDNER
 Die EP-Stufe von 1 bis 4 bestimmt den Waffenschaden.
@@ -68,8 +69,10 @@ Es kann immer nur eine Pumpe aktiv sein.
 @entry|item_industrial_pump
 }#
 #WAFFEN
-Waffen erhöhen den Schaden deiner Gefolgsleute.
-Mit mehr EP richten alle Waffen mehr Schaden an.
+Rüste deine Gefolgsleute mit Waffen aus,
+um ihren Schaden zu erhöhen. Mit mehr EP
+setzen sie jede Waffe wirkungsvoller ein.
+Wer die größere Reichweite hat, greift zuerst an.
 @entry|item_knife
 #SCHUSSWAFFEN
 Schusswaffen richten hohen Schaden an,

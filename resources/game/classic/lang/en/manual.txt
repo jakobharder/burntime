@@ -11,7 +11,7 @@ build a rat trap for a steady food and trade supply.
 }#
 #DAILY NEEDS
 Each person consumes 1 food and 1 water every day.
-Without either, they lose 25 health.
+Without either, they lose 25 HP.
 Establish camps to secure reliable supplies.
 
 #WATER
@@ -38,8 +38,8 @@ Let a technician inspect materials to discover recipes.
 Combine the required materials to build the item.
 @construction|item_rat_trap
 #DOCTOR
-People recover 2 health per day above 70 health.
-A doctor increases that to 4 per day above 50.
+People recover 2 HP per day above 70 HP.
+A doctor increases that to 4 HP per day above 50 HP.
 @doctor
 #MERCENARY
 XP tiers from 1 to 4 determine weapon damage.
@@ -61,6 +61,7 @@ Only one pump can be active at a time.
 #WEAPONS
 Equip followers with weapons to increase their damage.
 Higher XP makes every weapon more effective.
+Longer-reach weapons strike before shorter ones.
 @entry|item_knife
 #FIREARMS
 Firearms inflict heavy damage but require ammunition.

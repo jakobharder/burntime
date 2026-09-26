@@ -229,6 +229,95 @@ static class CombatResolverTests
             Equal(32f, fighter.AttackRange, "configured weapon range");
             return 0;
         });
+
+        yield return Int("longer reach defender intercepts before a shorter attacker", 0, () =>
+        {
+            var manager = new Burntime.Framework.States.StateManager(null!);
+            var game = manager.Create(() => new ClassicGame());
+            manager.Root = game;
+            game.SetRules(RuleSet.Dos);
+
+            HazardCharacter Fighter(string id, int range, int health)
+            {
+                var fighter = manager.Create(() => new HazardCharacter());
+                fighter.Class = CharClass.Mercenary;
+                fighter.Health = health;
+                fighter.Items = manager.Create<ItemList>();
+                fighter.Path = manager.Create<Burntime.Remaster.PathFinding.SimplePath>();
+                fighter.Items.Add(TestItem(manager, id, damage: 1,
+                    damageValues: new[] { 1 }, attackRange: range));
+                return fighter;
+            }
+
+            HazardCharacter attacker = Fighter("attacker_knife", 15, 1);
+            HazardCharacter defender = Fighter("defender_pitchfork", 28, 100);
+            var encounter = new LocalCombatEncounter(new[] { attacker }, defender);
+
+            encounter.Update(0);
+            Equal(true, attacker.IsDead, "longer reach lands the first strike");
+            Equal(100, defender.Health, "dead attacker cannot answer the intercept");
+            Equal(true, encounter.IsComplete, "intercepted exchange completes");
+            return 0;
+        });
+
+        yield return Int("reach intercept replaces rather than adds retaliation", 0, () =>
+        {
+            var manager = new Burntime.Framework.States.StateManager(null!);
+            var game = manager.Create(() => new ClassicGame());
+            manager.Root = game;
+            game.SetRules(RuleSet.Dos);
+
+            HazardCharacter Fighter(string id, int range)
+            {
+                var fighter = manager.Create(() => new HazardCharacter());
+                fighter.Class = CharClass.Mercenary;
+                fighter.Health = 100;
+                fighter.Items = manager.Create<ItemList>();
+                fighter.Path = manager.Create<Burntime.Remaster.PathFinding.SimplePath>();
+                fighter.Items.Add(TestItem(manager, id, damage: 1,
+                    damageValues: new[] { 1 }, attackRange: range));
+                return fighter;
+            }
+
+            HazardCharacter attacker = Fighter("attacker_knife", 15);
+            HazardCharacter defender = Fighter("defender_pitchfork", 28);
+            var encounter = new LocalCombatEncounter(new[] { attacker }, defender);
+
+            encounter.Update(0);
+            Equal(99, attacker.Health, "defender intercepts exactly once");
+            Equal(99, defender.Health, "surviving attacker answers the intercept");
+            Equal(true, encounter.IsComplete, "no second retaliation is queued");
+            return 0;
+        });
+
+        yield return Int("same reach tier preserves attacker initiative", 0, () =>
+        {
+            var manager = new Burntime.Framework.States.StateManager(null!);
+            var game = manager.Create(() => new ClassicGame());
+            manager.Root = game;
+            game.SetRules(RuleSet.Dos);
+
+            HazardCharacter Fighter(string id, int range, int damage, int health)
+            {
+                var fighter = manager.Create(() => new HazardCharacter());
+                fighter.Class = CharClass.Mercenary;
+                fighter.Health = health;
+                fighter.Items = manager.Create<ItemList>();
+                fighter.Path = manager.Create<Burntime.Remaster.PathFinding.SimplePath>();
+                fighter.Items.Add(TestItem(manager, id, damage: damage,
+                    damageValues: new[] { damage }, attackRange: range));
+                return fighter;
+            }
+
+            HazardCharacter attacker = Fighter("attacker_knife", 15, 1, 100);
+            HazardCharacter defender = Fighter("defender_close", 16, 100, 1);
+            var encounter = new LocalCombatEncounter(new[] { attacker }, defender);
+
+            encounter.Update(0);
+            Equal(true, defender.IsDead, "initiator wins a tied reach tier");
+            Equal(100, attacker.Health, "dead defender cannot retaliate");
+            return 0;
+        });
     }
 
     internal static IEnumerable<Case<int>> LocalCombatCases()

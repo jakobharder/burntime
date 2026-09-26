@@ -37,6 +37,7 @@ firearm_purchase_chance = 10
 recovery_water_days = 2
 trade_benefit = 1.0
 slump_material_grants = 2
+combat_loot_limit = 0
 die_when_trapped = false
 
 [1] ' normal
@@ -71,6 +72,7 @@ firearm_purchase_chance = 50
 recovery_water_days = 3
 trade_benefit = 1.2
 slump_material_grants = 4
+combat_loot_limit = 1
 die_when_trapped = false
 
 [2] ' hard
@@ -105,4 +107,5 @@ firearm_purchase_chance = 100
 recovery_water_days = 4
 trade_benefit = 1.5
 slump_material_grants = 8
+combat_loot_limit = 3
 die_when_trapped = false

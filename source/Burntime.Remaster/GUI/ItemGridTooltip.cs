@@ -27,6 +27,8 @@ internal sealed class ItemGridTooltip
     const int MoreRecipesText = 46;
     const int RemoteIntelText = 79, RestingSustenanceText = 80;
     const int CreatureDeterrentText = 81, MetalDetectionText = 82;
+    const int LoadWithAmmunitionText = 83, LoadsWeaponsText = 84;
+    const int ReachText = 87, ReachNameText = 88;
     readonly Module app;
     readonly Func<Character?> viewer;
     readonly List<Source> sources = [];
@@ -142,6 +144,16 @@ internal sealed class ItemGridTooltip
             lines.Add(text.Get(DamageText));
         }
 
+        if (item.Type.AttackRange > 0)
+        {
+            TextHelper text = new(app, "tooltip");
+            int reachName = ReachNameText +
+                (int)WeaponReachRules.FromRange(item.Type.AttackRange);
+            text.AddArgument("{reach}",
+                app.ResourceManager.GetString("tooltip", reachName));
+            lines.Add(text.Get(ReachText));
+        }
+
         if (item.FoodValue > 0 || item.WaterValue > 0)
         {
             TextHelper text = new(app, "tooltip");
@@ -194,8 +206,30 @@ internal sealed class ItemGridTooltip
         if (item.Type.HasFunction(ItemFunction.MetalDetection))
             lines.Add(app.ResourceManager.GetString("tooltip", MetalDetectionText));
 
+        string[] loadingResults = item.Type.Loads
+            .Where(game.ItemTypes.Contains).Distinct().ToArray();
+        HashSet<string> loadingResultSet = loadingResults.ToHashSet();
+        if (loadingResults.Length > 0)
+        {
+            bool isUnloadedWeapon = loadingResults.Any(result =>
+                game.ItemTypes[result].Empty == item.Type);
+            if (isUnloadedWeapon)
+            {
+                lines.Add(app.ResourceManager.GetString("tooltip",
+                    LoadWithAmmunitionText));
+            }
+            else
+            {
+                TextHelper text = new(app, "tooltip");
+                text.AddArgument("{weapons}", string.Join(" / ", loadingResults
+                    .Select(result => game.ItemTypes[result].LoadName)));
+                lines.Add(text.Get(LoadsWeaponsText));
+            }
+        }
+
         var recipes = game.Constructions.GetRecipes(game).Where(recipe =>
-            recipe.Items.Contains(item.ID) || recipe.Tools.Contains(item.ID))
+            (recipe.Items.Contains(item.ID) || recipe.Tools.Contains(item.ID)) &&
+            !loadingResultSet.Contains(recipe.Result))
             .ToArray();
         var known = recipes.Where(recipe => game.IsConstructionKnown(recipe.Result))
             .GroupBy(recipe => recipe.Result).Select(group => group.First()).ToArray();

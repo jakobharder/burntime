@@ -52,7 +52,7 @@ namespace Burntime.Remaster
         bool followSelectedCharacter;
         Character lastSelectedCharacter;
         bool groupMenuOpen;
-        LocationInteractionMode interactionMode = LocationInteractionMode.Auto;
+        LocationInteractionMode interactionMode = LocationInteractionMode.Talk;
         bool cursorShowsFight;
         bool characterCycleLatched;
         float characterCycleDebounce;
@@ -65,10 +65,8 @@ namespace Burntime.Remaster
             Size = app.Engine.Resolution.Game;
 
             view = new MapView(this, App);
-            view.Position = new Vector2(16, 0);
-            view.Size = new Vector2(Size.x - 32, Size.y - 40);
-            //view.Position = new Vector2(0, 0);
-            //view.Size = new Vector2(Size.x, Size.y - 16);
+            view.SetViewport(new Vector2(16, 0),
+                new Vector2(Size.x - 32, Size.y - 40));
             view.MouseClickEvent += OnMouseClickMap;
             view.Overlays.Add(new Maps.MapViewOverlayDroppedItems(App));
             view.Overlays.Add(charOverlay = new Maps.MapViewOverlayCharacters(App));
@@ -164,9 +162,9 @@ namespace Burntime.Remaster
 
             Size = app.Engine.Resolution.Game;
             manualWindow?.CenterIn(Size);
-            view.Size = new Vector2(Size.x - 32, Size.y - 40);
-            dialog.Position = view.Position + (view.Size - dialog.Size) / 2 - new Vector2(0, 10);
             gui.SetMapRenderArea(view, Size);
+            dialog.Position = view.Position + (view.Size - dialog.Size) / 2 -
+                new Vector2(0, 10);
             app.MouseBoundings = view.Boundings;
             UpdateCharacterPromptPositions();
         }
@@ -333,6 +331,14 @@ namespace Burntime.Remaster
                     characterCycleDebounce = CHARACTER_CYCLE_DEBOUNCE_TIME;
                 }
                 SelectAdjacentGroupCharacter(action == InputAction.LeftArea ? -1 : 1);
+                return true;
+            }
+
+            if (action == InputAction.PreviousTarget || action == InputAction.NextTarget)
+            {
+                if (app.LastInputMode == InputMode.Mouse)
+                    app.LastInputMode = InputMode.Keyboard;
+                nearbyAction.CycleTarget(action == InputAction.PreviousTarget ? -1 : 1);
                 return true;
             }
 
@@ -819,7 +825,7 @@ namespace Burntime.Remaster
 
         protected override void OnActivateScene(object parameter)
         {
-            interactionMode = LocationInteractionMode.Auto;
+            interactionMode = LocationInteractionMode.Talk;
             combatEncounter?.Cancel();
             combatEncounter = null;
             nextTurnHoldTime = 0;

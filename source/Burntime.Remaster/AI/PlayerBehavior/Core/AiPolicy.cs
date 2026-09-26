@@ -42,6 +42,7 @@ internal sealed class AiPolicy
     public int RecoveryWaterDays { get; init; }
     public float TradeBenefit { get; init; }
     public int SlumpMaterialGrantLimit { get; init; }
+    public int CombatLootLimit { get; init; }
     public bool DieWhenTrapped { get; init; }
 
     static ConfigFile Config
@@ -148,6 +149,7 @@ internal sealed class AiPolicy
             RecoveryWaterDays = section.GetInt("recovery_water_days"),
             TradeBenefit = section.GetFloat("trade_benefit"),
             SlumpMaterialGrantLimit = slumpMaterialGrants,
+            CombatLootLimit = Math.Max(0, section.GetInt("combat_loot_limit")),
             DieWhenTrapped = section.GetBool("die_when_trapped")
         };
     }

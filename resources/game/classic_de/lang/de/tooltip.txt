@@ -81,3 +81,12 @@ Meldet entfernte Lager und Gefahren}
 Der Mensch lebt nicht vom Brot allein.}
 Kreaturen scheinen es nicht zu mögen.}
 Kann auf Reisen Munition aufspüren.}
+Mit Munition laden}
+Lädt: {weapons}}
+Gewehr}
+Pistole}
+Reichweite: {reach}
+Nah}
+Mittel}
+Lang}
+Fern}

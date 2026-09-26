@@ -81,3 +81,12 @@ Reports remote camps and hazards}
 Man does not live by bread alone.}
 Creatures don't seem to like it.}
 May uncover ammunition while travelling.}
+Load with ammunition}
+Loads: {weapons}}
+rifle}
+pistol}
+Reach: {reach}}
+Close}
+Medium}
+Long}
+Ranged}
