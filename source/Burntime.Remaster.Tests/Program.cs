@@ -56,6 +56,7 @@ static class Program
         Run("item generation ranges", GameSettingsTests.ItemGenerationCases());
         Run("profile parsing", GameDefinitionsTests.ProfileParsingCases());
         Run("rule registry", GameDefinitionsTests.RuleRegistryCases());
+        Run("manual text layout", ManualTextLayoutTests.Cases());
         Run("setup patch notes", SetupPatchNotesTests.Cases());
         Run("resolution scaling", ResolutionTests.ResolutionCases());
         Run("font indicators", FontIndicatorTests.IndicatorCases());

@@ -1,88 +1,54 @@
 #EROBERUNG
-Um zu gewinnen, musst du die fünf Städte kontrollieren.
-Erobere dafür alle benachbarten Orte.
-In Städten kannst du rekrutieren, handeln
-und dich heilen lassen.
+Um zu gewinnen, musst du die fünf Städte kontrollieren. Erobere dafür alle benachbarten Orte. In Städten kannst du rekrutieren, handeln und dich heilen lassen.
 @city
 #ERSTE SCHRITTE
-Rekrutiere jemanden und gründe mit ihm
-dein erstes Lager.
-Finde einen Techniker und sammle Material für eine
-Rattenfalle. Sie liefert dir regelmäßig Nahrung,
-die du auch eintauschen kannst.
+Rekrutiere jemanden und gründe mit ihm dein erstes Lager. Finde einen Techniker und sammle Material für eine Rattenfalle. Sie liefert dir regelmäßig Nahrung, die du auch eintauschen kannst.
 @flag
 }#
 #TÄGLICHER BEDARF
-Jeder braucht täglich 1 Nahrung und 1 Wasser.
-Fehlen Nahrung oder Wasser, verliert man dafür
-jeweils 25 Lebenspunkte pro Tag.
-Sichere deine Versorgung mit eigenen Lagern.
+Jeder braucht täglich 1 Nahrung und 1 Wasser. Fehlen Nahrung oder Wasser, verliert man dafür jeweils 25 Lebenspunkte pro Tag. Sichere deine Versorgung mit eigenen Lagern.
 
 #WASSER
-Fülle leere Behälter an Wasserquellen auf.
-Größere Behälter fassen mehr Wasser.
+Fülle leere Behälter an Wasserquellen auf. Größere Behälter fassen mehr Wasser.
 @supply-example|item_water_bottle
 #NAHRUNG
-Stelle Fallen in deinen Lagern auf,
-um regelmäßig Nahrung zu erhalten.
-Bewahre überschüssige Nahrung zum Handeln
-und Anwerben auf.
+Stelle Fallen in deinen Lagern auf, um regelmäßig Nahrung zu erhalten. Bewahre überschüssige Nahrung zum Handeln und Anwerben auf.
 @supply-example|item_rats
 #GEFAHREN
-Die Ortsinfo zeigt Gefahren durch Gas und Strahlung.
-Schütze dich vor Gas und Strahlung,
-bevor du einen Ort betrittst.
+Die Ortsinfo zeigt Gefahren durch Gas und Strahlung. Schütze dich vor Gas und Strahlung, bevor du einen Ort betrittst.
 @supply-example|item_gas_mask
 }#
 #REKRUTIERUNG
-Sprich mit den Leuten und bringe ihnen,
-was sie verlangen.
-Nimm Rekruten mit oder gründe mit ihnen ein Lager.
+Sprich mit den Leuten und bringe ihnen, was sie verlangen. Nimm Rekruten mit oder gründe mit ihnen ein Lager.
 
 #TECHNIKER
 Techniker bauen Fallen und Ausrüstung.
 @technician
-Lass einen Techniker Material untersuchen,
-um Baupläne zu entdecken.
-Kombiniere die benötigten Materialien,
-um den Gegenstand zu bauen.
+Lass einen Techniker Material untersuchen, um Baupläne zu entdecken. Kombiniere die benötigten Materialien, um den Gegenstand zu bauen.
 @construction|item_rat_trap
 #ARZT
-Ab 70 Lebenspunkten erhält man täglich
-2 Lebenspunkte zurück. Mit einem Arzt sind es
-ab 50 Lebenspunkten täglich 4.
+Ab 70 Lebenspunkten erhält man täglich 2 Lebenspunkte zurück. Mit einem Arzt sind es ab 50 Lebenspunkten täglich 4.
 @doctor
 #SÖLDNER
-Erfahrungspunkte (EP) bestimmen die Waffenstufe.
-Sie reicht von 1 bis 4 und bestimmt den Schaden.
+Erfahrungspunkte (EP) bestimmen die Waffenstufe. Sie reicht von 1 bis 4 und bestimmt den Schaden.
 @tiers
-Für die Waffenstufe zählen die EP bei Söldnern voll,
-bei anderen Berufen nur zur Hälfte.
+Für die Waffenstufe zählen die EP bei Söldnern voll, bei anderen Berufen nur zur Hälfte.
 @mercenary
 }#
 #VERTEIDIGUNG
 Mehr Gefolgsleute stärken die Lagerverteidigung.
 #NAHRUNGSPRODUKTION
-Wähle aus, welche Nahrung das Lager produzieren soll.
-Lege bis zu zwei passende Werkzeuge oder Fallen
-im Lager ab.
+Wähle aus, welche Nahrung das Lager produzieren soll. Lege bis zu zwei passende Werkzeuge oder Fallen im Lager ab.
 @production|item_rat_trap|item_rats
 #WASSERPRODUKTION
-Platziere eine Pumpe direkt in der Wasserquelle.
-Es kann immer nur eine Pumpe aktiv sein.
+Platziere eine Pumpe direkt in der Wasserquelle. Es kann immer nur eine Pumpe aktiv sein.
 @entry|item_industrial_pump
 }#
 #WAFFEN
-Rüste deine Gefolgsleute mit Waffen aus,
-um ihren Schaden zu erhöhen. Mit mehr EP
-setzen sie jede Waffe wirkungsvoller ein.
-Wer die größere Reichweite hat, greift zuerst an.
+Rüste deine Gefolgsleute mit Waffen aus, um ihren Schaden zu erhöhen. Mit mehr EP setzen sie jede Waffe wirkungsvoller ein. Wer die größere Reichweite hat, greift zuerst an.
 @entry|item_knife
 #SCHUSSWAFFEN
-Schusswaffen richten hohen Schaden an,
-benötigen aber Munition.
-Kombiniere eine ungeladene Schusswaffe
-mit Munition, um sie zu laden.
+Schusswaffen richten hohen Schaden an, benötigen aber Munition. Kombiniere eine ungeladene Schusswaffe mit Munition, um sie zu laden.
 @entry|item_loaded_rifle
 @extended-only-begin
 #SCHUTZ

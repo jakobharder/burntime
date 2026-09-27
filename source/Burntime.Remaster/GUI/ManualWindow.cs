@@ -47,7 +47,6 @@ public sealed class ManualWindow : Container
     readonly GuiFont _selectedFont;
     readonly TextHelper _uiText;
     readonly Button _exitButton;
-    InputPromptHandle? _exitPrompt;
     ISprite? _goalFlag;
     ISprite? _goalCity;
     bool _restoreRenderMouse;
@@ -83,9 +82,8 @@ public sealed class ManualWindow : Container
 
         _exitButton = CreateButton(_uiText[6], Hide);
         Windows += _exitButton;
-        _exitControlRenderer = new InputControlLabelRenderer(app, _exitButton.Font, brackets: false);
-        _exitPrompt = Prompts.Add(new InputPrompt(InputAction.Back, ""),
-            Vector2.Zero, showBackground: false, horizontalPadding: 0);
+        _exitControlRenderer = new InputControlLabelRenderer(app, _exitButton.Font,
+            brackets: false, glyphTint: ClassicColors.MenuText);
         PositionFooter();
     }
 
@@ -111,9 +109,8 @@ public sealed class ManualWindow : Container
     Button CreateButton(GuiString text, System.Action command) => new(app, command)
     {
         Text = text,
-        Font = new GuiFont(BurntimeClassic.FontName, ClassicColors.HudText),
-        HoverFont = new GuiFont(BurntimeClassic.FontName,
-            ClassicColors.HudTextHover),
+        Font = _mutedFont,
+        HoverFont = _titleFont,
         IsTextOnly = true
     };
 
@@ -127,8 +124,7 @@ public sealed class ManualWindow : Container
             (app is BurntimeClassic classic && !classic.ShowUIHints)
             ? 0 : _exitControlRenderer.Measure(control) + 2;
         _exitButton.Position = new Vector2((Size.x - _exitButton.Size.x - promptWidth) / 2, y);
-        _exitPrompt?.UpdatePosition(_exitButton.Position +
-            new Vector2(_exitButton.Size.x + 2, -2));
+
     }
 
     public void Open()
@@ -173,6 +169,15 @@ public sealed class ManualWindow : Container
         }
 
         RenderTextPage(target);
+        if (app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad &&
+            (app is not BurntimeClassic classic || classic.ShowUIHints))
+        {
+            // Keep the manual's shortcut color independent of the host scene's overlay palette.
+            var control = InputControlDisplay.Resolve(app, app.LastInputMode,
+                new InputPrompt(InputAction.Back, ""));
+            _exitControlRenderer.Draw(target,
+                _exitButton.Position + new Vector2(_exitButton.Size.x + 2, 0), control);
+        }
     }
 
     void RenderTextPage(RenderTarget target)
@@ -181,8 +186,8 @@ public sealed class ManualWindow : Container
             ? (_page == 0 ? SetupPatchNotes.Read() :
                 app.ResourceManager.GetStrings($"setupnotes?s{_page}"))
             : app.ResourceManager.GetStrings($"manual?s{_page}");
-        if (_setupNotes)
-            lines = WrapNotes(lines);
+        lines = ManualTextLayout.Wrap(lines, Size.x - 30,
+            _textFont.GetWidth, _titleFont.GetWidth);
         List<ManualEntry> entries = BuildEntries(lines);
         int totalLineCount = entries.Sum(entry => entry.LineCount);
         int maximum = System.Math.Max(0, totalLineCount - VisibleLineCount);
@@ -204,30 +209,6 @@ public sealed class ManualWindow : Container
         }
         RenderScrollBar(target, _textScroll[_page], maximum,
             VisibleLineCount, totalLineCount);
-    }
-
-    string[] WrapNotes(string[] lines)
-    {
-        var wrapped = new List<string>();
-        foreach (string line in lines)
-        {
-            bool heading = line.StartsWith("#");
-            GuiFont font = heading ? _titleFont : _textFont;
-            string current = "";
-            foreach (string word in (heading ? line[1..] : line).Split(' '))
-            {
-                string next = current.Length == 0 ? word : current + " " + word;
-                if (current.Length > 0 && font.GetWidth(next) > Size.x - 30)
-                {
-                    wrapped.Add((heading ? "#" : "") + current);
-                    current = word;
-                }
-                else
-                    current = next;
-            }
-            wrapped.Add((heading ? "#" : "") + current);
-        }
-        return wrapped.ToArray();
     }
 
     List<ManualEntry> BuildEntries(string[] lines)

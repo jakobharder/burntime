@@ -4,5 +4,5 @@ PARTY
 CAMPS
 COMBAT
 MANUAL
-Exit
+Close
 Next
