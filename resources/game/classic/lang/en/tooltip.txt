@@ -70,7 +70,7 @@ None
 Change
 Everyone is supplied
 Not enough water
-Needs materials
+Check materials
 Needs ammunition
 Previous
 Next

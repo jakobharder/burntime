@@ -87,6 +87,13 @@ Inventory and room open with the first inventory page active and no item focused
 The fixtures press Left to select the first inventory item; the room fixture then
 presses Right three times to retain the room item tooltip in its capture.
 
+`construction-undiscovered` and `construction-discovered` show a technician
+focusing a spring with no tin or wire available. The first captures the unknown
+trap recipe and Inspect prompt. The second uses the normal investigation
+action, verifies that the recipe was learned, closes the dialog, and captures
+the same material with the known recipe and Check materials prompt. Both also
+run with hints disabled, where neither tooltip should appear.
+
 The inventory fixture equips a steel helmet (armour), and the room fixture equips
 a protective suit (gas and radiation protection). Each restores the original
 inventory before the following fixture. Classic stats use `Dmg: minimum-maximum` and
