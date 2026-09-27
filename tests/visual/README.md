@@ -49,10 +49,10 @@ refuses any mode with resource errors, a crash, or an incomplete capture suite.
 Fix those first and capture again. For experimental comparisons, both commands
 support `--baselines PATH` to use a disposable baseline directory.
 
-The original `GES_12.ANI` trader portrait currently contains an offset beyond the
-end of the file. The classic trader scenario exposes the existing loader warning
-`frame out of index in ges_12.ani`. This is deliberately reported as a resource
-failure, not ignored or approved by updating images.
+Original portrait tables such as `GES_12.ANI` can retain a stale 41st offset
+(`0x460d`) before zero padding. The loader excludes that entry only when it is
+out of bounds or points backward; valid frames with the same offset are retained.
+Other invalid offsets still produce resource warnings and fail this suite.
 
 ## Determinism and coverage
 

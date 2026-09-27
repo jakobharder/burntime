@@ -42,39 +42,51 @@ namespace Burntime.Data.BurnGfx
         public void ReadHeader()
         {
             count = 0;
-
+            header = Array.Empty<ushort>();
             if (file == null || file.Length < sizeof(ushort))
             {
                 Log.Warning("Animation header is missing or empty: " + (file?.Name ?? "<unknown>"));
                 return;
             }
 
-            ushort[] header = new ushort[0x1000];
-            int endread = 0x1000;
-
-            for (int i = 0; i < endread / 2; i++)
+            file.Seek(0, SeekPosition.Begin);
+            int headerSize = file.ReadUShort();
+            if (headerSize < 2 || headerSize % 2 != 0 || headerSize > file.Length)
             {
-                header[i] = file.ReadUShort();
-                if (i == 0)
-                    endread = header[i];
-
-                if (header[i] == 0 && count == 0)
-                {
-                    count = i;
-                    break;
-                }
-
-                if (header[i] >= file.Length)
-                {
-                    count = i;
-                    Log.Warning("frame out of index in " + file.Name);
-                    break;
-                }
+                Log.Warning("Invalid animation header in " + file.Name);
+                return;
             }
 
-            this.header = new ushort[count];
-            for (int i = 0; i < count; i++)
-                this.header[i] = header[i];
+            ushort[] offsets = new ushort[headerSize / 2];
+            offsets[0] = (ushort)headerSize;
+            for (int i = 1; i < offsets.Length; i++)
+                offsets[i] = file.ReadUShort();
+
+            for (int i = 0; i < offsets.Length; i++)
+            {
+                int offset = offsets[i];
+                if (offset == 0)
+                    break;
+
+                bool invalid = offset < headerSize || offset > file.Length - 4 ||
+                    (i > 0 && offset <= offsets[i - 1]);
+                if (invalid)
+                {
+                    // Original portrait tables can retain a stale 41st offset.
+                    // GES_08 uses this same value for a real frame, so only ignore
+                    // it when invalid and followed exclusively by zero padding.
+                    bool legacyTail = headerSize == 256 && i == 40 && offset == 0x460d;
+                    for (int j = i + 1; legacyTail && j < offsets.Length; j++)
+                        legacyTail = offsets[j] == 0;
+                    if (!legacyTail)
+                        Log.Warning("Invalid animation frame offset in " + file.Name);
+                    break;
+                }
+                count++;
+            }
+
+            header = new ushort[count];
+            Array.Copy(offsets, header, count);
         }
 
         public bool ReadImage(int index)
