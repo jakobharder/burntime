@@ -325,7 +325,9 @@ public class Window
         if (!hasFocus)
             return false;
 
-        InputAction action = app.GamepadActionBindings.GetAction(control);
+        InputAction action = UseGamepadDPadNavigation ? GetDPadNavigationAction(control) : global::Burntime.Framework.InputAction.None;
+        if (action == global::Burntime.Framework.InputAction.None)
+            action = app.GamepadActionBindings.GetAction(control);
         action = ResolveInputAction(action);
         return action != global::Burntime.Framework.InputAction.None && HeldInputAction(action, elapsed);
     }

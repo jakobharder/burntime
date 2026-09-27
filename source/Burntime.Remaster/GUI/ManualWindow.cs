@@ -54,6 +54,12 @@ public sealed class ManualWindow : Container
     int _page;
     int _hoveredPage = -1;
     readonly int[] _textScroll;
+    const float ScrollRepeatDelay = 0.3f;
+    const float ScrollRepeatInterval = 0.06f;
+    bool _heldScrollUp;
+    bool _heldScrollDown;
+    int _scrollDirection;
+    float _scrollRepeatRemaining = ScrollRepeatDelay;
 
     public ManualWindow(Module app, Vector2 hostSize, bool setupNotes = false)
         : base(app)
@@ -136,6 +142,9 @@ public sealed class ManualWindow : Container
 
     public override void OnShow()
     {
+        _heldScrollUp = _heldScrollDown = false;
+        _scrollDirection = 0;
+        _scrollRepeatRemaining = ScrollRepeatDelay;
         if (_hasRenderMouseOverride)
             return;
 
@@ -452,6 +461,32 @@ public sealed class ManualWindow : Container
     {
         if (IsVisible && _page == 0)
             _goalFlag?.Update(elapsed);
+
+        int direction = (_heldScrollDown ? 1 : 0) - (_heldScrollUp ? 1 : 0);
+        _heldScrollUp = _heldScrollDown = false;
+        if (direction == 0 || direction != _scrollDirection)
+            _scrollRepeatRemaining = ScrollRepeatDelay;
+        _scrollDirection = direction;
+        if (direction == 0)
+            return;
+
+        _scrollRepeatRemaining -= elapsed;
+        while (_scrollRepeatRemaining <= 0)
+        {
+            MoveTextScroll(direction);
+            _scrollRepeatRemaining += ScrollRepeatInterval;
+        }
+    }
+
+    public override bool OnHeldInputAction(InputAction action, float elapsed)
+    {
+        if (action.IsUp())
+            _heldScrollUp = true;
+        else if (action.IsDown())
+            _heldScrollDown = true;
+        else
+            return false;
+        return true;
     }
 
     void RenderTierLine(RenderTarget target, int y)
