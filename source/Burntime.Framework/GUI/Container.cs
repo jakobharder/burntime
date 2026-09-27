@@ -120,7 +120,7 @@ public class Container : Window
                 base.Size = background.Size;
 
             if (Size.x != 0)
-                background.Draw(thisTarget, (Size - background.Size) / 2);
+                background.Draw(thisTarget, GetBackgroundPosition(background.Size));
             else
                 background.Draw(thisTarget);
         }
@@ -134,6 +134,9 @@ public class Container : Window
             }
         }
     }
+
+    protected virtual Vector2 GetBackgroundPosition(Vector2 backgroundSize) =>
+        (Size - backgroundSize) / 2;
 
     internal override void Update(float elapsed)
     {

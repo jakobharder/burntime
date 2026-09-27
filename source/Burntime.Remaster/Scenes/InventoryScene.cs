@@ -94,6 +94,15 @@ namespace Burntime.Remaster.Scenes
             UpdateWaterSourceGridBackground();
         }
 
+        protected override Vector2 GetBackgroundPosition(Vector2 backgroundSize)
+        {
+            Vector2 screen = app.Engine.Resolution.Game;
+            Vector2 position = (screen - backgroundSize) / 2;
+            if (backgroundSize.x > screen.x)
+                position.x = screen.x - backgroundSize.x;
+            return position - PositionOnScreen;
+        }
+
         void UpdateWaterSourceGridBackground()
         {
             BurntimeClassic classic = app as BurntimeClassic;
