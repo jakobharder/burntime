@@ -1081,7 +1081,7 @@ namespace Burntime.Remaster.Logic
             Vector2f dir = position - old;
             if (dir == Vector2f.Zero && pathElapsed == 0 && movementElapsed > 0 && Path.MoveTo != Position)
                 dir = Path.MoveTo - Position;
-            if (Path.Speed > 0 && Path.MovementDirection != Vector2f.Zero)
+            if (pathElapsed > 0 && Path.MovementDirection != Vector2f.Zero)
                 dir = Path.MovementDirection;
             if (System.Math.Abs(dir.x) > 0.01f || System.Math.Abs(dir.y) > 0.01f)
             {
@@ -1109,6 +1109,12 @@ namespace Burntime.Remaster.Logic
             }
             else
                 Animation = 0;
+
+            // A new walking direction must take effect immediately. Debouncing
+            // it can retain the previous facing while the character moves away.
+            if (nextAnimation >= 2 && nextAnimation <= 9 &&
+                animation / 2 != nextAnimation / 2)
+                animation = nextAnimation;
 
             if (!aniDelay.IsIn && Animation != nextAnimation)
             {
