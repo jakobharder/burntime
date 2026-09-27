@@ -122,6 +122,9 @@ namespace Burntime.Remaster.Scenes
                 classic.Game.Constructions.Construct(construction, constructionInventory,
                     right, item, classic.Game);
 
+                if (classic.InventoryRoom != null)
+                    classic.Game.World.ActiveLocationObj.RefreshFoodProductionSelection();
+
                 inventory.OnSelectPage();
 
                 // grid is not available if inventory is shown while on main map
@@ -532,6 +535,18 @@ namespace Burntime.Remaster.Scenes
             };
             if (direction != Vector2.Zero)
             {
+                if (direction.x != 0 && inventory.Grid.FocusPosition == null &&
+                    grid?.FocusPosition == null)
+                {
+                    ItemGridWindow initialGrid = direction.x > 0 ? grid : inventory.Grid;
+                    if (initialGrid?.EnsureFocus() == true)
+                    {
+                        roomAreaActive = initialGrid == grid;
+                        UpdateActiveArea();
+                    }
+                    return true;
+                }
+
                 Vector2? sourcePosition = activeGrid.FocusPosition;
                 bool moved = activeGrid.MoveFocus(direction);
                 if (!moved && direction.x == 0 && direction.y != 0 &&
