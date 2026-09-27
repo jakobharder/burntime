@@ -658,7 +658,9 @@ namespace Burntime.MonoGame
 
             GamePadState previous = _gamePadWasConnected ? _previousGamePadState : default;
 
-            const float stickThreshold = 0.4f;
+            // MonoGame already filters the circular dead zone; keep the extra
+            // activation threshold light enough for partial stick movement.
+            const float stickThreshold = 0.25f;
             InputAction previousLeftStickDirection = _leftStickDirection;
             bool useCardinalMovement = _burntimeApp.SceneManager.UseCardinalGamepadMovement;
             _leftStickDirection = useCardinalMovement

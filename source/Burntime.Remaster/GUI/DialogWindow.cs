@@ -258,6 +258,10 @@ namespace Burntime.Remaster
                     conversation = character.Dialog.GetConversation(self, ConversationType.Talk);
                     break;
                 case ConversationActionType.Trade:
+                    // Trade takes over the music after the scene fade. Keep the
+                    // remembered map track paused instead of briefly resuming it
+                    // in OnHide; returning from trade restores it normally.
+                    resumePlaylistMusic = false;
                     Hide();
                     classic.Game.World.ActiveTraderObj = character as Trader;
                     classic.Game.World.ActivePlayerObj.Party.IgnoreRangeFilter =

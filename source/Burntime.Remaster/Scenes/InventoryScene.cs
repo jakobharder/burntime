@@ -16,9 +16,10 @@ namespace Burntime.Remaster.Scenes
         const int NeedsTechnicianTextIndex = 47;
         const int PlaceInRoomTextIndex = 48;
         const int UnsuitableCampTextIndex = 49;
-        const int GroupFullTextIndex = 70;
+        const int NotHungryTextIndex = 70;
+        const int NotThirstyTextIndex = 94;
         const int NotEnoughWaterTextIndex = 71;
-        const int NeedsMaterialsTextIndex = 72;
+        const int CheckMaterialsTextIndex = 72;
         const int NeedsAmmunitionTextIndex = 73;
         const int SelectedTrapTextIndex = 77;
 
@@ -188,7 +189,9 @@ namespace Burntime.Remaster.Scenes
                 if (!canConsume)
                 {
                     prompt = null;
-                    status = $"@tooltip?{GroupFullTextIndex}";
+                    status = focused.FoodValue > 0
+                        ? $"@tooltip?{NotHungryTextIndex}"
+                        : $"@tooltip?{NotThirstyTextIndex}";
                     statusIsMuted = true;
                 }
             }
@@ -236,17 +239,29 @@ namespace Burntime.Remaster.Scenes
                     : classic.PickItems;
                 if (roomItems != null)
                 {
+                    Character inspector = GetConstructionInspector(focused);
                     var availability = game.Constructions.EvaluateConstruction(
-                        inventory.ActiveCharacter, roomItems, focused);
-                    if (availability.Recipe != null && !availability.CanBuild)
+                        inspector, inventory.ActiveCharacter.Items, roomItems, focused);
+                    // Keep the investigation prompt while inspecting would reveal
+                    // this recipe, even when its materials are incomplete.
+                    if (availability.Recipe != null && !availability.CanBuild &&
+                        game.IsConstructionKnown(availability.Recipe.Result))
                     {
                         bool onlyNeedsAmmunition = availability.MissingRequirements.Count > 0 &&
                             availability.MissingRequirements.All(item =>
                                 item == "item_ammunition");
-                        status = onlyNeedsAmmunition
-                            ? $"@tooltip?{NeedsAmmunitionTextIndex}"
-                            : $"@tooltip?{NeedsMaterialsTextIndex}";
-                        statusIsMuted = false;
+                        if (onlyNeedsAmmunition)
+                        {
+                            status = $"@tooltip?{NeedsAmmunitionTextIndex}";
+                            statusIsMuted = false;
+                        }
+                        else
+                        {
+                            // Inspection remains useful after discovery: the
+                            // dialog lists the materials needed for this recipe.
+                            prompt = new(InputAction.Secondary,
+                                $"@tooltip?{CheckMaterialsTextIndex}");
+                        }
                     }
                 }
             }

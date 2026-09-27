@@ -15,7 +15,7 @@ public sealed class VisualTestScenes(BurntimeClassic app)
     [
         "menu", "setup-notes", "setup-versus-original", "setup-credits", "options", "map", "manual", "location", "inventory", "room",
         "trader", "doctor", "pub", "restaurant", "info", "statistics",
-        "church", "map-return"
+        "church", "map-return", "construction-undiscovered", "construction-discovered"
     ];
 
     bool gameCreated;
@@ -23,17 +23,28 @@ public sealed class VisualTestScenes(BurntimeClassic app)
     int serviceHealth;
     Item[]? equipmentItems;
     Item? equippedProtection;
+    CharClass? constructionClass;
+    Item[]? constructionRoomItems;
 
     public void Open(string name)
     {
         app.LastInputMode = InputMode.Keyboard;
-        if (equipmentItems != null)
+        if (name != "construction-discovered" && equipmentItems != null)
         {
             app.SelectedCharacter.Items.Clear();
             foreach (Item item in equipmentItems)
                 app.SelectedCharacter.Items.Add(item);
             app.SelectedCharacter.Protection = equippedProtection;
             equipmentItems = null;
+        }
+        if (name != "construction-discovered" && constructionClass.HasValue)
+        {
+            app.SelectedCharacter.Class = constructionClass.Value;
+            app.InventoryRoom.Items.Clear();
+            foreach (Item item in constructionRoomItems!)
+                app.InventoryRoom.Items.Add(item);
+            constructionClass = null;
+            constructionRoomItems = null;
         }
         if (serviceItems != null)
         {
@@ -122,6 +133,34 @@ public sealed class VisualTestScenes(BurntimeClassic app)
                     Press(InputAction.MoveRight);
                     Press(InputAction.MoveRight);
                 }
+                break;
+            case "construction-undiscovered":
+                // A spring reveals only the trap recipe; tin and wire stay absent
+                // so the second capture must offer Check materials, not Build.
+                equipmentItems = app.SelectedCharacter.Items.Cast<Item>().ToArray();
+                equippedProtection = app.SelectedCharacter.Protection;
+                constructionClass = app.SelectedCharacter.Class;
+                app.SelectedCharacter.Class = CharClass.Technician;
+                app.SelectedCharacter.Protection = null;
+                app.SelectedCharacter.Items.Clear();
+                app.SelectedCharacter.Items.Add(app.Game.Container.Create<Item>(
+                    app.Game.ItemTypes["item_spring"]));
+                app.InventoryBackground = 0;
+                app.InventoryRoom = app.Game.World.ActiveLocationObj.Rooms[0];
+                constructionRoomItems = app.InventoryRoom.Items.Cast<Item>().ToArray();
+                app.InventoryRoom.Items.Clear();
+                if (app.Game.IsConstructionKnown("item_trap"))
+                    throw new InvalidOperationException("Construction fixture requires an undiscovered trap recipe.");
+                app.SetScene("InventoryScene", app.SelectedCharacter);
+                Press(InputAction.MoveLeft);
+                break;
+            case "construction-discovered":
+                // Reveal it through the actual investigation action, then return
+                // to the same focused material without constructing anything.
+                Press(InputAction.Secondary);
+                if (!app.Game.IsConstructionKnown("item_trap"))
+                    throw new InvalidOperationException("Investigating the spring did not reveal the trap recipe.");
+                Press(InputAction.Back);
                 break;
             case "trader":
                 app.Game.World.ActiveTraderObj = app.Game.World.Traders[0];

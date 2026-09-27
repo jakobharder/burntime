@@ -68,9 +68,9 @@ Nahrungsproduktion
 {product}: {tools}}
 Keine
 Ändern
-Alle sind versorgt
+Kein Hunger
 Nicht genug Wasser
-Material benötigt
+Material prüfen
 Munition benötigt
 Zurück
 Weiter
@@ -92,3 +92,4 @@ Lang}
 Fern}
 Ausgerüstet}
 Wirkt beim Mitführen}
+Kein Durst
