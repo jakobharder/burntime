@@ -141,5 +141,9 @@ internal class LoopableSong : IDisposable
         set { if (_music is not null) _music.Volume = value; }
     }
 
-    public bool IsPlaying => _music?.State == SoundState.Playing;
+    // Dynamic playback remains in Playing state when its queue runs dry.
+    // A finite (including faded) song is finished once all buffers are consumed.
+    public bool IsPlaying => _music?.State == SoundState.Playing &&
+        (_loopEnabled || _music is not DynamicSoundEffectInstance streaming ||
+            streaming.PendingBufferCount > 0);
 }

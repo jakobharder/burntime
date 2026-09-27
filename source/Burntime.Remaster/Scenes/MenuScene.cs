@@ -24,6 +24,7 @@ public class MenuScene : Scene
         Difficulty,
         GameMode,
         AiPlayers,
+        Notes,
         Exit
     }
 
@@ -48,6 +49,7 @@ public class MenuScene : Scene
     readonly Button _loadButton;
     readonly Button _startButton;
     readonly Button _exitButton;
+    readonly Button _notesButton;
     readonly GUI.ManualWindow _setupNotes;
     readonly TooltipWindow _aiTooltip;
     readonly TooltipWindow _gameModeTooltip;
@@ -173,9 +175,13 @@ public class MenuScene : Scene
         // exit button
         _exitButton = new Button(app, OnButtonExit)
         {
-            Image = "gfx/menu_exit.png",
-            HoverImage = "gfx/menu_exit_hover.png",
-            Position = new Vector2(276, 163),
+            Image = "gfx/ui/menu_exit.png",
+            HoverImage = "gfx/ui/menu_exit_hover.png",
+            Position = new Vector2(271, 163), // Keep the right edge at 307 with the 36-pixel button.
+            Font = buttonFont,
+            Text = "EXIT",
+            TextHorizontalAlign = TextAlignment.Center,
+            TextVerticalAlign = VerticalTextAlignment.Center,
             Prompts = { { InputAction.Primary, "@prompts?4" } }
         };
         Windows += _exitButton;
@@ -184,11 +190,17 @@ public class MenuScene : Scene
             InputPromptColorScheme.Default);
 
         Windows += _setupNotes = new GUI.ManualWindow(app, new Vector2(320, 200), setupNotes: true);
-        Prompts.Add(new InputPrompt(InputAction.SetupNotes, "@setupnotes?3")
+        Windows += _notesButton = new Button(app, () => _setupNotes.Open())
         {
-            GamepadControl = GamepadControl.View,
-            ShowInMouseMode = true
-        }, () => !_setupNotes.IsVisible);
+            Image = "gfx/ui/menu_exit.png",
+            HoverImage = "gfx/ui/menu_exit_hover.png",
+            Position = new Vector2(13, 163), // Match EXIT's 13-pixel outer margin; grow inward.
+            Font = buttonFont,
+            Text = "NOTES",
+            TextHorizontalAlign = TextAlignment.Center,
+            TextVerticalAlign = VerticalTextAlignment.Center,
+            Prompts = { { InputAction.Primary, "@setupnotes?3" } }
+        };
         Prompts.SuppressWhen(() => _setupNotes.IsVisible);
 
         // player names
@@ -641,6 +653,7 @@ public class MenuScene : Scene
         GameMode.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.GameMode;
         AiPlayers.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.AiPlayers;
         _exitButton.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.Exit;
+        _notesButton.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.Notes;
     }
 
     bool HasVisibleSetupSelection() => _setupSelection switch
@@ -654,6 +667,7 @@ public class MenuScene : Scene
         SetupSelection.GameMode => GameMode.IsKeyboardSelected,
         SetupSelection.AiPlayers => AiPlayers.IsKeyboardSelected,
         SetupSelection.Exit => _exitButton.IsKeyboardSelected,
+        SetupSelection.Notes => _notesButton.IsKeyboardSelected,
         _ => false
     };
 
@@ -774,6 +788,9 @@ public class MenuScene : Scene
             case SetupSelection.Exit:
                 OnButtonExit();
                 break;
+            case SetupSelection.Notes:
+                _setupNotes.Open();
+                break;
         }
     }
 
@@ -789,6 +806,7 @@ public class MenuScene : Scene
                 break;
             case SetupSelection.Difficulty:
             case SetupSelection.GameMode:
+            case SetupSelection.Notes:
                 SelectPlayer(0, activateName: true);
                 return;
             case SetupSelection.AiPlayers:
@@ -851,22 +869,24 @@ public class MenuScene : Scene
         }
 
         if (_setupSelection is not (SetupSelection.Difficulty or SetupSelection.GameMode or
-            SetupSelection.AiPlayers or SetupSelection.Exit))
+            SetupSelection.AiPlayers or SetupSelection.Notes or SetupSelection.Exit))
             return;
 
         int index = _setupSelection switch
         {
-            SetupSelection.Difficulty => 0,
-            SetupSelection.GameMode => 1,
-            SetupSelection.AiPlayers => 2,
-            _ => 3
+            SetupSelection.Notes => 0,
+            SetupSelection.Difficulty => 1,
+            SetupSelection.GameMode => 2,
+            SetupSelection.AiPlayers => 3,
+            _ => 4
         };
-        index = System.Math.Clamp(index + direction, 0, 3);
+        index = System.Math.Clamp(index + direction, 0, 4);
         _setupSelection = index switch
         {
-            0 => SetupSelection.Difficulty,
-            1 => SetupSelection.GameMode,
-            2 => SetupSelection.AiPlayers,
+            0 => SetupSelection.Notes,
+            1 => SetupSelection.Difficulty,
+            2 => SetupSelection.GameMode,
+            3 => SetupSelection.AiPlayers,
             _ => SetupSelection.Exit
         };
         UpdateSetupSelection();

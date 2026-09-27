@@ -54,15 +54,15 @@ Schlange}
 Fleisch}
 Wasserflasche}
 Flasche}
-volle Feldflasche}
-leere Feldflasche}
-voller Wassersack}
-leerer Wassersack}
+Volle Feldflasche}
+Leere Feldflasche}
+Voller Wassersack}
+Leerer Wassersack}
 Messer}
 Axt}
 Mistgabel}
-geladenes Gewehr}
-ungeladenes Gewehr}
+Geladenes Gewehr}
+Ungeladenes Gewehr}
 Mine}
 Rattenfalle}
 Fangeisen}
@@ -71,10 +71,10 @@ Handpumpe}
 Förderpumpe}
 Minendedektor}
 Funkgerät}
-kaputte Pumpe}
+Kaputte Pumpe}
 Maschinenteile}
-kaputter Minendedector}
-kaputtes Funkgerät}
+Kaputter Minendedector}
+Kaputtes Funkgerät}
 Elektronikschrott}
 Batterien}
 LCD-Display}
@@ -378,7 +378,7 @@ BESTENLISTE}
 }
 }
 }
-EP: |A%}
+EP: |A}
 Leben: |B%}
 LADEN}
 SPEICHERN}
@@ -400,8 +400,8 @@ Arzt}
 Lager}
 |A}
 |B}
-WA. |C Tage|#WA. |C Tag}
-NG. |D Tage|#NG. |D Tag}
+Wasser: |C T}
+Essen: |D T}
 Tag |A}
 |A ist von uns gegangen!}
 Vorkommen}

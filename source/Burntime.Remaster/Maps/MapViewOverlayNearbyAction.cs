@@ -214,7 +214,7 @@ class MapViewOverlayNearbyAction : IMapViewOverlay
             if (character == selectedCharacter || character.IsDead ||
                 character.IsPlayerCharacter && character.Player.IsDead ||
                 app.LastInputMode is (InputMode.Keyboard or InputMode.Gamepad) &&
-                player.Party.Contains(character))
+                player.Party.Contains(selectedCharacter) && player.Party.Contains(character))
                 continue;
 
             float distance = (character.Position - selectedCharacter.Position).Length;
@@ -263,7 +263,8 @@ class MapViewOverlayNearbyAction : IMapViewOverlay
         if (key.Object is not Character character || location == null || player == null ||
             character == selectedCharacter || character.IsDead ||
             character.IsPlayerCharacter && character.Player.IsDead ||
-            player.Party.Contains(character) || !location.Characters.Contains(character))
+            player.Party.Contains(selectedCharacter) && player.Party.Contains(character) ||
+            !location.Characters.Contains(character) && !player.Party.Contains(character))
             return null;
 
         float distance = (character.Position - selectedCharacter.Position).Length;

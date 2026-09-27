@@ -53,5 +53,6 @@ Actual plans remain limited by supplies, equipment, recruitment, and travel safe
 - easy AIs shall be easy to conquer
 - AIs shall not starve on their own, only in combination of hostilities
 - AIs shall attack with all they have till death when they are locked in between foreign camps (excluding cities and unsustainable locations)
-  - except easy, there they shall simply die immediately
+  - Check the whole reachable area: camps behind hostile territory and loops through cities or barren locations do not count as an escape
+  - Use immediate death instead when `die_when_trapped` is enabled for that difficulty; the current configuration uses assaults on all difficulties
 - AIs shall never be stuck in one place if there's nothing to do

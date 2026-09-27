@@ -1,12 +1,12 @@
 like the original
 extended game
-dog shit
-dish
-paper helmet
+Dog Shit
+Dish
+Paper Helmet
 You are going to die!
-loaded pistol
+Loaded Pistol
 a loaded pistol
-unloaded pistol
+Unloaded Pistol
 an unloaded pistol
 wait for other players...
 pause
@@ -88,9 +88,9 @@ you up properly. (+|E HP)
 
 
 
-
-
-
+Gas
+Rad
+Radiation
 
 
 
@@ -98,7 +98,7 @@ you up properly. (+|E HP)
 
 
 Attack {attack}}
-Def. {defense}}
+Def: {defense}}
 % gas 
 % rad. 
 Blocked}
@@ -109,9 +109,9 @@ DOS AI players
 Amiga AI players
 Remaster AI players
 Extended rules
-Damage {damage}}
-Def. {defense}%}
-metal detector}
+Damage: {damage}}
+Defense: {defense}%}
+Metal Detector}
 a metal detector}
-defective metal detector}
+Defective Metal Detector}
 a defective metal detector}

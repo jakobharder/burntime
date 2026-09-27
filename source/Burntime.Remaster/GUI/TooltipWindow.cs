@@ -20,6 +20,7 @@ public sealed class TooltipWindow : Window
     int HeaderAdvance => app.IsNewGfx ? HeaderFont.LineHeight : 10;
     int StatusAdvance => app.IsNewGfx ? _statusFont.LineHeight : 10;
     int PromptRowHeight => app.IsNewGfx ? _controlRenderer.LineHeight : 8;
+    bool StatusUsesPromptLayout => app.IsNewGfx && StatusReplacesSecondaryPrompt;
 
     readonly GuiFont _textFont;
     readonly GuiFont _statusFont;
@@ -61,7 +62,7 @@ public sealed class TooltipWindow : Window
         var promptFont = new GuiFont("font-small.txt",
             ClassicColors.LightGray) { Borders = TextBorders.None };
         _controlRenderer = new InputControlLabelRenderer(app, promptFont,
-            brackets: false, bracketTextControls: false);
+            brackets: false, bracketTextControls: false, glyphVerticalOffset: 0);
         RefreshLayout();
     }
 
@@ -110,9 +111,18 @@ public sealed class TooltipWindow : Window
             (hasFooter ? 1 : 0);
         int height = TopPadding + BottomPadding +
             (hasHeader ? HeaderAdvance : 0) + TextHeight(text) +
-            (hasStatus ? (app.IsNewGfx ? _statusFont.LineHeight : hasPrompts ? 10 : 8) : 0) +
+            (hasStatus ? (StatusUsesPromptLayout ? PromptRowHeight :
+                app.IsNewGfx ? _statusFont.LineHeight : hasPrompts ? 10 : 8) : 0) +
             promptRows * PromptRowHeight +
             System.Math.Max(0, sectionCount - 1) * SectionGap;
+
+        // A replacement status occupies the same row and bottom inset as a prompt.
+        if (app.IsNewGfx && (StatusUsesPromptLayout && hasStatus ||
+            !(StatusReplacesSecondaryPrompt && hasStatus) &&
+            (StackPrompts && MeasurePrompt(VisibleSecondaryPrompt) > 0
+                ? PromptHasGlyph(VisibleSecondaryPrompt)
+                : PromptHasGlyph(Prompt) || PromptHasGlyph(VisibleSecondaryPrompt))))
+            height--;
 
         int width = System.Math.Max(MinimumWidth,
             contentWidth + HorizontalPadding * 2);
@@ -160,7 +170,8 @@ public sealed class TooltipWindow : Window
                 StatusIsMuted ? _mutedStatusFont : _statusFont;
             statusFont.DrawText(target,
                 new Vector2(Size.x - HorizontalPadding,
-                    y + (StatusReplacesSecondaryPrompt && MeasurePrompt(Prompt) > 0
+                    y + (StatusUsesPromptLayout ? _controlRenderer.TextOffset : 0) +
+                    (StatusReplacesSecondaryPrompt && MeasurePrompt(Prompt) > 0
                         ? _controlRenderer.LineHeight : 0)), status,
                 TextAlignment.Right, VerticalTextAlignment.Top);
             if (!StatusReplacesSecondaryPrompt)
@@ -183,8 +194,7 @@ public sealed class TooltipWindow : Window
             int secondaryY = y + (StackPrompts && hasPrompt ? _controlRenderer.LineHeight : 0);
             _controlRenderer.Draw(target, new Vector2(right, secondaryY),
                 secondaryPromptControl, secondaryPrompt.Label,
-                alignment: TextAlignment.Right, labelFirst: true,
-                textOffset: app.IsNewGfx ? 0.5f : 0);
+                alignment: TextAlignment.Right, labelFirst: true);
             if (StackPrompts)
             {
                 right = PromptRightEdge(promptControl);
@@ -198,7 +208,7 @@ public sealed class TooltipWindow : Window
                 new Vector2(right, y),
                 promptControl, prompt.Label,
                 alignment: TextAlignment.Right,
-                labelFirst: true, textOffset: app.IsNewGfx ? 0.5f : 0);
+                labelFirst: true);
         }
     }
 
@@ -224,6 +234,17 @@ public sealed class TooltipWindow : Window
             app.LastInputMode, value);
         return control.IsEmpty ? 0 : _controlRenderer.Measure(control, value.Label,
             labelFirst: true);
+    }
+
+    bool PromptHasGlyph(InputPrompt? prompt)
+    {
+        if (prompt is not { IsEmpty: false } value)
+            return false;
+        InputControlLabel control = InputControlDisplay.Resolve(app, app.LastInputMode, value);
+        foreach (InputControlPart part in control.Parts)
+            if (part.HasGlyph)
+                return true;
+        return false;
     }
 
     void MoveInsideScreen()

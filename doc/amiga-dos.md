@@ -504,9 +504,9 @@ Visible/table combat spends one round per firearm attack, even when damage is
 zero. DOS and Amiga rifles start with six rounds; each automatic reload consumes
 one carried ammunition item and restores six rounds.
 
-Extended rifles and pistols now also hold six rounds. Both manual and automatic
-reloads restore six rounds per ammunition item. Loaded weapons use one item type
-with an instance counter: two-bullet graphics represent 2–6 rounds, the optional
+Extended rifles hold six rounds and pistols hold nine. Both manual and automatic
+reloads restore the weapon's capacity per ammunition item. Loaded weapons use one item type
+with an instance counter: two-bullet graphics represent two or more rounds, the optional
 `image_last_round` graphic represents one round, and zero switches to the unloaded
 type. Inventory tooltips display the exact remaining/capacity count.
 
@@ -521,11 +521,15 @@ profile determines off-screen consumption, while the ruleset determines capacity
 
 ### Extended pistol balance
 
-The pistol keeps rifle priority 55 and six rounds, but trades peak damage for
-consistency. Its four tier rows are `4 7 9 11`, `6 9 12 15`, `9 12 16 18`, and
-`13 18 22 26`: roughly 11–12% less average damage than the rifle, with higher
-minimums and lower maximums. This is a balance starting point, not a guarantee
-of equal effectiveness against every target.
+The pistol keeps rifle priority 55, with nine rounds per ammunition item versus
+the rifle's six. Its four tier rows are `6 9 11 13`, `8 11 14 17`, `9 12 16 18`,
+and `13 18 22 26`. The first two tiers gain two damage per roll; later tiers retain
+the rifle's average-damage advantage. The pistol has higher minimums and lower
+maximums at every tier, and 50% more shots per ammunition item.
+
+Visible combat has a shared 0.75-second recovery after an exchange completes,
+including its retaliation batch. New attack commands are ignored during recovery;
+movement and character selection remain available.
 
 Modern AI counts pistols and rifles together for firearm purchasing limits:
 Easy and Normal allow one firearm-carrying group member, Hard has no fixed cap.

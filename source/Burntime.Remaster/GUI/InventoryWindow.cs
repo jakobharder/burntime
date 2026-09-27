@@ -39,6 +39,7 @@ namespace Burntime.Remaster.GUI
         Character leader;
         FaceWindow face;
         GuiFont font;
+        GuiFont smallFont;
         bool side;
 
         GuiFont nameFont;
@@ -102,6 +103,8 @@ namespace Burntime.Remaster.GUI
 
             font = new GuiFont(BurntimeClassic.FontName, ClassicColors.InventoryText);
             font.Borders = TextBorders.Screen;
+            smallFont = new GuiFont("font-small.txt", ClassicColors.InventoryText);
+            smallFont.Borders = TextBorders.Screen;
             nameFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.MenuTextHover);
             nameFont.Borders = TextBorders.Screen;
 
@@ -263,8 +266,9 @@ namespace Burntime.Remaster.GUI
             var combat = ((ClassicGame)activePage.Character.Container.Root).RuleBook
                 .GetEquippedCombatPreview(activePage.Character);
             txt.AddArgument("{defense}", combat.Defense ?? 0);
-            txt.AddArgument("{damage}", combat.Minimum == combat.Maximum
-                ? combat.Minimum.ToString() : $"{combat.Minimum}-{combat.Maximum}");
+            string damage = combat.Minimum == combat.Maximum
+                ? combat.Minimum.ToString() : $"{combat.Minimum}-{combat.Maximum}";
+            txt.AddArgument("{damage}", damage);
 
             int fontSpacing = 10;
 
@@ -280,16 +284,26 @@ namespace Burntime.Remaster.GUI
 
             if (activePage.Character.Class != CharClass.Trader)
             {
-                font.DrawText(Target, textPos, txt[403], TextAlignment.Left, VerticalTextAlignment.Top);
+                string food = txt[403];
+                string water = txt[402];
+                if (!app.IsNewGfx && app.Language == "de")
+                {
+                    food = food.Replace(" T", "T");
+                    water = water.Replace(" T", "T");
+                }
+                font.DrawText(Target, textPos, food, TextAlignment.Left, VerticalTextAlignment.Top);
                 textPos.y += fontSpacing;
-                font.DrawText(Target, textPos, txt[402], TextAlignment.Left, VerticalTextAlignment.Top);
+                font.DrawText(Target, textPos, water, TextAlignment.Left, VerticalTextAlignment.Top);
                 textPos.y += fontSpacing;
 
+                GuiFont statsFont = app.IsNewGfx ? smallFont : font;
                 textPos.x = basePos.x + 73;
                 if (combat.Defense > 0)
-                    font.DrawText(Target, textPos, txt.Get("newburn?112"), TextAlignment.Left, VerticalTextAlignment.Top);
+                    statsFont.DrawText(Target, textPos, app.IsNewGfx
+                        ? txt.Get("newburn?112") : $"Def: {combat.Defense}%", TextAlignment.Left, VerticalTextAlignment.Top);
                 textPos.x = basePos.x + 20;
-                font.DrawText(Target, textPos, txt.Get("newburn?111"),
+                statsFont.DrawText(Target, textPos, app.IsNewGfx || !(combat.Defense > 0)
+                    ? txt.Get("newburn?111") : $"Dmg: {damage}",
                     TextAlignment.Left, VerticalTextAlignment.Top);
                 textPos.y += fontSpacing;
 
@@ -300,13 +314,13 @@ namespace Burntime.Remaster.GUI
                         float rate = activePage.Character.GetHazardProtectionRate(hazard);
                         if (rate <= 0)
                             continue;
-                        text += (int)(System.Math.Round(rate * 100));
-                        if (hazard == "gas")
-                            text += app.ResourceManager.GetString("newburn?101");
-                        else
-                            text += app.ResourceManager.GetString("newburn?102");
+                        int label = hazard == "gas" ? 90 : app.IsNewGfx ? 92 : 91;
+                        if (text.Length > 0)
+                            text += "  ";
+                        text += app.ResourceManager.GetString($"newburn?{label}") +
+                            $": {(int)System.Math.Round(rate * 100)}%";
                     }
-                    font.DrawText(Target, textPos, text, TextAlignment.Left, VerticalTextAlignment.Top);
+                    statsFont.DrawText(Target, textPos, text, TextAlignment.Left, VerticalTextAlignment.Top);
                 }
                 textPos.y += fontSpacing;
             }

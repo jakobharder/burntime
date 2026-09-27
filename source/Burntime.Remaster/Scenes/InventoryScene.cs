@@ -458,9 +458,9 @@ namespace Burntime.Remaster.Scenes
             else
                 Music = "room";
 
-            roomAreaActive = grid != null && grid.HasFocusableItems;
-            inventory.Grid.ResetFocus();
-            grid?.ResetFocus();
+            roomAreaActive = false;
+            inventory.Grid.ClearFocus();
+            grid?.ClearFocus();
             UpdateActiveArea();
         }
 

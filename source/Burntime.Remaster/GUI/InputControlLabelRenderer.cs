@@ -24,6 +24,7 @@ sealed class InputControlLabelRenderer
     readonly bool _brackets;
     readonly bool _bracketTextControls;
     readonly PixelColor _glyphTint;
+    readonly float _glyphVerticalOffset;
     readonly GuiImage[][] _glyphs = new GuiImage[4][];
     readonly GuiImage[] _keyboardGlyphs =
         new GuiImage[KeyboardAtlasColumns * KeyboardAtlasRows];
@@ -37,13 +38,15 @@ sealed class InputControlLabelRenderer
     public int HoldGlyphWidth => GlyphWidth;
 
     public InputControlLabelRenderer(Module app, GuiFont font, bool brackets = true,
-        PixelColor? glyphTint = null, bool bracketTextControls = true)
+        PixelColor? glyphTint = null, bool bracketTextControls = true,
+        float glyphVerticalOffset = 0.5f)
     {
         _app = app;
         _font = font;
         _brackets = brackets;
         _bracketTextControls = bracketTextControls;
         _glyphTint = glyphTint ?? PixelColor.White;
+        _glyphVerticalOffset = glyphVerticalOffset;
         _holdGlyph = "gfx/ui/input_glyphs_hold.png";
         string[] families = ["xbox", "playstation", "steam", "switch"];
         for (int family = 0; family < families.Length; family++)
@@ -145,7 +148,7 @@ sealed class InputControlLabelRenderer
         target.DrawSelectedSpriteF(
             new Vector2f(position.x,
                 position.y + (_font.GetHeight() - GlyphHeight) / 2 +
-                (_app.IsNewGfx ? 0.5f : 0)),
+                (_app.IsNewGfx ? _glyphVerticalOffset : 0)),
             new Rect(Vector2.Zero, new Vector2(sourceSize, sourceSize)),
             tint,
             postFilter: true, directToFramebuffer: !_app.IsNewGfx);

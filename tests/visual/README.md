@@ -73,14 +73,30 @@ Captured pixels are made opaque without changing their RGB values: the backbuffe
 has already composited translucent UI, so PNG viewers must not blend it a second time.
 
 `source/Burntime.Remaster/VisualTestScenes.cs` contains the ordered, deliberately
-fixture list: menu in keyboard and mouse modes, all three setup-notes pages, options, world map, field manual, location, inventory, room, trader,
+fixture list: menu in keyboard mode, all three setup-notes pages, options, world map, field manual, location, inventory, room, trader,
 doctor, pub, restaurant, information, statistics, church, and return to the map.
-Options opens the settings page. Doctor offers a snake with patient health at 30, pub offers an empty
+Both world-map fixtures press Left once after activation to select a neighboring
+camp and display travel time. Options opens the settings page. Doctor offers a snake with patient health at 30, pub offers an empty
 bottle, and restaurant offers a knife using normal navigation and Space/Enter
 actions. Offers are returned and inventory order restored before leaving each
 fixture, and patient health is restored; the service is not purchased.
 Add scenarios there using normal scene activation and known game state. No
 serialized state fields or save fixtures are needed.
+
+Inventory and room open with the first inventory page active and no item focused.
+The fixtures press Left to select the first inventory item; the room fixture then
+presses Right three times to retain the room item tooltip in its capture.
+
+The inventory fixture equips a steel helmet (armour), and the room fixture equips
+a protective suit (gas and radiation protection). Each restores the original
+inventory before the following fixture. Classic stats use `Dmg: minimum-maximum` and
+`Def: percent` in both languages; newgfx retains localized ranges and uses the
+small font for combat and hazard protection rows. All stat labels use colons;
+hazard values follow their labels (`Gas: 100%`). Small type spells out Radiation
+(Strahlung in German), while classic uses Rad. German supply labels use Essen
+and Wasser with the compact day suffix T (9T in classic, 9 T in newgfx).
+XP/EP are point counts without a percent sign. Newgfx English spells out Defense. For German review captures,
+the private game runner also accepts `--language=de` after its output directory.
 
 Comparison uses exact decoded RGBA pixels, including alpha and dimensions, not
 PNG file bytes. Keep a consistent OS/GPU/driver environment for approved images;
@@ -96,15 +112,16 @@ artifacts/visual-build/venv/bin/python -m unittest discover -s tests/visual -p '
 
 ## Setup notes
 
-Game setup opens Notes with the global Notes prompt (F1 / gamepad View by default).
+Game setup opens Notes with the NOTES button opposite EXIT. Ctrl / gamepad View
+shortcuts remain available. The button participates in keyboard/gamepad focus navigation.
 `resources/game/classic/lang/en/setupnotes.txt` contains its tab labels, comparison
 with the originals, and credits. Patch Notes reads the embedded
 `resources/Changelog.md` directly: edit that changelog and rebuild, with no second
 copy to maintain. The small renderer supports the changelog's headings and bullets
 and wraps text to the manual width. Patch notes currently use the changelog's English.
 
-The setup-notes fixture opens the modal through physical F1 and gamepad View input,
-and the menu-mouse capture checks that the Notes shortcut stays visible in mouse mode.
+The setup-notes fixture selects NOTES with Down/Down/Left and activates it with Primary.
+The following fixture also exercises physical Ctrl and gamepad View input.
 
 Newgfx captures use production xBR2 by default, including the smaller setup-notes
 body font. The viewport is 455x237 logical pixels, with an 853x533 internal target,

@@ -320,17 +320,20 @@ static class ProductionPolicyTests
             Equal(12, config["trader"].GetStrings("199").Length, "Ivan assortment expanded");
             return 0;
         });
-        yield return Int("pistol trades damage for consistency at equal priority", 0, () =>
+        yield return Int("pistol offers efficient ammunition and reliable early damage", 0, () =>
         {
             var config = new Burntime.Platform.IO.ConfigFile();
             config.Open(System.IO.File.OpenRead(ResourceFile("rules/extended/items.txt")));
             var rifle = config["item_loaded_rifle"]; var pistol = config["item_loaded_pistol"];
             Equal(rifle.GetInt("weapon_priority"), pistol.GetInt("weapon_priority"), "equal equipment priority");
+            Equal(9, pistol.GetInt("ammo"), "nine pistol shots per ammunition item");
+            Equal(6, rifle.GetInt("ammo"), "rifle capacity unchanged");
             for (int tier = 0; tier < 4; tier++) {
                 var r = rifle.GetInts("damage").Skip(tier * 4).Take(4).ToArray();
                 var p = pistol.GetInts("damage").Skip(tier * 4).Take(4).ToArray();
                 double ratio = p.Average() / r.Average();
-                Equal(true, ratio >= 0.85 && ratio <= 0.90, "pistol average 10–15% lower");
+                Equal(true, tier < 2 ? ratio > 1 : ratio >= 0.85 && ratio <= 0.90,
+                    "early pistol buff retains late rifle damage advantage");
                 Equal(true, p.Min() > r.Min() && p.Max() < r.Max(), "tighter spread at each tier");
             }
             return 0;
@@ -379,7 +382,7 @@ static class ProductionPolicyTests
             (RuleSet.Dos, "item_loaded_rifle", 6, 6),
             (RuleSet.Amiga, "item_loaded_rifle", 6, 6),
             (RuleSet.Extended, "item_loaded_rifle", 6, 6),
-            (RuleSet.Extended, "item_loaded_pistol", 6, 6)
+            (RuleSet.Extended, "item_loaded_pistol", 9, 9)
         })
             foreach (int spare in new[] { 0, 2 })
                 yield return Int($"{rule} {id}, {spare} spare ammunition", initial + spare * perAmmo, () =>
