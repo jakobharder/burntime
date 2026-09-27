@@ -78,7 +78,7 @@ Automatic
 Active trap
 }#
 Reports remote camps and hazards}
-No food/water used at rest; travel uses both.}
+Man does not live by bread alone.}
 Dogs and mutants avoid attacking the carrier.}
 May uncover ammunition while travelling.}
 Load with ammunition}

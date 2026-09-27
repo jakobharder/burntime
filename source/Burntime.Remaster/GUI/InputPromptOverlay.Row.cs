@@ -17,6 +17,7 @@ sealed partial class InputPromptOverlay
         string _separator = "   ";
 
         readonly bool _smallFont;
+        bool UseSmallFontLayout => _smallFont && app.IsNewGfx;
         readonly GuiFont _font;
         readonly InputControlLabelRenderer _controlRenderer;
         readonly Key _preferredPrimaryKeyboardControl;
@@ -25,6 +26,7 @@ sealed partial class InputPromptOverlay
         string _language = string.Empty;
         InputMode _inputMode = InputMode.None;
         int _glyphRevision = -1;
+        bool _usedSmallFontLayout;
         bool _hasVisiblePrompts;
         int _backgroundLeft;
         int _backgroundWidth;
@@ -122,7 +124,8 @@ sealed partial class InputPromptOverlay
                 return;
 
             if (_inputMode != app.LastInputMode || _language != app.Language ||
-                _glyphRevision != app.Engine.InputGlyphs.Revision)
+                _glyphRevision != app.Engine.InputGlyphs.Revision ||
+                _usedSmallFontLayout != UseSmallFontLayout)
             {
                 _inputMode = app.LastInputMode;
                 RefreshText();
@@ -143,8 +146,9 @@ sealed partial class InputPromptOverlay
                 PromptDisplay display = _display[i];
                 if (display.IsVisible)
                 {
-                    _controlRenderer.Draw(target, new Vector2(x, VerticalPadding + (_smallFont ? _controlRenderer.TextOffset : 0)), display.Control,
-                        display.Label, alignment: TextAlignment.Right, labelFirst: true);
+                    _controlRenderer.Draw(target, new Vector2(x, VerticalPadding + (UseSmallFontLayout ? _controlRenderer.TextOffset : 0)), display.Control,
+                        display.Label, alignment: TextAlignment.Right, labelFirst: true,
+                        textOffset: UseSmallFontLayout ? 0.5f : 0);
                 }
                 x -= display.ReservedWidth + separatorWidth;
             }
@@ -191,9 +195,10 @@ sealed partial class InputPromptOverlay
                 width += _font.GetWidth(_separator) * (_display.Length - 1);
             _language = app.Language;
             _glyphRevision = app.Engine.InputGlyphs.Revision;
+            _usedSmallFontLayout = UseSmallFontLayout;
             Size = new Vector2(
                 width + HorizontalPadding * 2,
-                (_smallFont ? _controlRenderer.LineHeight : _font.GetHeight()) + VerticalPadding * 2);
+                (UseSmallFontLayout ? _controlRenderer.LineHeight : _font.GetHeight()) + VerticalPadding * 2);
             UpdateBackgroundBounds();
         }
 

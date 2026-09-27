@@ -40,6 +40,11 @@ namespace Burntime.Framework.GUI
             font.DrawText(target, position, text, align, vertAlign);
         }
 
+        public void DrawTextOffset(RenderTarget target, Vector2 position, string text, TextAlignment align, VerticalTextAlignment vertAlign, float verticalOffset)
+        {
+            font.DrawText(target, position, text, align, vertAlign, verticalOffset: verticalOffset);
+        }
+
         public void DrawText(RenderTarget target, Vector2 position, string text, TextAlignment align, VerticalTextAlignment vertAlign, float alpha)
         {
             font.DrawText(target, position, text, align, vertAlign, alpha);

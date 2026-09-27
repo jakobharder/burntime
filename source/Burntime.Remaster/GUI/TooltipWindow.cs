@@ -16,6 +16,10 @@ public sealed class TooltipWindow : Window
     int TopPadding => 4;
     int BottomPadding => app.IsNewGfx ? 2 : 4;
     int SectionGap => app.IsNewGfx ? 2 : 4;
+    // Classic text uses 8-pixel glyphs with a 10-pixel line advance.
+    int HeaderAdvance => app.IsNewGfx ? HeaderFont.LineHeight : 10;
+    int StatusAdvance => app.IsNewGfx ? _statusFont.LineHeight : 10;
+    int PromptRowHeight => app.IsNewGfx ? _controlRenderer.LineHeight : 8;
 
     readonly GuiFont _textFont;
     readonly GuiFont _statusFont;
@@ -100,14 +104,14 @@ public sealed class TooltipWindow : Window
         }
 
         if (StatusReplacesSecondaryPrompt && hasStatus)
-            promptRows = 1; // Keep the transfer row reserved even when moving is unavailable.
+            promptRows = MeasurePrompt(Prompt) > 0 ? 1 : 0;
 
         int sectionCount = (hasHeader ? 1 : 0) + (hasText ? 1 : 0) +
             (hasFooter ? 1 : 0);
         int height = TopPadding + BottomPadding +
-            (hasHeader ? HeaderFont.LineHeight : 0) + TextHeight(text) +
-            (hasStatus ? _statusFont.LineHeight : 0) +
-            promptRows * _controlRenderer.LineHeight +
+            (hasHeader ? HeaderAdvance : 0) + TextHeight(text) +
+            (hasStatus ? (app.IsNewGfx ? _statusFont.LineHeight : hasPrompts ? 10 : 8) : 0) +
+            promptRows * PromptRowHeight +
             System.Math.Max(0, sectionCount - 1) * SectionGap;
 
         int width = System.Math.Max(MinimumWidth,
@@ -136,7 +140,7 @@ public sealed class TooltipWindow : Window
         {
             HeaderFont.DrawText(target, new Vector2(HorizontalPadding, y), header,
                 TextAlignment.Left, VerticalTextAlignment.Top);
-            y += HeaderFont.LineHeight;
+            y += HeaderAdvance;
             if (text.Length > 0 || hasFooter)
                 y += SectionGap;
         }
@@ -156,15 +160,17 @@ public sealed class TooltipWindow : Window
                 StatusIsMuted ? _mutedStatusFont : _statusFont;
             statusFont.DrawText(target,
                 new Vector2(Size.x - HorizontalPadding,
-                    y + (StatusReplacesSecondaryPrompt ? _controlRenderer.LineHeight : 0)), status,
+                    y + (StatusReplacesSecondaryPrompt && MeasurePrompt(Prompt) > 0
+                        ? _controlRenderer.LineHeight : 0)), status,
                 TextAlignment.Right, VerticalTextAlignment.Top);
             if (!StatusReplacesSecondaryPrompt)
-                y += _statusFont.LineHeight;
+                y += StatusAdvance;
         }
         if (!hasPrompts)
             return;
 
-        y += _controlRenderer.TextOffset;
+        if (app.IsNewGfx)
+            y += _controlRenderer.TextOffset;
         InputControlLabel promptControl = InputControlDisplay.Resolve(app,
             app.LastInputMode, Prompt);
         InputControlLabel secondaryPromptControl = InputControlDisplay.Resolve(app,
@@ -177,7 +183,8 @@ public sealed class TooltipWindow : Window
             int secondaryY = y + (StackPrompts && hasPrompt ? _controlRenderer.LineHeight : 0);
             _controlRenderer.Draw(target, new Vector2(right, secondaryY),
                 secondaryPromptControl, secondaryPrompt.Label,
-                alignment: TextAlignment.Right, labelFirst: true);
+                alignment: TextAlignment.Right, labelFirst: true,
+                textOffset: app.IsNewGfx ? 0.5f : 0);
             if (StackPrompts)
             {
                 right = PromptRightEdge(promptControl);
@@ -191,12 +198,12 @@ public sealed class TooltipWindow : Window
                 new Vector2(right, y),
                 promptControl, prompt.Label,
                 alignment: TextAlignment.Right,
-                labelFirst: true);
+                labelFirst: true, textOffset: app.IsNewGfx ? 0.5f : 0);
         }
     }
 
     int TextHeight(string text) => text.Length == 0 ? 0 :
-        text.Split('\n').Length * _textFont.LineHeight;
+        text.Split('\n').Length * (app.IsNewGfx ? _textFont.LineHeight : 10);
 
     int PromptRightEdge(InputControlLabel control)
     {

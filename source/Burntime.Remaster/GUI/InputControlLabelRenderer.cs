@@ -75,7 +75,7 @@ sealed class InputControlLabelRenderer
 
     public void Draw(RenderTarget target, Vector2 position, InputControlLabel control,
         string label = "", string prefix = "", TextAlignment alignment = TextAlignment.Left,
-        bool labelFirst = false)
+        bool labelFirst = false, float textOffset = 0)
     {
         bool brackets = UsesBrackets(control);
         int width = Measure(control, label, prefix, labelFirst);
@@ -84,16 +84,16 @@ sealed class InputControlLabelRenderer
         {
             int gap = GetLabelGap(control, brackets, labelFirst: true);
             int controlX = x + _font.GetWidth(label) + gap;
-            _font.DrawText(target, new Vector2(controlX - gap, position.y), label,
-                TextAlignment.Right, VerticalTextAlignment.Top);
+            _font.DrawTextOffset(target, new Vector2(controlX - gap, position.y), label,
+                TextAlignment.Right, VerticalTextAlignment.Top, verticalOffset: textOffset);
             x = controlX;
         }
-        DrawText(target, ref x, position.y, prefix + (brackets ? "[" : ""));
+        DrawText(target, ref x, position.y, prefix + (brackets ? "[" : ""), textOffset);
         foreach (InputControlPart part in control.Parts)
         {
             if (!part.HasGlyph)
             {
-                DrawText(target, ref x, position.y, part.Text);
+                DrawText(target, ref x, position.y, part.Text, textOffset);
                 continue;
             }
 
@@ -120,11 +120,11 @@ sealed class InputControlLabelRenderer
             x += GlyphWidth;
         }
         string suffix = brackets ? "]" : "";
-        DrawText(target, ref x, position.y, suffix);
+        DrawText(target, ref x, position.y, suffix, textOffset);
         if (!labelFirst && label.Length > 0)
         {
             x += GetLabelGap(control, brackets, labelFirst: false);
-            DrawText(target, ref x, position.y, label);
+            DrawText(target, ref x, position.y, label, textOffset);
         }
     }
 
@@ -190,10 +190,10 @@ sealed class InputControlLabelRenderer
         return touchesGlyph ? System.Math.Max(1, spaceWidth / 2) : spaceWidth;
     }
 
-    void DrawText(RenderTarget target, ref int x, int y, string text)
+    void DrawText(RenderTarget target, ref int x, int y, string text, float textOffset = 0)
     {
-        _font.DrawText(target, new Vector2(x, y), text,
-            TextAlignment.Left, VerticalTextAlignment.Top);
+        _font.DrawTextOffset(target, new Vector2(x, y), text,
+            TextAlignment.Left, VerticalTextAlignment.Top, verticalOffset: textOffset);
         x += _font.GetWidth(text);
     }
 }

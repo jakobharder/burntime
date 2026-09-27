@@ -172,13 +172,13 @@ public class Font
     }
 
     public void DrawText(RenderTarget target, Vector2 position, string text, TextAlignment align = TextAlignment.Left, 
-        VerticalTextAlignment verticalAlign = VerticalTextAlignment.Center, float alpha = 1)
+        VerticalTextAlignment verticalAlign = VerticalTextAlignment.Center, float alpha = 1, float verticalOffset = 0)
     {
         if (!IsLoaded)
             _resourceManager.LoadFont(this);
 
         target.Layer++;
-        DrawText(target, position, text, align, verticalAlign, GetDrawColor(alpha));
+        DrawText(target, position, text, align, verticalAlign, GetDrawColor(alpha), verticalOffset);
         target.Layer--;
     }
 
@@ -256,7 +256,7 @@ public class Font
     }
 
     void DrawText(RenderTarget target, Vector2 position, string text, TextAlignment align,
-        VerticalTextAlignment verticalAlign, PixelColor color)
+        VerticalTextAlignment verticalAlign, PixelColor color, float verticalOffset = 0)
     {
         // TODO: text align
         if (text == null || text.Length == 0)
@@ -286,7 +286,7 @@ public class Font
 
             target.SelectSprite(Resource.Sprite);
 
-            float renderY = offset.y;
+            float renderY = offset.y + verticalOffset;
             if (Resource.Sprite.LinearFiltering)
             {
                 Vector2f snapped = target.SnapToPhysicalPixels(new Vector2f(renderX, renderY));

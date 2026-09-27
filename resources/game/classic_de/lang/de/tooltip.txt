@@ -78,7 +78,7 @@ Automatisch
 Aktive Falle
 }#
 Meldet entfernte Lager und Gefahren}
-Nahrung/Wasser nur auf Reisen nötig.}
+Der Mensch lebt nicht vom Brot allein.}
 Hunde und Mutanten meiden den Träger.}
 Kann auf Reisen Munition aufspüren.}
 Mit Munition laden}
