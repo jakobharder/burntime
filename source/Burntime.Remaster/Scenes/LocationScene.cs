@@ -57,6 +57,7 @@ namespace Burntime.Remaster
         bool characterCycleLatched;
         float characterCycleDebounce;
         LocalCombatEncounter? combatEncounter;
+        float combatRecovery;
         readonly ManualWindow manualWindow;
 
         public LocationScene(Module App)
@@ -232,7 +233,7 @@ namespace Burntime.Remaster
         {
             if (attacker.IsDead || defender.IsDead || view.Location.IsCity)
                 return false;
-            if (combatEncounter != null && !combatEncounter.IsComplete)
+            if (combatRecovery > 0 || combatEncounter != null && !combatEncounter.IsComplete)
                 return false;
 
             IEnumerable<Character> attackers = attacker.Player != null &&
@@ -532,9 +533,13 @@ namespace Burntime.Remaster
 
             game.World.ActiveLocationObj.Update(Elapsed);
             game.World.ActivePlayerObj.Update(Elapsed);
+            combatRecovery = System.Math.Max(0, combatRecovery - Elapsed);
             combatEncounter?.Update(Elapsed);
             if (combatEncounter?.IsComplete == true)
+            {
                 combatEncounter = null;
+                combatRecovery = 0.75f;
+            }
 
             if (app.MouseInputVisible)
                 followSelectedCharacter = false;
@@ -614,7 +619,7 @@ namespace Burntime.Remaster
 
         bool CanShowFightPrompt()
         {
-            if (combatEncounter != null && !combatEncounter.IsComplete)
+            if (combatRecovery > 0 || combatEncounter != null && !combatEncounter.IsComplete)
                 return false;
 
             if (app.LastInputMode == InputMode.Mouse)
@@ -665,11 +670,19 @@ namespace Burntime.Remaster
         void SelectAdjacentGroupCharacter(int direction)
         {
             var group = view.Player.Party;
-            if (group.Count <= 1)
+            if (group.Count == 0)
                 return;
 
             int targetIndex;
-            if (!view.Player.SingleMode)
+            if (!group.Contains(view.Player.SelectedCharacter))
+            {
+                // Camp selections are outside the party cycle. Either direction
+                // returns to the boss, including when the party has no followers.
+                targetIndex = 0;
+            }
+            else if (group.Count == 1)
+                return;
+            else if (!view.Player.SingleMode)
             {
                 // All is a separate state. LB selects the singular boss while
                 // RB starts the follower cycle at its first member.

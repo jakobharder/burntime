@@ -72,7 +72,7 @@ sealed partial class InputPromptOverlay
                 Borders = TextBorders.None
             };
             _controlRenderer = new InputControlLabelRenderer(app, _font, brackets: false,
-                glyphTint: glyphColor);
+                glyphTint: glyphColor, glyphVerticalOffset: smallFont ? 0 : 0.5f);
             HorizontalAlignment = PositionAlignment.Right;
             VerticalAlignment = PositionAlignment.Right;
             RefreshText();
@@ -139,7 +139,7 @@ sealed partial class InputPromptOverlay
 
             // Lay out from right to left. This keeps trailing/global prompts at the
             // exact same pixel when contextual prompts are inserted before them.
-            int x = Size.x - HorizontalPadding;
+            int x = Size.x - RightPadding;
             int separatorWidth = _font.GetWidth(_separator);
             for (int i = _display.Length - 1; i >= 0; i--)
             {
@@ -147,8 +147,7 @@ sealed partial class InputPromptOverlay
                 if (display.IsVisible)
                 {
                     _controlRenderer.Draw(target, new Vector2(x, VerticalPadding + (UseSmallFontLayout ? _controlRenderer.TextOffset : 0)), display.Control,
-                        display.Label, alignment: TextAlignment.Right, labelFirst: true,
-                        textOffset: UseSmallFontLayout ? 0.5f : 0);
+                        display.Label, alignment: TextAlignment.Right, labelFirst: true);
                 }
                 x -= display.ReservedWidth + separatorWidth;
             }
@@ -197,16 +196,23 @@ sealed partial class InputPromptOverlay
             _glyphRevision = app.Engine.InputGlyphs.Revision;
             _usedSmallFontLayout = UseSmallFontLayout;
             Size = new Vector2(
-                width + HorizontalPadding * 2,
-                (UseSmallFontLayout ? _controlRenderer.LineHeight : _font.GetHeight()) + VerticalPadding * 2);
+                width + HorizontalPadding + RightPadding,
+                (UseSmallFontLayout ? _controlRenderer.LineHeight : _font.GetHeight()) +
+                VerticalPadding + (UseSmallFontLayout ? 1 : VerticalPadding));
             UpdateBackgroundBounds();
         }
+
+        // Glyph artwork already contains an inset; avoid doubling it at the right edge.
+        int RightPadding => UseSmallFontLayout && _display.Length > 0 &&
+            _display[^1].Control.Parts.Count > 0 && _display[^1].Control.Parts[^1].HasGlyph
+                ? System.Math.Max(0, HorizontalPadding - 2)
+                : HorizontalPadding;
 
         void UpdateBackgroundBounds()
         {
             int left = Size.x;
             int right = 0;
-            int x = Size.x - HorizontalPadding;
+            int x = Size.x - RightPadding;
             int separatorWidth = _font.GetWidth(_separator);
             for (int i = _display.Length - 1; i >= 0; i--)
             {
@@ -220,7 +226,7 @@ sealed partial class InputPromptOverlay
             }
 
             _backgroundLeft = left - HorizontalPadding;
-            _backgroundWidth = right - left + HorizontalPadding * 2;
+            _backgroundWidth = right - left + HorizontalPadding + RightPadding;
         }
     }
 }

@@ -254,8 +254,15 @@ namespace Burntime.Remaster.GUI
 
         public void ResetFocus()
         {
-            focusIndex = -1;
+            ClearFocus();
             FocusFirstItem();
+        }
+
+        public void ClearFocus()
+        {
+            focusIndex = -1;
+            lastFocusPosition = null;
+            ClearMouseFocus();
         }
 
         public bool EnsureFocus()

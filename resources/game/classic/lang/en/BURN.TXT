@@ -378,7 +378,7 @@ HIGHSCORE}
 }
 }
 }
-XP: |A%}
+XP: |A}
 HP: |B%}
 LOAD}
 SAVE}

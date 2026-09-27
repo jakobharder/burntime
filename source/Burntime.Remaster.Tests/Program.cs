@@ -16,6 +16,7 @@ static class Program
     static int Main()
     {
         Burntime.Platform.IO.FileSystem.AddPackage("classic", System.IO.Path.GetDirectoryName(ResourceFile("rules/dos/items.txt")) + "/../..");
+        Run("animation frame tables", AnimationHeaderTests.Cases());
         Run("transactional saves", SaveGameTests.SaveCases());
         Run("repeated attack plans", AttackPlanObservationTests.Cases());
         Run("lasting combat progress", AttackRetryMemoryTests.Cases());

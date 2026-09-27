@@ -332,12 +332,12 @@ text=@newburn?7
 image=gfx/pistol_loaded_2.png
 image_last_round=gfx/pistol_loaded.png
 value=150
-ammo=6
+ammo=9
 empty=item_unloaded_pistol
 load_name=@tooltip?86
 weapon_priority=55
 attack_range=32
-damage=4 7 9 11 6 9 12 15 9 12 16 18 13 18 22 26
+damage=6 9 11 13 8 11 14 17 9 12 16 18 13 18 22 26
 
 [item_unloaded_pistol]
 class=weapon special rare

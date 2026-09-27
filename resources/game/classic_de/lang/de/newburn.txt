@@ -4,9 +4,9 @@ Hundekacke
 Teller
 Papierhelm
 Du wirst sterben!
-geladene Pistole
+Geladene Pistole
 eine geladene Pistole
-ungeladene Pistole
+Ungeladene Pistole
 eine ungeladene Pistole
 Warte auf andere Spieler...
 Pause
@@ -88,9 +88,9 @@ wieder richtig fit.
 
 
 
-
-
-
+Gas
+Rad
+Strahlung
 
 
 
@@ -98,7 +98,7 @@ wieder richtig fit.
 
 
 Angriff {attack}}
-Vert. {defense}}
+Vert: {defense}}
 % Gas 
 % Rad. 
 Blockiert}
@@ -109,9 +109,9 @@ DOS-Computerspieler
 Amiga-Computerspieler
 Remaster-Computerspieler
 Erweiterte Regeln
-Schaden {damage}}
-Vert. {defense}%}
+Schaden: {damage}}
+Vert: {defense}%}
 Metalldetektor}
 einen Metalldetektor}
-defekter Metalldetektor}
+Defekter Metalldetektor}
 einen defekten Metalldetektor}

@@ -25,10 +25,11 @@ internal sealed class VisualTestRunner(string outputDirectory)
     public static int Run(string[] args)
     {
         // Deliberately small private CLI; the Python script owns the user interface.
-        if (args.Length is < 3 or > 4 || (args.Length == 4 && args[3] != "--native-filter") || args[0] != "--visual-test" ||
+        if (args.Length is < 3 or > 5 || args.Skip(3).Any(arg =>
+            arg is not ("--native-filter" or "--language=en" or "--language=de")) || args[0] != "--visual-test" ||
             args[1] is not ("classic" or "newgfx" or "classic-no-hints"))
         {
-            Console.Error.WriteLine("Usage: Burntime --visual-test classic|newgfx|classic-no-hints OUTPUT_DIRECTORY [--native-filter]");
+            Console.Error.WriteLine("Usage: Burntime --visual-test classic|newgfx|classic-no-hints OUTPUT_DIRECTORY [--native-filter] [--language=en|--language=de]");
             return 2;
         }
         string output = Path.GetFullPath(args[2]);
@@ -37,14 +38,15 @@ internal sealed class VisualTestRunner(string outputDirectory)
         Directory.CreateDirectory(FileSystem.UserFolderOverride);
         int hints = (int)(args[1] == "classic-no-hints"
             ? UIHintVisibilityMode.Hide : UIHintVisibilityMode.Full);
+        string language = args.Contains("--language=de") ? "de" : "en";
         System.IO.File.WriteAllText(Path.Combine(FileSystem.UserFolderOverride, "user.txt"),
-            $"newgfx={(args[1] == "newgfx" ? "true" : "false")}\nprompts={hints}\nlanguage=en\nfullscreen=false\nmusic=off\nmap_music=none\ncontroller_glyphs=xbox\n");
+            $"newgfx={(args[1] == "newgfx" ? "true" : "false")}\nprompts={hints}\nlanguage={language}\nfullscreen=false\nmusic=off\nmap_music=none\ncontroller_glyphs=xbox\n");
         Platform.Math.SetRandomSeed(123);
         VisualTestRunner runner = new(output);
         try
         {
             using BurntimeGame game = new(emulateSteamDeck: true,
-                nearestPointOutputFiltering: args[1] != "newgfx" && args.Length == 3);
+                nearestPointOutputFiltering: args[1] != "newgfx" && !args.Contains("--native-filter"));
             game.VisualTest = runner;
             game.Run();
             return runner.Complete ? 0 : 1;

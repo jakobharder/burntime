@@ -13,7 +13,7 @@ public sealed class VisualTestScenes(BurntimeClassic app)
 {
     public static readonly string[] Names =
     [
-        "menu", "menu-mouse", "setup-notes", "setup-versus-original", "setup-credits", "options", "map", "manual", "location", "inventory", "room",
+        "menu", "setup-notes", "setup-versus-original", "setup-credits", "options", "map", "manual", "location", "inventory", "room",
         "trader", "doctor", "pub", "restaurant", "info", "statistics",
         "church", "map-return"
     ];
@@ -21,10 +21,20 @@ public sealed class VisualTestScenes(BurntimeClassic app)
     bool gameCreated;
     Item[]? serviceItems;
     int serviceHealth;
+    Item[]? equipmentItems;
+    Item? equippedProtection;
 
     public void Open(string name)
     {
         app.LastInputMode = InputMode.Keyboard;
+        if (equipmentItems != null)
+        {
+            app.SelectedCharacter.Items.Clear();
+            foreach (Item item in equipmentItems)
+                app.SelectedCharacter.Items.Add(item);
+            app.SelectedCharacter.Protection = equippedProtection;
+            equipmentItems = null;
+        }
         if (serviceItems != null)
         {
             Press(InputAction.Back); // Return the uncommitted offer through the normal exit action.
@@ -33,7 +43,7 @@ public sealed class VisualTestScenes(BurntimeClassic app)
             app.SelectedCharacter.Health = serviceHealth;
             serviceItems = null;
         }
-        if (name is not ("menu" or "menu-mouse" or "setup-notes" or "setup-versus-original" or "setup-credits" or "options") && !gameCreated)
+        if (name is not ("menu" or "setup-notes" or "setup-versus-original" or "setup-credits" or "options") && !gameCreated)
         {
             Platform.Math.SetRandomSeed(123);
             new GameCreation(app).CreateNewGame(new NewGameInfo
@@ -51,15 +61,18 @@ public sealed class VisualTestScenes(BurntimeClassic app)
         switch (name)
         {
             case "menu": app.SetScene("MenuScene"); break;
-            case "menu-mouse":
-                app.LastInputMode = InputMode.Mouse;
-                break;
             case "setup-notes":
-                // Exercise physical shortcuts, not just their semantic action.
-                app.DeviceManager.VKeyPress(SystemKey.Ctrl);
-                app.Process(0);
+                // Reach the new button through the normal setup focus order.
+                Press(InputAction.MoveDown);
+                Press(InputAction.MoveDown);
+                Press(InputAction.MoveLeft);
+                Press(InputAction.Primary);
                 break;
             case "setup-versus-original":
+                Press(InputAction.Back);
+                // Retain coverage of the physical Ctrl and gamepad shortcuts.
+                app.DeviceManager.VKeyPress(SystemKey.Ctrl);
+                app.Process(0);
                 Press(InputAction.Back);
                 app.DeviceManager.GamepadControlPress(GamepadControl.View);
                 app.Process(0);
@@ -79,16 +92,36 @@ public sealed class VisualTestScenes(BurntimeClassic app)
                 Press(InputAction.RightArea);
                 break;
             case "map":
-            case "map-return": app.SetScene("MapScene"); break;
+            case "map-return":
+                app.SetScene("MapScene");
+                Press(InputAction.MoveLeft); // Select a neighboring camp to show travel time.
+                break;
             case "location":
                 Press(InputAction.Back); // Close the field manual before leaving the map.
                 app.SetScene("LocationScene");
                 break;
             case "inventory":
             case "room":
+                // Exercise armour and hazard rows with the actual equipped item.
+                equipmentItems = app.SelectedCharacter.Items.Cast<Item>().ToArray();
+                equippedProtection = app.SelectedCharacter.Protection;
+                if (app.SelectedCharacter.Protection is Item previousProtection)
+                    app.SelectedCharacter.Items.Remove(previousProtection);
+                Item protection = app.Game.Container.Create<Item>(app.Game.ItemTypes[
+                    name == "inventory" ? "item_steel_helmet" : "item_protective_suit"]);
+                app.SelectedCharacter.Items.Add(protection);
+                app.SelectedCharacter.Protection = protection;
                 app.InventoryBackground = name == "room" ? 0 : -1;
                 app.InventoryRoom = name == "room" ? app.Game.World.ActiveLocationObj.Rooms[0] : null;
                 app.SetScene("InventoryScene", app.SelectedCharacter);
+                Press(InputAction.MoveLeft); // Enter item focus from the initial page selection.
+                if (name == "room")
+                {
+                    // Cross the three inventory columns to retain the room's Bible tooltip.
+                    Press(InputAction.MoveRight);
+                    Press(InputAction.MoveRight);
+                    Press(InputAction.MoveRight);
+                }
                 break;
             case "trader":
                 app.Game.World.ActiveTraderObj = app.Game.World.Traders[0];
