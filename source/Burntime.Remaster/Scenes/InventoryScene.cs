@@ -16,7 +16,8 @@ namespace Burntime.Remaster.Scenes
         const int NeedsTechnicianTextIndex = 47;
         const int PlaceInRoomTextIndex = 48;
         const int UnsuitableCampTextIndex = 49;
-        const int GroupFullTextIndex = 70;
+        const int NotHungryTextIndex = 70;
+        const int NotThirstyTextIndex = 94;
         const int NotEnoughWaterTextIndex = 71;
         const int CheckMaterialsTextIndex = 72;
         const int NeedsAmmunitionTextIndex = 73;
@@ -188,7 +189,9 @@ namespace Burntime.Remaster.Scenes
                 if (!canConsume)
                 {
                     prompt = null;
-                    status = $"@tooltip?{GroupFullTextIndex}";
+                    status = focused.FoodValue > 0
+                        ? $"@tooltip?{NotHungryTextIndex}"
+                        : $"@tooltip?{NotThirstyTextIndex}";
                     statusIsMuted = true;
                 }
             }

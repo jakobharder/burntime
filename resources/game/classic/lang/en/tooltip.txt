@@ -68,7 +68,7 @@ Food Production
 {product}: {tools}}
 None
 Change
-Everyone is supplied
+Not hungry
 Not enough water
 Check materials
 Needs ammunition
@@ -92,3 +92,4 @@ Long}
 Ranged}
 Equipped}
 Passive while carried}
+Not thirsty
