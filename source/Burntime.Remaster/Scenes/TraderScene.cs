@@ -119,6 +119,9 @@ class TraderScene : Scene
         acceptButton.Prompts.Add(InputAction.Action, "",
             new Vector2(acceptButton.Size.x + 2, -2));
 
+        Prompts.Add(InputPattern.HorizontalPaging, "@prompts?30",
+            () => inventory.PageCount > 1);
+
         PositionElements();
     }
 
@@ -228,9 +231,9 @@ class TraderScene : Scene
 
         side = InventorySide.None;
         keyboardArea = KeyboardArea.Trader;
-        inventory.Grid.ResetFocus();
-        inventoryTrader.Grid.ResetFocus();
-        temporarySpace.ResetFocus();
+        inventory.Grid.ClearFocus();
+        inventoryTrader.Grid.ClearFocus();
+        temporarySpace.ClearFocus();
         exchangeTop.Grid.FocusVisible = false;
         exchangeBottom.Grid.FocusVisible = false;
         UpdateKeyboardArea();
@@ -343,10 +346,13 @@ class TraderScene : Scene
             return true;
         }
 
-        // Trader pages are changed by moving beyond the vertical grid edges.
-        // Shoulder-button page changes are reserved for the single inventory UI.
+        // Shoulders always page through the party, regardless of the focused area.
         if (action is InputAction.LeftArea or InputAction.RightArea)
+        {
+            inventory.SelectAdjacentPage(action == InputAction.LeftArea ? -1 : 1);
+            UpdateKeyboardArea();
             return true;
+        }
 
         Vector2 direction = action switch
         {
@@ -362,6 +368,15 @@ class TraderScene : Scene
         };
         if (direction != Vector2.Zero)
         {
+            if (direction.x != 0 && inventory.Grid.FocusPosition == null &&
+                inventoryTrader.Grid.FocusPosition == null && temporarySpace.FocusPosition == null)
+            {
+                keyboardArea = direction.x > 0 ? KeyboardArea.Trader : KeyboardArea.Player;
+                ActiveKeyboardGrid.EnsureFocus();
+                UpdateKeyboardArea();
+                return true;
+            }
+
             ItemGridWindow activeGrid = ActiveKeyboardGrid;
             Vector2? sourcePosition = activeGrid.FocusPosition;
             bool moved = activeGrid.MoveFocus(direction);

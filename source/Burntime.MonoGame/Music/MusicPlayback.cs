@@ -422,14 +422,11 @@ public sealed class MusicPlayback : IMusic
     {
         _playlist.Clear();
         if (request.Kind == RequestKind.Play && _music is not null &&
-            Playing == request.Song)
+            Playing == request.Song && _repeat == request.Repeat &&
+            _isMapPlaylistPlayback == request.IsMapPlaylist)
         {
-            _repeat = request.Repeat;
-            _isMapPlaylistPlayback = request.IsMapPlaylist;
-            if (request.Repeat)
-                _music.EnableLoop();
-            else
-                _music.DisableLoop();
+            // Only reuse identical playback. A scene's looping song must not
+            // replace the finite map instance that will be resumed afterwards.
             _rememberPlaylistOnTransition = false;
             _pendingRequest = null;
             return;

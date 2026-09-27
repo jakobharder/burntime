@@ -646,10 +646,13 @@ namespace Burntime.Remaster
 
         bool CanShowCharacterPrompts() =>
             app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad &&
-            view.Player.Party.Count > 1;
+            (view.Player.Party.Count > 1 ||
+                (view.Player.SelectedCharacter != null &&
+                    !view.Player.Party.Contains(view.Player.SelectedCharacter)));
 
         bool CanShowGroupActionsPrompt() =>
-            CanShowCharacterPrompts();
+            app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad &&
+            HasGroupMenuCommands();
 
         void UpdateCharacterPromptPositions()
         {
@@ -924,7 +927,7 @@ namespace Burntime.Remaster
         void ShowActionsMenu(Vector2 position, bool openedByMouse)
         {
             groupMenuOpen = false;
-            menu.AlternatePrimaryAction = InputAction.None;
+            menu.FirstLineAction = InputAction.None;
             menu.Clear();
 
             void AddLine(GuiString text, Action command,
@@ -1007,11 +1010,12 @@ namespace Burntime.Remaster
 
             if (charOverlay.SelectedCharacter != view.Player.Character)
             {
-                addLine("@burn?363", OnMenuDismiss);
-                if (view.Player.Party.Contains(charOverlay.SelectedCharacter))
-                    addLine("@burn?364", OnMenuMakeCamp);
-                else if (view.Player.Party.Count < Logic.Group.MAX_PEOPLE)
+                bool inParty = view.Player.Party.Contains(charOverlay.SelectedCharacter);
+                if (!inParty && view.Player.Party.Count < Logic.Group.MAX_PEOPLE)
                     addLine("@burn?365", OnMenuLeaveCamp);
+                addLine("@burn?363", OnMenuDismiss);
+                if (inParty)
+                    addLine("@burn?364", OnMenuMakeCamp);
             }
         }
 
@@ -1021,7 +1025,7 @@ namespace Burntime.Remaster
                 return;
 
             groupMenuOpen = true;
-            menu.AlternatePrimaryAction = InputAction.Secondary;
+            menu.FirstLineAction = InputAction.Secondary;
             menu.Clear();
             AddGroupMenuLines((text, command) =>
                 menu.AddLine(text, new CommandHandler(command)));
@@ -1153,15 +1157,8 @@ namespace Burntime.Remaster
 
         public void OnMenuDismiss()
         {
-            if (charOverlay.SelectedCharacter.IsLastInCamp)
-            {
-                dialog.SetCharacter(view.Player.Character, charOverlay.SelectedCharacter, ConversationType.Dismiss);
-                dialog.Show();
-                return;
-            }
-
-            charOverlay.SelectedCharacter.Dismiss();
-            view.Player.SelectGroup(view.Player.Party);
+            dialog.SetCharacter(view.Player.Character, charOverlay.SelectedCharacter, ConversationType.Dismiss);
+            dialog.Show();
         }
 
         public void OnMenuMakeCamp()

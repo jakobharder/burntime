@@ -125,16 +125,6 @@ internal class LoopableSong : IDisposable
             fadingMusic.SubmitBuffer(_fadeOutBuffer);
     }
 
-    public void EnableLoop()
-    {
-        if (_loopEnabled || _loopBuffer is null ||
-            _music is not DynamicSoundEffectInstance music)
-            return;
-        _loopEnabled = true;
-        music.BufferNeeded += BufferNeeded;
-        _bufferNeededSubscribed = true;
-    }
-
     public float Volume
     {
         get => _music?.Volume ?? 0;

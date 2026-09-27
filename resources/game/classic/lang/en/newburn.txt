@@ -115,3 +115,6 @@ Metal Detector}
 a metal detector}
 Defective Metal Detector}
 a defective metal detector}
+Do you really want to
+dismiss me?
+All right, you're staying with me.
