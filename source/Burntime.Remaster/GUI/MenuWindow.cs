@@ -120,20 +120,20 @@ namespace Burntime.Remaster.GUI
 
         public override bool PreserveMouseModeForDirectionalInput => _openedByMouse;
 
-        public InputAction AlternatePrimaryAction { get; set; }
+        public InputAction FirstLineAction { get; set; }
         public float? ExternalPromptLayer { get; set; }
 
         public override void OnRender(RenderTarget target)
         {
             target.DrawSprite(Vector2.Zero, _topElement);
 
-            InputControlLabel alternatePrimaryControl = InputControlLabel.Empty;
-            if (AlternatePrimaryAction != InputAction.None &&
+            InputControlLabel firstLineControl = InputControlLabel.Empty;
+            if (FirstLineAction != InputAction.None &&
                 app.LastInputMode is (InputMode.Keyboard or InputMode.Gamepad) &&
                 (app is not BurntimeClassic classic || classic.ShowUIHints))
             {
-                alternatePrimaryControl = InputControlDisplay.Resolve(app,
-                    app.LastInputMode, AlternatePrimaryAction);
+                firstLineControl = InputControlDisplay.Resolve(app,
+                    app.LastInputMode, FirstLineAction);
             }
             InputMode shortcutInputMode = app.LastInputMode == InputMode.Gamepad
                 ? InputMode.Gamepad
@@ -176,15 +176,15 @@ namespace Burntime.Remaster.GUI
                 InputControlLabelRenderer renderer = _focusIndex == i
                     ? _focusControlRenderer
                     : _defaultControlRenderer;
-                if (i == 0 && !alternatePrimaryControl.IsEmpty)
+                if (i == 0 && !firstLineControl.IsEmpty)
                 {
                     const int controlGap = 2;
-                    int controlWidth = renderer.Measure(alternatePrimaryControl);
+                    int controlWidth = renderer.Measure(firstLineControl);
                     int combinedWidth = controlWidth + controlGap + textWidth;
                     int combinedX = (MENU_CONTENT_WIDTH - combinedWidth) / 2;
                     renderer.Draw(target,
                         new Vector2(combinedX, texty),
-                        alternatePrimaryControl);
+                        firstLineControl);
                     textx = combinedX + controlWidth + controlGap;
                 }
 
@@ -307,8 +307,14 @@ namespace Burntime.Remaster.GUI
                 return true;
             }
 
-            if (action == InputAction.Primary ||
-                AlternatePrimaryAction != InputAction.None && action == AlternatePrimaryAction)
+            if (FirstLineAction != InputAction.None && action == FirstLineAction)
+            {
+                if (_menuEntries.Count > 0)
+                    Execute(0);
+                return true;
+            }
+
+            if (action == InputAction.Primary)
             {
                 if (_focusIndex < 0 && _menuEntries.Count > 0)
                     _focusIndex = 0;

@@ -36,7 +36,10 @@ namespace Burntime.Remaster.Logic
             int index = 3; // TODO
 
             Conversation conv = new Conversation();
-            conv.Text = ResourceManager.GetStrings("men_502?s" + index);
+            conv.Text = Parent.IsLastInCamp
+                ? ResourceManager.GetStrings("men_502?s" + index)
+                : new[] { ResourceManager.GetString("newburn?117"),
+                    ResourceManager.GetString("newburn?118") };
             conv.Choices = new ConversationChoice[3];
 
             conv.Choices[0] = new ConversationChoice();
@@ -44,7 +47,8 @@ namespace Burntime.Remaster.Logic
             conv.Choices[0].Text = "";
             conv.Choices[1] = new ConversationChoice();
             conv.Choices[1].Action = new ConversationAction(ConversationActionType.No);
-            conv.Choices[1].Text = ResourceManager.GetString("burn?495");
+            conv.Choices[1].Text = ResourceManager.GetString(Parent.IsWithBoss
+                ? "newburn?119" : "burn?495");
             conv.Choices[2] = new ConversationChoice();
             conv.Choices[2].Action = new ConversationAction(ConversationActionType.Yes);
             conv.Choices[2].Text = ResourceManager.GetString("burn?496");

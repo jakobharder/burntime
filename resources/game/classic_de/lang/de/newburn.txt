@@ -115,3 +115,6 @@ Metalldetektor}
 einen Metalldetektor}
 Defekter Metalldetektor}
 einen defekten Metalldetektor}
+Willst du mich wirklich
+entlassen?
+Also gut, du bleibst bei mir.
