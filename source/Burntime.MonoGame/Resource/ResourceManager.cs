@@ -96,14 +96,40 @@ namespace Burntime.Platform.Resource
                     LinearFiltering = true
                 };
 
-                resource.Load(sprite, processor.CharInfo, processor.Kerning,
-                    processor.Offset, processor.GlyphHeight, processor.PostFilter);
+                Dictionary<char, FontSpriteResource> indicators =
+                    LoadFontSprites(processor.Indicators);
+                Dictionary<char, FontSpriteResource> icons =
+                    LoadFontSprites(processor.Icons, processor.Factor);
+
+                resource.Load(sprite, processor.CharInfo, processor.Kerning, indicators, icons,
+                    processor.Offset, processor.GlyphHeight, processor.PostFilter, processor.LineHeight);
                 if (isNewResource)
                     fonts.Add(info, resource);
 
                 _engine.DecreaseLoadingCount();
             }
             return font;
+        }
+
+        Dictionary<char, FontSpriteResource> LoadFontSprites(
+            IReadOnlyDictionary<char, FontSpriteInfo> definitions,
+            Vector2f? resolution = null)
+        {
+            Dictionary<char, FontSpriteResource> result = [];
+            foreach ((char code, FontSpriteInfo definition) in definitions)
+            {
+                ISprite[] frames = new ISprite[definition.FrameCount];
+                for (int i = 0; i < frames.Length; i++)
+                {
+                    frames[i] = GetImage(
+                        $"pngsheet@{definition.Image}?{definition.StartFrame + i}?" +
+                        $"{definition.FrameSize.x}x{definition.FrameSize.y}");
+                    if (resolution.HasValue)
+                        frames[i].Resolution = resolution.Value;
+                }
+                result[code] = new FontSpriteResource(frames, definition.Advance);
+            }
+            return result;
         }
         #endregion
 

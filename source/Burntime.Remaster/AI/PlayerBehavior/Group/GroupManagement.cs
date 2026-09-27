@@ -16,8 +16,8 @@ internal static class GroupManagement
         bool allowCampTransfers = false)
     {
         Player player = state.Player;
-        Character[] group = player.Group.Where(character => !character.IsDead).ToArray();
-        WeaponLoadout.NormalizeWeaponLimits(state, group);
+        Character[] group = player.Party.ToArray();
+        WeaponLoadout.RefreshWeapons(group);
         NormalizeCarriedProtection(state, group);
 
         // Keep one weapon on every traveller before spending weapons on camp upgrades.
@@ -25,9 +25,9 @@ internal static class GroupManagement
             WeaponLoadout.EquipWeapon(state, traveller, group,
                 upgradeWeakWeapon: false,
                 traveller == player.Character ? "leader" : "follower");
-        if (allowCampTransfers)
+        if (allowCampTransfers && state.CanCollectLocalLoot)
             TransferRearCampWeapons(state, group, group);
-        if (state.HasAttackPlan)
+        if (state.HasAttackPlan || state.Difficulty > 0)
         {
             foreach (Character traveller in group)
                 WeaponLoadout.EquipWeapon(state, traveller, group,
@@ -86,16 +86,17 @@ internal static class GroupManagement
         int consumedItems = 0;
         int consumedFood = 0;
         ItemType? reservedPayment = Recruitment.PlannedFutureSettlementPaymentType(state);
-        while (state.Player.Group.Any(character => character.Food < character.MaxFood))
+        while (state.Player.Party.Any(character => character.Food < character.MaxFood))
         {
             int storedFood = camp.Rooms.Sum(room =>
                 room.Items.Count(item => item.FoodValue > 0));
-            List<(IItemCollection Owner, Item Item)> candidates = state.Player.Group
+            List<(IItemCollection Owner, Item Item)> candidates = state.Player.Party
                 .SelectMany(character => character.Items
                     .Where(item => item.FoodValue > 0 && reservedPayment != item.Type)
                     .Select(item => ((IItemCollection)character.Items, item)))
                 .ToList();
-            if (storedFood > CampManagement.CampFoodItemReserve)
+            if (state.CanCollectLocalLoot &&
+                storedFood > CampManagement.CampFoodItemReserve)
             {
                 candidates.AddRange(camp.Rooms.SelectMany(room => room.Items
                     .Where(item => item.FoodValue > 0 && reservedPayment != item.Type)
@@ -108,12 +109,12 @@ internal static class GroupManagement
             if (candidate.Item == null)
                 break;
 
-            int capacity = state.Player.Group.Sum(character =>
+            int capacity = state.Player.Party.Sum(character =>
                 character.MaxFood - character.Food);
             if (candidate.Item.FoodValue > capacity)
                 break;
 
-            state.Player.Group.Eat(null, candidate.Item.FoodValue);
+            state.Player.Party.Eat(null, candidate.Item.FoodValue);
             candidate.Owner.Remove(candidate.Item);
             consumedItems++;
             consumedFood += candidate.Item.FoodValue;
@@ -138,7 +139,7 @@ internal static class GroupManagement
 
     static int ExchangeCampWaterReserves(ClassicAiState state, Location camp)
     {
-        var carriedEmpties = state.Player.Group
+        var carriedEmpties = state.Player.Party
             .SelectMany(character => character.Items
                 .Where(item => item.WaterValue == 0 &&
                     AiItemPool.IsWaterContainer(item.Type))
@@ -272,12 +273,12 @@ internal static class GroupManagement
 
     internal static void CarryStrategicProtection(ClassicAiState state)
     {
-        int desired = System.Math.Min(state.Player.Group.Count, Trading.DesiredProtectionReserve(state));
-        while (state.Player.Group.SelectMany(character => character.Items)
+        int desired = System.Math.Min(state.Player.Party.Count, Trading.DesiredProtectionReserve(state));
+        while (state.Player.Party.SelectMany(character => character.Items)
                    .Count(item => AiItemPool.IsHazardProtection(item.Type)) < desired &&
                state.Reserve.ProtectionCount > 0)
         {
-            Character carrier = state.Player.Group.FirstOrDefault(character =>
+            Character carrier = state.Player.Party.FirstOrDefault(character =>
                 !character.Items.IsFull && !character.Items.Any(item =>
                     AiItemPool.IsHazardProtection(item.Type)));
             if (carrier == null)

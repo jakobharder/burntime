@@ -7,25 +7,36 @@ using Burntime.Remaster.Logic;
 using Burntime.Remaster.Logic.Interaction;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Burntime.Remaster.Scenes
 {
     class InventoryScene : Scene
     {
+        const int NeedsTechnicianTextIndex = 47;
+        const int PlaceInRoomTextIndex = 48;
+        const int UnsuitableCampTextIndex = 49;
+        const int GroupFullTextIndex = 70;
+        const int NotEnoughWaterTextIndex = 71;
+        const int NeedsMaterialsTextIndex = 72;
+        const int NeedsAmmunitionTextIndex = 73;
+        const int SelectedTrapTextIndex = 77;
+
         public override bool UseDiagonalGamepadNavigation => true;
 
         InventoryWindow inventory;
         ItemGridWindow grid;
         GuiFont waterSourceFont;
         DialogWindow dialog;
-        InputPromptOverlay promptOverlay;
-        InputPromptOverlay exitPromptOverlay;
         Button exitButton;
         Construction construction;
+        Character constructionCharacter;
+        IItemCollection constructionInventory;
         Item item;
         ICharacterCollection group;
         Character leader;
         bool roomAreaActive;
+        readonly ItemGridTooltip itemTooltip;
 
         public InventoryScene(Module app)
             : base(app)
@@ -38,20 +49,24 @@ namespace Burntime.Remaster.Scenes
             inventory.Position = new Vector2(2, 5);
             inventory.LeftClickItemEvent += OnLeftClickItemInventory;
             inventory.RightClickItemEvent += OnRightClickItemInventory;
-            inventory.Grid.MouseSelectionChanged += OnMouseSelectionChanged;
-            inventory.Grid.SelectionEmptied += OnSelectionEmptied;
+            inventory.Grid.MouseFocusChanged += OnMouseFocusChanged;
+            inventory.Grid.FocusEmptied += OnFocusEmptied;
+            AddGridPrompts(inventory.Grid, true);
             Windows += inventory;
+
+            itemTooltip = new ItemGridTooltip(app, () => inventory.ActiveCharacter);
+            Windows += itemTooltip.Window;
 
             exitButton = new Button(app);
             exitButton.Position = new Vector2(25, 183);
             exitButton.Text = app.ResourceManager.GetString("burn?354");
-            exitButton.Font = new GuiFont(BurntimeClassic.FontName, new PixelColor(92, 92, 148));
-            exitButton.HoverFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(144, 160, 212));
+            exitButton.Font = new GuiFont(BurntimeClassic.FontName, ClassicColors.HudText);
+            exitButton.HoverFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.HudTextHover);
             exitButton.Command += OnButtonExit;
             exitButton.SetTextOnly();
             Windows += exitButton;
 
-            waterSourceFont = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.Gray);
+            waterSourceFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.Gray);
 
             Windows += dialog = new DialogWindow(app)
             {
@@ -62,25 +77,39 @@ namespace Burntime.Remaster.Scenes
             dialog.Layer += 55;
             dialog.WindowHide += new EventHandler(dialog_WindowHide);
 
-            Windows += promptOverlay = new InputPromptOverlay(app);
-            promptOverlay.AnchorToScreenBottomRight();
-
-            Windows += exitPromptOverlay = new InputPromptOverlay(app)
-            {
-                HorizontalAlignment = PositionAlignment.Left,
-                VerticalAlignment = PositionAlignment.Left
-            };
-            exitPromptOverlay.SetPrompts(new InputPrompt(InputAction.Back, ""));
-            UpdateExitPromptPosition();
+            Windows += new InputPromptOverlay(app, Prompts,
+                InputPromptColorScheme.Hud);
+            Prompts.SuppressWhen(() => dialog.IsVisible);
+            exitButton.Prompts.Add(InputAction.Back, "",
+                new Vector2(exitButton.Size.x + 2, -2));
+            Prompts.Add(InputPattern.HorizontalPaging, "@prompts?30",
+                () => inventory.PageCount > 1);
         }
 
-        public override void OnResizeScreen()
+        public override void OnResizeScreen(bool reload = false)
         {
-            base.OnResizeScreen();
+            base.OnResizeScreen(reload);
 
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
-            promptOverlay.AnchorToScreenBottomRight();
-            UpdateExitPromptPosition();
+            UpdateWaterSourceGridBackground();
+        }
+
+        protected override Vector2 GetBackgroundPosition(Vector2 backgroundSize)
+        {
+            Vector2 screen = app.Engine.Resolution.Game;
+            Vector2 position = (screen - backgroundSize) / 2;
+            if (backgroundSize.x > screen.x)
+                position.x = screen.x - backgroundSize.x;
+            return position - PositionOnScreen;
+        }
+
+        void UpdateWaterSourceGridBackground()
+        {
+            BurntimeClassic classic = app as BurntimeClassic;
+            if (grid != null && classic.InventoryRoom?.IsWaterSource == true)
+                grid.BackgroundColor = app.IsNewGfx
+                    ? new PixelColor(128, 0, 0, 0)
+                    : null;
         }
 
         void dialog_WindowHide(object? sender, EventArgs e)
@@ -90,7 +119,8 @@ namespace Burntime.Remaster.Scenes
                 BurntimeClassic classic = app as BurntimeClassic;
                 IItemCollection right = (classic.InventoryRoom == null) ? (IItemCollection)classic.PickItems : classic.InventoryRoom.Items;
 
-                classic.Game.Constructions.Construct(construction, inventory.ActiveCharacter, right, item, classic.Game);
+                classic.Game.Constructions.Construct(construction, constructionInventory,
+                    right, item, classic.Game);
 
                 inventory.OnSelectPage();
 
@@ -129,73 +159,137 @@ namespace Burntime.Remaster.Scenes
 
         public override void OnUpdate(float elapsed)
         {
-            UpdatePromptOverlay();
-            UpdateExitPromptPosition();
             ClassicGame game = app.GameState as ClassicGame;
             game.World.Update(elapsed);
+            itemTooltip.Update();
         }
 
-        void UpdateExitPromptPosition()
+        ItemTooltipDetails GetItemTooltipDetails(Item focused, bool isInInventory, ItemGridWindow source)
         {
-            exitPromptOverlay.Position = new Vector2(exitButton.Boundings.Right + 2, 181);
-        }
+            InputPrompt? prompt = GetItemPrompt(focused, isInInventory);
+            GuiString? status = null;
+            bool statusIsSuccess = false;
+            bool statusIsMuted = false;
+            ClassicGame game = app.GameState as ClassicGame;
+            BurntimeClassic classic = app as BurntimeClassic;
+            var recipes = game.Constructions.GetRecipes(game).Where(recipe =>
+                recipe.Items.Contains(focused.ID) || recipe.Tools.Contains(focused.ID))
+                .ToArray();
 
-        void UpdatePromptOverlay()
-        {
-            if (dialog.IsVisible)
+            if (focused.FoodValue > 0 || focused.WaterValue > 0)
             {
-                promptOverlay.SetPrompts();
-                exitPromptOverlay.SetPrompts();
-                return;
-            }
-
-            exitPromptOverlay.SetPrompts(app.LastInputMode == InputMode.Mouse
-                ? []
-                : [new InputPrompt(InputAction.Back, "")]);
-
-            ItemGridWindow activeGrid = roomAreaActive && grid != null ? grid : inventory.Grid;
-            Item? selectedItem = app.LastInputMode == InputMode.Mouse
-                ? activeGrid.MouseHoveredItem
-                : activeGrid.KeyboardSelectedItem;
-            GuiString? secondaryAction = GetSecondaryPrompt(selectedItem, activeGrid == inventory.Grid);
-
-            List<InputPrompt> prompts = [];
-            if (secondaryAction != null)
-            {
-                prompts.Add(new(InputAction.Secondary, secondaryAction)
+                bool canConsume = focused.FoodValue > 0 &&
+                    CanSupplyGroup(character => character.Food < character.MaxFood) ||
+                    focused.WaterValue > 0 &&
+                    CanSupplyGroup(character => character.Water < character.MaxWater);
+                if (!canConsume)
                 {
-                    PreferredMouseControl = MouseButton.Right
-                });
+                    prompt = null;
+                    status = $"@tooltip?{GroupFullTextIndex}";
+                    statusIsMuted = true;
+                }
             }
-            bool canTransfer = selectedItem != null && grid != null &&
-                (activeGrid == inventory.Grid
+
+            int capacity = focused.Type.Full?.WaterValue ?? 0;
+            if (focused.WaterValue == 0 && capacity > 0)
+            {
+                if (isInInventory && classic.InventoryRoom?.IsWaterSource == true &&
+                    game.World.ActiveLocationObj.Source.Reserve < capacity)
+                {
+                    prompt = null;
+                    status = $"@tooltip?{NotEnoughWaterTextIndex}";
+                    statusIsMuted = false;
+                }
+            }
+
+            if (focused.Type.Production is Production production)
+            {
+                if (!focused.IsSelectable &&
+                    (isInInventory || classic.InventoryRoom == null))
+                {
+                    status = $"@tooltip?{PlaceInRoomTextIndex}";
+                    statusIsMuted = false;
+                }
+                else if (!focused.IsSelectable &&
+                    !game.World.ActiveLocationObj.ValidProductions.Contains(production))
+                {
+                    status = $"@tooltip?{UnsuitableCampTextIndex}";
+                    statusIsMuted = false;
+                }
+            }
+
+            bool needsTechnician = recipes.Length > 0 &&
+                !group.Any(character => recipes.Any(recipe =>
+                    recipe.Classes[(int)character.Class]));
+            if (needsTechnician && !focused.IsSelectable)
+            {
+                status = $"@tooltip?{NeedsTechnicianTextIndex}";
+                statusIsMuted = false;
+            }
+            else if (!focused.IsSelectable)
+            {
+                IItemCollection? roomItems = classic.InventoryRoom != null
+                    ? classic.InventoryRoom.Items
+                    : classic.PickItems;
+                if (roomItems != null)
+                {
+                    var availability = game.Constructions.EvaluateConstruction(
+                        inventory.ActiveCharacter, roomItems, focused);
+                    if (availability.Recipe != null && !availability.CanBuild)
+                    {
+                        bool onlyNeedsAmmunition = availability.MissingRequirements.Count > 0 &&
+                            availability.MissingRequirements.All(item =>
+                                item == "item_ammunition");
+                        status = onlyNeedsAmmunition
+                            ? $"@tooltip?{NeedsAmmunitionTextIndex}"
+                            : $"@tooltip?{NeedsMaterialsTextIndex}";
+                        statusIsMuted = false;
+                    }
+                }
+            }
+
+            if (!isInInventory && classic.InventoryRoom != null &&
+                focused.Type.Production != null &&
+                game.World.ActiveLocationObj.Production == focused.Type.Production)
+            {
+                prompt = null;
+                status = $"@tooltip?{SelectedTrapTextIndex}";
+                statusIsSuccess = true;
+                statusIsMuted = false;
+            }
+
+            if (app.IsNewGfx)
+            {
+                InputPrompt? transfer = CanTransferSelectedItem(source)
+                    ? new InputPrompt(InputAction.Primary,
+                        isInInventory ? "@prompts?39" : "@prompts?37")
+                        { KeyboardControl = PreferredPrimaryKeyboardControl }
+                    : null;
+                return new(transfer, status, statusIsSuccess, statusIsMuted,
+                    SecondaryPrompt: prompt);
+            }
+            return new(prompt, status, statusIsSuccess, statusIsMuted);
+        }
+
+        bool CanTransferSelectedItem(ItemGridWindow source)
+        {
+            Item? focusedItem = source.FocusedItem;
+            return focusedItem != null && grid != null &&
+                (source == inventory.Grid
                     ? grid.Count < grid.MaxCount
                     : inventory.Grid.Count < inventory.Grid.MaxCount);
-            if (canTransfer)
-            {
-                prompts.Add(new(InputAction.Primary,
-                    activeGrid == inventory.Grid ? "@prompts?39" : "@prompts?37")
-                {
-                    PreferredMouseControl = MouseButton.Left
-                });
-            }
-            if (app.LastInputMode != InputMode.Mouse && inventory.PageCount > 1)
-            {
-                prompts.Add(new(InputAction.LeftArea, "@prompts?16")
-                {
-                    AlternateAction = InputAction.RightArea,
-                    PreferredKeyboardControl = new Key(SystemKey.Left, ModifierKeys.Shift),
-                    PreferredAlternateKeyboardControl = new Key(SystemKey.Right,
-                        ModifierKeys.Shift),
-                    PreferredGamepadControl = GamepadControl.LeftShoulder,
-                    PreferredAlternateGamepadControl = GamepadControl.RightShoulder
-                });
-            }
-
-            promptOverlay.SetPrompts(prompts.ToArray());
         }
 
-        GuiString? GetSecondaryPrompt(Item? selectedItem, bool isInInventory)
+        void AddGridPrompts(ItemGridWindow promptGrid, bool isInInventory)
+        {
+            promptGrid.Prompts.HideInNewGfx = true;
+            promptGrid.Prompts.Add(InputAction.Primary,
+                isInInventory ? "@prompts?39" : "@prompts?37",
+                () => CanTransferSelectedItem(promptGrid));
+        }
+
+        InputPrompt? GetItemPrompt(Item? selectedItem,
+            bool isInInventory)
         {
             if (selectedItem == null)
                 return null;
@@ -204,18 +298,20 @@ namespace Burntime.Remaster.Scenes
             {
                 if (!CanSupplyGroup(character => character.Food < character.MaxFood))
                     return null;
-                return "@prompts?18";
+                return new(InputAction.Action, "@prompts?18");
             }
             if (selectedItem.WaterValue != 0)
             {
                 if (!CanSupplyGroup(character => character.Water < character.MaxWater))
                     return null;
-                return "@prompts?19";
+                return new(InputAction.Action, "@prompts?19");
             }
             if (selectedItem.Type.Full != null && selectedItem.Type.Full.WaterValue != 0)
             {
-                if (isInInventory && classic.InventoryRoom?.IsWaterSource == true)
-                    return "@prompts?24";
+                if (isInInventory && classic.InventoryRoom?.IsWaterSource == true &&
+                    classic.Game.World.ActiveLocationObj.Source.Reserve >=
+                        selectedItem.Type.Full.WaterValue)
+                    return new(InputAction.Action, "@prompts?24");
                 return null;
             }
 
@@ -223,17 +319,43 @@ namespace Burntime.Remaster.Scenes
             {
                 bool isEquipped = inventory.ActiveCharacter.Weapon == selectedItem ||
                     inventory.ActiveCharacter.Protection == selectedItem;
-                return isEquipped ? "@prompts?22" : "@prompts?21";
+                return new(InputAction.Secondary,
+                    isEquipped ? "@prompts?22" : "@prompts?21");
             }
+
+            if (!isInInventory && classic.InventoryRoom != null &&
+                selectedItem.Type.Production is Production production)
+            {
+                if (!classic.Game.World.ActiveLocationObj.ValidProductions.Contains(production))
+                    return null;
+                return classic.Game.World.ActiveLocationObj.Production == production
+                    ? null
+                    : new(InputAction.Action, "@prompts?42");
+            }
+
+            // Production tools have dedicated placement/selection behavior and
+            // never use the generic construction inspection action.
+            if (selectedItem.Type.Production != null)
+                return null;
 
             IItemCollection? roomItems = classic.InventoryRoom != null
                 ? classic.InventoryRoom.Items
                 : classic.PickItems;
-            if (roomItems != null && classic.Game.Constructions.HasConstruction(
-                inventory.ActiveCharacter, roomItems, selectedItem))
-                return "@prompts?20";
+            if (roomItems != null)
+            {
+                Character inspector = GetConstructionInspector(selectedItem);
+                var availability = classic.Game.Constructions.EvaluateConstruction(
+                    inspector, inventory.ActiveCharacter.Items, roomItems, selectedItem);
+                if (availability.Recipe != null && availability.CanBuild)
+                {
+                    bool loadsWeapon = selectedItem.Type.Loads.Contains(
+                        availability.Recipe.Result);
+                    return new(InputAction.Secondary,
+                        loadsWeapon ? "@prompts?3" : "@prompts?20");
+                }
+            }
 
-            return "@prompts?23";
+            return new(InputAction.Secondary, "@prompts?23");
         }
 
         bool CanSupplyGroup(Func<Character, bool> needsSupply)
@@ -267,6 +389,9 @@ namespace Burntime.Remaster.Scenes
                 Windows -= grid;
                 grid = null;
             }
+            itemTooltip.ClearGrids();
+            itemTooltip.AddGrid(inventory.Grid, ItemTooltipSide.Right,
+                item => GetItemTooltipDetails(item, true, inventory.Grid));
 
             if (classic.InventoryRoom != null)
             {
@@ -289,12 +414,16 @@ namespace Burntime.Remaster.Scenes
                 grid.Position = new Vector2(160, classic.InventoryRoom.IsWaterSource ? 128 : 20);
                 grid.Spacing = new Vector2(4, 4);
                 grid.Grid = new Vector2(4, classic.InventoryRoom.IsWaterSource ? 2 : 5);
+                UpdateWaterSourceGridBackground();
                 grid.Layer++;
                 grid.LeftClickItemEvent += OnLeftClickItemRoom;
                 grid.RightClickItemEvent += OnRightClickItemRoom;
-                grid.MouseSelectionChanged += OnMouseSelectionChanged;
-                grid.SelectionEmptied += OnSelectionEmptied;
+                grid.MouseFocusChanged += OnMouseFocusChanged;
+                grid.FocusEmptied += OnFocusEmptied;
+                AddGridPrompts(grid, false);
                 Windows += grid;
+                itemTooltip.AddGrid(grid, ItemTooltipSide.Left,
+                    item => GetItemTooltipDetails(item, false, grid));
 
                 grid.Add(classic.InventoryRoom.Items);
 
@@ -317,32 +446,35 @@ namespace Burntime.Remaster.Scenes
                 grid.Layer++;
                 grid.LeftClickItemEvent += OnLeftClickItemRoom;
                 grid.RightClickItemEvent += OnRightClickItemRoom;
-                grid.MouseSelectionChanged += OnMouseSelectionChanged;
-                grid.SelectionEmptied += OnSelectionEmptied;
+                grid.MouseFocusChanged += OnMouseFocusChanged;
+                grid.FocusEmptied += OnFocusEmptied;
+                AddGridPrompts(grid, false);
                 Windows += grid;
+                itemTooltip.AddGrid(grid, ItemTooltipSide.Left,
+                    item => GetItemTooltipDetails(item, false, grid));
 
                 grid.Add(classic.PickItems);
             }
             else
                 Music = "room";
 
-            roomAreaActive = grid != null && grid.HasKeyboardItems;
-            inventory.Grid.ResetKeyboardSelection();
-            grid?.ResetKeyboardSelection();
+            roomAreaActive = grid != null && grid.HasFocusableItems;
+            inventory.Grid.ResetFocus();
+            grid?.ResetFocus();
             UpdateActiveArea();
         }
 
-        void OnMouseSelectionChanged(ItemGridWindow selectedGrid)
+        void OnMouseFocusChanged(ItemGridWindow focusedGrid)
         {
-            roomAreaActive = grid != null && selectedGrid == grid;
+            roomAreaActive = grid != null && focusedGrid == grid;
             UpdateActiveArea();
         }
 
-        void OnSelectionEmptied(ItemGridWindow emptiedGrid, Vector2 previousPosition)
+        void OnFocusEmptied(ItemGridWindow emptiedGrid, Vector2 previousPosition)
         {
             ItemGridWindow targetGrid = emptiedGrid == inventory.Grid ? grid : inventory.Grid;
             Vector2 direction = emptiedGrid == inventory.Grid ? new Vector2(1, 0) : new Vector2(-1, 0);
-            if (targetGrid?.SelectKeyboardEdge(direction, previousPosition) != true)
+            if (targetGrid?.FocusEdge(direction, previousPosition) != true)
                 return;
 
             roomAreaActive = targetGrid == grid;
@@ -400,22 +532,22 @@ namespace Burntime.Remaster.Scenes
             };
             if (direction != Vector2.Zero)
             {
-                Vector2? sourcePosition = activeGrid.KeyboardSelectionPosition;
-                bool moved = activeGrid.MoveKeyboardSelection(direction);
+                Vector2? sourcePosition = activeGrid.FocusPosition;
+                bool moved = activeGrid.MoveFocus(direction);
                 if (!moved && direction.x == 0 && direction.y != 0 &&
                     activeGrid == inventory.Grid &&
                     inventory.SelectAdjacentPage(direction.y > 0 ? 1 : -1))
                 {
                     if (sourcePosition.HasValue)
-                        inventory.Grid.SelectKeyboardPageEdge(direction, sourcePosition.Value);
+                        inventory.Grid.FocusPageEdge(direction, sourcePosition.Value);
                     UpdateActiveArea();
                 }
                 else if (!moved && direction.x != 0)
                 {
                     ItemGridWindow targetGrid = roomAreaActive ? inventory.Grid : grid;
                     bool selectedTarget = sourcePosition.HasValue
-                        ? targetGrid?.SelectKeyboardEdge(direction, sourcePosition.Value) == true
-                        : targetGrid?.EnsureKeyboardSelection() == true;
+                        ? targetGrid?.FocusEdge(direction, sourcePosition.Value) == true
+                        : targetGrid?.EnsureFocus() == true;
                     if (selectedTarget)
                     {
                         roomAreaActive = !roomAreaActive;
@@ -425,9 +557,10 @@ namespace Burntime.Remaster.Scenes
                 return true;
             }
 
-            if (action == InputAction.Primary || action == InputAction.Secondary)
+            if (action is InputAction.Primary or InputAction.Secondary or
+                InputAction.Action)
             {
-                activeGrid.ActivateKeyboardItem(action == InputAction.Secondary);
+                activeGrid.ActivateFocusedItem(action != InputAction.Primary);
                 EnsureNonEmptyArea();
                 return true;
             }
@@ -437,19 +570,19 @@ namespace Burntime.Remaster.Scenes
 
         void UpdateActiveArea()
         {
-            inventory.Grid.KeyboardSelectionVisible = !roomAreaActive || grid == null;
+            inventory.Grid.FocusVisible = !roomAreaActive || grid == null;
             if (grid != null)
-                grid.KeyboardSelectionVisible = roomAreaActive;
+                grid.FocusVisible = roomAreaActive;
         }
 
         void EnsureNonEmptyArea()
         {
             ItemGridWindow activeGrid = roomAreaActive && grid != null ? grid : inventory.Grid;
-            if (activeGrid.HasKeyboardItems)
+            if (activeGrid.HasFocusableItems)
                 return;
 
             ItemGridWindow otherGrid = roomAreaActive ? inventory.Grid : grid;
-            if (otherGrid != null && otherGrid.HasKeyboardItems)
+            if (otherGrid != null && otherGrid.HasFocusableItems)
                 roomAreaActive = !roomAreaActive;
 
             UpdateActiveArea();
@@ -471,6 +604,9 @@ namespace Burntime.Remaster.Scenes
                 classic.InventoryRoom.Items.Add(item);
                 inventory.ActiveCharacter.Items.Remove(item);
 
+                if (item.Type.Production != null)
+                    classic.Game.World.ActiveLocationObj.RefreshFoodProductionSelection();
+
                 // fill up empty bottles
                 if (classic.InventoryRoom.IsWaterSource)
                     classic.Game.World.ActiveLocationObj.Source.RefillItem(item);
@@ -487,6 +623,7 @@ namespace Burntime.Remaster.Scenes
                 inventory.Grid.Remove(state as Item);
             }
 
+            inventory.RefreshCombatLoadout();
             EnsureNonEmptyArea();
         }
 
@@ -559,19 +696,16 @@ namespace Burntime.Remaster.Scenes
             else if (item.IsSelectable)
             {
                 inventory.ActiveCharacter.SelectItem(item);
-                inventory.Grid.Selection.Clear();
-                if (inventory.ActiveCharacter.Weapon != null)
-                    inventory.Grid.Selection.Add(inventory.ActiveCharacter.Weapon);
-                if (inventory.ActiveCharacter.Protection != null)
-                    inventory.Grid.Selection.Add(inventory.ActiveCharacter.Protection);
+                inventory.RefreshItemMarkers();
+            }
+            else if (item.Type.Production != null)
+            {
+                // Production tools have no generic inspection action.
             }
             else //if (inventory.ActiveCharacter.Class == CharClass.Technician)
             {
                 IItemCollection right = (classic.InventoryRoom == null) ? (IItemCollection)classic.PickItems : classic.InventoryRoom.Items;
-                construction = classic.Game.Constructions.GetConstruction(inventory.ActiveCharacter, right, item);
-                this.item = item;
-                dialog.SetCharacter(inventory.ActiveCharacter, construction.Dialog);
-                dialog.Show();
+                InspectItem(item, right);
             }
 
             EnsureNonEmptyArea();
@@ -586,11 +720,15 @@ namespace Burntime.Remaster.Scenes
 
             if (classic.InventoryRoom != null)
             {
-                inventory.ActiveCharacter.Items.Add(state as Item);
-                classic.InventoryRoom.Items.Remove(state as Item);
+                Item item = (Item)state;
+                inventory.ActiveCharacter.Items.Add(item);
+                classic.InventoryRoom.Items.Remove(item);
 
-                inventory.Grid.Add(state as Item);
-                grid.Remove(state as Item);
+                if (item.Type.Production != null)
+                    classic.Game.World.ActiveLocationObj.RefreshFoodProductionSelection();
+
+                inventory.Grid.Add(item);
+                grid.Remove(item);
             }
             else if (classic.PickItems != null)
             {
@@ -602,11 +740,7 @@ namespace Burntime.Remaster.Scenes
                 grid.Remove(state as Item);
             }
 
-            inventory.Grid.Selection.Clear();
-            if (inventory.ActiveCharacter.Weapon != null)
-                inventory.Grid.Selection.Add(inventory.ActiveCharacter.Weapon);
-            if (inventory.ActiveCharacter.Protection != null)
-                inventory.Grid.Selection.Add(inventory.ActiveCharacter.Protection);
+            inventory.RefreshCombatLoadout();
 
             EnsureNonEmptyArea();
         }
@@ -616,9 +750,22 @@ namespace Burntime.Remaster.Scenes
             BurntimeClassic classic = app as BurntimeClassic;
             Item item = state as Item;
             IItemCollection right = (classic.InventoryRoom == null) ? (IItemCollection)classic.PickItems : classic.InventoryRoom.Items;
-            
+
+            if (item.Type.Production is Production production)
+            {
+                if (classic.InventoryRoom != null)
+                {
+                    Location location = classic.Game.World.ActiveLocationObj;
+                    if (location.ValidProductions.Contains(production))
+                    {
+                        location.SelectProduction(production);
+                        if (!classic.ShowUIHints)
+                            ShowTrapSelectedDialog(production);
+                    }
+                }
+            }
             // eat
-            if (item.FoodValue != 0)
+            else if (item.FoodValue != 0)
             {
                 int left = group.Eat(leader, item.FoodValue);
 
@@ -659,13 +806,46 @@ namespace Burntime.Remaster.Scenes
             }
             else //if (inventory.ActiveCharacter.Class == CharClass.Technician)
             {
-                construction = classic.Game.Constructions.GetConstruction(inventory.ActiveCharacter, right, item);
-                this.item = item;
-                dialog.SetCharacter(inventory.ActiveCharacter, construction.Dialog);
-                dialog.Show();
+                InspectItem(item, right);
             }
 
             EnsureNonEmptyArea();
+        }
+
+        void ShowTrapSelectedDialog(Production production)
+        {
+            TextHelper text = new(app, "dialogs");
+            text.AddArgument("|P", production.Produce.Title);
+            dialog.SetCharacter(inventory.ActiveCharacter,
+                Conversation.Simple(text, 0));
+            dialog.Show();
+        }
+
+        Character GetConstructionInspector(Item mainItem)
+        {
+            ClassicGame game = (ClassicGame)app.GameState;
+            return game.Constructions.SelectInspector(game, inventory.ActiveCharacter,
+                group, mainItem);
+        }
+
+        void InspectItem(Item inspectedItem, IItemCollection roomItems)
+        {
+            ClassicGame game = (ClassicGame)app.GameState;
+            constructionCharacter = GetConstructionInspector(inspectedItem);
+            constructionInventory = inventory.ActiveCharacter.Items;
+            construction = game.Constructions.GetConstruction(constructionCharacter,
+                constructionInventory, roomItems, inspectedItem);
+            RememberConstruction(construction);
+            item = inspectedItem;
+            dialog.SetCharacter(constructionCharacter, construction.Dialog);
+            dialog.Show();
+        }
+
+        void RememberConstruction(Construction inspected)
+        {
+            if (inspected.construction != null)
+                (app.GameState as ClassicGame).RememberConstruction(
+                    inspected.construction.Result);
         }
     }
 }

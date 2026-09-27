@@ -1,2 +1,2 @@
-Indicaciones MOSTRAR
-Indicaciones OCULTAR
+Ayudas de IU MOSTRAR
+Ayudas de IU OCULTAR

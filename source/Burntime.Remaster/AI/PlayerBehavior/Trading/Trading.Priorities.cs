@@ -20,6 +20,8 @@ internal static partial class Trading
 
     internal static float ShoppingPriority(ClassicAiState state, Item item)
     {
+        if (AiItemPool.IsFirearm(item.Type) && EquipmentPlanning.LoadedShots(item.Type, item.AmmoValue) <= 0)
+            return 0;
         float strategic = ShoppingPriority(
             AiTurnContext.For(state).Needs, item.Type, allowConsolidation: false);
         return strategic > 0 || !IsTradeValueUpgrade(state, item)
@@ -72,6 +74,9 @@ internal static partial class Trading
                 needs.MaterialDemandBreadth(type.ID) * 30 + type.TradeValue;
         if (IsPump(type) && needs.PumpStock < needs.PumpQuota)
             return 2400 + (type.ID == "item_industrial_pump" ? 20 : 0);
+        if (type.HasFunction(ItemFunction.RestingSustenance) &&
+            needs.GlobalItemCount(type) < 1)
+            return 2300 + type.TradeValue;
         if (waterContainer && needs.CampWaterContainerShortfall > 0)
             return (needs.HasCriticalCampWaterContainerShortfall ? 2700 : 1700) +
                 AiItemPool.WaterContainerCapacity(type);
@@ -92,6 +97,9 @@ internal static partial class Trading
             (needs.NeedsProtection(type) || needs.ProtectionStock < needs.ProtectionQuota))
             return 1100 + type.TradeValue;
 
+        if (needs.EquipmentDemand(type) > 0)
+            return 900 + type.WeaponPriority + type.DefenseValue;
+
         // 5. Cargo consolidation is deliberately last.
         return allowConsolidation ? 500 + type.TradeValue : 0;
     }
@@ -101,9 +109,13 @@ internal static partial class Trading
 
     static bool CanSell(ClassicAiState state, StrategicNeeds needs, Item item)
     {
+        if (item.Type.HasFunction(ItemFunction.RestingSustenance) &&
+            needs.GlobalItemCount(item.Type) <= 1)
+            return false;
         if (needs.PlannedSettlementPaymentType == item.Type)
             return false;
-        if (state.Player.Group.Any(character => character.Weapon == item || character.Protection == item))
+        if (state.Player.Party.Any(character => character.Weapon == item || character.Protection == item ||
+            character.Items.FindBestDefense() == item))
             return false;
         if (item.Type.Production != null &&
             (needs.NeedsProduction(item.Type) ||
@@ -116,14 +128,14 @@ internal static partial class Trading
             int requiredFoodInventory = state.Current.IsCity && state.OwnedCampCount > 0
                 ? RecoveryServices.RequiredReturnFoodInventory(state)
                 : Math.Max(0, needs.DesiredPortableFood -
-                    state.Player.Group.GetFoodReserve());
-            if (state.Player.Group.GetFoodInInventory() - item.FoodValue < requiredFoodInventory)
+                    state.Player.Party.GetFoodReserve());
+            if (state.Player.Party.GetFoodInInventory() - item.FoodValue < requiredFoodInventory)
                 return false;
         }
         if (AiItemPool.IsWaterContainer(item.Type))
         {
             if (state.Current.IsCity && state.OwnedCampCount > 0 && item.WaterValue > 0 &&
-                state.Player.Group.GetWaterInInventory() - item.WaterValue <
+                state.Player.Party.GetWaterInInventory() - item.WaterValue <
                     RecoveryServices.RequiredReturnWaterInventory(state))
                 return false;
             int remainingCapacity = Trading.PortableWaterCapacity(state) +
@@ -137,6 +149,9 @@ internal static partial class Trading
             return false;
         if (needs.IsPolicyAttackWeapon(item.Type) &&
             needs.MeleeWeaponStock <= needs.MeleeWeaponQuota)
+            return false;
+        if (item.ID == "item_ammunition" && state.Player.Party.Any(character =>
+            character.Items.Any(weapon => AiItemPool.IsFirearm(weapon.Type))))
             return false;
         if (Trading.ConstructionMaterials.Contains(item.ID) &&
             needs.MaterialStock(item.ID) <= needs.MaterialQuota(item.ID))
@@ -171,13 +186,13 @@ internal static partial class Trading
         if (!AiTurnContext.For(state).Needs.CanBuy(target.Type) ||
             AiItemPool.Accepts(target.Type) || target.TradeValue <= 0)
             return false;
-        Item[] lowerValueGoods = state.Player.Group.SelectMany(character => character.Items)
+        Item[] lowerValueGoods = state.Player.Party.SelectMany(character => character.Items)
             .Where(item => CanSell(state, item) && item.ID != target.ID &&
                 item.TradeValue > 0 && item.TradeValue < target.TradeValue)
             .OrderBy(item => item.TradeValue)
             .ToArray();
         return lowerValueGoods.Length >= 2 &&
-            lowerValueGoods.Sum(item => item.TradeValue * TradeBenefit(state)) >= target.TradeValue;
+            lowerValueGoods.Sum(item => item.TradeValue * TradeFactor(state)) >= target.TradeValue;
     }
 
     internal static bool IsStrategicPurchase(ClassicAiState state, Item item) =>
@@ -195,7 +210,7 @@ internal static partial class Trading
 
     internal static bool NeedsTravelOrDefenseWeapons(ClassicAiState state)
     {
-        IEnumerable<Character> travellers = state.Player.Group.Where(character => !character.IsDead);
+        IEnumerable<Character> travellers = state.Player.Party;
         IEnumerable<Character> guards = state.RootGame.World.Locations
             .Where(location => location.Player == state.Player && ReinforcementPlanning.IsThreatened(state, location))
             .SelectMany(location => location.CampNPC.Where(npc => npc.Player == state.Player));
@@ -261,7 +276,7 @@ internal static partial class Trading
     }
 
     internal static int GlobalProtectionStock(ClassicAiState state) => state.Reserve.ProtectionCount +
-        state.Player.Group.SelectMany(character => character.Items)
+        state.Player.Party.SelectMany(character => character.Items)
             .Count(item => AiItemPool.IsHazardProtection(item.Type));
 
     internal static bool NeedsBetterWaterContainers(ClassicAiState state, ItemType offered)
@@ -316,6 +331,6 @@ internal static partial class Trading
 
     internal static int PortableMaterialCount(ClassicAiState state, string itemId) =>
         state.Reserve.GetConstructionMaterialCount(itemId) +
-        state.Player.Group.SelectMany(character => character.Items).Count(item => item.ID == itemId);
+        state.Player.Party.SelectMany(character => character.Items).Count(item => item.ID == itemId);
 
 }

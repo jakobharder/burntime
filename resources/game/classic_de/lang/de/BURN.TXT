@@ -378,8 +378,8 @@ BESTENLISTE}
 }
 }
 }
-Erf. |A%}
-Vit. |B%}
+EP: |A%}
+Leben: |B%}
 LADEN}
 SPEICHERN}
 LÖSCHEN}

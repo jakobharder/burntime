@@ -42,7 +42,7 @@ namespace Burntime.Remaster.Scenes
             Size = new Vector2(320, 200);
             Music = "score";
             Position = (app.Engine.Resolution.Game - Size) / 2;
-            font = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray, new PixelColor(92, 92, 96));
+            font = new GuiFont(BurntimeClassic.FontName, ClassicColors.LightGray, new PixelColor(92, 92, 96));
             CaptureAllMouseClicks = true;
 
             _rightBottom = (GuiImage)"gfx/backgrounds/stats_rightbottom.png";
@@ -54,9 +54,9 @@ namespace Burntime.Remaster.Scenes
             _backgroundClassic = app.ResourceManager.GetImage("blz.pac");
         }
 
-        public override void OnResizeScreen()
+        public override void OnResizeScreen(bool reload = false)
         {
-            base.OnResizeScreen();
+            base.OnResizeScreen(reload);
 
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
         }
@@ -194,9 +194,9 @@ namespace Burntime.Remaster.Scenes
                 }
             }
 
-            for (int i = 0; i < world.ActivePlayerObj.Group.Count; i++)
+            for (int i = 0; i < world.ActivePlayerObj.Party.Count; i++)
             {
-                switch (world.ActivePlayerObj.Group[i].Class)
+                switch (world.ActivePlayerObj.Party[i].Class)
                 {
                     case CharClass.Mercenary: fighter++; break;
                     case CharClass.Doctor: doctor++; break;

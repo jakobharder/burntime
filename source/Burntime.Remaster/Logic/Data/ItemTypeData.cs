@@ -22,6 +22,9 @@ namespace Burntime.Remaster.Logic.Data
         public bool IsSelectable;
 
         public string Sprite;
+        public string? LastRoundSprite;
+
+        internal ItemTypeData CreateAlias() => (ItemTypeData)MemberwiseClone();
         public string Title;
         public string Text;
 
@@ -36,8 +39,16 @@ namespace Burntime.Remaster.Logic.Data
         public float HealValue;
         public int ExperienceValue;
         public int DamageValue;
+        public int? WeaponPriority;
+        public int AttackRange;
+        public int[] DamageValues = Array.Empty<int>();
         public int DefenseValue;
         public int AmmoValue;
+        public string[] Loads = Array.Empty<string>();
+        public string LoadName = "";
+        public ItemFunction Functions;
+        public string TraderWorldGroup = "";
+        public int TraderWorldLimit;
 
         public string Empty;
         public string Full;

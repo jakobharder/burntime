@@ -37,11 +37,12 @@ public sealed class PersistentTelemetry
     internal void RecordSession(string reason)
     {
         var aiProfiles = game.World.Players
-            .Where(player => player.AiState is ClassicAiState)
+            .Where(player => AiStateOperations.TryGetDifficulty(
+                player.AiState, out _))
             .Select(player => new
             {
                 player = player.Index,
-                difficulty = ((ClassicAiState)player.AiState).Difficulty
+                difficulty = GetAiDifficulty(player)
             });
 
         Append(new
@@ -53,6 +54,12 @@ public sealed class PersistentTelemetry
             telemetryRevision = 1,
             aiProfiles
         });
+    }
+
+    static int GetAiDifficulty(Player player)
+    {
+        AiStateOperations.TryGetDifficulty(player.AiState, out int difficulty);
+        return difficulty;
     }
 
     internal void RecordCampOwnershipChange(Location location, Player? previous, Player? current)

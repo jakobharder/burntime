@@ -35,17 +35,26 @@ namespace Burntime.Remaster.GUI
             : base(App)
         {
             Size = new Vector2(32, 32);
-            font = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
+            font = new GuiFont(BurntimeClassic.FontName, ClassicColors.MenuTextHover);
             font.Borders = TextBorders.Screen;
             text = null;
         }
 
-        string itemID;
+        string itemID = "";
+        Item? item;
+        string? displayedSprite;
+        public Item? Item
+        {
+            get => item;
+            set { item = value; itemID = value?.ID ?? ""; RefreshItem(); }
+        }
+        public string? TooltipText => item?.TooltipText ?? text;
         public string ItemID
         {
-            get { return itemID; }
+            get { return item?.ID ?? itemID; }
             set
             {
+                item = null;
                 itemID = value;
                 RefreshItem();
             }
@@ -53,15 +62,22 @@ namespace Burntime.Remaster.GUI
 
         void RefreshItem()
         {
-            if (itemID != "")
+            string? sprite = null;
+            if (!string.IsNullOrEmpty(ItemID))
             {
-                Background = BurntimeClassic.Instance.Game.ItemTypes[itemID].Sprite;
-                text = BurntimeClassic.Instance.Game.ItemTypes[itemID].Title;
+                sprite = item?.Sprite ?? BurntimeClassic.Instance.Game.ItemTypes[ItemID].Sprite;
+                text = item?.TooltipText ?? BurntimeClassic.Instance.Game.ItemTypes[ItemID].Title;
             }
-            else
+            else text = null;
+            if (sprite != displayedSprite)
             {
-                Background = null;
-                text = null;
+                // Keep null typed as GuiImage: a null string still invokes
+                // the implicit resource conversion and crashes in ResourceID.
+                if (string.IsNullOrEmpty(sprite))
+                    Background = null;
+                else
+                    Background = sprite;
+                displayedSprite = sprite;
             }
         }
 
@@ -95,7 +111,7 @@ namespace Burntime.Remaster.GUI
             }
 
             if (Parent is ItemGridWindow grid)
-                grid.SelectFromMouseClick(index);
+                grid.FocusFromMouseClick(index);
 
             if (Button == MouseButton.Left && leftClickEvent != null)
                 leftClickEvent.Execute(index);
@@ -106,9 +122,12 @@ namespace Burntime.Remaster.GUI
 
         public override void OnRender(RenderTarget Target)
         {
+            if (item != null) RefreshItem();
             base.OnRender(Target);
 
-            if (ShowHoverText && GetTopMostItem() == this && text != null)
+            bool showLegacyHoverText = ShowHoverText ||
+                app is BurntimeClassic classic && !classic.ShowUIHints;
+            if (showLegacyHoverText && GetTopMostItem() == this && text != null)
             {
                 Target.Layer += 5;
                 RenderTarget bigger = Target.GetSubBuffer(new Rect(-50, -50, 132, 132));

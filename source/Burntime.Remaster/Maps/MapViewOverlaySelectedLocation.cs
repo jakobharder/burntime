@@ -38,14 +38,14 @@ class MapViewOverlaySelectedLocation : IMapViewOverlay
 
         var entrance = game.World.Map.Entrances[LocationNumber];
         string title = app.ResourceManager.GetString(entrance.TitleId);
-        var info = new MapViewHoverInfo(title, entrance.Area.Center, BurntimeClassic.LightGray)
+        var info = new MapViewHoverInfo(title, entrance.Area.Center, ClassicColors.LightGray)
         {
             WorldLocation = game.World.Locations[LocationNumber]
         };
         const int topMargin = 8;
         var textTarget = target.GetSubBuffer(new Rect(0, topMargin, target.Width, target.Height - topMargin));
         hoverText.DrawWorldLocationText(textTarget, info,
-            offset - new Vector2(0, topMargin), 1);
+            offset - new Vector2(0, topMargin), 1, showOwnershipFlag: true);
     }
 
     public IMapObject GetObjectAt(Vector2 position)

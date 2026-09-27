@@ -6,8 +6,6 @@ namespace Burntime.Remaster.AI;
 
 internal static class CombatResolver
 {
-    const int MaxRounds = 100;
-
     public static void Resolve(ClassicAiState state, bool fightToDeath = false)
     {
         Player attacker = state.Player;
@@ -19,10 +17,14 @@ internal static class CombatResolver
             return;
         }
 
-        List<Character> originalDefenders = location.CampNPC
-            .Where(character => character.Player == defenderOwner && !character.IsDead)
+        List<Character> originalDefenders = CombatStrength.Defenders(location)
             .ToList();
-        List<Character> originalAttackers = attacker.Group.Where(character => !character.IsDead).ToList();
+        List<Character> originalAttackers = attacker.Party.ToList();
+        var defenderHealth = originalDefenders.ToDictionary(character => character, character => character.Health);
+        var attackingForce = AttackRetryMemory.Force.Capture(originalAttackers, attacker.Character);
+        var defendingForce = AttackRetryMemory.Force.Capture(originalDefenders);
+        Dictionary<Character, Item[]> carriedByDefenders = originalDefenders
+            .ToDictionary(character => character, character => character.Items.ToArray());
         Dictionary<Character, Item[]> carriedBeforeCombat = originalAttackers
             .ToDictionary(character => character, character => character.Items.ToArray());
         float initialAttackerStrength = CombatStrength.Attacker(attacker);
@@ -31,53 +33,13 @@ internal static class CombatResolver
         DefenseIntelligence.UpdateKnowledgeFromEncounter(state, location, originalDefenders);
         AiTelemetry.Report(attacker,
             $"attacks {defenderOwner.Name}'s camp at {location.Title}: " +
-            $"{attacker.Group.Count} attackers against {originalDefenders.Count} defenders");
+            $"{attacker.Party.Count} attackers against {originalDefenders.Count} defenders");
 
-        bool tacticalWithdrawal = false;
-        for (int round = 1; round <= MaxRounds; round++)
-        {
-            List<Character> defenders = originalDefenders.Where(character => !character.IsDead).ToList();
-            if (defenders.Count == 0)
-                break;
-
-            if (!fightToDeath && !attacker.Group.Any(character => character != attacker.Character && !character.IsDead))
-                break;
-
-            int defendersBeforeRound = defenders.Count;
-            foreach (Character fighter in attacker.Group.Where(character => !character.IsDead).ToArray())
-            {
-                Character? target = defenders.Where(character => !character.IsDead)
-                    .OrderBy(character => character.Health)
-                    .FirstOrDefault();
-                if (target == null)
-                    break;
-                DealDamage(fighter, target);
-            }
-
-            defenders = originalDefenders.Where(character => !character.IsDead).ToList();
-            foreach (Character fighter in defenders)
-            {
-                Character? target = attacker.Group
-                    .Where(character => !character.IsDead &&
-                        (fightToDeath || character != attacker.Character))
-                    .OrderBy(character => character.Health)
-                    .FirstOrDefault();
-                if (target == null)
-                    break;
-                DealDamage(fighter, target);
-            }
-
-            bool killedDefender = defenders.Count < defendersBeforeRound;
-            bool lostFollower = originalAttackers.Any(character =>
-                character != attacker.Character && character.IsDead);
-            bool followerInDanger = attacker.Group.Any(character =>
-                character != attacker.Character && !character.IsDead && character.Health <= 35);
-            if (!fightToDeath && defenders.Count > 0 && !lostFollower && (killedDefender || followerInDanger))
-            {
-                tacticalWithdrawal = true;
-                break;
-            }
-        }
+        var encounter = StrategicEncounter.Fight(state.RootGame, attacker, defenderOwner,
+            originalDefenders, fightToDeath);
+        bool tacticalWithdrawal = encounter.AttackerWithdrew;
+        if (encounter.DefendingPartyDisengaged)
+            AiTelemetry.Report(defenderOwner, $"disengaged defending party at {location.Title} to protect the boss; party stays at the location");
 
         foreach (Character casualty in originalDefenders.Where(character => character.IsDead))
             AiTelemetry.Report(attacker, $"defeated defender {casualty.Name} at {location.Title}");
@@ -90,15 +52,33 @@ internal static class CombatResolver
             .ToArray();
         state.CollectCombatLoot(ownDrops);
 
-        bool defendersDefeated = originalDefenders.All(character => character.IsDead);
-        Character[] survivingDefenders = originalDefenders.Where(character => !character.IsDead).ToArray();
+        Character[] survivingDefenders = originalDefenders.Where(character => !character.IsDead &&
+            (!encounter.DefendingPartyDisengaged || !defenderOwner.Party.Contains(character))).ToArray();
+        bool defendersDefeated = survivingDefenders.Length == 0;
+        int damageDealt = originalDefenders.Sum(character =>
+            System.Math.Max(0, defenderHealth[character] - System.Math.Max(0, character.Health)));
+        int killed = originalDefenders.Count(character => character.IsDead);
+        var retry = AttackRetryMemory.For(attacker).Record(location, defenderOwner,
+            attackingForce, defendingForce, killed, defendersDefeated);
+        AiTelemetry.Report(attacker,
+            $"combat outcome at {location.Title}: {damageDealt} damage this encounter, {killed} defenders killed; " +
+            $"{retry.Comparison}; " +
+            (retry.Blocked ? "further attempts deferred until forces change" : "retry remains subject to readiness"));
         DefenseIntelligence.UpdateKnowledgeFromEncounter(state, location, survivingDefenders);
         if (defendersDefeated)
         {
+            Item[] defenderDrops = originalDefenders
+                .Where(character => character.IsDead)
+                .SelectMany(character => carriedByDefenders[character])
+                .Where(item => location.Items.Any(ground => ground == item))
+                .ToArray();
+            state.CollectCombatLoot(SelectDefenderLoot(defenderDrops,
+                AiPolicy.ForDifficulty(state.Difficulty).CombatLootLimit));
+
             state.LastChanceAttackTarget = null;
-            Character? guard = attacker.Group
+            Character? guard = attacker.Party
                 .Where(character => character != attacker.Character && !character.IsDead)
-                .OrderBy(character => character.AttackValue + character.DefenseValue)
+                .OrderBy(character => CombatStrength.Fighter(character))
                 .FirstOrDefault();
 
             location.Player = null;
@@ -121,8 +101,7 @@ internal static class CombatResolver
             state.StrategicTarget = null;
             if (!fightToDeath)
                 state.LastChanceAttackTarget = null;
-            bool madeProgress = survivingDefenders.Length < originalDefenders.Count ||
-                survivingDefenders.Any(character => character.Health < 100);
+            bool madeProgress = killed > 0 || damageDealt > 0;
             state.RecordFailedAttack(location, originalAttackers.Count, initialAttackerStrength,
                 initialDefenderStrength, AiPolicy.ForDifficulty(state.Difficulty),
                 madeProgress);
@@ -146,8 +125,8 @@ internal static class CombatResolver
                 attacker.Travel(retreat);
                 AiTelemetry.Report(attacker,
                     tacticalWithdrawal && madeProgress
-                    ? $"withdrew from {location.Title} after reducing the defense to " +
-                        $"{survivingDefenders.Length}, toward {safeLocation?.Title ?? retreat.Title} via {retreat.Title}"
+                    ? $"withdrew from {location.Title} after dealing {damageDealt} damage; " +
+                        $"{survivingDefenders.Length} defenders remain, toward {safeLocation?.Title ?? retreat.Title} via {retreat.Title}"
                     : $"retreated from {location.Title} toward " +
                     $"{safeLocation?.Title ?? retreat.Title} via {retreat.Title} before risking the leader");
             }
@@ -159,12 +138,12 @@ internal static class CombatResolver
         }
     }
 
-    static void DealDamage(Character attacker, Character defender)
-    {
-        int attack = attacker.PrepareStrategicAttack();
-        float defense = defender.PrepareStrategicDefense();
-        float randomFactor = 0.85f + (float)Burntime.Platform.Math.Random.NextDouble() * 0.30f;
-        int damage = (int)System.Math.Max(1, (attack - defense) * randomFactor);
-        defender.Health -= damage;
-    }
+    internal static IEnumerable<Item> SelectDefenderLoot(IEnumerable<Item> dropped, int limit) =>
+        dropped
+            .Where(item => EquipmentNeeds.IsEquipment(item.Type))
+            .OrderByDescending(item => item.Type.WeaponPriority)
+            .ThenByDescending(item => item.DefenseValue)
+            .ThenByDescending(item => item.TradeValue)
+            .Take(System.Math.Max(0, limit));
+
 }

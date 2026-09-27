@@ -9,7 +9,7 @@ internal static class CargoManagement
 {
     internal static void FillCityCaravan(ClassicAiState state, Location camp)
     {
-        if (state.Player.Group.GetFreeSlotCount() == 0)
+        if (!state.CanCollectLocalLoot || state.Player.Party.GetFreeSlotCount() == 0)
             return;
 
         HashSet<Item> reservedWeapons = CampManagement.CampStoredWeaponReserveItems(camp);
@@ -20,6 +20,7 @@ internal static class CargoManagement
             .Where(entry => !reservedWeapons.Contains(entry.Item) &&
                 !reservedWater.Contains(entry.Item) &&
                 !AiItemPool.IsWaterContainer(entry.Item.Type) &&
+                !entry.Item.Type.HasFunction(ItemFunction.RestingSustenance) &&
                 !Trading.IsPump(entry.Item))
             .Where(entry => entry.Item.Type.Production == null ||
                 !camp.ValidProductions.Contains(entry.Item.Type.Production))
@@ -107,10 +108,10 @@ internal static class CargoManagement
         if (!AiItemPool.IsWaterContainer(item.Type))
             return Trading.CanSell(state, item);
 
-        int availableContainers = state.Player.Group.SelectMany(character => character.Items)
+        int availableContainers = state.Player.Party.SelectMany(character => character.Items)
             .Count(candidate => AiItemPool.IsWaterContainer(candidate.Type)) +
             state.Reserve.WaterContainerCount;
-        return availableContainers >= state.Player.Group.Count;
+        return availableContainers >= state.Player.Party.Count;
     }
 
     public static bool TryReplaceCargo(
@@ -124,7 +125,7 @@ internal static class CargoManagement
         int food = Trading.PortableFoodSupply(state);
         int waterCapacity = Trading.PortableWaterSupply(state);
 
-        var candidate = state.Player.Group
+        var candidate = state.Player.Party
             .SelectMany(character => character.Items.Select(item => new { Character = character, Item = item }))
             .Where(entry => Trading.CanSell(state, entry.Item))
             .Where(entry => GroupInventory.CanReplaceCargo(state, entry.Character, entry.Item, found))
@@ -156,6 +157,8 @@ internal static class CargoManagement
             return 9000 + Trading.ProductionTradePriority(item.Type.Production);
         if (AiItemPool.IsHazardProtection(item.Type) && Trading.NeedsDangerProtection(state, item.Type))
             return 8000 + item.TradeValue;
+        if (item.Type.HasFunction(ItemFunction.RestingSustenance))
+            return 7500 + item.TradeValue;
         // Food value is also slot efficiency. Once cheap maggots and rats have
         // been eaten, prefer compact meat and snakes over similarly valued cargo
         // without making food untouchable economic capital.

@@ -1,0 +1,18 @@
+[image]
+background=gfx/backgrounds/film10.png
+animations=1
+frame=yes
+sprite_scale=1.875x2.25
+
+[music]
+song=sounds/trader.ogg
+loop=false
+
+' The ratio-corrected background is 360 pixels wide and centered in the
+' 320-pixel scene. Animation positions are relative to that background.
+
+[animation0]
+image=pngsheet@gfx/backgrounds/film10_ani.png?0-12?60x72
+position=128x89
+speed=9
+interval_margin=3

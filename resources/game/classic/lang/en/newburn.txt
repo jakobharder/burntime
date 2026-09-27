@@ -55,27 +55,27 @@ to get in there.}
 |D - day |J - |C
 Scaling SHARP
 Scaling SMOOTH
-toggle in-game with Alt+Enter
+toggle with Alt+Enter
 Map Music NONE
 Map Music KEEP
 Map Music LIST
 maps stay silent
 scene music continues
 randomized playlist
+Bring me food, and
+I'll treat your wounds.
 
+There's nothing more
+I can do for you.
 
+For that I can patch
+you up a little. (+|E HP)
 
+For that I can get you
+back on your feet. (+|E HP)
 
-
-
-
-
-
-
-
-
-
-
+For that I can fix
+you up properly. (+|E HP)
 
 
 
@@ -103,3 +103,15 @@ Def. {defense}}
 % rad. 
 Blocked}
 |J days|#1 day
+Classic rules
+Amiga rules
+DOS AI players
+Amiga AI players
+Remaster AI players
+Extended rules
+Damage {damage}}
+Def. {defense}%}
+metal detector}
+a metal detector}
+defective metal detector}
+a defective metal detector}

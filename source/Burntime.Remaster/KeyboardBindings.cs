@@ -13,6 +13,7 @@ public sealed class KeyboardBindings : IKeyboardBindings
 
     static readonly (string Setting, string DefaultControls, InputAction Action)[] definitions =
     {
+        ("setup_notes", "ctrl", InputAction.SetupNotes),
         ("move_up", "up", InputAction.MoveUp),
         ("move_down", "down", InputAction.MoveDown),
         ("move_left", "left", InputAction.MoveLeft),
@@ -24,7 +25,7 @@ public sealed class KeyboardBindings : IKeyboardBindings
         ("accept", "space enter", InputAction.Primary),
         ("back", "escape", InputAction.Back),
         ("secondary", "f", InputAction.Secondary),
-        ("action", "q", InputAction.SceneAction),
+        ("action", "q", InputAction.Action),
         ("options", "o", InputAction.Options),
         ("inventory", "e i", InputAction.Inventory),
         ("world_map", "v m", InputAction.WorldMap),
@@ -44,6 +45,8 @@ public sealed class KeyboardBindings : IKeyboardBindings
     {
         Dictionary<string, Key> result = new(StringComparer.OrdinalIgnoreCase)
         {
+            ["f1"] = new Key(SystemKey.F1),
+            ["ctrl"] = new Key(SystemKey.Ctrl),
             ["space"] = new Key(' '),
             ["backspace"] = new Key('\b'),
             ["enter"] = new Key(SystemKey.Enter),
@@ -91,6 +94,11 @@ public sealed class KeyboardBindings : IKeyboardBindings
 
     public InputAction GetAction(Key key)
     {
+        if (key.IsVirtual && key.VirtualKey == SystemKey.Tab)
+            return (key.Modifier & ModifierKeys.Shift) != 0
+                ? InputAction.PreviousTarget
+                : InputAction.NextTarget;
+
         if (key.IsVirtual && (key.Modifier & ModifierKeys.Shift) != 0)
         {
             if (key.VirtualKey == SystemKey.Left)
@@ -127,6 +135,10 @@ public sealed class KeyboardBindings : IKeyboardBindings
             result.Add(new Key(SystemKey.Left, ModifierKeys.Shift));
         else if (action == InputAction.RightArea)
             result.Add(new Key(SystemKey.Right, ModifierKeys.Shift));
+        else if (action == InputAction.PreviousTarget)
+            result.Add(new Key(SystemKey.Tab, ModifierKeys.Shift));
+        else if (action == InputAction.NextTarget)
+            result.Add(new Key(SystemKey.Tab));
         return result;
     }
 

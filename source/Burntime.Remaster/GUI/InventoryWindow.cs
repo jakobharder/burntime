@@ -73,7 +73,7 @@ namespace Burntime.Remaster.GUI
                 if (pageIndices[i] == nextPage)
                 {
                     OnPage(i);
-                    grid.ResetKeyboardSelection();
+                    grid.ResetFocus();
                     return true;
                 }
             }
@@ -100,9 +100,9 @@ namespace Burntime.Remaster.GUI
             face.Layer = this.Layer + 6;
             Windows += face;
 
-            font = new GuiFont(BurntimeClassic.FontName, new PixelColor(128, 136, 192));
+            font = new GuiFont(BurntimeClassic.FontName, ClassicColors.InventoryText);
             font.Borders = TextBorders.Screen;
-            nameFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
+            nameFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.MenuTextHover);
             nameFont.Borders = TextBorders.Screen;
 
             pageName = "";
@@ -214,15 +214,33 @@ namespace Burntime.Remaster.GUI
 
             if (activePage != null)
             {
+                RefreshCombatLoadout();
                 for (int i = activePage.Offset; i < activePage.Character.Items.Count && grid.Count < 6; i++)
                     grid.Add(activePage.Character.Items[i]);
-                if (activePage.Character.Weapon != null)
-                    grid.Selection.Add(activePage.Character.Weapon);
-                if (activePage.Character.Protection != null)
-                    grid.Selection.Add(activePage.Character.Protection);
 
                 face.FaceID = activePage.Character.FaceID;
             }
+        }
+
+        public void RefreshCombatLoadout()
+        {
+            if (activePage == null)
+                return;
+
+            ((ClassicGame)activePage.Character.Container.Root).RuleBook
+                .SelectCombatLoadout(activePage.Character);
+            RefreshItemMarkers();
+        }
+
+        public void RefreshItemMarkers()
+        {
+            grid.Selection.Clear();
+            if (activePage == null)
+                return;
+
+            foreach (Item item in activePage.Character.Items)
+                if (activePage.Character.IsItemInUse(item))
+                    grid.Selection.Add(item);
         }
 
         public override void OnRender(RenderTarget Target)
@@ -242,8 +260,11 @@ namespace Burntime.Remaster.GUI
             txt.AddArgument("|C", activePage.Character.Water);
             txt.AddArgument("|D", activePage.Character.Food);
 
-            txt.AddArgument("{attack}", (int)activePage.Character.AttackValue);
-            txt.AddArgument("{defense}", (int)activePage.Character.DefenseValue);
+            var combat = ((ClassicGame)activePage.Character.Container.Root).RuleBook
+                .GetEquippedCombatPreview(activePage.Character);
+            txt.AddArgument("{defense}", combat.Defense ?? 0);
+            txt.AddArgument("{damage}", combat.Minimum == combat.Maximum
+                ? combat.Minimum.ToString() : $"{combat.Minimum}-{combat.Maximum}");
 
             int fontSpacing = 10;
 
@@ -264,19 +285,23 @@ namespace Burntime.Remaster.GUI
                 font.DrawText(Target, textPos, txt[402], TextAlignment.Left, VerticalTextAlignment.Top);
                 textPos.y += fontSpacing;
 
-                font.DrawText(Target, textPos, txt.Get("newburn?100"), TextAlignment.Left, VerticalTextAlignment.Top);
+                textPos.x = basePos.x + 73;
+                if (combat.Defense > 0)
+                    font.DrawText(Target, textPos, txt.Get("newburn?112"), TextAlignment.Left, VerticalTextAlignment.Top);
                 textPos.x = basePos.x + 20;
-                font.DrawText(Target, textPos, txt.Get("newburn?99"), TextAlignment.Left, VerticalTextAlignment.Top);
+                font.DrawText(Target, textPos, txt.Get("newburn?111"),
+                    TextAlignment.Left, VerticalTextAlignment.Top);
                 textPos.y += fontSpacing;
 
-                if (activePage.Character.Protection != null)
                 {
                     string text = "";
-                    foreach (var protection in activePage.Character.Protection.Type.Protection)
+                    foreach (string hazard in new[] { "gas", "radiation" })
                     {
-                        var p = protection.Object;
-                        text += (int)(System.Math.Round(p.Rate * 100));
-                        if (p.Type == "gas")
+                        float rate = activePage.Character.GetHazardProtectionRate(hazard);
+                        if (rate <= 0)
+                            continue;
+                        text += (int)(System.Math.Round(rate * 100));
+                        if (hazard == "gas")
                             text += app.ResourceManager.GetString("newburn?101");
                         else
                             text += app.ResourceManager.GetString("newburn?102");

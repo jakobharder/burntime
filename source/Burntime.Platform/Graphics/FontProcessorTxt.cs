@@ -17,14 +17,19 @@ namespace Burntime.Platform.Graphics
         public Vector2 Size { get { return size; } }
         public int Offset { get { return offset; } }
         public int GlyphHeight { get { return glyphHeight; } }
+        public int LineHeight { get; private set; }
         public Vector2f Factor { get { return factor; } }
         public bool PostFilter { get; private set; }
 
         public Dictionary<char, CharInfo> CharInfo { get { return charInfo; } }
-        public Dictionary<string, int> Kerning { get { return kerning; } }
+        public Dictionary<string, float> Kerning { get { return kerning; } }
+        public IReadOnlyDictionary<char, FontSpriteInfo> Indicators => indicators;
+        public IReadOnlyDictionary<char, FontSpriteInfo> Icons => icons;
 
         Dictionary<char, CharInfo> charInfo;
-        Dictionary<string, int> kerning = [];
+        Dictionary<string, float> kerning = [];
+        Dictionary<char, FontSpriteInfo> indicators = [];
+        Dictionary<char, FontSpriteInfo> icons = [];
 
         byte[] image;
         int stride;
@@ -38,7 +43,8 @@ namespace Burntime.Platform.Graphics
             config.Open(FileSystem.GetFile(id.File));
 
             int lines = config[""].GetInt("lines");
-            int height = config[""].GetInt("height");
+            float sourceHeight = config[""].GetFloat("height");
+            LineHeight = config[""].GetInt("line_height");
             offset = config[""].GetInt("offset");
             Vector2f scale = config[""].GetVector2f("scale", Vector2f.One);
             PostFilter = config[""].GetBool("post_filter", false);
@@ -56,30 +62,26 @@ namespace Burntime.Platform.Graphics
 
             // Round at the base export scale first. Higher-resolution atlases are
             // exact integer multiples of that rasterization.
-            height = (int)System.Math.Round(height * scale.y) * multiplier;
+            int height = (int)System.Math.Round(sourceHeight * scale.y) * multiplier;
             glyphHeight = height;
 
             charInfo = new Dictionary<char, CharInfo>();
-            kerning = new Dictionary<string, int>();
+            kerning = new Dictionary<string, float>();
+            indicators = ReadSpriteInfo(config[""], "indicator");
+            icons = ReadSpriteInfo(config[""], "icon");
 
-            for (int amount = 1; config[""].ContainsKey("kerning" + amount); amount++)
-            {
-                string key = "kerning" + amount;
-                foreach (string pair in config[""].Get(key).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
-                {
-                    if (pair.Length != 2)
-                        throw new System.IO.InvalidDataException($"{key} entries must be two-character pairs.");
-
-                    kerning[pair] = -amount;
-                }
-            }
+            foreach (var entry in config[""].Values)
+                if (entry.Key.StartsWith("kerning") &&
+                    float.TryParse(entry.Key[7..], System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out float amount) && amount > 0)
+                    AddKerning(config[""], entry.Key, amount);
 
             for (int line = 0; line < lines; line++)
             {
 
                 // read character info
                 string sequence = config[""].Get("char" + line);
-                int[] widths = config[""].GetInts("width" + line);
+                float[] widths = config[""].GetFloats("width" + line);
                 float[] renderWidths = config[""].GetFloats("renderwidth" + line);
                 char[] chars = sequence.ToCharArray();
 
@@ -95,7 +97,7 @@ namespace Burntime.Platform.Graphics
 
                     CharInfo info = new CharInfo();
                     info.pos = pos;
-                    info.width = widths[i];
+                    info.width = (int)System.Math.Round(widths[i]);
                     info.renderWidth = renderWidths.Length == 0
                         ? widths[i]
                         : renderWidths[i] * 2 / scale.x;
@@ -106,7 +108,8 @@ namespace Burntime.Platform.Graphics
                     info.imgWidth = renderWidths.Length == 0
                         ? end - pos
                         : (int)System.Math.Round(info.renderWidth / factor.x);
-                    info.spritePos = new Vector2(pos, line * height);
+                    info.spritePos = new Vector2(pos, config[""].ContainsKey("atlas_y" + line)
+                        ? config[""].GetInt("atlas_y" + line) : line * height);
 
                     if (charInfo.ContainsKey(chars[i]))
                         charInfo.Remove(chars[i]);
@@ -122,7 +125,55 @@ namespace Burntime.Platform.Graphics
             size = new Vector2(decoded.Width, decoded.Height);
             image = decoded.BgraData;
             stride = decoded.Width * 4;
+            foreach (char character in new List<char>(charInfo.Keys))
+            {
+                CharInfo glyph = charInfo[character];
+                glyph.imgHeight = System.Math.Max(0, System.Math.Min(glyph.imgHeight, size.y - glyph.spritePos.y));
+                charInfo[character] = glyph;
+            }
             file.Close();
+        }
+
+        static Dictionary<char, FontSpriteInfo> ReadSpriteInfo(
+            ConfigSection config, string prefix)
+        {
+            Dictionary<char, FontSpriteInfo> result = [];
+            string image = config.Get(prefix + "_image");
+            string codes = config.Get(prefix + "_codes");
+            Vector2 size = config.GetVector2(prefix + "_size");
+            int[] starts = config.GetInts(prefix + "_starts");
+            int[] counts = config.GetInts(prefix + "_counts");
+            int[] widths = config.GetInts(prefix + "_widths");
+            int count = System.Math.Min(codes?.Length ?? 0,
+                System.Math.Min(starts.Length,
+                    System.Math.Min(counts.Length, widths.Length)));
+            if (string.IsNullOrEmpty(image) || size.x <= 0 || size.y <= 0)
+                return result;
+
+            for (int i = 0; i < count; i++)
+            {
+                if (counts[i] <= 0 || widths[i] < 0)
+                    continue;
+                result[codes[i]] = new FontSpriteInfo(image, size, starts[i],
+                    counts[i], widths[i]);
+            }
+            return result;
+        }
+
+        void AddKerning(ConfigSection section, string key, float amount)
+        {
+            if (!section.ContainsKey(key))
+                return;
+
+            foreach (string pair in section.Get(key).Split((char[]?)null,
+                StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (pair.Length != 2)
+                    throw new System.IO.InvalidDataException(
+                        $"{key} entries must be two-character pairs.");
+
+                kerning[pair] = -amount;
+            }
         }
 
         public void Render(System.IO.Stream stream, int stride)

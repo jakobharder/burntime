@@ -125,9 +125,9 @@ internal static class TerritorialTargetDeferrals
     {
         Blocker.RouteSupplies or Blocker.SettlementSupplies =>
             Math.Min(
-                state.Player.Group.GetLowestFoodWithInventory(),
-                state.Player.Group.GetLowestWaterWithInventory()),
-        Blocker.Attackers => state.Player.Group.Count,
+                state.Player.Party.GetLowestFoodWithInventory(),
+                state.Player.Party.GetLowestWaterWithInventory()),
+        Blocker.Attackers => state.Player.Party.Count,
         Blocker.CombatReadiness => (int)MathF.Round(
             CombatStrength.Attacker(state.Player) * 10),
         _ => 0

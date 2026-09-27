@@ -1,0 +1,9 @@
+[image]
+background=gfx/backgrounds/wirt.png
+animations=1
+sprite_scale=1.875x2.25
+
+[animation0]
+image=pngsheet@gfx/backgrounds/wirt_ani.png?0-10?64x96
+position=202x51
+progressive=false

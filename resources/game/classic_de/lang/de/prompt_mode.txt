@@ -1,2 +1,2 @@
-Prompts ANZEIGEN
-Prompts AUSBLENDEN
+UI-Hinweise ANZEIGEN
+UI-Hinweise AUSBLENDEN

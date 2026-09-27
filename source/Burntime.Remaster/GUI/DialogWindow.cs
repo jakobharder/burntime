@@ -22,6 +22,7 @@ namespace Burntime.Remaster
         public bool Ended;
         bool ready = false;
         int dlgoffset = 0;
+        int textLinesPerPage = 2;
         int dialogmode;
         int focusChoiceIndex = -1;
         Vector2 lastMousePosition;
@@ -55,9 +56,9 @@ namespace Burntime.Remaster
             face.DisplayOnly = true;
             Windows += face;
 
-            fontText = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 164, 56));
-            fontOptions = new GuiFont(BurntimeClassic.FontName, new PixelColor(108, 116, 168));
-            fontFocusedChoice = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
+            fontText = new GuiFont(BurntimeClassic.FontName, ClassicColors.DialogText);
+            fontOptions = new GuiFont(BurntimeClassic.FontName, ClassicColors.MenuText);
+            fontFocusedChoice = new GuiFont(BurntimeClassic.FontName, ClassicColors.MenuTextHover);
 
             CaptureAllMouseMove = true;
         }
@@ -100,20 +101,22 @@ namespace Burntime.Remaster
             }
         }
 
-        public void SetCharacter(Character character, Conversation conversation, bool showFace = false)
+        public void SetCharacter(Character character, Conversation conversation, bool showFace = false,
+            int textLinesPerPage = 2)
         {
             result = ConversationActionType.None;
             ResultChoice = -1;
             self = null;
             this.character = character;
             this.conversation = conversation;
+            this.textLinesPerPage = System.Math.Clamp(textLinesPerPage, 1, 3);
             face.IsVisible = showFace;
             if (showFace)
             {
                 face.FaceID = character.FaceID;
             }
 
-            dialogmode = (conversation.Text.Length < 3) ? 1 : 0;
+            dialogmode = conversation.Text.Length <= this.textLinesPerPage ? 1 : 0;
             dlgoffset = 0;
             focusChoiceIndex = FirstVisibleChoice();
 
@@ -137,7 +140,8 @@ namespace Burntime.Remaster
 
             conversation = character.Dialog.GetConversation(self, type);
 
-            dialogmode = (conversation.Text.Length < 3) ? 1 : 0;
+            textLinesPerPage = 2;
+            dialogmode = conversation.Text.Length <= textLinesPerPage ? 1 : 0;
             dlgoffset = 0;
             focusChoiceIndex = FirstVisibleChoice();
 
@@ -207,8 +211,8 @@ namespace Burntime.Remaster
 
         void AdvanceText()
         {
-            dlgoffset += 2;
-            if (dlgoffset + 2 >= conversation.Text.Length)
+            dlgoffset += textLinesPerPage;
+            if (dlgoffset + textLinesPerPage >= conversation.Text.Length)
                 dialogmode = 1;
             ResetFocus();
         }
@@ -256,7 +260,7 @@ namespace Burntime.Remaster
                 case ConversationActionType.Trade:
                     Hide();
                     classic.Game.World.ActiveTraderObj = character as Trader;
-                    classic.Game.World.ActivePlayerObj.Group.IgnoreRangeFilter =
+                    classic.Game.World.ActivePlayerObj.Party.IgnoreRangeFilter =
                         !classic.Game.World.ActivePlayerObj.SingleMode;
                     app.SceneManager.SetScene("TraderScene");
                     break;
@@ -277,7 +281,7 @@ namespace Burntime.Remaster
                     break;
             }
 
-            dialogmode = (conversation.Text.Length < 3) ? 1 : 0;
+            dialogmode = conversation.Text.Length <= textLinesPerPage ? 1 : 0;
             ResetFocus();
         }
 
@@ -360,7 +364,7 @@ namespace Burntime.Remaster
 
             TextHelper txt = new TextHelper(app, "burn");
 
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < textLinesPerPage; i++)
             {
                 if (dlgoffset + i < conversation.Text.Length)
                 {
@@ -406,7 +410,7 @@ namespace Burntime.Remaster
             Player boss = classic.Game.World.ActivePlayerObj;
 
             character.Hire(boss);
-            boss.SelectGroup(boss.Group);
+            boss.SelectGroup(boss.Party);
         }
     }
 }

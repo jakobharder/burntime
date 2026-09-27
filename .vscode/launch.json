@@ -24,12 +24,12 @@
             "console": "internalConsole"
         },
         {
-            "name": "Debug Burntime (with shaders)",
+            "name": "1440p",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build Burntime with shaders (Debug)",
             "program": "${workspaceFolder}/bin/Debug/Burntime.dll",
-            "args": [],
+            "args": ["--window-size", "1200x675"],
             "cwd": "${workspaceFolder}/bin/Debug",
             "stopAtEntry": false,
             "console": "internalConsole"

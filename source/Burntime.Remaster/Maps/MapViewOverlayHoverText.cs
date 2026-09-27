@@ -53,7 +53,7 @@ class MapViewOverlayHoverText : IMapViewOverlay
     public MapViewOverlayHoverText(Module App)
     {
         resMan = App.ResourceManager;
-        textBars = new GuiTextBars(resMan);
+        textBars = new GuiTextBars(App);
     }
 
     public void MouseMoveOverlay(Vector2 Position)
@@ -80,7 +80,7 @@ class MapViewOverlayHoverText : IMapViewOverlay
         {
             if (mapState.Hover.WorldLocation != null)
                 DrawWorldLocationText(textTarget, mapState.Hover,
-                    Offset - new Vector2(0, topMargin), 1);
+                    Offset - new Vector2(0, topMargin), 1, showOwnershipFlag: true);
             else if (mapState.Hover.Character != null)
                 DrawCharacterText(textTarget, mapState.Hover,
                     Offset - new Vector2(0, topMargin), 1);
@@ -103,7 +103,7 @@ class MapViewOverlayHoverText : IMapViewOverlay
                     continue;
 
                 var info = new MapViewHoverInfo(resMan.GetString(entrance.TitleId),
-                    entrance.Area.Center, BurntimeClassic.LightGray)
+                    entrance.Area.Center, ClassicColors.LightGray)
                 {
                     WorldLocation = location
                 };
@@ -126,8 +126,8 @@ class MapViewOverlayHoverText : IMapViewOverlay
 
                 MapViewHoverInfo info = entrancesBlocked
                     ? new MapViewHoverInfo(resMan.GetString("newburn?103"), entrance.Area.Center,
-                        BurntimeClassic.LightGray, room)
-                    : new MapViewHoverInfo(room, resMan, BurntimeClassic.LightGray);
+                        ClassicColors.LightGray, room)
+                    : new MapViewHoverInfo(room, resMan, ClassicColors.LightGray);
                 DrawEntranceText(textTarget, info, Offset - new Vector2(0, topMargin), 0.7f,
                     showInventoryHint: false);
             }
@@ -145,7 +145,7 @@ class MapViewOverlayHoverText : IMapViewOverlay
         List<GuiTextBar> bars = new(2);
         if (showExperience)
             bars.Add(new GuiTextBar(GuiTextBarType.Dots,
-                GetLevel(character!.Experience, 4)));
+                game.RuleBook.GetExperienceTier(character!.Experience) + 1));
         if (showHealth)
             bars.Add(new GuiTextBar(GuiTextBarType.RedBar,
                 GetLevel(character!.Health, 7)));
@@ -160,22 +160,64 @@ class MapViewOverlayHoverText : IMapViewOverlay
     }
 
     internal void DrawWorldLocationText(RenderTarget target, MapViewHoverInfo info, Vector2 offset,
-        float alpha)
+        float alpha, bool showOwnershipFlag = false)
     {
+        Player? controllingPlayer = info.WorldLocation?.ControllingPlayer;
+        bool isCity = info.WorldLocation?.IsCity == true;
+        ISprite? ownershipFlag = showOwnershipFlag && !isCity
+            ? controllingPlayer?.Flag.Object
+            : null;
+        PixelColor locationColor = isCity && controllingPlayer != null
+            ? controllingPlayer.Color
+            : info.Color;
+        int foodPerDay = info.WorldLocation?.GetFoodProductionRate().FoodPerDay ?? 0;
+        bool hasVisited = player?.HasVisited(info.WorldLocation) == true;
+        bool hasRadio = player != null && RadioIntel.HasRadio(player);
+        string? dangerIcon = hasVisited || hasRadio ? info.WorldLocation?.Danger?.Type switch
+        {
+            "gas" => FontIcons.Toxic,
+            "radiation" => FontIcons.Radiation,
+            _ => null
+        } : null;
+
         if (info.WorldLocation?.Player != player)
         {
-            textBars.Draw(target, info.Position + offset, info.Title, info.Color, alpha,
-                System.Array.Empty<GuiTextBar>());
+            int baseWater = info.WorldLocation?.Source.BaseWater ?? 0;
+            bool showResourceInfo = hasVisited && !info.WorldLocation!.IsCity;
+            List<GuiTextBar> radioBars = new(4);
+            if (game != null && player != null &&
+                RadioIntel.IsAvailable(player, info.WorldLocation!))
+            {
+                RadioReport report = RadioIntel.Create(game, player, info.WorldLocation!);
+                if (report.Defenders > 0)
+                    radioBars.Add(new GuiTextBar(
+                        GuiTextBarType.CampNpcs, report.Defenders,
+                        SeparatorAfter: true));
+                if (report.Food > 0)
+                    radioBars.Add(new GuiTextBar(GuiTextBarType.RedBar, report.Food));
+                AddTrapIcons(radioBars, info.WorldLocation);
+                radioBars.Add(new GuiTextBar(GuiTextBarType.BlueBar, report.Water));
+            }
+            else if (showResourceInfo)
+                radioBars.Add(new GuiTextBar(GuiTextBarType.BlueBar, baseWater));
+            textBars.Draw(target, info.Position + offset, info.Title, locationColor, alpha,
+                radioBars, dangerIcon,
+                ownershipFlag, showBackground: true);
             return;
         }
 
-        int foodPerDay = info.WorldLocation.GetFoodProductionRate().FoodPerDay;
         List<GuiTextBar> bars = new(4);
+        int npcCount = info.WorldLocation.CampNPC.Count(character =>
+            character.Player == player && !character.IsDead);
+        if (npcCount > 0)
+            bars.Add(new GuiTextBar(GuiTextBarType.CampNpcs, npcCount,
+                SeparatorAfter: true));
         if (foodPerDay > 0)
             bars.Add(new GuiTextBar(GuiTextBarType.RedBar, foodPerDay));
         AddTrapIcons(bars, info.WorldLocation);
         bars.Add(new GuiTextBar(GuiTextBarType.BlueBar, info.WorldLocation.Source.Water));
-        textBars.Draw(target, info.Position + offset, info.Title, info.Color, alpha, bars);
+        textBars.Draw(target, info.Position + offset, info.Title, locationColor, alpha, bars,
+            dangerIcon, ownershipFlag, showBackground: true);
     }
 
     internal void DrawEntranceText(RenderTarget target, MapViewHoverInfo info, Vector2 offset, float alpha,
@@ -221,15 +263,7 @@ class MapViewOverlayHoverText : IMapViewOverlay
                 return;
         }
 
-        int toolCount = 0;
-        foreach (Room candidateRoom in location.Rooms)
-            foreach (Item item in candidateRoom.Items)
-                if (item.Type.Production == production)
-                    toolCount++;
-        foreach (Character npc in location.CampNPC)
-            foreach (Item item in npc.Items)
-                if (item.Type.Production == production)
-                    toolCount++;
+        int toolCount = location.GetProductionToolCount(production);
 
         int trapLevel = GetTrapLevel(production);
         int activeToolCount = System.Math.Min(2,

@@ -132,7 +132,6 @@ namespace Burntime.Framework
         public InputManager InputManager { get; } = new();
         public IKeyboardBindings KeyboardActionBindings { get; protected set; } = new EmptyKeyboardBindings();
         public IGamepadBindings GamepadActionBindings { get; protected set; } = new EmptyGamepadBindings();
-
         public bool IsInputActionDown(InputAction action)
         {
             if (InputManager.ActionsDown.Contains(action))
@@ -186,7 +185,8 @@ namespace Burntime.Framework
             if (MouseImage != null && RenderMouse && MouseInputVisible)
             {
                 target.Layer = 255;
-                target.DrawSprite(DeviceManager.Mouse.Position, MouseImage);
+                target.DrawSprite(DeviceManager.Mouse.Position + new Vector2(0, -1),
+                    MouseImage, alpha: 1, directToFramebuffer: !IsNewGfx);
             }
         }
 

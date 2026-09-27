@@ -15,22 +15,21 @@ internal class LanguageScene : Scene
     readonly GuiFont _font;
     readonly GuiFont _selectedFont;
     int _selectedLanguage;
-    readonly InputPromptOverlay _promptOverlay;
 
     public LanguageScene(Module app) : base(app)
     {
         Size = app.Engine.Resolution.Game;
         var center = app.Engine.Resolution.Game / 2;
-        _font = new GuiFont(BurntimeClassic.FontName, new PixelColor(108, 116, 168))
+        _font = new GuiFont(BurntimeClassic.FontName, ClassicColors.MenuText)
         {
             Borders = TextBorders.None
         };
-        _selectedFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 164, 56))
+        _selectedFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.DialogText)
         {
             Borders = TextBorders.None
         };
 
-        _hintFont = new GuiFont("highres-font.txt", new PixelColor(128, 128, 128)) { Borders = Platform.Graphics.TextBorders.None };
+        _hintFont = new GuiFont("font-highres.txt", new PixelColor(128, 128, 128)) { Borders = Platform.Graphics.TextBorders.None };
 
         Windows += _german = new Button(app, () => SelectLanguage("de"))
         {
@@ -39,7 +38,14 @@ internal class LanguageScene : Scene
             Position = center + new Vector2(-5, -10),
             Text = "Deutsch",
             HorizontalAlignment = PositionAlignment.Right,
-            IsTextOnly = true
+            IsTextOnly = true,
+            Prompts =
+            {
+                new InputPrompt(InputAction.Primary, "Auswählen")
+                {
+                    MouseControl = MouseButton.None
+                }
+            }
         };
 
         Windows += _english = new Button(app, () => SelectLanguage("en"))
@@ -49,39 +55,37 @@ internal class LanguageScene : Scene
             Position = center + new Vector2(5, -10),
             Text = "English",
             HorizontalAlignment = PositionAlignment.Left,
-            IsTextOnly = true
+            IsTextOnly = true,
+            Prompts =
+            {
+                new InputPrompt(InputAction.Primary, "Select")
+                {
+                    MouseControl = MouseButton.None
+                }
+            }
         };
 
         _selectedLanguage = app.Language == "de" ? 0 : 1;
-        Windows += _promptOverlay = new InputPromptOverlay(app);
-        _promptOverlay.AnchorToScreenBottomRight();
+        Windows += new InputPromptOverlay(app, Prompts,
+            InputPromptColorScheme.Default);
+        Prompts.AddDynamic(
+            () => new InputPrompt(InputPattern.HorizontalNavigation,
+                _selectedLanguage == 0 ? "Sprache" : "Language"),
+            new(InputPattern.HorizontalNavigation, "Sprache"),
+            new(InputPattern.HorizontalNavigation, "Language"));
         UpdateSelection();
     }
 
-    public override void OnResizeScreen()
+    public override void OnResizeScreen(bool reload = false)
     {
-        base.OnResizeScreen();
+        base.OnResizeScreen(reload);
         Size = app.Engine.Resolution.Game;
-        _promptOverlay.AnchorToScreenBottomRight();
     }
 
     void UpdateSelection()
     {
         _german.IsKeyboardSelected = _selectedLanguage == 0;
         _english.IsKeyboardSelected = _selectedLanguage == 1;
-        bool german = _selectedLanguage == 0;
-        if (app.LastInputMode == InputMode.Mouse)
-        {
-            _promptOverlay.SetPrompts();
-            return;
-        }
-        _promptOverlay.SetPrompts(
-            new InputPrompt(InputAction.MoveLeft, german ? "Sprache" : "Language")
-            {
-                AlternateAction = InputAction.MoveRight,
-                GamepadOverride = "D-pad/Stick Left/Right"
-            },
-            new InputPrompt(InputAction.Primary, german ? "Auswählen" : "Select"));
     }
 
     public override void OnUpdate(float elapsed)

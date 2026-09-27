@@ -57,6 +57,7 @@ internal static class AiTurnController
         Construction.ConstructPortableEconomicUpgrade(state);
         GroupManagement.MaintainGroupEquipment(state, allowCampTransfers: true);
         CampManagement.MaintainCampNetwork(state);
+        EquipmentPlanning.Maintain(state);
         ExpansionPlanning.TryClaimCurrentAsLocalOpportunity(state);
 
         if (state.Current.Player == state.Player)
@@ -73,6 +74,7 @@ internal static class AiTurnController
         if (completedTrade)
         {
             GroupManagement.MaintainGroupEquipment(state);
+            EquipmentPlanning.Maintain(state);
             GroupInventory.MaintainLeaderRoleSlots(state);
         }
     }
@@ -112,9 +114,9 @@ internal static class AiTurnController
         Player player = state.Player;
         if (player.Location.Source == null)
             return;
-        player.Location.Source.Reserve = player.Group.Drink(
+        player.Location.Source.Reserve = player.Party.Drink(
             player.Character, player.Location.Source.Reserve);
-        foreach (Item item in player.Group.GetEmptyWaterItems())
+        foreach (Item item in player.Party.GetEmptyWaterItems())
             player.Location.Source.RefillItem(item);
     }
 
@@ -153,7 +155,7 @@ internal static class AiTurnController
         }
         if (destination.IsCity || destination.Player != state.Player ||
             !CampEconomy.CanProvisionFood(destination) ||
-            !CampEconomy.CanProvisionGroupWater(destination, state.Player.Group.Count))
+            !CampEconomy.CanProvisionGroupWater(destination, state.Player.Party.Count))
         {
             AiTelemetry.Report(state.Player,
                 $"cancelled committed journey to {destination.Title}: destination is no longer a sustainable owned camp");
@@ -213,7 +215,7 @@ internal static class AiTurnController
                     : "seek real food, water, or medical services",
                 allowSurvivableRecoveryRisk: true,
                 allowFatalRecoveryRisk: lastChance);
-            if (reachableRecovery == null && player.Group.Count > 1 &&
+            if (reachableRecovery == null && player.Party.Count > 1 &&
                 !RecoveryServices.CanRecoverLocallyForTravel(state))
             {
                 candidates.Add(new AiDecision(
@@ -292,8 +294,8 @@ internal static class AiTurnController
         ExpansionPlanning.AddCandidates(state, observation, policy, territory, candidates);
         long expansionMilliseconds = timer.ElapsedMilliseconds;
 
-        if (!preparingAttack && player.Group.Count > 1 &&
-            player.Group.Count < observation.DesiredGroupSize && !state.HasHireableNpc())
+        if (!preparingAttack && player.Party.Count > 1 &&
+            player.Party.Count < observation.DesiredGroupSize && !state.HasHireableNpc())
         {
             Location? preparationCamp = Trading.FindBestCampForCityPreparation(state);
             Location? recruitmentCity = Recruitment.FindNearestRecruitmentCity(state, policy);
@@ -330,7 +332,7 @@ internal static class AiTurnController
     {
         Location? target = state.StrategicTarget;
         if (!state.HasSettlementPlan || target == null || target.Player != null ||
-            state.Player.Group.Any(character => character.Health <= 40))
+            state.Player.Party.Any(character => character.Health <= 40))
             return false;
         RouteFinder.Route? route = RouteFinder.Find(state.Player, state.Current, target);
         return route != null && TravelSupplies.HasRouteSupplies(
@@ -725,7 +727,8 @@ internal static class AiTurnController
         string reason,
         bool allowSurvivableRecoveryRisk = false,
         RouteFinder.Route? knownRoute = null,
-        bool allowFatalRecoveryRisk = false)
+        bool allowFatalRecoveryRisk = false,
+        bool commitJourney = false)
     {
         if (target == null)
             return;
@@ -748,7 +751,8 @@ internal static class AiTurnController
             score - route.Days,
             target,
             route.NextStep,
-            reason));
+            reason,
+            CommitJourney: commitJourney));
     }
 
     internal static Location? FindNearestLogistics(ClassicAiState state, bool requireReachable = false)

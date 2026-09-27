@@ -53,7 +53,7 @@ internal static class RouteOpportunities
             .Where(camp => camp.Player == state.Player &&
                 CampEconomy.CanProvisionFood(camp) &&
                 CampEconomy.CanProvisionGroupWater(
-                    camp, state.Player.Group.Count))
+                    camp, state.Player.Party.Count))
             .Select(camp => RouteFinder.Find(state.Player, destination, camp))
             .Where(route => route != null)
             .Any(returnRoute => RecoveryServices.CanProvisionReturnTrip(
@@ -64,12 +64,12 @@ internal static class RouteOpportunities
         ClassicAiState state,
         Location? tradeCity)
     {
-        if (state.Player.Group.GetFreeSlotCount() == 0 || Trading.HasPreparedTradeCargo(state))
+        if (state.Player.Party.GetFreeSlotCount() == 0 || Trading.HasPreparedTradeCargo(state))
             return null;
 
         if (tradeCity == null)
             return null;
-        int freeSlots = state.Player.Group.GetFreeSlotCount();
+        int freeSlots = state.Player.Party.GetFreeSlotCount();
         Item[] carriedCapital = Trading.TradeCapital(state);
         return state.RootGame.World.Locations
             .Where(camp => camp.Player == state.Player && camp != state.Current)

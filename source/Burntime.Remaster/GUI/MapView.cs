@@ -61,6 +61,8 @@ public class ObjectArgs : EventArgs
 
 public class MapView : Window
 {
+    protected override bool IsPromptActive(InputMode inputMode) => true;
+
     public event EventHandler<ObjectArgs> ClickObject;
     public event EventHandler<MapScrollArgs> Scroll;
 
@@ -126,7 +128,14 @@ public class MapView : Window
     float scrollSpeed = 70;
 
     Vector2f border = new Vector2f();
+    bool mouseEdgeScrollArmed = true;
     int entrance = -1;
+
+    public void RequireMouseEdgeScrollReentry()
+    {
+        border = Vector2f.Zero;
+        mouseEdgeScrollArmed = false;
+    }
 
     public int ActiveEntrance
     {
@@ -233,6 +242,15 @@ public class MapView : Window
         border.y += (position.y < BigMargin) ? 1 : 0;
         border.y -= (position.y > Size.y - BigMargin) ? 1 : 0;
 
+        if (!mouseEdgeScrollArmed)
+        {
+            mouseEdgeScrollArmed = position.x >= BigMargin &&
+                position.x <= Size.x - BigMargin &&
+                position.y >= BigMargin && position.y <= Size.y - BigMargin;
+            if (!mouseEdgeScrollArmed)
+                border = Vector2f.Zero;
+        }
+
         bool found = false;
         for (int i = 0; i < map.Entrances.Length; i++)
         {
@@ -288,10 +306,13 @@ public class MapView : Window
 
         if (button == MouseButton.Right)
         {
-            if (_moveTotal < 10)
+            bool wasDrag = _moveTotal >= 10;
+            if (!wasDrag)
                 ContextMenu?.Invoke(position, button);
             _rightClickMove = null;
             _moveTotal = 0;
+            if (wasDrag)
+                return true;
         }
 
         // end all capture here
@@ -395,7 +416,7 @@ public class MapView : Window
                 if (game.MainMapView)
                 {
                     Burntime.Data.BurnGfx.MapEntrance e = game.World.Map.Entrances[entrance];
-                    game.World.ActiveLocationObj.Hover = new MapViewHoverInfo(app.ResourceManager.GetString(e.TitleId), e.Area.Center, BurntimeClassic.LightGray)
+                    game.World.ActiveLocationObj.Hover = new MapViewHoverInfo(app.ResourceManager.GetString(e.TitleId), e.Area.Center, ClassicColors.LightGray)
                     {
                         WorldLocation = game.World.Locations[entrance]
                     };
@@ -404,8 +425,8 @@ public class MapView : Window
                 {
                     Location location = game.World.ActiveLocationObj;
                     game.World.ActiveLocationObj.Hover = location.AreEntrancesBlockedFor(game.World.ActivePlayerObj)
-                        ? new MapViewHoverInfo(app.ResourceManager.GetString("newburn?103"), location.Map.Entrances[entrance].Area.Center, BurntimeClassic.LightGray, location.Rooms[entrance])
-                        : new MapViewHoverInfo(location.Rooms[entrance], app.ResourceManager, BurntimeClassic.LightGray);
+                        ? new MapViewHoverInfo(app.ResourceManager.GetString("newburn?103"), location.Map.Entrances[entrance].Area.Center, ClassicColors.LightGray, location.Rooms[entrance])
+                        : new MapViewHoverInfo(location.Rooms[entrance], app.ResourceManager, ClassicColors.LightGray);
                 }
             }
         }
@@ -418,6 +439,14 @@ public class MapView : Window
         _position = -centerTo + (Boundings.Size / 2);
         ConstrainPosition();
         Scroll?.Invoke(this, new MapScrollArgs(_position));
+    }
+
+    public void SetViewport(Vector2 position, Vector2 size)
+    {
+        Position = position;
+        Size = size;
+        if (ConstrainPosition())
+            Scroll?.Invoke(this, new MapScrollArgs(_position));
     }
 
     public bool FollowWithinMiddleThird(Vector2 mapPosition, float elapsed)

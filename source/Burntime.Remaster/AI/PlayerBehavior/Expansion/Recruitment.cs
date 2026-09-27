@@ -44,7 +44,7 @@ internal static partial class Recruitment
         Player player = state.Player;
         bool generatedPaymentAllowed = context.Current.IsCity &&
             policy.AllowGeneratedRecruitPaymentInCities;
-        if (target == null && state.OwnedCampCount == 0 && player.Group.Count == 1)
+        if (target == null && state.OwnedCampCount == 0 && player.Party.Count == 1)
         {
             Location? firstCampWaypoint = FindFirstCampWaypoint(state, context, policy);
             AiTurnController.AddTravelCandidate(
@@ -54,7 +54,7 @@ internal static partial class Recruitment
                     : $"advance to viable first-camp waypoint {firstCampWaypoint.Title}");
         }
         bool hasCommittedSettler = target is { IsCity: false, Player: null } &&
-            player.Group.Count > 1;
+            player.Party.Count > 1;
         Location? reinforcementCamp = hasCommittedSettler
             ? null
             : ReinforcementPlanning.FindBestCampForReinforcement(
@@ -64,15 +64,15 @@ internal static partial class Recruitment
             : ReinforcementPlanning.SustainableGarrisonTarget(
                 reinforcementCamp, policy.CriticalGarrisonTarget);
         bool needsSettler = target is { IsCity: false, Player: null } &&
-            player.Group.Count == 1;
+            player.Party.Count == 1;
         bool needsGarrisonFollower = reinforcementCamp != null &&
-            player.Group.Count == 1;
+            player.Party.Count == 1;
         bool standingFollowerSupported =
             EmpireFoodSurplus(state) >= StandingGroupFoodSurplus;
         int desiredGroupSize = standingFollowerSupported
             ? context.DesiredGroupSize
             : 1;
-        bool needsFollower = player.Group.Count < context.DesiredGroupSize &&
+        bool needsFollower = player.Party.Count < context.DesiredGroupSize &&
             (needsSettler || needsGarrisonFollower || standingFollowerSupported);
 
         if (!shouldVisitTrader &&
@@ -206,10 +206,12 @@ internal static partial class Recruitment
             .Where(index => context.Current.WayLengths[index] > 0)
             .Select(index => context.Current.Neighbors[index])
             .Where(waypoint => !waypoint.IsCity && waypoint.Player == null &&
-                CampEconomy.IsAcceptableFirstCamp(waypoint) &&
+                !ExpansionPlanning.IsOccupiedByOtherBoss(state, waypoint) &&
+                (CampEconomy.IsAcceptableFirstCamp(waypoint) ||
+                    CampEconomy.CanFoundWithRestingSustenance(state, waypoint)) &&
                 state.CanClaim(waypoint) &&
                 ExpansionPlanning.HasTravellingHazardProtection(state, waypoint) &&
-                CampEconomy.CanSustainCamp(waypoint))
+                ExpansionPlanning.CanSustainCandidate(state, waypoint))
             .Select(waypoint => new
             {
                 Waypoint = waypoint,
@@ -259,7 +261,7 @@ internal static partial class Recruitment
     {
         Location? target = state.StrategicTarget;
         if (!state.HasSettlementPlan || target == null || target.Player != null ||
-            state.Player.Group.Count != 1)
+            state.Player.Party.Count != 1)
             return false;
 
         RouteFinder.Route? direct = RouteFinder.Find(state.Player, context.Current, target);
@@ -324,7 +326,7 @@ internal static partial class Recruitment
         bool hasRoundTripSupplies = TravelSupplies.HasSettlementRoundTripSupplies(
             state.Player, outbound, returnRoute, paymentFood, paymentWater);
         bool canRefillAtSettlement = CampEconomy.CanProvisionGroupWater(
-            target, state.Player.Group.Count);
+            target, state.Player.Party.Count);
         if (!hasRoundTripSupplies && !(canRefillAtSettlement &&
             TravelSupplies.HasSettlementRoundTripFood(
                 state.Player, outbound, returnRoute)))
@@ -335,7 +337,7 @@ internal static partial class Recruitment
             2110 - outbound.Days,
             target,
             outbound.NextStep,
-            state.OwnedCampCount == 0 && state.Player.Group.Count == 1
+            state.OwnedCampCount == 0 && state.Player.Party.Count == 1
                 ? $"pick up free first settler {recruit.Recruit.Name} at {target.Title}, then establish the camp"
                 : $"hire {recruit.Recruit.Name} at {target.Title} with the reserved requested item, then establish the camp"));
         return true;
@@ -494,7 +496,7 @@ internal static partial class Recruitment
             .FirstOrDefault(item => item != null);
         return target.ValidProductions.Any(production =>
         {
-            int toolCount = state.Player.Group
+            int toolCount = state.Player.Party
                 .SelectMany(character => character.Items)
                 .Concat(recruit.Items)
                 .Count(item => item.Type.Production == production && item != exactPayment);
@@ -512,7 +514,7 @@ internal static partial class Recruitment
         .Where(camp => camp.Player == context.Player &&
             CampEconomy.CanProvisionFood(camp) &&
             CampEconomy.CanProvisionGroupWater(
-                camp, context.Player.Group.Count))
+                camp, context.Player.Party.Count))
         .Select(camp => RouteFinder.Find(context.Player, start, camp))
         .Where(route => route != null)
         .OrderBy(route => route!.Days)
@@ -520,10 +522,10 @@ internal static partial class Recruitment
 
     internal static ItemType? PlannedFutureSettlementPaymentType(ClassicAiState state)
     {
-        if (state.OwnedCampCount == 0 && state.Player.Group.Count == 1)
+        if (state.OwnedCampCount == 0 && state.Player.Party.Count == 1)
             return null;
 
-        Location? target = state.HasSettlementPlan && state.Player.Group.Count == 1
+        Location? target = state.HasSettlementPlan && state.Player.Party.Count == 1
             ? state.StrategicTarget
             : null;
         if (target == null || target.IsCity || target.Player != null)
@@ -550,7 +552,7 @@ internal static partial class Recruitment
         Player player = state.Player;
         int travelGroupSize = context.DesiredGroupSize;
         int attackGroupSize = AttackPlanning.RequiredAttackGroupSize(state, target, policy);
-        if (player.Group.Count < travelGroupSize)
+        if (player.Party.Count < travelGroupSize)
         {
             if (CanRecallFollower(state, policy.CriticalGarrisonTarget))
             {
@@ -569,7 +571,7 @@ internal static partial class Recruitment
         }
 
         if (attackGroupSize <= travelGroupSize ||
-            player.Group.Count >= attackGroupSize)
+            player.Party.Count >= attackGroupSize)
             return new RecruitmentNeeds(null);
 
         int stagingTarget = attackGroupSize - travelGroupSize + 1;
@@ -614,9 +616,14 @@ internal static partial class Recruitment
         if (candidates.Count > candidatesBeforeRecruitment)
             return new RecruitmentNeeds(null);
 
-        return stagingCamp == null
-            ? new RecruitmentNeeds(null)
-            : new RecruitmentNeeds(stagingCamp, stagingTarget, IsAttackStaging: true);
+        if (stagingCamp == null)
+        {
+            candidates.Add(new AiDecision(
+                AiAction.CancelAttackPlan, 1200, target,
+                Reason: $"defer attack on {target.Title}: no safe recruitment or staging route can assemble {attackGroupSize} attackers"));
+            return new RecruitmentNeeds(null);
+        }
+        return new RecruitmentNeeds(stagingCamp, stagingTarget, IsAttackStaging: true);
     }
 
     static bool AddFailedCityAttackRecruitmentCancellation(
@@ -635,6 +642,14 @@ internal static partial class Recruitment
             : null;
         if (recruit != null)
             return false;
+
+        Location? alternativeCity = FindAttackRecruitmentCity(state, policy);
+        if (alternativeCity != null)
+        {
+            AiTurnController.AddTravelCandidate(state, candidates, alternativeCity, 1070,
+                $"continue attack recruitment at {alternativeCity.Title} because {context.Current.Title} has no safe recruit");
+            return true;
+        }
 
         candidates.Add(new AiDecision(
             AiAction.CancelAttackPlan,
@@ -655,9 +670,7 @@ internal static partial class Recruitment
     {
         bool generatedPaymentAllowed = context.Current.IsCity &&
             policy.AllowGeneratedRecruitPaymentInCities;
-        if (!CanRecruitAtCurrentLocation(state))
-            return;
-        if (state.CanRecruit(generatedPaymentAllowed))
+        if (CanRecruitAtCurrentLocation(state) && state.CanRecruit(generatedPaymentAllowed))
         {
             ClassicAiState.RecruitmentPlan? safeRecruit = FindSafeLocalRecruit(
                 state, context, policy);
@@ -669,11 +682,11 @@ internal static partial class Recruitment
                     context.Current,
                     Reason: reason,
                     Recruit: safeRecruit.Recruit));
+                return;
             }
-            return;
         }
 
-        Location? recruitmentCity = FindNearestRecruitmentCity(state, policy);
+        Location? recruitmentCity = FindAttackRecruitmentCity(state, policy);
         Location? preparationCamp = recruitmentCity == null
             ? Trading.FindBestCampForCityPreparation(state)
             : null;
@@ -684,9 +697,19 @@ internal static partial class Recruitment
                 : $"collect recruitment-trip supplies before {reason}");
     }
 
+    static Location? FindAttackRecruitmentCity(ClassicAiState state, AiPolicy policy)
+    {
+        // Keep the destination across intermediate stops, but revalidate the
+        // recruit, payment, and route on every decision.
+        state.AttackRecruitmentCity = FindNearestRecruitmentCity(
+            state, policy, state.AttackRecruitmentCity);
+        return state.AttackRecruitmentCity;
+    }
+
     internal static Location? FindNearestRecruitmentCity(
         ClassicAiState state,
-        AiPolicy policy)
+        AiPolicy policy,
+        Location? preferredCity = null)
     {
         bool allowGeneratedPayment = policy.AllowGeneratedRecruitPaymentInCities;
         int cityMinimum = state.OwnedCampCount > 0
@@ -727,7 +750,8 @@ internal static partial class Recruitment
                     state.Player, candidate.Route, candidate.Return, cityMinimum,
                     candidate.RecruitFood, candidate.RecruitWater,
                     candidate.PaymentFood, candidate.PaymentWater))
-            .OrderBy(candidate => candidate.Route!.Days)
+            .OrderByDescending(candidate => candidate.City == preferredCity)
+            .ThenBy(candidate => candidate.Route!.Days)
             .Select(candidate => candidate.City)
             .FirstOrDefault();
     }
@@ -747,13 +771,14 @@ internal static partial class Recruitment
             return null;
 
         Character recruit = plan.Recruit;
-        bool projectedCritical = context.Player.Group.Any(character =>
+        (int recruitFood, int recruitWater) = ProjectedRecruitReserves();
+        bool projectedCritical = context.Player.Party.Any(character =>
                 character.Health < 40 || character.Food <= 3 || character.Water <= 2) ||
-            recruit.Health < 40 || recruit.Food <= 3 || recruit.Water <= 2;
+            recruit.Health < 40 || recruitFood <= 3 || recruitWater <= 2;
         if (!projectedCritical)
             return plan;
 
-        int projectedGroupSize = context.Player.Group.Count + 1;
+        int projectedGroupSize = context.Player.Party.Count + 1;
         if (context.Current.Player == context.Player &&
             CampEconomy.FoodSurplusPerDay(context.Current) > projectedGroupSize &&
             CampEconomy.WaterSurplusPerDay(context.Current) > projectedGroupSize)
@@ -767,7 +792,7 @@ internal static partial class Recruitment
                 context.Player, context.Current, location))
             .Any(route => route != null &&
                 TravelSupplies.HasProjectedRecruitRouteSupplies(
-                    context.Player, route, recruit.Food, recruit.Water,
+                    context.Player, route, recruitFood, recruitWater,
                     paymentFood, paymentWater));
         return hasRecovery ? plan : null;
     }
@@ -805,7 +830,7 @@ internal static partial class Recruitment
             .Where(location => location.Player == state.Player && location != state.Current &&
                 CampEconomy.CanProvisionFood(location) &&
                 CampEconomy.CanProvisionGroupWater(
-                    location, state.Player.Group.Count + 1))
+                    location, state.Player.Party.Count + 1))
             .Select(location => new
             {
                 Location = location,

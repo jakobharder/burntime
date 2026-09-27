@@ -1,0 +1,8 @@
+[image]
+background=film_08.pac
+animations=0
+frame=yes
+
+[music]
+song=
+loop=true

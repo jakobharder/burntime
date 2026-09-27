@@ -17,22 +17,19 @@ internal sealed class DecisionContext
     public static DecisionContext Create(ClassicAiState state, AiPolicy policy)
     {
         Player player = state.Player;
-        bool critical = player.Group.Any(character =>
-            character.Health < 40 || character.Food <= 3 || character.Water <= 2) ||
-            RecoveryServices.NeedsCityRecoveryStaging(state);
+        bool critical = RecoveryServices.NeedsRecovery(state);
         bool safe = state.Current.IsCity || state.Current.Player == player;
-        bool neutralAllowed = true;
-        if (state.HasHumanPlayers)
-        {
-            neutralAllowed = state.OwnedCampCount <
-                state.HumanCampBenchmark + state.Configuration.MaxAdvance;
-        }
+        AiStateOperations.ProgressBenchmark progressBenchmark = state.ProgressBenchmark;
+        bool neutralAllowed = state.OwnedCampCount <
+            AiStateOperations.ProgressRelativeLimitOrUnrestricted(
+                progressBenchmark,
+                state.Configuration.MaxAdvance);
 
         return new DecisionContext
         {
             Player = player,
             Current = state.Current,
-            Group = player.Group.ToArray(),
+            Group = player.Party.ToArray(),
             CriticalSupplies = critical,
             SafeLocation = safe,
             DesiredGroupSize = policy.GroupSize,

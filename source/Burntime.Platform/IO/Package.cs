@@ -19,6 +19,7 @@ public interface IPackage
 
     // not supported by all packages
     bool RemoveFile(FilePath filePath) => false;
+    bool ReplaceFile(FilePath sourcePath, FilePath targetPath) => false;
     bool ExistsFolder(FilePath folderPath) => false;
     bool RemoveFolder(FilePath folderPath) => false;
     bool MoveFolder(FilePath sourcePath, FilePath targetPath) => false;

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Burntime.Data.BurnGfx;
 using Burntime.Framework;
 using Burntime.Framework.GUI;
@@ -31,20 +32,25 @@ namespace Burntime.Remaster
         }
 
         const float NEXT_TURN_HOLD_TIME = 0.6f;
+        const float CHARACTER_CYCLE_DEBOUNCE_TIME = 0.15f;
 
         ClassicMapView view;
         IMapGuiWindow gui;
         MenuWindow menu;
         Image _cursorAni;
         readonly DialogWindow _dialog;
-        readonly InputPromptOverlay _promptOverlay;
         readonly Maps.MapViewOverlayHoverText _hoverInfo;
         readonly Maps.MapViewOverlaySelectedLocation _keyboardSelection;
+        readonly ManualWindow _manualWindow;
         bool _followKeyboardSelection;
         bool _cameraPanActive;
         bool _followPlayerAfterPan;
         float _nextTurnHoldTime;
         bool _nextTurnTriggered;
+        bool _characterCycleLatched;
+        float _characterCycleDebounce;
+        InputPromptHandle _previousCharacterPrompt;
+        InputPromptHandle _nextCharacterPrompt;
         string _cheatCommand = string.Empty;
         bool _cheatDialogActive;
         bool _menuOpenedByMouse;
@@ -80,7 +86,6 @@ namespace Burntime.Remaster
             menu.Layer += 50;
             menu.ShortcutAction = OnMenuShortcut;
             menu.HeldShortcutAction = OnMenuHeldShortcut;
-            ConfigureMenu(true);
             menu.Hide();
             Windows += menu;
 
@@ -107,8 +112,45 @@ namespace Burntime.Remaster
             _dialog.WindowShow += new EventHandler(OnDialogShown);
             Windows += _dialog;
 
-            Windows += _promptOverlay = new InputPromptOverlay(app);
-            _promptOverlay.AnchorToScreenBottomRight();
+            InputPromptOverlay promptOverlay = new(app, Prompts,
+                InputPromptColorScheme.Hud);
+            Windows += promptOverlay;
+            Windows += _manualWindow = new ManualWindow(app, Size);
+            _manualWindow.WindowShow += (_, _) => view.RequireMouseEdgeScrollReentry();
+            _manualWindow.WindowHide += (_, _) => view.RequireMouseEdgeScrollReentry();
+            Prompts.SuppressWhen(() => _dialog.IsVisible || menu.IsVisible ||
+                _manualWindow.IsVisible);
+            Prompts.Add(new InputPrompt(InputAction.Back, "...")
+            {
+                MouseControl = MouseButton.Right
+            });
+            view.Prompts.AddDynamic(
+                () => GetLocationInfoPrompt(MouseButton.Left),
+                LocationInfoPrompt("@prompts?27", MouseButton.Left),
+                LocationInfoPrompt("@prompts?43", MouseButton.Left));
+            view.Prompts.AddDynamic(
+                () => GetLocationInfoPrompt(MouseButton.Right),
+                LocationInfoPrompt("@prompts?27", MouseButton.Right),
+                LocationInfoPrompt("@prompts?43", MouseButton.Right));
+            view.Prompts.AddDynamic(InputPromptPosition.Primary,
+                GetEnterOrTravelPrompt,
+                new InputPrompt(InputAction.Primary, "@prompts?26"),
+                new InputPrompt(InputAction.Action, "@prompts?25")
+                {
+                    MouseControl = MouseButton.Left
+                });
+            _previousCharacterPrompt = Prompts.Add(
+                new InputPrompt(InputAction.LeftArea, ""),
+                Vector2.Zero, CanShowCharacterPrompts,
+                PositionAlignment.Right, PositionAlignment.Right);
+            _nextCharacterPrompt = Prompts.Add(
+                new InputPrompt(InputAction.RightArea, ""),
+                Vector2.Zero, CanShowCharacterPrompts,
+                PositionAlignment.Left, PositionAlignment.Right,
+                separator: " ");
+            UpdateCharacterPromptPositions();
+
+            ConfigureMenu(true);
         }
 
         private void View_OnContextMenu(Vector2 position, MouseButton button)
@@ -122,16 +164,73 @@ namespace Burntime.Remaster
         bool TryShowLocationInfo(int locationNumber)
         {
             ClassicGame game = app.GameState as ClassicGame;
-            if (locationNumber < 0 || locationNumber >= game.World.Locations.Count ||
-                !CanShowInfo(game.World.ActivePlayerObj,
-                    game.World.Locations[locationNumber]))
-            {
+            if (locationNumber < 0 || locationNumber >= game.World.Locations.Count)
                 return false;
-            }
 
-            BurntimeClassic.Instance.InfoCity = locationNumber;
-            app.SceneManager.SetScene("InfoScene");
+            Logic.Player player = game.World.ActivePlayerObj;
+            Logic.Location location = game.World.Locations[locationNumber];
+            if (location.IsCity)
+            {
+                ShowCityReport(game, player, location);
+                return true;
+            }
+            if (CanShowCampInfo(player, location))
+            {
+                BurntimeClassic.Instance.InfoCity = locationNumber;
+                app.SceneManager.SetScene("InfoScene");
+                return true;
+            }
+            if (!RadioIntel.IsAvailable(player, location))
+                return false;
+
+            ShowRadioReport(game, player, location);
             return true;
+        }
+
+        void ShowCityReport(ClassicGame game, Logic.Player player, Logic.Location location)
+        {
+            TextHelper text = new(app, "cityinfo");
+            text.AddArgument("{missing}", location.Neighbors.Count(neighbor => neighbor.Player != player));
+            text.AddArgument("{neighbors}", location.Neighbors.Count);
+            text.AddArgument("{total}", game.World.Locations.Count(city => city.IsCity));
+
+            bool controlled = location.ControllingPlayer == player;
+            ShowReport(player, [text.Get(controlled ? 3 : 0),
+                text.Get(controlled ? 4 : 1),
+                text.Get(2)], textLinesPerPage: 3);
+        }
+
+        void ShowRadioReport(ClassicGame game, Logic.Player player, Logic.Location location)
+        {
+            RadioReport report = RadioIntel.Create(game, player, location);
+            TextHelper text = new(app, "radio");
+            text.AddArgument("{location}", location.Title);
+            text.AddArgument("{count}", report.Defenders);
+            text.AddArgument("{food}", report.Food);
+            text.AddArgument("{water}", report.Water);
+            text.AddArgument("{threat}", text.Get(7 + System.Math.Max(1, report.Threat)));
+
+            ShowReport(player, [text.Get(0), text.Get(12),
+                text.Get(report.Defenders == 0 ? 1 : 13)], textLinesPerPage: 3);
+        }
+
+        void ShowReport(Logic.Player player, string[] lines, int textLinesPerPage = 2)
+        {
+            Conversation conversation = new()
+            {
+                Text = lines,
+                Choices = new ConversationChoice[3]
+                {
+                    new(),
+                    new(),
+                    new() {
+                        Action = new ConversationAction(ConversationActionType.Exit),
+                        Text = app.ResourceManager.GetString("newburn?45")
+                    }
+                }
+            };
+            _dialog.SetCharacter(player.Character, conversation, textLinesPerPage: textLinesPerPage);
+            _dialog.Show();
         }
 
         void ShowContextMenu(Vector2 position, bool openedByMouse)
@@ -163,6 +262,7 @@ namespace Burntime.Remaster
                 new(InputAction.Statistics));
             menu.AddLine("@burn?361", (CommandHandler)OnMenuOptions,
                 new(InputAction.Options));
+            menu.AddLine("@manualui?5", (CommandHandler)_manualWindow.Open);
             menu.AddLine("@burn?357", (CommandHandler)OnMenuTurn,
                 new(InputAction.NextTurn) { Hold = true });
         }
@@ -200,14 +300,15 @@ namespace Burntime.Remaster
             }
         }
 
-        public override void OnResizeScreen()
+        public override void OnResizeScreen(bool reload = false)
         {
-            base.OnResizeScreen();
+            base.OnResizeScreen(reload);
 
             Size = app.Engine.Resolution.Game;
+            _manualWindow?.CenterIn(Size);
             gui.SetMapRenderArea(view, Size);
             app.MouseBoundings = view.Boundings;
-            _promptOverlay.AnchorToScreenBottomRight();
+            UpdateCharacterPromptPositions();
         }
 
         void view_Scroll(object sender, MapScrollArgs e)
@@ -306,6 +407,7 @@ namespace Burntime.Remaster
             app.Engine.Xbr2IndividualLayer = gui.Layer;
 
             bool showInteractionMode = app.MouseInputVisible && !_dialog.IsVisible &&
+                !_manualWindow.IsVisible &&
                 (_infoMode || _debugNoTravel || CanTravelToHoveredLocation());
             if (_cursorAni.IsVisible != showInteractionMode)
                 _cursorAni.IsVisible = showInteractionMode;
@@ -314,7 +416,8 @@ namespace Burntime.Remaster
             {
                 _cursorAni.Position = app.DeviceManager.Mouse.Position + new Vector2(8, 11);
 
-                if (!BurntimeClassic.Instance.NewGui && app.MouseInputVisible)
+                if (!BurntimeClassic.Instance.NewGui && app.MouseInputVisible &&
+                    !_manualWindow.IsVisible)
                 {
                     var layer = Target.Layer;
                     Target.Layer = gui.Layer - 1;
@@ -326,8 +429,8 @@ namespace Burntime.Remaster
 
         public override void OnUpdate(float Elapsed)
         {
-            UpdatePromptOverlay();
             ResetHeldActionsIfReleased();
+            _characterCycleDebounce = System.Math.Max(0, _characterCycleDebounce - Elapsed);
             UpdateCameraPan(Elapsed);
             _hoverInfo.ShowAllEntrances = app.IsInputActionDown(InputAction.ShowEntrances);
             _hoverInfo.HighlightedWorldLocation = app.MouseInputVisible
@@ -340,6 +443,7 @@ namespace Burntime.Remaster
             if (game.World.Time <= 0)
             {
                 app.ActiveClient.Finish();
+                app.SceneManager.BlendMusicThroughNextBridge();
                 app.SceneManager.SetScene("WaitScene");
             }
 
@@ -367,112 +471,158 @@ namespace Burntime.Remaster
             gui.ExpectedTravelDays = hoverLocation is null ? 0 : player.GetTravelDays(player.Location, hoverLocation);
         }
 
-        void UpdatePromptOverlay()
+        int PromptLocationNumber => app.LastInputMode == InputMode.Mouse
+            ? view.ActiveEntrance
+            : _keyboardSelection.LocationNumber;
+
+        Logic.Location PromptLocation =>
+            (app.GameState as ClassicGame).World.Locations[PromptLocationNumber];
+
+        bool IsPromptNavigationInput =>
+            app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad;
+
+        bool HasValidPromptLocation()
         {
-            if (_dialog.IsVisible || menu.IsVisible)
-            {
-                _promptOverlay.SetPrompts();
+            ClassicGame game = app.GameState as ClassicGame;
+            return PromptLocationNumber >= 0 &&
+                PromptLocationNumber < game.World.Locations.Count;
+        }
+
+        InputPrompt? GetEnterOrTravelPrompt()
+        {
+            if (CanPromptEnter())
+                return new InputPrompt(InputAction.Primary, "@prompts?26");
+            if (CanPromptTravel())
+                return new InputPrompt(InputAction.Action, "@prompts?25")
+                {
+                    MouseControl = MouseButton.Left
+                };
+            return null;
+        }
+
+        bool CanShowCharacterPrompts() =>
+            app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad &&
+            (app.GameState as ClassicGame).World.ActivePlayerObj.Party.Count > 1;
+
+        void UpdateCharacterPromptPositions()
+        {
+            const int portraitLeftOffset = -31;
+            const int portraitWidth = 68;
+            const int portraitGap = 2;
+            const int bottomMargin = 6;
+            int portraitLeft = app.Engine.Resolution.Game.x / 2 + portraitLeftOffset;
+            int portraitRight = portraitLeft + portraitWidth;
+            int baseline = app.Engine.Resolution.Game.y - bottomMargin;
+            _previousCharacterPrompt.UpdatePosition(new Vector2(
+                portraitLeft - portraitGap, baseline));
+            _nextCharacterPrompt.UpdatePosition(new Vector2(
+                portraitRight + portraitGap, baseline));
+        }
+
+        void CyclePartyCharacter(int direction)
+        {
+            Logic.Player player = (app.GameState as ClassicGame).World.ActivePlayerObj;
+            Group party = player.Party;
+            if (party.Count <= 1)
                 return;
+
+            if (app.LastInputMode == InputMode.Gamepad)
+            {
+                if (_characterCycleLatched || _characterCycleDebounce > 0)
+                    return;
+                _characterCycleLatched = true;
+                _characterCycleDebounce = CHARACTER_CYCLE_DEBOUNCE_TIME;
+            }
+
+            int targetIndex;
+            if (!player.SingleMode)
+            {
+                targetIndex = direction > 0 ? 1 : 0;
+            }
+            else
+            {
+                int currentIndex = 0;
+                for (int i = 0; i < party.Count; i++)
+                {
+                    if (party[i] == player.SelectedCharacter)
+                    {
+                        currentIndex = i;
+                        break;
+                    }
+                }
+                targetIndex = (currentIndex + direction + party.Count) % party.Count;
+            }
+
+            Character target = party[targetIndex];
+            player.SelectGroup(party);
+            if (target == player.Character)
+                player.SelectGroup(target);
+            else
+                player.SelectCharacter(target);
+            gui.UpdatePlayer();
+        }
+
+        bool CanPromptEnter()
+        {
+            if (!HasValidPromptLocation())
+                return false;
+            if (app.LastInputMode == InputMode.Mouse && _infoMode)
+                return false;
+            return (app.LastInputMode == InputMode.Mouse || IsPromptNavigationInput) &&
+                PromptLocationNumber ==
+                    (app.GameState as ClassicGame).World.ActivePlayerObj.Location.Id;
+        }
+
+        bool CanPromptTravel()
+        {
+            if (!HasValidPromptLocation() ||
+                app.LastInputMode == InputMode.Mouse && _infoMode)
+                return false;
+            ClassicGame game = app.GameState as ClassicGame;
+            Logic.Player player = game.World.ActivePlayerObj;
+            return (app.LastInputMode == InputMode.Mouse || IsPromptNavigationInput) &&
+                PromptLocationNumber != player.Location.Id &&
+                player.Location.Neighbors.Contains(PromptLocation) &&
+                player.CanTravel(player.Location, PromptLocation);
+        }
+
+        bool CanPromptLocationInfo(MouseButton mouseButton)
+        {
+            if (!HasValidPromptLocation())
+                return false;
+
+            if (app.LastInputMode == InputMode.Mouse)
+            {
+                MouseButton expectedButton = _infoMode
+                    ? MouseButton.Left
+                    : MouseButton.Right;
+                if (mouseButton != expectedButton)
+                    return false;
+            }
+            else if (!IsPromptNavigationInput)
+            {
+                return false;
             }
 
             ClassicGame game = app.GameState as ClassicGame;
-            if (app.LastInputMode == InputMode.Mouse)
-            {
-                List<InputPrompt> mousePrompts = [];
-                int hoveredLocationNumber = view.ActiveEntrance;
-                if (hoveredLocationNumber >= 0)
-                {
-                    Logic.Player player = game.World.ActivePlayerObj;
-                    Logic.Location hoveredLocation =
-                        game.World.Locations[hoveredLocationNumber];
-                    GuiString? primaryLabel = null;
-                    if (_infoMode)
-                    {
-                        if (CanShowInfo(player, hoveredLocation))
-                            primaryLabel = "@prompts?27";
-                    }
-                    else if (hoveredLocationNumber == player.Location.Id)
-                    {
-                        primaryLabel = "@prompts?26";
-                    }
-                    else if (player.Location.Neighbors.Contains(hoveredLocation) &&
-                        player.CanTravel(player.Location, hoveredLocation))
-                    {
-                        primaryLabel = GetTravelTimeLabel(player, hoveredLocation);
-                    }
-
-                    if (primaryLabel != null)
-                    {
-                        mousePrompts.Add(new(InputAction.Primary, primaryLabel)
-                        {
-                            PreferredMouseControl = MouseButton.Left
-                        });
-                    }
-                }
-
-                bool canShowHoveredInfo = !_infoMode && hoveredLocationNumber >= 0 &&
-                    hoveredLocationNumber < game.World.Locations.Count &&
-                    CanShowInfo(game.World.ActivePlayerObj,
-                        game.World.Locations[hoveredLocationNumber]);
-                if (canShowHoveredInfo)
-                {
-                    mousePrompts.Add(new(InputAction.Secondary, "@prompts?27")
-                    {
-                        PreferredMouseControl = MouseButton.Right
-                    });
-                }
-                else
-                {
-                    mousePrompts.Add(new(InputAction.Back, "...")
-                    {
-                        PreferredMouseControl = MouseButton.Right
-                    });
-                }
-                _promptOverlay.SetPrompts(mousePrompts.ToArray());
-                return;
-            }
-
-            int locationNumber = _keyboardSelection.LocationNumber;
-            bool canEnter = locationNumber == game.World.ActivePlayerObj.Location.Id;
-            bool canTravel = locationNumber >= 0 && !canEnter &&
-                game.World.ActivePlayerObj.CanTravel(game.World.ActivePlayerObj.Location,
-                    game.World.Locations[locationNumber]);
-            bool canShowInfo = locationNumber >= 0 &&
-                CanShowInfo(game.World.ActivePlayerObj, game.World.Locations[locationNumber]);
-
-            List<InputPrompt> prompts = [];
-            if (app.LastInputMode is (InputMode.Keyboard or InputMode.Gamepad) &&
-                (canEnter || canTravel))
-            {
-                GuiString label = canEnter
-                    ? "@prompts?26"
-                    : GetTravelTimeLabel(game.World.ActivePlayerObj,
-                        game.World.Locations[locationNumber]);
-                prompts.Add(new(InputAction.Primary, label)
-                {
-                    PreferredKeyboardControl = new Key(' '),
-                    PreferredGamepadControl = GamepadControl.A
-                });
-            }
-            if (canShowInfo)
-                prompts.Add(new(InputAction.Secondary, "@prompts?27"));
-            if (app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad)
-            {
-                prompts.Add(new(InputAction.Back, "...")
-                {
-                    PreferredKeyboardControl = new Key(SystemKey.Escape),
-                    PreferredGamepadControl = GamepadControl.B
-                });
-            }
-            _promptOverlay.SetPrompts(prompts.ToArray());
+            return CanShowInfo(game.World.ActivePlayerObj, PromptLocation);
         }
 
-        GuiString GetTravelTimeLabel(Logic.Player player, Logic.Location destination)
+        InputPrompt? GetLocationInfoPrompt(MouseButton mouseButton)
         {
-            var text = new TextHelper(app, "newburn");
-            text.AddArgument("|J", player.GetTravelDays(player.Location, destination));
-            return text[104];
+            if (!CanPromptLocationInfo(mouseButton))
+                return null;
+
+            ClassicGame game = app.GameState as ClassicGame;
+            string label = RadioIntel.IsAvailable(
+                game.World.ActivePlayerObj, PromptLocation)
+                ? "@prompts?43"
+                : "@prompts?27";
+            return LocationInfoPrompt(label, mouseButton);
         }
+
+        static InputPrompt LocationInfoPrompt(string label, MouseButton mouseButton) =>
+            new(InputAction.Secondary, label) { MouseControl = mouseButton };
 
         bool CanTravelToHoveredLocation()
         {
@@ -494,6 +644,8 @@ namespace Burntime.Remaster
             _nextTurnTriggered = false;
             _cameraPanActive = false;
             _followPlayerAfterPan = false;
+            _characterCycleLatched = false;
+            _characterCycleDebounce = 0;
 
             if (!BurntimeClassic.Instance.NewGui)
             {
@@ -531,6 +683,12 @@ namespace Burntime.Remaster
                 OnMenuInfo();
             else
                 OnMenuTravel();
+
+            if (BurntimeClassic.Instance.ShowManualOnNextWorldMap)
+            {
+                BurntimeClassic.Instance.ShowManualOnNextWorldMap = false;
+                _manualWindow.Open();
+            }
         }
 
         protected override void OnInactivateScene()
@@ -576,23 +734,19 @@ namespace Burntime.Remaster
 
             if (action == InputAction.LocationInfo)
             {
-                if (!game.World.ActiveLocationObj.IsCity)
-                {
-                    (app as BurntimeClassic).InfoCity = game.World.ActivePlayerObj.Location;
-                    app.SceneManager.SetScene("InfoScene");
-                }
+                TryShowLocationInfo(game.World.ActivePlayerObj.Location.Id);
                 return true;
             }
 
             if (action == InputAction.LeftArea)
             {
-                // Shoulder buttons are reserved for character cycling on the
-                // location map. World-map actions already use A and X directly.
+                CyclePartyCharacter(-1);
                 return true;
             }
 
             if (action == InputAction.RightArea)
             {
+                CyclePartyCharacter(1);
                 return true;
             }
 
@@ -625,19 +779,26 @@ namespace Burntime.Remaster
             }
 
             if (app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad &&
+                action == InputAction.Action)
+            {
+                if (CanPromptTravel())
+                    TravelToLocation(_keyboardSelection.LocationNumber);
+                return true;
+            }
+
+            if (app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad &&
                 action == InputAction.Primary)
             {
-                int locationNumber = _keyboardSelection.LocationNumber;
-                if (locationNumber >= 0)
-                    TravelToLocation(locationNumber);
+                if (CanPromptEnter())
+                    TravelToLocation(_keyboardSelection.LocationNumber);
                 return true;
             }
 
             if (app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad &&
                 action == InputAction.Secondary)
             {
-                int locationNumber = _keyboardSelection.LocationNumber;
-                TryShowLocationInfo(locationNumber);
+                if (CanPromptLocationInfo(MouseButton.Right))
+                    TryShowLocationInfo(_keyboardSelection.LocationNumber);
                 return true;
             }
 
@@ -846,9 +1007,12 @@ namespace Burntime.Remaster
 
         bool CanShowInfo(Logic.Player player, Logic.Location location)
         {
-            return !location.IsCity &&
-                (location == player.Location || location.Player == player);
+            return location.IsCity || CanShowCampInfo(player, location) ||
+                RadioIntel.IsAvailable(player, location);
         }
+
+        static bool CanShowCampInfo(Logic.Player player, Logic.Location location) =>
+            !location.IsCity && (location == player.Location || location.Player == player);
 
         void SetKeyboardSelection(int locationNumber)
         {
@@ -906,6 +1070,10 @@ namespace Burntime.Remaster
                 _nextTurnHoldTime = 0;
                 _nextTurnTriggered = false;
             }
+            if (_characterCycleLatched &&
+                !app.IsInputActionDown(InputAction.LeftArea) &&
+                !app.IsInputActionDown(InputAction.RightArea))
+                _characterCycleLatched = false;
         }
 
         void UpdateCameraPan(float elapsed)
@@ -976,7 +1144,9 @@ namespace Burntime.Remaster
             classic.InventoryBackground = -1;
             classic.InventoryRoom = null;
             classic.PickItems = null;
-            app.SceneManager.SetScene("InventoryScene", classic.Game.World.ActivePlayerObj.Character);
+            Logic.Player player = classic.Game.World.ActivePlayerObj;
+            app.SceneManager.SetScene("InventoryScene",
+                player.SelectedCharacter ?? player.Character);
         }
 
         public void OnMenuStatistics()
@@ -991,6 +1161,7 @@ namespace Burntime.Remaster
 
         public void OnMenuTurn()
         {
+            app.SceneManager.BlendMusicThroughNextBridge();
             app.SceneManager.SetScene("WaitScene");
             app.SceneManager.BlockBlendIn();
             app.ActiveClient.Finish();

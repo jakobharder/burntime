@@ -15,8 +15,11 @@ public class GuiString
         ID = str ?? "";
     }
 
-    public static implicit operator string(GuiString right)
+    public static implicit operator string(GuiString? right)
     {
+        if (right is null)
+            return string.Empty;
+
         if (!right._text.TryGetValue(Module.Instance.Language, out string? text))
         {
             if (right.ID.StartsWith("@") == true)

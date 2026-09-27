@@ -1,52 +1,95 @@
 ﻿# Burntime Changelog
 
-## [Unreleased]
+## 1.2 (2026-09-27)
 
-- Behavior
-  - Automatically select all after hiring an NPC
-  - Improve group following into attacks, rooms and traders
-  - Place produced food preferrably next to the trap
-  - Make attacked people flee a bit
-  - Apply previous dog/mutant changes to existing saves
+### Game rules and AI
 
-- New
-  - Show food/trap/water infos on entrances and locations
-  - Show travel days on world map
-  - Alt/LT shortcut to show all entrances
-  - Music on maps; change mode in options
+- Added original Amiga AI
+- Restored original combat, XP, hiring, healing, production and trade mechanics
+- Reworked Classic rules from the DOS and Amiga originals
+- Staggered NPC respawns; cities first in Extended mode
+- Optional early victory after defeating the last rival
+- Improved Remaster AI equipment, supplies, camps and looting
 
-- Input
-  - Polished input, prompts
-  - Added option to hide prompts
+### Extended mode
+
+- Rebalanced trader stock and rare utility items
+- Radios report remote camp hazards, defenders and production
+- Metal detectors find ammunition on trips
+- Bible prevents food and water consumption while stationary
+- Skulls and bones protect carriers from dogs and mutants
+- Doctors slowly stabilize supplied characters below 50 health
+- Food decays on the ground
+
+### Combat and camp management
+
+- Improved group attacks, retaliation and fleeing
+- Longer-reach weapons strike first
+- Select the whole party after hiring
+- Improved group following into fights, rooms and traders
+- Automatic and manual trap selection
+- Food spawns near traps when possible
+
+### Interface and controls
+
+- Added in-game manual
+- Added optional tooltips for game setup and items
+- Preview healing before paying doctors
+- Show food, traps and water on entrances and locations
+- Show travel days on the world map
+- Added city control and victory progress reports
+- Show all entrances with Alt/LT
+- Cycle nearby targets with Tab, Shift+Tab or right trigger
+- Polished input, prompts, HUD and hover text placement
+
+### Graphics and audio
+
+- Remastered restaurant scenes and animations
+- Improved fonts, supply indicators and input glyphs
+- Added map music, smooth transitions and music mode selection
+
+### Fixes
+
+- Preserve saves when saving fails
+- Fixed party overlap and stuck followers when entering locations
+- Fixed save/load list scroll position after selection changes
+- Apply dog and mutant changes to existing saves
 
 ## 1.1 (2026-09-04)
 
-### Changes
+### Platform Support
 
-- Platform Support
-  - Added macOS and Linux support
-  - Improved Steam Deck and gamescope support
-  - Added keyboard and gamepad support
-  - Added contextual keyboard and gamepad prompts
-  - Updated dependencies (.NET 10, MonoGame 3.8.5)
-- Reworked AI player behavior
-  - They play more closely by the rules now, with trade and inventory boosts
-  - They attack, plan attacks and retreat in danger
-  - Camp takeover now leaves storage intact
-  - Enclosed AIs immediately die on easy; on medium/hard they attack or die trying
-- QoL
-  - Added auto saves
-- Balancing
-  - Disabled dog and mutant spawning in original mode
-  - Reduced dog and mutant spawning in extended mode
-  - Reduced mutant drops and removed dog droppings
-  - Prevented dogs and mutants from attacking in cities
-- Graphics
-  - Improved character portraits
-  - Improved item graphics
-  - Improved font
-  - Remastered travel paths
-  - Additional runtime xbr2 filtering for remastered graphics
+- Added macOS and Linux support
+- Improved Steam Deck and gamescope support
+- Added keyboard and gamepad support
+- Added contextual keyboard and gamepad prompts
+- Updated dependencies (.NET 10, MonoGame 3.8.5)
+
+### Reworked AI player behavior
+
+- They play more closely by the rules now, with trade and inventory boosts
+- They attack, plan attacks and retreat in danger
+- Camp takeover now leaves storage intact
+- Enclosed AIs immediately die on easy; on medium/hard they attack or die trying
+
+### QoL
+
+- Added auto saves
+
+### Balancing
+
+- Disabled dog and mutant spawning in original mode
+- Reduced dog and mutant spawning in extended mode
+- Reduced mutant drops and removed dog droppings
+- Prevented dogs and mutants from attacking in cities
+
+### Graphics
+
+- Improved character portraits
+- Improved item graphics
+- Improved font
+- Remastered travel paths
+- Additional runtime xbr2 filtering for remastered graphics
 
 ### Fixes
 

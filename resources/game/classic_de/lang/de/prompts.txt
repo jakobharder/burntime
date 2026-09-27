@@ -38,5 +38,10 @@ Anbieten
 Nehmen
 Kämpfen
 Lagern
-Abwählen
+Entfernen
 Inventar
+Falle auswählen
+Radio
+Entfernen
+Ablegen
+Nehmen

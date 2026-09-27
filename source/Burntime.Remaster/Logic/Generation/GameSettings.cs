@@ -1,14 +1,32 @@
 ﻿using Burntime.Platform.IO;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Burntime.Remaster.Logic.Generation;
+
+enum StartLocationRule { DosRotatingGroups, AmigaRegions }
+enum BossExperienceRule { DosCamps, AmigaEconomy }
+enum RecruitmentRule { DosXpTimes15, AmigaXpPlus4 }
+enum TraderRefreshRule { DosIndividual, AmigaGlobal, RemasterRandom }
+enum WaterOutputRule { DosProportional, AmigaMinimum, RemasterFixed }
+enum SpawnMethodRule { Timer, DosPlayerCycle, AmigaLocationCycle }
+enum PlayerSetupRule { DosGamdat, RemasterSettings }
+enum InitialItemsRule { DosGamdat, RemasterSpawning }
+enum RecruitSuppliesRule { DosFixed, RemasterDifficulty }
+enum TraderInventoryRule { DosGamdat, RemasterRandom }
+enum FoodProductionRule { DosFeedThenStore, AmigaStoreAll }
+enum SurvivalRule { DosDailyConsumption, RemasterSupplyPool }
+enum ServiceValueRule { DosTradeValue, RemasterNutrition }
+enum CombatRule { DosUnarmoured, RemasterArmour }
 
 class GameSettings
 {
     public struct RespawnTimes
     {
+        public RespawnMethod Method;
         public int NPC;
+        public int CitySpawnThreshold;
         public int Trader;
         public int Dog;
         public int Mutant;
@@ -42,27 +60,22 @@ class GameSettings
             }
         }
 
-        public static ItemGeneration FromString(string itemsConfig, string rateConfig = "1")
+        public static ItemGeneration FromStrings(IEnumerable<string> itemsConfig,
+            IEnumerable<string> rateConfig)
         {
             int min = 1;
             int max = 1;
-            var rates = rateConfig.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            string[] rates = rateConfig.ToArray();
 
-            if (rates.Length > 1)
+            if (rates.Length > 0)
             {
                 if (!int.TryParse(rates[0], out min))
                     min = 1;
-                if (rates.Length > 2 && !int.TryParse(rates[1], out max))
-                    max = 1;
+                max = min;
+                if (rates.Length > 1 && !int.TryParse(rates[1], out max))
+                    max = min;
             }
 
-            return FromStrings(
-                itemsConfig.Split(' ', StringSplitOptions.RemoveEmptyEntries),
-                min, max);
-        }
-
-        public static ItemGeneration FromStrings(IEnumerable<string> itemsConfig, int atLeast = 1, int upTo = 1)
-        {
             var include = new List<string>();
             var exclude = new List<string>();
             var generation = new ItemGeneration();
@@ -78,8 +91,8 @@ class GameSettings
             generation.Include = include.ToArray();
             generation.Exclude = exclude.ToArray();
 
-            generation.Minimum = Math.Max(0, atLeast);
-            generation.Maximum = Math.Min(generation.Minimum, upTo);
+            generation.Minimum = Math.Max(0, min);
+            generation.Maximum = Math.Max(generation.Minimum, max);
 
             return generation;
         }
@@ -112,9 +125,26 @@ class GameSettings
     public int StartRegionCount => config[difficulty].GetInt("start_regions");
     public int[] GetStartLocation(int region) => config[difficulty].GetInts($"start_locations_{region}");
 
+    public int OriginalStartGroupCount => config["original_start_locations"].GetInt("groups");
+    public int[] GetOriginalStartLocations(int group) =>
+        config["original_start_locations"].GetInts($"group_{group}");
+
     public ConfigSection GetRegionItem(int entry) => config.GetSection($"region_item_{entry}");
 
-    public int StartExperience => config[difficulty].GetInt("start_experience");
+    public int StartExperience => config["rules"].GetInt("start_experience");
+    public StartLocationRule StartLocationRule { get; }
+    public BossExperienceRule BossExperienceRule { get; }
+    public RecruitmentRule RecruitmentRule { get; }
+    public TraderRefreshRule TraderRefreshRule { get; }
+    public WaterOutputRule WaterOutputRule { get; }
+    public PlayerSetupRule PlayerSetupRule { get; }
+    public InitialItemsRule InitialItemsRule { get; }
+    public RecruitSuppliesRule RecruitSuppliesRule { get; }
+    public TraderInventoryRule TraderInventoryRule { get; }
+    public FoodProductionRule FoodProductionRule { get; }
+    public SurvivalRule SurvivalRule { get; }
+    public ServiceValueRule ServiceValueRule { get; }
+    public CombatRule CombatRule { get; }
     public string[] RandomItems => config[difficulty].GetStrings("random_items");
     public int RandomItemsMin => config[difficulty].GetInt("random_items_rate_min");
     public int RandomItemsMax => config[difficulty].GetInt("random_items_rate_max");
@@ -124,6 +154,43 @@ class GameSettings
     public RespawnTimes Respawn => respawn;
     public ClassStatInfos ClassStats => stats;
 
+    public int GetBarterFactor(int level) => config[Math.Clamp(level, 0, 2).ToString()].GetInt("barter_factor");
+    public float DoctorHealingFactor => config["rules"].GetFloat("healing_factor");
+    public int DoctorHealthCap => config["rules"].GetInt("health_cap");
+    public int DoctorStabilization =>
+        Math.Max(0, config["rules"].GetInt("doctor_stabilization"));
+    public int TechnicianFoodBonus =>
+        Math.Max(0, config["rules"].GetInt("technician_food_bonus"));
+    public int CombatTierWidth => config["rules"].GetInt("experience_tier_width");
+    public int DroppedFoodDecayInterval =>
+        Math.Max(0, config["rules"].GetInt("dropped_food_decay_interval"));
+    public string[] FightClasses => config["rules"].GetStrings("fight_class");
+    public int[] GetTraderAttack(int difficultyLevel) =>
+        config[Math.Clamp(difficultyLevel, 0, 2).ToString()].GetInts("trader_attack");
+    public int[] GetMutantAttack(int difficultyLevel) =>
+        config[Math.Clamp(difficultyLevel, 0, 2).ToString()].GetInts("mutant_attack");
+    public int[] GetDogAttack(int difficultyLevel) =>
+        config[Math.Clamp(difficultyLevel, 0, 2).ToString()].GetInts("dog_attack");
+    public bool IsFightClass(CharClass characterClass)
+    {
+        string name = characterClass switch
+        {
+            CharClass.Mercenary => "fighter",
+            CharClass.Technician => "technician",
+            CharClass.Doctor => "doctor",
+            CharClass.Boss => "boss",
+            CharClass.Mutant => "mutant",
+            CharClass.Trader => "trader",
+            CharClass.Dog => "dog",
+            _ => "",
+        };
+        return Array.Exists(FightClasses,
+            configured => configured.Equals(name, StringComparison.OrdinalIgnoreCase));
+    }
+    public float HazardDamage(string type) => config["rules"].GetFloat(type + "_damage_per_second");
+    public bool IsHazardImmune(string type, int face) =>
+        Array.IndexOf(config["rules"].GetInts(type + "_immune_faces"), face) >= 0;
+
     public int StartHealth => 100;
     public int StartFood => 9;
     public int StartWater => 5;
@@ -132,13 +199,60 @@ class GameSettings
     {
         config = new ConfigFile();
         config.Open(file);
+        ConfigSection rules = config["rules"];
+        StartLocationRule = ParseRule(rules, "start_locations", StartLocationRule.AmigaRegions);
+        BossExperienceRule = ParseRule(rules, "boss_experience", BossExperienceRule.DosCamps);
+        RecruitmentRule = ParseRule(rules, "recruitment", RecruitmentRule.DosXpTimes15);
+        TraderRefreshRule = ParseRule(rules, "trader_refresh", TraderRefreshRule.DosIndividual);
+        WaterOutputRule = ParseRule(rules, "water_output", WaterOutputRule.AmigaMinimum);
+        SpawnMethodRule spawnMethod = ParseRule(rules, "spawn_method", SpawnMethodRule.Timer);
+        respawn.Method = spawnMethod switch
+        {
+            SpawnMethodRule.DosPlayerCycle => RespawnMethod.PlayerCycle,
+            SpawnMethodRule.AmigaLocationCycle => RespawnMethod.LocationCycle,
+            _ => RespawnMethod.Timer
+        };
+        PlayerSetupRule = ParseRule(rules, "player_setup", PlayerSetupRule.DosGamdat);
+        InitialItemsRule = ParseRule(rules, "initial_items", InitialItemsRule.DosGamdat);
+        RecruitSuppliesRule = ParseRule(rules, "recruit_supplies", RecruitSuppliesRule.DosFixed);
+        TraderInventoryRule = ParseRule(rules, "trader_inventory", TraderInventoryRule.DosGamdat);
+        FoodProductionRule = ParseRule(rules, "food_production", FoodProductionRule.DosFeedThenStore);
+        SurvivalRule = ParseRule(rules, "survival", SurvivalRule.DosDailyConsumption);
+        ServiceValueRule = ParseRule(rules, "service_value", ServiceValueRule.DosTradeValue);
+        CombatRule = ParseRule(rules, "combat", CombatRule.DosUnarmoured);
+    }
+
+    static T ParseRule<T>(ConfigSection section, string key, T fallback,
+        bool optional = false) where T : struct, Enum
+    {
+        string value = section.GetString(key);
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            if (!optional)
+                Burntime.Platform.Log.Warning($"Missing rule '{key}'; using '{fallback}'.");
+            return fallback;
+        }
+
+        string name = string.Concat(value.Split(new[] { '_', '-' },
+            StringSplitOptions.RemoveEmptyEntries).Select(part =>
+                char.ToUpperInvariant(part[0]) + part[1..]));
+        if (Enum.TryParse(name, ignoreCase: false, out T result) && Enum.IsDefined(result))
+            return result;
+
+        Burntime.Platform.Log.Warning(
+            $"Unknown rule '{key}={value}'; using '{fallback}'.");
+        return fallback;
     }
 
     public void SetDifficulty(int difficulty)
     {
         this.difficulty = difficulty.ToString();
 
-        respawn.NPC = config[this.difficulty].GetInt("npc_respawn");
+        // npc_respawn is retained as a fallback for custom and older rulesets.
+        respawn.NPC = string.IsNullOrWhiteSpace(config[this.difficulty].GetString("npc_spawn"))
+            ? config[this.difficulty].GetInt("npc_respawn")
+            : config[this.difficulty].GetInt("npc_spawn");
+        respawn.CitySpawnThreshold = config[this.difficulty].GetInt("city_spawn_threshold");
         respawn.Trader = config[this.difficulty].GetInt("trader_respawn");
         respawn.Mutant = config[this.difficulty].GetInt("mutant_respawn");
         respawn.Dog = config[this.difficulty].GetInt("dog_respawn");
@@ -152,30 +266,9 @@ class GameSettings
 
     }
 
-    public ItemGeneration GetItemGeneration(string name)
-    {
-        string[] itemclass = config[difficulty].GetStrings(name);
-        List<string> include = new List<string>();
-        List<string> exclude = new List<string>();
+    public ItemGeneration GetItemGeneration(string name) =>
+        ItemGeneration.FromStrings(
+            config[difficulty].GetStrings(name),
+            config[difficulty].GetStrings(name + "_rate"));
 
-        ItemGeneration generation;
-
-        foreach (string item in itemclass)
-        {
-            if (item.StartsWith("-"))
-                exclude.Add(item.Substring(1));
-            else
-                include.Add(item);
-        }
-
-        generation.Include = include.ToArray();
-        generation.Exclude = exclude.ToArray();
-
-        int[] rate = config[difficulty].GetInts(name + "_rate");
-
-        generation.Minimum = rate.Length > 0 ? rate[0] : 0;
-        generation.Maximum = rate.Length > 1 ? rate[1] : generation.Minimum;
-
-        return generation;
-    }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 using Burntime.Platform;
@@ -37,6 +38,11 @@ namespace Burntime.Remaster.Logic
         public StateLinkList<Character> AllCharacters;
         public StateLinkList<Trader> Traders;
         public StateLink<CharacterRespawn> Respawn;
+        public IEnumerable<Item> AllItems => AllCharacters.SelectMany(character => character.Items)
+            .Concat(Locations.SelectMany(location => location.Items))
+            .Concat(Locations.SelectMany(location => location.Rooms)
+                .SelectMany(room => room.Items))
+            .Distinct();
         public int ActivePlayer;
         public float Time;
         public int Day;
@@ -102,9 +108,9 @@ namespace Burntime.Remaster.Logic
                             }
                         }
 
-                        for (int j = 1; j < Players[i].Group.Count; j++)
+                        for (int j = 1; j < Players[i].Party.Count; j++)
                         {
-                            Players[i].Group[j].Dismiss();
+                            Players[i].Party[j].Dismiss();
                         }
 
                         Players[i].IsDead = true;
@@ -121,8 +127,8 @@ namespace Burntime.Remaster.Logic
 
                 if (!Players[i].IsDead)
                 {
-                    for (int j = 0; j < Players[i].Group.Count; j++)
-                        Players[i].Group[j].Turn();
+                    for (int j = 0; j < Players[i].Party.Count; j++)
+                        Players[i].Party[j].Turn();
                 }
             }
 
@@ -140,11 +146,7 @@ namespace Burntime.Remaster.Logic
 
         public virtual void TurnTraders(StateLinkList<Trader> TraderList)
         {
-            for (int i = 0; i < TraderList.Count; i++)
-            {
-                Trader trader = TraderList[i];
-                trader.Turn();
-            }
+            ((ClassicGame)Container.Root).RuleBook.TurnTraders(TraderList);
         }
     }
 }

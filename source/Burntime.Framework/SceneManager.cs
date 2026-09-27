@@ -16,6 +16,7 @@ namespace Burntime.Framework
         Module app;
         Stack<Window> modalStack = new Stack<Window>();
         int blockBlendIn;
+        bool blendMusicThroughBridge;
 
         Dictionary<String, Type> sceneTypes = new Dictionary<string, Type>();
 
@@ -58,6 +59,7 @@ namespace Burntime.Framework
             bool targetIsTransitionBridge = typeof(ISceneTransitionBridge)
                 .IsAssignableFrom(sceneTypes[Scene]);
             var musicTransition = ConfigureMusicTransition(sceneTypes[Scene]);
+            app.Engine.MusicBlend = blendMusicThroughBridge;
             app.Engine.BlendOverlay.FadeOut(wait: true);
             if (musicTransition.discardRememberedSong)
                 app.Engine.Music.DiscardRememberedSong();
@@ -102,6 +104,8 @@ namespace Burntime.Framework
             app.Engine.CenterMouse();
             app.Engine.IsLoading = true;
             app.Engine.BlendOverlay.FadeIn();
+            if (sourceIsTransitionBridge && !targetIsTransitionBridge)
+                blendMusicThroughBridge = false;
         }
 
         public void PreviousScene()
@@ -112,6 +116,7 @@ namespace Burntime.Framework
                 bool sourceIsTransitionBridge = activeScene is ISceneTransitionBridge;
                 bool targetIsTransitionBridge = previousScene is ISceneTransitionBridge;
                 var musicTransition = ConfigureMusicTransition(previousScene.GetType());
+                app.Engine.MusicBlend = blendMusicThroughBridge;
                 app.Engine.BlendOverlay.FadeOut(wait: true);
                 if (musicTransition.discardRememberedSong)
                     app.Engine.Music.DiscardRememberedSong();
@@ -138,6 +143,8 @@ namespace Burntime.Framework
                     app.Engine.MusicSilenced = false;
                 sceneQueue.RemoveAt(sceneQueue.Count - 1);
                 app.Engine.BlendOverlay.FadeIn();
+                if (sourceIsTransitionBridge && !targetIsTransitionBridge)
+                    blendMusicThroughBridge = false;
             }
         }
 
@@ -196,15 +203,6 @@ namespace Burntime.Framework
                 }
             }
 
-            bool continuingAfterScene =
-                app.Engine.MapMusicMode == MapMusicMode.Keep &&
-                targetIsMap && !sourceIsMap && keepMusic;
-            bool navigatingBetweenMaps =
-                app.Engine.MapMusicMode != MapMusicMode.None &&
-                sourceIsMapNavigation && targetIsMapNavigation;
-            app.Engine.MusicBlend =
-                !continuingAfterScene && !navigatingBetweenMaps;
-
             return (targetIsMap, keepMusic, playPlaylist, rememberPlaylist,
                 continuePlaylist, rememberSong, resumeRememberedSong,
                 discardRememberedSong);
@@ -217,6 +215,8 @@ namespace Burntime.Framework
             if (blockBlendIn == 1)
                 app.Engine.BlendOverlay.Block = true;
         }
+
+        public void BlendMusicThroughNextBridge() => blendMusicThroughBridge = true;
 
         public void UnblockBlendIn()
         {
@@ -231,17 +231,15 @@ namespace Burntime.Framework
         public bool UseDiagonalGamepadNavigation => activeScene?.UseDiagonalGamepadNavigation ?? false;
         public bool PreserveMouseModeForDirectionalInput =>
             modalStack.Count > 0 && modalStack.Peek().PreserveMouseModeForDirectionalInput;
+        internal Window? InputWindow => modalStack.Count > 0
+            ? modalStack.Peek()
+            : activeScene;
 
         internal void Render(RenderTarget Target) => activeScene?.Render(Target);
 
         internal void Process(float Elapsed)
         {
-            Window handle = null;
-
-            if (modalStack.Count > 0)
-                handle = modalStack.Peek();
-            else
-                handle = activeScene;
+            Window handle = InputWindow;
 
             Vector2 parentPos = handle.PositionOnScreen - handle.Position;
 
@@ -325,9 +323,9 @@ namespace Burntime.Framework
             activeScene = null;
         }
 
-        public void ResizeScene()
+        public void ResizeScene(bool reload = false)
         {
-            activeScene?.OnResizeScreen();
+            activeScene?.OnResizeScreen(reload);
         }
     }
 }

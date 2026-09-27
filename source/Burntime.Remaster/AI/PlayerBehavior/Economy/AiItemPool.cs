@@ -32,8 +32,11 @@ namespace Burntime.Remaster.AI
 
         internal static bool Accepts(ItemType type)
         {
-            return Array.Exists(ItemTypeFilter, id => id == type.ID) || IsWaterContainer(type);
+            return !IsFirearm(type) && (Array.Exists(ItemTypeFilter, id => id == type.ID) ||
+                IsWaterContainer(type) || type.DefenseValue > 0);
         }
+
+        static int MaximumCount(ItemType type) => MaximumItemsPerType;
 
         internal static bool IsWaterContainer(ItemType type) =>
             (type.Empty != null && type.WaterValue > 0) ||
@@ -96,7 +99,7 @@ namespace Burntime.Remaster.AI
             if (!Accepts(item.Type))
                 return false;
 
-            return InsertUnchecked(item.Type, MaximumItemsPerType);
+            return InsertUnchecked(item.Type, MaximumCount(item.Type));
         }
 
         /// <summary>
@@ -123,7 +126,7 @@ namespace Burntime.Remaster.AI
             if (!Accepts(type))
                 return false;
 
-            return InsertUnchecked(type, MaximumItemsPerType);
+            return InsertUnchecked(type, MaximumCount(type));
         }
 
         /// <summary>
@@ -162,7 +165,9 @@ namespace Burntime.Remaster.AI
             int removed = 0;
             foreach (PoolItem item in items)
             {
-                int maximum = Accepts(item.Type) ? MaximumItemsPerType : 1;
+                int maximum = Accepts(item.Type) || IsFirearm(item.Type)
+                    ? MaximumCount(item.Type)
+                    : 1;
                 if (item.Count <= maximum)
                     continue;
                 removed += item.Count - maximum;
@@ -227,6 +232,18 @@ namespace Burntime.Remaster.AI
                 "item_full_canteen", "item_empty_canteen",
                 "item_water_bottle", "item_bottle") != null;
         }
+
+        // Compatibility path for saves created while resting-sustenance items
+        // were accepted into this abstract reserve. New copies remain physical.
+        internal Item GetRestingSustenance()
+        {
+            PoolItem item = items.FirstOrDefault(candidate => candidate.Count > 0 &&
+                candidate.Type.HasFunction(ItemFunction.RestingSustenance));
+            return item != null ? Take(item) : null;
+        }
+
+        internal bool HasRestingSustenance() => items.Any(item => item.Count > 0 &&
+            item.Type.HasFunction(ItemFunction.RestingSustenance));
 
         /// <summary>
         /// Get best available food production item.
@@ -420,7 +437,7 @@ namespace Burntime.Remaster.AI
         }
 
         internal static bool IsFirearm(ItemType? type) =>
-            type != null && (type.ID is "item_loaded_rifle" or "item_loaded_pistol");
+            type != null && (type.ID is "item_loaded_rifle" or "item_loaded_rifle_1" or "item_loaded_pistol" or "item_unloaded_rifle" or "item_unloaded_pistol");
 
         internal static int WaterContainerCapacity(ItemType type) =>
             type.WaterValue > 0 ? type.WaterValue : type.Full?.WaterValue ?? 0;

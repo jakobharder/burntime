@@ -1,0 +1,5 @@
+Dir fehlen noch {missing} umliegende Lager,|#Dir fehlt noch {missing} umliegendes Lager,
+um diese Stadt zu kontrollieren.
+Kontrolliere alle {total} Städte, um zu gewinnen.
+Du kontrollierst alle umliegenden Lager
+und damit auch diese Stadt.

@@ -10,14 +10,12 @@ using System.Collections.Generic;
 
 namespace Burntime.Remaster
 {
-    public enum ActionAfterImageScene
-    {
-        None,
-        Trader,
-        Doctor,
-        Pub,
-        Restaurant
-    }
+    public sealed record ImageSceneRequest(
+        string Resource,
+        string NextScene = null,
+        string SubtitleArgument = null,
+        bool FinishClient = false,
+        object? NextSceneParameter = null);
 
     public enum LanguageMode
     {
@@ -26,7 +24,7 @@ namespace Burntime.Remaster
         German
     }
 
-    public enum PromptVisibilityMode
+    public enum UIHintVisibilityMode
     {
         Full = 0,
         Less = 1,
@@ -55,9 +53,7 @@ namespace Burntime.Remaster
         public static bool IsSupportedSavegameVersion(string? version) =>
             version == SavegameVersion || version == PreviousSavegameVersion;
         public static string FontName = "font.txt";
-
-        public static readonly PixelColor LightGray = new(212, 212, 212);
-        public static readonly PixelColor Gray = new(184, 184, 184);
+        public string VersionLabel { get; set; } = Version;
 
         private static string? _version;
         public static string Version
@@ -110,8 +106,8 @@ namespace Burntime.Remaster
 
         public bool ChooseLanguageOnStart { get; set; }
         public LanguageMode LanguageSelection { get; private set; } = LanguageMode.Auto;
-        public PromptVisibilityMode PromptVisibility { get; private set; } = PromptVisibilityMode.Full;
-        public bool ShowInputPrompts => PromptVisibility != PromptVisibilityMode.Hide;
+        public UIHintVisibilityMode UIHintVisibility { get; private set; } = UIHintVisibilityMode.Full;
+        public bool ShowUIHints => UIHintVisibility != UIHintVisibilityMode.Hide;
 
         public override void Start()
         {
@@ -162,10 +158,10 @@ namespace Burntime.Remaster
                 UserSettings.Save("user.txt");
             Engine.ControllerGlyphMode = ParseControllerGlyphMode(
                 UserSettings[""].GetString("controller_glyphs"));
-            PromptVisibility = (PromptVisibilityMode)System.Math.Clamp(
+            UIHintVisibility = (UIHintVisibilityMode)System.Math.Clamp(
                 UserSettings[""].GetInt("prompts"),
-                (int)PromptVisibilityMode.Full,
-                (int)PromptVisibilityMode.Hide);
+                (int)UIHintVisibilityMode.Full,
+                (int)UIHintVisibilityMode.Hide);
             KeyboardBindings.Load(Settings);
             GamepadBindings.Load(Settings);
             LanguageSelection = ParseLanguageMode(UserSettings[""].GetString("language"));
@@ -221,6 +217,7 @@ namespace Burntime.Remaster
 
             Settings = new ConfigFile();
             Settings.Open("settings.txt");
+            RefreshResourceReplacements();
 
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
             ResourceManager.Encoding = Encoding.UTF8;
@@ -255,7 +252,7 @@ namespace Burntime.Remaster
             UserSettings[""].Set("newgfx", IsNewGfx);
             UserSettings[""].Set("language", FormatLanguageMode(LanguageSelection));
             UserSettings[""].Set("controller_glyphs", FormatControllerGlyphMode(Engine.ControllerGlyphMode));
-            UserSettings[""].Set("prompts", (int)PromptVisibility);
+            UserSettings[""].Set("prompts", (int)UIHintVisibility);
             UserSettings.Save("user.txt");
         }
 
@@ -271,11 +268,11 @@ namespace Burntime.Remaster
             };
         }
 
-        public void CyclePromptVisibilityMode()
+        public void CycleUIHintVisibilityMode()
         {
-            PromptVisibility = PromptVisibility == PromptVisibilityMode.Hide
-                ? PromptVisibilityMode.Full
-                : PromptVisibilityMode.Hide;
+            UIHintVisibility = UIHintVisibility == UIHintVisibilityMode.Hide
+                ? UIHintVisibilityMode.Full
+                : UIHintVisibilityMode.Hide;
         }
 
         static ControllerGlyphMode ParseControllerGlyphMode(string value) =>
@@ -370,11 +367,28 @@ namespace Burntime.Remaster
         public int InfoCity = -1;
         public int InventoryBackground = -1;
         public Room InventoryRoom = null;
-        public String ImageScene = null;
         public PickItemList PickItems = null;
-        public ActionAfterImageScene ActionAfterImageScene = ActionAfterImageScene.None;
+
+        public void SetScene(string scene, object? parameter = null,
+            string? introScene = null)
+        {
+            if (introScene == null)
+                SceneManager.SetScene(scene, parameter);
+            else
+                SceneManager.SetScene("ImageScene", new ImageSceneRequest(
+                    introScene, scene, NextSceneParameter: parameter));
+        }
+
+        public void SetImageScene(string imageScene,
+            string subtitleArgument = null, bool finishClient = false)
+        {
+            SceneManager.SetScene("ImageScene", new ImageSceneRequest(
+                imageScene, SubtitleArgument: subtitleArgument,
+                FinishClient: finishClient));
+        }
 
         public int PreviousPlayerId = -1;
+        public bool ShowManualOnNextWorldMap;
         public bool NewGui = false;
 
         public override bool IsNewGfx
@@ -567,7 +581,7 @@ namespace Burntime.Remaster
             RefreshResourceReplacements();
 
             Engine.ReloadGraphics();
-            SceneManager.ResizeScene();
+            SceneManager.ResizeScene(reload: true);
         }
 
         public void RefreshResourceReplacements()
@@ -577,7 +591,7 @@ namespace Burntime.Remaster
             // character-body ranges to frames that exist in the original RAW.
             if (FileSystem.ExistsFile("newgfx.txt"))
                 replacements.Add("newgfx.txt");
-            if (Engine.OutputFiltering == OutputFiltering.Xbr2 &&
+            if (Engine?.OutputFiltering == OutputFiltering.Xbr2 &&
                 FileSystem.ExistsFile("xbr2.txt"))
                 replacements.Add("xbr2.txt");
             ResourceManager.SetResourceReplacements(replacements.ToArray());

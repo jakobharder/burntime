@@ -8,6 +8,16 @@ using System.Collections.Generic;
 
 namespace Burntime.Remaster.Logic
 {
+    [Flags]
+    public enum ItemFunction
+    {
+        None = 0,
+        RemoteIntel = 1,
+        RestingSustenance = 2,
+        CreatureDeterrent = 4,
+        MetalDetection = 8
+    }
+
     [Serializable]
     public class ItemType : StateObject
     {
@@ -73,6 +83,7 @@ namespace Burntime.Remaster.Logic
 
         public bool IsSelectable => data.Object.IsSelectable;
         public string Sprite => data.Object.Sprite;
+        public string? LastRoundSprite => data.Object.LastRoundSprite;
 
         public string Title => dummy ??
             (string.IsNullOrEmpty(data.Object.Title) ? data.Object.ID : ResourceManager.GetString(data.Object.Title));
@@ -91,10 +102,25 @@ namespace Burntime.Remaster.Logic
         public float HealValue => data.Object.HealValue;
         public int ExperienceValue => data.Object.ExperienceValue;
         public int DamageValue => data.Object.DamageValue;
+        public int WeaponPriority => data.Object.WeaponPriority ?? DamageValue;
+        public int AttackRange => data.Object.AttackRange;
+        public int[] DamageValues => data.Object.DamageValues;
         public int DefenseValue => data.Object.DefenseValue;
         public int AmmoValue => data.Object.AmmoValue;
+        public string[] Loads => data.Object.Loads;
+        public string LoadName => string.IsNullOrEmpty(data.Object.LoadName)
+            ? Title : ResourceManager.GetString(data.Object.LoadName);
+        public ItemFunction Functions => data.Object.Functions;
+        public string TraderWorldGroup => data.Object.TraderWorldGroup;
+        public int TraderWorldLimit => data.Object.TraderWorldLimit;
 
-        public ItemType Empty => empty;
+        public bool HasFunction(ItemFunction function) => Functions.HasFlag(function);
+
+        public ItemType Empty
+        {
+            get => empty;
+            internal set => empty = value;
+        }
         public ItemType Full => full;
 
         public Production Production
@@ -121,6 +147,8 @@ namespace Burntime.Remaster.Logic
 
         public Item Generate()
         {
+            if (ID == "item_loaded_rifle_1")
+                return ((ClassicGame)Container.Root).ItemTypes["item_loaded_rifle"].Generate();
             return container.Create<Item>(new object[] { this });
         }
     }

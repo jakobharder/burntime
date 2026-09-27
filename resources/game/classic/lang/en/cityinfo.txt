@@ -1,0 +1,5 @@
+You still need {missing} surrounding camps|#You still need {missing} surrounding camp
+to control this city.
+Control all {total} cities to win.
+You control all surrounding camps
+and therefore this city.

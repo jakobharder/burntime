@@ -17,8 +17,7 @@ internal static class AttackPlanning
             return false;
 
         DefenseIntelligence.UpdateKnowledgeFromEncounter(state, context.Current,
-            context.Current.CampNPC.Where(character =>
-                character.Player == context.Current.Player && !character.IsDead));
+            CombatStrength.Defenders(context.Current));
 
         if (!IsSuitable(state, player, context.Current, policy))
         {
@@ -29,15 +28,25 @@ internal static class AttackPlanning
                 state.DeferAttackPlan(context.Current, policy);
             }
             Location? suppliedRetreat = AiTurnController.FindNearestLogistics(state, requireReachable: true);
-            Location? retreat = suppliedRetreat ?? AiTurnController.FindNearestLogistics(state);
+            Location? ownedRetreat = suppliedRetreat ??
+                AiTurnController.FindNearestLogistics(state);
+            Location? previousRetreat = player.PreviousLocation is Location previous &&
+                !IsHostile(previous, player) &&
+                player.CanTravel(context.Current, previous)
+                ? previous
+                : null;
+            Location? retreat = ownedRetreat ?? previousRetreat;
             if (retreat != null)
             {
+                bool returningToPreviousLocation = ownedRetreat == null;
                 candidates.Add(new AiDecision(
                     AiAction.Travel,
                     1250,
                     retreat,
                     RouteFinder.Find(player, context.Current, retreat)?.NextStep,
-                    suppliedRetreat != null
+                    returningToPreviousLocation
+                        ? $"retreat to the previous location {retreat.Title} because no owned logistics remain"
+                        : suppliedRetreat != null
                         ? "retreat toward the nearest reachable safe location"
                         : "make an emergency retreat despite insufficient route supplies"));
             }
@@ -90,7 +99,7 @@ internal static class AttackPlanning
             return null;
         }
         int requiredGroupSize = RequiredAttackGroupSize(state, target, policy);
-        bool currentReady = context.Player.Group.Count >= requiredGroupSize &&
+        bool currentReady = context.Player.Party.Count >= requiredGroupSize &&
             IsSuitable(state, context.Player, target, policy) &&
             TravelSupplies.HasRouteSupplies(context.Player, route, hostileTarget: true);
         if (!currentReady)
@@ -124,7 +133,7 @@ internal static class AttackPlanning
         AiPolicy policy)
     {
         Player player = state.Player;
-        if (player.Group.Count < RequiredAttackGroupSize(state, target, policy) ||
+        if (player.Party.Count < RequiredAttackGroupSize(state, target, policy) ||
             !HasGroupWeapon(player) ||
             !IsTerritorialFrontierTarget(state, target))
             return false;
@@ -140,7 +149,7 @@ internal static class AttackPlanning
         {
             if (route.NextStep.Player == player &&
                 !CampEconomy.CanProvisionGroupWater(
-                    route.NextStep, player.Group.Count))
+                    route.NextStep, player.Party.Count))
                 return false;
             RouteFinder.Route? safeLeg = RouteFinder.Find(player, state.Current, route.NextStep);
             return safeLeg != null && TravelSupplies.HasRouteSupplies(
@@ -158,7 +167,7 @@ internal static class AttackPlanning
     {
         Player player = state.Player;
         int requiredGroupSize = RequiredAttackGroupSize(state, target, policy);
-        if (player.Group.Count < requiredGroupSize)
+        if (player.Party.Count < requiredGroupSize)
             return $"attack plan for {target.Title} is waiting for {requiredGroupSize} attackers";
         if (!HasGroupWeapon(player))
             return $"attack plan for {target.Title} is waiting for a weapon";
@@ -170,7 +179,7 @@ internal static class AttackPlanning
             return $"attack plan for {target.Title} has no permitted route";
 
         if (route.NextStep.Player == player &&
-            !CampEconomy.CanProvisionGroupWater(route.NextStep, player.Group.Count))
+            !CampEconomy.CanProvisionGroupWater(route.NextStep, player.Party.Count))
         {
             return $"attack plan for {target.Title} is waiting for camp water capacity";
         }
@@ -195,18 +204,11 @@ internal static class AttackPlanning
         Location target,
         AiPolicy policy)
     {
-        Character[] followers = player.Group
+        Character[] followers = player.Party
             .Where(character => character != player.Character && !character.IsDead)
             .ToArray();
         if (followers.Length == 0 || !HasGroupWeapon(player) ||
             !IsTargetAllowed(state, target, policy))
-            return false;
-
-        Character[] attackers = player.Group.Where(character => !character.IsDead).ToArray();
-        if (attackers.Any(character =>
-                AiItemPool.IsFirearm(character.Items.FindBestWeapon()?.Type)) ||
-            attackers.Count(character => character.Items.FindBestWeapon()?.ID == "item_pitchfork") >
-                policy.PitchforkLimit)
             return false;
 
         float defenders = DefenseIntelligence.Estimate(state, target).EstimatedStrength;
@@ -214,7 +216,7 @@ internal static class AttackPlanning
             return true;
         float attackersStrength = CombatStrength.Attacker(player);
         return state.HasImprovedSinceFailedAttack(
-                target, attackers.Length, attackersStrength, defenders) &&
+                target, followers.Length + (player.Character.IsDead ? 0 : 1), attackersStrength, defenders) &&
             attackersStrength / defenders >= policy.MinimumAttackRatio;
     }
 
@@ -223,7 +225,8 @@ internal static class AttackPlanning
         Location target,
         AiPolicy policy)
     {
-        if (!IsHostile(target, state.Player))
+        if (!IsHostile(target, state.Player) ||
+            !AttackRetryMemory.For(state.Player).CanRetry(state.Player, target))
             return false;
         if (target.Player?.Type != PlayerType.Human || state.IsRetaliatingAgainst(target.Player))
             return true;
@@ -245,8 +248,16 @@ internal static class AttackPlanning
         // campaigns assembling a third or fourth body even when the current
         // armed group was strong enough to attack safely.
         int numericalAdvantage = policy.UseDetailedCombatEstimate ? 0 : 1;
-        return System.Math.Clamp(
+        int desired = System.Math.Clamp(
             expectedDefenders + numericalAdvantage, 2, policy.AttackGroupSize);
+        // Numerical superiority is a preparation goal, not a reason to reject
+        // an existing armed party that already meets the safety margin. Easy
+        // still requires two; Hard retains its detailed-estimate policy.
+        int available = state.Player.Party.Count;
+        if (!policy.UseDetailedCombatEstimate && available >= 2 && available < desired &&
+            IsSuitable(state, state.Player, target, policy))
+            return available;
+        return desired;
     }
 
     public static bool IsTerritorialFrontierTarget(ClassicAiState state, Location target)
@@ -287,7 +298,7 @@ internal static class AttackPlanning
         return false;
     }
 
-    public static bool HasGroupWeapon(Player player) => player.Group.Any(character =>
+    public static bool HasGroupWeapon(Player player) => player.Party.Any(character =>
         !character.IsDead &&
         (character.Items.FindBestWeapon()?.DamageValue ?? 0) > 0);
 
@@ -306,7 +317,7 @@ internal static class AttackPlanning
                 !location.IsCity && !TerritorialTargetDeferrals.IsDeferred(state, location) &&
                 IsHostile(location, context.Player) &&
                 IsTerritorialFrontierTarget(state, location) &&
-                context.Player.Group.Count >= RequiredAttackGroupSize(state, location, policy) &&
+                context.Player.Party.Count >= RequiredAttackGroupSize(state, location, policy) &&
                 IsTargetAllowed(state, location, policy) &&
                 IsSuitable(state, context.Player, location, policy))
             .Select(location => new

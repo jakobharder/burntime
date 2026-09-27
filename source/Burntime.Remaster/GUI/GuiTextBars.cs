@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Burntime.Framework;
 using Burntime.Platform;
 using Burntime.Platform.Graphics;
@@ -10,88 +11,71 @@ enum GuiTextBarType
 {
     RedBar,
     Dots,
-    BlueBar
+    BlueBar,
+    CampNpcs
 }
 
-readonly record struct GuiTextBar(GuiTextBarType Type, int Value);
+readonly record struct GuiTextBar(GuiTextBarType Type, int Value,
+    bool SeparatorAfter = false);
 
 /// <summary>
 /// Draws centered map labels followed by compact counter bars.
 /// </summary>
 sealed class GuiTextBars
 {
-    const int CounterFrameCount = 15;
-    const int RedRowOffset = CounterFrameCount;
-    const int TrapRowOffset = CounterFrameCount * 2;
-
-    const int BarWidth = 4;
-    const int DotsWidth = 2;
-
     readonly IResourceManager resourceManager;
-    readonly ISprite[] counterSprites = new ISprite[CounterFrameCount * 3];
+    readonly Module app;
 
-    public GuiTextBars(IResourceManager resourceManager)
+    public GuiTextBars(Module app)
     {
+        this.app = app;
+        resourceManager = app.ResourceManager;
         this.resourceManager = resourceManager;
-        for (int frame = 0; frame < counterSprites.Length; frame++)
-        {
-            ISprite sprite = resourceManager.GetImage(
-                $"pngsheet@gfx/ui/info_counter.png?{frame}?8x12");
-            sprite.Touch();
-            counterSprites[frame] = sprite;
-        }
     }
 
     public void Draw(RenderTarget target, Vector2 center, string text, PixelColor color,
-        float alpha, IReadOnlyList<GuiTextBar> bars)
+        float alpha, IReadOnlyList<GuiTextBar> bars, string? leadingIcon = null,
+        ISprite? marker = null, ISprite? trailingMarker = null,
+        bool showBackground = false)
     {
+        if (app is BurntimeClassic classic && !classic.ShowUIHints)
+        {
+            bars = System.Array.Empty<GuiTextBar>();
+            leadingIcon = null;
+            trailingMarker = null;
+        }
+
         Font font = resourceManager.GetFont(BurntimeClassic.FontName, color);
-        if (bars.Count == 0)
-        {
-            font.DrawText(target, center, text, TextAlignment.Center,
-                VerticalTextAlignment.Center, alpha);
-            return;
-        }
+        List<FontInlineRun> runs = new(4 +
+            (leadingIcon != null ? 1 : 0) + (marker != null ? 2 : 1) +
+            (trailingMarker != null ? 1 : 0));
+        if (leadingIcon != null)
+            runs.Add(new FontInlineRun(leadingIcon));
+        runs.Add(new FontInlineRun(marker != null || bars.Count > 0 ? text + " " : text));
+        if (marker != null)
+            runs.Add(new FontInlineRun(marker,
+                marker.Width + (bars.Count > 0 ? 1 : 0), verticalOffset: 2));
+        if (bars.Count > 0)
+            runs.Add(new FontInlineRun(string.Concat(bars.Select(GetIndicatorText))));
+        if (trailingMarker != null)
+            runs.Add(new FontInlineRun(trailingMarker, trailingMarker.Width));
 
-        string label = text + " ";
-        int labelWidth = font.GetWidth(label);
-        int barsWidth = 0;
-        for (int i = 0; i < bars.Count; i++)
-            barsWidth += GetWidth(bars[i].Type);
-
-        int totalWidth = labelWidth + barsWidth;
-        Vector2 position = center - new Vector2(totalWidth / 2, 0);
-        position.x = System.Math.Clamp(position.x, 0,
-            System.Math.Max(0, target.Size.x - totalWidth));
-        font.DrawText(target, position, label, TextAlignment.Left,
-            VerticalTextAlignment.Center, alpha);
-        position.x += labelWidth;
-
-        for (int i = 0; i < bars.Count; i++)
-        {
-            GuiTextBar bar = bars[i];
-            ISprite sprite = GetSprite(bar);
-            target.DrawSprite(new Vector2(position.x, position.y - sprite.Height / 2),
-                sprite, alpha);
-            position.x += GetWidth(bar.Type);
-        }
+        font.DrawInline(target, center, runs, TextAlignment.Center,
+            VerticalTextAlignment.Center, alpha,
+            backgroundColor: showBackground && app is BurntimeClassic { ShowUIHints: true }
+                ? new PixelColor((int)(128 * alpha), 0, 0, 0)
+                : null,
+            // The marker frames contain two transparent columns before the icon.
+            backgroundPaddingLeft: leadingIcon != null ? 0 : 2,
+            backgroundPaddingRight: 1, backgroundPaddingVertical: 1);
     }
 
-    ISprite GetSprite(GuiTextBar bar)
-    {
-        int value = System.Math.Clamp(bar.Value, 0, CounterFrameCount - 1);
-        int frame = bar.Type switch
+    static string GetIndicatorText(GuiTextBar bar) =>
+        $"~{bar.Type switch
         {
-            GuiTextBarType.RedBar => RedRowOffset + value,
-            GuiTextBarType.Dots => TrapRowOffset + value,
-            _ => value
-        };
-        return counterSprites[frame];
-    }
-
-    static int GetWidth(GuiTextBarType type) => type switch
-    {
-        GuiTextBarType.Dots => DotsWidth,
-        _ => BarWidth
-    };
+            GuiTextBarType.RedBar => 'r',
+            GuiTextBarType.Dots => 'd',
+            GuiTextBarType.CampNpcs => 'n',
+            _ => 'b'
+        }}{bar.Value}{(bar.SeparatorAfter ? " " : "")}";
 }

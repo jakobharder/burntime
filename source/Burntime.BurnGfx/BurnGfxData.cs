@@ -85,6 +85,7 @@ namespace Burntime.Data.BurnGfx
         {
             #warning OPTIMIZE remove, as it is only needed in development
             _ = PacImageFileReader.Read("opti.pac");
+            _ = PacImageFileReader.Read("koch.pac");
         }
         #endregion
 

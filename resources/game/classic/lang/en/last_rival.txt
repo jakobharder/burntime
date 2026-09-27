@@ -1,0 +1,5 @@
+Your last rival has been defeated.
+Stop here, or take control
+of all {total} cities?
+That's enough
+Finish what I started

@@ -224,10 +224,10 @@ internal static partial class Trading
         OccupiedCargoSlots(state) >= DesiredCaravanSlots(state);
 
     internal static int DesiredPortableFood(ClassicAiState state) =>
-        state.Player.Group.Count * StandingFoodDays;
+        state.Player.Party.Count * StandingFoodDays;
 
     internal static int DesiredWaterContainerCapacity(ClassicAiState state) =>
-        DesiredWaterContainerCapacity(state.Player.Group.Count);
+        DesiredWaterContainerCapacity(state.Player.Party.Count);
 
     internal static int DesiredWaterContainerCapacity(int people)
     {
@@ -239,32 +239,32 @@ internal static partial class Trading
     }
 
     internal static int DesiredPortableWaterCapacity(ClassicAiState state) =>
-        state.Player.Group.Sum(character => character.MaxWater) +
+        state.Player.Party.Sum(character => character.MaxWater) +
         DesiredWaterContainerCapacity(state);
 
-    internal static int DesiredCaravanSlots(ClassicAiState state) => state.Player.Group
+    internal static int DesiredCaravanSlots(ClassicAiState state) => state.Player.Party
         .Take(MaximumCaravanPeople)
         .Sum(character => character.Items.MaxCount);
 
-    internal static int OccupiedCargoSlots(ClassicAiState state) => state.Player.Group
+    internal static int OccupiedCargoSlots(ClassicAiState state) => state.Player.Party
         .Sum(character => character.Items.Count);
 
-    internal static int PortableWaterCapacity(ClassicAiState state) => state.Player.Group
+    internal static int PortableWaterCapacity(ClassicAiState state) => state.Player.Party
         .SelectMany(character => character.Items)
         .Where(item => AiItemPool.IsWaterContainer(item.Type))
         .Sum(item => AiItemPool.WaterContainerCapacity(item.Type));
 
     internal static int PortableFoodSupply(ClassicAiState state) =>
-        state.Player.Group.GetFoodReserve() + state.Player.Group.GetFoodInInventory();
+        state.Player.Party.GetFoodReserve() + state.Player.Party.GetFoodInInventory();
 
     internal static int PortableWaterSupply(ClassicAiState state) =>
-        state.Player.Group.GetWaterReserve() + PortableWaterCapacity(state);
+        state.Player.Party.GetWaterReserve() + PortableWaterCapacity(state);
 
     internal static Item[] TradeCapital(ClassicAiState state)
     {
         bool mayLiquidateReserves = state.RootGame.World.Locations.Any(city =>
             city.IsCity && city.LocalTrader != null && CityHasHighReturnReservePurchase(state, city));
-        return state.Player.Group.SelectMany(character => character.Items)
+        return state.Player.Party.SelectMany(character => character.Items)
             .Where(item => Trading.CanSell(state, item) ||
                 (mayLiquidateReserves && Trading.IsHighReturnLiquidReserve(item)))
             .ToArray();
@@ -287,7 +287,7 @@ internal static partial class Trading
 
     internal static bool HasAffordableHighReturnTradeCargo(ClassicAiState state)
     {
-        float buyingPower = SurvivalSafeEconomicCapital(state) * Trading.TradeBenefit(state);
+        float buyingPower = SurvivalSafeEconomicCapital(state) * Trading.TradeFactor(state);
         if (buyingPower <= 0)
             return false;
         return ReachableHighReturnPurchaseTypes(state).Any(type => type.TradeValue <= buyingPower);
@@ -308,10 +308,10 @@ internal static partial class Trading
 
     static float SurvivalSafeEconomicCapital(ClassicAiState state)
     {
-        Item[] inventory = state.Player.Group.SelectMany(character => character.Items).ToArray();
+        Item[] inventory = state.Player.Party.SelectMany(character => character.Items).ToArray();
         HashSet<Item> spendable = inventory.Where(item => CanSell(state, item)).ToHashSet();
         int food = PortableFoodSupply(state);
-        int foodFloor = state.Player.Group.Count * 3;
+        int foodFloor = state.Player.Party.Count * 3;
         foreach (Item item in inventory.Where(item => item.FoodValue > 0 && !spendable.Contains(item))
             .OrderBy(item => item.TradeValue))
         {
@@ -322,7 +322,7 @@ internal static partial class Trading
         }
 
         int water = PortableWaterSupply(state);
-        int waterFloor = state.Player.Group.Count * 3;
+        int waterFloor = state.Player.Party.Count * 3;
         foreach (Item item in inventory.Where(item => AiItemPool.IsWaterContainer(item.Type) &&
             !spendable.Contains(item)).OrderBy(item => item.TradeValue))
         {
@@ -366,7 +366,7 @@ internal static partial class Trading
         // continue to the city from there instead of cycling through another camp.
         // A valuable caravan may still use a near-route pickup while it has space;
         // value readiness alone should not discard that existing opportunity.
-        if (state.Current.Player == state.Player || state.Player.Group.GetFreeSlotCount() == 0)
+        if (state.Current.Player == state.Player || state.Player.Party.GetFreeSlotCount() == 0)
             return null;
 
         RouteFinder.Route directCityRoute = state.RootGame.World.Locations
@@ -417,7 +417,7 @@ internal static partial class Trading
         ClassicAiState state,
         Location? tradeCity)
     {
-        if (state.Current.Player != state.Player || state.Player.Group.GetFreeSlotCount() == 0)
+        if (state.Current.Player != state.Player || state.Player.Party.GetFreeSlotCount() == 0)
             return false;
         if (tradeCity == null)
             return false;
@@ -428,12 +428,12 @@ internal static partial class Trading
         Production.Rate rate = state.Current.GetFoodProductionRate();
         int guards = CampEconomy.LivingGuardCount(state.Current, state.Player);
         int localDailyExport = System.Math.Max(0, rate.FoodPerDay - guards);
-        return rate.ItemDropInterval > 0 && localDailyExport > state.Player.Group.Count;
+        return rate.ItemDropInterval > 0 && localDailyExport > state.Player.Party.Count;
     }
 
     public static bool ShouldReduceTradeCaravan(ClassicAiState state)
     {
-        if (state.Current.Player != state.Player || state.Player.Group.Count <= MaximumCaravanPeople ||
+        if (state.Current.Player != state.Player || state.Player.Party.Count <= MaximumCaravanPeople ||
             !CampManagement.ShouldPreferProductionAtCamp(state, state.Current))
             return false;
         int guards = CampEconomy.LivingGuardCount(state.Current, state.Player);

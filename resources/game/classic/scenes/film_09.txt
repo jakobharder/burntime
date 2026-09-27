@@ -1,0 +1,8 @@
+[image]
+background=film_09.pac
+animations=0
+frame=yes
+
+[music]
+song=texaco
+loop=true

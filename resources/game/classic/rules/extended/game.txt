@@ -1,0 +1,157 @@
+[rules]
+start_locations = amiga_regions
+boss_experience = dos_camps
+recruitment = dos_xp_times_1_5
+trader_refresh = remaster_random
+water_output = remaster_fixed
+spawn_method = amiga_location_cycle
+player_setup = remaster_settings
+initial_items = remaster_spawning
+recruit_supplies = remaster_difficulty
+trader_inventory = remaster_random
+food_production = dos_feed_then_store
+survival = remaster_supply_pool
+service_value = remaster_nutrition
+combat = remaster_armour
+dropped_food_decay_interval = 10
+start_experience = 37
+healing_factor = 1
+health_cap = 95
+doctor_stabilization = 1
+technician_food_bonus = 0
+experience_tier_width = 25
+fight_class = fighter trader
+gas_damage_per_second = 0.5
+radiation_damage_per_second = 1.35
+gas_immune_faces = 10
+radiation_immune_faces =
+
+[0] ' difficulty easy
+barter_factor = 100
+start_locations_1   = 2 4
+start_locations_2   = 18 25
+start_locations_3   = 30 32
+start_locations_4   = 6 11
+start_locations_5   = 29 37
+start_regions       = 5
+start_items        = item_meat item_bottle item_knife item_full_canteen
+
+random_items_start        = food material weapon -nodrop -rare -special
+random_items_start_rate   = 1
+random_items_ground       = food weapon material useless -nodrop -rare -special
+random_items_ground_rate  = 1 3
+random_items_room         = food water bottle weapon material pump_parts protection_parts useless key repairable -nodrop -special
+random_items_room_rate    = 1 3
+random_items_closed_room            = special repairable -nodrop
+random_items_closed_room_rate       = 2 4
+random_items_danger_location        = special repairable -nodrop
+random_items_danger_location_rate   = 2 5
+
+npc_spawn             = 4
+city_spawn_threshold  = 12
+trader_respawn        = 50
+mutant_respawn        = 500
+dog_respawn           = 50
+trader_health         = 100
+mutant_health         = 31
+dog_health            = 31
+trader_attack         = 8 16 25 40
+mutant_attack         = 2 3 4 6
+mutant_drop_chance    = 0.20
+mutant_drop_type      = useless
+dog_attack            = 2 3 4 6
+
+[1] ' difficulty normal
+barter_factor = 90
+start_locations_1   = 1 8 7
+start_locations_2   = 12 17 33 19 24
+start_locations_3   = 30 32 34 21
+start_locations_4   = 6 11 10 9
+start_locations_5   = 29 35 37 36
+start_regions       = 5
+start_items         = item_snake item_bottle item_knife item_empty_canteen
+
+random_items_start        = food material -nodrop -rare -special
+random_items_start_rate   = 1
+random_items_ground       = material useless -nodrop -rare -special
+random_items_ground_rate  = 1 2
+random_items_room         = food water bottle material useless -nodrop -special -rare
+random_items_room_rate    = 1 2
+random_items_closed_room          = special repairable -nodrop
+random_items_closed_room_rate     = 1 3
+random_items_danger_location      = special repairable -nodrop
+random_items_danger_location_rate = 1 3
+
+npc_spawn             = 8
+city_spawn_threshold  = 12
+trader_respawn        = 150
+mutant_respawn        = 350
+dog_respawn           = 150
+trader_health         = 150
+mutant_health         = 40
+dog_health            = 31
+trader_attack         = 8 16 25 40
+mutant_attack         = 4 5 6 8
+mutant_drop_chance    = 0.20
+mutant_drop_type      = useless
+dog_attack            = 4 5 6 8
+
+[2] ' difficulty hard
+barter_factor = 80
+start_locations_1   = 5 8
+start_locations_2   = 26 24
+start_locations_3   = 28 31
+start_locations_4   = 3 15
+start_locations_5   = 23
+start_regions       = 5
+start_items           = item_maggots item_knife
+
+random_items_start        = material -nodrop -rare -special -food
+random_items_start_rate   = 1
+random_items_ground       = water useless -nodrop -rare -special -food
+random_items_ground_rate  = 1 2
+random_items_room         = food water bottle material pump_parts key -nodrop -special -rare
+random_items_room_rate    = 1 2
+random_items_closed_room          = special -rare -nodrop
+random_items_closed_room_rate     = 1 2
+random_items_danger_location      = special repairable -nodrop
+random_items_danger_location_rate = 1 2
+
+npc_spawn             = 12
+city_spawn_threshold  = 12
+trader_respawn        = 0
+mutant_respawn        = 200
+dog_respawn           = 0
+trader_health         = 250
+mutant_health         = 60
+dog_health            = 31
+trader_attack         = 8 16 25 40
+mutant_attack         = 6 7 8 10
+mutant_drop_chance    = 0.20
+mutant_drop_type      = useless
+dog_attack            = 6 7 8 10
+
+[region_item_0]
+items     = item_rat_trap
+locations = 35
+rate      = 1
+
+[region_item_1]
+items     = item_gold
+locations = 20 20 17 17 21
+rate      = 4 9
+
+[region_item_2]
+items     = item_bible
+locations = 31 36 10
+rate      = 1 3
+
+[region_item_3]
+items     = item_defective_two_way_radio
+locations = 31 2 3
+rate      = 1 2
+
+[region_item_4]
+items     = item_knife
+locations = 37
+rate      = 1

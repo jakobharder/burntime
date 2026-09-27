@@ -1,0 +1,33 @@
+[image]
+background=gfx/backgrounds/film5.png
+animations=3
+frame=yes
+sprite_scale=1.875x2.25
+
+[music]
+song=sounds/trader.ogg
+loop=false
+
+' The ratio-corrected background is 360 pixels wide and centered in the
+' 320-pixel scene. Animation positions are relative to that background.
+
+[animation0]
+image=pngsheet@gfx/backgrounds/film5_ani.png?0-17?135x126
+position=96x120
+speed=6.5
+interval_margin=4
+progressive=false
+
+[animation1]
+image=pngsheet@gfx/backgrounds/film5_ani2.png?0-1?90x72
+position=72x88
+speed=6.5
+interval_margin=5
+progressive=false
+reverse=true
+
+[animation2]
+image=pngsheet@gfx/backgrounds/film5_ani3.png?0-1?90x72
+position=104x48
+speed=6.5
+progressive=false

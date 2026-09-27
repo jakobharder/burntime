@@ -120,9 +120,9 @@ public class Container : Window
                 base.Size = background.Size;
 
             if (Size.x != 0)
-                thisTarget.DrawSprite((Size - background.Size) / 2, background);
+                background.Draw(thisTarget, GetBackgroundPosition(background.Size));
             else
-                thisTarget.DrawSprite(background);
+                background.Draw(thisTarget);
         }
 
         lock (windows)
@@ -134,6 +134,9 @@ public class Container : Window
             }
         }
     }
+
+    protected virtual Vector2 GetBackgroundPosition(Vector2 backgroundSize) =>
+        (Size - backgroundSize) / 2;
 
     internal override void Update(float elapsed)
     {
@@ -320,11 +323,13 @@ public class Container : Window
         }
     }
 
-    public override void OnResizeScreen()
+    public override void OnResizeScreen(bool reload = false)
     {
-        base.OnResizeScreen();
+        base.OnResizeScreen(reload);
+        if (reload)
+            background?.Reload();
 
         foreach (Window window in windows)
-            window.OnResizeScreen();
+            window.OnResizeScreen(reload);
     }
 }

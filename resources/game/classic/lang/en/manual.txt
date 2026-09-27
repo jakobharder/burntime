@@ -1,0 +1,79 @@
+#CONQUER
+To win the game you need to control the five cities. Do that by claiming every location next to them. Cities are good places to recruit, trade and heal.
+@city
+#FIRST STEPS
+Recruit someone to establish your first camp. Find a technician and gather the materials needed to build a rat trap for a steady food and trade supply.
+@flag
+}#
+#DAILY NEEDS
+Each person consumes 1 food and 1 water every day. They lose 25 HP per day for each missing supply. Establish camps to secure reliable supplies.
+
+#WATER
+Refill empty containers at water sources. Larger containers carry more water.
+@supply-example|item_water_bottle
+#FOOD
+Build traps in camps for steady food production. Stockpile surplus food for trade and recruitment.
+@supply-example|item_rats
+#HAZARDS
+Location info shows gas and radiation hazards. Carry suitable protection before entering.
+@supply-example|item_gas_mask
+}#
+#RECRUITING
+Talk to people and bring them what they ask for. Take recruits with you or leave them to claim a camp.
+
+#TECHNICIAN
+Technicians build traps and equipment.
+@technician
+Let a technician inspect materials to discover recipes. Combine the required materials to build the item.
+@construction|item_rat_trap
+#DOCTOR
+People recover 2 HP per day at 70 HP or more. With a doctor, they recover 4 HP at 50 HP or more.
+@doctor
+#MERCENARY
+XP tiers from 1 to 4 determine weapon damage.
+@tiers
+Mercenaries use full XP; other professions use half.
+@mercenary
+}#
+#DEFENSE
+Assign more followers to strengthen a camp's defense.
+#FOOD PRODUCTION
+Select food available at the camp. Place up to two matching tools or traps in the camp.
+@production|item_rat_trap|item_rats
+#WATER PRODUCTION
+Place a pump directly in the water source. Only one pump can be active at a time.
+@entry|item_industrial_pump
+}#
+#WEAPONS
+Equip followers with weapons to increase their damage. Higher XP makes every weapon more effective. Longer-reach weapons strike before shorter ones.
+@entry|item_knife
+#FIREARMS
+Firearms inflict heavy damage but require ammunition. Combine an unloaded firearm with ammunition to load it.
+@entry|item_loaded_rifle
+@extended-only-begin
+#PROTECTION
+Equip protective clothing to reduce incoming damage.
+@entry|item_steel_helmet
+@extended-only-end
+}#
+Damage T1: |A-|B / T4: |C-|D
+Daily yield: |A-|B days of food
+Water/day at a 2-water source: 2 / |B
+Gas protection: |A%  Radiation protection: |B%
+|M
+Found equipment
+needs ammunition
+Food value: |A
+Water value: |A
+Defense: |A%
+Provides gas protection.
+Carries |A daily portions.
+Provides |A daily portions.
+|A food per day with 1 trap
+|A food per day with |B traps
+Prevents |A% damage.
+Produces |A water per day
+at a |B-water source
+|A-|B damage at tier 1
+|A-|B damage at tier 4
+}#

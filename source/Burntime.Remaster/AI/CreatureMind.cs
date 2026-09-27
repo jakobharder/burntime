@@ -1,6 +1,7 @@
 ﻿using System;
 using Burntime.Remaster.Logic;
 using Burntime.Platform;
+using System.Linq;
 
 namespace Burntime.Remaster.AI
 {
@@ -16,8 +17,6 @@ namespace Burntime.Remaster.AI
         protected float tryToAttack = 0;
         [NonSerialized]
         protected Character attack;
-        [NonSerialized]
-        int lastAttackDay;
 
         public override void Process(float elapsed)
         {
@@ -28,11 +27,16 @@ namespace Burntime.Remaster.AI
                 return;
             }
 
-            int currentDay = ((ClassicGame)container.Root).World.Day;
-            bool canAttack = !Owner.Location.IsCity && lastAttackDay != currentDay;
+            ClassicGame game = (ClassicGame)container.Root;
+            bool canAttack = !Owner.Location.IsCity;
 
-            // Fighting is disabled in cities, and each creature gets at most one
-            // successful strike per day. Cancel an approach in either case.
+            if (attack?.HasItemFunction(ItemFunction.CreatureDeterrent) == true)
+            {
+                attack = null;
+                Owner.Path.MoveTo = Owner.Position;
+            }
+
+            // Fighting is disabled in cities, so cancel an approach there.
             if (!canAttack && attack != null)
             {
                 attack = null;
@@ -44,10 +48,15 @@ namespace Burntime.Remaster.AI
             {
                 if (!attack.IsDead && (attack.Position - Owner.Position).Length < 20)
                 {
-                    Owner.AttackWithoutRetaliation(attack);
-                    lastAttackDay = currentDay;
-                    attack = null;
-                    return;
+                    // DOS serializes creature attacks through one pending slot and
+                    // Amiga uses one global timer. A short game-wide cooldown keeps
+                    // that shared pacing without tying attacks to world turns.
+                    if (game.TryBeginCreatureAttack())
+                    {
+                        Owner.AttackWithoutRetaliation(attack);
+                        attack = null;
+                        return;
+                    }
                 }
                 else
                 {
@@ -68,16 +77,17 @@ namespace Burntime.Remaster.AI
                 else
                 {
                     Player player = (Player)container.Root.CurrentPlayer;
-                    Character sel = player.SelectedCharacter;
+                    Character? target = SelectAttackTarget(player, Owner.Position);
 
-                    if (player.Location == Owner.Location && (sel.Position - Owner.Position).Length < 200)
+                    if (target != null && player.Location == Owner.Location &&
+                        (target.Position - Owner.Position).Length < 200)
                     {
                         // attack with a chance of 33%
                         if (Burntime.Platform.Math.Random.Next() % 3 == 0)
                         {
                             tryToAttack = 0;
-                            attack = sel;
-                            Owner.Path.MoveTo = sel.Position;
+                            attack = target;
+                            Owner.Path.MoveTo = target.Position;
                         }
 
                         // wait 3 ~ 7 seconds for next possible attack
@@ -116,6 +126,21 @@ namespace Burntime.Remaster.AI
                 }
             }
         }
+
+        internal static Character? SelectAttackTarget(Player player, Vector2 position)
+        {
+            Character? selected = player.SelectedCharacter;
+            if (CanAttack(selected))
+                return selected;
+
+            return player.Party.Where(CanAttack)
+                .OrderBy(character => (character.Position - position).Length)
+                .FirstOrDefault();
+        }
+
+        static bool CanAttack(Character? character) => character != null &&
+            !character.IsDead &&
+            !character.HasItemFunction(ItemFunction.CreatureDeterrent);
 
         public override void RequestToTalk()
         {

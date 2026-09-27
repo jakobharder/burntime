@@ -129,7 +129,7 @@ namespace Burntime.Remaster
                 if (item.DamageValue > 0)
                 {
                     if (current is null
-                        || (current.DamageValue < item.DamageValue && !item.ConsumesAmmo))
+                        || (current.Type.WeaponPriority < item.Type.WeaponPriority && !item.ConsumesAmmo))
                         current = item;
                 }
             }
@@ -140,8 +140,8 @@ namespace Burntime.Remaster
         {
             foreach (Item item in this)
             {
-                if (item.DefenseValue > 0)
-                    current ??= item;
+                if (item.DefenseValue > (current?.DefenseValue ?? 0))
+                    current = item;
             }
             return current;
         }

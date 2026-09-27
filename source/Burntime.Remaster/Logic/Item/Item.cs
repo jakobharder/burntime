@@ -27,7 +27,7 @@ namespace Burntime.Remaster
 
         public string Sprite
         {
-            get { return Type.Sprite; }
+            get { return ammo == 1 && !string.IsNullOrEmpty(Type.LastRoundSprite) ? Type.LastRoundSprite : Type.Sprite; }
         }
 
         public string Title
@@ -101,6 +101,7 @@ namespace Burntime.Remaster
 
         // remaining bullets
         protected int ammo;
+        public string TooltipText => Type.AmmoValue > 0 ? $"{Title} ({ammo}/{Type.AmmoValue})" : Title;
         public int AmmoValue => ammo;
 
         /// <summary>
@@ -145,6 +146,12 @@ namespace Burntime.Remaster
         public void MakeFull()
         {
             Type = Type.Full;
+        }
+
+        internal void Reload(ItemType loadedType)
+        {
+            Type = loadedType;
+            ammo = loadedType.AmmoValue;
         }
 
         // for debug

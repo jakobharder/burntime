@@ -5,19 +5,23 @@ namespace Burntime.Remaster.AI;
 
 internal static class CombatStrength
 {
-    public static float Attacker(Player player) => player.Group
+    public static float Fighter(Character character) => Fighter(character, detailed: true);
+
+    static float Fighter(Character character, bool detailed) =>
+        ((ClassicGame)character.Container.Root).RuleBook.CalculateStrategicStrength(
+            character, detailed);
+
+    public static float Attacker(Player player) => player.Party
         .Where(character => !character.IsDead)
-        .Sum(character => character.AttackValue + character.DefenseValue + character.Health / 10f);
+        .Sum(Fighter);
+
+    internal static System.Collections.Generic.IEnumerable<Character> Defenders(Location location) =>
+        location.Player == null ? Enumerable.Empty<Character>() :
+            AiStateOperations.GetCampDefenders(location, null, new[] { location.Player });
 
     public static float AssessedDefenders(Location location, AiPolicy policy)
     {
-        Character[] defenders = location.CampNPC
-            .Where(character => !character.IsDead && character.Player == location.Player)
-            .ToArray();
-        return policy.UseDetailedCombatEstimate
-            ? defenders.Sum(character =>
-                character.AttackValue + character.DefenseValue + character.Health / 10f)
-            : defenders.Sum(character =>
-                (character.Items.FindBestWeapon()?.DamageValue ?? character.BaseAttackValue) + 10f);
+        Character[] defenders = Defenders(location).ToArray();
+        return defenders.Sum(character => Fighter(character, policy.UseDetailedCombatEstimate));
     }
 }

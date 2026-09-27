@@ -348,6 +348,21 @@ public class PackageSystem
         return true;
     }
 
+    public bool ReplaceFile(FilePath source, FilePath target)
+    {
+        if ((source.PackageSpecified && source.Package != "user") ||
+            (target.PackageSpecified && target.Package != "user") ||
+            !ExistsMount("user"))
+            return false;
+
+        if (!nameMountMap["user"].Package.ReplaceFile(
+            source.PathWithoutPackage, target.PathWithoutPackage))
+            return false;
+
+        RefreshFileMountMap();
+        return true;
+    }
+
     public bool RemoveFolder(FilePath path)
     {
         if (path.PackageSpecified && path.Package != "user")

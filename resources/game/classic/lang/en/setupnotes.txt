@@ -1,0 +1,69 @@
+Patch Notes
+Versus Original
+Credits
+Notes
+}#
+#GAMEPLAY
+- Follows DOS and Amiga implementations as close as possible
+- Bug fixes like hazards relying on PC speed
+- Modified combat with fairer retaliation; longer-reach weapons strike first
+- Trade offer value: 100% / 90% / 80% (a mix of DOS and Amiga rules)
+- Optional early victory after defeating the last rival
+
+#QUALITY OF LIFE
+- Automatic weapon and protection selection on pickup and before combat; firearms selected manually
+- Automatic trap selection in camps
+- Doctor previews healing before payment
+- Inventory shows damage and protection
+- Item tooltips
+- More info on the world map: travel days and camp supplies
+- Shortcut to show all entrances
+- Keyboard/gamepad controls and autosaves
+
+#EXTENDED: ITEMS
+- Clothing: 5-25% damage reduction
+- Radio: remote camp hazards, defenders and production
+- Metal detector: 1% ammunition discovery chance per travel day
+- Bible: no food or water use while stationary; normal consumption on trips
+- Skull / bones: carrier ignored by dogs and mutants
+- Extra equipment: pistol and paper helmet
+
+#EXTENDED: GAMEPLAY
+- Doctor: +1 health/day below 50 health for supplied characters
+- Food on the ground: decay over time
+- New recruits: supplies based on payment and difficulty, rather than always full
+- Random starting loot; fewer supplies on harder settings
+- Rotating trader stock; limited rare utility items
+- Returning recruits: cities replenished first; slower respawns on harder settings
+- Dogs, mutants and traders: possible respawns
+}#
+#BURNTIME REMASTER
+Development and remaster: Jakob Harder
+Spanish translation: German Jakob
+Contributions: Krystian Rabe, Felix Stolle, Chris1982, graysonwall, Shadow, Maschine and Memento.
+
+#THE ORIGINAL GAME - MAX DESIGN
+Idea and concept: Wilfried Reiter, Albert Lasser and Martin Lasser
+Programming: Albert Lasser and Wilfried Reiter
+Graphics: Martin Lasser and Wilfried Reiter
+Music and sound: Hannes Seifert
+Handbook: Johann Schilcher and John WooD (JoWooD)
+Cover and packaging: Robert Pils
+Testing: Michael Schuetter, Manfred Bertl and Dieter Bernauer
+Coffee and customer care: Elisabeth Lasser
+Translation: Patricia Spella
+Special thanks: Greenpeace
+
+#THANK YOU
+Thanks to Martin Lasser, Wilfried Reiter and Hannes Seifert for allowing use of the original graphics and music. This community project is not affiliated with Max Design or the original developers.
+
+#LIBRARIES AND ASSETS
+MonoGame, NVorbis and StbImageSharp
+Pixel-art scaling: xBR-lv2 by Hyllian
+Input glyphs adapted from Kenney's Input Prompts (CC0).
+See the bundled third-party notices for license details.
+
+#COMMUNITY
+github.com/jakobharder/burntime
+burntime.org
+}#

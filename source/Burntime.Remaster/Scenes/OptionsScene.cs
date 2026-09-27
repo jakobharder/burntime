@@ -11,6 +11,9 @@ namespace Burntime.Remaster;
 
 public class OptionsScene : Scene, IMapMusicInterruptionScene
 {
+    public override Key PreferredPrimaryKeyboardControl =>
+        new(SystemKey.Enter);
+
     GuiFont disabled;
     GuiFont red;
     GuiFont hover;
@@ -22,10 +25,10 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
     readonly OptionsGiveUpPage _giveUpPage;
     readonly OptionsJukeboxPage _jukeboxPage;
     readonly Container _emptyPage;
-    readonly InputPromptOverlay _promptOverlay;
 
     readonly GuiImage _optionsBulb;
     readonly Image _backgroundAni;
+    readonly Button _tabRail;
     readonly Button[] _menuButtons;
     int _menuIndex = 1;
     int _tabFocusIndex = 1;
@@ -50,11 +53,11 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         Music = "radio";
         Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
-        disabled = new GuiFont(BurntimeClassic.FontName, new PixelColor(100, 100, 100)) { Borders = TextBorders.None };
-        red = new GuiFont(BurntimeClassic.FontName, new PixelColor(134, 44, 4)) { Borders = TextBorders.None };
-        hover = new GuiFont(BurntimeClassic.FontName, new PixelColor(109, 117, 170)) { Borders = TextBorders.None };
-        hoverRed = new GuiFont(BurntimeClassic.FontName, new PixelColor(190, 77, 12)) { Borders = TextBorders.None };
-        green = new GuiFont(BurntimeClassic.FontName, new PixelColor(0, 108, 0)) { Borders = TextBorders.None };
+        disabled = new GuiFont(BurntimeClassic.FontName, ClassicColors.OptionsDisabled) { Borders = TextBorders.None };
+        red = new GuiFont(BurntimeClassic.FontName, ClassicColors.OptionsRed) { Borders = TextBorders.None };
+        hover = new GuiFont(BurntimeClassic.FontName, ClassicColors.OptionsBlueHover) { Borders = TextBorders.None };
+        hoverRed = new GuiFont(BurntimeClassic.FontName, ClassicColors.OptionsRedHover) { Borders = TextBorders.None };
+        green = new GuiFont(BurntimeClassic.FontName, ClassicColors.OptionsGreen) { Borders = TextBorders.None };
 
         _optionsBulb = "gfx/ui/options_bulb.png";
 
@@ -71,7 +74,7 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         Windows += _menuButtons[0] = new Button(app, app.SceneManager.PreviousScene)
         {
             Font = red,
-            HoverFont = hover,
+            HoverFont = hoverRed,
             Text = "@burn?388",
             Position = new Vector2(214, 64),
             IsTextOnly = true
@@ -80,7 +83,7 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         Windows += _menuButtons[1] = new Button(app, () => SelectPage(1))
         {
             Font = red,
-            HoverFont = hover,
+            HoverFont = hoverRed,
             Text = "@newburn?21",
             Position = new Vector2(214, 84),
             IsTextOnly = true
@@ -89,7 +92,7 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         Windows += _menuButtons[2] = new Button(app, () => SelectPage(2))
         {
             Font = red,
-            HoverFont = hover,
+            HoverFont = hoverRed,
             DisabledFont = disabled,
             IsEnabled = !BurntimeClassic.Instance.DisableMusic,
             Text = "@newburn?29",
@@ -100,7 +103,7 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         Windows += _menuButtons[3] = new Button(app, () => SelectPage(3))
         {
             Font = red,
-            HoverFont = hover,
+            HoverFont = hoverRed,
             Text = "@newburn?22",
             Position = new Vector2(214, 127),
             IsTextOnly = true
@@ -109,14 +112,14 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         Windows += _menuButtons[4] = new Button(app, () => SelectPage(4))
         {
             Font = red,
-            HoverFont = hover,
+            HoverFont = hoverRed,
             Text = "@newburn?27",
             Position = new Vector2(214, 148),
             IsTextOnly = true
         };
 
         // radio cover
-        Windows += new Button(app)
+        Windows += _tabRail = new Button(app)
         {
             #warning TODO make this fixed? merge it with the background? It doesn't work well with non-mouse input.
             Image = "opta.raw?1",
@@ -138,31 +141,22 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         Windows += _giveUpPage = new OptionsGiveUpPage(app, fonts) { IsVisible = false };
         Windows += _jukeboxPage = new OptionsJukeboxPage(app, fonts) { IsVisible = false };
         Windows += _emptyPage = new Container(app) { IsVisible = false };
-        Windows += _promptOverlay = new InputPromptOverlay(app);
-        UpdatePromptOverlay();
-        _promptOverlay.AnchorToScreenBottomRight();
-        ActivePage = _savesPage;
-        UpdatePageFocus();
-    }
 
-    void UpdatePromptOverlay()
-    {
-        if (app.LastInputMode == InputMode.Mouse)
+        foreach (Window promptOwner in new Window[]
         {
-            _promptOverlay.SetPrompts();
-            return;
+            _tabRail, _savesPage, _settingsPage, _giveUpPage, _jukeboxPage
+        })
+        {
+            promptOwner.Prompts.Add(InputAction.Primary, "@prompts?31",
+                () => app.LastInputMode != InputMode.Mouse);
         }
 
-        _promptOverlay.SetPrompts(
-            new(InputAction.Primary, "@prompts?31"),
-            new(InputAction.LeftArea, "@prompts?30")
-            {
-                AlternateAction = InputAction.RightArea,
-                KeyboardOverride = "Shift+Up/Down",
-                PreferredGamepadControl = GamepadControl.LeftShoulder,
-                PreferredAlternateGamepadControl = GamepadControl.RightShoulder
-            },
-            new(InputAction.Back, "@prompts?17"));
+        Windows += new InputPromptOverlay(app, Prompts,
+            InputPromptColorScheme.Options);
+        Prompts.Add(InputAction.Back, "@prompts?17");
+        Prompts.Add(InputPattern.VerticalPaging, "@prompts?30");
+        ActivePage = _savesPage;
+        UpdatePageFocus();
     }
 
     void SelectPage(int index)
@@ -202,6 +196,7 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
     {
         bool showKeyboardFocus = _tabsFocused &&
             app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad;
+        _tabRail.IsKeyboardSelected = showKeyboardFocus;
         for (int i = 0; i < _menuButtons.Length; i++)
             _menuButtons[i].IsKeyboardSelected = showKeyboardFocus && i == _tabFocusIndex;
     }
@@ -355,8 +350,6 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
 
     public override void OnUpdate(float elapsed)
     {
-        UpdatePromptOverlay();
-
         if (app.LastInputMode == InputMode.Mouse)
         {
             int hoveredIndex = Array.FindIndex(_menuButtons,
@@ -370,12 +363,11 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         base.OnUpdate(elapsed);
     }
 
-    public override void OnResizeScreen()
+    public override void OnResizeScreen(bool reload = false)
     {
-        base.OnResizeScreen();
+        base.OnResizeScreen(reload);
         Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
         _backgroundAni.IsVisible = !app.IsNewGfx;
-        _promptOverlay.AnchorToScreenBottomRight();
     }
 
     protected override void OnActivateScene(object parameter)
@@ -408,8 +400,8 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         target.Layer--;
 
         target.Layer += 10;
-        red.DrawText(target, new Vector2(6, target.ScreenSize.y - 6) - target.ScreenOffset,
-            BurntimeClassic.Version, TextAlignment.Left, VerticalTextAlignment.Bottom);
+        red.DrawText(target, new Vector2(6, 6) - target.ScreenOffset,
+            ((BurntimeClassic)app).VersionLabel, TextAlignment.Left, VerticalTextAlignment.Top);
         target.Layer -= 10;
 
         base.OnRender(target);

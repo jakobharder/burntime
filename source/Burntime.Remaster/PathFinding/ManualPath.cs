@@ -140,6 +140,9 @@ namespace Burntime.Remaster.PathFinding
             return this.position;
         }
 
+        protected override bool IsPositionWalkable(PathMask mask, Vector2 position) =>
+            IsWalkable(mask, position);
+
         bool TryBeginDetour(PathMask mask, Vector2f start)
         {
             const int MaximumRadiusInCells = 4;

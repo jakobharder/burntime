@@ -230,6 +230,8 @@ public abstract class ResourceManagerBase : IResourceManager
     {
         if (!txtDB.ContainsKey(file))
             AddDB(file);
+        if (index < 0 || index >= txtDB[file].Data.Count)
+            return string.Empty;
         string res = txtDB[file].Data[index];
 
         if (res.EndsWith("}"))
@@ -322,6 +324,14 @@ public abstract class ResourceManagerBase : IResourceManager
         }
 
         return null;
+    }
+
+    public string ResolveFileReplacement(string file)
+    {
+        var replacement = GetReplacement(file);
+        return replacement is not null && FileSystem.ExistsFile(replacement.Id.File)
+            ? replacement.Id.File
+            : file;
     }
 
     private static ResourceID? GetReplacementID(ResourceID id, ConfigSection section)

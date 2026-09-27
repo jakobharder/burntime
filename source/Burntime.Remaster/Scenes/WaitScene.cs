@@ -17,6 +17,7 @@ namespace Burntime.Remaster.Scenes
         const float WAIT_DISPLAY_DELAY = 10;
 
         ITurnNews news;
+        bool hadDeaths;
 
         public WaitScene(Module App)
             : base(App)
@@ -27,9 +28,9 @@ namespace Burntime.Remaster.Scenes
             font = new GuiFont(BurntimeClassic.FontName, new PixelColor(255, 255, 255));
         }
 
-        public override void OnResizeScreen()
+        public override void OnResizeScreen(bool reload = false)
         {
-            base.OnResizeScreen();
+            base.OnResizeScreen(reload);
 
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
         }
@@ -50,10 +51,18 @@ namespace Burntime.Remaster.Scenes
 
             if (news != null)
             {
-                if (news is DeathNews)
-                    app.SceneManager.SetScene("DeathScene", (news as DeathNews).Name);
-                else if (news is VictoryNews)
-                    app.SceneManager.SetScene("VictoryScene", (news as VictoryNews));
+                if (news is DeathNews death)
+                {
+                    hadDeaths = true;
+                    classic.SetImageScene("scenes/death.txt", subtitleArgument: death.Name,
+                        finishClient: true);
+                }
+                else if (news is VictoryNews victory)
+                {
+                    hadDeaths = false;
+                    classic.SetImageScene("scenes/victory.txt", subtitleArgument: victory.Name,
+                        finishClient: true);
+                }
             }
             else
             {
@@ -68,6 +77,7 @@ namespace Burntime.Remaster.Scenes
 
                 if (gameOver)
                 {
+                    hadDeaths = false;
                     app.Server.Stop();
                     app.SceneManager.SetScene("MenuScene");
                 }
@@ -75,6 +85,16 @@ namespace Burntime.Remaster.Scenes
                 {
                     ClassicGame game = app.GameState as ClassicGame;
                     game.World.ActivePlayer = classic.ActiveClient.Player;
+
+                    // Consume the death batch once, after its scenes and before resuming play.
+                    bool offerVictory = hadDeaths && game.World.VictoryCondition.Object
+                        .CanOfferLastRivalVictory(game.World.ActivePlayerObj);
+                    hadDeaths = false;
+                    if (offerVictory)
+                    {
+                        app.SceneManager.SetScene("LastRivalScene");
+                        return;
+                    }
 
                     if (!game.World.ActivePlayerObj.OnMainMap)
                         app.SceneManager.SetScene("LocationScene");

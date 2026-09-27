@@ -1,0 +1,94 @@
+Remaster-KI
+Spielt das Spiel regulär.
+Erhält kleine Vorteile.
+Zur Amiga-KI wechseln
+}#
+Amiga-KI
+Originale Amiga-KI.
+Schummelt ziemlich stark.
+KI ausschalten
+}#
+Ohne KI
+Ohne computergesteuerte
+Gegner spielen.
+Zur Remaster-KI wechseln
+}#
+Messer
+Schaden {damage}}
+Ausrüsten
+Ablegen
+}#
+Erweiterter Modus
+Neue Gegenstände und Funktionen.
+Hunde und Mutanten kehren zurück.
+Nahrung am Boden verdirbt.
+}
+Zum klassischen Modus
+}#
+Klassischer Modus
+Originalgetreue Mischung der
+DOS- und Amiga-Versionen.
+}
+Zum erweiterten Modus
+}#
+Nahrung {food}}
+Wasser {water}}
+}#
+Verteidigung {defense}%}
+Gasschutz {gas}%}
+Strahlenschutz {radiation}%}
+}#
+Erzeugt täglich {food} Nahrung}
+Kapazität {water}}
+Voll
+Benötigt für {recipe}}
+Benötigt für ???
+Benötigt für ??? x{count}}
+Benötigt für ...
+Techniker benötigt
+In einem Raum ablegen
+Ungeeignetes Lager
+}#
+Einfach
+Mehr Vorräte und Funde.
+Bessere Handelschancen.
+Zu Normal wechseln
+}#
+Normal
+Normale Vorräte, Funde
+und Handelschancen.
+Zu Schwer wechseln
+}#
+Schwer
+Weniger Vorräte und Funde.
+Schlechtere Handelschancen.
+Zu Einfach wechseln
+}#
+Nahrungsproduktion
+{product}: {tools}}
+Keine
+Ändern
+Alle sind versorgt
+Nicht genug Wasser
+Material benötigt
+Munition benötigt
+Zurück
+Weiter
+Automatisch
+Aktive Falle
+}#
+Meldet entfernte Lager und Gefahren}
+Der Mensch lebt nicht vom Brot allein.}
+Hunde und Mutanten meiden den Träger.}
+Kann auf Reisen Munition aufspüren.}
+Mit Munition laden}
+Munition für: {weapons}}
+Gewehr}
+Pistole}
+Reichweite: {reach}}
+Kurz}
+Mittel}
+Lang}
+Fern}
+Ausgerüstet}
+Wirkt beim Mitführen}

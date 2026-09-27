@@ -1,7 +1,6 @@
 using System;
 using Burntime.Framework;
 using Burntime.Platform;
-using Burntime.Remaster.Logic;
 
 namespace Burntime.Remaster.GUI;
 
@@ -24,9 +23,9 @@ class InventoryKeyboardNavigation
 
     public void Reset()
     {
-        roomAreaActive = roomGrid.HasKeyboardItems;
-        inventory.Grid.ResetKeyboardSelection();
-        roomGrid.ResetKeyboardSelection();
+        roomAreaActive = roomGrid.HasFocusableItems;
+        inventory.Grid.ResetFocus();
+        roomGrid.ResetFocus();
         UpdateActiveArea();
     }
 
@@ -67,11 +66,11 @@ class InventoryKeyboardNavigation
         if (direction != Vector2.Zero)
         {
             ItemGridWindow activeGrid = ActiveGrid;
-            Vector2? sourcePosition = activeGrid.KeyboardSelectionPosition;
-            if (!activeGrid.MoveKeyboardSelection(direction) && direction.x != 0 && sourcePosition.HasValue)
+            Vector2? sourcePosition = activeGrid.FocusPosition;
+            if (!activeGrid.MoveFocus(direction) && direction.x != 0 && sourcePosition.HasValue)
             {
                 ItemGridWindow targetGrid = roomAreaActive ? inventory.Grid : roomGrid;
-                if (targetGrid.SelectKeyboardEdge(direction, sourcePosition.Value))
+                if (targetGrid.FocusEdge(direction, sourcePosition.Value))
                 {
                     roomAreaActive = !roomAreaActive;
                     UpdateActiveArea();
@@ -82,12 +81,12 @@ class InventoryKeyboardNavigation
 
         if (action == InputAction.Primary)
         {
-            ActiveGrid.ActivateKeyboardItem(false);
+            ActiveGrid.ActivateFocusedItem(false);
             EnsureNonEmptyArea();
             return true;
         }
 
-        if (action == InputAction.SceneAction)
+        if (action == InputAction.Action)
         {
             globalAction();
             EnsureNonEmptyArea();
@@ -104,42 +103,29 @@ class InventoryKeyboardNavigation
 
     public ItemGridWindow ActiveGrid => roomAreaActive ? roomGrid : inventory.Grid;
 
-    public void SelectFromMouse(ItemGridWindow selectedGrid)
+    public void FocusFromMouse(ItemGridWindow focusedGrid)
     {
-        roomAreaActive = selectedGrid == roomGrid;
+        roomAreaActive = focusedGrid == roomGrid;
         UpdateActiveArea();
-    }
-
-    public bool CanMoveSelectedItem(Func<Item, bool>? canMoveToRoom = null)
-    {
-        Item? item = ActiveGrid.KeyboardSelectedItem;
-        if (item == null)
-            return false;
-
-        if (roomAreaActive)
-            return inventory.Grid.Count < inventory.Grid.MaxCount;
-
-        return roomGrid.Count < roomGrid.MaxCount &&
-            (canMoveToRoom == null || canMoveToRoom(item));
     }
 
     void EnsureNonEmptyArea()
     {
-        if (ActiveGrid.HasKeyboardItems)
+        if (ActiveGrid.HasFocusableItems)
         {
             UpdateActiveArea();
             return;
         }
 
         ItemGridWindow otherGrid = roomAreaActive ? inventory.Grid : roomGrid;
-        if (otherGrid.HasKeyboardItems)
+        if (otherGrid.HasFocusableItems)
             roomAreaActive = !roomAreaActive;
         UpdateActiveArea();
     }
 
     void UpdateActiveArea()
     {
-        inventory.Grid.KeyboardSelectionVisible = !roomAreaActive;
-        roomGrid.KeyboardSelectionVisible = roomAreaActive;
+        inventory.Grid.FocusVisible = !roomAreaActive;
+        roomGrid.FocusVisible = roomAreaActive;
     }
 }

@@ -1,0 +1,14 @@
+Funkbericht: {location}}
+Keine Verteidiger gemeldet.
+Verteidiger: {count}}
+Anführer: {bosses}}
+Söldner: {mercenaries}}
+Techniker: {technicians}}
+Ärzte: {doctors}}
+Verteidigung: {threat}}
+schwach
+mittel
+stark
+extrem
+Nahrung {food} TR, Wasser {water} TR}
+Verteidiger: {count}, Gefahr: {threat}}

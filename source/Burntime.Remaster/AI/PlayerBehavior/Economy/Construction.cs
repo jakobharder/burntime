@@ -18,7 +18,7 @@ internal static class Construction
         if (wanted.Length == 0)
             return;
 
-        List<IItemCollection> sources = state.Player.Group
+        List<IItemCollection> sources = state.Player.Party
             .Select(character => (IItemCollection)character.Items)
             .ToList();
         Item result = state.RootGame.Constructions.TryConstructAny(
@@ -34,7 +34,7 @@ internal static class Construction
     internal static void RefillConstructionReserve(ClassicAiState state)
     {
         List<(IItemCollection Owner, Item Item)> available = new();
-        if (state.Current.Player == state.Player)
+        if (state.CanCollectLocalLoot && state.Current.Player == state.Player)
         {
             available.AddRange(state.Current.Rooms
                 .SelectMany(room => room.Items.Select(item => ((IItemCollection)room.Items, item))));
@@ -44,7 +44,7 @@ internal static class Construction
                     .Where(item => character.Weapon != item && character.Protection != item)
                     .Select(item => ((IItemCollection)character.Items, item))));
         }
-        available.AddRange(state.Player.Group
+        available.AddRange(state.Player.Party
             .SelectMany(character => character.Items
                 .Where(item => character.Weapon != item && character.Protection != item)
                 .Select(item => ((IItemCollection)character.Items, item))));
@@ -56,7 +56,9 @@ internal static class Construction
                 continue;
 
             (IItemCollection Owner, Item Item) candidate = available
-                .FirstOrDefault(entry => entry.Item.ID == itemId);
+                .FirstOrDefault(entry => entry.Item.ID == itemId &&
+                    !AiItemPool.IsFirearm(entry.Item.Type) &&
+                    !(itemId == "item_ammunition" && entry.Owner.Any(item => AiItemPool.IsFirearm(item.Type))));
             if (candidate.Item == null || !state.Reserve.TryReserveConstructionMaterial(candidate.Item))
                 continue;
 

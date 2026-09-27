@@ -15,6 +15,8 @@ public enum PositionAlignment
 
 public class Window
 {
+    public InputPromptCollection Prompts { get; }
+
     internal Container parent;
     public Container Parent
     {
@@ -156,7 +158,10 @@ public class Window
     public Window(Module App)
     {
         app = App;
+        Prompts = new InputPromptCollection(this);
     }
+
+    protected internal virtual bool IsPromptActive(InputMode inputMode) => HasFocus;
 
     public void Show()
     {
@@ -320,7 +325,9 @@ public class Window
         if (!hasFocus)
             return false;
 
-        InputAction action = app.GamepadActionBindings.GetAction(control);
+        InputAction action = UseGamepadDPadNavigation ? GetDPadNavigationAction(control) : global::Burntime.Framework.InputAction.None;
+        if (action == global::Burntime.Framework.InputAction.None)
+            action = app.GamepadActionBindings.GetAction(control);
         action = ResolveInputAction(action);
         return action != global::Burntime.Framework.InputAction.None && HeldInputAction(action, elapsed);
     }
@@ -411,5 +418,5 @@ public class Window
     // render
     public virtual void OnRender(RenderTarget target) { }
 
-    public virtual void OnResizeScreen() { }
+    public virtual void OnResizeScreen(bool reload = false) { }
 }

@@ -27,8 +27,8 @@ namespace Burntime.Remaster.GUI
         readonly GuiImage _bottomElement;
         readonly GuiFont _defaultFont;
         readonly GuiFont _focusFont;
-        readonly InputControlRenderer _defaultControlRenderer;
-        readonly InputControlRenderer _focusControlRenderer;
+        readonly InputControlLabelRenderer _defaultControlRenderer;
+        readonly InputControlLabelRenderer _focusControlRenderer;
 
         const int TOP_HEIGHT = 4;
         const int MIDDLE_HEIGHT = 11;
@@ -44,12 +44,19 @@ namespace Burntime.Remaster.GUI
 
             _menuEntries = new List<MenuItem>();
 
-            _defaultFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(108, 116, 168));
+            _defaultFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.MenuText);
             _defaultFont.Borders = TextBorders.Screen;
-            _focusFont = new GuiFont(BurntimeClassic.FontName, new PixelColor(240, 64, 56));
+            _focusFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.MenuTextHover);
             _focusFont.Borders = TextBorders.Screen;
-            _defaultControlRenderer = new InputControlRenderer(app, _defaultFont, brackets: false);
-            _focusControlRenderer = new InputControlRenderer(app, _focusFont, brackets: false);
+            PixelColor promptColor = ClassicColors.HudTextHover;
+            GuiFont promptFont = new(BurntimeClassic.FontName, promptColor)
+            {
+                Borders = TextBorders.Screen
+            };
+            _defaultControlRenderer = new InputControlLabelRenderer(app, promptFont,
+                brackets: false, glyphTint: promptColor);
+            _focusControlRenderer = new InputControlLabelRenderer(app, promptFont,
+                brackets: false, glyphTint: promptColor);
 
             _focusIndex = -1;
             IsModal = true;
@@ -123,7 +130,7 @@ namespace Burntime.Remaster.GUI
             InputControlLabel alternatePrimaryControl = InputControlLabel.Empty;
             if (AlternatePrimaryAction != InputAction.None &&
                 app.LastInputMode is (InputMode.Keyboard or InputMode.Gamepad) &&
-                (app is not BurntimeClassic classic || classic.ShowInputPrompts))
+                (app is not BurntimeClassic classic || classic.ShowUIHints))
             {
                 alternatePrimaryControl = InputControlDisplay.Resolve(app,
                     app.LastInputMode, AlternatePrimaryAction);
@@ -132,7 +139,7 @@ namespace Burntime.Remaster.GUI
                 ? InputMode.Gamepad
                 : InputMode.Keyboard;
             bool showShortcuts = app is not BurntimeClassic promptOwner ||
-                promptOwner.ShowInputPrompts;
+                promptOwner.ShowUIHints;
 
             if (showShortcuts && _menuEntries.Exists(
                 entry => entry.Shortcut.Action != InputAction.None))
@@ -166,7 +173,7 @@ namespace Burntime.Remaster.GUI
                 target.Layer++;
 
                 GuiFont f = _focusIndex == i ? _focusFont : _defaultFont;
-                InputControlRenderer renderer = _focusIndex == i
+                InputControlLabelRenderer renderer = _focusIndex == i
                     ? _focusControlRenderer
                     : _defaultControlRenderer;
                 if (i == 0 && !alternatePrimaryControl.IsEmpty)
@@ -191,8 +198,7 @@ namespace Burntime.Remaster.GUI
                     InputControlLabel shortcutControl = InputControlDisplay.Resolve(app,
                         shortcutInputMode, shortcut.Action,
                         preferredKeyboardControl,
-                        shortcut.PreferredGamepadControl,
-                        shortcut.KeyboardOverride, shortcut.GamepadOverride);
+                        shortcut.PreferredGamepadControl);
                     if (!shortcutControl.IsEmpty)
                     {
                         float rowLayer = target.Layer;

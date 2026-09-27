@@ -15,7 +15,11 @@ namespace Burntime.Data.BurnGfx
         public bool PostFilter => false;
 
         public Dictionary<char, CharInfo> CharInfo { get { return charInfo; } }
-        public Dictionary<string, int> Kerning { get; } = [];
+        public Dictionary<string, float> Kerning { get; } = [];
+        public IReadOnlyDictionary<char, FontSpriteInfo> Indicators { get; } =
+            new Dictionary<char, FontSpriteInfo>();
+        public IReadOnlyDictionary<char, FontSpriteInfo> Icons { get; } =
+            new Dictionary<char, FontSpriteInfo>();
 
         CharInfo[] chars;
         Burntime.Platform.IO.File reader;

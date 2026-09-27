@@ -1,0 +1,9 @@
+[image]
+background=bar.pac
+animations=1
+
+[animation0]
+image=bar.ani??p
+position=206x67
+interval_margin=6
+progressive=false

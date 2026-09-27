@@ -1,5 +1,6 @@
 using System;
 using Burntime.Platform.IO;
+using Burntime.Remaster.Logic.Generation;
 
 namespace Burntime.Remaster.AI;
 
@@ -34,9 +35,14 @@ internal sealed class AiPolicy
     public int MinimumRecruitExperience { get; init; }
     public int MaximumRecruitExperience { get; init; }
     public int ThreatRadius { get; init; }
-    public int PitchforkLimit { get; init; }
+    public int ArmourLimit { get; init; }
+    public int FirearmLimit { get; init; }
+    public int EquipmentUpgradeChance { get; init; }
+    public int FirearmPurchaseChance { get; init; }
+    public int RecoveryWaterDays { get; init; }
     public float TradeBenefit { get; init; }
     public int SlumpMaterialGrantLimit { get; init; }
+    public int CombatLootLimit { get; init; }
     public bool DieWhenTrapped { get; init; }
 
     static ConfigFile Config
@@ -136,9 +142,14 @@ internal sealed class AiPolicy
                 ? int.MaxValue
                 : recruitExperience[1],
             ThreatRadius = section.GetInt("threat_radius"),
-            PitchforkLimit = section.GetInt("pitchfork_limit"),
+            ArmourLimit = section.GetInt("armour_limit"),
+            FirearmLimit = section.GetInt("firearm_limit"),
+            EquipmentUpgradeChance = section.GetInt("equipment_upgrade_chance"),
+            FirearmPurchaseChance = section.GetInt("firearm_purchase_chance"),
+            RecoveryWaterDays = section.GetInt("recovery_water_days"),
             TradeBenefit = section.GetFloat("trade_benefit"),
             SlumpMaterialGrantLimit = slumpMaterialGrants,
+            CombatLootLimit = Math.Max(0, section.GetInt("combat_loot_limit")),
             DieWhenTrapped = section.GetBool("die_when_trapped")
         };
     }

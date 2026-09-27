@@ -24,7 +24,7 @@ public enum InputAction
     Back,
     Primary,
     Secondary,
-    SceneAction,
+    Action,
     Options,
     Statistics,
     ToggleInteractionMode,
@@ -32,7 +32,10 @@ public enum InputAction
     Inventory,
     LocationInfo,
     WorldMap,
-    ShowEntrances
+    ShowEntrances,
+    PreviousTarget,
+    NextTarget,
+    SetupNotes
 }
 
 public static class InputActionDirections

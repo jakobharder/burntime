@@ -13,6 +13,11 @@ using System.ComponentModel;
 
 namespace Burntime.Remaster.Logic
 {
+    [Serializable]
+    public class Fog : StateObject
+    {
+    }
+
 
     public enum PlayerType
     {
@@ -140,6 +145,10 @@ namespace Burntime.Remaster.Logic
         protected StateLink<Location> destination;
         protected StateLink<Location> previousLocation;
 
+        // Indexed by the immutable world-location ID. Optional for legacy saves.
+        [System.Runtime.Serialization.OptionalField]
+        bool[]? visitedLocations;
+
         protected DataID<ISprite> flag;
         public DataID<ISprite> Flag
         {
@@ -162,16 +171,20 @@ namespace Burntime.Remaster.Logic
             set
             {
                 if (character != null)
-                    Group.Remove(character);
+                    Party.Remove(character);
                 character = value;
                 if (character != null)
-                    Group.Insert(0, character);
+                    Party.Insert(0, character);
                 selectedCharacter = character;
             }
         }
 
         StateLink<Group> group;
-        public Group Group
+        /// <summary>
+        /// The player's living accompanying characters, including the leader.
+        /// Dead characters are removed immediately.
+        /// </summary>
+        public Group Party
         {
             get { return group; }
             set { group = value; }
@@ -220,7 +233,8 @@ namespace Burntime.Remaster.Logic
         protected override void InitInstance(object[] parameter)
         {
             group = container.Create<Group>();
-            Group.RangeFilterValue = 50;
+            visitedLocations = [];
+            Party.RangeFilterValue = 50;
             refreshScrollPosition = true;
             refreshMapScrollPosition = true;
             index = (int)parameter[0];
@@ -234,7 +248,64 @@ namespace Burntime.Remaster.Logic
         public Location Location
         {
             get { return city; }
-            set { city = value; }
+            set
+            {
+                city = value;
+                if (value != null)
+                    MarkVisited(value);
+            }
+        }
+
+        public bool HasVisited(Location location)
+        {
+            EnsureVisitedLocations();
+            return location.Id >= 0 && location.Id < visitedLocations!.Length &&
+                visitedLocations[location.Id];
+        }
+
+        void MarkVisited(Location location)
+        {
+            EnsureVisitedLocations();
+            if (location.Id >= 0 && location.Id < visitedLocations!.Length)
+                visitedLocations[location.Id] = true;
+        }
+
+        void EnsureVisitedLocations()
+        {
+            ClassicWorld? world = (Container.Root as ClassicGame)?.World;
+            if (world == null)
+                return;
+
+            bool isLegacySave = visitedLocations == null;
+            int locationCount = world.Locations.Count;
+            if (visitedLocations == null || visitedLocations.Length != locationCount)
+            {
+                bool[] replacement = new bool[locationCount];
+                if (visitedLocations != null)
+                    Array.Copy(visitedLocations, replacement,
+                        System.Math.Min(visitedLocations.Length, replacement.Length));
+                visitedLocations = replacement;
+            }
+
+            if (!isLegacySave)
+                return;
+
+            // Older saves have no exploration history. Preserve only the local
+            // knowledge implied by camps, adjacent routes, and the current position.
+            foreach (Location camp in world.Locations.Where(location => location.Player == this))
+            {
+                MarkVisitedWithoutMigration(camp);
+                foreach (Location neighbor in camp.Neighbors)
+                    MarkVisitedWithoutMigration(neighbor);
+            }
+            if (Location != null)
+                MarkVisitedWithoutMigration(Location);
+        }
+
+        void MarkVisitedWithoutMigration(Location location)
+        {
+            if (location.Id >= 0 && location.Id < visitedLocations!.Length)
+                visitedLocations[location.Id] = true;
         }
 
         public Location Destination
@@ -274,12 +345,12 @@ namespace Burntime.Remaster.Logic
                 return;
             }
 
-            for (int i = 0; i < Group.Count; i++)
+            for (int i = 0; i < Party.Count; i++)
             {
-                if (Group[i].Position == -Vector2.One)
-                    Group[i].Position = new Vector2(Location.EntryPoint);
+                if (Party[i].Position == -Vector2.One)
+                    Party[i].Position = new Vector2(Location.EntryPoint);
 
-                Group[i].Update(elapsed);
+                Party[i].Update(elapsed);
             }
         }
 
@@ -296,6 +367,7 @@ namespace Burntime.Remaster.Logic
                 {
                     Location = destination;
                     destination = null;
+                    MetalDetectorScavenging.TryDiscoverAmmunition(this, travelDays);
                 }
             }
         }
@@ -311,12 +383,20 @@ namespace Burntime.Remaster.Logic
             if (days <= 0)
                 return;
 
-            SelectGroup(Group);
+            SelectGroup(Party);
             RefreshScrollPosition = true;
             RefreshMapScrollPosition = true;
 
-            foreach (Character chr in Group)
-                chr.Position = destination.EntryPoint;
+            foreach (Character character in Party)
+            {
+                character.Position = destination.EntryPoint;
+                character.Path.MoveTo = character.Position;
+            }
+            for (int i = 1; i < Party.Count; i++)
+            {
+                Party[i].Position = destination.GetEntryPosition(i);
+                Party[i].Path.MoveTo = Party[i].Position;
+            }
 
             remainingTravelDays = days;
             travelDays = days;
@@ -382,22 +462,10 @@ namespace Burntime.Remaster.Logic
             return world.Locations.OfType<Location>().Where(l => l.Player == this).Count();
         }
 
-        private void RecalculateExperience()
+        internal void RecalculateExperience()
         {
-            int count = 0;
-
             ClassicGame game = container.Root as ClassicGame;
-            foreach (Location location in game.World.Locations)
-            {
-                if (location.Player == this)
-                    count++;
-            }
-
-            Character.Experience = count * 3 + BaseExperience;
-
-            // limit experience to 99%
-            if (Character.Experience > 99)
-                Character.Experience = 99;
+            Character.Experience = game.RuleBook.CalculateBossExperience(this, game);
         }
     }
 }

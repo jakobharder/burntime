@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Burntime.Framework.States
 {
@@ -89,15 +90,18 @@ namespace Burntime.Framework.States
     [Serializable]
     public class StateLink<T> : IStateLink where T : StateObject
     {
-        public static implicit operator StateLink<T>(StateObject right)
+        [return: NotNullIfNotNull(nameof(right))]
+        public static implicit operator StateLink<T>?(T? right)
         {
             if (right == null)
                 return null;
 
-            StateLink<T> state = new StateLink<T>();
-            state.ID = right.ID;
-            state.localID = right.localID;
-            state.container = right.container;
+            StateLink<T> state = new()
+            {
+                ID = right.ID,
+                localID = right.localID,
+                container = right.container
+            };
             if (right.container == null)
                 throw new CustomException("null container");
             return state;
@@ -112,9 +116,10 @@ namespace Burntime.Framework.States
             get { return (T)container.GetObject(ID, localID); }
         }
 
-        public static implicit operator T(StateLink<T> right)
+        [return: NotNullIfNotNull(nameof(right))]
+        public static implicit operator T?(StateLink<T>? right)
         {
-            return (right == null) ? null : (T)right.Object;
+            return right?.Object;
         }
 
         public override bool Equals(object obj)

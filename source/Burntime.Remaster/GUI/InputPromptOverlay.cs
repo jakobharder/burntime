@@ -1,4 +1,4 @@
-﻿using Burntime.Framework;
+using Burntime.Framework;
 using Burntime.Framework.GUI;
 using Burntime.Platform;
 using Burntime.Platform.Graphics;
@@ -7,181 +7,146 @@ using System.Collections.Generic;
 
 namespace Burntime.Remaster;
 
-public readonly record struct InputPrompt(InputAction Action, GuiString Label)
+enum InputPromptColorScheme
 {
-    public InputAction AlternateAction { get; init; }
-    public Key? PreferredKeyboardControl { get; init; }
-    public Key? PreferredAlternateKeyboardControl { get; init; }
-    public GamepadControl? PreferredGamepadControl { get; init; }
-    public GamepadControl? PreferredAlternateGamepadControl { get; init; }
-    public MouseButton? PreferredMouseControl { get; init; }
-    public MouseButton? PreferredAlternateMouseControl { get; init; }
-    public string? KeyboardOverride { get; init; }
-    public string? GamepadOverride { get; init; }
+    Default,
+    Muted,
+    Hud,
+    Options
 }
 
-/// <summary>
-/// A scene-owned, non-interactive row of contextual input prompts.
-/// Scenes place the overlay and replace its prompts when their focus changes.
-/// </summary>
-public sealed class InputPromptOverlay : Window
+sealed partial class InputPromptOverlay : Container
 {
-    const int VerticalPadding = 2;
-    string _separator = "   ";
+    readonly record struct RowPrompt(InputPrompt Prompt, bool IsVisible = true,
+        int ReservedWidth = 0);
 
-    readonly GuiFont _font;
-    readonly InputControlRenderer _controlRenderer;
-    readonly List<InputPrompt> _prompts = [];
-    PromptDisplay[] _display = [];
-    string _language = string.Empty;
-    InputMode _inputMode = InputMode.None;
-    int _glyphRevision = -1;
+    readonly InputPromptController _controller;
+    readonly InputPromptColorScheme _colors;
+    readonly Row _sceneRow;
+    readonly Row _contextRow;
+    readonly Dictionary<InlineKey, Row> _inlineRows = [];
 
-    readonly record struct PromptDisplay(InputControlLabel Control, string Label, int Width);
+    readonly record struct InlineKey(int X, int Y,
+        PositionAlignment HorizontalAlignment, PositionAlignment VerticalAlignment,
+        bool ShowBackground, int HorizontalPadding, string Separator);
 
-    public PixelColor BackgroundColor { get; set; } = new(128, 0, 0, 0);
-    public bool ShowBackground { get; set; } = true;
-    public int HorizontalPadding { get; set; } = 4;
-    public string Separator
-    {
-        get => _separator;
-        set
-        {
-            _separator = value;
-            RefreshText();
-        }
-    }
-
-    public InputPromptOverlay(Module app)
+    public InputPromptOverlay(Module app,
+        InputPromptCollection prompts, InputPromptColorScheme colors)
         : base(app)
     {
-        _font = new GuiFont(BurntimeClassic.FontName, BurntimeClassic.LightGray)
-        {
-            Borders = TextBorders.None
-        };
-        _controlRenderer = new InputControlRenderer(app, _font, brackets: false);
-        HorizontalAlignment = PositionAlignment.Right;
-        VerticalAlignment = PositionAlignment.Right;
-        // MonoGame maps layers 0..255 into clip-space depth. Keep this well
-        // above normal scene UI (currently <= 60), but inside that range.
-        Layer = 200;
-        RefreshText();
-    }
+        _controller = new InputPromptController(app, prompts);
+        _colors = colors;
+        Layer = 199;
 
-    public void AnchorToScreenBottomRight(int margin = 6)
-    {
-        Vector2 parentPosition = Parent?.PositionOnScreen ?? Vector2.Zero;
-        Position = app.Engine.Resolution.Game - parentPosition - margin;
-    }
-
-    public void SetPrompts(params InputPrompt[] prompts)
-    {
-        if (PromptsEqual(_prompts, prompts))
-            return;
-
-        _prompts.Clear();
-        _prompts.AddRange(prompts);
-        RefreshText();
-    }
-
-    static bool PromptsEqual(List<InputPrompt> current, InputPrompt[] prompts)
-    {
-        if (current.Count != prompts.Length)
-            return false;
-
-        for (int i = 0; i < prompts.Length; i++)
-            if (current[i].Action != prompts[i].Action ||
-                current[i].AlternateAction != prompts[i].AlternateAction ||
-                current[i].Label.ID != prompts[i].Label.ID ||
-                !Nullable.Equals(current[i].PreferredKeyboardControl,
-                    prompts[i].PreferredKeyboardControl) ||
-                !Nullable.Equals(current[i].PreferredAlternateKeyboardControl,
-                    prompts[i].PreferredAlternateKeyboardControl) ||
-                current[i].PreferredGamepadControl != prompts[i].PreferredGamepadControl ||
-                current[i].PreferredAlternateGamepadControl !=
-                    prompts[i].PreferredAlternateGamepadControl ||
-                current[i].PreferredMouseControl != prompts[i].PreferredMouseControl ||
-                current[i].PreferredAlternateMouseControl !=
-                    prompts[i].PreferredAlternateMouseControl ||
-                current[i].KeyboardOverride != prompts[i].KeyboardOverride ||
-                current[i].GamepadOverride != prompts[i].GamepadOverride)
-                return false;
-
-        return true;
+        Windows += _sceneRow = new Row(app, colors,
+            _controller.PreferredPrimaryKeyboardControl, smallFont: true);
+        _sceneRow.AnchorToScreenBottomLeft();
+        Windows += _contextRow = new Row(app, colors,
+            _controller.PreferredPrimaryKeyboardControl, smallFont: true);
+        _contextRow.AnchorToScreenBottomRight();
     }
 
     public override void OnRender(RenderTarget target)
     {
-        if (app is BurntimeClassic classic && !classic.ShowInputPrompts)
-            return;
-
-        if (app.LastInputMode is not (InputMode.Mouse or InputMode.Keyboard or InputMode.Gamepad))
-            return;
-
-        if (_inputMode != app.LastInputMode || _language != app.Language ||
-            _glyphRevision != app.Engine.InputGlyphs.Revision)
-        {
-            _inputMode = app.LastInputMode;
-            RefreshText();
-        }
-        if (_display.Length == 0)
-            return;
-
-        if (ShowBackground)
-            target.RenderRect(Vector2.Zero, Size, BackgroundColor);
-
-        // Lay out from right to left. This keeps trailing/global prompts at the
-        // exact same pixel when contextual prompts are inserted before them.
-        int x = Size.x - HorizontalPadding;
-        int separatorWidth = _font.GetWidth(_separator);
-        for (int i = _display.Length - 1; i >= 0; i--)
-        {
-            PromptDisplay display = _display[i];
-            _controlRenderer.Draw(target, new Vector2(x, VerticalPadding), display.Control,
-                display.Label, alignment: TextAlignment.Right);
-            x -= display.Width + separatorWidth;
-        }
+        Vector2 parentPosition = Parent?.PositionOnScreen ?? Vector2.Zero;
+        Position = -parentPosition;
+        Size = app.Engine.Resolution.Game;
+        Refresh();
     }
 
-    void RefreshText()
+    void Refresh()
     {
-        // RefreshText can run before the first render (for example from
-        // SetPrompts). Use the current input mode here so Size/Boundings are
-        // already correct when Window.Render creates this window's target.
-        _inputMode = app.LastInputMode;
+        _sceneRow.AnchorToScreenBottomLeft();
+        _contextRow.AnchorToScreenBottomRight();
 
-        List<PromptDisplay> display = [];
-        int width = 0;
-        foreach (InputPrompt prompt in _prompts)
+        foreach (Row row in _inlineRows.Values)
+            row.SetPrompts([]);
+
+        InputPromptLayout layout = _controller.Resolve();
+        _sceneRow.SetPrompts(ToVisibleRowPrompts(layout.ScenePrompts));
+        _contextRow.SetPrompts(BuildContextPrompts(layout.ContextGroups));
+        RefreshInline(layout.InlinePrompts);
+    }
+
+    static RowPrompt[] ToVisibleRowPrompts(IReadOnlyList<InputPrompt> prompts)
+    {
+        RowPrompt[] result = new RowPrompt[prompts.Count];
+        for (int i = 0; i < prompts.Count; i++)
+            result[i] = new RowPrompt(prompts[i]);
+        return result;
+    }
+
+    RowPrompt[] BuildContextPrompts(
+        IReadOnlyList<InputPromptContextGroup> groups)
+    {
+        List<RowPrompt> prompts = [];
+        foreach (InputPromptContextGroup group in groups)
         {
-            InputControlLabel control = prompt.AlternateAction == InputAction.None
-                ? InputControlDisplay.Resolve(app, _inputMode, prompt.Action,
-                    prompt.PreferredKeyboardControl, prompt.PreferredGamepadControl,
-                    prompt.KeyboardOverride, prompt.GamepadOverride,
-                    prompt.PreferredMouseControl)
-                : InputControlDisplay.ResolvePair(app, _inputMode,
-                    prompt.Action, prompt.AlternateAction,
-                    prompt.PreferredKeyboardControl, prompt.PreferredAlternateKeyboardControl,
-                    prompt.PreferredGamepadControl, prompt.PreferredAlternateGamepadControl,
-                    prompt.KeyboardOverride, prompt.GamepadOverride,
-                    prompt.PreferredMouseControl, prompt.PreferredAlternateMouseControl);
-            if (control.IsEmpty)
-                continue;
+            InputPrompt widest = default;
+            int maximumWidth = 0;
+            foreach (InputPrompt candidate in group.Candidates)
+            {
+                int width = _contextRow.MeasurePrompt(candidate);
+                if (width > maximumWidth)
+                {
+                    maximumWidth = width;
+                    widest = candidate;
+                }
+            }
 
-            string label = prompt.Label;
-            int displayWidth = _controlRenderer.Measure(control, label);
-            display.Add(new PromptDisplay(control, label, displayWidth));
-            width += displayWidth;
+            InputPrompt display = group.ActivePrompt ?? widest;
+            if (display.IsEmpty)
+                continue;
+            prompts.Add(new RowPrompt(display, group.ActivePrompt.HasValue,
+                maximumWidth));
+        }
+        return prompts.ToArray();
+    }
+
+    void RefreshInline(IReadOnlyList<InputPromptInlineEntry> entries)
+    {
+        Dictionary<InlineKey, List<RowPrompt>> groups = [];
+        foreach (InputPromptInlineEntry entry in entries)
+        {
+            InlineKey key = new(entry.Position.x, entry.Position.y,
+                entry.HorizontalAlignment, entry.VerticalAlignment,
+                entry.ShowBackground, entry.HorizontalPadding, entry.Separator);
+            if (!groups.TryGetValue(key, out List<RowPrompt>? prompts))
+                groups.Add(key, prompts = []);
+            prompts.Add(new RowPrompt(entry.Prompt));
         }
 
-        _display = display.ToArray();
+        HashSet<InlineKey> activeKeys = [.. groups.Keys];
+        List<InlineKey> staleKeys = [];
+        foreach (InlineKey key in _inlineRows.Keys)
+            if (!activeKeys.Contains(key))
+                staleKeys.Add(key);
+        foreach (InlineKey key in staleKeys)
+        {
+            Windows -= _inlineRows[key];
+            _inlineRows.Remove(key);
+        }
 
-        if (_display.Length > 1)
-            width += _font.GetWidth(_separator) * (_display.Length - 1);
-        _language = app.Language;
-        _glyphRevision = app.Engine.InputGlyphs.Revision;
-        Size = new Vector2(
-            width + HorizontalPadding * 2,
-            _font.GetHeight() + VerticalPadding * 2);
+        foreach ((InlineKey key, List<RowPrompt> prompts) in groups)
+        {
+            if (!_inlineRows.TryGetValue(key, out Row? row))
+            {
+                row = new Row(app, _colors,
+                    _controller.PreferredPrimaryKeyboardControl)
+                {
+                    HorizontalAlignment = key.HorizontalAlignment,
+                    VerticalAlignment = key.VerticalAlignment,
+                    ShowBackground = key.ShowBackground,
+                    HorizontalPadding = key.HorizontalPadding,
+                    Separator = key.Separator
+                };
+                Windows += row;
+                row.Layer = 199;
+                _inlineRows.Add(key, row);
+            }
+            Vector2 scenePosition = Parent?.PositionOnScreen ?? Vector2.Zero;
+            row.Position = scenePosition + new Vector2(key.X, key.Y);
+            row.SetPrompts(prompts.ToArray());
+        }
     }
 }

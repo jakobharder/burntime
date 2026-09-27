@@ -43,7 +43,7 @@ namespace Burntime.Remaster
             Windows += nameField = new(app, "gfx/ui/progress_glass.png", "gfx/ui/progress_glass.png")
             {
                 Position = new Vector2(3, 56),
-                Color = new PixelColor(208, 0, 0),
+                Color = ClassicColors.StatusFailure,
                 Progress = 1.0f,
                 Border = 0
             };
@@ -51,7 +51,7 @@ namespace Burntime.Remaster
             Windows += timeField = new(app, "gfx/ui/progress_glass.png", "gfx/ui/progress_glass.png")
             {
                 Position = new Vector2(3, Size.y - 30),
-                Color = new PixelColor(208, 0, 0),
+                Color = ClassicColors.StatusFailure,
                 Progress = 1.0f,
                 Border = 0
             };
@@ -114,8 +114,8 @@ namespace Burntime.Remaster
 
         public override void SetMapRenderArea(MapView mapView, Vector2 size)
         {
-            mapView.Position = new Vector2(66, 0);
-            mapView.Size = new Vector2(size.x - 66, size.y);
+            mapView.SetViewport(new Vector2(66, 0),
+                new Vector2(size.x - 66, size.y));
         }
 
         public override void OnRender(RenderTarget Target)

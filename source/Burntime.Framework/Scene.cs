@@ -1,4 +1,5 @@
 ﻿using Burntime.Framework.GUI;
+using Burntime.Platform;
 
 namespace Burntime.Framework;
 
@@ -19,6 +20,7 @@ public abstract class Scene : Container
 {
     public virtual bool UseCardinalGamepadMovement => false;
     public virtual bool UseDiagonalGamepadNavigation => false;
+    public virtual Key PreferredPrimaryKeyboardControl => new(' ');
 
     public string? Music { get; set; }
     public bool MusicLoop { get; set; } = true;

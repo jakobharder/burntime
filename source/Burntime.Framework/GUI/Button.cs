@@ -96,6 +96,14 @@ public class Button : Window
         }
     }
 
+    protected internal override bool IsPromptActive(InputMode inputMode) =>
+        IsEnabled && inputMode switch
+    {
+        InputMode.Mouse => IsHover,
+        InputMode.Keyboard or InputMode.Gamepad => IsKeyboardSelected,
+        _ => false
+    };
+
     private string _lastLanguage = string.Empty;
     public override void OnRender(RenderTarget Target)
     {

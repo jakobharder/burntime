@@ -14,12 +14,18 @@ namespace Burntime.Remaster.AI;
 public sealed class HeadlessSimulationOptions
 {
     public int Turns { get; init; } = 100;
+    public bool WeakFrontierTest { get; init; }
     public int Difficulty { get; init; } = 2;
     public int[]? AiDifficulties { get; init; }
+    public AiProfile[]? AiProfiles { get; init; }
     public int Seed { get; init; } = 1;
-    public bool ExtendedGame { get; init; }
+    public RuleSet Rules { get; init; } = RuleSet.Dos;
+    public AiProfile AI { get; init; } = AiProfile.Modern;
     public string? LoadGamePath { get; init; }
     public string? SaveGamePath { get; init; }
+    public bool AssertSmokeInvariants { get; init; }
+    public int EarlyDeathTurn { get; init; } = 60;
+    public string? EconomyReportPath { get; init; }
 }
 
 /// <summary>
@@ -29,6 +35,10 @@ public static class HeadlessSimulation
 {
     public static string Run(BurntimeClassic app, HeadlessSimulationOptions options)
     {
+        if (options.WeakFrontierTest && (options.LoadGamePath != null ||
+            options.Rules != RuleSet.Extended || options.AI != AiProfile.Modern ||
+            options.Difficulty < 1 || options.AiProfiles != null || options.AiDifficulties != null))
+            throw new ArgumentException("Weak frontier requires a new Extended/Modern game on Normal or Hard without slot overrides.");
         if (options.Turns < 1)
             throw new ArgumentOutOfRangeException(nameof(options.Turns), "Turn count must be positive.");
         if (options.Difficulty is < 0 or > 2)
@@ -38,6 +48,12 @@ public static class HeadlessSimulation
                 options.AiDifficulties.Any(difficulty => difficulty is < 0 or > 2)))
             throw new ArgumentOutOfRangeException(nameof(options.AiDifficulties),
                 "AI difficulties must contain four easy, normal, or hard values.");
+        if (options.AiProfiles != null && options.AiProfiles.Length != 4)
+            throw new ArgumentOutOfRangeException(nameof(options.AiProfiles),
+                "AI profiles must contain four values.");
+        if (options.EarlyDeathTurn < 1)
+            throw new ArgumentOutOfRangeException(nameof(options.EarlyDeathTurn),
+                "Early-death cutoff must be positive.");
 
         Platform.Math.SetRandomSeed(options.Seed);
 
@@ -52,10 +68,11 @@ public static class HeadlessSimulation
                 FaceTwo = -1,
                 Difficulty = options.Difficulty,
                 AiDifficulties = options.AiDifficulties,
+                AiProfiles = options.AiProfiles,
                 ColorOne = BurntimePlayerColor.Green,
                 ColorTwo = BurntimePlayerColor.Red,
-                DisableAI = false,
-                ExtendedGame = options.ExtendedGame
+                Rules = options.Rules,
+                AI = options.AI,
             };
             creation.CreateNewGame(info, startServer: false);
         }
@@ -65,12 +82,23 @@ public static class HeadlessSimulation
         }
 
         ClassicGame game = (ClassicGame)app.Server.World;
+        WeakFrontierScenario? frontier = options.WeakFrontierTest ? new(game, options.Difficulty) : null;
+        if (options.AssertSmokeInvariants)
+            AssertConfiguration(game, options);
         List<string> events = new();
+        AttackPlanObservation plans = new();
+        List<DeathObservation> deaths = new();
+        bool[] initialCharacterDeaths = game.World.Players
+            .Select(player => player.Character.IsDead)
+            .ToArray();
+        bool[] knownCharacterDeaths = initialCharacterDeaths.ToArray();
+        bool[] dosMaintenanceBlocked = new bool[game.World.Players.Count];
         Dictionary<int, int?> ownership = CaptureOwnership(game);
         int completedTurns = 0;
         Player? winner = null;
         int activeTurn = 0;
         EconomyMetrics economy = new(game);
+        EconomyObservation? observation = options.EconomyReportPath == null ? null : new(game);
         List<(int Turn, long AiMilliseconds, long WorldMilliseconds, long TotalMilliseconds,
             string PlayerMilliseconds)> timings = new();
         AiTelemetry.Sink = (eventPlayer, message) =>
@@ -78,11 +106,21 @@ public static class HeadlessSimulation
             events.Add($"Turn {activeTurn}: {PlayerLabel(eventPlayer)} {message}.");
             economy.Observe(eventPlayer, activeTurn, message);
         };
+        AiTelemetry.AttackPlanStarted = (player, target) =>
+            plans.Record(player.Index, target.Id, game.World.Day);
+        AiTelemetry.EventSink = (eventPlayer, telemetryEvent) =>
+        {
+            if (telemetryEvent == AiTelemetryEvent.DosMaintenanceBlockedByConflict)
+                dosMaintenanceBlocked[eventPlayer.Index] = true;
+            else if (telemetryEvent == AiTelemetryEvent.DosMaintenanceCompleted)
+                dosMaintenanceBlocked[eventPlayer.Index] = false;
+        };
 
         try
         {
             for (int turn = 1; turn <= options.Turns; turn++)
             {
+                int campaignTurn = game.World.Day + 1;
                 Stopwatch turnTimer = Stopwatch.StartNew();
                 List<string> playerMilliseconds = new();
                 activeTurn = turn;
@@ -94,14 +132,38 @@ public static class HeadlessSimulation
                     DecisionSnapshot before = DecisionSnapshot.Capture(player);
                     Location beforeLocation = player.Location;
                     Location? beforeDestination = player.Destination;
+                    int eventCountBeforeTurn = events.Count;
+                    bool hostileContext = IsHostileCombatContext(player, beforeLocation);
 
                     Stopwatch playerTimer = Stopwatch.StartNew();
-                    if (player.AiState is ClassicAiState ai)
-                        ai.Turn();
+                    observation?.BeforeAction();
+                    frontier?.BeforeAction();
+                    AiStateOperations.Turn(player.AiState);
+                    frontier?.AfterAction(player);
+                    observation?.AfterAction(turn);
+                    observation?.AfterFoodCollection();
                     playerMilliseconds.Add(
                         $"{PlayerLabel(player)} {playerTimer.ElapsedMilliseconds} ms");
 
                     RecordDecisionChanges(player, before, turn, events);
+                    string[] turnEvents = events.Skip(eventCountBeforeTurn).ToArray();
+                    bool lastChance = turnEvents.Any(message =>
+                        message.Contains("last-chance", StringComparison.OrdinalIgnoreCase) ||
+                        message.Contains("trapped", StringComparison.OrdinalIgnoreCase));
+                    bool reportedCombat = turnEvents.Any(message =>
+                        message.Contains(" attacks ", StringComparison.OrdinalIgnoreCase) ||
+                        message.Contains("opposition", StringComparison.OrdinalIgnoreCase) ||
+                        message.Contains("contested", StringComparison.OrdinalIgnoreCase));
+                    RecordDeaths(
+                        game,
+                        knownCharacterDeaths,
+                        deaths,
+                        campaignTurn,
+                        lastChance ? DeathCause.LastChanceCombat
+                            : hostileContext || reportedCombat
+                                ? DeathCause.StrategicCombat
+                                : DeathCause.AiAction,
+                        dosMaintenanceBlocked);
 
                     if (beforeDestination != player.Destination && player.Destination is not null)
                     {
@@ -113,24 +175,39 @@ public static class HeadlessSimulation
                 long aiMilliseconds = turnTimer.ElapsedMilliseconds;
 
                 economy.RecordCappedCampTurn();
+                observation?.BeforeDaily();
+                bool[] foodExhaustedBeforeDaily = game.World.Players
+                    .Select(player => player.Character.Food == 0)
+                    .ToArray();
+                bool[] waterExhaustedBeforeDaily = game.World.Players
+                    .Select(player => player.Character.Water == 0)
+                    .ToArray();
                 game.Turn();
+                RecordDeaths(game, knownCharacterDeaths, deaths, campaignTurn,
+                    DeathCause.DailyProcessing, dosMaintenanceBlocked,
+                    foodExhaustedBeforeDaily, waterExhaustedBeforeDaily);
 
                 // Advance every player, including human-controlled slots from
                 // loaded games. This makes the simulation a save compatibility
                 // smoke test rather than only an AI decision test.
                 foreach (Player player in game.World.Players)
                     player.Turn();
+                RecordDeaths(game, knownCharacterDeaths, deaths, campaignTurn,
+                    DeathCause.PlayerTurn, dosMaintenanceBlocked);
                 long worldMilliseconds = turnTimer.ElapsedMilliseconds - aiMilliseconds;
 
                 RecordOwnershipChanges(game, ownership, turn, events, economy);
                 economy.RecordTurn(turn);
+                observation?.RecordTurn(turn);
                 foreach (Player player in game.World.Players.Where(player => !player.IsDead))
                     events.Add($"Turn {turn}: {FormatGroupState(player)}");
                 timings.Add((turn, aiMilliseconds, worldMilliseconds,
                     turnTimer.ElapsedMilliseconds, string.Join(", ", playerMilliseconds)));
                 completedTurns = turn;
+                if (frontier?.HasProgress == true)
+                    break;
                 winner = game.CheckWinner() as Player;
-                if (winner is not null)
+                if (winner is not null && observation == null && frontier == null)
                     break;
 
                 Player[] survivors = game.World.Players
@@ -138,20 +215,195 @@ public static class HeadlessSimulation
                     .ToArray();
                 if (survivors.Length == 1)
                     winner = survivors[0];
-                if (survivors.Length <= 1)
+                if (observation == null ? survivors.Length <= 1 :
+                    !survivors.Any(player => AiStateOperations.GetProfile(player) == AiProfile.Modern))
                     break;
             }
         }
         finally
         {
             AiTelemetry.Sink = null;
+            AiTelemetry.EventSink = null;
+            AiTelemetry.AttackPlanStarted = null;
         }
 
-        if (options.SaveGamePath is not null)
-            creation.SaveGame(options.SaveGamePath);
+        if (options.EconomyReportPath is not null)
+            observation!.Write(options.EconomyReportPath, options);
 
-        return BuildReport(game, options, completedTurns, winner, events, economy, timings);
+        if (options.SaveGamePath is not null && !creation.SaveGame(options.SaveGamePath))
+            throw new InvalidOperationException($"Could not save simulation to '{options.SaveGamePath}'.");
+
+        if (options.AssertSmokeInvariants)
+            AssertSmokeInvariants(game, options, completedTurns, deaths,
+                initialCharacterDeaths);
+
+        string report = BuildReport(game, options, completedTurns, winner, events, economy, timings)
+            + "\nRepeated attack plans (review only; restarts can be legitimate)\n"
+            + plans.Describe();
+        if (frontier != null && !frontier.HasProgress)
+            throw new InvalidOperationException($"Weak frontier: no damage or capture after {completedTurns} turns.\n{report}");
+        return report;
     }
+
+    static void AssertConfiguration(ClassicGame game, HeadlessSimulationOptions options)
+    {
+        if (game.Rules != options.Rules)
+            throw new InvalidDataException(
+                $"Smoke invariant failed: expected {options.Rules} rules, loaded {game.Rules}.");
+
+        AiProfile[] expected = options.AiProfiles ??
+            Enumerable.Repeat(options.AI, game.World.Players.Count).ToArray();
+        AiProfile[] actual = game.World.Players.Select(AiStateOperations.GetProfile).ToArray();
+        if (!expected.SequenceEqual(actual))
+        {
+            throw new InvalidDataException(
+                "Smoke invariant failed: expected AI profiles " +
+                $"[{string.Join(", ", expected)}], loaded [{string.Join(", ", actual)}].");
+        }
+
+        for (int index = 0; index < expected.Length; index++)
+        {
+            if (expected[index] == AiProfile.None && !game.World.Players[index].IsDead)
+            {
+                throw new InvalidDataException(
+                    $"Smoke invariant failed: disabled P{index + 1} is alive.");
+            }
+        }
+    }
+
+    static bool IsHostileCombatContext(Player actor, Location location)
+    {
+        if (location.Player != null && location.Player != actor)
+            return true;
+        ClassicGame game = (ClassicGame)actor.Container.Root;
+        return game.World.Players.Any(opponent =>
+            opponent != actor && !opponent.IsDead && !opponent.IsTraveling &&
+            opponent.Location == location);
+    }
+
+    static void RecordDeaths(
+        ClassicGame game,
+        bool[] knownDeaths,
+        ICollection<DeathObservation> deaths,
+        int turn,
+        DeathCause cause,
+        IReadOnlyList<bool> dosMaintenanceBlocked,
+        IReadOnlyList<bool>? foodExhausted = null,
+        IReadOnlyList<bool>? waterExhausted = null)
+    {
+        foreach (Player player in game.World.Players)
+        {
+            bool dead = player.Character.IsDead;
+            if (!knownDeaths[player.Index] && dead)
+                deaths.Add(new DeathObservation(player.Index, turn, cause,
+                    foodExhausted?[player.Index] == true,
+                    waterExhausted?[player.Index] == true,
+                    dosMaintenanceBlocked[player.Index]));
+            knownDeaths[player.Index] = dead;
+        }
+    }
+
+    static void AssertSmokeInvariants(
+        ClassicGame game,
+        HeadlessSimulationOptions options,
+        int completedTurns,
+        IReadOnlyCollection<DeathObservation> deaths,
+        IReadOnlyList<bool> initiallyDead)
+    {
+        AssertConfiguration(game, options);
+
+        DeathObservation[] unexpected = deaths.Where(death =>
+                death.Turn <= options.EarlyDeathTurn && death.Cause is not
+                    (DeathCause.StrategicCombat or DeathCause.LastChanceCombat) &&
+                !IsExpectedAmigaFoodAttrition(
+                    AiStateOperations.GetProfile(game.World.Players[death.Player]),
+                    death.Cause == DeathCause.DailyProcessing,
+                    death.FoodExhausted,
+                    death.WaterExhausted) &&
+                !IsExpectedDosConflictAttrition(
+                    AiStateOperations.GetProfile(game.World.Players[death.Player]),
+                    death.Cause == DeathCause.DailyProcessing,
+                    death.FoodExhausted || death.WaterExhausted,
+                    death.DosMaintenanceBlocked))
+            .Take(1)
+            .ToArray();
+        if (unexpected.Length > 0)
+        {
+            DeathObservation death = unexpected[0];
+            throw new InvalidDataException(
+                $"Smoke invariant failed: P{death.Player + 1} died on turn {death.Turn} " +
+                $"during {death.Cause}, not conquest-related combat.");
+        }
+
+        if (completedTurns >= options.Turns)
+            return;
+
+        bool gameVictory = game.CheckWinner() is Player;
+        Player[] enabledPlayers = game.World.Players.Where(player =>
+            AiStateOperations.GetProfile(player) != AiProfile.None).ToArray();
+        bool soleSurvivor = enabledPlayers.Count(player => !player.IsDead) <= 1;
+        if (!gameVictory && !soleSurvivor)
+        {
+            throw new InvalidDataException(
+                $"Smoke invariant failed: stopped after {completedTurns} of {options.Turns} turns " +
+                "without game victory or a sole survivor.");
+        }
+
+        if (soleSurvivor)
+        {
+            int[] unexplained = enabledPlayers
+                .Where(player => player.IsDead && !initiallyDead[player.Index] &&
+                    !deaths.Any(death =>
+                        death.Player == player.Index &&
+                        (death.Cause is DeathCause.StrategicCombat or DeathCause.LastChanceCombat ||
+                            IsExpectedAmigaFoodAttrition(
+                                AiStateOperations.GetProfile(player),
+                                death.Cause == DeathCause.DailyProcessing,
+                                death.FoodExhausted,
+                                death.WaterExhausted))))
+                .Select(player => player.Index + 1)
+                .ToArray();
+            if (unexplained.Length > 0)
+            {
+                throw new InvalidDataException(
+                    "Smoke invariant failed: sole-survivor termination includes " +
+                    $"non-combat deaths for P{string.Join(", P", unexplained)}.");
+            }
+        }
+    }
+
+    enum DeathCause
+    {
+        AiAction,
+        StrategicCombat,
+        LastChanceCombat,
+        DailyProcessing,
+        PlayerTurn
+    }
+
+    internal static bool IsExpectedDosConflictAttrition(
+        AiProfile profile,
+        bool diedDuringDailyProcessing,
+        bool supplyExhausted,
+        bool maintenanceBlockedSinceLastRefill) =>
+        profile == AiProfile.Dos && diedDuringDailyProcessing &&
+        supplyExhausted && maintenanceBlockedSinceLastRefill;
+
+    internal static bool IsExpectedAmigaFoodAttrition(
+        AiProfile profile,
+        bool diedDuringDailyProcessing,
+        bool foodExhausted,
+        bool waterExhausted) =>
+        profile == AiProfile.Amiga && diedDuringDailyProcessing &&
+        foodExhausted && !waterExhausted;
+
+    readonly record struct DeathObservation(
+        int Player,
+        int Turn,
+        DeathCause Cause,
+        bool FoodExhausted,
+        bool WaterExhausted,
+        bool DosMaintenanceBlocked);
 
     static Dictionary<int, int?> CaptureOwnership(ClassicGame game)
     {
@@ -208,7 +460,7 @@ public static class HeadlessSimulation
                 events.Add($"{prefix} left ground items due to unavailable storage: {FormatItems(leftBehind)}.");
         }
 
-        Character[] currentGroup = player.Group.ToArray();
+        Character[] currentGroup = player.Party.ToArray();
         Character[] hired = currentGroup.Where(character => !before.Group.Contains(character)).ToArray();
         foreach (Character character in hired)
         {
@@ -272,13 +524,21 @@ public static class HeadlessSimulation
         report.AppendLine($"Difficulty: {DifficultyLabel(game.World.Difficulty)}");
         report.AppendLine("AI difficulties: " + string.Join(", ",
             game.World.Players.Select(player =>
-                player.AiState is ClassicAiState ai
-                    ? $"P{player.Index + 1} {DifficultyLabel(ai.Difficulty)}"
+                AiStateOperations.GetProfile(player) == AiProfile.None
+                    ? $"P{player.Index + 1} disabled"
+                    : AiStateOperations.TryGetDifficulty(player.AiState, out int difficulty)
+                    ? $"P{player.Index + 1} {DifficultyLabel(difficulty)}"
                     : $"P{player.Index + 1} human")));
+        AiProfile[] profiles = game.World.Players
+            .Select(AiStateOperations.GetProfile)
+            .ToArray();
+        if (profiles.Distinct().Count() > 1)
+            report.AppendLine("AI profiles: " + string.Join(", ", profiles.Select(
+                (profile, index) => $"P{index + 1} {profile.ToString().ToLowerInvariant()}")));
         report.AppendLine($"Requested turns: {options.Turns}");
         report.AppendLine($"Completed turns: {completedTurns}");
         report.AppendLine($"Final world day: {game.World.Day}");
-        report.AppendLine($"Rules: {(options.ExtendedGame ? "extended" : "1993")}");
+        report.AppendLine($"Rules: {game.Rules.ToString().ToLowerInvariant()}");
         report.AppendLine($"Winner: {(winner is null ? "none" : PlayerLabel(winner))}");
         report.AppendLine();
 
@@ -327,9 +587,9 @@ public static class HeadlessSimulation
 
             report.AppendLine($"- {PlayerLabel(player)}: {state}, {travel}, {camps} camps " +
                 $"({establishedCamps} well established), " +
-                $"group {player.Group.Count}, defenders {defenders}, " +
+                $"group {player.Party.Count}, defenders {defenders}, " +
                 $"health {player.Character.Health}, food {player.Character.Food}, water {player.Character.Water}");
-            foreach (Character member in player.Group)
+            foreach (Character member in player.Party)
             {
                 report.AppendLine($"  - {CharacterLabel(member)}: health {member.Health}, food {member.Food}, " +
                     $"water {member.Water}, inventory {FormatItems(member.Items)}");
@@ -501,7 +761,7 @@ public static class HeadlessSimulation
 
     static string FormatGroupState(Player player)
     {
-        string members = string.Join("; ", player.Group.Select(character =>
+        string members = string.Join("; ", player.Party.Select(character =>
             $"{character.Name}: H{character.Health}/F{character.Food}/W{character.Water}, " +
             $"items [{FormatItems(character.Items)}]"));
         return $"{PlayerLabel(player)} group at {LocationLabel(player.Location)}: {members}.";
@@ -550,7 +810,7 @@ public static class HeadlessSimulation
         public static DecisionSnapshot Capture(Player player)
         {
             Item[] groundItems = player.Location.Items.ToArray();
-            Character[] group = player.Group.ToArray();
+            Character[] group = player.Party.ToArray();
             return new DecisionSnapshot
             {
                 Location = player.Location,

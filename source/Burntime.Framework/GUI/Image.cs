@@ -43,11 +43,19 @@ namespace Burntime.Framework.GUI
                 }
                 background.Update(Target.Elapsed);
             }
-            Target.DrawSprite(background);
+            background?.Draw(Target);
         }
 
         public override void OnUpdate(float Elapsed)
         {
+        }
+
+        public override void OnResizeScreen(bool reload = false)
+        {
+            base.OnResizeScreen(reload);
+            if (reload)
+                background?.Reload();
+            sizeSet = false;
         }
 
         public void OnSpriteLoaded()

@@ -55,28 +55,28 @@ um dort reinzukommen.}
 |D - Tag |J - |C
 Skalierung SCHARF
 Skalierung WEICH
-im Spiel mit Alt+Enter wechseln
+mit Alt+Enter wechseln
+Karte STILLE
+Karte MUSIK WEITER
+Karte ZUFALLSMUSIK
+Auf Karten bleibt es still
+Die aktuelle Musik läuft weiter
+Zufällige Titel aus der Playlist
+Bring mir Essen, dann
+versorge ich deine Wunden.
 
+Mehr kann ich nicht
+für dich tun.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Dafür kann ich dich
+etwas zusammenflicken.
+(+|E Leben)
+Dafür bringe ich dich
+wieder auf die Beine.
+(+|E Leben)
+Dafür mache ich dich
+wieder richtig fit.
+(+|E Leben)
 
 
 
@@ -103,3 +103,15 @@ Vert. {defense}}
 % Rad. 
 Blockiert}
 |J Tage|#1 Tag
+Klassische Regeln
+Amiga-Regeln
+DOS-Computerspieler
+Amiga-Computerspieler
+Remaster-Computerspieler
+Erweiterte Regeln
+Schaden {damage}}
+Vert. {defense}%}
+Metalldetektor}
+einen Metalldetektor}
+defekter Metalldetektor}
+einen defekten Metalldetektor}

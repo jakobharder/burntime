@@ -108,6 +108,11 @@ public class FileSystem
 
     static public IPackage GetUserPackage(string gameName)
     {
+        if (UserFolderOverride != null)
+        {
+            System.IO.Directory.CreateDirectory(UserFolderOverride);
+            return OpenPackage(UserFolderOverride);
+        }
         //string userPath = (Environment.OSVersion.Platform == PlatformID.Unix || Environment.OSVersion.Platform == PlatformID.MacOSX) ? 
         //    Environment.GetEnvironmentVariable("HOME") : Environment.ExpandEnvironmentVariables("%HOMEDRIVE%%HOMEPATH%");
 
@@ -145,6 +150,9 @@ public class FileSystem
         // add new user folder
         vfs.Mount("user", GetUserPackage(gameName));
     }
+
+    // Allows integration runners to keep settings and saves outside the player's profile.
+    public static string? UserFolderOverride { get; set; }
 
     // get all filenames in specified virtual location
     static public string[] GetFileNames(FilePath path, string filter)
@@ -303,6 +311,7 @@ public class FileSystem
 
     static public bool AddFile(FilePath path) => vfs.AddFile(path);
     static public bool RemoveFile(FilePath path) => vfs.RemoveFile(path);
+    static public bool ReplaceFile(FilePath source, FilePath target) => vfs.ReplaceFile(source, target);
     static public bool IsPackageLoaded(string package) => vfs.ExistsMount(package);
     static public void Clear() => vfs.UnmountAll();
 

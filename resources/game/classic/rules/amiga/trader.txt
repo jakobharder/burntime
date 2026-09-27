@@ -1,0 +1,23 @@
+[trader]
+179=item_loaded_rifle item_knife item_broken_pump item_hose item_snake_trap item_boots
+180=item_wire item_screws item_rags item_gloves item_axe
+181=item_wire item_knife item_ammunition item_axe item_snake_trap item_protective_overall
+182=item_pitchfork item_empty_canteen item_screws item_woodpile item_rags item_gloves
+183=item_spring item_empty_wineskin item_tin item_rope item_snake_trap item_protective_overall
+184=item_pants item_sweater item_leather_jacket item_gloves item_wire
+185=item_pitchfork item_empty_canteen item_screws item_woodpile item_gas_mask item_boots
+186=item_bottle item_empty_canteen item_tin item_knife item_boots item_gloves
+187=item_axe item_empty_wineskin item_boots item_tin item_snake_trap
+188=item_wire item_screws item_rags item_protective_overall item_boots
+189=item_wire item_knife item_tin item_woodpile item_rope
+190=item_iron_pipe item_spare_parts item_empty_wineskin item_hose item_snake_trap item_protective_suit
+191=item_rags item_knife item_screws item_woodpile item_gas_mask item_boots
+192=item_knife item_wire item_tin item_hose item_broken_pump
+193=item_rags item_pitchfork item_water_bottle item_woodpile item_wire
+194=item_wire item_axe item_rags item_woodpile item_empty_wineskin
+195=item_wire item_knife item_tin item_woodpile item_broken_pump item_gloves
+196=item_spring item_empty_canteen item_empty_wineskin item_knife item_broken_pump
+197=item_wire item_knife item_empty_wineskin item_hose item_spring item_gas_mask
+198=item_iron_pipe item_spare_parts item_empty_wineskin item_hose item_gas_mask item_boots
+199=item_knife item_axe item_loaded_rifle item_ammunition item_tools item_protective_overall
+200=item_spring item_empty_wineskin item_tin item_knife item_gas_mask item_protective_overall

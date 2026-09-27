@@ -8,7 +8,8 @@ namespace Burntime.MonoGame.Music;
 
 internal class LoopableSong : IDisposable
 {
-    public static LoopableSong? FromFileName(string fileName, bool repeat = false)
+    public static LoopableSong? FromFileName(string fileName, bool repeat = false,
+        bool fade = false)
     {
         string? intro = null;
         string loop = fileName;
@@ -24,44 +25,63 @@ internal class LoopableSong : IDisposable
         if (loopFile is null)
             return null;
 
-        if (intro is not null && repeat)
-            return new LoopableSong(loopFile, FileSystem.GetFile(intro));
+        if (intro is not null)
+            return new LoopableSong(loopFile, FileSystem.GetFile(intro), repeat, fade);
 
-        return new LoopableSong(loopFile, null, repeat);
+        return new LoopableSong(loopFile, null, repeat, fade);
     }
 
     readonly byte[]? _loopBuffer;
+    readonly byte[]? _fadeOutBuffer;
     SoundEffect? _effect;
     SoundEffectInstance? _music;
-    bool _loopEnabled = true;
+    bool _loopEnabled;
+    bool _bufferNeededSubscribed;
 
-    public LoopableSong(Burntime.Platform.IO.File loop, Burntime.Platform.IO.File? intro = null, bool repeat = false)
+    public LoopableSong(Burntime.Platform.IO.File loop,
+        Burntime.Platform.IO.File? intro = null, bool repeat = false,
+        bool fade = false)
     {
-        if (intro is not null)
-        {
-            using var ogg = new VorbisReader((intro ?? loop).Stream, false);
-            var music = new DynamicSoundEffectInstance(ogg.SampleRate, ogg.Channels == 2 ? AudioChannels.Stereo : AudioChannels.Mono);
-            music.SubmitBuffer(ogg.GetBuffer());
-
-            if (intro is not null)
-            {
-                using var introOgg = new VorbisReader(loop.Stream, false);
-
-                if (introOgg.SampleRate != ogg.SampleRate || introOgg.Channels != ogg.Channels)
-                    return;
-
-                _loopBuffer = introOgg.GetBuffer();
-                music.BufferNeeded += BufferNeeded;
-            }
-
-            _music = music;
-        }
-        else
+        if (intro is null && !repeat && !fade)
         {
             _effect = OggSoundEffect.FromStream(loop.Stream);
             _music = _effect.CreateInstance();
-            _music.IsLooped = repeat;
+            return;
         }
+
+        using var loopOgg = new VorbisReader(loop.Stream, false);
+        byte[] loopBuffer = loopOgg.GetBuffer();
+        byte[]? introBuffer = null;
+        if (intro is not null)
+        {
+            using var introOgg = new VorbisReader(intro.Stream, false);
+            if (introOgg.SampleRate != loopOgg.SampleRate ||
+                introOgg.Channels != loopOgg.Channels)
+                return;
+            introBuffer = introOgg.GetBuffer();
+        }
+
+        _loopBuffer = loopBuffer;
+        _loopEnabled = repeat;
+        if (repeat || fade)
+        {
+            _fadeOutBuffer = (byte[])loopBuffer.Clone();
+            OggSoundEffect.ApplyFadeOut(_fadeOutBuffer, loopOgg.SampleRate,
+                loopOgg.Channels);
+        }
+
+        var music = new DynamicSoundEffectInstance(loopOgg.SampleRate,
+            loopOgg.Channels == 2 ? AudioChannels.Stereo : AudioChannels.Mono);
+        _music = music;
+        if (repeat)
+        {
+            music.BufferNeeded += BufferNeeded;
+            _bufferNeededSubscribed = true;
+        }
+        byte[] firstLoopBuffer = fade && !repeat ? _fadeOutBuffer! : loopBuffer;
+        music.SubmitBuffer(introBuffer ?? firstLoopBuffer);
+        if (!repeat && introBuffer is not null)
+            music.SubmitBuffer(firstLoopBuffer);
     }
 
     private void BufferNeeded(object? sender, EventArgs e)
@@ -76,7 +96,7 @@ internal class LoopableSong : IDisposable
         if (_music is not null)
         {
             _music.Stop();
-            if (_loopBuffer is not null && _music is DynamicSoundEffectInstance music)
+            if (_bufferNeededSubscribed && _music is DynamicSoundEffectInstance music)
                 music.BufferNeeded -= BufferNeeded;
             _music.Dispose();
             _music = null;
@@ -89,11 +109,30 @@ internal class LoopableSong : IDisposable
     public void Pause() => _music?.Pause();
     public void Resume() => _music?.Resume();
     public void Stop() => _music?.Stop();
+
     public void DisableLoop()
     {
+        if (!_loopEnabled)
+            return;
         _loopEnabled = false;
-        if (_music is not null && _music is not DynamicSoundEffectInstance)
-            _music.IsLooped = false;
+        if (_bufferNeededSubscribed && _music is DynamicSoundEffectInstance music)
+        {
+            music.BufferNeeded -= BufferNeeded;
+            _bufferNeededSubscribed = false;
+        }
+        if (_fadeOutBuffer is not null &&
+            _music is DynamicSoundEffectInstance fadingMusic)
+            fadingMusic.SubmitBuffer(_fadeOutBuffer);
+    }
+
+    public void EnableLoop()
+    {
+        if (_loopEnabled || _loopBuffer is null ||
+            _music is not DynamicSoundEffectInstance music)
+            return;
+        _loopEnabled = true;
+        music.BufferNeeded += BufferNeeded;
+        _bufferNeededSubscribed = true;
     }
 
     public float Volume

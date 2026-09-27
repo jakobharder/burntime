@@ -15,7 +15,8 @@ namespace Burntime.Remaster.Logic
         protected DataID<ItemTypesData> data;
         protected StateLinkList<ItemType> types;
 
-        internal bool UsesExtendedRules => data.Name == "items@items.txt";
+        internal int[] UnarmedDamage => data.Object.Items[0].DamageValues;
+        internal string Path => data.Name;
 
         [NonSerialized]
         protected Dictionary<string, ItemType>? typeMap;
@@ -51,6 +52,15 @@ namespace Burntime.Remaster.Logic
         {
             typeMap ??= GenerateMap();
             return typeMap.ContainsKey(id);
+        }
+
+        internal int GetOriginalTitleId(ItemType type) =>
+            0x33 + Array.IndexOf(data.Object.BurnGfxIDs, type.ID);
+
+        internal void ClearProductionAssociations()
+        {
+            foreach (ItemType type in types)
+                type.Production = null;
         }
 
         /// <summary>

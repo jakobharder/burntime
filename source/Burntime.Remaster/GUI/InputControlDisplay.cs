@@ -1,4 +1,5 @@
 using Burntime.Framework;
+using Burntime.Framework.GUI;
 using Burntime.Platform;
 using System.Collections.Generic;
 
@@ -59,47 +60,82 @@ static class InputControlDisplay
     const int DPadRight = 21;
     const int Menu = 22;
     const int View = 23;
-    const int DPad = 24;
-    const int Stick = 25;
-
     public static string Localized(Module app, int index) =>
         app.ResourceManager.GetString("controls", index);
 
-    public static InputControlLabel ResolvePair(Module app, InputMode inputMode,
-        InputAction firstAction, InputAction secondAction,
-        Key? preferredFirstKeyboardControl = null, Key? preferredSecondKeyboardControl = null,
-        GamepadControl? preferredFirstGamepadControl = null,
-        GamepadControl? preferredSecondGamepadControl = null,
-        string? keyboardOverride = null, string? gamepadOverride = null,
-        MouseButton? preferredFirstMouseControl = null,
-        MouseButton? preferredSecondMouseControl = null)
+    public static InputControlLabel ResolvePattern(Module app, InputMode inputMode,
+        InputPattern pattern)
     {
-        string? controlOverride = inputMode == InputMode.Keyboard
-            ? keyboardOverride
-            : inputMode == InputMode.Gamepad ? gamepadOverride : null;
-        if (inputMode == InputMode.Mouse &&
-            !preferredFirstMouseControl.HasValue &&
-            !preferredSecondMouseControl.HasValue)
-        {
-            // Pair overrides describe a keyboard shortcut that remains usable
-            // while the mouse is active (for example Shift + Up/Down).
-            controlOverride = keyboardOverride;
-        }
-        if (controlOverride != null)
-        {
-            if (inputMode == InputMode.Gamepad && controlOverride == "D-pad Left/Right")
-                return new InputControlLabel(new InputControlPart(InputGlyph.DPadHorizontal));
-            if (inputMode == InputMode.Keyboard)
-                return ResolveKeyboardOverride(app, controlOverride);
-            return FromText(TranslateOverride(app, controlOverride));
-        }
+        if (inputMode == InputMode.Mouse)
+            inputMode = InputMode.Keyboard;
 
+        if (inputMode == InputMode.Keyboard)
+            return pattern switch
+            {
+                InputPattern.HorizontalNavigation => KeyboardPair(
+                    KeyboardGlyph.Left, KeyboardGlyph.Right),
+                InputPattern.HorizontalPaging => KeyboardPair(
+                    KeyboardGlyph.Left, KeyboardGlyph.Right, KeyboardGlyph.Shift),
+                InputPattern.VerticalPaging => KeyboardPair(
+                    KeyboardGlyph.Up, KeyboardGlyph.Down, KeyboardGlyph.Shift),
+                _ => InputControlLabel.Empty
+            };
+
+        if (inputMode == InputMode.Gamepad)
+            return pattern switch
+            {
+                InputPattern.HorizontalNavigation => new InputControlLabel(
+                    new InputControlPart(InputGlyph.DPadHorizontal)),
+                InputPattern.HorizontalPaging or InputPattern.VerticalPaging =>
+                    ResolvePair(app, inputMode,
+                        InputAction.LeftArea, InputAction.RightArea),
+                _ => InputControlLabel.Empty
+            };
+
+        return InputControlLabel.Empty;
+    }
+
+    public static InputControlLabel Resolve(Module app, InputMode inputMode,
+        InputPrompt? prompt, Key? preferredPrimaryKeyboardControl = null)
+    {
+        if (prompt is not InputPrompt value)
+            return InputControlLabel.Empty;
+
+        InputPattern pattern = inputMode is InputMode.Keyboard or InputMode.Mouse
+            ? value.KeyboardPattern ?? value.Pattern
+            : value.Pattern;
+        if (pattern != InputPattern.None)
+            return ResolvePattern(app, inputMode, pattern);
+
+        Key? keyboardControl = value.KeyboardControl ??
+            (value.Action == InputAction.Primary
+                ? preferredPrimaryKeyboardControl
+                : null);
+        return Resolve(app, inputMode, value.Action, keyboardControl,
+            value.GamepadControl, value.EffectiveMouseControl);
+    }
+
+    static InputControlLabel KeyboardPair(KeyboardGlyph first, KeyboardGlyph second,
+        KeyboardGlyph modifier = KeyboardGlyph.None)
+    {
+        List<InputControlPart> parts = [];
+        if (modifier != KeyboardGlyph.None)
+            parts.Add(new InputControlPart(modifier));
+        parts.Add(new InputControlPart(first));
+        parts.Add(new InputControlPart(second));
+        return new InputControlLabel(parts.ToArray());
+    }
+
+    static InputControlLabel ResolvePair(Module app, InputMode inputMode,
+        InputAction firstAction, InputAction secondAction,
+        Key? firstKeyboardControl = null,
+        GamepadControl? firstGamepadControl = null,
+        MouseButton? firstMouseControl = null)
+    {
         InputControlLabel first = Resolve(app, inputMode, firstAction,
-            preferredFirstKeyboardControl, preferredFirstGamepadControl,
-            mouseControl: preferredFirstMouseControl);
-        InputControlLabel second = Resolve(app, inputMode, secondAction,
-            preferredSecondKeyboardControl, preferredSecondGamepadControl,
-            mouseControl: preferredSecondMouseControl);
+            firstKeyboardControl, firstGamepadControl,
+            mouseControl: firstMouseControl);
+        InputControlLabel second = Resolve(app, inputMode, secondAction);
         if (first.IsEmpty || second.IsEmpty)
             return InputControlLabel.Empty;
 
@@ -138,12 +174,12 @@ static class InputControlDisplay
 
     public static InputControlLabel Resolve(Module app, InputMode inputMode, InputAction action,
         Key? preferredKeyboardControl = null, GamepadControl? preferredGamepadControl = null,
-        string? keyboardOverride = null, string? gamepadOverride = null,
         MouseButton? mouseControl = null)
     {
         if (inputMode == InputMode.Mouse)
         {
-            MouseButton? control = mouseControl ?? DefaultMouseControl(action);
+            MouseButton? control = mouseControl ??
+                InputPrompt.DefaultMouseControl(action);
             if (control.HasValue)
             {
                 KeyboardGlyph glyph = control.Value switch
@@ -163,9 +199,6 @@ static class InputControlDisplay
 
         if (inputMode == InputMode.Keyboard)
         {
-            if (keyboardOverride != null)
-                return ResolveKeyboardOverride(app, keyboardOverride);
-
             IReadOnlyList<Key> controls = app.KeyboardActionBindings.GetControls(action);
             if (controls.Count == 0)
                 return InputControlLabel.Empty;
@@ -174,9 +207,6 @@ static class InputControlDisplay
 
         if (inputMode == InputMode.Gamepad)
         {
-            if (gamepadOverride != null)
-                return FromText(TranslateOverride(app, gamepadOverride));
-
             IReadOnlyList<GamepadControl> controls = app.GamepadActionBindings.GetControls(action);
             if (controls.Count == 0 && !preferredGamepadControl.HasValue)
                 return InputControlLabel.Empty;
@@ -233,12 +263,6 @@ static class InputControlDisplay
     {
         InputAction.Statistics => GamepadControl.DPadLeft,
         InputAction.LocationInfo => GamepadControl.DPadRight,
-        _ => null
-    };
-
-    static MouseButton? DefaultMouseControl(InputAction action) => action switch
-    {
-        InputAction.Primary => MouseButton.Left,
         _ => null
     };
 
@@ -304,6 +328,7 @@ static class InputControlDisplay
             SystemKey.Enter => KeyboardGlyph.Enter,
             SystemKey.Tab => KeyboardGlyph.Tab,
             SystemKey.Alt => KeyboardGlyph.Alt,
+            SystemKey.Ctrl => KeyboardGlyph.Ctrl,
             SystemKey.Up => KeyboardGlyph.Up,
             SystemKey.Down => KeyboardGlyph.Down,
             SystemKey.Left => KeyboardGlyph.Left,
@@ -311,15 +336,6 @@ static class InputControlDisplay
             _ => KeyboardGlyph.None
         };
     }
-
-    static InputControlLabel ResolveKeyboardOverride(Module app, string value) => value switch
-    {
-        "Shift+Up/Down" => new InputControlLabel(
-            new InputControlPart(KeyboardGlyph.Shift),
-            new InputControlPart(KeyboardGlyph.Up),
-            new InputControlPart(KeyboardGlyph.Down)),
-        _ => FromText(TranslateOverride(app, value))
-    };
 
     static string Format(Module app, Key key)
     {
@@ -391,13 +407,5 @@ static class InputControlDisplay
         GamepadControl.Menu => Localized(app, Menu),
         GamepadControl.View => Localized(app, View),
         _ => control.ToString()
-    };
-
-    static string TranslateOverride(Module app, string value) => value switch
-    {
-        "Shift+Up/Down" => $"{Localized(app, Shift)}+{Localized(app, Up)}/{Localized(app, Down)}",
-        "D-pad Left/Right" => $"{Localized(app, DPad)} {Localized(app, Left)}/{Localized(app, Right)}",
-        "D-pad/Stick Left/Right" => $"{Localized(app, DPad)}/{Localized(app, Stick)} {Localized(app, Left)}/{Localized(app, Right)}",
-        _ => value
     };
 }

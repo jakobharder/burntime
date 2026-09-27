@@ -32,100 +32,27 @@ It recreates the original game with remastered graphics and modern platform supp
 
 - [Git](https://git-scm.com/downloads) (used in build process to get the version tag)
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
-- MonoGame 3.8.5 tools:
-
-```sh
-dotnet tool restore --tool-manifest source/Burntime.MonoGame/.config/dotnet-tools.json
-```
-
-MonoGame framework packages are restored automatically by .NET.
+- MonoGame 3.8.5 tools: `dotnet tool restore --tool-manifest source/Burntime.MonoGame/.config/dotnet-tools.json`
 
 ### Build and run
+
+Default builds omit optional shader compilation.
 
 ```sh
 dotnet build source/Burntime.MonoGame/Burntime.MonoGame.csproj -c Debug
 dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj
 ```
 
-The default build omits optional shaders and does not require Wine. To compile
-the sharp-bilinear shader as part of the build, use:
+Shader compilation requires Wine on macOS and Linux; generated shaders are reused by normal builds and publishes.
+
+Compile and deploy the sharp-bilinear shader with:
 
 ```sh
 dotnet build source/Burntime.MonoGame/Burntime.MonoGame.csproj -c Debug -p:BuildShaders=true
 ```
 
-This also deploys the compiled shader to `resources/game/classic/shaders`. Once
-generated, normal builds and publishes include it as part of the classic package
-without requiring Wine or the shader compiler. In
-VS Code, use the `build Burntime with shaders (Debug)` task or the
-`Debug Burntime (with shaders)` launch configuration to refresh it.
-
-MonoGame shader compilation on macOS and Linux requires Wine. Once compiled,
-the shader remains available to subsequent normal builds through the platform
-filesystem.
-
-For windowed Steam feature and resolution testing, pass one of these options after
-`--`:
-
-```sh
-dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- --steam-machine
-dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- --steam-deck
-dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- --choose-language
-dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- --linear
-dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- --fps
-```
-
-- `--steam-machine` uses the normal half-display window size, defaults to gamepad
-  prompts, and disables the fullscreen toggle.
-- `--steam-deck` uses a 1280x800 window with 1.5× output scaling, defaults to
-  gamepad prompts, and disables the fullscreen toggle.
-- `--choose-language` opens the language selection scene even when a language was
-  saved previously. It can be combined with either Steam emulation option.
-- `--linear` uses linear filtering when scaling the intermediate render buffer to
-  the window. The default is nearest-neighbor filtering.
-- `--fps` shows the FPS and used texture memory in the top-left corner.
-
-### Headless AI simulation
-
-Run a deterministic four-AI game without opening a window:
-
-```sh
-scripts/ai-simulate.sh --turns 100 --difficulty hard --seed 123 --report ai-run.txt
-```
-
-- `--turns`: number of turns; default `100`.
-- `--difficulty`: `easy`, `normal`, or `hard`; default `hard`.
-- `--seed`: random seed for reproducible runs; default `1`.
-- `--report`: optional output file; without it, the report is printed to the terminal.
-- `--extended`: optionally use the extended-game item set instead of 1993 rules.
-- `--load-save`: start the simulation from an existing `.sav` instead of a new game.
-- `--save-at-end`: save the resulting game after the requested turns complete.
-
-The report summarizes player condition, travel, camps, stationed NPCs, and major timeline events.
-
-For example, continue a player save for 25 turns and write a new save:
-
-```sh
-scripts/ai-simulate.sh --load-save old.sav --turns 25 --save-at-end continued.sav
-```
-
-### Save-game compatibility tests
-
-Place historical save fixtures below `tests/savegames`, grouped by release, and run:
-
-```sh
-scripts/savegame-test.sh
-```
-
-Every `.sav` is loaded recursively and advanced through at least one complete
-turn, including human-controlled player slots. See
-[`tests/savegames/README.md`](tests/savegames/README.md) for the fixture layout.
-
-Check that the standard AI baseline has not changed:
-
-```sh
-scripts/ai-refactor-check.sh
-```
+- [Runtime testing options](doc/command-line.md)
+- [Headless AI simulation and test scripts](scripts/README.md)
 
 ### Publish
 
@@ -135,8 +62,6 @@ dotnet publish source/Burntime.MonoGame/Burntime.MonoGame.csproj -c Release -r <
 
 Use one of the following instead of `<platform>`:
 - `osx-arm64`, `osx-x64`, `linux-x64`, `win-x64`
-
-Visual Studio users: open `source/Burntime.sln` and select `Burntime.MonoGame` as the startup project.
 
 ## Credits
 

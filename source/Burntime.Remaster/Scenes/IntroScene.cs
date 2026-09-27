@@ -83,8 +83,7 @@ namespace Burntime.Remaster.Scenes
 
             view = new MapView(null, app);
             view.Enabled = false;
-            view.Position = new Vector2(16, 0);
-            view.Size = new Vector2(288, 160);
+            view.SetViewport(new Vector2(16, 0), new Vector2(288, 160));
             Windows += view;
 
             image = new Image(app);
@@ -96,9 +95,9 @@ namespace Burntime.Remaster.Scenes
             PreloadAnimations();
         }
 
-        public override void OnResizeScreen()
+        public override void OnResizeScreen(bool reload = false)
         {
-            base.OnResizeScreen();
+            base.OnResizeScreen(reload);
 
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
         }
@@ -117,7 +116,7 @@ namespace Burntime.Remaster.Scenes
             if (oldSpeed == 0)
                 oldSpeed = app.Engine.BlendOverlay.Speed;
 
-            app.Engine.Music.Volume = 0;
+            app.Engine.Music.SceneVolume = 0;
             app.Engine.BlendOverlay.Speed = 0.9f;
 
             app.Engine.MusicBlend = false;
@@ -237,7 +236,6 @@ namespace Burntime.Remaster.Scenes
 
         private void NextScene()
         {
-            app.Engine.MusicBlend = true;
             app.SceneManager.SetScene("MenuScene");
         }
     }

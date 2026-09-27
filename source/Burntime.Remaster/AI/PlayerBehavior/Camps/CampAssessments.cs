@@ -103,7 +103,7 @@ internal sealed class CampAssessments
                 DesiredProductionTools = new Dictionary<Production, int>(),
                 NeedsPump = Trading.NeedsPump(camp),
                 TravelWaterBottleneck = CampEconomy.IsTravelWaterBottleneck(
-                    camp, player.Group.Count)
+                    camp, player.Party.Count)
             };
         }
 
@@ -118,10 +118,10 @@ internal sealed class CampAssessments
     {
         Player player = state.Player;
 
-        bool carriesPump = player.Group.SelectMany(character => character.Items)
+        bool carriesPump = player.Party.SelectMany(character => character.Items)
             .Any(Trading.IsPump);
         int portableCapacity = Trading.PortableWaterCapacity(state);
-        bool carriesSpareWaterContainer = player.Group
+        bool carriesSpareWaterContainer = player.Party
             .SelectMany(character => character.Items)
             .Where(item => AiItemPool.IsWaterContainer(item.Type))
             .Any(item => portableCapacity - AiItemPool.WaterContainerCapacity(item.Type) >=
@@ -132,7 +132,7 @@ internal sealed class CampAssessments
             : System.Array.Empty<Trading.ConstructionOpportunity>();
         bool reserveProductionTool = ExpansionPlanning.ShouldReserveProductionTool(state);
         bool carriesProductionTool = !reserveProductionTool &&
-            (player.Group.SelectMany(character => character.Items)
+            (player.Party.SelectMany(character => character.Items)
                 .Any(item => item.Type.Production != null) ||
              state.Reserve.GetContents().Any(entry => entry.Type.Production != null));
 
@@ -153,7 +153,7 @@ internal sealed class CampAssessments
             bool immediateWaterUpgrade = assessment.NeedsPump && carriesPump ||
                 canConstructPump;
             bool reusableContainerUpgrade = carriesSpareWaterContainer &&
-                CampEconomy.NeedsReusableWaterReserve(camp, player.Group.Count);
+                CampEconomy.NeedsReusableWaterReserve(camp, player.Party.Count);
             bool waterUpgrade = immediateWaterUpgrade || reusableContainerUpgrade;
             bool criticalWaterDelivery = assessment.TravelWaterBottleneck && waterUpgrade;
             bool ordinaryWaterDelivery = !assessment.TravelWaterBottleneck && waterUpgrade;

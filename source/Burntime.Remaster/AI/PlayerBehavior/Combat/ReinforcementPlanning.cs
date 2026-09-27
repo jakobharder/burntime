@@ -21,11 +21,11 @@ internal static partial class ReinforcementPlanning
                 AttackPlanning.RequiredAttackGroupSize(
                     state, state.StrategicTarget, policy));
         }
-        bool demobilizingSurplus = state.Player.Group.Count > activeGroupLimit;
+        bool demobilizingSurplus = state.Player.Party.Count > activeGroupLimit;
         if (camp != null && !CanSupportAdditionalGuard(
             state, camp, CampEconomy.LivingGuardCount(camp, state.Player)))
             camp = null;
-        if (camp != null && state.Player.Group.Count > 1)
+        if (camp != null && state.Player.Party.Count > 1)
         {
             // Deliver the normal second traveller, then recruit or recall its
             // replacement only if another concrete personnel task needs one.
@@ -37,7 +37,10 @@ internal static partial class ReinforcementPlanning
             {
                 candidates.Add(new AiDecision(
                     AiAction.StationFollower,
-                    priority,
+                    // Complete a sustainable local delivery before optional
+                    // trade errands (up to 1850). Emergency recovery is handled
+                    // before normal planning; execution rechecks supply safety.
+                    System.Math.Max(priority, 2000),
                     context.Current,
                     Reason: demobilizingSurplus
                         ? "demobilize a surplus attack follower into a strategically needed garrison"
@@ -52,7 +55,8 @@ internal static partial class ReinforcementPlanning
                         ? $"demobilize a surplus attack follower into the needed garrison at {camp.Title}"
                         : recruitment.IsAttackStaging
                         ? $"deliver a recruited guard to frontier camp {camp.Title}"
-                        : $"reinforce critical camp toward {recruitment.ReinforcementTarget} guards");
+                        : $"reinforce critical camp toward {recruitment.ReinforcementTarget} guards",
+                    commitJourney: true);
             }
         }
         else if (demobilizingSurplus)
@@ -204,7 +208,7 @@ internal static partial class ReinforcementPlanning
 
         int toolCount = camp.Rooms.Sum(room => room.Items.Count(item =>
                 item.Type.Production == camp.Production)) +
-            camp.CampNPC.Where(npc => npc.Player == state.Player && !npc.IsDead)
+            camp.CampNPC.Where(npc => camp.Production.AllowInventory && npc.Player == state.Player && !npc.IsDead)
                 .Sum(npc => npc.Items.Count(item => item.Type.Production == camp.Production));
         Production.Rate projected = camp.Production.GetRate(toolCount, projectedGuards);
         return !projected.IsCampStarving &&
@@ -223,7 +227,7 @@ internal static partial class ReinforcementPlanning
 
         int toolCount = camp.Rooms.Sum(room => room.Items.Count(item =>
                 item.Type.Production == camp.Production)) +
-            camp.CampNPC.Where(npc => npc.Player == state.Player && !npc.IsDead)
+            camp.CampNPC.Where(npc => camp.Production.AllowInventory && npc.Player == state.Player && !npc.IsDead)
                 .Sum(npc => npc.Items.Count(item => item.Type.Production == camp.Production));
         Production.Rate projected = camp.Production.GetRate(toolCount, guardTarget);
         return !projected.IsCampStarving &&

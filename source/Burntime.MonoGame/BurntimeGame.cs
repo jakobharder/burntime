@@ -31,6 +31,7 @@ namespace Burntime.MonoGame
         BlendOverlayBase IEngine.BlendOverlay => RenderDevice?.BlendOverlay;
 
         BurntimeClassic _burntimeApp;
+        internal VisualTestRunner? VisualTest { get; set; }
         internal bool UseRemasteredGraphics => _burntimeApp?.IsNewGfx ?? true;
         internal void RefreshResourceReplacements() =>
             _burntimeApp?.RefreshResourceReplacements();
@@ -39,6 +40,7 @@ namespace Burntime.MonoGame
         readonly bool _emulateSteamMachine;
         readonly bool _emulateSteamDeck;
         readonly bool _chooseLanguage;
+        readonly Platform.Vector2? _windowSizeOverride;
         public OutputFiltering OutputFiltering { get; set; }
         internal OutputFiltering DefaultOutputFiltering { get; }
         public bool ForceLinearOutputFiltering { get; }
@@ -130,11 +132,12 @@ namespace Burntime.MonoGame
         public BurntimeGame(bool emulateSteamMachine = false, bool emulateSteamDeck = false,
             bool chooseLanguage = false, bool linearOutputFiltering = false,
             bool nearestPointOutputFiltering = false, bool disableShaders = false,
-            bool showFps = false)
+            bool showFps = false, Platform.Vector2? windowSizeOverride = null)
         {
             _emulateSteamMachine = emulateSteamMachine;
             _emulateSteamDeck = emulateSteamDeck;
             _chooseLanguage = chooseLanguage;
+            _windowSizeOverride = windowSizeOverride;
             ForceLinearOutputFiltering = linearOutputFiltering;
             ForceNearestPointOutputFiltering = nearestPointOutputFiltering;
             DisableShaders = disableShaders;
@@ -235,7 +238,9 @@ namespace Burntime.MonoGame
         protected override void Initialize()
         {
             string logPath = "log.txt";
-            if (OperatingSystem.IsMacOS())
+            if (VisualTest != null)
+                logPath = System.IO.Path.Combine(VisualTest.OutputDirectory, "resources.log");
+            else if (OperatingSystem.IsMacOS())
             {
                 string logDirectory = System.IO.Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -251,6 +256,9 @@ namespace Burntime.MonoGame
                 Log.Info("Steam Deck test mode: 1280x800 windowed");
             else if (_emulateSteamMachine)
                 Log.Info("Steam Machine test mode: gamescope features, windowed");
+            if (_windowSizeOverride.HasValue)
+                Log.Info($"Window size override: {_windowSizeOverride.Value.x}x" +
+                    $"{_windowSizeOverride.Value.y} windowed");
 
             Window.Title = "Burntime " + BurntimeClassic.Version;
 
@@ -262,7 +270,7 @@ namespace Burntime.MonoGame
 
             ConfigFile cfg = new();
             cfg.Open("classic:settings.txt");
-            Log.DebugOut = cfg["engine"].GetBool("debug");
+            Log.DebugOut = VisualTest != null || cfg["engine"].GetBool("debug");
 
             _burntimeApp = new();
             _burntimeApp.ChooseLanguageOnStart = _chooseLanguage;
@@ -271,9 +279,6 @@ namespace Burntime.MonoGame
             Resolution.RatioCorrection = _burntimeApp.RatioCorrection;
             Resolution.MinResolution = _burntimeApp.MinResolution;
             Resolution.MaxResolution = _burntimeApp.MaxResolution;
-            if (_emulateSteamDeck || IsSteamDeck())
-                Resolution.OutputScaleOverride = 1.5f;
-
             _burntimeApp.Engine = this;
             _burntimeApp.SceneManager = new SceneManager(_burntimeApp);
             _burntimeApp.DeviceManager = new DeviceManager(Resolution);
@@ -328,12 +333,11 @@ namespace Burntime.MonoGame
                     var displayResolution = new Platform.Vector2(
                         GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
                         GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Height);
-                    Resolution.Native = _emulateSteamDeck
+                    Resolution.Native = _windowSizeOverride ?? (_emulateSteamDeck
                         ? new Platform.Vector2(1280, 800)
                         : IsGamescopeSession() || IsSteamDeck()
                             ? displayResolution
-                            : displayResolution / 2;
-                    //Resolution.Native = new Platform.Vector2(2560, 1440);
+                            : displayResolution / 2);
                 }
                 else
                 {
@@ -376,6 +380,9 @@ namespace Burntime.MonoGame
 
             Log.Info("Start resource manager thread...");
             ResourceManager.Run();
+
+            if (VisualTest != null)
+                return;
 
             Log.Info("Start game thread...");
             _gameThread.Start((Platform.GameTime gameTime) =>
@@ -544,6 +551,14 @@ namespace Burntime.MonoGame
             _burntimeApp.InputManager.ClearDown(InputSource.Keyboard);
             foreach (var key in keys)
             {
+                // Alt remains a held gameplay binding, but the Enter part of the
+                // platform fullscreen chord must not also activate Primary.
+                if (SupportsFullscreenToggle && key == Keys.Enter &&
+                    (modifier & ModifierKeys.LeftAlt) == ModifierKeys.LeftAlt)
+                {
+                    continue;
+                }
+
                 Key? bindingKey = ConvertToBindingKey(key, modifier);
                 if (bindingKey.HasValue)
                 {
@@ -575,7 +590,7 @@ namespace Burntime.MonoGame
 
                     if (key == Keys.Escape || key == Keys.Pause || key == Keys.Enter
                         || key == Keys.Up || key == Keys.Down || key == Keys.Left || key == Keys.Right
-                        || key == Keys.Tab
+                        || key == Keys.Tab || key == Keys.LeftControl || key == Keys.RightControl
                         || key == Keys.F1 || key == Keys.F2 || key == Keys.F3 || key == Keys.F4 || key == Keys.F8 || key == Keys.F9)
                     {
                         DeviceManager?.VKeyPress(key switch
@@ -588,6 +603,7 @@ namespace Burntime.MonoGame
                             Keys.Left => SystemKey.Left,
                             Keys.Right => SystemKey.Right,
                             Keys.Tab => SystemKey.Tab,
+                            Keys.LeftControl or Keys.RightControl => SystemKey.Ctrl,
                             Keys.F1 => SystemKey.F1,
                             Keys.F2 => SystemKey.F2,
                             Keys.F3 => SystemKey.F3,
@@ -622,6 +638,7 @@ namespace Burntime.MonoGame
                 Keys.Left => new Key(SystemKey.Left, modifier),
                 Keys.Right => new Key(SystemKey.Right, modifier),
                 Keys.LeftAlt or Keys.RightAlt => new Key(SystemKey.Alt, modifier),
+                Keys.LeftControl or Keys.RightControl => new Key(SystemKey.Ctrl, modifier),
                 _ => null
             };
         }
@@ -804,6 +821,13 @@ namespace Burntime.MonoGame
 
         protected override void Update(Microsoft.Xna.Framework.GameTime gameTime)
         {
+            if (VisualTest != null)
+            {
+                VisualTest.Update(this, _burntimeApp);
+                RenderDevice.Update();
+                base.Update(gameTime);
+                return;
+            }
             lock (_inputGlyphSync)
                 _steamInputGlyphs?.RunFrame();
             HandleMouseInput();
@@ -826,7 +850,8 @@ namespace Burntime.MonoGame
             GraphicsDevice.Clear(Color.Black);
 
             UpdateFpsCounter();
-            RenderDevice.Render((float)gameTime.ElapsedGameTime.TotalSeconds);
+            RenderDevice.Render(VisualTest != null ? 1f / 60 : (float)gameTime.ElapsedGameTime.TotalSeconds);
+            VisualTest?.Capture(this);
 
             base.Draw(gameTime);
         }
@@ -846,6 +871,8 @@ namespace Burntime.MonoGame
 
         void IEngine.CenterMouse()
         {
+            if (VisualTest != null)
+                return;
             if (_burntimeApp.RenderMouse && _burntimeApp.MouseInputVisible && IsActive)
             {
                 var center = Resolution.Native / 2;
@@ -914,20 +941,30 @@ namespace Burntime.MonoGame
             RenderDevice.AddEntity(entity);
         }
 
-        public void RenderSprite(ISprite sprite, Platform.Vector2 pos, float alpha = 1)
+        public void RenderSprite(ISprite sprite, Platform.Vector2 pos, float alpha = 1,
+            bool postFilter = false, bool directToFramebuffer = false)
+        {
+            RenderSpriteF(sprite, (Platform.Vector2f)pos, alpha, postFilter,
+                directToFramebuffer);
+        }
+
+        public void RenderSpriteF(ISprite sprite, Platform.Vector2f pos, float alpha = 1,
+            bool postFilter = false, bool directToFramebuffer = false)
         {
             if (sprite is not MonoGame.Graphics.Sprite nativeSprite || !nativeSprite.Touch()) return;
 
             long now = System.Diagnostics.Stopwatch.GetTimestamp();
-            if (now - nativeSprite.Frame.TimeStamp < (long)(Stopwatch.Frequency / popInSpeed) && popInSpeed != 0)
+            if (VisualTest == null && now - nativeSprite.Frame.TimeStamp < (long)(Stopwatch.Frequency / popInSpeed) && popInSpeed != 0)
                 alpha *= (now - nativeSprite.Frame.TimeStamp) / (float)Stopwatch.Frequency * popInSpeed;
 
             Graphics.SpriteEntity entity = new()
             {
                 Rectangle = new Rectangle(0, 0, nativeSprite.OriginalSize.x, nativeSprite.OriginalSize.y),
                 Color = new Color(alpha, alpha, alpha, alpha),
-                Factor = nativeSprite.Frame.Resolution,
-                LinearFiltering = nativeSprite.LinearFiltering
+                Factor = nativeSprite.Resolution,
+                LinearFiltering = nativeSprite.LinearFiltering,
+                PostFilter = postFilter,
+                DirectToFramebuffer = directToFramebuffer
             };
 
             if (sprite.Animation != null && sprite.Animation.Progressive && nativeSprite.Frames != null)
@@ -943,8 +980,10 @@ namespace Burntime.MonoGame
                 Color = entity.Color,
                 SpriteFrame = nativeSprite.Frame,
                 Position = new Vector3(pos.x, pos.y, CalcZ(Layer)),
-                Factor = nativeSprite.Frame.Resolution,
-                LinearFiltering = nativeSprite.LinearFiltering
+                Factor = nativeSprite.Resolution,
+                LinearFiltering = nativeSprite.LinearFiltering,
+                PostFilter = postFilter,
+                DirectToFramebuffer = directToFramebuffer
             };
             RenderDevice.AddEntity(entity2);
         }
@@ -964,14 +1003,14 @@ namespace Burntime.MonoGame
             {
                 Rectangle = new Rectangle(srcPos.x, srcPos.y, srcWidth, srcHeight),
                 Color = new Color(color.r, color.g, color.b, color.a),
-                Factor = nativeSprite.Frame.Resolution,
+                Factor = nativeSprite.Resolution,
                 LinearFiltering = nativeSprite.LinearFiltering,
                 PostFilter = postFilter,
                 DirectToFramebuffer = directToFramebuffer
             };
 
             long now = System.Diagnostics.Stopwatch.GetTimestamp();
-            if (now - nativeSprite.Frame.TimeStamp < (long)(Stopwatch.Frequency / popInSpeed) && popInSpeed != 0)
+            if (VisualTest == null && now - nativeSprite.Frame.TimeStamp < (long)(Stopwatch.Frequency / popInSpeed) && popInSpeed != 0)
             {
                 entity.Color.A *= (byte)System.Math.Min(255, (now - nativeSprite.Frame.TimeStamp) / (float)Stopwatch.Frequency * popInSpeed);
                 entity.Color.R *= (byte)System.Math.Min(255, (now - nativeSprite.Frame.TimeStamp) / (float)Stopwatch.Frequency * popInSpeed);
@@ -992,7 +1031,7 @@ namespace Burntime.MonoGame
                 Color = entity.Color,
                 SpriteFrame = nativeSprite.Frame,
                 Position = new Vector3(pos.x, pos.y, CalcZ(Layer)),
-                Factor = nativeSprite.Frame.Resolution,
+                Factor = nativeSprite.Resolution,
                 LinearFiltering = nativeSprite.LinearFiltering,
                 PostFilter = postFilter,
                 DirectToFramebuffer = directToFramebuffer

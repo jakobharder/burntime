@@ -1,0 +1,9 @@
+[image]
+background=gfx/backgrounds/film9_large.png
+animations=0
+frame=yes
+sprite_scale=1.875x2.25
+
+[music]
+song=texaco
+loop=true

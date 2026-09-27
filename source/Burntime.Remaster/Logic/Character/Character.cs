@@ -7,6 +7,24 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Burntime.Remaster.Logic.Generation;
+using Burntime.Remaster.Logic.Rules;
+
+namespace Burntime.Remaster
+{
+    public enum CharClass
+    {
+        Mercenary,
+        Technician,
+        Doctor,
+        Boss,
+        Mutant,
+        Trader,
+        Dog,
+
+        Count
+    }
+}
 
 namespace Burntime.Remaster.Logic
 {
@@ -45,6 +63,14 @@ namespace Burntime.Remaster.Logic
         float fleeTimeRemaining;
         [NonSerialized]
         Vector2 fleeDestination;
+        [NonSerialized]
+        Character fleeFromCharacter;
+        [NonSerialized]
+        Character combatApproachTarget;
+        [NonSerialized]
+        float combatApproachRange;
+        [NonSerialized]
+        bool combatHold;
 
         const float WALK_SPEED = 35;
         const float CONTROLLED_WALK_SPEED = 50;
@@ -57,15 +83,19 @@ namespace Burntime.Remaster.Logic
         // leaving a 25-degree cone around each horizontal direction.
         const float VERTICAL_FACING_MIN_SLOPE = 0.46630767f; // tan(25 degrees)
 
+        internal bool IsFleeing => fleeTimeRemaining > 0;
+        internal bool IsHeldForCombat => combatHold;
+        internal bool IsCommittedToCombat => combatHold || combatApproachTarget != null;
+
         // some helper attributes
         public bool IsWithBoss
         {
-            get { if (Player == null) return false; return Player.Group.Contains(this); }
+            get { if (Player == null) return false; return Player.Party.Contains(this); }
         }
 
         public bool IsStationed
         {
-            get { if (Player == null) return false; return !Player.Group.Contains(this); }
+            get { if (Player == null) return false; return !Player.Party.Contains(this); }
         }
 
         public bool IsHuman
@@ -129,9 +159,8 @@ namespace Burntime.Remaster.Logic
         }
 
         public virtual int BaseAttackValue => DEFAULT_ATTACK_VALUE;
-        public virtual float AttackValue => (Weapon?.DamageValue ?? BaseAttackValue) * Experience / 100;
-        public virtual float DefenseValue => (DEFAULT_ATTACK_VALUE + (Protection?.DefenseValue ?? 0)) * Experience / 100;
-
+        internal int CombatExperience(GameSettings settings) =>
+            RuleFormulas.CombatExperience(settings.IsFightClass(Class), Experience);
         protected DataID<Platform.Graphics.ISprite> body;
         public DataID<Platform.Graphics.ISprite> Body
         {
@@ -185,6 +214,11 @@ namespace Burntime.Remaster.Logic
 
         public int GetFoodInInventory() => Items.OfType<Item>().Sum(x => x.FoodValue);
         public int GetWaterInInventory() => Items.OfType<Item>().Sum(x => x.WaterValue);
+        internal bool HasItemFunction(ItemFunction function) =>
+            Items?.Any(item => item.Type.HasFunction(function)) == true;
+
+        internal bool IsItemInUse(Item item) => Items.Contains(item) &&
+            (Weapon == item || Protection == item || item.Type.Functions != ItemFunction.None);
         #endregion
 
         protected override void InitInstance(object[] parameter)
@@ -262,16 +296,16 @@ namespace Burntime.Remaster.Logic
                 if (value == null)
                 {
                     if (location != null)
-                        location.Object.Characters -= this;
+                        location.Object.Characters.Remove(this);
 
                     location = null;
                 }
                 else
                 {
                     if (location != null)
-                        location.Object.Characters -= this;
+                        location.Object.Characters.Remove(this);
 
-                    value.Characters += this;
+                    value.Characters.Add(this);
 
                     location = value;
                 }
@@ -337,7 +371,7 @@ namespace Burntime.Remaster.Logic
 
         public void JoinCamp()
         {
-            Player.Group.Remove(this);
+            Player.Party.Remove(this);
             Location = Player.Location;
             Location.Player = Player;
             Mind = container.Create<AI.SimpleMind>(new object[] { this });
@@ -354,7 +388,7 @@ namespace Burntime.Remaster.Logic
                 Location.Player = null;
 
             if (Player != null)
-                Player.Group.Add(this);
+                Player.Party.Add(this);
 
             Location = null;
             Mind = container.Create<AI.FellowerMind>(new object[] { this, Player.Character });
@@ -362,10 +396,16 @@ namespace Burntime.Remaster.Logic
             Path.MoveTo = Position;
         }
 
-        public void Hire(Player boss, bool waivePayment = false)
+        public void Hire(Player boss, bool waivePayment = false) =>
+            Hire(boss, waivePayment, initializeRecruit: true);
+
+        internal void HireWithoutInitialization(Player boss) =>
+            Hire(boss, waivePayment: true, initializeRecruit: false);
+
+        void Hire(Player boss, bool waivePayment, bool initializeRecruit)
         {
             Location = null;
-            boss.Group.Add(this);
+            boss.Party.Add(this);
             Player = boss;
 
             if (SetBodyId != -1 && boss.BodyColorSet != -1)
@@ -386,34 +426,8 @@ namespace Burntime.Remaster.Logic
             Path = container.Create<PathFinding.ComplexPath>();
             Path.MoveTo = Position;
 
-            ClassicGame classic = (ClassicGame)container.Root;
-            int difficulty = 2 - classic.World.Difficulty; // set inverted difficulty (0 hard, 1 normal, 2 easy)
-
-            if (boss.Type == PlayerType.Ai)
-            {
-                // Fixed reserves make every AI recruitment option strategically
-                // equivalent, whether it happens in a city or at the target camp.
-                Food = 5;
-                Water = 5;
-            }
-            else
-            {
-                // if hire item is food or water then use it
-                if (hireItem.FoodValue != 0)
-                    Food = System.Math.Min(MaxFood, Food + hireItem.FoodValue);
-
-                // prevent 0 food situation depending on difficulty setting
-                if (Food < difficulty)
-                    Food = difficulty;
-
-                (int minimumWater, int maximumWater) = classic.World.Difficulty switch
-                {
-                    0 => (3, 5),
-                    1 => (1, 4),
-                    _ => (0, 2)
-                };
-                Water = Burntime.Platform.Math.Random.Next(minimumWater, maximumWater + 1);
-            }
+            if (initializeRecruit)
+                ((ClassicGame)container.Root).RuleBook.InitializeRecruit(this, boss, hireItem);
         }
 
         public void Dismiss()
@@ -421,7 +435,7 @@ namespace Burntime.Remaster.Logic
             if (location == null)
             {
                 Location = Player.Location;
-                Player.Group.Remove(this);
+                Player.Party.Remove(this);
             }
             else
             {
@@ -465,8 +479,10 @@ namespace Burntime.Remaster.Logic
 
         public virtual void Revive()
         {
-            // set full heatlh
-            health = 100;
+            health = 95;
+            Food = 8;
+            Water = 4;
+            Items.Clear();
 
             // reset animation
             ani = new Burntime.Platform.Graphics.SpriteAnimation(2);
@@ -498,29 +514,141 @@ namespace Burntime.Remaster.Logic
             Mind.MoveToObject(null);
         }
 
-        public bool IsInAttackRange(Character target)
+        internal float AttackRange
         {
-            return (Position - target.Position).Length < 30;
+            get
+            {
+                // Amiga uses a short innate range for mutants and a wider
+                // autonomous range for dogs/traders. Inventory-using characters
+                // take the range from the weapon selected by normal combat.
+                if (Class == CharClass.Mutant)
+                    return 16;
+                if (Class is CharClass.Dog or CharClass.Trader)
+                    return 24;
+
+                Item? selected = Items == null ? null : FindOriginalWeapon();
+                return selected?.Type.AttackRange > 0
+                    ? selected.Type.AttackRange
+                    : 16;
+            }
+        }
+
+        public bool IsInAttackRange(Character target) =>
+            IsInAttackRange(target, AttackRange);
+
+        internal bool IsInAttackRange(Character target, float range)
+        {
+            Vector2f difference = Position - target.Position;
+            return difference.x * difference.x + difference.y * difference.y <= range * range;
+        }
+
+        internal void BeginCombatApproach(Character target, float range)
+        {
+            // A new attack starts a new exchange. Do not let the retreat from
+            // the previous exchange override this approach for several seconds;
+            // the encounter will start a fresh flee after all new responses.
+            fleeTimeRemaining = 0;
+            fleeFromCharacter = null;
+            fleeDestination = Position;
+            combatHold = false;
+            combatApproachTarget = target;
+            combatApproachRange = range;
+            Mind?.MoveToObject(null);
+            if (Path == null || Path is PathFinding.ManualPath)
+            {
+                Path = container.Create<PathFinding.ComplexPath>();
+                Path.MoveTo = Position;
+            }
+
+            // Replace an existing formation or autonomous route immediately.
+            // Subsequent updates can track a moving target without replanning
+            // every frame.
+            if (Path is PathFinding.ComplexPath complexPath)
+                complexPath.UpdateMovingTarget(target.Position, forceRepath: true);
+            else
+                Path.MoveTo = target.Position;
+        }
+
+        internal void ClearCombatApproach(Character target)
+        {
+            if (combatApproachTarget != target)
+                return;
+
+            combatApproachTarget = null;
+            combatApproachRange = 0;
+            Path?.Stop(Position);
+        }
+
+        internal void HoldForCombat()
+        {
+            fleeTimeRemaining = 0;
+            fleeFromCharacter = null;
+            fleeDestination = Position;
+            combatApproachTarget = null;
+            combatApproachRange = 0;
+            combatHold = true;
+            Mind?.MoveToObject(null);
+            Path?.Stop(Position);
+        }
+
+        internal void ReleaseCombatHold()
+        {
+            combatHold = false;
+        }
+
+        void UpdateCombatApproach()
+        {
+            Character target = combatApproachTarget;
+            if (target == null)
+                return;
+            if (target.IsDead || target.Location != Location)
+            {
+                ClearCombatApproach(target);
+                return;
+            }
+
+            if (IsInAttackRange(target, combatApproachRange))
+            {
+                Path?.Stop(Position);
+                return;
+            }
+
+            if (Path is PathFinding.ComplexPath complexPath)
+                complexPath.UpdateMovingTarget(target.Position, forceRepath: false);
+            else if (Path != null)
+                Path.MoveTo = target.Position;
+        }
+
+        internal bool ResolveSingleAttack(Character defender, bool useAmmo = true)
+        {
+            if (IsDead || defender.IsDead)
+                return false;
+
+            Root.RuleBook.DealAttackDamage(this, defender, useAmmo);
+            container.Notify(new AttackEvent(this, defender));
+            if (defender.Player?.AiState is AI.ClassicAiState strategicAi)
+                strategicAi.RecordAttack(this, defender);
+            return true;
         }
 
         public void Attack(Character defender, bool defendWithAmmo = true)
         {
 #warning TODO attacks against camps should involve every camp member
 
-            // Add 25% per difficulty. Reverse if current player is not the attacker
-            float difficultyFactor = (1 + Root.World.Difficulty * 0.1f);
-            bool isPlayer = (Player == container.Root.CurrentPlayer);
+            if (IsDead || defender.IsDead)
+                return;
 
             var attackingGroup = (Player != null && Player.Character == this && !Player.SingleMode)
-                ? Player.Group.ToArray()
+                ? Player.Party.ToArray()
                 : new Character[] { this };
 
             foreach (var attacker in attackingGroup)
             {
-                DealAttackDamage(attacker, defender, useAmmo: true,
-                    isPlayer ? 1 : difficultyFactor);
-                DealAttackDamage(defender, attacker, defendWithAmmo,
-                    isPlayer ? difficultyFactor : 1);
+                if (attacker.IsDead)
+                    continue;
+                Root.RuleBook.DealAttackDamage(attacker, defender, useAmmo: true);
+                if (!defender.IsDead)
+                    Root.RuleBook.DealAttackDamage(defender, attacker, defendWithAmmo);
 
                 if (attacker.IsHuman && !defender.IsDead)
                     defender.FleeFrom(attacker);
@@ -535,8 +663,7 @@ namespace Burntime.Remaster.Logic
 
         internal void AttackWithoutRetaliation(Character defender)
         {
-            float difficultyFactor = 1 + Root.World.Difficulty * 0.1f;
-            DealAttackDamage(this, defender, useAmmo: true, difficultyFactor);
+            Root.RuleBook.DealAttackDamage(this, defender, useAmmo: true);
             FleeFrom(defender);
 
             container.Notify(new AttackEvent(this, defender));
@@ -544,16 +671,60 @@ namespace Burntime.Remaster.Logic
                 strategicAi.RecordAttack(this, defender);
         }
 
-        static void DealAttackDamage(Character attacker, Character defender,
-            bool useAmmo, float factor)
+        internal Item? FindOriginalWeapon(bool allowUnloadedRifle = false)
         {
-            int attackValue = attacker.UseBestEquipment(useAmmo);
-            int damage = (int)System.Math.Max(1,
-                (attackValue - defender.DefenseValue) * factor);
-            defender.Health -= damage;
+            Item? selected = Weapon != null && Items.Contains(Weapon)
+                ? Weapon
+                : null;
+            if (selected?.DamageValue == 0 &&
+                !(allowUnloadedRifle && selected.ID == "item_unloaded_rifle"))
+                selected = null;
+            if (selected == null)
+            {
+                // Firearms are an explicit ammunition-use choice for human
+                // players. AI weapon policy continues to manage its own ammo.
+                selected = Player?.Type == PlayerType.Human
+                    ? Items.Where(item => item.DamageValue > 0 &&
+                        !item.ConsumesAmmo)
+                        .OrderBy(item => item.Type.WeaponPriority)
+                        .LastOrDefault()
+                    : Items.FindBestWeapon();
+            }
+            else
+                selected = Items.FindBestWeapon(selected);
+            if (allowUnloadedRifle && selected == null)
+                selected = Items.FirstOrDefault(item => item.ID == "item_unloaded_rifle");
+            return selected;
         }
 
-        void FleeFrom(Character attacker)
+        internal Item? SelectOriginalWeapon(bool allowUnloadedRifle = false)
+        {
+            Weapon = FindOriginalWeapon(allowUnloadedRifle);
+            return Weapon;
+        }
+
+        internal void UseOriginalWeapon(Item weapon)
+        {
+            ItemType loadedType = weapon.Type;
+            weapon.Use();
+            if (weapon.DamageValue != 0)
+                return;
+
+            Item? ammunition = Items.FirstOrDefault(item => item.ID == "item_ammunition");
+            if (ammunition != null)
+            {
+                Items.Remove(ammunition);
+                weapon.Reload(loadedType);
+            }
+            else
+            {
+                Weapon = null;
+            }
+        }
+
+        internal void BeginFleeFrom(Character attacker) => FleeFrom(attacker);
+
+        Vector2 FindFleeDestination(Character attacker)
         {
             Vector2f direction = Position - attacker.Position;
             if (direction.Length < 0.1f)
@@ -566,35 +737,44 @@ namespace Burntime.Remaster.Logic
 
             Vector2 destination = Position + (Vector2)(direction * FLEE_DISTANCE);
             Location? location = Location ?? Player?.Location;
-            if (location is not null && !location.Map.Mask.IsWalkableMapPosition(destination))
+            if (location is null || location.Map.Mask.IsWalkableMapPosition(destination))
+                return destination;
+
+            // Try nearby escape angles when the direct route ends outside the
+            // walkable map. Prefer continuing generally away from the attacker.
+            float[] angles = { 45, -45, 90, -90, 135, -135, 180 };
+            foreach (float angle in angles)
             {
-                // Try nearby escape angles when the direct route ends outside the
-                // walkable map. Prefer continuing generally away from the attacker.
-                float[] angles = { 45, -45, 90, -90 };
-                foreach (float angle in angles)
+                float radians = angle * (float)System.Math.PI / 180;
+                float cos = (float)System.Math.Cos(radians);
+                float sin = (float)System.Math.Sin(radians);
+                Vector2f alternative = new(
+                    direction.x * cos - direction.y * sin,
+                    direction.x * sin + direction.y * cos);
+                Vector2 candidate = Position + (Vector2)(alternative * FLEE_DISTANCE);
+                if (location.Map.Mask.IsWalkableMapPosition(candidate))
                 {
-                    float radians = angle * (float)System.Math.PI / 180;
-                    float cos = (float)System.Math.Cos(radians);
-                    float sin = (float)System.Math.Sin(radians);
-                    Vector2f alternative = new(
-                        direction.x * cos - direction.y * sin,
-                        direction.x * sin + direction.y * cos);
-                    Vector2 candidate = Position + (Vector2)(alternative * FLEE_DISTANCE);
-                    if (location.Map.Mask.IsWalkableMapPosition(candidate))
-                    {
-                        destination = candidate;
-                        break;
-                    }
+                    return candidate;
                 }
             }
 
+            return Position;
+        }
+
+        void FleeFrom(Character attacker)
+        {
+            Vector2 destination = FindFleeDestination(attacker);
             if (destination == Position)
                 return;
 
-            Mind.MoveToObject(null);
-            if (Path is PathFinding.ManualPath)
+            Mind?.MoveToObject(null);
+            combatHold = false;
+            combatApproachTarget = null;
+            combatApproachRange = 0;
+            if (Path == null || Path is PathFinding.ManualPath)
                 Path = container.Create<PathFinding.ComplexPath>();
             Path.MoveTo = destination;
+            fleeFromCharacter = attacker;
             fleeDestination = destination;
             fleeTimeRemaining = FLEE_DURATION;
         }
@@ -610,22 +790,39 @@ namespace Burntime.Remaster.Logic
                 return;
             }
 
-            // npc is with boss
-            if (IsWithBoss)
+            Root.RuleBook.TurnEmployedCharacter(
+                this, AI.AiStateOperations.GetNaturalHealingThreshold(Player.AiState));
+
+            if (IsDead)
+                return;
+
+            ResetStationedMind();
+
+            //Dialog.Turn();
+        }
+
+        internal bool HasLocalDoctor => IsWithBoss
+            ? Player.Party.Any(member => member.Class == CharClass.Doctor)
+            : Location?.CampNPC.Any(member => !member.IsDead &&
+                member.Class == CharClass.Doctor && member.Player == Player) == true;
+
+        internal void TurnExtendedEmployed(int? naturalHealingThreshold, bool skipSupplies)
+        {
+            ICharacterCollection group = GetGroup();
+
+            if (!skipSupplies && Food == 0)
             {
-                Group group = Player.Group;
-
-                if (Food == 0)
+                Item? item = FindAccessibleFood(out IItemCollection? owner);
+                if (item != null && owner != null)
                 {
-                    IItemCollection owner;
-                    Item item = group.FindFood(out owner);
-                    if (item != null)
-                    {
-                        group.Eat(null, item.FoodValue);
-                        owner.Remove(item);
-                    }
+                    group.Eat(null, item.FoodValue);
+                    owner.Remove(item);
                 }
+            }
 
+            // npc is with boss
+            if (!skipSupplies && IsWithBoss)
+            {
                 if (Water == 0)
                 {
                     Item item = group.FindWater();
@@ -636,30 +833,8 @@ namespace Burntime.Remaster.Logic
                     }
                 }
             }
-            else // npc is stationed
+            else if (!skipSupplies) // npc is stationed
             {
-                ICharacterCollection group = GetGroup();
-
-                if (Location.NPCFoodProduction > 0)
-                {
-                    Location.NPCFoodProduction--;
-                    Food++;
-                }
-                else if (Food == 0)
-                {
-                    IItemCollection owner;
-                    // search for food in rooms
-                    Item item = Location.FindFood(out owner);
-                    // if not available then try the inventory
-                    if (item == null)
-                        item = group.FindFood(out owner);
-                    if (item != null)
-                    {
-                        group.Eat(null, item.FoodValue);
-                        owner.Remove(item);
-                    }
-                }
-
                 Location.Source.Reserve = group.Drink(null, Location.Source.Reserve);
                 if (Water == 0)
                 {
@@ -677,26 +852,26 @@ namespace Burntime.Remaster.Logic
             }
 
             // TODO move location healing to location
-            bool doctorAvailable = Player?.Group.Any(chr => chr.Class == CharClass.Doctor) == true ||
-                Location?.CampNPC.Any(chr => chr.Class == CharClass.Doctor && chr.Player == Player) == true;
-            bool aiAutoHealing = Player?.Type == PlayerType.Ai;
-            if (doctorAvailable)
-            {
-                if (health >= 50 || aiAutoHealing)
-                    health += 4;
-            }
-            else
-            {
-                if (health >= 70 || aiAutoHealing)
-                    health += 2;
-            }
+            bool doctorAvailable = HasLocalDoctor;
+            int healingThreshold = RuleFormulas.NaturalHealingThreshold(
+                doctorAvailable, naturalHealingThreshold);
+            int stabilization = RuleFormulas.DoctorStabilizationHealing(
+                Health, doctorAvailable, Food > 0 && Water > 0,
+                Root.RuleBook.Settings.DoctorStabilization);
+            if (stabilization > 0)
+                health += stabilization;
+            else if (health >= healingThreshold)
+                health += doctorAvailable ? 4 : 2;
 
             if (health > 100)
                 health = 100;
-            if (Food == 0)
-                health -= 25;
-            if (Water == 0)
-                health -= 25;
+            if (!skipSupplies)
+            {
+                if (Food == 0)
+                    health -= 25;
+                if (Water == 0)
+                    health -= 25;
+            }
 
             if (health <= 0)
             {
@@ -704,13 +879,19 @@ namespace Burntime.Remaster.Logic
                 return;
             }
 
-            Food--;
-            if (Food < 0)
-                Food = 0;
-            Water--;
-            if (Water < 0)
-                Water = 0;
+            if (!skipSupplies)
+            {
+                Food--;
+                if (Food < 0)
+                    Food = 0;
+                Water--;
+                if (Water < 0)
+                    Water = 0;
+            }
+        }
 
+        void ResetStationedMind()
+        {
             // Selecting a stationed NPC gives it a player-controlled mind. At the
             // start of each new day, camp NPCs return to roaming independently of
             // whether their camp belongs to a human or AI player.
@@ -720,8 +901,6 @@ namespace Burntime.Remaster.Logic
                 Path = container.Create<PathFinding.SimplePath>();
                 Path.MoveTo = Position;
             }
-
-            //Dialog.Turn();
         }
 
         protected void TurnNonPlayer()
@@ -739,19 +918,39 @@ namespace Burntime.Remaster.Logic
                 Water = 0;
         }
 
+        public float GetHazardProtectionRate(string hazardType)
+        {
+            if (((ClassicGame)Container.Root).RuleBook.Settings.IsHazardImmune(hazardType, FaceID))
+                return 1;
+            return System.Math.Clamp(Protection?.Type.GetProtection(hazardType)?.Rate ?? 0, 0, 1);
+        }
+
         public float GetDangerRate()
         {
             if (Location.Danger is null)
                 return 0;
 
-            float rate = 1;
             UseBestProtection();
+            return 1 - GetHazardProtectionRate(Location.Danger.Type);
+        }
 
-            Interaction.DangerProtection? p = Protection?.Type.GetProtection(Location.Danger.Type);
-            if (p is not null)
-                rate -= p.Rate;
+        internal bool ApplyContinuousHazard(float elapsed)
+        {
+            if (Location?.Danger == null)
+                return false;
 
-            return rate;
+            var settings = ((ClassicGame)Container.Root).RuleBook.Settings;
+            if (settings.IsHazardImmune(Location.Danger.Type, FaceID))
+                return false;
+            float rate = GetDangerRate();
+            if (rate <= 0)
+                return false;
+
+            health -= settings.HazardDamage(Location.Danger.Type) * elapsed * rate;
+            if (!IsDead)
+                return false;
+            Die();
+            return true;
         }
 
         public virtual void Update(float elapsed)
@@ -771,7 +970,7 @@ namespace Burntime.Remaster.Logic
             }
 
             Player activePlayer = container.Root.CurrentPlayer as Player;
-            bool isActiveGroup = activePlayer?.Group.Contains(this) == true;
+            bool isActiveGroup = activePlayer?.Party.Contains(this) == true;
             bool isPlayerControlled = activePlayer?.SelectedCharacter == this || Mind is AI.PlayerControlledMind;
             Path.Speed = isActiveGroup || isPlayerControlled
                 ? CONTROLLED_WALK_SPEED
@@ -786,7 +985,8 @@ namespace Burntime.Remaster.Logic
                 Path.Speed = FLEE_SPEED;
 
             bool isHovered = Location?.HoverCharacter == this;
-            bool isInTalkingDistance = IsHuman && !isActiveGroup && !isPlayerControlled &&
+            bool isInTalkingDistance = !combatHold && combatApproachTarget == null &&
+                fleeTimeRemaining <= 0 && IsHuman && !isActiveGroup && !isPlayerControlled &&
                 activePlayer?.SelectedCharacter != null &&
                 activePlayer.Location == Location &&
                 (activePlayer.SelectedCharacter.Position - Position).Length < TALKING_DISTANCE;
@@ -801,41 +1001,53 @@ namespace Burntime.Remaster.Logic
             if (proximityPauseRemaining > 0)
             {
                 proximityPauseRemaining = System.Math.Max(0, proximityPauseRemaining - elapsed);
-                if (!isFleeing)
+                if (!isFleeing && combatApproachTarget == null)
                     Path.Speed = 0;
             }
-            if (isHovered && !isFleeing && !isActiveGroup && !isPlayerControlled)
+            if (isHovered && !isFleeing && combatApproachTarget == null &&
+                !isActiveGroup && !isPlayerControlled)
                 Path.Speed = 0;
 
             Vector2 old = new Vector2(position);
 
             // process dangers (only if hired)
-            if (Player != null)
+            if (Player != null && Root.RuleBook.ApplyContinuousHazard(this, elapsed))
             {
-                if (Location.Danger != null)
-                {
-                    float rate = GetDangerRate();
-                    if (rate > 0)
-                    {
-                        health -= Location.Danger.HealthDecrease * elapsed * rate;
-                        if (IsDead)
-                        {
-                            Die();
-                            return;
-                        }
-                    }
-                }
+                return;
             }
 
-            Mind.Process(elapsed);
+            // Combat movement owns the character until its strike is resolved.
+            // In particular, FellowerMind must not restore formation movement,
+            // and CreatureMind must not deliver an additional autonomous hit.
+            if (combatApproachTarget == null && fleeTimeRemaining <= 0 && !combatHold)
+                Mind.Process(elapsed);
+
+            // A local combat order temporarily takes precedence over formation
+            // following and ordinary autonomous movement. Fleeing is applied
+            // afterwards and therefore remains the final movement authority.
+            UpdateCombatApproach();
 
             if (fleeTimeRemaining > 0)
             {
                 fleeTimeRemaining = System.Math.Max(0, fleeTimeRemaining - elapsed);
-                if ((fleeDestination - Position).Length <= 2)
-                    fleeTimeRemaining = 0;
+                if (fleeTimeRemaining <= 0)
+                {
+                    fleeFromCharacter = null;
+                    Path.Stop(Position);
+                }
                 else
+                {
+                    // Reaching one segment does not end the retreat. Continue
+                    // choosing walkable destinations until the flee timer ends.
+                    if ((fleeDestination - Position).Length <= 4 &&
+                        fleeFromCharacter != null)
+                    {
+                        Vector2 nextDestination = FindFleeDestination(fleeFromCharacter);
+                        if (nextDestination != Position)
+                            fleeDestination = nextDestination;
+                    }
                     Path.MoveTo = fleeDestination;
+                }
             }
 
             Location loc = Location;
@@ -910,58 +1122,37 @@ namespace Burntime.Remaster.Logic
 
         public ICharacterCollection GetGroup()
         {
-            if (Player != null && Player.Group.Contains(this))
+            if (Player != null && Player.Party.Contains(this))
             {
-                return Player.Group;
+                return Player.Party;
             }
 
             return this;
         }
 
-        /// <summary>
-        /// Use best weapon and protection. Returns attack value.
-        /// </summary>
-        private int UseBestEquipment(bool allowAmmo = true)
+        internal Item? FindAccessibleFood(out IItemCollection? owner)
         {
-            Protection = Items.FindBestDefense(Protection);
-
-            // make sure empty guns are not used
-            if (Weapon?.DamageValue == 0)
-                Weapon = null;
-
-            Item? weapon = Items.FindBestWeapon(allowAmmo ? Weapon : null);
-            if (weapon is null)
-                return BaseAttackValue * Experience / 100;
-
-            int attackValue = weapon.DamageValue;
-            if (allowAmmo)
+            ICharacterCollection inventory = GetGroup();
+            Item? item = inventory.FindFood(out IItemCollection inventoryOwner);
+            if (item != null)
             {
-                weapon.Use();
-                if (weapon.DamageValue == 0)
-                    Weapon = null;
+                owner = inventoryOwner;
+                return item;
             }
 
-            Weapon = Items.FindBestWeapon(Weapon);
-            return attackValue * Experience / 100;
-        }
+            if (!IsWithBoss && Location != null)
+                return Location.FindFood(out owner);
 
-        internal int PrepareStrategicAttack()
-        {
-            return UseBestEquipment(allowAmmo: true);
-        }
-
-        internal float PrepareStrategicDefense()
-        {
-            Protection = Items.FindBestDefense(Protection);
-            return DefenseValue;
+            owner = null;
+            return null;
         }
 
         /// <summary>
-        /// Use best danger protection.
+        /// Select the best protection against the current environmental hazard.
         /// </summary>
         private void UseBestProtection()
         {
-            Protection = Items.FindBestProtection(Protection, Location.Danger.Type);
+            Protection = TableCombat.PreferredProtection(this);
         }
 
         #region ICharacterCollection, IEnumerable implementations
@@ -1018,8 +1209,8 @@ namespace Burntime.Remaster.Logic
 
             for (int j = 0; j < Items.Count; j++)
             {
-                if (Items[j].FoodValue != 0 &&
-                    (item == null || Items[j].FoodValue > item.FoodValue))
+                if (Items[j].FoodValue > 0 &&
+                    (item == null || Items[j].FoodValue < item.FoodValue))
                 {
                     item = Items[j];
                     owner = Items;

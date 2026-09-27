@@ -1,0 +1,94 @@
+Remaster AI
+Plays the game normally.
+Receives minor advantages.
+Change to Amiga AI
+}#
+Amiga AI
+Original Amiga AI.
+Quite cheaty actually.
+Change to No AI
+}#
+No AI
+Play without computer
+controlled enemies.
+Change to Remaster AI
+}#
+Knife
+Damage {damage}}
+Equip
+Unequip
+}#
+Extended mode
+New items and uses for old ones.
+Dogs and mutants respawn.
+Food left on the ground decays.
+}
+Change to Classic Mode
+}#
+Classic mode
+Faithful blend of the original
+DOS and Amiga implementations.
+}
+Change to Extended Mode
+}#
+Food {food}}
+Water {water}}
+}#
+Defense {defense}%}
+Gas protection {gas}%}
+Radiation protection {radiation}%}
+}#
+Yields {food} food daily}
+Capacity {water}}
+Full
+Needed for {recipe}}
+Needed for ???
+Needed for ??? x{count}}
+Needed for ...
+Needs Technician
+Place in a room
+Unsuitable camp
+}#
+Easy
+More supplies and finds.
+Better trading odds.
+Change to Normal
+}#
+Normal
+Standard supplies, finds,
+and trading odds.
+Change to Hard
+}#
+Hard
+Fewer supplies and finds.
+Worse trading odds.
+Change to Easy
+}#
+Food Production
+{product}: {tools}}
+None
+Change
+Everyone is supplied
+Not enough water
+Needs materials
+Needs ammunition
+Previous
+Next
+Automatic
+Active trap
+}#
+Reports remote camps and hazards}
+Man does not live by bread alone.}
+Dogs and mutants avoid attacking the carrier.}
+May uncover ammunition while travelling.}
+Load with ammunition}
+Ammo for: {weapons}}
+rifle}
+pistol}
+Reach: {reach}}
+Close}
+Medium}
+Long}
+Ranged}
+Equipped}
+Passive while carried}

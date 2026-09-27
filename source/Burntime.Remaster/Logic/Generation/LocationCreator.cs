@@ -42,6 +42,13 @@ namespace Burntime.Remaster.Logic.Generation
             }
         }
 
+        internal static void ApplyEnvironment(Location location, ConfigFile config, IResourceManager resources)
+        {
+            location.AvailableProducts = config[""].GetInts("available_products");
+            string danger = config[""].GetString("danger");
+            location.Danger = string.IsNullOrEmpty(danger) ? null : resources.GetData(danger) as Danger;
+        }
+
         public void Create(ClassicGame game)
         {
             var resources = LogicFactory.GetParameter<IResourceManager>("resource");
@@ -53,49 +60,28 @@ namespace Burntime.Remaster.Logic.Generation
                 ConfigFile cfg = new ConfigFile();
                 cfg.Open("maps/mat_" + i.ToString("D3") + ".txt");
 
-                Location loc = container.Create<Location>();
-                loc.Id = i - 1;
-                loc.Source.Water = cfg[""].GetInt("water_refresh");
-                loc.Source.Reserve = loc.Source.Water;
-                loc.Source.Capacity = cfg[""].GetInt("water_capacity");
-                loc.Production = null;// city.Producing == -1 ? null : game.Productions[city.Producing];
-                loc.AvailableProducts = new int[] { };// (int[])city.Production.Clone();
-                loc.Danger = resources.GetData(cfg[""].GetString("danger")) as Danger;
-                loc.IsCity = cfg[""].GetBool("city");
-                loc.EntryPoint = cfg[""].GetVector2("entry_point");
-
-                loc.Ways = new int[] { };
-                loc.NeighborIds = cfg[""].GetInts("ways");
-                loc.WayLengths = cfg[""].GetInts("way_lengths");
+                int water = cfg[""].GetInt("water_refresh");
+                int[] neighborIds = cfg[""].GetInts("ways");
+                int[] wayLengths = cfg[""].GetInts("way_lengths");
+                string dangerName = cfg[""].GetString("danger");
+                Map map = container.Create<Map>(new object[] { "maps/mat_" + i.ToString("D3") + ".burnmap??4" });
+                Location loc = Location.Create(container, new Location.Params(
+                    Id: i - 1,
+                    Map: map,
+                    Water: water,
+                    WaterReserve: water,
+                    WaterCapacity: cfg[""].GetInt("water_capacity"),
+                    Production: null,
+                    AvailableProducts: cfg[""].GetInts("available_products"),
+                    Danger: string.IsNullOrEmpty(dangerName) ? null : resources.GetData(dangerName) as Danger,
+                    IsCity: cfg[""].GetBool("city"),
+                    EntryPoint: cfg[""].GetVector2("entry_point"),
+                    Ways: Array.Empty<int>(),
+                    WayLengths: wayLengths,
+                    NeighborIds: neighborIds));
 
                 // in case of a burngfx location we need to add new ways
-                updateBurngfxLocation(loc.Id, loc.NeighborIds, loc.WayLengths, game.World.Locations);
-
-                loc.Map = container.Create<Map>(new object[] { "maps/mat_" + i.ToString("D3") + ".burnmap??4" });
-
-                loc.Rooms = container.CreateLinkList<Room>();
-
-                for (int j = 0; j < loc.Map.Entrances.Length; j++)
-                {
-                    RoomType type = loc.Map.Entrances[j].RoomType;
-
-                    Room room = container.Create<Room>();
-                    room.IsWaterSource = type == RoomType.WaterSource;
-                    if (type != RoomType.Normal && type != RoomType.Rope && type != RoomType.WaterSource)
-                        room.Items.MaxCount = 0;
-                    else
-                        room.Items.MaxCount = room.IsWaterSource ? 8 : 32;
-                    room.EntryCondition.MaxDistanceOnMap = 15;
-                    if (loc.Map.Entrances[j].RoomType == RoomType.Rope)
-                    {
-                        room.EntryCondition.MaxDistanceOnMap = 75;
-                        room.EntryCondition.RequiredItem = game.ItemTypes["item_rope"];
-                    }
-                    room.EntryCondition.RegionOnMap = loc.Map.Entrances[j].Area;
-                    room.EntryCondition.HasRegionOnMap = true;
-                    room.TitleId = loc.Map.Entrances[j].TitleId;
-                    loc.Rooms += room;
-                }
+                updateBurngfxLocation(loc.Id, neighborIds, wayLengths, game.World.Locations);
 
                 game.World.Locations += loc;
                 i++;

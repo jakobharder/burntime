@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
 
 using Burntime.Platform;
 using Burntime.Framework.States;
@@ -28,16 +29,12 @@ namespace Burntime.Remaster.Logic
             set { reserve = value; }
         }
 
+        internal int BaseWater => water;
+
         public int Water
         {
-            get 
-            { 
-                return water + GetBoost(); 
-            }
-            set 
-            { 
-                water = value - GetBoost(); 
-            }
+            get => Root.RuleBook.CalculateWaterOutput(water, HasHandPump, HasIndustrialPump);
+            set => water = value;
         }
 
         protected override void InitInstance(object[] parameter)
@@ -61,41 +58,13 @@ namespace Burntime.Remaster.Logic
 
         public int GetBoost()
         {
-            int boost = 0;
-
-            // at game start objects can be null
-            if (location.Object == null || location.Object.Rooms == null)
-                return 0;
-
-            // find water source
-            Room source = null;
-            foreach (Room room in location.Object.Rooms)
-            {
-                if (room.IsWaterSource)
-                {
-                    source = room;
-                    break;
-                }
-            }
-
-            if (source == null)
-                return 0;
-
-            // find pumps at source
-            bool handPump = null != source.Items.Find("item_hand_pump");
-            bool pump = null != source.Items.Find("item_industrial_pump");
-
-            if (pump)
-            {
-                boost = System.Math.Max(5, water / 2);
-            }
-            else if (handPump)
-            {
-                boost = System.Math.Max(2, water / 4);
-            }
-
-            return boost;
+            return Water - water;
         }
+
+        Room? SourceRoom => location.Object?.Rooms?.FirstOrDefault(room => room.IsWaterSource);
+        bool HasHandPump => SourceRoom?.Items.Find("item_hand_pump") != null;
+        bool HasIndustrialPump => SourceRoom?.Items.Find("item_industrial_pump") != null;
+        ClassicGame Root => (ClassicGame)Container.Root;
 
         public bool RefillItem(Item item)
         {

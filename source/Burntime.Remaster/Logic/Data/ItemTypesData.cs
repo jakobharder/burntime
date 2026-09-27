@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 using Burntime.Framework.States;
@@ -17,7 +18,7 @@ namespace Burntime.Remaster.Logic.Data
             public DataObject Process(ResourceID id, IResourceManager resourceManager)
             {
                 ConfigFile file = new ConfigFile();
-                file.Open(id.File);
+                file.Open(resourceManager.ResolveFileReplacement(id.File));
 
                 return new ItemTypesData(file, resourceManager);
             }
@@ -92,21 +93,42 @@ namespace Burntime.Remaster.Logic.Data
                     type.DrinkValue = section.GetInt("value") / 4.0f;
                 }
 
+                type.LastRoundSprite = section.GetString("image_last_round");
                 type.Class = section.GetStrings("class");
+                foreach (string function in section.GetStrings("function"))
+                {
+                    string name = string.Concat(function.Split(new[] { '_', '-' },
+                        StringSplitOptions.RemoveEmptyEntries).Select(part =>
+                            char.ToUpperInvariant(part[0]) + part[1..]));
+                    if (Enum.TryParse(name, out ItemFunction value) && Enum.IsDefined(value))
+                        type.Functions |= value;
+                    else
+                        Burntime.Platform.Log.Warning(
+                            $"Unknown item function '{function}' on {section.Name}.");
+                }
 
                 type.FoodValue = section.GetInt("food");
                 type.WaterValue = section.GetInt("water");
                 type.HealValue = section.GetInt("heal");
-                type.DamageValue = section.GetInt("damage");
+                type.DamageValues = section.GetInts("damage");
+                if (type.DamageValues.Length is not (0 or 1 or 16) || type.DamageValues.Any(value => value < 0))
+                    throw new InvalidOperationException($"Invalid damage vector for {section.Name}: expected one value or four tiers of four rolls.");
+                type.DamageValue = section.Name == "" || type.DamageValues.Length == 0 ? 0 : (int)type.DamageValues.Average();
+                type.WeaponPriority = section.ContainsKey("weapon_priority") ? section.GetInt("weapon_priority") : null;
+                type.AttackRange = section.GetInt("attack_range");
                 type.Protection = section.GetStrings("protection");
                 type.Production = "";
                 type.Full = section.GetString("full");
                 type.Empty = section.GetString("empty");
                 type.AmmoValue = section.GetInt("ammo");
+                type.Loads = section.GetStrings("loads");
+                type.LoadName = section.GetString("load_name");
                 type.DefenseValue = section.GetInt("defense");
                 type.Fluff = section.Get("fluff");
+                type.TraderWorldGroup = section.GetString("trader_world_group");
+                type.TraderWorldLimit = Math.Max(0, section.GetInt("trader_world_limit"));
 
-                if (type.Protection.Length > 0 || type.DamageValue > 0 || type.DefenseValue > 0)
+                if (section.Name != "" && (type.Protection.Length > 0 || type.DamageValue > 0 || type.DefenseValue > 0))
                 {
                     type.IsSelectable = true;
                 }
@@ -118,6 +140,12 @@ namespace Burntime.Remaster.Logic.Data
                 else
                     resourceManager.RegisterDataObject(section.Name, type);
             }
+
+            // Old saves reference this DataID. Resolve it from canonical data,
+            // without retaining a second weapon definition or sprite mapping.
+            ItemTypeData? rifle = list.FirstOrDefault(type => type.ID == "item_loaded_rifle");
+            if (rifle != null)
+                resourceManager.RegisterDataObject("item_loaded_rifle_1", rifle.CreateAlias());
         }
     }
 }
