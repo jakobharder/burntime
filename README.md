@@ -7,10 +7,10 @@ It recreates the original game with remastered graphics and modern platform supp
 
 ## Features
 
-- Faithful 1993 mode alongside expanded gameplay
+- Classic mode faithful to DOS and Amiga implementations
+- Extended mode with improved systems, new items and mechanics
 - Remastered graphics, widescreen and modern resolutions
-- New locations, items and gameplay mechanics
-- Reworked AI and difficulty levels
+- Amiga AI and Remaster AI and difficulty levels
 - Mouse, keyboard and gamepad controls
 - Native Windows, macOS and Linux support
 
@@ -18,7 +18,7 @@ It recreates the original game with remastered graphics and modern platform supp
 
 ## How to get
 
-- [Steam](https://store.steampowered.com/app/3269080/Burntime_Remastered/) (Windows & SteamOS Proton)
+- [Steam](https://store.steampowered.com/app/3269080/Burntime_Remastered/) (Windows, MacOS & Linux)
 - [Direct Download](https://github.com/jakobharder/burntime/releases) (Windows, MacOS & Linux)
 
 ## Notes
