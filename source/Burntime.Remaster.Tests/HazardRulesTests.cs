@@ -18,6 +18,40 @@ static class HazardRulesTests
     internal static IEnumerable<Case<int>> ContinuousHazardCases()
     {
         foreach (RuleSet rule in Enum.GetValues<RuleSet>())
+            yield return Int($"{rule} inventory prioritizes hazard wearables", 0, () =>
+            {
+                var manager = new StateManager(null!);
+                var character = manager.Create<HazardCharacter>();
+                var location = manager.Create<Location>();
+                character.Place(location);
+                var mask = manager.Create<Item>(manager.Create(() => new HazardProtectionType("gas")));
+                var suit = manager.Create<Item>(manager.Create(() => new HazardProtectionType("radiation")));
+                var jacket = TestItem(manager, "jacket", defense: 20);
+                var rules = new GameRules(rule);
+                character.Items.Add(mask);
+                rules.SelectCombatLoadout(character);
+                Equal(mask, character.Protection, "only wearable auto-equips even without hazard");
+                character.Items.Add(jacket);
+                rules.SelectCombatLoadout(character);
+                Equal(jacket, character.Protection, "safe location prefers damage protection");
+                location.Danger = new("gas", 95, "", null!) { DataName = "gas" };
+                rules.SelectCombatLoadout(character);
+                Equal(mask, character.Protection, "gas mask takes priority over jacket");
+                Equal(mask, TableCombat.PreferredProtection(character), "combat preserves hazard protection");
+                character.Items.Add(suit);
+                location.Danger = new("radiation", 95, "", null!) { DataName = "radiation" };
+                rules.SelectCombatLoadout(character);
+                Equal(suit, character.Protection, "hazard change selects matching protection");
+                character.Items.Remove(suit);
+                rules.SelectCombatLoadout(character);
+                Equal(jacket, character.Protection, "no matching protection falls back to jacket");
+                location.Danger = null;
+                rules.SelectCombatLoadout(character);
+                Equal(jacket, character.Protection, "leaving hazard prefers clothing");
+                return 0;
+            });
+
+        foreach (RuleSet rule in Enum.GetValues<RuleSet>())
         foreach (string hazard in new[] { "gas", "radiation" })
         {
             yield return Int($"{rule} {hazard} exposure, equipment and death", 0, () =>

@@ -1,5 +1,5 @@
-You need {missing} of the {neighbors} surrounding camps
+You still need {missing} surrounding camps|#You still need {missing} surrounding camp
 to control this city.
-You need all {total} cities to win.
-You hold all {neighbors} surrounding camps
-and control this city.
+Control all {total} cities to win.
+You control all surrounding camps
+and therefore this city.

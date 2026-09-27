@@ -9,6 +9,14 @@ static class ManualTextLayoutTests
 {
     internal static IEnumerable<Case<int>> Cases()
     {
+        yield return Int("changelog subheadings wrap using small font metrics", 0, () =>
+        {
+            Equal("##one two|##three", string.Join('|',
+                ManualTextLayout.Wrap(["##one two three"], 7,
+                    text => text.Length, text => text.Length * 2)),
+                "small heading width and marker survive wrapping");
+            return 0;
+        });
         yield return Int("manual reflows paragraphs for active font metrics", 0, () =>
         {
             string[] paragraphs = ["one two three four"];

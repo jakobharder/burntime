@@ -28,6 +28,7 @@ public sealed class ManualWindow : Container
     {
         Text,
         Heading,
+        Subheading,
         Tiers,
         ClassImage,
         SupplyExample,
@@ -41,6 +42,7 @@ public sealed class ManualWindow : Container
 
     readonly GuiFont _titleFont;
     readonly GuiFont _textFont;
+    readonly GuiFont _subheadingFont;
     readonly GuiFont _mutedFont;
     readonly GuiFont _detailFont;
     readonly InputControlLabelRenderer _exitControlRenderer;
@@ -78,6 +80,8 @@ public sealed class ManualWindow : Container
             ClassicColors.DialogText) { Borders = TextBorders.None };
         _textFont = new GuiFont("font-small.txt",
             ClassicColors.LightGray) { Borders = TextBorders.None };
+        _subheadingFont = new GuiFont("font-small.txt",
+            ClassicColors.DialogText) { Borders = TextBorders.None };
         _mutedFont = new GuiFont(BurntimeClassic.FontName,
             ClassicColors.MenuText) { Borders = TextBorders.None };
         _detailFont = new GuiFont("font-small.txt",
@@ -291,6 +295,8 @@ public sealed class ManualWindow : Container
         if (line.StartsWith("@construction|"))
             return new(ManualEntryKind.Construction, line[14..],
                 ConstructionLineCount(line[14..]));
+        if (line.StartsWith("##"))
+            return new(ManualEntryKind.Subheading, line[2..], 1);
         if (line.StartsWith("#"))
             return new(ManualEntryKind.Heading, line[1..], PixelLineCount((_setupNotes ? 1 : 2) * _titleFont.LineHeight));
         return new(ManualEntryKind.Text, line, 1);
@@ -360,6 +366,10 @@ public sealed class ManualWindow : Container
                 int headingOffset = (entry.LineCount * TextLineHeight - _titleFont.GetHeight()) / 2;
                 _titleFont.DrawText(target, new Vector2(6, y + headingOffset),
                     entry.Payload, TextAlignment.Left, VerticalTextAlignment.Top);
+                break;
+            case ManualEntryKind.Subheading:
+                _subheadingFont.DrawText(target, new Vector2(6, y), entry.Payload,
+                    TextAlignment.Left, VerticalTextAlignment.Top);
                 break;
             case ManualEntryKind.Tiers:
                 RenderTierLine(target, y);

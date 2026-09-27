@@ -29,7 +29,10 @@ public sealed class TooltipWindow : Window
     public GuiString? Text { get; set; }
     public InputPrompt? Prompt { get; set; }
     public bool StackPrompts { get; set; }
+    public bool StatusReplacesSecondaryPrompt { get; set; }
     public InputPrompt? SecondaryPrompt { get; set; }
+    InputPrompt? VisibleSecondaryPrompt => StatusReplacesSecondaryPrompt &&
+        Status is not null && !string.IsNullOrEmpty(Status) ? null : SecondaryPrompt;
     public GuiString? Status { get; set; }
     public bool StatusIsMuted { get; set; }
     public bool StatusIsSuccess { get; set; }
@@ -72,7 +75,7 @@ public sealed class TooltipWindow : Window
             textBounds.Width);
 
         bool hasPrompts = Prompt is { IsEmpty: false } ||
-            SecondaryPrompt is { IsEmpty: false };
+            VisibleSecondaryPrompt is { IsEmpty: false };
         bool hasFooter = hasStatus || hasPrompts;
 
         int promptRows = hasPrompts ? 1 : 0;
@@ -80,7 +83,7 @@ public sealed class TooltipWindow : Window
         if (hasPrompts)
         {
             int promptWidth = MeasurePrompt(Prompt);
-            int secondaryPromptWidth = MeasurePrompt(SecondaryPrompt);
+            int secondaryPromptWidth = MeasurePrompt(VisibleSecondaryPrompt);
             int footerWidth;
             if (StackPrompts)
             {
@@ -95,6 +98,9 @@ public sealed class TooltipWindow : Window
             }
             contentWidth = System.Math.Max(contentWidth, footerWidth);
         }
+
+        if (StatusReplacesSecondaryPrompt && hasStatus)
+            promptRows = 1; // Keep the transfer row reserved even when moving is unavailable.
 
         int sectionCount = (hasHeader ? 1 : 0) + (hasText ? 1 : 0) +
             (hasFooter ? 1 : 0);
@@ -123,7 +129,7 @@ public sealed class TooltipWindow : Window
         string text = Text ?? string.Empty;
         string status = Status ?? string.Empty;
         bool hasPrompts = Prompt is { IsEmpty: false } ||
-            SecondaryPrompt is { IsEmpty: false };
+            VisibleSecondaryPrompt is { IsEmpty: false };
         bool hasFooter = status.Length > 0 || hasPrompts;
         int y = TopPadding;
         if (header.Length > 0)
@@ -149,9 +155,11 @@ public sealed class TooltipWindow : Window
             GuiFont statusFont = StatusIsSuccess ? _successFont :
                 StatusIsMuted ? _mutedStatusFont : _statusFont;
             statusFont.DrawText(target,
-                new Vector2(Size.x - HorizontalPadding, y), status,
+                new Vector2(Size.x - HorizontalPadding,
+                    y + (StatusReplacesSecondaryPrompt ? _controlRenderer.LineHeight : 0)), status,
                 TextAlignment.Right, VerticalTextAlignment.Top);
-            y += _statusFont.LineHeight;
+            if (!StatusReplacesSecondaryPrompt)
+                y += _statusFont.LineHeight;
         }
         if (!hasPrompts)
             return;
@@ -160,11 +168,11 @@ public sealed class TooltipWindow : Window
         InputControlLabel promptControl = InputControlDisplay.Resolve(app,
             app.LastInputMode, Prompt);
         InputControlLabel secondaryPromptControl = InputControlDisplay.Resolve(app,
-            app.LastInputMode, SecondaryPrompt);
+            app.LastInputMode, VisibleSecondaryPrompt);
         bool hasPrompt = !promptControl.IsEmpty;
         bool hasSecondaryPrompt = !secondaryPromptControl.IsEmpty;
         int right = PromptRightEdge(hasSecondaryPrompt ? secondaryPromptControl : promptControl);
-        if (hasSecondaryPrompt && SecondaryPrompt is InputPrompt secondaryPrompt)
+        if (hasSecondaryPrompt && VisibleSecondaryPrompt is InputPrompt secondaryPrompt)
         {
             int secondaryY = y + (StackPrompts && hasPrompt ? _controlRenderer.LineHeight : 0);
             _controlRenderer.Draw(target, new Vector2(right, secondaryY),

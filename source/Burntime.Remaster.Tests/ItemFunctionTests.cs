@@ -14,6 +14,33 @@ static class ItemFunctionTests
 {
     internal static IEnumerable<Case<int>> FunctionCases()
     {
+        yield return Int("in-use marker follows carried effects and equipment", 0, () =>
+        {
+            var manager = new Burntime.Framework.States.StateManager(null!);
+            var character = manager.Create<Character>();
+            foreach (ItemFunction function in new[] { ItemFunction.RestingSustenance,
+                ItemFunction.CreatureDeterrent, ItemFunction.RemoteIntel, ItemFunction.MetalDetection })
+            {
+                Item item = TestItem(manager, "passive", functions: function);
+                Equal(false, character.IsItemInUse(item), "stored item is inactive");
+                character.Items.Add(item);
+                Equal(true, character.IsItemInUse(item), "carried effect is marked");
+                character.Items.Remove(item);
+                Equal(false, character.IsItemInUse(item), "removed effect loses marker");
+            }
+            Item tradeItem = TestItem(manager, "item_bible");
+            character.Items.Add(tradeItem);
+            Equal(false, character.IsItemInUse(tradeItem), "no effect in original rules");
+            Item weapon = TestItem(manager, "weapon", damage: 25);
+            character.Items.Add(weapon);
+            Equal(false, character.IsItemInUse(weapon), "spare weapon is not marked");
+            character.Weapon = weapon;
+            Equal(true, character.IsItemInUse(weapon), "selected weapon is marked");
+            character.Items.Remove(weapon);
+            Equal(false, character.IsItemInUse(weapon), "removed weapon loses marker");
+            return 0;
+        });
+
         yield return Int("item type exposes configured functions", 0, () =>
         {
             var manager = new Burntime.Framework.States.StateManager(null!);

@@ -156,7 +156,8 @@ public enum SystemKey
     Left,
     Right,
     Tab,
-    Alt
+    Alt,
+    Ctrl
 }
 
 [Flags]

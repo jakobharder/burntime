@@ -3,27 +3,39 @@ Versus Original
 Credits
 Notes
 }#
-#GAME RULES
-Classic follows DOS rules. Amiga uses the original Amiga balance, including its healing, combat and supply rules.
-Extended adds equipment effects, food decay and other survival mechanics.
+#GAMEPLAY
+- Follows DOS and Amiga implementations as close as possible
+- Bug fixes like hazards relying on PC speed
+- Modified combat with fairer retaliation; longer-reach weapons strike first
+- Trade offer value: 100% / 90% / 80% (a mix of DOS and Amiga rules)
+- Optional early victory after defeating the last rival
 
-#COMPUTER OPPONENTS
-AI is selected separately from game rules.
-DOS and Amiga AI follow the original behavior. Remaster AI adds supply, equipment and camp management. AI can also be disabled.
+#QUALITY OF LIFE
+- Automatic weapon and protection selection on pickup and before combat; firearms selected manually
+- Automatic trap selection in camps
+- Doctor previews healing before payment
+- Inventory shows damage and protection
+- Item tooltips
+- More info on the world map: travel days and camp supplies
+- Shortcut to show all entrances
+- Keyboard/gamepad controls and autosaves
 
-#CONTROLS AND INTERFACE
-- Keyboard and gamepad controls
-- Contextual prompts and item tooltips
-- In-game manual and autosaves
-- Treatment preview at doctors
-UI hints can be disabled in Settings.
+#EXTENDED: ITEMS
+- Clothing: 5-25% damage reduction
+- Radio: remote camp hazards, defenders and production
+- Metal detector: 1% ammunition discovery chance per travel day
+- Bible: no food or water use while stationary; normal consumption on trips
+- Skull / bones: carrier ignored by dogs and mutants
+- Extra equipment: pistol and paper helmet
 
-#GRAPHICS AND MUSIC
-Original and remastered graphics use the same game rules.
-DOS, Amiga and remastered music can be selected independently in Settings.
-
-#FIXES AND CHANGES
-Original bugs are not all preserved. See Patch Notes for individual fixes and gameplay changes.
+#EXTENDED: GAMEPLAY
+- Doctor: +1 health/day below 50 health for supplied characters
+- Food on the ground: decay over time
+- New recruits: supplies based on payment and difficulty, rather than always full
+- Random starting loot; fewer supplies on harder settings
+- Rotating trader stock; limited rare utility items
+- Returning recruits: cities replenished first; slower respawns on harder settings
+- Dogs, mutants and traders: possible respawns
 }#
 #BURNTIME REMASTER
 Development and remaster: Jakob Harder

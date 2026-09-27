@@ -20,7 +20,6 @@ internal static class SetupPatchNotes
     internal static string[] Format(string markdown)
     {
         var result = new List<string>();
-        string release = "";
         foreach (string raw in markdown.Split('\n'))
         {
             string line = raw.Trim().TrimStart('\uFEFF');
@@ -28,15 +27,12 @@ internal static class SetupPatchNotes
                 continue;
             if (line.StartsWith("## "))
             {
-                release = line[3..].Replace("[", "").Replace("]", "");
-                result.Add("#" + release);
+                result.Add("#" + line[3..].Replace("[", "").Replace("]", ""));
                 continue;
             }
             if (line.StartsWith("### "))
             {
-                if (result.Count > 0 && result[^1] == "#" + release)
-                    result.RemoveAt(result.Count - 1);
-                line = "#" + (release.Length > 0 ? release + ": " : "") + line[4..];
+                line = "##" + line[4..];
             }
             else if (line.StartsWith('#'))
                 line = "#" + line.TrimStart('#', ' ');

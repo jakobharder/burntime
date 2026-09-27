@@ -1,87 +1,95 @@
 ﻿# Burntime Changelog
 
-## [Unreleased]
+## 1.2 (2026-09-27)
 
-### Changes
+### Game rules and AI
 
-- Game rules and AI
-  - After defeating the last rival, choose to claim victory immediately or continue until you control all cities
-  - Reworked Classic mode using gameplay rules from the original DOS and Amiga versions
-  - Added original Amiga AI as an alternative to Remaster AI
-  - Aligned combat damage, experience, hiring, healing, production and trading with the original mechanics
-  - Reworked NPC respawning with staggered location cycles; Extended mode replenishes cities first
-  - Improved Remaster AI equipment, supplies, camp management and combat loot collection
-  - Remaster AI now defers repeated unsuccessful attacks until its forces improve, the target's defenses weaken or ownership changes
+- Added original Amiga AI
+- Restored original combat, XP, hiring, healing, production and trade mechanics
+- Reworked Classic rules from the DOS and Amiga originals
+- Staggered NPC respawns; cities first in Extended mode
+- Optional early victory after defeating the last rival
+- Improved Remaster AI equipment, supplies, camps and looting
 
-- Extended mode
-  - Two-way radios reveal hazards and report personnel, defenses and production at remote camps
-  - Metal detectors can uncover ammunition while travelling and can be repaired by technicians
-  - Carrying a Bible removes food and water needs while staying at one location; travel still consumes supplies
-  - Remaster AI can use a Bible to establish a self-sufficient caretaker at Reststop
-  - Skulls and bones deter dogs and mutants from attacking their carrier
-  - Doctors now slowly stabilize supplied characters below 50 health
-  - Food left on the ground decays over time
-  - Rebalanced trader assortments and the availability of rare utility items
+### Extended mode
 
-- Combat and camp management
-  - Improved group attacks, retaliation and fleeing, with longer-reach weapons striking first
-  - Automatically select all party members after hiring an NPC
-  - Improved group following into attacks, rooms and traders
-  - Added automatic and manual food production selection, including selection directly from traps in rooms
-  - Update food production when tools are placed or removed, and preferably place produced food next to the trap
+- Rebalanced trader stock and rare utility items
+- Radios report remote camp hazards, defenders and production
+- Metal detectors find ammunition on trips
+- Bible prevents food and water consumption while stationary
+- Skulls and bones protect carriers from dogs and mutants
+- Doctors slowly stabilize supplied characters below 50 health
+- Food decays on the ground
 
-- Interface and controls
-  - Added an in-game manual
-  - Added game setup tooltips explaining modes, AI and difficulty
-  - Added item tooltips throughout inventory, trading and service screens, including damage, reach, protection, supplies and construction hints
-  - Doctors now preview how much health an offered payment will restore before treatment
-  - Show food, trap and water information on entrances and locations, and travel days on the world map
-  - Added city reports showing surrounding camp ownership and progress toward victory
-  - Added Alt/LT shortcut to show all entrances
-  - Added nearby target cycling with Tab, Shift+Tab and the right trigger
-  - Polished input, contextual prompts, HUD and hover text placement
-  - Added option to hide prompts and tooltips
+### Combat and camp management
 
-- Graphics and audio
-  - Remastered restaurant scenes and their animations
-  - Improved font rendering, supply indicators and keyboard/gamepad glyphs
-  - Added music on maps, with smooth track transitions and mode selection in options
+- Improved group attacks, retaliation and fleeing
+- Longer-reach weapons strike first
+- Select the whole party after hiring
+- Improved group following into fights, rooms and traders
+- Automatic and manual trap selection
+- Food spawns near traps when possible
+
+### Interface and controls
+
+- Added in-game manual
+- Added optional tooltips for game setup and items
+- Preview healing before paying doctors
+- Show food, traps and water on entrances and locations
+- Show travel days on the world map
+- Added city control and victory progress reports
+- Show all entrances with Alt/LT
+- Cycle nearby targets with Tab, Shift+Tab or right trigger
+- Polished input, prompts, HUD and hover text placement
+
+### Graphics and audio
+
+- Remastered restaurant scenes and animations
+- Improved fonts, supply indicators and input glyphs
+- Added map music, smooth transitions and music mode selection
 
 ### Fixes
 
-- Preserve existing save files if saving fails
-- Fixed party members overlapping or getting stuck when entering locations
-- Fixed save/load list scroll position resetting after selection changes
-- Apply previous dog and mutant changes to existing saves
+- Preserve saves when saving fails
+- Fixed party overlap and stuck followers when entering locations
+- Fixed save/load list scroll position after selection changes
+- Apply dog and mutant changes to existing saves
 
 ## 1.1 (2026-09-04)
 
-### Changes
+### Platform Support
 
-- Platform Support
-  - Added macOS and Linux support
-  - Improved Steam Deck and gamescope support
-  - Added keyboard and gamepad support
-  - Added contextual keyboard and gamepad prompts
-  - Updated dependencies (.NET 10, MonoGame 3.8.5)
-- Reworked AI player behavior
-  - They play more closely by the rules now, with trade and inventory boosts
-  - They attack, plan attacks and retreat in danger
-  - Camp takeover now leaves storage intact
-  - Enclosed AIs immediately die on easy; on medium/hard they attack or die trying
-- QoL
-  - Added auto saves
-- Balancing
-  - Disabled dog and mutant spawning in original mode
-  - Reduced dog and mutant spawning in extended mode
-  - Reduced mutant drops and removed dog droppings
-  - Prevented dogs and mutants from attacking in cities
-- Graphics
-  - Improved character portraits
-  - Improved item graphics
-  - Improved font
-  - Remastered travel paths
-  - Additional runtime xbr2 filtering for remastered graphics
+- Added macOS and Linux support
+- Improved Steam Deck and gamescope support
+- Added keyboard and gamepad support
+- Added contextual keyboard and gamepad prompts
+- Updated dependencies (.NET 10, MonoGame 3.8.5)
+
+### Reworked AI player behavior
+
+- They play more closely by the rules now, with trade and inventory boosts
+- They attack, plan attacks and retreat in danger
+- Camp takeover now leaves storage intact
+- Enclosed AIs immediately die on easy; on medium/hard they attack or die trying
+
+### QoL
+
+- Added auto saves
+
+### Balancing
+
+- Disabled dog and mutant spawning in original mode
+- Reduced dog and mutant spawning in extended mode
+- Reduced mutant drops and removed dog droppings
+- Prevented dogs and mutants from attacking in cities
+
+### Graphics
+
+- Improved character portraits
+- Improved item graphics
+- Improved font
+- Remastered travel paths
+- Additional runtime xbr2 filtering for remastered graphics
 
 ### Fixes
 

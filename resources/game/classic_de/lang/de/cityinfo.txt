@@ -1,5 +1,5 @@
-Dir fehlen {missing} von {neighbors} umliegenden Lagern,|#Dir fehlt {missing} von {neighbors} umliegenden Lagern,
+Dir fehlen noch {missing} umliegende Lager,|#Dir fehlt noch {missing} umliegendes Lager,
 um diese Stadt zu kontrollieren.
-Für den Sieg brauchst du alle {total} Städte.
-Dir gehören alle {neighbors} umliegenden Lager.
-Damit kontrollierst du diese Stadt.
+Kontrolliere alle {total} Städte, um zu gewinnen.
+Du kontrollierst alle umliegenden Lager
+und damit auch diese Stadt.

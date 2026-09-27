@@ -30,6 +30,7 @@ internal sealed class ItemGridTooltip
     const int CreatureDeterrentText = 81, MetalDetectionText = 82;
     const int LoadWithAmmunitionText = 83, LoadsWeaponsText = 84;
     const int ReachText = 87, ReachNameText = 88;
+    const int EquippedText = 92, PassiveText = 93;
     readonly Module app;
     readonly Func<Character?> viewer;
     readonly List<Source> sources = [];
@@ -114,6 +115,7 @@ internal sealed class ItemGridTooltip
         Window.Status = details.Status;
         Window.StatusIsSuccess = details.StatusIsSuccess;
         Window.StatusIsMuted = details.StatusIsMuted;
+        Window.StatusReplacesSecondaryPrompt = app.IsNewGfx;
         Window.RefreshLayout();
         if (!Window.IsVisible)
             Window.Show();
@@ -137,6 +139,10 @@ internal sealed class ItemGridTooltip
         ClassicGame? game = app.GameState as ClassicGame;
         if (game == null)
             return string.Empty;
+
+        if (viewer() is Character carrier && carrier.IsItemInUse(item))
+            lines.Add(app.ResourceManager.GetString("tooltip",
+                item.Type.Functions != ItemFunction.None ? PassiveText : EquippedText));
 
         if (item.Type.DamageValues.Length > 0 && viewer() is Character character)
         {

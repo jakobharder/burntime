@@ -20,10 +20,11 @@ internal static class ManualTextLayout
             }
 
             bool heading = paragraph.StartsWith('#');
-            string prefix = heading ? "#" : "";
-            Func<string, int> measure = heading ? measureHeading : measureText;
+            bool subheading = paragraph.StartsWith("##");
+            string prefix = subheading ? "##" : heading ? "#" : "";
+            Func<string, int> measure = heading && !subheading ? measureHeading : measureText;
             string line = "";
-            foreach (string word in (heading ? paragraph[1..] : paragraph)
+            foreach (string word in paragraph[prefix.Length..]
                 .Split(' ', StringSplitOptions.RemoveEmptyEntries))
             {
                 string next = line.Length == 0 ? word : line + " " + word;

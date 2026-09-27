@@ -328,6 +328,7 @@ static class InputControlDisplay
             SystemKey.Enter => KeyboardGlyph.Enter,
             SystemKey.Tab => KeyboardGlyph.Tab,
             SystemKey.Alt => KeyboardGlyph.Alt,
+            SystemKey.Ctrl => KeyboardGlyph.Ctrl,
             SystemKey.Up => KeyboardGlyph.Up,
             SystemKey.Down => KeyboardGlyph.Down,
             SystemKey.Left => KeyboardGlyph.Left,

@@ -10,4 +10,5 @@ low
 moderate
 high
 extreme
-Food {food}/day, water {water}/day}
+Food {food} days, water {water} days}
+Defenders: {count}, threat: {threat}}

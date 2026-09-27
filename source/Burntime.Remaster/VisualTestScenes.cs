@@ -56,7 +56,7 @@ public sealed class VisualTestScenes(BurntimeClassic app)
                 break;
             case "setup-notes":
                 // Exercise physical shortcuts, not just their semantic action.
-                app.DeviceManager.VKeyPress(SystemKey.F1);
+                app.DeviceManager.VKeyPress(SystemKey.Ctrl);
                 app.Process(0);
                 break;
             case "setup-versus-original":

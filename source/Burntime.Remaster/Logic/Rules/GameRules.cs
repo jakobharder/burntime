@@ -249,7 +249,7 @@ internal sealed class GameRules
         TableCombat.WeaponPreview(character, weapon, Settings);
 
     public void SelectCombatLoadout(Character character) =>
-        TableCombat.SelectLoadout(character, UsesArmour);
+        TableCombat.SelectLoadout(character);
 
     public float CalculateStrategicStrength(Character character, bool detailed) =>
         TableCombat.Strength(character, Settings, detailed, UsesArmour);

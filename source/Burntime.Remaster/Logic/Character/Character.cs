@@ -216,6 +216,9 @@ namespace Burntime.Remaster.Logic
         public int GetWaterInInventory() => Items.OfType<Item>().Sum(x => x.WaterValue);
         internal bool HasItemFunction(ItemFunction function) =>
             Items?.Any(item => item.Type.HasFunction(function)) == true;
+
+        internal bool IsItemInUse(Item item) => Items.Contains(item) &&
+            (Weapon == item || Protection == item || item.Type.Functions != ItemFunction.None);
         #endregion
 
         protected override void InitInstance(object[] parameter)
@@ -1149,7 +1152,7 @@ namespace Burntime.Remaster.Logic
         /// </summary>
         private void UseBestProtection()
         {
-            Protection = Items.FindBestProtection(Protection, Location.Danger.Type);
+            Protection = TableCombat.PreferredProtection(this);
         }
 
         #region ICharacterCollection, IEnumerable implementations

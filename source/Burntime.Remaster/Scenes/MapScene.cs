@@ -206,35 +206,12 @@ namespace Burntime.Remaster
             TextHelper text = new(app, "radio");
             text.AddArgument("{location}", location.Title);
             text.AddArgument("{count}", report.Defenders);
-            text.AddArgument("{bosses}", report.Bosses);
-            text.AddArgument("{mercenaries}", report.Mercenaries);
-            text.AddArgument("{technicians}", report.Technicians);
-            text.AddArgument("{doctors}", report.Doctors);
             text.AddArgument("{food}", report.Food);
             text.AddArgument("{water}", report.Water);
+            text.AddArgument("{threat}", text.Get(7 + System.Math.Max(1, report.Threat)));
 
-            List<string> lines = [text.Get(0)];
-            if (report.Defenders == 0)
-            {
-                lines.Add(text.Get(1));
-            }
-            else
-            {
-                lines.Add(text.Get(2));
-                if (report.Bosses > 0)
-                    lines.Add(text.Get(3));
-                if (report.Mercenaries > 0)
-                    lines.Add(text.Get(4));
-                if (report.Technicians > 0)
-                    lines.Add(text.Get(5));
-                if (report.Doctors > 0)
-                    lines.Add(text.Get(6));
-                text.AddArgument("{threat}", text.Get(7 + report.Threat));
-                lines.Add(text.Get(7));
-            }
-            lines.Add(text.Get(12));
-
-            ShowReport(player, lines.ToArray());
+            ShowReport(player, [text.Get(0), text.Get(12),
+                text.Get(report.Defenders == 0 ? 1 : 13)], textLinesPerPage: 3);
         }
 
         void ShowReport(Logic.Player player, string[] lines, int textLinesPerPage = 2)

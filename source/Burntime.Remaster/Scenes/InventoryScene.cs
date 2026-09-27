@@ -696,11 +696,7 @@ namespace Burntime.Remaster.Scenes
             else if (item.IsSelectable)
             {
                 inventory.ActiveCharacter.SelectItem(item);
-                inventory.Grid.Selection.Clear();
-                if (inventory.ActiveCharacter.Weapon != null)
-                    inventory.Grid.Selection.Add(inventory.ActiveCharacter.Weapon);
-                if (inventory.ActiveCharacter.Protection != null)
-                    inventory.Grid.Selection.Add(inventory.ActiveCharacter.Protection);
+                inventory.RefreshItemMarkers();
             }
             else if (item.Type.Production != null)
             {

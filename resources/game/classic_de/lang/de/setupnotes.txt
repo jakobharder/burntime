@@ -1,0 +1,69 @@
+Patch Notes
+Versus Original
+Credits
+Hinweise
+}#
+#SPIELREGELN
+- Möglichst originalgetreu nach DOS- und Amiga-Version
+- Fehlerkorrekturen, etwa bei vom PC-Tempo abhängigem Gefahrenschaden
+- Überarbeitete Kämpfe mit faireren Gegenangriffen; Waffen mit größerer Reichweite schlagen zuerst zu
+- Tauschwert bei Händlern: 100% / 90% / 80% (Mischung aus DOS- und Amiga-Regeln)
+- Optionaler vorzeitiger Sieg nach dem letzten besiegten Gegner
+
+#KOMFORT
+- Automatische Waffen- und Schutzwahl beim Aufnehmen und vor Kämpfen; Schusswaffen nur nach manueller Auswahl
+- Automatische Fallenauswahl in Lagern
+- Heilungsvorschau beim Arzt vor der Bezahlung
+- Schaden und Schutz im Inventar sichtbar
+- Tooltips für Gegenstände
+- Mehr Weltkarteninfos: Reisetage und Lagervorräte
+- Taste zum Anzeigen aller Eingänge
+- Tastatur/Gamepad und automatisches Speichern
+
+#EXTENDED: GEGENSTÄNDE
+- Kleidung: 5-25% weniger Schaden
+- Funkgerät: Gefahren, Verteidiger und Produktion entfernter Lager
+- Metalldetektor: 1% Chance auf Munitionsfund pro Reisetag
+- Bibel: kein Nahrungs- oder Wasserverbrauch am Standort; normaler Verbrauch auf Reisen
+- Schädel / Knochen: Träger von Hunden und Mutanten ignoriert
+- Zusätzliche Ausrüstung: Pistole und Papierhelm
+
+#EXTENDED: SPIELREGELN
+- Arzt: +1 Gesundheit/Tag unter 50 Gesundheit
+- Nahrung am Boden: Verfall mit der Zeit
+- Neue Rekruten: Vorräte nach Bezahlung und Schwierigkeit statt immer voll
+- Zufällige Gegenstände; weniger bei höherer Schwierigkeit
+- Wechselndes Händlerangebot; begrenzte seltene Hilfsmittel
+- Zurückkehrende Rekruten: Städte werden zuerst aufgefüllt; seltener bei höherer Schwierigkeit
+- Hunde, Mutanten und Händler: möglicher Respawn
+}#
+#BURNTIME REMASTER
+Development and remaster: Jakob Harder
+Spanish translation: German Jakob
+Contributions: Krystian Rabe, Felix Stolle, Chris1982, graysonwall, Shadow, Maschine and Memento.
+
+#THE ORIGINAL GAME - MAX DESIGN
+Idea and concept: Wilfried Reiter, Albert Lasser and Martin Lasser
+Programming: Albert Lasser and Wilfried Reiter
+Graphics: Martin Lasser and Wilfried Reiter
+Music and sound: Hannes Seifert
+Handbook: Johann Schilcher and John WooD (JoWooD)
+Cover and packaging: Robert Pils
+Testing: Michael Schuetter, Manfred Bertl and Dieter Bernauer
+Coffee and customer care: Elisabeth Lasser
+Translation: Patricia Spella
+Special thanks: Greenpeace
+
+#THANK YOU
+Thanks to Martin Lasser, Wilfried Reiter and Hannes Seifert for allowing use of the original graphics and music. This community project is not affiliated with Max Design or the original developers.
+
+#LIBRARIES AND ASSETS
+MonoGame, NVorbis and StbImageSharp
+Pixel-art scaling: xBR-lv2 by Hyllian
+Input glyphs adapted from Kenney's Input Prompts (CC0).
+See the bundled third-party notices for license details.
+
+#COMMUNITY
+github.com/jakobharder/burntime
+burntime.org
+}#

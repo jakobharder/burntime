@@ -10,4 +10,5 @@ schwach
 mittel
 stark
 extrem
-Nahrung {food}/Tag, Wasser {water}/Tag}
+Nahrung {food} TR, Wasser {water} TR}
+Verteidiger: {count}, Gefahr: {threat}}

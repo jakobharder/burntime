@@ -332,6 +332,7 @@ namespace Burntime.Remaster.Scenes
 
             inventory.Grid.Remove(item);
             ActiveCharacter.Items.Remove(item);
+            inventory.RefreshCombatLoadout();
             OnOfferChanged();
             keyboardNavigation.ItemsChanged();
         }
@@ -342,6 +343,7 @@ namespace Burntime.Remaster.Scenes
                 return;
 
             ActiveCharacter.Items.Add(item);
+            inventory.RefreshCombatLoadout();
             offer.Remove(item);
             OnOfferChanged();
             keyboardNavigation.ItemsChanged();

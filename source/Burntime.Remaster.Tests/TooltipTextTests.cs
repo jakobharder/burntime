@@ -14,6 +14,17 @@ static class TooltipTextTests
     {
         TestResourceManager resources = new();
 
+        yield return new("absent GUI status converts to empty text", string.Empty, () =>
+        {
+            Burntime.Framework.GUI.GuiString? status = null;
+            return status;
+        });
+        yield return new("absent tooltip status is empty", "True", () =>
+        {
+            Burntime.Framework.GUI.GuiString? status = null;
+            return string.IsNullOrEmpty(status).ToString();
+        });
+
         TextHelper damage = new(resources, "tooltip");
         damage.AddArgument("{damage}", "9-20");
         yield return new("knife damage", "Damage 9-20",
@@ -81,6 +92,10 @@ static class TooltipTextTests
         reach.AddArgument("{reach}", resources.GetString("tooltip", 90));
         yield return new("weapon reach", "Reach: Long",
             () => reach.Get(87));
+        yield return new("equipment marker", "Equipped",
+            () => reach.Get(92));
+        yield return new("passive marker", "Passive while carried",
+            () => reach.Get(93));
     }
 
     sealed class TestResourceManager : ResourceManagerBase

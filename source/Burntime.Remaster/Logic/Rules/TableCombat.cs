@@ -23,29 +23,34 @@ internal static class TableCombat
             ((ClassicGame)character.Container.Root).ItemTypes.UnarmedDamage;
     }
 
-    internal static Item? BestDefense(Character character)
+    internal static Item? PreferredProtection(Character character)
     {
         Item? selected = character.Protection != null &&
             character.Items.Contains(character.Protection)
             ? character.Protection
             : null;
-        return character.Items.FindBestDefense(selected);
+        string? hazard = character.Location?.Danger?.Type;
+        if (hazard != null)
+        {
+            Item? hazardProtection = character.Items.FindBestProtection(selected, hazard);
+            if ((hazardProtection?.Type.GetProtection(hazard)?.Rate ?? 0) > 0)
+                return hazardProtection;
+        }
+        return character.Items.FindBestDefense(selected) ??
+            System.Linq.Enumerable.FirstOrDefault(character.Items,
+                item => item.Type.Protection.Length > 0);
     }
 
     internal static int ProtectionPercent(Character character) =>
-        Math.Clamp(BestDefense(character)?.DefenseValue ?? 0, 0, 100);
+        Math.Clamp(PreferredProtection(character)?.DefenseValue ?? 0, 0, 100);
 
-    internal static void SelectLoadout(Character character, bool armour)
+    internal static void SelectLoadout(Character character)
     {
         if (character.Class is CharClass.Trader or CharClass.Mutant or CharClass.Dog)
             return;
 
         character.SelectOriginalWeapon();
-        if (armour)
-            character.Protection = BestDefense(character);
-        else if (character.Protection != null &&
-            !character.Items.Contains(character.Protection))
-            character.Protection = null;
+        character.Protection = PreferredProtection(character);
     }
 
     internal static CombatPreview Preview(Character character, GameSettings settings, bool armour)
@@ -98,7 +103,7 @@ internal static class TableCombat
             attacker.UseOriginalWeapon(weapon);
         if (armour && defender != null)
         {
-            defender.Protection = BestDefense(defender);
+            defender.Protection = PreferredProtection(defender);
             damage = RuleFormulas.ApplyArmour(damage, ProtectionPercent(defender));
         }
         return damage;

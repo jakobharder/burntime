@@ -229,11 +229,18 @@ namespace Burntime.Remaster.GUI
 
             ((ClassicGame)activePage.Character.Container.Root).RuleBook
                 .SelectCombatLoadout(activePage.Character);
+            RefreshItemMarkers();
+        }
+
+        public void RefreshItemMarkers()
+        {
             grid.Selection.Clear();
-            if (activePage.Character.Weapon != null)
-                grid.Selection.Add(activePage.Character.Weapon);
-            if (activePage.Character.Protection != null)
-                grid.Selection.Add(activePage.Character.Protection);
+            if (activePage == null)
+                return;
+
+            foreach (Item item in activePage.Character.Items)
+                if (activePage.Character.IsItemInUse(item))
+                    grid.Selection.Add(item);
         }
 
         public override void OnRender(RenderTarget Target)
