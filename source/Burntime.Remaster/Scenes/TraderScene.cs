@@ -217,6 +217,18 @@ class TraderScene : Scene
         return base.OnMouseMove(position);
     }
 
+    public override bool OnTouchTap(Vector2 position)
+    {
+        if (app.Engine.Resolution.Game.x >= 450 || !new Rect(Vector2.Zero, Size).PointInside(position))
+            return false;
+        bool exchangeSide = side == InventorySide.Left ? position.x >= 195 : position.x < 125;
+        if (!exchangeSide) return false;
+        keyboardMousePosition = null;
+        keyboardArea = side == InventorySide.Left ? KeyboardArea.Trader : KeyboardArea.Player;
+        PositionElements(position, side == InventorySide.Left ? InventorySide.Right : InventorySide.Left);
+        return true;
+    }
+
     protected override void OnActivateScene(object parameter)
     {
         BurntimeClassic classic = app as BurntimeClassic;
@@ -241,6 +253,9 @@ class TraderScene : Scene
 
     void OnMouseFocusChanged(ItemGridWindow focusedGrid)
     {
+        if (app.LastInputMode == InputMode.Touch &&
+            (focusedGrid == exchangeTop.Grid || focusedGrid == exchangeBottom.Grid))
+            return;
         keyboardArea = focusedGrid == inventoryTrader.Grid || focusedGrid == exchangeTop.Grid
             ? KeyboardArea.Trader
             : focusedGrid == temporarySpace

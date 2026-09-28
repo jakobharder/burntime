@@ -16,7 +16,14 @@ using System.Globalization;
 
 namespace Burntime.MonoGame
 {
-    public class BurntimeGame : Game, IEngine, ILoadingCounter
+    internal interface IVisualTestRunner
+    {
+        string OutputDirectory { get; }
+        void Update(BurntimeGame game, BurntimeClassic app);
+        void Capture(BurntimeGame game);
+    }
+
+    public partial class BurntimeGame : Game, IEngine, ILoadingCounter
     {
         const int TargetFramesPerSecond = 60;
 
@@ -31,7 +38,7 @@ namespace Burntime.MonoGame
         BlendOverlayBase IEngine.BlendOverlay => RenderDevice?.BlendOverlay;
 
         BurntimeClassic _burntimeApp;
-        internal VisualTestRunner? VisualTest { get; set; }
+        internal IVisualTestRunner? VisualTest { get; set; }
         internal bool UseRemasteredGraphics => _burntimeApp?.IsNewGfx ?? true;
         internal void RefreshResourceReplacements() =>
             _burntimeApp?.RefreshResourceReplacements();
@@ -59,7 +66,9 @@ namespace Burntime.MonoGame
         public MusicPlayback Music { get; } = new MusicPlayback();
         IMusic IEngine.Music => Music;
         readonly object _inputGlyphSync = new();
+#if !IOS
         SteamInputGlyphProvider? _steamInputGlyphs;
+#endif
         volatile IInputGlyphProvider _inputGlyphs = TextInputGlyphProvider.Instance;
         public IInputGlyphProvider InputGlyphs => _inputGlyphs;
         string? _automaticLanguage;
@@ -110,7 +119,7 @@ namespace Burntime.MonoGame
         bool _requestFullscreen = false;
         bool IsSteamSession => _emulateSteamMachine || _emulateSteamDeck ||
             IsGamescopeSession() || IsSteamDeck();
-        public bool SupportsFullscreenToggle => !IsSteamSession;
+        public bool SupportsFullscreenToggle => !OperatingSystem.IsIOS() && !IsSteamSession;
         public bool IsFullscreen 
         {
             get => _isFullscreen;
@@ -162,11 +171,16 @@ namespace Burntime.MonoGame
         {
             lock (_inputGlyphSync)
             {
+#if !IOS
                 _steamInputGlyphs?.Dispose();
                 _steamInputGlyphs = null;
+#endif
 
                 if (_controllerGlyphMode == ControllerGlyphMode.Auto)
                 {
+#if IOS
+                    _inputGlyphs = new ForcedInputGlyphProvider(GamepadLabelStyle.Xbox);
+#else
                     try
                     {
                         _steamInputGlyphs = new SteamInputGlyphProvider();
@@ -180,6 +194,7 @@ namespace Burntime.MonoGame
                         Log.Info($"Steamworks.NET unavailable ({exception.GetType().Name}); " +
                             "using Xbox controller glyphs");
                     }
+#endif
                 }
                 else
                 {
@@ -200,6 +215,7 @@ namespace Burntime.MonoGame
 
         string DetectAutomaticLanguage()
         {
+#if !IOS
             string? steamLanguage;
             lock (_inputGlyphSync)
                 steamLanguage = _steamInputGlyphs?.CurrentGameLanguage;
@@ -224,6 +240,7 @@ namespace Burntime.MonoGame
                 return IsGermanLanguage(steamLanguage) ? "de" : "en";
             }
 
+#endif
             string systemLanguage = CultureInfo.CurrentUICulture.Name;
             Log.Info($"System UI language: {systemLanguage}");
             return IsGermanLanguage(systemLanguage) ? "de" : "en";
@@ -240,7 +257,7 @@ namespace Burntime.MonoGame
             string logPath = "log.txt";
             if (VisualTest != null)
                 logPath = System.IO.Path.Combine(VisualTest.OutputDirectory, "resources.log");
-            else if (OperatingSystem.IsMacOS())
+            else if (OperatingSystem.IsMacOS() || OperatingSystem.IsIOS())
             {
                 string logDirectory = System.IO.Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -260,10 +277,16 @@ namespace Burntime.MonoGame
                 Log.Info($"Window size override: {_windowSizeOverride.Value.x}x" +
                     $"{_windowSizeOverride.Value.y} windowed");
 
+#if !IOS
             Window.Title = "Burntime " + BurntimeClassic.Version;
+#endif
 
             // Installed content lives next to the executable on every desktop platform.
+#if IOS
+            FileSystem.BasePath = Foundation.NSBundle.MainBundle.ResourcePath;
+#else
             FileSystem.BasePath = AppContext.BaseDirectory;
+#endif
             PackageManager paketManager = new("game/");
 
             paketManager.LoadPackages("classic", FileSystem.VFS, null);
@@ -274,7 +297,8 @@ namespace Burntime.MonoGame
 
             _burntimeApp = new();
             _burntimeApp.ChooseLanguageOnStart = _chooseLanguage;
-            _burntimeApp.LastInputMode = IsSteamSession ? InputMode.Gamepad : InputMode.Mouse;
+            _burntimeApp.LastInputMode = OperatingSystem.IsIOS() ? InputMode.Touch
+                : IsSteamSession ? InputMode.Gamepad : InputMode.Mouse;
 
             Resolution.RatioCorrection = _burntimeApp.RatioCorrection;
             Resolution.MinResolution = _burntimeApp.MinResolution;
@@ -293,12 +317,16 @@ namespace Burntime.MonoGame
             _burntimeApp.Run();
 
             Log.Info("Start engine...");
+#if !IOS
             Window.AllowUserResizing = true;
+#endif
             Window.ClientSizeChanged += OnResize;
             IsMouseVisible = false;
             ApplyGraphicsDeviceResolution(initialize: true);
 
+#if !IOS
             Window.TextInput += Window_TextInput;
+#endif
             Music.RunThread();
 
             base.Initialize();
@@ -316,6 +344,18 @@ namespace Burntime.MonoGame
             if ((!_initialized && !initialize) || _resizing) return;
 
             _resizing = true;
+#if IOS
+            var displayMode = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode;
+            _graphics.SupportedOrientations = DisplayOrientation.LandscapeLeft | DisplayOrientation.LandscapeRight;
+            _graphics.PreferredBackBufferWidth = System.Math.Max(displayMode.Width, displayMode.Height);
+            _graphics.PreferredBackBufferHeight = System.Math.Min(displayMode.Width, displayMode.Height);
+            _graphics.IsFullScreen = true;
+            _graphics.ApplyChanges();
+            Resolution.Native = new Platform.Vector2(GraphicsDevice.PresentationParameters.BackBufferWidth,
+                GraphicsDevice.PresentationParameters.BackBufferHeight);
+            Microsoft.Xna.Framework.Input.Touch.TouchPanel.DisplayWidth = Resolution.Native.x;
+            Microsoft.Xna.Framework.Input.Touch.TouchPanel.DisplayHeight = Resolution.Native.y;
+#else
             if (IsFullscreen)
             {
                 Resolution.Native = new Platform.Vector2(GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
@@ -359,6 +399,7 @@ namespace Burntime.MonoGame
                 Resolution.Native = new Platform.Vector2(Window.ClientBounds.Width,
                     Window.ClientBounds.Height);
             }
+#endif
             if (!initialize)
                 _burntimeApp.SceneManager.ResizeScene();
             MainTarget = new RenderTarget(this, new Rect(Platform.Vector2.Zero, Resolution.Game));
@@ -387,6 +428,10 @@ namespace Burntime.MonoGame
             Log.Info("Start game thread...");
             _gameThread.Start((Platform.GameTime gameTime) =>
             {
+#if IOS
+                PersistMobileSettings();
+                if (!_mobileActive) return;
+#endif
                 _burntimeApp.Process(gameTime.Elapsed);
                 MainTarget.Elapsed = gameTime.Elapsed;
                 MainTarget.TotalElapsed += gameTime.Elapsed;
@@ -830,9 +875,13 @@ namespace Burntime.MonoGame
                 base.Update(gameTime);
                 return;
             }
+#if IOS
+            HandleTouchInput();
+#else
             lock (_inputGlyphSync)
                 _steamInputGlyphs?.RunFrame();
             HandleMouseInput();
+#endif
             HandleKeyboardInput();
             HandleGamePadInput();
             
@@ -885,8 +934,10 @@ namespace Burntime.MonoGame
 
         protected override void OnExiting(object sender, ExitingEventArgs args)
         {
+#if !IOS
             lock (_inputGlyphSync)
                 _steamInputGlyphs?.Dispose();
+#endif
             base.OnExiting(sender, args);
 
             Music.StopThread();
@@ -896,7 +947,9 @@ namespace Burntime.MonoGame
 
         void IEngine.ExitApplication()
         {
+#if !IOS
             Exit();
+#endif
         }
 
         void IEngine.ReloadGraphics()

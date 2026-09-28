@@ -40,7 +40,6 @@ namespace Burntime.Remaster
         Image _cursorAni;
         readonly DialogWindow _dialog;
         readonly Maps.MapViewOverlayHoverText _hoverInfo;
-        readonly Maps.MapViewOverlaySelectedLocation _keyboardSelection;
         readonly ManualWindow _manualWindow;
         bool _followKeyboardSelection;
         bool _cameraPanActive;
@@ -77,9 +76,13 @@ namespace Burntime.Remaster
             view.Overlays.Add(new Maps.MapViewOverlayFlags(app));
             view.Overlays.Add(new Maps.MapViewOverlayPlayer(app));
             view.Overlays.Add(_hoverInfo = new Maps.MapViewOverlayHoverText(app));
-            view.Overlays.Add(_keyboardSelection = new Maps.MapViewOverlaySelectedLocation(app, _hoverInfo));
             view.Scroll += new EventHandler<MapScrollArgs>(view_Scroll);
             view.ContextMenu += View_OnContextMenu;
+            view.TouchLocationSecondary = number =>
+            {
+                SelectTouchLocation(number);
+                TryShowLocationInfo(number);
+            };
             Windows += view;
 
             menu = new MenuWindow(App);
@@ -433,9 +436,6 @@ namespace Burntime.Remaster
             _characterCycleDebounce = System.Math.Max(0, _characterCycleDebounce - Elapsed);
             UpdateCameraPan(Elapsed);
             _hoverInfo.ShowAllEntrances = app.IsInputActionDown(InputAction.ShowEntrances);
-            _hoverInfo.HighlightedWorldLocation = app.MouseInputVisible
-                ? -1
-                : _keyboardSelection.LocationNumber;
 
             ClassicGame game = app.GameState as ClassicGame;
             game.World.Update(Elapsed);
@@ -447,36 +447,27 @@ namespace Burntime.Remaster
                 app.SceneManager.SetScene("WaitScene");
             }
 
-            if (app.MouseInputVisible)
+            if (app.LastInputMode is InputMode.Mouse or InputMode.Touch)
                 _followPlayerAfterPan = false;
             else if (_followPlayerAfterPan)
             {
                 Vector2 position = view.Map.Entrances[game.World.ActivePlayerObj.Location.Id].Area.Center;
                 _followPlayerAfterPan = !view.FollowWithinMiddleThird(position, Elapsed);
             }
-            else if (_followKeyboardSelection && _keyboardSelection.LocationNumber >= 0)
+            else if (_followKeyboardSelection && view.ActiveEntrance >= 0)
             {
-                Vector2 position = view.Map.Entrances[_keyboardSelection.LocationNumber].Area.Center;
+                Vector2 position = view.Map.Entrances[view.ActiveEntrance].Area.Center;
                 _followKeyboardSelection = !view.FollowWithinMiddleThird(position, Elapsed);
             }
 
-            SyncGamepadCursor();
-
-            int selectedLocation = app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad &&
-                _keyboardSelection.LocationNumber >= 0
-                ? _keyboardSelection.LocationNumber
-                : view.ActiveEntrance;
+            int selectedLocation = view.ActiveEntrance;
             var hoverLocation = selectedLocation >= 0 ? BurntimeClassic.Instance.Game.World.Locations[selectedLocation] : null;
             var player = BurntimeClassic.Instance.Game.World.ActivePlayerObj;
             gui.ExpectedTravelDays = hoverLocation is null ? 0 : player.GetTravelDays(player.Location, hoverLocation);
         }
 
-        int PromptLocationNumber => app.LastInputMode == InputMode.Mouse
-            ? view.ActiveEntrance
-            : _keyboardSelection.LocationNumber;
-
         Logic.Location PromptLocation =>
-            (app.GameState as ClassicGame).World.Locations[PromptLocationNumber];
+            (app.GameState as ClassicGame).World.Locations[view.ActiveEntrance];
 
         bool IsPromptNavigationInput =>
             app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad;
@@ -484,8 +475,8 @@ namespace Burntime.Remaster
         bool HasValidPromptLocation()
         {
             ClassicGame game = app.GameState as ClassicGame;
-            return PromptLocationNumber >= 0 &&
-                PromptLocationNumber < game.World.Locations.Count;
+            return view.ActiveEntrance >= 0 &&
+                view.ActiveEntrance < game.World.Locations.Count;
         }
 
         InputPrompt? GetEnterOrTravelPrompt()
@@ -569,7 +560,7 @@ namespace Burntime.Remaster
             if (app.LastInputMode == InputMode.Mouse && _infoMode)
                 return false;
             return (app.LastInputMode == InputMode.Mouse || IsPromptNavigationInput) &&
-                PromptLocationNumber ==
+                view.ActiveEntrance ==
                     (app.GameState as ClassicGame).World.ActivePlayerObj.Location.Id;
         }
 
@@ -581,7 +572,7 @@ namespace Burntime.Remaster
             ClassicGame game = app.GameState as ClassicGame;
             Logic.Player player = game.World.ActivePlayerObj;
             return (app.LastInputMode == InputMode.Mouse || IsPromptNavigationInput) &&
-                PromptLocationNumber != player.Location.Id &&
+                view.ActiveEntrance != player.Location.Id &&
                 player.Location.Neighbors.Contains(PromptLocation) &&
                 player.CanTravel(player.Location, PromptLocation);
         }
@@ -666,7 +657,7 @@ namespace Burntime.Remaster
             view.Ways = (WayData)game.World.Ways.WayData;
             view.Map = (MapData)game.World.Map.MapData;
             view.Player = game.World.ActivePlayerObj;
-            _keyboardSelection.LocationNumber = game.World.ActivePlayerObj.Location.Id;
+            view.ActiveEntrance = game.World.ActivePlayerObj.Location.Id;
             _followKeyboardSelection = false;
             //if (game.World.ActivePlayerObj.RefreshMapScrollPosition)
                 view.CenterTo(view.Map.Entrances[game.World.ActivePlayerObj.Location].Area.Center);
@@ -782,7 +773,7 @@ namespace Burntime.Remaster
                 action == InputAction.Action)
             {
                 if (CanPromptTravel())
-                    TravelToLocation(_keyboardSelection.LocationNumber);
+                    TravelToLocation(view.ActiveEntrance);
                 return true;
             }
 
@@ -790,7 +781,7 @@ namespace Burntime.Remaster
                 action == InputAction.Primary)
             {
                 if (CanPromptEnter())
-                    TravelToLocation(_keyboardSelection.LocationNumber);
+                    TravelToLocation(view.ActiveEntrance);
                 return true;
             }
 
@@ -798,7 +789,7 @@ namespace Burntime.Remaster
                 action == InputAction.Secondary)
             {
                 if (CanPromptLocationInfo(MouseButton.Right))
-                    TryShowLocationInfo(_keyboardSelection.LocationNumber);
+                    TryShowLocationInfo(view.ActiveEntrance);
                 return true;
             }
 
@@ -860,7 +851,7 @@ namespace Burntime.Remaster
                 return;
 
             Logic.Player player = BurntimeClassic.Instance.Game.World.ActivePlayerObj;
-            int currentSelection = _keyboardSelection.LocationNumber;
+            int currentSelection = view.ActiveEntrance;
             Vector2 current = currentSelection >= 0
                 ? view.Map.Entrances[currentSelection].Area.Center
                 : view.Map.Entrances[player.Location.Id].Area.Center;
@@ -868,7 +859,7 @@ namespace Burntime.Remaster
             int selected = SelectLocationInDirection(current, currentSelection, direction, player);
             if (selected != -1)
             {
-                SetKeyboardSelection(selected);
+                view.ActiveEntrance = selected;
                 _followKeyboardSelection = true;
             }
         }
@@ -1014,24 +1005,6 @@ namespace Burntime.Remaster
         static bool CanShowCampInfo(Logic.Player player, Logic.Location location) =>
             !location.IsCity && (location == player.Location || location.Player == player);
 
-        void SetKeyboardSelection(int locationNumber)
-        {
-            _keyboardSelection.LocationNumber = locationNumber;
-        }
-
-        void SyncGamepadCursor()
-        {
-            if (app.MouseInputVisible || view.Map == null || _keyboardSelection.LocationNumber < 0)
-                return;
-
-            int locationNumber = _keyboardSelection.LocationNumber;
-            if (locationNumber >= view.Map.Entrances.Length)
-                return;
-
-            Vector2 mapPosition = view.Map.Entrances[locationNumber].Area.Center;
-            app.DeviceManager.MouseMove(view.Boundings.Position + view.ScrollPosition + mapPosition);
-        }
-
         public override bool OnHeldInputAction(InputAction action, float elapsed)
         {
             if (action == InputAction.NextTurn)
@@ -1175,6 +1148,14 @@ namespace Burntime.Remaster
 
         public bool OnClickEntrance(int Number, MouseButton Button)
         {
+            if (app.LastInputMode == InputMode.Touch && Button == MouseButton.Left)
+            {
+                bool activate = view.ActiveEntrance == Number;
+                SelectTouchLocation(Number);
+                if (activate)
+                    TravelToLocation(Number);
+                return true;
+            }
             Logic.Player player = BurntimeClassic.Instance.Game.World.ActivePlayerObj;
             Logic.Location clickedLocation = BurntimeClassic.Instance.Game.World.Locations[Number];
 
@@ -1192,6 +1173,12 @@ namespace Burntime.Remaster
                 return true;
             }
             return false;
+        }
+
+        void SelectTouchLocation(int number)
+        {
+            view.ActiveEntrance = number;
+            _followPlayerAfterPan = _followKeyboardSelection = false;
         }
 
         void TravelToLocation(int locationNumber)

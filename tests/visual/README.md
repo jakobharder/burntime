@@ -4,6 +4,20 @@ This suite runs the real MonoGame window and resource loader in separate classic
 newgfx, and classic-no-hints processes. It requires .NET 10, a graphical desktop/OpenGL context,
 and Python with Pillow. It does not work with the headless simulation renderer.
 
+For isolated touch captures and input-dispatch assertions, run:
+
+```sh
+dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- \
+  --visual-test newgfx /tmp/burntime-touch-visual --touch
+```
+
+Use `classic` instead of `newgfx` for the original graphics. These fixtures use
+an isolated game/profile and verify selection without travel, single-tap tooltips,
+second-tap primary actions and long-press secondary actions. Location fixtures also
+check entrance labels, destination highlighting, cancelled commands, dragging over
+labels, and switching back to gamepad input. They
+capture PNGs without comparing them to the desktop baseline suite.
+
 From the repository root:
 
 ```sh

@@ -56,6 +56,7 @@ public sealed class ManualWindow : Container
     int _page;
     int _hoveredPage = -1;
     readonly int[] _textScroll;
+    int _touchScrollPixels;
     const float ScrollRepeatDelay = 0.3f;
     const float ScrollRepeatInterval = 0.06f;
     bool _heldScrollUp;
@@ -146,6 +147,7 @@ public sealed class ManualWindow : Container
 
     public override void OnShow()
     {
+        _touchScrollPixels = 0;
         _heldScrollUp = _heldScrollDown = false;
         _scrollDirection = 0;
         _scrollRepeatRemaining = ScrollRepeatDelay;
@@ -840,6 +842,18 @@ public sealed class ManualWindow : Container
     public override bool OnMouseWheel(Vector2 position, int delta)
     {
         MoveTextScroll(delta > 0 ? -1 : 1);
+        return true;
+    }
+
+    public override bool OnTouchScroll(Vector2 position, Vector2 delta)
+    {
+        if (!new Rect(10, 24, Size.x - 20, ContentHeight).PointInside(position))
+            return false;
+        _touchScrollPixels -= delta.y;
+        int lineHeight = System.Math.Max(1, TextLineHeight);
+        int lines = _touchScrollPixels / lineHeight;
+        _touchScrollPixels %= lineHeight;
+        if (lines != 0) MoveTextScroll(lines);
         return true;
     }
 

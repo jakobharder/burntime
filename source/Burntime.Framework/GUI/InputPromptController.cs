@@ -257,6 +257,8 @@ public sealed class InputPromptController
 
     public InputPromptLayout Resolve()
     {
+        if (_app.LastInputMode == InputMode.Touch)
+            return new InputPromptLayout([], [], []);
         bool mouseInput = _app.LastInputMode == InputMode.Mouse;
         List<InputPrompt> scenePrompts = [];
         Dictionary<InputPromptPosition, List<ContextCandidate>> candidates = [];

@@ -135,11 +135,11 @@ namespace Burntime.Remaster.GUI
                 firstLineControl = InputControlDisplay.Resolve(app,
                     app.LastInputMode, FirstLineAction);
             }
-            InputMode shortcutInputMode = app.LastInputMode == InputMode.Gamepad
-                ? InputMode.Gamepad
-                : InputMode.Keyboard;
-            bool showShortcuts = app is not BurntimeClassic promptOwner ||
-                promptOwner.ShowUIHints;
+            InputMode shortcutInputMode = app.LastInputMode == InputMode.Mouse
+                ? InputMode.Keyboard
+                : app.LastInputMode;
+            bool showShortcuts = app.LastInputMode != InputMode.Touch &&
+                (app is not BurntimeClassic promptOwner || promptOwner.ShowUIHints);
 
             if (showShortcuts && _menuEntries.Exists(
                 entry => entry.Shortcut.Action != InputAction.None))
@@ -272,6 +272,11 @@ namespace Burntime.Remaster.GUI
 
         public override bool OnMouseClick(Vector2 Position, MouseButton Button)
         {
+            if (app.LastInputMode == InputMode.Touch)
+            {
+                _mouseSelectionEnabled = true;
+                _focusIndex = GetTouchEntryAt(Position);
+            }
             if (Boundings.PointInside(this.Position + Position))
             {
                 if (_focusIndex >= 0 && _focusIndex < _menuEntries.Count && Button == MouseButton.Left)
@@ -285,6 +290,25 @@ namespace Burntime.Remaster.GUI
                 Hide();
 
             return true;
+        }
+
+        int GetTouchEntryAt(Vector2 position)
+        {
+            int selected = -1;
+            float distance = float.MaxValue;
+            for (int i = 0; i < _menuEntries.Count; i++)
+            {
+                int width = _defaultFont.GetWidth(_menuEntries[i].Text);
+                var bounds = new Rect(MENU_CONTENT_WIDTH / 2 - width / 2,
+                    TOP_HEIGHT + i * MIDDLE_HEIGHT, width, MIDDLE_HEIGHT);
+                float candidateDistance = (bounds.Center - position).Length;
+                if (TouchHitTest.Expand(bounds, TouchHitTest.MinimumSize).PointInside(position) && candidateDistance < distance)
+                {
+                    selected = i;
+                    distance = candidateDistance;
+                }
+            }
+            return selected;
         }
 
         public override bool OnInputAction(InputAction action)

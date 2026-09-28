@@ -10,6 +10,8 @@ namespace Burntime.Remaster
 {
     class FaceWindow : Image
     {
+        public override bool IsTouchTarget => !DisplayOnly;
+        public override int MinimumTouchTargetSize => TouchHitTest.MinimumSize;
         public FaceWindow(Module App)
             : base(App)
         {

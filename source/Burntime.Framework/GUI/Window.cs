@@ -191,6 +191,33 @@ public class Window
     }
 
     // internal message handling
+    public virtual int MinimumTouchTargetSize => 0;
+    public virtual bool IsTouchTarget => false;
+
+    internal virtual Window? FindTouchTarget(Vector2 screenPosition) =>
+        visible && IsTouchTarget && TouchHitTest.Expand(TouchHitTest.Bounds(this), MinimumTouchTargetSize).PointInside(screenPosition)
+            ? this : null;
+
+    // A scene can consume a tap before any child acts (for example, switching sides).
+    public virtual bool OnTouchTap(Vector2 position) => false;
+
+    internal virtual bool TouchLongPress(Vector2 position) =>
+        visible && Boundings.PointInside(position) && OnTouchLongPress(position - Position);
+
+    public virtual bool OnTouchLongPress(Vector2 position) => false;
+
+    internal virtual bool TouchDrag(Vector2 origin, Vector2 delta)
+    {
+        if (!visible || !Boundings.PointInside(origin)) return false;
+        OnTouchDrag(delta);
+        return true;
+    }
+
+    public virtual void OnTouchDrag(Vector2 delta) { }
+
+    // Scrollable containers get first refusal before their buttons consume a drag.
+    public virtual bool OnTouchScroll(Vector2 position, Vector2 delta) => false;
+
     internal virtual bool MouseClick(Vector2 position, MouseButton button)
     {
         if (!visible)

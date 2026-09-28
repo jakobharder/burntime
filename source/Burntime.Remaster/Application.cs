@@ -239,7 +239,9 @@ namespace Burntime.Remaster
             }
         }
 
-        protected override void OnClose()
+        protected override void OnClose() => SaveUserSettings();
+
+        public void SaveUserSettings()
         {
             // ensure section is created
             UserSettings.GetSection("", true);

@@ -246,6 +246,20 @@ internal class OptionsSavesPage : Container
         return true;
     }
 
+    int _touchScrollPixels;
+    public override bool OnTouchScroll(Vector2 position, Vector2 delta)
+    {
+        if (!new Rect(LIST_X, LIST_Y, LIST_WIDTH + SCROLLBAR_WIDTH + 2,
+                VisibleSaveCount * RowHeight).PointInside(position))
+            return false;
+        _touchScrollPixels -= delta.y;
+        int rowHeight = System.Math.Max(1, RowHeight);
+        int rows = _touchScrollPixels / rowHeight;
+        _touchScrollPixels %= rowHeight;
+        if (rows != 0) ScrollList(rows);
+        return true;
+    }
+
     public void SetKeyboardActive(bool active, bool resetFocus = false)
     {
         HasFocus = active;
@@ -262,7 +276,7 @@ internal class OptionsSavesPage : Container
 
     void UpdateKeyboardFocus()
     {
-        bool keyboardFocus = HasFocus && app.LastInputMode != InputMode.Mouse;
+        bool keyboardFocus = HasFocus && app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad;
         for (int i = 0; i < _saveRows.Length; i++)
         {
             int entryIndex = _scrollOffset + i;
@@ -461,7 +475,7 @@ internal class OptionsSavesPage : Container
             _keyboardArea = hoveredAction >= 0 ? KeyboardArea.Actions : KeyboardArea.Slots;
         }
 
-        bool keyboardPreview = app.LastInputMode != InputMode.Mouse && HasFocus &&
+        bool keyboardPreview = app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad && HasFocus &&
             _keyboardArea == KeyboardArea.Slots;
         int previewEntry = hoveredEntry >= 0
             ? hoveredEntry
@@ -754,7 +768,7 @@ internal class OptionsSavesPage : Container
         if (focusedFile is not null)
             _saveFocusIndex = FindEntry(focusedFile);
 
-        if (HasFocus && app.LastInputMode != InputMode.Mouse)
+        if (HasFocus && app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad)
             EnsureFocusVisible();
         else
             _scrollOffset = System.Math.Clamp(scrollOffset, 0,

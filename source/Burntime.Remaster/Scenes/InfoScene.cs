@@ -288,7 +288,8 @@ namespace Burntime.Remaster.Scenes
         void UpdateProductionTooltip()
         {
             bool show = !productionTooltipDismissed && production.ItemID != "" &&
-                (production.IsMouseHovered || app.LastInputMode != InputMode.Mouse);
+                (app.LastInputMode == InputMode.Touch ? production.IsTouchSelected :
+                    production.IsMouseHovered || app.LastInputMode != InputMode.Mouse);
             if (!show)
             {
                 if (productionTooltip.IsVisible)

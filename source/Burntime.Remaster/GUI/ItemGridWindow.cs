@@ -159,7 +159,7 @@ namespace Burntime.Remaster.GUI
             }
 
             bool showUIHints = app is not BurntimeClassic classic || classic.ShowUIHints;
-            if ((FocusVisible || showUIHints && mouseFocusActive) &&
+            if (app.LastInputMode != InputMode.Touch && (FocusVisible || showUIHints && mouseFocusActive) &&
                 IsValidFocusIndex(focusIndex))
             {
                 Target.Layer += 5;
@@ -240,9 +240,9 @@ namespace Burntime.Remaster.GUI
             mouseFocusHideRemaining = 0;
         }
 
-        internal void FocusFromMouseClick(int index)
+        internal void FocusItem(int index)
         {
-            if (!UnifiedSelection || !IsValidFocusIndex(index))
+            if ((!UnifiedSelection && app.LastInputMode != InputMode.Touch) || !IsValidFocusIndex(index))
                 return;
 
             mouseFocusActive = true;
@@ -251,6 +251,16 @@ namespace Burntime.Remaster.GUI
             focusIndex = index;
             MouseFocusChanged?.Invoke(this);
         }
+
+        internal bool FocusItem(ItemWindow item)
+        {
+            bool wasFocused = IsFocused(item);
+            FocusItem(Array.IndexOf(itemWindows, item));
+            return wasFocused;
+        }
+
+        internal bool IsFocused(ItemWindow item) =>
+            IsValidFocusIndex(focusIndex) && ReferenceEquals(itemWindows[focusIndex], item);
 
         public void ResetFocus()
         {
@@ -406,6 +416,7 @@ namespace Burntime.Remaster.GUI
 
         public Item? FocusedItem => app.LastInputMode switch
         {
+            InputMode.Touch => FocusedItemAtIndex,
             InputMode.Mouse when mouseFocusActive => FocusedItemAtIndex,
             InputMode.Keyboard or InputMode.Gamepad when FocusVisible =>
                 FocusedItemAtIndex,

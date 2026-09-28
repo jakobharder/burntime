@@ -139,10 +139,13 @@ public class MapView : Window
 
     public int ActiveEntrance
     {
-        get { return entrance; }
+        get => HoveredObject is EntranceObject entrance ? entrance.Number : -1;
+        set => HoveredObject = map != null && value >= 0 && value < map.Entrances.Length
+            ? new EntranceObject(map.Entrances[value], value)
+            : null;
     }
 
-    public IMapObject HoveredObject { get; private set; }
+    public IMapObject? HoveredObject { get; set; }
 
     public override void OnRender(RenderTarget Target)
     {
@@ -210,6 +213,8 @@ public class MapView : Window
 
         foreach (Maps.IMapViewOverlay overlay in overlays)
         {
+            if (!overlay.IsVisible)
+                continue;
             Target.Layer++;
             overlay.RenderOverlay(Target, offset, Size);
         }
@@ -251,17 +256,7 @@ public class MapView : Window
                 border = Vector2f.Zero;
         }
 
-        bool found = false;
-        for (int i = 0; i < map.Entrances.Length; i++)
-        {
-            if (map.Entrances[i].Area.PointInside(position - (Vector2)this._position))
-            {
-                entrance = i;
-                found = true;
-            }
-        }
-        if (!found)
-            entrance = -1;
+        entrance = HitTestEntranceAt(position);
 
         mousePosition = position - ScrollPosition;
 
@@ -319,6 +314,8 @@ public class MapView : Window
         if (!Boundings.PointInside(position + Position))
             return false;
 
+        entrance = HitTestEntranceAt(position);
+
         if (entrance != -1 && handler != null)
             if (handler.OnClickEntrance(entrance, button))
                 return true;
@@ -326,6 +323,8 @@ public class MapView : Window
         IMapObject mostTopObj = null;
         foreach (Maps.IMapViewOverlay overlay in overlays)
         {
+            if (!overlay.IsVisible)
+                continue;
             IMapObject obj = overlay.GetObjectAt(position - ScrollPosition);
             if (obj != null)
                 mostTopObj = obj;
@@ -347,7 +346,56 @@ public class MapView : Window
         return false;
     }
 
+    public Action<int>? TouchLocationSecondary { get; set; }
+
+    int HitTestEntranceAt(Vector2 position)
+    {
+        for (int i = overlays.Count - 1; i >= 0; i--)
+        {
+            Maps.IMapViewOverlay overlay = overlays[i];
+            if (!overlay.IsVisible)
+                continue;
+
+            if (overlay is Maps.IMapViewEntranceOverlay entranceOverlay)
+            {
+                int entrance = entranceOverlay.HitTestEntrance(position,
+                    ScrollPosition, Size);
+                if (entrance >= 0)
+                    return entrance;
+            }
+        }
+
+        if (map != null)
+        {
+            for (int i = map.Entrances.Length - 1; i >= 0; i--)
+                if (map.Entrances[i].Area.PointInside(position - ScrollPosition))
+                    return i;
+        }
+
+        return -1;
+    }
+
+    public override bool OnTouchLongPress(Vector2 position)
+    {
+        if (!Enabled || TouchLocationSecondary == null) return false;
+        int entranceNumber = HitTestEntranceAt(position);
+        if (entranceNumber >= 0)
+        {
+            TouchLocationSecondary(entranceNumber);
+            return true;
+        }
+        return false;
+    }
+
     float _moveTotal;
+    public override void OnTouchDrag(Vector2 delta)
+    {
+        if (!Enabled) return;
+        _position += (Vector2f)delta;
+        ConstrainPosition();
+        Scroll?.Invoke(this, new MapScrollArgs(_position));
+    }
+
     Vector2? _rightClickMove = null;
     public override bool OnMouseDown(Vector2 position, MouseButton button)
     {
@@ -395,12 +443,16 @@ public class MapView : Window
         if (handler != null)
         {
             ClassicGame game = app.GameState as ClassicGame;
-            HoveredObject = null;
+            if (mouseInputVisible)
+                HoveredObject = null;
             game.World.ActiveLocationObj.Hover = null;
             game.World.ActiveLocationObj.HoverCharacter = null;
 
             foreach (Maps.IMapViewOverlay overlay in overlays)
             {
+                if (!overlay.IsVisible)
+                    continue;
+
                 if (mouseInputVisible)
                 {
                     overlay.MouseMoveOverlay(mousePosition);
@@ -412,21 +464,28 @@ public class MapView : Window
             }
 
             if (mouseInputVisible && entrance != -1)
+                HoveredObject = new EntranceObject(map.Entrances[entrance], entrance);
+
+            int activeEntrance = ActiveEntrance;
+            if (activeEntrance != -1)
             {
+                PixelColor entranceColor = app.LastInputMode == InputMode.Touch && !game.MainMapView
+                    ? ClassicColors.MenuTextHover
+                    : ClassicColors.LightGray;
                 if (game.MainMapView)
                 {
-                    Burntime.Data.BurnGfx.MapEntrance e = game.World.Map.Entrances[entrance];
-                    game.World.ActiveLocationObj.Hover = new MapViewHoverInfo(app.ResourceManager.GetString(e.TitleId), e.Area.Center, ClassicColors.LightGray)
+                    Burntime.Data.BurnGfx.MapEntrance e = game.World.Map.Entrances[activeEntrance];
+                    game.World.ActiveLocationObj.Hover = new MapViewHoverInfo(app.ResourceManager.GetString(e.TitleId), e.Area.Center, entranceColor)
                     {
-                        WorldLocation = game.World.Locations[entrance]
+                        WorldLocation = game.World.Locations[activeEntrance]
                     };
                 }
-                else if (entrance < game.World.ActiveLocationObj.Rooms.Count)
+                else if (activeEntrance < game.World.ActiveLocationObj.Rooms.Count)
                 {
                     Location location = game.World.ActiveLocationObj;
                     game.World.ActiveLocationObj.Hover = location.AreEntrancesBlockedFor(game.World.ActivePlayerObj)
-                        ? new MapViewHoverInfo(app.ResourceManager.GetString("newburn?103"), location.Map.Entrances[entrance].Area.Center, ClassicColors.LightGray, location.Rooms[entrance])
-                        : new MapViewHoverInfo(location.Rooms[entrance], app.ResourceManager, ClassicColors.LightGray);
+                        ? new MapViewHoverInfo(app.ResourceManager.GetString("newburn?103"), location.Map.Entrances[activeEntrance].Area.Center, entranceColor, location.Rooms[activeEntrance])
+                        : new MapViewHoverInfo(location.Rooms[activeEntrance], app.ResourceManager, entranceColor);
                 }
             }
         }

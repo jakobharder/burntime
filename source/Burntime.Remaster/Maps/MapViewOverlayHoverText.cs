@@ -38,6 +38,9 @@ public class MapViewHoverInfo
     }
 }
 
+internal readonly record struct MapViewHoverTextEntry(MapViewHoverInfo Info,
+    float Alpha, bool ShowInventoryHint = false);
+
 class MapViewOverlayHoverText : IMapViewOverlay
 {
     ClassicGame game;
@@ -45,10 +48,15 @@ class MapViewOverlayHoverText : IMapViewOverlay
     Player player;
     IResourceManager resMan;
     readonly GuiTextBars textBars;
+    Character? announcedCharacter;
+    MapViewHoverInfo? announcedCharacterInfo;
+    float announcementRemaining;
+    readonly List<MapViewHoverTextEntry> additionalInfo = [];
+
+    const float AnnouncementFadeDuration = 0.35f;
 
     public bool IsVisible { get; set; } = true;
     public bool ShowAllEntrances { get; set; }
-    public int HighlightedWorldLocation { get; set; } = -1;
 
     public MapViewOverlayHoverText(Module App)
     {
@@ -60,18 +68,42 @@ class MapViewOverlayHoverText : IMapViewOverlay
     {
     }
 
+    public void AnnounceCharacter(Character character, float duration)
+    {
+        announcedCharacter = character;
+        announcedCharacterInfo = new MapViewHoverInfo(character, resMan,
+            GetCharacterColor(character));
+        announcementRemaining = duration;
+    }
+
+    public void SetAdditionalInfo(IEnumerable<MapViewHoverTextEntry> entries)
+    {
+        additionalInfo.Clear();
+        additionalInfo.AddRange(entries);
+    }
+
     public void UpdateOverlay(WorldState world, float elapsed)
     {
         game = world as ClassicGame;
         mapState = world.CurrentLocation as Location;
         player = world.CurrentPlayer as Player;
+
+        if (announcementRemaining > 0 && announcedCharacter != null &&
+            announcedCharacterInfo != null && !announcedCharacter.IsDead)
+        {
+            announcementRemaining = System.Math.Max(0, announcementRemaining - elapsed);
+            announcedCharacterInfo.Position = new Vector2(
+                announcedCharacter.MapArea.Left + announcedCharacter.MapArea.Width / 2,
+                announcedCharacter.MapArea.Top - 10);
+        }
+        else
+        {
+            ClearAnnouncement();
+        }
     }
 
     public void RenderOverlay(RenderTarget Target, Vector2 Offset, Vector2 Size)
     {
-        if (!IsVisible)
-            return;
-
         const int topMargin = 8;
 
         var textTarget = Target.GetSubBuffer(new Rect(0, topMargin, Target.Width, Target.Height - topMargin));
@@ -89,12 +121,23 @@ class MapViewOverlayHoverText : IMapViewOverlay
                     showInventoryHint: mapState.Player == player);
         }
 
+        foreach (MapViewHoverTextEntry entry in additionalInfo)
+        {
+            if (entry.Info.Character != null)
+                DrawCharacterText(textTarget, entry.Info,
+                    Offset - new Vector2(0, topMargin), entry.Alpha);
+            else
+                DrawEntranceText(textTarget, entry.Info,
+                    Offset - new Vector2(0, topMargin), entry.Alpha,
+                    entry.ShowInventoryHint);
+        }
+
         if (ShowAllEntrances && game?.MainMapView == true)
         {
             for (int i = 0; i < game.World.Locations.Count && i < game.World.Map.Entrances.Length; i++)
             {
                 Location location = game.World.Locations[i];
-                if (location.Player != player || i == HighlightedWorldLocation ||
+                if (location.Player != player ||
                     mapState?.Hover?.WorldLocation == location)
                     continue;
 
@@ -132,6 +175,33 @@ class MapViewOverlayHoverText : IMapViewOverlay
                     showInventoryHint: false);
             }
         }
+
+        if (announcedCharacterInfo != null)
+        {
+            float alpha = System.Math.Min(1,
+                announcementRemaining / AnnouncementFadeDuration);
+            DrawCharacterText(textTarget, announcedCharacterInfo,
+                Offset - new Vector2(0, topMargin), alpha);
+        }
+    }
+
+    void ClearAnnouncement()
+    {
+        announcedCharacter = null;
+        announcedCharacterInfo = null;
+        announcementRemaining = 0;
+    }
+
+    internal static PixelColor GetCharacterColor(Character character)
+    {
+        if (character.Player != null)
+        {
+            return character.Player.Party.Contains(character)
+                ? character.Player.Color
+                : character.Player.ColorDark;
+        }
+
+        return new PixelColor(252, 220, 0);
     }
 
     internal void DrawCharacterText(RenderTarget target, MapViewHoverInfo info, Vector2 offset,

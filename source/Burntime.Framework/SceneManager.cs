@@ -55,6 +55,7 @@ namespace Burntime.Framework
 
         public void SetScene(String Scene, bool DoNotQueue, object parameter)
         {
+            touchInputContext = new object();
             bool sourceIsTransitionBridge = activeScene is ISceneTransitionBridge;
             bool targetIsTransitionBridge = typeof(ISceneTransitionBridge)
                 .IsAssignableFrom(sceneTypes[Scene]);
@@ -104,12 +105,14 @@ namespace Burntime.Framework
             app.Engine.CenterMouse();
             app.Engine.IsLoading = true;
             app.Engine.BlendOverlay.FadeIn();
+            touchInputContext = new object();
             if (sourceIsTransitionBridge && !targetIsTransitionBridge)
                 blendMusicThroughBridge = false;
         }
 
         public void PreviousScene()
         {
+            touchInputContext = new object();
             if (sceneQueue.Count > 0)
             {
                 Scene previousScene = scenes[sceneQueue[sceneQueue.Count - 1]];
@@ -235,18 +238,72 @@ namespace Burntime.Framework
             ? modalStack.Peek()
             : activeScene;
 
+        volatile object touchInputContext = new();
+        public object TouchInputContext => touchInputContext;
+        readonly System.Collections.Concurrent.ConcurrentQueue<(TouchGesture Gesture, object? Context)> touchGestures = new();
+
+        public void QueueTouchGesture(TouchGesture gesture, object? context) =>
+            touchGestures.Enqueue((gesture, context));
+
+        public void ClearTouchGestures() => touchGestures.Clear();
+
         internal void Render(RenderTarget Target) => activeScene?.Render(Target);
 
         internal void Process(float Elapsed)
         {
             Window handle = InputWindow;
-
-            Vector2 parentPos = handle.PositionOnScreen - handle.Position;
-
             if (handle != null)
             {
+                Vector2 parentPos = handle.PositionOnScreen - handle.Position;
                 // move mouse
                 handle.MouseMove(app.DeviceManager.Mouse.Position - parentPos);
+
+                while (touchGestures.TryDequeue(out var touch))
+                {
+                    if (!ReferenceEquals(touch.Context, TouchInputContext) || !ReferenceEquals(handle, InputWindow))
+                        continue;
+                    app.LastInputMode = InputMode.Touch;
+                    var gesture = touch.Gesture;
+                    if (gesture.Kind == TouchGestureKind.Tap)
+                    {
+                        if (handle.OnTouchTap(gesture.Position - handle.PositionOnScreen))
+                            continue;
+                        var target = handle.FindTouchTarget(gesture.Position);
+                        if (target != null)
+                        {
+                            // Both phases go to the same target, even if expanded regions overlap.
+                            Vector2 local = gesture.Position - target.PositionOnScreen;
+                            if (target.OnTouchTap(local))
+                                continue;
+                            for (Window? ancestor = target; ancestor != null; ancestor = ancestor.Parent)
+                            {
+                                bool consumed = ancestor.OnMouseDown(gesture.Position - ancestor.PositionOnScreen, MouseButton.Left);
+                                if (consumed || ReferenceEquals(ancestor, handle) || !ReferenceEquals(touch.Context, TouchInputContext)) break;
+                            }
+                            if (ReferenceEquals(touch.Context, TouchInputContext) && target.IsVisible)
+                                target.OnMouseClick(local, MouseButton.Left);
+                            continue;
+                        }
+                    }
+                    if (gesture.Kind == TouchGestureKind.Cancel)
+                        continue;
+                    if (gesture.Kind is TouchGestureKind.HoldMove or TouchGestureKind.HoldEnd)
+                        continue;
+                    if (gesture.Kind == TouchGestureKind.LongPress)
+                    {
+                        if (handle.TouchLongPress(gesture.Origin - parentPos)) continue;
+                    }
+                    if (gesture.Kind == TouchGestureKind.Drag)
+                        handle.TouchDrag(gesture.Origin - parentPos, gesture.Delta);
+                    else
+                    {
+                        var button = gesture.Kind == TouchGestureKind.LongPress ? MouseButton.Right : MouseButton.Left;
+                        app.DeviceManager.MouseMove(gesture.Position);
+                        handle.MouseDown(gesture.Position - parentPos, button);
+                        if (ReferenceEquals(handle, InputWindow))
+                            handle.MouseClick(gesture.Position - parentPos, button);
+                    }
+                }
 
                 // handle clicks
                 var clicks = app.DeviceManager.Mouse.ConsumeClicks();
@@ -303,6 +360,7 @@ namespace Burntime.Framework
 
         internal void PushModalStack(Window window)
         {
+            touchInputContext = new object();
             Window handle = null;
 
             if (modalStack.Count > 0)
@@ -315,10 +373,15 @@ namespace Burntime.Framework
             modalStack.Push(window);
         }
 
-        internal void PopModalStack() => modalStack.Pop();
+        internal void PopModalStack()
+        {
+            touchInputContext = new object();
+            modalStack.Pop();
+        }
 
         internal void Reset()
         {
+            touchInputContext = new object();
             modalStack.Clear();
             activeScene = null;
         }

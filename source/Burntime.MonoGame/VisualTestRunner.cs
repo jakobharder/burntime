@@ -9,9 +9,10 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Burntime.MonoGame;
 
-internal sealed class VisualTestRunner(string outputDirectory)
+internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = false) : IVisualTestRunner
 {
     public string OutputDirectory { get; } = outputDirectory;
+    readonly string[] names = touchOnly ? VisualTestScenes.TouchNames : VisualTestScenes.Names;
     readonly List<string> captured = [];
     readonly Stopwatch deadline = Stopwatch.StartNew();
     VisualTestScenes? scenes;
@@ -25,11 +26,11 @@ internal sealed class VisualTestRunner(string outputDirectory)
     public static int Run(string[] args)
     {
         // Deliberately small private CLI; the Python script owns the user interface.
-        if (args.Length is < 3 or > 5 || args.Skip(3).Any(arg =>
-            arg is not ("--native-filter" or "--language=en" or "--language=de")) || args[0] != "--visual-test" ||
+        if (args.Length is < 3 or > 6 || args.Skip(3).Any(arg =>
+            arg is not ("--native-filter" or "--language=en" or "--language=de" or "--touch")) || args[0] != "--visual-test" ||
             args[1] is not ("classic" or "newgfx" or "classic-no-hints"))
         {
-            Console.Error.WriteLine("Usage: Burntime --visual-test classic|newgfx|classic-no-hints OUTPUT_DIRECTORY [--native-filter] [--language=en|--language=de]");
+            Console.Error.WriteLine("Usage: Burntime --visual-test classic|newgfx|classic-no-hints OUTPUT_DIRECTORY [--native-filter] [--language=en|--language=de] [--touch]");
             return 2;
         }
         string output = Path.GetFullPath(args[2]);
@@ -42,7 +43,7 @@ internal sealed class VisualTestRunner(string outputDirectory)
         System.IO.File.WriteAllText(Path.Combine(FileSystem.UserFolderOverride, "user.txt"),
             $"newgfx={(args[1] == "newgfx" ? "true" : "false")}\nprompts={hints}\nlanguage={language}\nfullscreen=false\nmusic=off\nmap_music=none\ncontroller_glyphs=xbox\n");
         Platform.Math.SetRandomSeed(123);
-        VisualTestRunner runner = new(output);
+        VisualTestRunner runner = new(output, args.Contains("--touch"));
         try
         {
             using BurntimeGame game = new(emulateSteamDeck: true,
@@ -69,7 +70,7 @@ internal sealed class VisualTestRunner(string outputDirectory)
         if (deadline.Elapsed > TimeSpan.FromSeconds(60))
         {
             System.IO.File.WriteAllText(Path.Combine(OutputDirectory, "error.txt"),
-                $"Timed out loading scenario {VisualTestScenes.Names[System.Math.Max(0, index)]}");
+                $"Timed out loading scenario {names[System.Math.Max(0, index)]}");
             game.Exit();
             return;
         }
@@ -83,11 +84,11 @@ internal sealed class VisualTestRunner(string outputDirectory)
         if (nextScene)
         {
             index++;
-            Log.Info($"VISUAL SCENARIO: {VisualTestScenes.Names[index]}");
-            scenes.Open(VisualTestScenes.Names[index]);
+            Log.Info($"VISUAL SCENARIO: {names[index]}");
+            scenes.Open(names[index]);
             nextScene = false;
             readyFrames = 0;
-            animationFrames = VisualTestScenes.Names[index] == "menu" ? 60 : 0;
+            animationFrames = names[index] == "menu" ? 60 : 0;
             advanceAnimation = false;
             game.MainTarget.TotalElapsed = 0;
             deadline.Restart();
@@ -131,13 +132,13 @@ internal sealed class VisualTestRunner(string outputDirectory)
             pixels[i].A = 255;
         using Texture2D image = new(game.GraphicsDevice, width, height);
         image.SetData(pixels);
-        string name = VisualTestScenes.Names[index];
+        string name = names[index];
         using (var stream = System.IO.File.Create(Path.Combine(OutputDirectory, name + ".png")))
             image.SaveAsPng(stream, width, height);
         captured.Add(name);
         Console.WriteLine($"Captured {name}");
         nextScene = true;
-        if (index + 1 == VisualTestScenes.Names.Length)
+        if (index + 1 == names.Length)
         {
             Complete = true;
             System.IO.File.WriteAllText(Path.Combine(OutputDirectory, "captures.json"),

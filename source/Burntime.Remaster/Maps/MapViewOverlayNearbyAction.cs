@@ -3,6 +3,7 @@ using Burntime.Framework;
 using Burntime.Framework.States;
 using Burntime.Platform;
 using Burntime.Platform.Graphics;
+using Burntime.Remaster.GUI;
 using Burntime.Remaster.Logic;
 using Burntime.Remaster.Logic.Interaction;
 
@@ -34,47 +35,41 @@ class MapViewOverlayNearbyAction : IMapViewOverlay
     {
         public TargetKey Key { get; init; }
         public float Distance { get; init; }
-        public Vector2 Position { get; init; }
         public required MapViewHoverInfo Info { get; init; }
     }
 
     readonly Module app;
-    readonly MapViewOverlayHoverText hoverText;
-    MapViewHoverInfo info;
+    readonly MapView view;
     Player? player;
     Location? location;
-    Character? announcedCharacter;
-    MapViewHoverInfo? announcedInfo;
-    float announcementRemaining;
     readonly List<TargetCandidate> candidates = [];
     readonly List<TargetKey> cycleTargets = [];
     TargetKey? lockedTarget;
     Character? targetOwner;
     int pendingCycleDirection;
 
-    const float AnnouncementFadeDuration = 0.35f;
+    bool isVisible = true;
+    public bool IsVisible
+    {
+        get => isVisible;
+        set
+        {
+            if (isVisible == value)
+                return;
+            isVisible = value;
+            if (!isVisible)
+                OnHide();
+        }
+    }
 
-    public int EntranceNumber { get; private set; } = -1;
-    public IMapObject Object { get; private set; }
-    public Vector2? Position { get; private set; }
-    public bool IsVisible { get; set; } = true;
-
-    public MapViewOverlayNearbyAction(Module app, MapViewOverlayHoverText hoverText)
+    public MapViewOverlayNearbyAction(Module app, MapView view)
     {
         this.app = app;
-        this.hoverText = hoverText;
+        this.view = view;
     }
 
     public void MouseMoveOverlay(Vector2 position)
     {
-    }
-
-    public void AnnounceCharacter(Character character, float duration)
-    {
-        announcedCharacter = character;
-        announcedInfo = new MapViewHoverInfo(character, app.ResourceManager,
-            GetCharacterColor(character));
-        announcementRemaining = duration;
     }
 
     public void CycleTarget(int direction)
@@ -124,34 +119,9 @@ class MapViewOverlayNearbyAction : IMapViewOverlay
 
     public void UpdateOverlay(WorldState world, float elapsed)
     {
+        view.HoveredObject = null;
         player = world.CurrentPlayer as Player;
         location = world.CurrentLocation as Location;
-        EntranceNumber = -1;
-        Object = null;
-        Position = null;
-        info = null;
-
-        if (announcementRemaining > 0 && announcedCharacter != null && announcedInfo != null &&
-            !announcedCharacter.IsDead)
-        {
-            announcementRemaining = System.Math.Max(0, announcementRemaining - elapsed);
-            announcedInfo.Position = new Vector2(
-                announcedCharacter.MapArea.Left + announcedCharacter.MapArea.Width / 2,
-                announcedCharacter.MapArea.Top - 10);
-        }
-        else
-        {
-            announcedCharacter = null;
-            announcedInfo = null;
-            announcementRemaining = 0;
-        }
-
-        if (app.LastInputMode == InputMode.Mouse)
-        {
-            ClearTargetLock();
-            candidates.Clear();
-            return;
-        }
 
         if (location == null ||
             player == null || player.SelectedCharacter == null)
@@ -180,7 +150,6 @@ class MapViewOverlayNearbyAction : IMapViewOverlay
             {
                 Key = new TargetKey(i, null),
                 Distance = distance,
-                Position = entrance.Area.Center,
                 Info = location.AreEntrancesBlockedFor(player)
                     ? new MapViewHoverInfo(app.ResourceManager.GetString("newburn?103"), entrance.Area.Center, ClassicColors.LightGray, location.Rooms[i])
                     : new MapViewHoverInfo(location.Rooms[i], app.ResourceManager, ClassicColors.LightGray)
@@ -197,7 +166,6 @@ class MapViewOverlayNearbyAction : IMapViewOverlay
             {
                 Key = new TargetKey(-1, item),
                 Distance = distance,
-                Position = item.Position,
                 Info = new MapViewHoverInfo(item, app.ResourceManager,
                     new PixelColor(180, 152, 112))
             });
@@ -213,7 +181,6 @@ class MapViewOverlayNearbyAction : IMapViewOverlay
         {
             if (character == selectedCharacter || character.IsDead ||
                 character.IsPlayerCharacter && character.Player.IsDead ||
-                app.LastInputMode is (InputMode.Keyboard or InputMode.Gamepad) &&
                 player.Party.Contains(selectedCharacter) && player.Party.Contains(character))
                 continue;
 
@@ -252,7 +219,6 @@ class MapViewOverlayNearbyAction : IMapViewOverlay
     {
         Key = new TargetKey(-1, character),
         Distance = distance,
-        Position = character.Position,
         Info = new MapViewHoverInfo(character, app.ResourceManager,
             GetCharacterColor(character))
     };
@@ -295,10 +261,12 @@ class MapViewOverlayNearbyAction : IMapViewOverlay
 
     void Apply(TargetCandidate candidate)
     {
-        EntranceNumber = candidate.Key.EntranceNumber;
-        Object = candidate.Key.Object;
-        Position = candidate.Position;
-        info = candidate.Info;
+        view.HoveredObject = candidate.Key.EntranceNumber >= 0 && location != null
+            ? new EntranceObject(location.Map.Entrances[candidate.Key.EntranceNumber],
+                candidate.Key.EntranceNumber)
+            : candidate.Key.Object;
+        if (location != null)
+            location.Hover = candidate.Info;
     }
 
     void ClearTargetLock()
@@ -311,38 +279,14 @@ class MapViewOverlayNearbyAction : IMapViewOverlay
 
     public void RenderOverlay(RenderTarget target, Vector2 offset, Vector2 size)
     {
-        if (!IsVisible)
-            return;
-
-        const int topMargin = 8;
-        var textTarget = target.GetSubBuffer(new Rect(0, topMargin, target.Width, target.Height - topMargin));
-        if (info != null)
-            DrawInfo(textTarget, info, offset - new Vector2(0, topMargin), 1);
-        if (announcedInfo != null)
-        {
-            float alpha = System.Math.Min(1,
-                announcementRemaining / AnnouncementFadeDuration);
-            DrawInfo(textTarget, announcedInfo, offset - new Vector2(0, topMargin), alpha);
-        }
     }
 
-    void DrawInfo(RenderTarget target, MapViewHoverInfo drawInfo, Vector2 offset, float alpha)
+    void OnHide()
     {
-        if (drawInfo.Character != null)
-        {
-            hoverText.DrawCharacterText(target, drawInfo, offset, alpha);
-            return;
-        }
-        if (drawInfo.Room != null)
-        {
-            hoverText.DrawEntranceText(target, drawInfo, offset, alpha,
-                showInventoryHint: location?.Player == player);
-            return;
-        }
-
-        Font font = app.ResourceManager.GetFont(BurntimeClassic.FontName, drawInfo.Color);
-        font.DrawText(target, drawInfo.Position + offset, drawInfo.Title,
-            TextAlignment.Center, VerticalTextAlignment.Center, alpha);
+        location = null;
+        player = null;
+        candidates.Clear();
+        ClearTargetLock();
     }
 
     static PixelColor GetCharacterColor(Character character)

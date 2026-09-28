@@ -60,6 +60,7 @@ static class Program
         Run("manual text layout", ManualTextLayoutTests.Cases());
         Run("setup patch notes", SetupPatchNotesTests.Cases());
         Run("resolution scaling", ResolutionTests.ResolutionCases());
+        Run("touch gestures", TouchGestureTests.Cases());
         Run("font indicators", FontIndicatorTests.IndicatorCases());
         Run("tooltip text substitution", TooltipTextTests.SubstitutionCases());
         Run("construction feedback", ConstructionFeedbackTests.AvailabilityCases());

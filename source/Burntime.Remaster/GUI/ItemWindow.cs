@@ -11,6 +11,7 @@ namespace Burntime.Remaster.GUI
 {
     class ItemWindow : Image
     {
+        public override bool IsTouchTarget => !string.IsNullOrEmpty(ItemID);
         GuiFont font;
         String text;
         CommandEvent leftClickEvent;
@@ -99,7 +100,8 @@ namespace Burntime.Remaster.GUI
         public override bool OnMouseClick(Vector2 Position, MouseButton Button)
         {
             // prevent from clicking two overlapping items at a time
-            if (GetTopMostItem() != this)
+            if ((app.LastInputMode == InputMode.Touch
+                ? GetTopMostItemAt(this.Position + Position) : GetTopMostItem()) != this)
                 return false;
 
             Window[] group = Parent.Windows.GetGroup(Group);
@@ -111,14 +113,38 @@ namespace Burntime.Remaster.GUI
             }
 
             if (Parent is ItemGridWindow grid)
-                grid.FocusFromMouseClick(index);
+                grid.FocusItem(index);
 
             if (Button == MouseButton.Left && leftClickEvent != null)
+            {
                 leftClickEvent.Execute(index);
+                return true;
+            }
             else if (Button == MouseButton.Right && rightClickEvent != null)
+            {
                 rightClickEvent.Execute(index);
-            return base.OnMouseClick(Position, Button);
+                return true;
+            }
+            return false;
         }
+
+        public bool IsTouchSelected => Parent is ItemGridWindow grid && grid.IsFocused(this);
+
+        public override bool OnTouchTap(Vector2 position)
+        {
+            if (string.IsNullOrEmpty(ItemID) || GetTopMostItemAt(Position + position) != this)
+                return false;
+
+            if (Parent is not ItemGridWindow grid)
+                return false;
+
+            if (grid.FocusItem(this))
+                OnMouseClick(position, MouseButton.Left);
+            return true;
+        }
+
+        public override bool OnTouchLongPress(Vector2 position) =>
+            OnMouseClick(position, MouseButton.Right);
 
         public override void OnRender(RenderTarget Target)
         {
@@ -127,12 +153,22 @@ namespace Burntime.Remaster.GUI
 
             bool showLegacyHoverText = ShowHoverText ||
                 app is BurntimeClassic classic && !classic.ShowUIHints;
-            if (showLegacyHoverText && GetTopMostItem() == this && text != null)
+            if (showLegacyHoverText && (app.LastInputMode == InputMode.Touch ? IsTouchSelected : GetTopMostItem() == this) && text != null)
             {
                 Target.Layer += 5;
                 RenderTarget bigger = Target.GetSubBuffer(new Rect(-50, -50, 132, 132));
                 font.DrawText(bigger, new Vector2(66, 41), text, TextAlignment.Center, VerticalTextAlignment.Top);
             }
+        }
+
+        private ItemWindow? GetTopMostItemAt(Vector2 position)
+        {
+            ItemWindow? top = null;
+            foreach (var sibling in Parent.Windows)
+                if (sibling is ItemWindow item && item.IsVisible &&
+                    !string.IsNullOrEmpty(item.ItemID) && item.Boundings.PointInside(position))
+                    top = item;
+            return top;
         }
 
         private ItemWindow GetTopMostItem()

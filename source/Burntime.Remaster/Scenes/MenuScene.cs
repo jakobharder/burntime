@@ -185,6 +185,7 @@ public class MenuScene : Scene
             Prompts = { { InputAction.Primary, "@prompts?4" } }
         };
         Windows += _exitButton;
+        if (OperatingSystem.IsIOS()) _exitButton.Hide();
 
         Windows += new InputPromptOverlay(app, Prompts,
             InputPromptColorScheme.Default);
@@ -644,7 +645,7 @@ public class MenuScene : Scene
 
     void UpdateSetupSelection()
     {
-        bool showSelection = app.LastInputMode != InputMode.Mouse;
+        bool showSelection = app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad;
         PlayerOneSwitch.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.Player && _currentPlayer == 0;
         PlayerTwoSwitch.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.Player && _currentPlayer == 1;
         _loadButton.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.Load;

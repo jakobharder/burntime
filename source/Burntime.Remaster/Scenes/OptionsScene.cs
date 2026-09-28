@@ -11,6 +11,15 @@ namespace Burntime.Remaster;
 
 public class OptionsScene : Scene, IMapMusicInterruptionScene
 {
+    sealed class TabRailButton : Button
+    {
+        public override bool IsTouchTarget => false;
+
+        public TabRailButton(Module app) : base(app)
+        {
+        }
+    }
+
     public override Key PreferredPrimaryKeyboardControl =>
         new(SystemKey.Enter);
 
@@ -119,7 +128,7 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         };
 
         // radio cover
-        Windows += _tabRail = new Button(app)
+        Windows += _tabRail = new TabRailButton(app)
         {
             #warning TODO make this fixed? merge it with the background? It doesn't work well with non-mouse input.
             Image = "opta.raw?1",

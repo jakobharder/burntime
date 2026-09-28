@@ -38,6 +38,26 @@ public sealed class MusicPlayback : IMusic
     PlaybackRequest? _pendingRequest;
     float _transitionVolume = 1;
     Thread? _musicThread;
+    bool _suspended;
+
+    public void SetSuspended(bool suspended)
+    {
+        lock (this)
+        {
+            if (_suspended == suspended) return;
+            _suspended = suspended;
+            if (suspended)
+            {
+                _music?.Pause();
+                foreach (var sound in _sounds) sound.Pause();
+            }
+            else
+            {
+                _music?.Resume();
+                foreach (var sound in _sounds) sound.Resume();
+            }
+        }
+    }
     bool _requestStop;
 
     public bool Enabled { get; set; }
@@ -615,6 +635,7 @@ public sealed class MusicPlayback : IMusic
 #warning THREADING lock playlist
             lock (this)
             {
+                if (_suspended) continue;
                 for (int i = _sounds.Count - 1; i >= 0; i--)
                 {
                     if (_sounds[i].IsPlaying)

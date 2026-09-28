@@ -5,5 +5,6 @@ public enum InputMode
     None,
     Mouse,
     Keyboard,
-    Gamepad
+    Gamepad,
+    Touch
 }

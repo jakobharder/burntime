@@ -6,6 +6,8 @@ namespace Burntime.Framework.GUI;
 
 public class Button : Window
 {
+    public override int MinimumTouchTargetSize => TouchHitTest.MinimumSize;
+    public override bool IsTouchTarget => IsEnabled;
     public VerticalTextAlignment TextVerticalAlign = VerticalTextAlignment.Default;
     public TextAlignment TextHorizontalAlign = TextAlignment.Default;
 
@@ -107,7 +109,7 @@ public class Button : Window
     private string _lastLanguage = string.Empty;
     public override void OnRender(RenderTarget Target)
     {
-        bool isHighlighted = IsHover || IsKeyboardSelected;
+        bool isHighlighted = app.LastInputMode != InputMode.Touch && (IsHover || IsKeyboardSelected);
 
         if (IsTextOnly && _lastLanguage != app.Language)
         {
