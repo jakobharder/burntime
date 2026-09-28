@@ -73,7 +73,9 @@ public class StateLinkList<TState> : IStateLinkList, IEnumerable, IEnumerable<TS
     public void Add(TState state) => list.Add(StateLinkBase.MakeLink(state));
     public void Remove(TState state) => list.Remove(StateLinkBase.MakeLink(state));
     public void Insert(int index, TState state) => list.Insert(index, StateLinkBase.MakeLink(state));
-    public bool Contains(TState state) => list.Contains(StateLinkBase.MakeLink(state));
+    public bool Contains(TState state) =>
+        // Display-only objects have no manager and cannot belong to a link list.
+        state?.Container != null && list.Contains(StateLinkBase.MakeLink(state));
 
     public TState this[int index]
     {

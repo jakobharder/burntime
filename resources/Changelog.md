@@ -2,6 +2,10 @@
 
 ## 1.2 (2026-09-27)
 
+### 1.2.1
+
+- Fix crash in info scene
+
 ### Game rules and AI
 
 - Added original Amiga AI

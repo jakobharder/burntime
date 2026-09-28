@@ -14,6 +14,22 @@ static class ItemFunctionTests
 {
     internal static IEnumerable<Case<int>> FunctionCases()
     {
+        yield return Int("info-screen preview items are not in use", 0, () =>
+        {
+            var manager = new Burntime.Framework.States.StateManager(null!);
+            var character = manager.Create<Character>();
+            Item carried = TestItem(manager, "passive", functions: ItemFunction.RemoteIntel);
+            character.Items.Add(carried);
+
+            // InfoScene creates unmanaged items to represent its item summaries.
+            Item preview = new Item { Type = carried.Type };
+            Equal(false, character.Items.Contains(preview), "preview is not in inventory");
+            Equal(false, character.IsItemInUse(preview), "preview has no in-use marker");
+            Equal(true, character.IsItemInUse(carried), "carried item remains in use");
+            Equal(1, character.Items.Count, "lookup preserves inventory");
+            return 0;
+        });
+
         yield return Int("in-use marker follows carried effects and equipment", 0, () =>
         {
             var manager = new Burntime.Framework.States.StateManager(null!);
