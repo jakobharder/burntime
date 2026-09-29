@@ -4,6 +4,7 @@
 
 - Fixed previous game leaking into a new game
 - Fixed cities allowing camp creation
+- Automatically select traps after camp creation
 
 ## 1.2 (2026-09-27)
 
