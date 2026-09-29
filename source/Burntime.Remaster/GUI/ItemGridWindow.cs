@@ -26,6 +26,7 @@ namespace Burntime.Remaster.GUI
         int focusIndex = -1;
         Vector2? lastFocusPosition;
         public bool FocusVisible { get; set; }
+        public bool ActivateOnFirstTouch { get; set; }
         public PixelColor? BackgroundColor { get; set; }
         public event Action<ItemGridWindow> MouseFocusChanged;
         public event Action<ItemGridWindow, Vector2> FocusEmptied;

@@ -41,6 +41,10 @@ namespace Burntime.Remaster.GUI
         GuiFont font;
         GuiFont smallFont;
         bool side;
+        Vector2? touchSwipeOrigin;
+        float touchSwipeResetRemaining;
+
+        const float TouchSwipeResetDelay = 0.15f;
 
         GuiFont nameFont;
         String pageName;
@@ -80,6 +84,34 @@ namespace Burntime.Remaster.GUI
             }
 
             return false;
+        }
+
+        public override bool OnTouchScroll(Vector2 position, Vector2 delta)
+        {
+            if (System.Math.Abs(delta.y) <= System.Math.Abs(delta.x))
+                return false;
+
+            // Drag gestures arrive as a stream of deltas. Page once per swipe,
+            // even when the finger crosses several rows of the inventory.
+            bool alreadyHandled = touchSwipeOrigin.HasValue && touchSwipeOrigin.Value == position;
+            touchSwipeOrigin = position;
+            touchSwipeResetRemaining = TouchSwipeResetDelay;
+            if (alreadyHandled)
+                return true;
+
+            // Content follows the finger: swiping up advances, swiping down goes back.
+            int direction = delta.y < 0 ? 1 : -1;
+            Vector2? sourcePosition = grid.FocusPosition;
+            if (SelectAdjacentPage(direction) && sourcePosition.HasValue)
+                grid.FocusPageEdge(new Vector2(0, direction), sourcePosition.Value);
+            return true;
+        }
+
+        public override void OnUpdate(float elapsed)
+        {
+            if (touchSwipeOrigin.HasValue && (touchSwipeResetRemaining -= elapsed) <= 0)
+                touchSwipeOrigin = null;
+            base.OnUpdate(elapsed);
         }
 
         public LogicEvent LeftClickItemEvent;
@@ -146,6 +178,7 @@ namespace Burntime.Remaster.GUI
         {
             this.group = leader.GetGroup();
             this.leader = leader;
+            touchSwipeOrigin = null;
 
             activePageIndex = 0;
 

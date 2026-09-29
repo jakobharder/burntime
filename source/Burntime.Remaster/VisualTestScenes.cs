@@ -296,21 +296,46 @@ public sealed class VisualTestScenes(BurntimeClassic app)
             var traderScene = ReadPrivate<Scene>(app.SceneManager, "activeScene");
             var playerInventory = ReadPrivate<InventoryWindow>(traderScene, "inventory");
             var traderInventory = ReadPrivate<InventoryWindow>(traderScene, "inventoryTrader");
-            var exchange = ReadPrivate<ExchangeWindow>(traderScene, "exchangeTop");
+            var traderExchange = ReadPrivate<ExchangeWindow>(traderScene, "exchangeTop");
+            var playerExchange = ReadPrivate<ExchangeWindow>(traderScene, "exchangeBottom");
             if (app.Engine.Resolution.Game.x < 450)
             {
-                int offered = exchange.Grid.Count;
-                var point = exchange.PositionOnScreen + exchange.Size / 2;
-                Touch(TouchGestureKind.Tap, point, point);
-                if (!playerInventory.IsVisible || traderInventory.IsVisible || exchange.Grid.Count != offered)
-                    throw new InvalidOperationException("Trader exchange tap did not switch to player inventory without changing the offer.");
+                var point = traderScene.PositionOnScreen + traderScene.Size / 2;
+                Swipe(point, new Vector2(40, 0));
+                if (!playerInventory.IsVisible || traderInventory.IsVisible)
+                    throw new InvalidOperationException("Trader swipe right did not show the player inventory.");
                 if (name == "touch-trader-right")
                 {
-                    point = exchange.PositionOnScreen + exchange.Size / 2;
-                    Touch(TouchGestureKind.Tap, point, point);
-                    if (playerInventory.IsVisible || !traderInventory.IsVisible || exchange.Grid.Count != offered)
-                        throw new InvalidOperationException("Trader exchange tap did not switch back to trader inventory.");
+                    Swipe(point + new Vector2(1, 0), new Vector2(-40, 0));
+                    if (playerInventory.IsVisible || !traderInventory.IsVisible)
+                        throw new InvalidOperationException("Trader swipe left did not show the trader inventory.");
                 }
+            }
+
+            InventoryWindow activeInventory = name == "touch-trader-right"
+                ? traderInventory
+                : playerInventory;
+            ExchangeWindow activeExchange = name == "touch-trader-right"
+                ? traderExchange
+                : playerExchange;
+            ItemWindow traderItem = Descendants(activeInventory).OfType<ItemWindow>()
+                .First(window => window.IsVisible && window.Item != null);
+            var selectedItem = traderItem.Item!;
+            Touch(TouchGestureKind.Tap, traderItem.PositionOnScreen + traderItem.Size / 2,
+                traderItem.PositionOnScreen + traderItem.Size / 2);
+            if (!activeExchange.Grid.Contains(selectedItem))
+                throw new InvalidOperationException("First trader item tap did not add the item to the trade.");
+
+            if (name == "touch-trader-right")
+            {
+                int pageBefore = ReadPrivate<int>(traderInventory, "activePageIndex");
+                // Start over the portrait, outside the item grid: the whole
+                // inventory window is the vertical paging gesture target.
+                Vector2 point = traderInventory.PositionOnScreen + new Vector2(100, 35);
+                Swipe(point, new Vector2(0, -40));
+                int pageAfter = ReadPrivate<int>(traderInventory, "activePageIndex");
+                if (pageAfter == pageBefore)
+                    throw new InvalidOperationException("Trader inventory swipe up did not advance the page.");
             }
             return;
         }
@@ -418,5 +443,12 @@ public sealed class VisualTestScenes(BurntimeClassic app)
     {
         app.SceneManager.QueueTouchGesture(new(kind, origin, position, default, touchTestTime += delay), app.SceneManager.TouchInputContext);
         app.Process(0);
+    }
+
+    void Swipe(Vector2 origin, Vector2 delta)
+    {
+        app.SceneManager.QueueTouchGesture(new(TouchGestureKind.Drag, origin,
+            origin + delta, delta, touchTestTime += 1), app.SceneManager.TouchInputContext);
+        app.Process(.2f);
     }
 }

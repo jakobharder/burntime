@@ -138,7 +138,8 @@ namespace Burntime.Remaster.GUI
             if (Parent is not ItemGridWindow grid)
                 return false;
 
-            if (grid.FocusItem(this))
+            bool wasFocused = grid.FocusItem(this);
+            if (wasFocused || grid.ActivateOnFirstTouch)
                 OnMouseClick(position, MouseButton.Left);
             return true;
         }
