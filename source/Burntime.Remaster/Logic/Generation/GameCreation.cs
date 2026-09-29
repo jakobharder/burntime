@@ -72,6 +72,10 @@ namespace Burntime.Remaster.Logic.Generation
 
         public void CreateNewGame(NewGameInfo Info, bool startServer = true)
         {
+            // A completed game can still have a client marked ready while its
+            // victory screens are being shown. Detach that session before new
+            // clients are added, otherwise WaitScene may select the old client.
+            app.StopGame();
             app.Autosaves.OnNewGameCreated();
             new LogicFactory();
 
@@ -604,7 +608,9 @@ namespace Burntime.Remaster.Logic.Generation
             if (container == null)
                 container = new Burntime.Framework.States.StateManager(app.ResourceManager);
 
-            app.Clients.Clear();
+            // Loading replaces the whole session just like starting a new game.
+            // Stop its workers as well as removing its public client list.
+            app.StopGame();
 
             Burntime.Framework.SaveGame game = new Burntime.Framework.SaveGame(filename);
             List<int> ids = new List<int>();

@@ -256,7 +256,7 @@ public class MapView : Window
                 border = Vector2f.Zero;
         }
 
-        entrance = HitTestEntranceAt(position);
+        entrance = HitTestEntrance(position);
 
         mousePosition = position - ScrollPosition;
 
@@ -314,7 +314,7 @@ public class MapView : Window
         if (!Boundings.PointInside(position + Position))
             return false;
 
-        entrance = HitTestEntranceAt(position);
+        entrance = HitTestEntrance(position);
 
         if (entrance != -1 && handler != null)
             if (handler.OnClickEntrance(entrance, button))
@@ -348,7 +348,7 @@ public class MapView : Window
 
     public Action<int>? TouchLocationSecondary { get; set; }
 
-    int HitTestEntranceAt(Vector2 position)
+    public int HitTestEntrance(Vector2 position)
     {
         for (int i = overlays.Count - 1; i >= 0; i--)
         {
@@ -378,7 +378,7 @@ public class MapView : Window
     public override bool OnTouchLongPress(Vector2 position)
     {
         if (!Enabled || TouchLocationSecondary == null) return false;
-        int entranceNumber = HitTestEntranceAt(position);
+        int entranceNumber = HitTestEntrance(position);
         if (entranceNumber >= 0)
         {
             TouchLocationSecondary(entranceNumber);

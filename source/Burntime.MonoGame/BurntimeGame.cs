@@ -13,6 +13,7 @@ using Microsoft.Xna.Framework.Input;
 using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.Threading;
 
 namespace Burntime.MonoGame
 {
@@ -62,6 +63,8 @@ namespace Burntime.MonoGame
         long _fpsSampleStart = Stopwatch.GetTimestamp();
         int _fpsSampleFrames;
         volatile int _framesPerSecond;
+        long _workingSetBytes;
+        long _managedMemoryBytes;
 
         public MusicPlayback Music { get; } = new MusicPlayback();
         IMusic IEngine.Music => Music;
@@ -137,6 +140,7 @@ namespace Burntime.MonoGame
             Environment.GetEnvironmentVariable("SteamDeck") == "1";
 
         bool _initialized = false;
+        int _shutdownStarted;
 
         public BurntimeGame(bool emulateSteamMachine = false, bool emulateSteamDeck = false,
             bool chooseLanguage = false, bool linearOutputFiltering = false,
@@ -266,7 +270,9 @@ namespace Burntime.MonoGame
                 logPath = System.IO.Path.Combine(logDirectory, "log.txt");
             }
 
-            Log.Initialize(logPath);
+            // Keep the current launch plus the previous nine launches for crash
+            // diagnosis. Visual-test resource logs are regenerated per run.
+            Log.Initialize(logPath, VisualTest == null ? 10 : 1);
             Log.Info(System.DateTime.Now.ToLocalTime().ToString());
             Log.Info("Burntime version " + BurntimeClassic.Version);
             if (_emulateSteamDeck)
@@ -440,7 +446,10 @@ namespace Burntime.MonoGame
                 _burntimeApp.Render(MainTarget);
                 _fpsFont?.DrawText(MainTarget, new Platform.Vector2(2, 2),
                     string.Create(CultureInfo.InvariantCulture,
-                        $"{_framesPerSecond} FPS\n{ResourceManager.TextureMemoryUsage / (1024.0 * 1024.0):0.0} MB"),
+                        $"{_framesPerSecond} FPS\n" +
+                        $"RSS {Interlocked.Read(ref _workingSetBytes) / (1024.0 * 1024.0):0.0} MB\n" +
+                        $"GC {Interlocked.Read(ref _managedMemoryBytes) / (1024.0 * 1024.0):0.0} MB\n" +
+                        $"Tex {ResourceManager.TextureMemoryUsage / (1024.0 * 1024.0):0.0} MB"),
                     TextAlignment.Left, VerticalTextAlignment.Top);
                 RenderDevice.End();
             }, framesPerSecond: TargetFramesPerSecond);
@@ -900,7 +909,8 @@ namespace Burntime.MonoGame
         {
             GraphicsDevice.Clear(Color.Black);
 
-            UpdateFpsCounter();
+            if (ShowFps)
+                UpdateFpsCounter();
             RenderDevice.Render(VisualTest != null ? 1f / 60 : (float)gameTime.ElapsedGameTime.TotalSeconds);
             VisualTest?.Capture(this);
 
@@ -916,6 +926,9 @@ namespace Burntime.MonoGame
                 return;
 
             _framesPerSecond = (int)System.Math.Round(_fpsSampleFrames / sampleSeconds);
+            using Process process = Process.GetCurrentProcess();
+            Interlocked.Exchange(ref _workingSetBytes, process.WorkingSet64);
+            Interlocked.Exchange(ref _managedMemoryBytes, GC.GetTotalMemory(false));
             _fpsSampleFrames = 0;
             _fpsSampleStart = now;
         }
@@ -934,15 +947,59 @@ namespace Burntime.MonoGame
 
         protected override void OnExiting(object sender, ExitingEventArgs args)
         {
-#if !IOS
-            lock (_inputGlyphSync)
-                _steamInputGlyphs?.Dispose();
-#endif
-            base.OnExiting(sender, args);
+            try
+            {
+                base.OnExiting(sender, args);
+            }
+            finally
+            {
+                Shutdown();
+            }
+        }
 
-            Music.StopThread();
-            _gameThread.Stop();
-            _burntimeApp.Close();
+        protected override void Dispose(bool disposing)
+        {
+            try
+            {
+                if (disposing)
+                    Shutdown();
+            }
+            finally
+            {
+                base.Dispose(disposing);
+            }
+        }
+
+        void Shutdown()
+        {
+            if (Interlocked.Exchange(ref _shutdownStarted, 1) != 0)
+                return;
+
+#if !IOS
+            ShutdownComponent("input glyphs", () =>
+            {
+                lock (_inputGlyphSync)
+                    _steamInputGlyphs?.Dispose();
+            });
+#endif
+            ShutdownComponent("music", Music.StopThread);
+            ShutdownComponent("game thread", _gameThread.Stop);
+            ShutdownComponent("resource loader", () => ResourceManager?.Dispose());
+            ShutdownComponent("game module", () => _burntimeApp?.Close());
+        }
+
+        static void ShutdownComponent(string name, Action shutdown)
+        {
+            try
+            {
+                shutdown();
+            }
+            catch (Exception exception)
+            {
+                // Cleanup failures must not mask the original runner exception
+                // or leave the remaining engine services running.
+                Log.Warning($"Failed to shut down {name}: {exception}");
+            }
         }
 
         void IEngine.ExitApplication()

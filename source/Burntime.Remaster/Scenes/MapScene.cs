@@ -158,7 +158,7 @@ namespace Burntime.Remaster
 
         private void View_OnContextMenu(Vector2 position, MouseButton button)
         {
-            if (!_infoMode && TryShowLocationInfo(view.ActiveEntrance))
+            if (!_infoMode && TryShowLocationInfo(view.HitTestEntrance(position)))
                 return;
 
             ShowContextMenu(position, true);

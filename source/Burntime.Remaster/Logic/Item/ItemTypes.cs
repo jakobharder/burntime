@@ -17,6 +17,7 @@ namespace Burntime.Remaster.Logic
 
         internal int[] UnarmedDamage => data.Object.Items[0].DamageValues;
         internal string Path => data.Name;
+        public IEnumerable<ItemType> Types => types;
 
         [NonSerialized]
         protected Dictionary<string, ItemType>? typeMap;

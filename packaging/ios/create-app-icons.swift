@@ -15,6 +15,10 @@ guard let image = NSImage(contentsOfFile: sourcePath),
 try FileManager.default.createDirectory(at: outputDirectory, withIntermediateDirectories: true)
 
 let slots: [(size: Double, scale: Int, idiom: String)] = [
+    (20, 2, "iphone"), (20, 3, "iphone"),
+    (29, 2, "iphone"), (29, 3, "iphone"),
+    (40, 2, "iphone"), (40, 3, "iphone"),
+    (60, 2, "iphone"), (60, 3, "iphone"),
     (20, 1, "ipad"), (20, 2, "ipad"),
     (29, 1, "ipad"), (29, 2, "ipad"),
     (40, 1, "ipad"), (40, 2, "ipad"),

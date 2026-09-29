@@ -13,7 +13,7 @@ public sealed class AppDelegate : UIApplicationDelegate
 
     public override bool FinishedLaunching(UIApplication application, NSDictionary launchOptions)
     {
-        Console.WriteLine("Starting Burntime for iPad");
+        Console.WriteLine("Starting Burntime for iOS");
         game = new BurntimeGame(disableShaders: true);
         if (Environment.GetEnvironmentVariable("BURNTIME_IOS_SMOKE_TEST") == "1")
         {

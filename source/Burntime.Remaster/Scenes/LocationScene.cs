@@ -227,8 +227,13 @@ namespace Burntime.Remaster
                 return;
 
             // only if not player owned
-            if (view.Player != targetCharacter.Player)
-                TryAttack(charOverlay.SelectedCharacter, targetCharacter);
+            if (view.Player != targetCharacter.Player &&
+                TryAttack(charOverlay.SelectedCharacter, targetCharacter) &&
+                app.LastInputMode == InputMode.Touch)
+            {
+                touch.SelectDestination(targetCharacter,
+                    charOverlay.SelectedCharacter);
+            }
         }
 
         bool TryAttack(Character attacker, Character defender)
@@ -534,6 +539,7 @@ namespace Burntime.Remaster
             {
                 combatEncounter = null;
                 combatRecovery = 0.75f;
+                touch.ClearDestination();
             }
 
             if (app.MouseInputVisible)

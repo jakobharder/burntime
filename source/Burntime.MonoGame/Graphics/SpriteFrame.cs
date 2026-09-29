@@ -64,8 +64,8 @@ public class SpriteFrame : Platform.Graphics.GenericSpriteFrame<Texture2D>
         var tex = renderDevice.CreateTexture(_textureSize.x, _textureSize.y);
         tex.SetData(_systemCopy);
 
-        //if (!keepSystemCopy)
-        //    _systemCopy = null;
+        if (!_keepSystemCopy)
+            _systemCopy = null;
 
         _texture = tex;
 

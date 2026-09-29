@@ -3,6 +3,7 @@ using Burntime.Platform.Graphics;
 using System.Diagnostics;
 using System.Text;
 using System.Runtime.InteropServices.ComTypes;
+using System.Threading;
 
 namespace Burntime.Platform.Resource;
 
@@ -27,6 +28,7 @@ public abstract class ResourceManagerBase : IResourceManager
     public bool IsLoading => delayLoader.IsLoading;
 
     protected ILoadingCounter _loadingCounter;
+    int disposeStarted;
 
     public ResourceManagerBase(ILoadingCounter loadingCounter)
     {
@@ -54,10 +56,19 @@ public abstract class ResourceManagerBase : IResourceManager
 
     public void Dispose()
     {
+        if (Interlocked.Exchange(ref disposeStarted, 1) != 0)
+            return;
+
+        if (!delayLoader.Stop())
+        {
+            Log.Warning("Timed out stopping the delayed resource loader; " +
+                "skipping resource release to avoid racing the loader.");
+            return;
+        }
+
         ReleaseAll();
 
         Log.Info("texture memory peek: " + (_memoryPeek / 1024 / 1024).ToString() + " MB");
-        delayLoader.Stop();
     }
 
     public void Reset()

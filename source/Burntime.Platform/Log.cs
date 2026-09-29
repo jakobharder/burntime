@@ -3,44 +3,93 @@
 public class Log
 {
     static readonly object sync = new();
-    public static StreamWriter? File { get; private set; }
+    static string? filePath;
     public static bool DebugOut;
 
     public static string FormatPercentage(float factor) => System.Math.Round(factor * 100) + "%";
     public static string FormatPercentage(Vector2f factor) => System.Math.Round(factor.x * 100) + "% x " + System.Math.Round(factor.y * 100) + "%";
 
-    static public void Initialize(String file)
+    static public void Initialize(String file, int retainedSessionCount = 1)
     {
-        Log.File = new StreamWriter(file, false);
+        lock (sync)
+        {
+            filePath = file;
+
+            try
+            {
+                Rotate(file, Math.Max(1, retainedSessionCount));
+                using StreamWriter writer = new(file, false);
+            }
+            catch (Exception exception) when (exception is IOException or
+                UnauthorizedAccessException)
+            {
+                // Diagnostics must never prevent the application from starting.
+            }
+        }
+    }
+
+    static void Rotate(string file, int retainedSessionCount)
+    {
+        if (retainedSessionCount <= 1)
+            return;
+
+        for (int index = retainedSessionCount - 1; index >= 2; --index)
+        {
+            string previous = ArchivePath(file, index - 1);
+            if (System.IO.File.Exists(previous))
+                System.IO.File.Move(previous, ArchivePath(file, index), true);
+        }
+
+        if (System.IO.File.Exists(file))
+            System.IO.File.Move(file, ArchivePath(file, 1), true);
+    }
+
+    static string ArchivePath(string file, int index)
+    {
+        string? directory = Path.GetDirectoryName(file);
+        string name = Path.GetFileNameWithoutExtension(file);
+        string extension = Path.GetExtension(file);
+        return Path.Combine(directory ?? string.Empty, $"{name}.{index}{extension}");
+    }
+
+    /// <summary>
+    /// Writes directly to the current log without retaining a writable file
+    /// handle between messages. This is required on iOS, which terminates a
+    /// suspended application that retains file locks.
+    /// </summary>
+    public static void Write(Action<StreamWriter> write)
+    {
+        lock (sync)
+        {
+            if (filePath is null)
+                return;
+
+            try
+            {
+                using StreamWriter writer = new(filePath, true);
+                write(writer);
+            }
+            catch (Exception exception) when (exception is IOException or
+                UnauthorizedAccessException)
+            {
+                // Diagnostics must never crash the application.
+            }
+        }
     }
 
     static public void Info(String str)
     {
-        lock (sync)
-        if (File != null)
-        {
-            File.WriteLine("[info] " + str);
-            File.Flush();
-        }
+        Write(writer => writer.WriteLine("[info] " + str));
     }
 
     static public void Warning(String str)
     {
-        lock (sync)
-        if (File != null)
-        {
-            File.WriteLine("[warning] " + str);
-            File.Flush();
-        }
+        Write(writer => writer.WriteLine("[warning] " + str));
     }
 
     static public void Debug(String str)
     {
-        lock (sync)
-        if (File != null && DebugOut)
-        {
-            File.WriteLine("[debug] " + str);
-            File.Flush();
-        }
+        if (DebugOut)
+            Write(writer => writer.WriteLine("[debug] " + str));
     }
 }

@@ -24,7 +24,7 @@ public sealed class VisualTestScenes(BurntimeClassic app)
 
     public static readonly string[] TouchNames =
     [
-        "touch-map-selected", "touch-map-info", "touch-location-entrances", "touch-location-destination", "touch-item-selected",
+        "touch-map-selected", "touch-map-info", "touch-map-menu", "touch-location-entrances", "touch-location-destination", "touch-item-selected",
         "touch-item-secondary", "touch-item-primary", "touch-trader-left", "touch-trader-right"
     ];
 
@@ -326,6 +326,28 @@ public sealed class VisualTestScenes(BurntimeClassic app)
             var view = Descendants(scene).OfType<MapView>().First();
             var player = app.Game.World.ActivePlayerObj;
             var departure = player.Location;
+            if (name == "touch-map-menu")
+            {
+                Vector2? empty = null;
+                for (int y = 8; y < view.Size.y && empty == null; y += 8)
+                    for (int x = 8; x < view.Size.x; x += 8)
+                        if (view.HitTestEntrance(new Vector2(x, y)) < 0)
+                        {
+                            empty = new Vector2(x, y);
+                            break;
+                        }
+                if (empty == null)
+                    throw new InvalidOperationException("World map fixture has no empty long-press target.");
+                int selectedEntrance = view.ActiveEntrance;
+                origin = view.PositionOnScreen + empty.Value;
+                Touch(TouchGestureKind.LongPress, origin, origin);
+                MenuWindow? contextMenu = Descendants(scene).OfType<MenuWindow>()
+                    .FirstOrDefault(window => window.IsVisible);
+                if (contextMenu == null)
+                    throw new InvalidOperationException($"Empty-map long press opened location {selectedEntrance} instead of the context menu.");
+                contextMenu.Hide();
+                return;
+            }
             int destinationNumber = name == "touch-map-info" ? view.ActiveEntrance :
                 Enumerable.Range(0, app.Game.World.Locations.Count).First(number =>
                     number != view.ActiveEntrance);

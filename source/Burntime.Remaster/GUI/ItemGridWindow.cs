@@ -159,12 +159,13 @@ namespace Burntime.Remaster.GUI
             }
 
             bool showUIHints = app is not BurntimeClassic classic || classic.ShowUIHints;
-            if (app.LastInputMode != InputMode.Touch && (FocusVisible || showUIHints && mouseFocusActive) &&
+            bool touchFocus = app.LastInputMode == InputMode.Touch && mouseFocusActive;
+            if ((touchFocus || FocusVisible || showUIHints && mouseFocusActive) &&
                 IsValidFocusIndex(focusIndex))
             {
                 Target.Layer += 5;
                 Vector2 itemPosition = itemWindows[focusIndex].Position;
-                if (showUIHints)
+                if (showUIHints || touchFocus)
                     Target.DrawSprite(itemPosition, focusSprite);
                 else
                 {

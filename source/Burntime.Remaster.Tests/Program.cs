@@ -64,6 +64,7 @@ static class Program
         Run("font indicators", FontIndicatorTests.IndicatorCases());
         Run("tooltip text substitution", TooltipTextTests.SubstitutionCases());
         Run("construction feedback", ConstructionFeedbackTests.AvailabilityCases());
+        Run("log file lifetime", LogLifecycleTests.Cases());
 
         Console.WriteLine($"Rule formulas: {passed} passed, {failed} failed.");
         return failed == 0 ? 0 : 1;

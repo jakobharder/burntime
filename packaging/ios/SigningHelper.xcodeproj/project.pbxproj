@@ -12,7 +12,7 @@
   A00000000000000000000008 = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SigningHelper.app; sourceTree = BUILT_PRODUCTS_DIR;};
   A00000000000000000000009 = {isa = XCConfigurationList; buildConfigurations = (A00000000000000000000011); defaultConfigurationIsVisible = 0; defaultConfigurationName = Debug;};
   A00000000000000000000010 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A00000000000000000000012); runOnlyForDeploymentPostprocessing = 0;};
-  A00000000000000000000011 = {isa = XCBuildConfiguration; name = Debug; buildSettings = {CODE_SIGN_STYLE = Automatic; OTHER_LDFLAGS = "-framework UIKit -framework Foundation"; ALWAYS_SEARCH_USER_PATHS = NO; GENERATE_INFOPLIST_FILE = YES; PRODUCT_BUNDLE_IDENTIFIER = org.burntime.remastered.dev; PRODUCT_NAME = "$(TARGET_NAME)"; TARGETED_DEVICE_FAMILY = 2; CURRENT_PROJECT_VERSION = 1; MARKETING_VERSION = 1.0;};};
+  A00000000000000000000011 = {isa = XCBuildConfiguration; name = Debug; buildSettings = {CODE_SIGN_STYLE = Automatic; OTHER_LDFLAGS = "-framework UIKit -framework Foundation"; ALWAYS_SEARCH_USER_PATHS = NO; GENERATE_INFOPLIST_FILE = YES; PRODUCT_BUNDLE_IDENTIFIER = org.burntime.remastered.dev; PRODUCT_NAME = "$(TARGET_NAME)"; TARGETED_DEVICE_FAMILY = "1,2"; CURRENT_PROJECT_VERSION = 1; MARKETING_VERSION = 1.0;};};
   A00000000000000000000012 = {isa = PBXBuildFile; fileRef = A00000000000000000000007;};
  }; rootObject = A00000000000000000000001;
 }

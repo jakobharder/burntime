@@ -3,7 +3,7 @@
 <plist version="1.0"><dict>
   <key>CFBundleDisplayName</key><string>Burntime</string>
   <key>CFBundleName</key><string>Burntime</string>
-  <key>UIDeviceFamily</key><array><integer>2</integer></array>
+  <key>UIDeviceFamily</key><array><integer>1</integer><integer>2</integer></array>
   <key>UISupportedInterfaceOrientations</key><array>
     <string>UIInterfaceOrientationLandscapeLeft</string>
     <string>UIInterfaceOrientationLandscapeRight</string>
