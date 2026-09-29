@@ -2,7 +2,8 @@
 
 ## [Unreleased]
 
-- Fixed a completed game leaking into a newly started game
+- Fixed previous game leaking into a new game
+- Fixed cities allowing camp creation
 
 ## 1.2 (2026-09-27)
 
