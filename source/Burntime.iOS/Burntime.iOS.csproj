@@ -8,8 +8,6 @@
     <Nullable>enable</Nullable>
     <SupportedOSPlatformVersion>15.0</SupportedOSPlatformVersion>
     <ApplicationId>org.burntime.remastered.dev</ApplicationId>
-    <ApplicationVersion>1</ApplicationVersion>
-    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
     <AppIcon>AppIcon</AppIcon>
     <!-- Personal-device prototype: retain the reflection-based game/save schema. -->
     <TrimMode>copy</TrimMode>
@@ -20,6 +18,21 @@
     <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
     <CodesignKey Condition="'$(RuntimeIdentifier)' == 'ios-arm64'">Apple Development</CodesignKey>
   </PropertyGroup>
+  <PropertyGroup>
+    <GetBundleDisplayVersionCommand>sh &quot;$(MSBuildProjectDirectory)/get-bundle-version.sh&quot; display</GetBundleDisplayVersionCommand>
+    <GetBundleBuildVersionCommand>sh &quot;$(MSBuildProjectDirectory)/get-bundle-version.sh&quot; build</GetBundleBuildVersionCommand>
+  </PropertyGroup>
+  <Target Name="SetGitVersion" BeforeTargets="InitializeSourceControlInformation;_CompileAppManifestInputs">
+    <Exec Command="$(GetBundleDisplayVersionCommand)" ConsoleToMSBuild="True" IgnoreExitCode="False">
+      <Output PropertyName="ApplicationDisplayVersion" TaskParameter="ConsoleOutput" />
+    </Exec>
+    <Exec Command="$(GetBundleBuildVersionCommand)" ConsoleToMSBuild="True" IgnoreExitCode="False">
+      <Output PropertyName="ApplicationVersion" TaskParameter="ConsoleOutput" />
+    </Exec>
+    <PropertyGroup>
+      <Version>$(ApplicationDisplayVersion)</Version>
+    </PropertyGroup>
+  </Target>
   <ItemGroup>
     <TrimmerRootAssembly Include="Burntime" />
     <TrimmerRootAssembly Include="Burntime.Game" />

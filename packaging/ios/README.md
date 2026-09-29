@@ -84,7 +84,9 @@ xcrun devicectl device process launch --device YOUR_IPAD_UDID \
 
 For subsequent builds, reuse the profile while it is valid. The bundle identifier
 is `org.burntime.remastered.dev`. Installing updates preserves app data; deleting
-the app deletes its local saves. Development builds do not use Steam Cloud.
+the app deletes its local saves. Development builds do not use Steam Cloud. The
+display version is derived from the nearest Git tag, while the numeric bundle
+build version uses the repository commit count.
 
 ## Simulator and integration smoke test
 
