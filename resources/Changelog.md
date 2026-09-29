@@ -1,5 +1,9 @@
 ﻿# Burntime Changelog
 
+## [Unreleased]
+
+- Fixed a completed game leaking into a newly started game
+
 ## 1.2 (2026-09-27)
 
 ### 1.2.1

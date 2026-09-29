@@ -175,6 +175,14 @@ namespace Burntime.Framework.Network
             TravelDays++;
         }
 
+        internal void Deactivate()
+        {
+            readyEvent.Reset();
+            FinishedEvent.Reset();
+            if (state != GameClientState.Dead)
+                state = GameClientState.Waiting;
+        }
+
         public void Die()
         {
             state = GameClientState.Dead;

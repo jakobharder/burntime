@@ -3,11 +3,14 @@ using System.Collections.Generic;
 using System.Threading;
 
 using Burntime.Framework.Network;
+using Burntime.Platform;
 
 namespace Burntime.Framework.AI
 {
     public class AIControl
     {
+        static readonly TimeSpan StopTimeout = TimeSpan.FromSeconds(5);
+
         public List<GameClient> Player = new List<GameClient>();
         Thread thread = null;
 
@@ -33,6 +36,10 @@ namespace Burntime.Framework.AI
         {
             if (readyEvent != null)
                 readyEvent[0].Set();
+
+            if (thread != null && thread != Thread.CurrentThread && thread.IsAlive &&
+                !thread.Join(StopTimeout))
+                Log.Warning("AI player thread did not stop within five seconds.");
         }
 
         void RunThread()

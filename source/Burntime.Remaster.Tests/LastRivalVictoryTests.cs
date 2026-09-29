@@ -97,6 +97,21 @@ static class LastRivalVictoryTests
             Equal(human.Name, ((VictoryNews)server.PopNews()).Name, "same victory announcement");
             return 0;
         });
+        yield return Int("ending a game detaches its clients before a new session", 0, () =>
+        {
+            var (_, _, _, manager) = Fixture();
+            var oldClient = new GameClient(null!, 0, manager);
+            var module = new Burntime.Framework.Module();
+            module.Clients.Add(oldClient);
+            module.ActiveClient = oldClient;
+
+            module.StopGame();
+
+            Equal(0, module.Clients.Count, "old clients removed");
+            Equal(true, ReferenceEquals(GameClient.NoClient, module.ActiveClient), "active client reset");
+            Equal(null, module.GameServer, "server interface detached");
+            return 0;
+        });
     }
 
     static (ClassicGame Game, Player Human, Player Rival, StateManager Manager) Fixture()
