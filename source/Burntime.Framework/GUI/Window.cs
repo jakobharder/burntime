@@ -210,6 +210,11 @@ public class Window
 
     public virtual void OnTouchPress(Vector2 position) { }
 
+    internal virtual void TouchRelease(Vector2 position, bool cancelled) =>
+        OnTouchRelease(position - Position, cancelled);
+
+    public virtual void OnTouchRelease(Vector2 position, bool cancelled) { }
+
     internal virtual bool TouchLongPress(Vector2 position) =>
         visible && Boundings.PointInside(position) && OnTouchLongPress(position - Position);
 

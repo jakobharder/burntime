@@ -171,6 +171,13 @@ public class Container : Window
         return true;
     }
 
+    internal override void TouchRelease(Vector2 position, bool cancelled)
+    {
+        foreach (Window window in windows)
+            window.TouchRelease(position - Position, cancelled);
+        base.TouchRelease(position, cancelled);
+    }
+
     internal override bool TouchLongPress(Vector2 position)
     {
         if (!visible) return false;

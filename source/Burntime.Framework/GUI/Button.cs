@@ -13,12 +13,22 @@ public class Button : Window
 
     public bool IsHover { get; private set; }
     public bool IsKeyboardSelected { get; set; }
+    public bool IsTouchPressed { get; private set; }
 
     private bool _isEnabled = true;
     public bool IsEnabled
     {
         get => _isEnabled;
-        set { _isEnabled = value; if (_isEnabled == false) { IsHover = false; IsKeyboardSelected = false; } }
+        set
+        {
+            _isEnabled = value;
+            if (!_isEnabled)
+            {
+                IsHover = false;
+                IsKeyboardSelected = false;
+                IsTouchPressed = false;
+            }
+        }
     }
 
     public CommandEvent? Command;
@@ -109,7 +119,8 @@ public class Button : Window
     private string _lastLanguage = string.Empty;
     public override void OnRender(RenderTarget Target)
     {
-        bool isHighlighted = app.LastInputMode != InputMode.Touch && (IsHover || IsKeyboardSelected);
+        bool isHighlighted = IsTouchPressed ||
+            app.LastInputMode != InputMode.Touch && (IsHover || IsKeyboardSelected);
 
         if (IsTextOnly && _lastLanguage != app.Language)
         {
@@ -204,6 +215,15 @@ public class Button : Window
 
         IsHover = false;
     }
+
+    public override void OnTouchPress(Vector2 position)
+    {
+        if (IsEnabled)
+            IsTouchPressed = true;
+    }
+
+    public override void OnTouchRelease(Vector2 position, bool cancelled) =>
+        IsTouchPressed = false;
 
     public override bool OnMouseClick(Vector2 Position, MouseButton Button)
     {

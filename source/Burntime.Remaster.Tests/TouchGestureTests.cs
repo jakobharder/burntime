@@ -46,6 +46,12 @@ static class TouchGestureTests
             Equal(lower, Pick(new(65, 54)), "nearest lower in overlap");
             Equal(upper, Pick(new(65, 47)), "exact target wins over expanded neighbor");
             Equal(new Vector2(40, 8), upper.Size, "visual size unchanged");
+            upper.OnTouchPress(Vector2.Zero);
+            Equal(true, upper.IsTouchPressed, "touch down highlights button");
+            typeof(Container).GetMethod("TouchRelease",
+                BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(root,
+                new object[] { new Vector2(120, 120), true });
+            Equal(false, upper.IsTouchPressed, "cancelled touch clears highlight");
             lower.IsEnabled = false;
             Equal<Window?>(null, Pick(new(65, 66)), "disabled target ignored");
             root.Hide();

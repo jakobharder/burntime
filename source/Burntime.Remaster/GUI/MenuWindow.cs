@@ -105,9 +105,15 @@ namespace Burntime.Remaster.GUI
                 MoveInside(Boundings.Value);
 
             _lastMousePosition = app.DeviceManager.Mouse.Position - PositionOnScreen;
-            _mouseSelectionEnabled = openedByMouse;
+            bool touchInput = app.LastInputMode == InputMode.Touch;
+            _mouseSelectionEnabled = openedByMouse && !touchInput;
             _mouseHasLeft = false;
-            _focusIndex = openedByMouse ? GetEntryAt(_lastMousePosition) : _menuEntries.Count > 0 ? 0 : -1;
+            _focusIndex = touchInput ? -1 : openedByMouse
+                ? GetEntryAt(_lastMousePosition)
+                : _menuEntries.Count > 0 ? 0 : -1;
+            _touchPressedIndex = -1;
+            _touchActivationIndex = -1;
+            _touchReleasePending = false;
 
             Show();
         }
@@ -117,6 +123,9 @@ namespace Burntime.Remaster.GUI
         bool _mouseSelectionEnabled;
         bool _mouseHasLeft;
         bool _openedByMouse;
+        int _touchPressedIndex = -1;
+        int _touchActivationIndex = -1;
+        bool _touchReleasePending;
 
         public override bool PreserveMouseModeForDirectionalInput => _openedByMouse;
 
@@ -275,7 +284,10 @@ namespace Burntime.Remaster.GUI
             if (app.LastInputMode == InputMode.Touch)
             {
                 _mouseSelectionEnabled = true;
-                _focusIndex = GetTouchEntryAt(Position);
+                _focusIndex = _touchReleasePending
+                    ? _touchActivationIndex
+                    : GetTouchEntryAt(Position);
+                _touchReleasePending = false;
             }
             if (Boundings.PointInside(this.Position + Position))
             {
@@ -290,6 +302,25 @@ namespace Burntime.Remaster.GUI
                 Hide();
 
             return true;
+        }
+
+        public override void OnTouchPress(Vector2 position)
+        {
+            _touchPressedIndex = GetTouchEntryAt(position);
+            _touchActivationIndex = -1;
+            _touchReleasePending = false;
+            _focusIndex = _touchPressedIndex;
+        }
+
+        public override void OnTouchRelease(Vector2 position, bool cancelled)
+        {
+            int releasedIndex = cancelled ? -1 : GetTouchEntryAt(position);
+            _touchActivationIndex = releasedIndex == _touchPressedIndex
+                ? releasedIndex
+                : -1;
+            _touchReleasePending = !cancelled;
+            _focusIndex = _touchActivationIndex;
+            _touchPressedIndex = -1;
         }
 
         int GetTouchEntryAt(Vector2 position)

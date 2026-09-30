@@ -448,12 +448,24 @@ public sealed class VisualTestScenes(BurntimeClassic app)
 
     void Touch(TouchGestureKind kind, Vector2 origin, Vector2 position, double delay = 1)
     {
+        if (kind is TouchGestureKind.Tap or TouchGestureKind.LongPress or
+            TouchGestureKind.Drag)
+        {
+            app.SceneManager.QueueTouchGesture(new(TouchGestureKind.Press,
+                origin, origin, default, touchTestTime += .01),
+                app.SceneManager.TouchInputContext);
+            app.Process(0);
+        }
         app.SceneManager.QueueTouchGesture(new(kind, origin, position, default, touchTestTime += delay), app.SceneManager.TouchInputContext);
         app.Process(0);
     }
 
     void Swipe(Vector2 origin, Vector2 delta)
     {
+        app.SceneManager.QueueTouchGesture(new(TouchGestureKind.Press,
+            origin, origin, default, touchTestTime += .01),
+            app.SceneManager.TouchInputContext);
+        app.Process(0);
         app.SceneManager.QueueTouchGesture(new(TouchGestureKind.Drag, origin,
             origin + delta, delta, touchTestTime += 1), app.SceneManager.TouchInputContext);
         app.Process(.2f);
