@@ -161,7 +161,7 @@ namespace Burntime.Remaster
             if (!_infoMode && TryShowLocationInfo(view.HitTestEntrance(position)))
                 return;
 
-            ShowContextMenu(position, true);
+            ShowContextMenu(position, app.LastInputMode == InputMode.Mouse);
         }
 
         bool TryShowLocationInfo(int locationNumber)

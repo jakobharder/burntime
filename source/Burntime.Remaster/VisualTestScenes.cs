@@ -285,6 +285,7 @@ public sealed class VisualTestScenes(BurntimeClassic app)
                 actor.Position = area.Center + new Vector2(100, 100);
                 ((LocationScene)locationScene).OnClickEntrance(0, MouseButton.Left);
                 overlay.UpdateOverlay(app.Game, .3f);
+                ((LocationScene)locationScene).OnMenuFight();
             }
             return;
         }
@@ -370,6 +371,12 @@ public sealed class VisualTestScenes(BurntimeClassic app)
                     .FirstOrDefault(window => window.IsVisible);
                 if (contextMenu == null)
                     throw new InvalidOperationException($"Empty-map long press opened location {selectedEntrance} instead of the context menu.");
+                var entries = ReadPrivate<System.Collections.Generic.List<MenuItem>>(
+                    contextMenu, "_menuEntries");
+                if (entries.Any(entry =>
+                    entry.Shortcut.Action == InputAction.ToggleInteractionMode))
+                    throw new InvalidOperationException(
+                        "Touch world-map context menu contains the travel/info mode toggle.");
                 contextMenu.Hide();
                 return;
             }

@@ -38,6 +38,8 @@ namespace Burntime.Remaster
         MainUiOriginalWindow gui;
         MenuWindow menu;
         Image cursorAni;
+        Image touchTalkAni;
+        Image touchFightAni;
         DialogWindow dialog;
         InputPromptHandle previousCharacterPrompt;
         InputPromptHandle nextCharacterPrompt;
@@ -100,6 +102,12 @@ namespace Burntime.Remaster
             gui.Layer += 60;
             Windows += gui;
 
+            touchTalkAni = CreateTouchModeIndicator("burngfxani@munt.raw?10-13");
+            Windows += touchTalkAni;
+            touchFightAni = CreateTouchModeIndicator("burngfxani@munt.raw?14-17");
+            Windows += touchFightAni;
+            UpdateTouchModeIndicatorPosition();
+
             dialog = new DialogWindow(app);
             //dialog.Position = new Vector2(33, 20);
             dialog.Position = view.Position + (view.Size - dialog.Size) / 2 - new Vector2(0, 10);
@@ -152,6 +160,26 @@ namespace Burntime.Remaster
             UpdateCharacterPromptPositions();
         }
 
+        Image CreateTouchModeIndicator(string background)
+        {
+            Image indicator = new(app)
+            {
+                Background = background,
+                VerticalAlignment = PositionAlignment.Right
+            };
+            indicator.Background.Animation.Progressive = false;
+            indicator.Layer += 61;
+            indicator.Hide();
+            return indicator;
+        }
+
+        void UpdateTouchModeIndicatorPosition()
+        {
+            Vector2 position = new(16, Size.y - 2);
+            touchTalkAni.Position = position;
+            touchFightAni.Position = position;
+        }
+
         private void View_ContextMenu(Vector2 position, MouseButton button)
         {
             if (IsAutoFightTarget(view.HoveredObject))
@@ -170,6 +198,7 @@ namespace Burntime.Remaster
                 new Vector2(0, 10);
             app.MouseBoundings = view.Boundings;
             UpdateCharacterPromptPositions();
+            UpdateTouchModeIndicatorPosition();
         }
 
         void dialog_WindowShow(object sender, EventArgs e)
@@ -447,6 +476,17 @@ namespace Burntime.Remaster
         {
             app.Engine.Xbr2IndividualLayer = gui.Layer;
             UpdateInteractionCursor();
+
+            bool showTouchTalk = app.LastInputMode == InputMode.Touch &&
+                interactionMode == LocationInteractionMode.Talk &&
+                !dialog.IsVisible && !manualWindow.IsVisible;
+            bool showTouchFight = app.LastInputMode == InputMode.Touch &&
+                interactionMode == LocationInteractionMode.Fight &&
+                !dialog.IsVisible && !manualWindow.IsVisible;
+            if (touchTalkAni.IsVisible != showTouchTalk)
+                touchTalkAni.IsVisible = showTouchTalk;
+            if (touchFightAni.IsVisible != showTouchFight)
+                touchFightAni.IsVisible = showTouchFight;
 
             bool showInteractionMode = app.MouseInputVisible && !dialog.IsVisible &&
                 !manualWindow.IsVisible &&
