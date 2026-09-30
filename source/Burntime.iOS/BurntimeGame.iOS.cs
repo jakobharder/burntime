@@ -63,6 +63,7 @@ public partial class BurntimeGame
         var contact = contacts[0];
         var nativePosition = new Vector2((int)contact.Position.X, (int)contact.Position.Y);
         double now = Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency;
+        TouchGesture? began = null;
         if (contact.State == TouchLocationState.Pressed)
         {
             _burntimeApp.LastInputMode = InputMode.Touch;
@@ -70,11 +71,12 @@ public partial class BurntimeGame
             touchContext = _burntimeApp.SceneManager.TouchInputContext;
             // Keep a roughly ten-point movement tolerance on Retina displays.
             touchRecognizer.MovementTolerance = 10 * (float)UIKit.UIScreen.MainScreen.Scale;
-            touchRecognizer.Begin(nativePosition, now);
+            began = touchRecognizer.Begin(nativePosition, now);
         }
         if (touchId != contact.Id) return;
         TouchGesture? gesture = contact.State switch
         {
+            TouchLocationState.Pressed => began,
             TouchLocationState.Moved => touchRecognizer.Move(nativePosition, now),
             TouchLocationState.Released => touchRecognizer.End(nativePosition, now),
             TouchLocationState.Invalid => new TouchGesture(TouchGestureKind.Cancel, nativePosition, nativePosition, default),
@@ -86,7 +88,9 @@ public partial class BurntimeGame
             var position = ToGamePosition(value.Position);
             // Transform endpoints, not delta alone, to retain sub-pixel drag movement.
             var delta = position - ToGamePosition(value.Position - value.Delta);
-            _burntimeApp.SceneManager.QueueTouchGesture(new(value.Kind, origin, position, delta, now), touchContext);
+            var velocity = ToGameVelocity(value.Velocity);
+            _burntimeApp.SceneManager.QueueTouchGesture(
+                new(value.Kind, origin, position, delta, now, velocity), touchContext);
         }
         if (contact.State is TouchLocationState.Released or TouchLocationState.Invalid)
         {
@@ -98,4 +102,8 @@ public partial class BurntimeGame
     Vector2 ToGamePosition(Vector2 position) => new(
         position.x * Resolution.Game.x / System.Math.Max(1, Resolution.Native.x),
         position.y * Resolution.Game.y / System.Math.Max(1, Resolution.Native.y));
+
+    Vector2f ToGameVelocity(Vector2f velocity) => new(
+        velocity.x * Resolution.Game.x / System.Math.Max(1, Resolution.Native.x),
+        velocity.y * Resolution.Game.y / System.Math.Max(1, Resolution.Native.y));
 }

@@ -44,6 +44,10 @@ namespace Burntime.Remaster.Scenes
         const int ProductionTooltipNextIndex = 75;
         const int ProductionTooltipAutomaticIndex = 76;
         bool productionTooltipDismissed;
+        const int StorageRowHeight = 38;
+        static readonly Rect StorageBounds = new(105, 103, 106, 72);
+        float touchScrollPixels;
+        readonly KineticScroll touchMomentum = new();
 
         public InfoScene(Module App)
             : base(App)
@@ -275,14 +279,57 @@ namespace Burntime.Remaster.Scenes
 
 
             offset = 0;
+            touchScrollPixels = 0;
+            touchMomentum.Stop();
             RefreshItems();
             UpdateCampNPCs();
         }
 
         public override void OnUpdate(float elapsed)
         {
+            ApplyTouchScroll(touchMomentum.Update(elapsed));
             UpdateProductionTooltip();
             itemTooltip.Update();
+        }
+
+        public override bool OnMouseWheel(Vector2 position, int delta)
+        {
+            if (!StorageBounds.PointInside(position))
+                return false;
+            MoveItemOffset(-System.Math.Sign(delta));
+            return true;
+        }
+
+        public override bool OnTouchScroll(Vector2 position, Vector2 delta)
+        {
+            if (!StorageBounds.PointInside(position))
+                return false;
+            touchMomentum.Stop();
+            ApplyTouchScroll(-delta.y);
+            return true;
+        }
+
+        public override void OnTouchScrollEnd(Vector2 position, Vector2f velocity) =>
+            touchMomentum.Release(-velocity.y);
+
+        public override void OnTouchPress(Vector2 position)
+        {
+            if (StorageBounds.PointInside(position))
+                touchMomentum.Stop();
+        }
+
+        void ApplyTouchScroll(float pixels)
+        {
+            touchScrollPixels += pixels;
+            int rows = (int)(touchScrollPixels / StorageRowHeight);
+            if (rows == 0)
+                return;
+            touchScrollPixels -= rows * StorageRowHeight;
+            if (!MoveItemOffset(rows))
+            {
+                touchScrollPixels = 0;
+                touchMomentum.Stop();
+            }
         }
 
         void UpdateProductionTooltip()
@@ -481,26 +528,23 @@ namespace Burntime.Remaster.Scenes
 
         void OnButtonListUp()
         {
-            if (items.Count <= 1)
-                return;
-
-            offset--;
-            if (offset < 0)
-                offset = 0;
-
-            RefreshItems();
+            MoveItemOffset(-1);
         }
 
         void OnButtonListDown()
         {
-            if (items.Count <= 1)
-                return;
+            MoveItemOffset(1);
+        }
 
-            offset++;
-            if (offset > items.Count - 2)
-                offset = items.Count - 2;
-
+        bool MoveItemOffset(int direction)
+        {
+            int newOffset = System.Math.Clamp(offset + direction, 0,
+                System.Math.Max(0, items.Count - 2));
+            if (newOffset == offset)
+                return false;
+            offset = newOffset;
             RefreshItems();
+            return true;
         }
 
         void NextProduction()

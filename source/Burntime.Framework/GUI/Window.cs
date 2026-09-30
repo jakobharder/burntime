@@ -201,6 +201,15 @@ public class Window
     // A scene can consume a tap before any child acts (for example, switching sides).
     public virtual bool OnTouchTap(Vector2 position) => false;
 
+    internal virtual bool TouchPress(Vector2 position)
+    {
+        if (!visible || !Boundings.PointInside(position)) return false;
+        OnTouchPress(position - Position);
+        return true;
+    }
+
+    public virtual void OnTouchPress(Vector2 position) { }
+
     internal virtual bool TouchLongPress(Vector2 position) =>
         visible && Boundings.PointInside(position) && OnTouchLongPress(position - Position);
 
@@ -215,8 +224,24 @@ public class Window
 
     public virtual void OnTouchDrag(Vector2 delta) { }
 
+    internal virtual bool TouchDragEnd(Vector2 origin, Vector2 delta, Vector2f velocity)
+    {
+        if (!visible || !Boundings.PointInside(origin)) return false;
+        if (delta != Vector2.Zero)
+            OnTouchDrag(delta);
+        OnTouchDragEnd(velocity);
+        return true;
+    }
+
+    public virtual void OnTouchDragEnd(Vector2f velocity) { }
+
     // Scrollable containers get first refusal before their buttons consume a drag.
     public virtual bool OnTouchScroll(Vector2 position, Vector2 delta) => false;
+
+    // Called when a scrollable container consumed the final drag delta. This is
+    // separate from OnTouchDragEnd because the original touch target may be one
+    // of the container's child controls.
+    public virtual void OnTouchScrollEnd(Vector2 position, Vector2f velocity) { }
 
     internal virtual bool MouseClick(Vector2 position, MouseButton button)
     {

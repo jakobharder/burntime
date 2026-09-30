@@ -56,7 +56,8 @@ public sealed class ManualWindow : Container
     int _page;
     int _hoveredPage = -1;
     readonly int[] _textScroll;
-    int _touchScrollPixels;
+    float _touchScrollPixels;
+    readonly KineticScroll _touchMomentum = new();
     const float ScrollRepeatDelay = 0.3f;
     const float ScrollRepeatInterval = 0.06f;
     bool _heldScrollUp;
@@ -148,6 +149,7 @@ public sealed class ManualWindow : Container
     public override void OnShow()
     {
         _touchScrollPixels = 0;
+        _touchMomentum.Stop();
         _heldScrollUp = _heldScrollDown = false;
         _scrollDirection = 0;
         _scrollRepeatRemaining = ScrollRepeatDelay;
@@ -473,6 +475,8 @@ public sealed class ManualWindow : Container
     {
         if (IsVisible && _page == 0)
             _goalFlag?.Update(elapsed);
+
+        ApplyTouchScroll(_touchMomentum.Update(elapsed));
 
         int direction = (_heldScrollDown ? 1 : 0) - (_heldScrollUp ? 1 : 0);
         _heldScrollUp = _heldScrollDown = false;
@@ -849,16 +853,41 @@ public sealed class ManualWindow : Container
     {
         if (!new Rect(10, 24, Size.x - 20, ContentHeight).PointInside(position))
             return false;
-        _touchScrollPixels -= delta.y;
-        int lineHeight = System.Math.Max(1, TextLineHeight);
-        int lines = _touchScrollPixels / lineHeight;
-        _touchScrollPixels %= lineHeight;
-        if (lines != 0) MoveTextScroll(lines);
+        _touchMomentum.Stop();
+        ApplyTouchScroll(-delta.y);
         return true;
     }
 
-    void MovePage(int direction) =>
+    public override void OnTouchScrollEnd(Vector2 position, Vector2f velocity) =>
+        _touchMomentum.Release(-velocity.y);
+
+    public override void OnTouchPress(Vector2 position)
+    {
+        _touchMomentum.Stop();
+    }
+
+    void ApplyTouchScroll(float pixels)
+    {
+        _touchScrollPixels += pixels;
+        int lineHeight = System.Math.Max(1, TextLineHeight);
+        int lines = (int)(_touchScrollPixels / lineHeight);
+        if (lines == 0)
+            return;
+
+        _touchScrollPixels -= lines * lineHeight;
+        if (!MoveTextScroll(lines))
+        {
+            _touchScrollPixels = 0;
+            _touchMomentum.Stop();
+        }
+    }
+
+    void MovePage(int direction)
+    {
+        _touchMomentum.Stop();
+        _touchScrollPixels = 0;
         _page = (_page + direction + PageCount) % PageCount;
+    }
 
     int GetTabAt(Vector2 position)
     {
@@ -868,6 +897,25 @@ public sealed class ManualWindow : Container
         return (position.x - TabsLeft) / TabWidth;
     }
 
-    void MoveTextScroll(int direction) =>
-        _textScroll[_page] = System.Math.Max(0, _textScroll[_page] + direction);
+    int MaximumTextScroll()
+    {
+        string[] lines = _setupNotes
+            ? (_page == 0 ? SetupPatchNotes.Read() :
+                app.ResourceManager.GetStrings($"setupnotes?s{_page}"))
+            : app.ResourceManager.GetStrings($"manual?s{_page}");
+        lines = ManualTextLayout.Wrap(lines, Size.x - 30,
+            _textFont.GetWidth, _titleFont.GetWidth);
+        return System.Math.Max(0,
+            BuildEntries(lines).Sum(entry => entry.LineCount) - VisibleLineCount);
+    }
+
+    bool MoveTextScroll(int direction)
+    {
+        int newScroll = System.Math.Clamp(_textScroll[_page] + direction,
+            0, MaximumTextScroll());
+        if (newScroll == _textScroll[_page])
+            return false;
+        _textScroll[_page] = newScroll;
+        return true;
+    }
 }

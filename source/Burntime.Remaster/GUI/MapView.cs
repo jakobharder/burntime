@@ -290,6 +290,8 @@ public class MapView : Window
     public override void OnActivate()
     {
         _rightClickMove = null;
+        _touchPanVelocity = Vector2f.Zero;
+        _suppressTouchAction = false;
 
         base.OnActivate();
     }
@@ -377,6 +379,11 @@ public class MapView : Window
 
     public override bool OnTouchLongPress(Vector2 position)
     {
+        if (_suppressTouchAction)
+        {
+            _suppressTouchAction = false;
+            return true;
+        }
         if (!Enabled || TouchLocationSecondary == null) return false;
         int entranceNumber = HitTestEntrance(position);
         if (entranceNumber >= 0)
@@ -388,12 +395,44 @@ public class MapView : Window
     }
 
     float _moveTotal;
+    Vector2f _touchPanVelocity;
+    bool _suppressTouchAction;
+    const float TouchPanMaximumSpeed = 500;
+    const float TouchPanStopSpeed = 4;
+    const float TouchPanHalfLife = 0.15f;
+
     public override void OnTouchDrag(Vector2 delta)
     {
         if (!Enabled) return;
+        _suppressTouchAction = false;
+        _touchPanVelocity = Vector2f.Zero;
         _position += (Vector2f)delta;
         ConstrainPosition();
         Scroll?.Invoke(this, new MapScrollArgs(_position));
+    }
+
+    public override void OnTouchDragEnd(Vector2f velocity)
+    {
+        if (!Enabled) return;
+        if (velocity.Length > TouchPanMaximumSpeed)
+        {
+            velocity.Normalize();
+            velocity *= TouchPanMaximumSpeed;
+        }
+        _touchPanVelocity = velocity;
+    }
+
+    public override void OnTouchPress(Vector2 position)
+    {
+        _suppressTouchAction = _touchPanVelocity != Vector2f.Zero;
+        _touchPanVelocity = Vector2f.Zero;
+    }
+
+    public override bool OnTouchTap(Vector2 position)
+    {
+        if (!_suppressTouchAction) return false;
+        _suppressTouchAction = false;
+        return true;
     }
 
     Vector2? _rightClickMove = null;
@@ -427,6 +466,26 @@ public class MapView : Window
                 cameraPanInputDown = true;
                 break;
             }
+        }
+
+        if (cameraPanInputDown)
+            _touchPanVelocity = Vector2f.Zero;
+
+        if (_touchPanVelocity != Vector2f.Zero)
+        {
+            Vector2f proposedPosition = _position + _touchPanVelocity * Elapsed;
+            _position = proposedPosition;
+            ConstrainPosition();
+            if (_position.x != proposedPosition.x)
+                _touchPanVelocity.x = 0;
+            if (_position.y != proposedPosition.y)
+                _touchPanVelocity.y = 0;
+
+            float decay = (float)System.Math.Pow(0.5, Elapsed / TouchPanHalfLife);
+            _touchPanVelocity *= decay;
+            if (_touchPanVelocity.Length < TouchPanStopSpeed)
+                _touchPanVelocity = Vector2f.Zero;
+            positionChanged = true;
         }
 
         if (mouseInputVisible && !cameraPanInputDown &&
@@ -495,6 +554,7 @@ public class MapView : Window
 
     public void CenterTo(Vector2 centerTo)
     {
+        _touchPanVelocity = Vector2f.Zero;
         _position = -centerTo + (Boundings.Size / 2);
         ConstrainPosition();
         Scroll?.Invoke(this, new MapScrollArgs(_position));
@@ -554,6 +614,7 @@ public class MapView : Window
         if (map is null)
             return;
 
+        _touchPanVelocity = Vector2f.Zero;
         _position -= (Vector2f)direction * elapsed * scrollSpeed;
         ConstrainPosition();
         Scroll?.Invoke(this, new MapScrollArgs(_position));

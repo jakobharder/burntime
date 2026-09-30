@@ -84,10 +84,35 @@ static class TouchGestureTests
             Equal(new Vector2(0, -12), parent.Scrolled, "hidden container ignores drag");
             return 0;
         });
+        yield return Int("scroll regions receive release velocity and kinetic scrolling decays", 0, () =>
+        {
+            var module = new Module();
+            var parent = new ScrollProbe(module) { Position = new(20, 30), Size = new(100, 100) };
+            var child = new DragProbe(module) { Size = new(100, 100) };
+            parent.Windows += child;
+            var dispatch = typeof(Container).GetMethod("TouchDragEnd",
+                BindingFlags.Instance | BindingFlags.NonPublic)!;
+            dispatch.Invoke(parent, new object[] {
+                new Vector2(40, 60), new Vector2(0, -5), new Vector2f(0, -240)
+            });
+            Equal(new Vector2f(0, -240), parent.Released,
+                "scroll owner receives release velocity");
+            Equal(Vector2.Zero, child.Dragged,
+                "child does not receive consumed release");
+
+            var momentum = new KineticScroll();
+            momentum.Release(1000);
+            Equal(50f, momentum.Update(.1f), "release velocity is capped");
+            Equal(true, momentum.IsActive, "momentum continues after first frame");
+            for (int i = 0; i < 200; i++)
+                momentum.Update(.1f);
+            Equal(false, momentum.IsActive, "momentum decays to rest");
+            return 0;
+        });
         yield return Int("tap only fires on release", 0, () =>
         {
             var input = new TouchGestureRecognizer();
-            input.Begin(new(20, 30), 0);
+            Equal(TouchGestureKind.Press, input.Begin(new(20, 30), 0).Kind, "press");
             Equal<TouchGesture?>(null, input.Move(new(23, 31), .1), "pending press");
             Equal<TouchGestureKind?>(TouchGestureKind.Tap, input.End(new(23, 31), .2)?.Kind, "tap");
             Equal<TouchGesture?>(null, input.End(new(23, 31), .3), "no duplicate release");
@@ -118,14 +143,31 @@ static class TouchGestureTests
             Equal(TouchGestureKind.Drag, first.Kind, "drag");
             Equal(new Vector2(20, 0), first.Delta, "full first delta");
             Equal(new Vector2(5, 0), input.Move(new(45, 30), .7)!.Value.Delta, "continued drag, no hold");
-            Equal<TouchGesture?>(null, input.End(new(45, 30), 1), "no release click");
+            Equal<TouchGestureKind?>(TouchGestureKind.DragEnd, input.End(new(45, 30), 1)?.Kind,
+                "release ends drag without clicking");
             return 0;
         });
         yield return Int("release movement can start a drag", 0, () =>
         {
             var input = new TouchGestureRecognizer();
             input.Begin(new(20, 30), 0);
-            Equal<TouchGestureKind?>(TouchGestureKind.Drag, input.End(new(40, 30), .1)?.Kind, "drag");
+            Equal<TouchGestureKind?>(TouchGestureKind.DragEnd, input.End(new(40, 30), .1)?.Kind, "drag");
+            return 0;
+        });
+        yield return Int("drag release reports recent velocity but drops it after a pause", 0, () =>
+        {
+            var input = new TouchGestureRecognizer();
+            input.Begin(new(0, 0), 0);
+            input.Move(new(20, 0), .05);
+            input.Move(new(40, 0), .1);
+            TouchGesture movingRelease = input.End(new(50, 0), .12)!.Value;
+            Equal(true, movingRelease.Velocity.x > 0 && movingRelease.Velocity.y == 0,
+                "moving release velocity");
+
+            input.Begin(new(0, 0), 1);
+            input.Move(new(30, 0), 1.05);
+            TouchGesture pausedRelease = input.End(new(30, 0), 1.2)!.Value;
+            Equal(Vector2f.Zero, pausedRelease.Velocity, "pause cancels fling");
             return 0;
         });
         yield return Int("cancellation prevents stale clicks", 0, () =>
@@ -158,12 +200,16 @@ static class TouchGestureTests
     sealed class ScrollProbe(Module module) : Container(module)
     {
         public Vector2 Scrolled;
+        public Vector2f Released;
         public override bool OnTouchScroll(Vector2 position, Vector2 delta)
         {
             if (!new Rect(10, 20, 80, 60).PointInside(position)) return false;
             Scrolled += delta;
             return true;
         }
+
+        public override void OnTouchScrollEnd(Vector2 position, Vector2f velocity) =>
+            Released = velocity;
     }
 
     sealed class DragProbe(Module module) : Window(module)

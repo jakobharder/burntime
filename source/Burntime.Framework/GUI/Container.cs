@@ -162,6 +162,15 @@ public class Container : Window
         return TouchHitTest.Prefer(target, base.FindTouchTarget(screenPosition), screenPosition);
     }
 
+    internal override bool TouchPress(Vector2 position)
+    {
+        if (!visible || !Boundings.PointInside(position)) return false;
+        OnTouchPress(position - Position);
+        foreach (Window window in windows)
+            if (window.TouchPress(position - Position)) return true;
+        return true;
+    }
+
     internal override bool TouchLongPress(Vector2 position)
     {
         if (!visible) return false;
@@ -178,6 +187,19 @@ public class Container : Window
         foreach (Window window in windows)
             if (window.TouchDrag(origin - Position, delta)) return true;
         return base.TouchDrag(origin, delta);
+    }
+
+    internal override bool TouchDragEnd(Vector2 origin, Vector2 delta, Vector2f velocity)
+    {
+        if (!visible) return false;
+        if (Boundings.PointInside(origin) && OnTouchScroll(origin - Position, delta))
+        {
+            OnTouchScrollEnd(origin - Position, velocity);
+            return true;
+        }
+        foreach (Window window in windows)
+            if (window.TouchDragEnd(origin - Position, delta, velocity)) return true;
+        return base.TouchDragEnd(origin, delta, velocity);
     }
 
     internal override bool MouseClick(Vector2 Position, MouseButton Button)

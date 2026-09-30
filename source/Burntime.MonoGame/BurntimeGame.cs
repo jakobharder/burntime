@@ -305,6 +305,12 @@ namespace Burntime.MonoGame
             _burntimeApp.ChooseLanguageOnStart = _chooseLanguage;
             _burntimeApp.LastInputMode = OperatingSystem.IsIOS() ? InputMode.Touch
                 : IsSteamSession ? InputMode.Gamepad : InputMode.Mouse;
+#if IOS
+            _burntimeApp.SmallDeviceUi =
+                UIKit.UIDevice.CurrentDevice.UserInterfaceIdiom ==
+                    UIKit.UIUserInterfaceIdiom.Phone &&
+                !Foundation.NSProcessInfo.ProcessInfo.IsiOSApplicationOnMac;
+#endif
 
             Resolution.RatioCorrection = _burntimeApp.RatioCorrection;
             Resolution.MinResolution = _burntimeApp.MinResolution;

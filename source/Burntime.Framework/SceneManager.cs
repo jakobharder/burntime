@@ -264,6 +264,11 @@ namespace Burntime.Framework
                         continue;
                     app.LastInputMode = InputMode.Touch;
                     var gesture = touch.Gesture;
+                    if (gesture.Kind == TouchGestureKind.Press)
+                    {
+                        handle.TouchPress(gesture.Origin - parentPos);
+                        continue;
+                    }
                     if (gesture.Kind == TouchGestureKind.Tap)
                     {
                         if (handle.OnTouchTap(gesture.Position - handle.PositionOnScreen))
@@ -295,6 +300,9 @@ namespace Burntime.Framework
                     }
                     if (gesture.Kind == TouchGestureKind.Drag)
                         handle.TouchDrag(gesture.Origin - parentPos, gesture.Delta);
+                    else if (gesture.Kind == TouchGestureKind.DragEnd)
+                        handle.TouchDragEnd(gesture.Origin - parentPos, gesture.Delta,
+                            gesture.Velocity);
                     else
                     {
                         var button = gesture.Kind == TouchGestureKind.LongPress ? MouseButton.Right : MouseButton.Left;
