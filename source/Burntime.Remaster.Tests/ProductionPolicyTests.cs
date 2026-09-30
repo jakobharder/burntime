@@ -32,6 +32,21 @@ static class ProductionPolicyTests
             return 0;
         });
 
+        yield return Int("accepted automatic movement ignores the current hold until neutral", 0, () =>
+        {
+            var gate = new ManualMovementInputGate();
+            gate.ProtectAutomaticMovement(movementInputDown: true);
+            Equal(true, gate.Suppress(movementInputDown: true),
+                "existing hold is suppressed while interaction remains pending");
+            Equal(true, gate.Suppress(movementInputDown: true),
+                "long follower wait remains protected");
+            Equal(false, gate.Suppress(movementInputDown: false),
+                "neutral releases the old hold");
+            Equal(false, gate.Suppress(movementInputDown: true),
+                "fresh movement is allowed to cancel the interaction");
+            return 0;
+        });
+
         yield return Int("unwalkable positions recover only on scene entry", 0, () =>
         {
             var m = new StateManager(null!);

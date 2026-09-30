@@ -16,6 +16,27 @@ using Burntime.Remaster.Maps;
 
 namespace Burntime.Remaster
 {
+    internal sealed class ManualMovementInputGate
+    {
+        bool waitingForNeutral;
+
+        public void ProtectAutomaticMovement(bool movementInputDown) =>
+            waitingForNeutral = movementInputDown;
+
+        public bool Suppress(bool movementInputDown)
+        {
+            if (!waitingForNeutral)
+                return false;
+            if (movementInputDown)
+                return true;
+
+            waitingForNeutral = false;
+            return false;
+        }
+
+        public void Reset() => waitingForNeutral = false;
+    }
+
     public class LocationScene : Scene, IMapEntranceHandler, IInteractionHandler, ILogicNotifycationHandler, IMapNavigationScene
     {
         enum LocationInteractionMode
@@ -49,6 +70,7 @@ namespace Burntime.Remaster
         MapViewOverlayTouch touch;
         Maps.MapViewOverlayCharacters charOverlay;
         Character manuallyMovedCharacter;
+        readonly ManualMovementInputGate manualMovementInputGate = new();
         float nextTurnHoldTime;
         bool nextTurnTriggered;
         bool cameraPanActive;
@@ -810,8 +832,10 @@ namespace Burntime.Remaster
                 return false;
 
             Vector2 direction = Vector2.Zero;
+            bool movementInputDown = false;
             foreach (InputAction action in app.InputManager.ActionsDown)
             {
+                movementInputDown |= StartsAutomaticCameraFollow(action);
                 direction += action switch
                 {
                     InputAction.MoveUp => new Vector2(0, -1),
@@ -821,6 +845,9 @@ namespace Burntime.Remaster
                     _ => Vector2.Zero
                 };
             }
+
+            if (manualMovementInputGate.Suppress(movementInputDown))
+                return false;
 
             if (manuallyMovedCharacter != null && manuallyMovedCharacter != selectedCharacter)
             {
@@ -870,6 +897,14 @@ namespace Burntime.Remaster
             character.Path.MoveTo = character.Position;
         }
 
+        void ProtectAutomaticMovementFromHeldInput()
+        {
+            bool movementInputDown = app.InputManager.ActionsDown
+                .Any(StartsAutomaticCameraFollow);
+            manualMovementInputGate.ProtectAutomaticMovement(movementInputDown);
+            manuallyMovedCharacter = null;
+        }
+
         protected override void OnActivateScene(object parameter)
         {
             touch.Reset();
@@ -882,6 +917,7 @@ namespace Burntime.Remaster
             followSelectedCharacter = false;
             characterCycleLatched = false;
             characterCycleDebounce = 0;
+            manualMovementInputGate.Reset();
 
             app.RenderMouse = false;
             app.MouseBoundings = view.Boundings;
@@ -952,6 +988,7 @@ namespace Burntime.Remaster
             combatEncounter = null;
             view.Player?.SelectedCharacter?.CancelAction();
             manuallyMovedCharacter = null;
+            manualMovementInputGate.Reset();
             app.RenderMouse = true;
             app.MouseBoundings = null;
             app.GameState.Container.RemoveNotifycationHandler(this);
@@ -1275,6 +1312,7 @@ namespace Burntime.Remaster
 
             EntranceObject entranceObject = new EntranceObject(entrance, Number);
             combatEncounter?.CancelOffense();
+            ProtectAutomaticMovementFromHeldInput();
             EnsureAutomaticPath(charOverlay.SelectedCharacter);
             var interaction = new InteractionObject(entranceObject, loc.Rooms[Number].EntryCondition, this);
             charOverlay.SelectedCharacter.Mind.MoveToObject(interaction);
@@ -1288,6 +1326,7 @@ namespace Burntime.Remaster
         {
             touch.ClearDestination();
             combatEncounter?.CancelOffense();
+            ProtectAutomaticMovementFromHeldInput();
             EnsureAutomaticPath(charOverlay.SelectedCharacter);
             charOverlay.SelectedCharacter.Mind.MoveToObject(null);
             charOverlay.SelectedCharacter.Path.MoveTo = position;
@@ -1296,6 +1335,7 @@ namespace Burntime.Remaster
         void MoveCharacter(IMapObject obj)
         {
             touch.ClearDestination();
+            ProtectAutomaticMovementFromHeldInput();
             EnsureAutomaticPath(charOverlay.SelectedCharacter);
             charOverlay.SelectedCharacter.Mind.MoveToObject(new InteractionObject(obj, this));
             if (app.LastInputMode == InputMode.Touch)
