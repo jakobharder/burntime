@@ -279,11 +279,9 @@ namespace Burntime.Remaster
 
             // only if not player owned
             if (view.Player != targetCharacter.Player &&
-                TryAttack(charOverlay.SelectedCharacter, targetCharacter) &&
-                app.LastInputMode == InputMode.Touch)
+                TryAttack(charOverlay.SelectedCharacter, targetCharacter))
             {
-                touch.SelectDestination(targetCharacter,
-                    charOverlay.SelectedCharacter);
+                SelectInteractionTarget(targetCharacter);
             }
         }
 
@@ -628,6 +626,8 @@ namespace Burntime.Remaster
         {
             nearbyAction.IsVisible = app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad;
             touch.IsVisible = app.LastInputMode == InputMode.Touch;
+            if (app.LastInputMode is not (InputMode.Mouse or InputMode.Touch))
+                hoverInfo.ClearTarget();
         }
 
         GuiString? GetDirectInteractionPrompt()
@@ -908,6 +908,7 @@ namespace Burntime.Remaster
         protected override void OnActivateScene(object parameter)
         {
             touch.Reset();
+            hoverInfo.ClearTarget();
             interactionMode = LocationInteractionMode.Talk;
             combatEncounter?.Cancel();
             combatEncounter = null;
@@ -984,6 +985,7 @@ namespace Burntime.Remaster
         protected override void OnInactivateScene()
         {
             touch.Reset();
+            hoverInfo.ClearTarget();
             combatEncounter?.Cancel();
             combatEncounter = null;
             view.Player?.SelectedCharacter?.CancelAction();
@@ -1316,8 +1318,7 @@ namespace Burntime.Remaster
             EnsureAutomaticPath(charOverlay.SelectedCharacter);
             var interaction = new InteractionObject(entranceObject, loc.Rooms[Number].EntryCondition, this);
             charOverlay.SelectedCharacter.Mind.MoveToObject(interaction);
-            if (app.LastInputMode == InputMode.Touch)
-                touch.SelectDestination(entranceObject, charOverlay.SelectedCharacter);
+            SelectInteractionTarget(entranceObject);
 
             return true;
         }
@@ -1338,8 +1339,15 @@ namespace Burntime.Remaster
             ProtectAutomaticMovementFromHeldInput();
             EnsureAutomaticPath(charOverlay.SelectedCharacter);
             charOverlay.SelectedCharacter.Mind.MoveToObject(new InteractionObject(obj, this));
+            SelectInteractionTarget(obj);
+        }
+
+        void SelectInteractionTarget(IMapObject target)
+        {
             if (app.LastInputMode == InputMode.Touch)
-                touch.SelectDestination(obj, charOverlay.SelectedCharacter);
+                touch.SelectDestination(target, charOverlay.SelectedCharacter);
+            else if (app.LastInputMode == InputMode.Mouse)
+                hoverInfo.SelectTarget(target, charOverlay.SelectedCharacter);
         }
 
         bool IInteractionHandler.HandleInteraction(IMapObject obj, Character actor)

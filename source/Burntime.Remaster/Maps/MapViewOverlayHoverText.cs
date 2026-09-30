@@ -19,6 +19,7 @@ public class MapViewHoverInfo
     public Room Room { get; init; }
     public Location WorldLocation { get; init; }
     public Character? Character { get; init; }
+    public IMapObject? Object { get; init; }
 
     public MapViewHoverInfo(String title, Vector2 position, PixelColor color, Room room = null)
     {
@@ -26,6 +27,7 @@ public class MapViewHoverInfo
         Position = new Vector2(position.x, position.y - 9);
         Color = color;
         Room = room;
+        Object = room;
     }
 
     public MapViewHoverInfo(IMapObject obj, IResourceManager manager, PixelColor color)
@@ -35,6 +37,7 @@ public class MapViewHoverInfo
         Color = color;
         Room = obj as Room;
         Character = obj as Character;
+        Object = obj;
     }
 }
 
@@ -51,6 +54,10 @@ class MapViewOverlayHoverText : IMapViewOverlay
     Character? announcedCharacter;
     MapViewHoverInfo? announcedCharacterInfo;
     float announcementRemaining;
+    float targetPulseTime;
+    IMapObject? commandTarget;
+    Character? commandOwner;
+    Location? commandLocation;
     readonly List<MapViewHoverTextEntry> additionalInfo = [];
 
     const float AnnouncementFadeDuration = 0.35f;
@@ -82,11 +89,33 @@ class MapViewOverlayHoverText : IMapViewOverlay
         additionalInfo.AddRange(entries);
     }
 
+    public void SelectTarget(IMapObject target, Character owner)
+    {
+        commandTarget = target;
+        commandOwner = owner;
+        commandLocation = mapState;
+        targetPulseTime = 0;
+    }
+
+    public void ClearTarget()
+    {
+        commandTarget = null;
+        commandOwner = null;
+        commandLocation = null;
+    }
+
     public void UpdateOverlay(WorldState world, float elapsed)
     {
         game = world as ClassicGame;
         mapState = world.CurrentLocation as Location;
         player = world.CurrentPlayer as Player;
+        if (commandTarget != null)
+        {
+            if (mapState != commandLocation || player?.SelectedCharacter != commandOwner)
+                ClearTarget();
+            else
+                targetPulseTime += System.Math.Max(0, elapsed);
+        }
 
         if (announcementRemaining > 0 && announcedCharacter != null &&
             announcedCharacterInfo != null && !announcedCharacter.IsDead)
@@ -108,7 +137,9 @@ class MapViewOverlayHoverText : IMapViewOverlay
 
         var textTarget = Target.GetSubBuffer(new Rect(0, topMargin, Target.Width, Target.Height - topMargin));
 
-        if (mapState != null && mapState.Hover != null)
+        MapViewHoverInfo? targetInfo = CreateTargetInfo();
+        if (mapState != null && mapState.Hover != null &&
+            !IsSameTarget(mapState.Hover, targetInfo))
         {
             if (mapState.Hover.WorldLocation != null)
                 DrawWorldLocationText(textTarget, mapState.Hover,
@@ -160,7 +191,7 @@ class MapViewOverlayHoverText : IMapViewOverlay
             for (int i = 0; i < entranceCount; i++)
             {
                 Room room = mapState.Rooms[i];
-                if (mapState.Hover?.Room == room)
+                if (mapState.Hover?.Room == room || targetInfo?.Room == room)
                     continue;
 
                 var entrance = mapState.Map.Entrances[i];
@@ -174,6 +205,18 @@ class MapViewOverlayHoverText : IMapViewOverlay
                 DrawEntranceText(textTarget, info, Offset - new Vector2(0, topMargin), 0.7f,
                     showInventoryHint: false);
             }
+        }
+
+        if (targetInfo != null)
+        {
+            float alpha = MapTargetPulse.GetAlpha(targetPulseTime);
+            if (targetInfo.Character != null)
+                DrawCharacterText(textTarget, targetInfo,
+                    Offset - new Vector2(0, topMargin), alpha);
+            else
+                DrawEntranceText(textTarget, targetInfo,
+                    Offset - new Vector2(0, topMargin), alpha,
+                    showInventoryHint: mapState?.Player == player);
         }
 
         if (announcedCharacterInfo != null)
@@ -191,6 +234,35 @@ class MapViewOverlayHoverText : IMapViewOverlay
         announcedCharacterInfo = null;
         announcementRemaining = 0;
     }
+
+    MapViewHoverInfo? CreateTargetInfo()
+    {
+        if (commandTarget == null || mapState == null)
+            return null;
+
+        if (commandTarget is EntranceObject entrance)
+        {
+            int number = entrance.Number;
+            if (number < 0 || number >= mapState.Map.Entrances.Length ||
+                number >= mapState.Rooms.Count)
+                return null;
+            Room room = mapState.Rooms[number];
+            return player != null && mapState.AreEntrancesBlockedFor(player)
+                ? new MapViewHoverInfo(resMan.GetString("newburn?103"),
+                    mapState.Map.Entrances[number].Area.Center,
+                    ClassicColors.LightGray, room)
+                : new MapViewHoverInfo(room, resMan, ClassicColors.LightGray);
+        }
+
+        PixelColor color = commandTarget is Character character
+            ? GetCharacterColor(character)
+            : new PixelColor(180, 152, 112);
+        return new MapViewHoverInfo(commandTarget, resMan, color);
+    }
+
+    static bool IsSameTarget(MapViewHoverInfo hover, MapViewHoverInfo? target) =>
+        target != null && hover.Object != null &&
+        ReferenceEquals(hover.Object, target.Object);
 
     internal static PixelColor GetCharacterColor(Character character)
     {
@@ -364,5 +436,16 @@ class MapViewOverlayHoverText : IMapViewOverlay
     public IMapObject GetObjectAt(Vector2 position)
     {
         return null;
+    }
+}
+
+internal static class MapTargetPulse
+{
+    const float Period = 0.75f;
+
+    internal static float GetAlpha(float elapsed)
+    {
+        float phase = elapsed / Period * 2 * System.MathF.PI;
+        return (System.MathF.Cos(phase) + 1) / 2;
     }
 }

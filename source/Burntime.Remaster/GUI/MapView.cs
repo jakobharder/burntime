@@ -528,9 +528,7 @@ public class MapView : Window
             int activeEntrance = ActiveEntrance;
             if (activeEntrance != -1)
             {
-                PixelColor entranceColor = app.LastInputMode == InputMode.Touch && !game.MainMapView
-                    ? ClassicColors.MenuTextHover
-                    : ClassicColors.LightGray;
+                PixelColor entranceColor = ClassicColors.LightGray;
                 if (game.MainMapView)
                 {
                     Burntime.Data.BurnGfx.MapEntrance e = game.World.Map.Entrances[activeEntrance];

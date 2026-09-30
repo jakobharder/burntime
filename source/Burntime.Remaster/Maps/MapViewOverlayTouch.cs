@@ -88,6 +88,7 @@ sealed class MapViewOverlayTouch : IMapViewOverlay, IMapViewEntranceOverlay
     {
         destination = target;
         destinationOwner = owner;
+        hoverText.SelectTarget(target, owner);
         if (target is EntranceObject entrance)
             opacity[entrance.Number] = 1;
         if (location != null)
@@ -98,6 +99,7 @@ sealed class MapViewOverlayTouch : IMapViewOverlay, IMapViewEntranceOverlay
     {
         destination = null;
         destinationOwner = null;
+        hoverText.ClearTarget();
         view.HoveredObject = null;
         if (location != null)
             location.Hover = null;
@@ -218,9 +220,11 @@ sealed class MapViewOverlayTouch : IMapViewOverlay, IMapViewEntranceOverlay
     {
         view.HoveredObject = destination;
         location!.Hover = destination is EntranceObject entrance
-            ? CreateEntranceInfo(entrance.Number, ClassicColors.MenuTextHover)
+            ? CreateEntranceInfo(entrance.Number)
             : new MapViewHoverInfo(destination!, app.ResourceManager,
-                ClassicColors.MenuTextHover);
+                destination is Character character
+                    ? MapViewOverlayHoverText.GetCharacterColor(character)
+                    : new PixelColor(180, 152, 112));
     }
 
     void Layout(Vector2 offset, Vector2 size)
