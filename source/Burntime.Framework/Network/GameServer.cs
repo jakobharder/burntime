@@ -234,6 +234,7 @@ namespace Burntime.Framework.Network
 
             foreach (GameClient client in Clients)
             {
+                client.Deactivate();
                 client.isServerStopped = true;
                 client.isGameOver = gameOver;
             }
@@ -273,6 +274,8 @@ namespace Burntime.Framework.Network
 
     public class GameServer : IGameServer
     {
+        static readonly TimeSpan StopTimeout = TimeSpan.FromSeconds(5);
+
         public bool CheckVictory() => serverObj.CheckVictory();
 
         GameServerObject serverObj;
@@ -341,6 +344,10 @@ namespace Burntime.Framework.Network
             Log.Info("Stop ai player thread...");
             if (aiControl != null)
                 aiControl.Stop();
+
+            if (serverThread != null && serverThread != Thread.CurrentThread && serverThread.IsAlive &&
+                !serverThread.Join(StopTimeout))
+                Log.Warning("Game server thread did not stop within five seconds.");
         }
 
         public bool IsStopped

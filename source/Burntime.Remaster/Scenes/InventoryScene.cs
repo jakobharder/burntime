@@ -22,6 +22,12 @@ namespace Burntime.Remaster.Scenes
         const int CheckMaterialsTextIndex = 72;
         const int NeedsAmmunitionTextIndex = 73;
         const int SelectedTrapTextIndex = 77;
+        const int WaterBarWidth = 14;
+        const int WaterBarUnitHeight = 2;
+
+        // Match the blue and light-blue bars in font-indicators.png.
+        static readonly PixelColor WaterBarBlue = new(112, 136, 208);
+        static readonly PixelColor WaterBarLightBlue = new(84, 179, 194);
 
         public override bool UseDiagonalGamepadNavigation => true;
 
@@ -150,15 +156,39 @@ namespace Burntime.Remaster.Scenes
             if (classic.InventoryRoom != null && classic.InventoryRoom.IsWaterSource)
             {
                 TextHelper txt = new TextHelper(app, "burn");
-                txt.AddArgument("|C", classic.Game.World.ActiveLocationObj.Source.Reserve);
+                WaterSource source = classic.Game.World.ActiveLocationObj.Source;
+                txt.AddArgument("|C", source.Reserve);
                 waterSourceFont.DrawText(target, target.Size, txt[423]);
 
-                Vector2 bar = new Vector2(14, classic.Game.World.ActiveLocationObj.Source.Reserve * 2);
+                int capacity = source.Capacity;
+                int stored = System.Math.Min(source.Reserve, capacity);
+                int daily = source.Water;
+                int storedAtDailyRate = System.Math.Min(stored, daily);
+                int storedAboveDailyRate = System.Math.Max(0, stored - daily);
+                Vector2 bottom = target.Size - new Vector2(2, 10);
 
-                target.RenderRect(target.Size - new Vector2(2, 10) - bar, bar, new PixelColor(240, 64, 56));
+                // Capacity is the translucent background. Stored water overlays
+                // it, with the portion above one day's output shown more brightly.
+                DrawWaterBarSegment(target, bottom, 0, capacity,
+                    new PixelColor(128, WaterBarBlue.r, WaterBarBlue.g, WaterBarBlue.b));
+                DrawWaterBarSegment(target, bottom, 0, storedAtDailyRate, WaterBarBlue);
+                DrawWaterBarSegment(target, bottom, storedAtDailyRate,
+                    storedAboveDailyRate, WaterBarLightBlue);
             }
 
             target.Layer -= 10;
+        }
+
+        static void DrawWaterBarSegment(RenderTarget target, Vector2 bottom,
+            int unitsBelow, int units, PixelColor color)
+        {
+            if (units <= 0)
+                return;
+
+            Vector2 size = new(WaterBarWidth, units * WaterBarUnitHeight);
+            Vector2 position = bottom - new Vector2(WaterBarWidth,
+                (unitsBelow + units) * WaterBarUnitHeight);
+            target.RenderRect(position, size, color);
         }
 
         public override void OnUpdate(float elapsed)

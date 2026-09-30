@@ -166,14 +166,18 @@ namespace Burntime.Framework
 
         public void StopGame()
         {
-            if (Server != null)
+            try
             {
-                Server.Stop();
-                Server = null;
+                if (Server != null)
+                    Server.Stop();
             }
-
-            Clients.Clear();
-            ActiveClient = null;
+            finally
+            {
+                Server = null;
+                GameServer = null;
+                Clients.Clear();
+                ActiveClient = Network.GameClient.NoClient;
+            }
         }
 
         public void Render(RenderTarget target)

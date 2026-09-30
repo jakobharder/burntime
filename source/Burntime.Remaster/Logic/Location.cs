@@ -371,7 +371,9 @@ public class Location : StateObject, IUpdateable, ITurnable
         foreach (var production in ValidProductions)
         {
             var candidate = GetFoodProductionRate(production);
-            if (candidate.FoodPerDay > info.FoodPerDay)
+            if (candidate.FoodPerDay > info.FoodPerDay ||
+                candidate.FoodPerDay == info.FoodPerDay && candidate.FoodPerDay > 0 &&
+                (Production == null || production.ID > Production.ID))
             {
                 Production = production;
                 info = candidate;

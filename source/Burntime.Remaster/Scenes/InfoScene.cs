@@ -174,18 +174,31 @@ namespace Burntime.Remaster.Scenes
             font.DrawText(target, new Vector2(224, 86), txt[406], TextAlignment.Left, VerticalTextAlignment.Top);
 
             Production.Rate production = loc.GetFoodProductionRate();
-            txt.AddArgument("|J", production.MaintenanceBonus > 0
-                ? $"{production.FoodPerDay - production.MaintenanceBonus}+{production.MaintenanceBonus}"
-                : production.FoodPerDay.ToString());
-            txt.AddArgument("|D", loc.Source.Water);
+            TextHelper foodText = new(app, "newburn");
+            foodText.AddArgument("|F", loc.GetCurrentProductionStockCount());
+            foodText.AddArgument("|D", production.FoodPerDay);
+            DrawProductionText(target, new Vector2(263, 117), foodText[82], foodText[81]);
 
-            font.DrawText(target, new Vector2(265, 117), txt[421], TextAlignment.Left, VerticalTextAlignment.Top);
-            font.DrawText(target, new Vector2(265, 152), txt[422], TextAlignment.Left, VerticalTextAlignment.Top);
+            TextHelper waterText = new(app, "newburn");
+            waterText.AddArgument("|F", loc.Source.Reserve);
+            waterText.AddArgument("|C", loc.Source.Capacity);
+            waterText.AddArgument("|D", loc.Source.Water);
+            DrawProductionText(target, new Vector2(263, 152), waterText[80], waterText[81]);
 
             if (loc.Danger != null)
                 font.DrawText(target, new Vector2(251, 68), loc.Danger.InfoString, TextAlignment.Center, VerticalTextAlignment.Top);
 
-            txt.ClearArguments();
+        }
+
+        void DrawProductionText(RenderTarget target, Vector2 position,
+            string reserve, string daily)
+        {
+            Vector2 firstLine = new(position.x, position.y - font.LineHeight / 2);
+            font.DrawText(target, firstLine, reserve, TextAlignment.Left,
+                VerticalTextAlignment.Top);
+            font.DrawText(target, new Vector2(firstLine.x,
+                firstLine.y + font.LineHeight), daily, TextAlignment.Left,
+                VerticalTextAlignment.Top);
         }
 
         private void RenderNPCLine(RenderTarget target, Vector2 position, int npcCount, ISprite image)

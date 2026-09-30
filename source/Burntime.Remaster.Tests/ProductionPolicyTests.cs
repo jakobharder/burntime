@@ -223,6 +223,30 @@ static class ProductionPolicyTests
             Equal(rats, camp.Production, "automatic fallback selects the productive traps");
             return 0;
         });
+        yield return Int("automatic production breaks equal-output ties toward higher tiers", 0, () =>
+        {
+            var m = new StateManager(null!);
+            var game = m.Create<ClassicGame>(); m.Root = game;
+            var camp = m.Create<Location>(); camp.Rooms = m.CreateLinkList<Room>();
+            var room = m.Create<Room>(); camp.Rooms.Add(room);
+            camp.Player = m.Create<HazardPlayer>(new object[] { 0 });
+
+            var basic = m.Create(() => new Production(1, new[] { 0, 3 },
+                Array.Empty<int>(), TestItem(m, "item_maggots", food: 1).Type, 0));
+            var advanced = m.Create(() => new Production(1, new[] { 0, 3 },
+                Array.Empty<int>(), TestItem(m, "item_rats", food: 5).Type, 1));
+            game.Productions.Add(basic); game.Productions.Add(advanced);
+            camp.AvailableProducts = new[] { 0, 1 };
+
+            var knife = TestItem(m, "item_knife"); knife.Type.Production = basic;
+            var ratTrap = TestItem(m, "item_rat_trap"); ratTrap.Type.Production = advanced;
+            room.Items.Add(knife); room.Items.Add(ratTrap);
+
+            camp.RefreshFoodProductionSelection();
+            Equal(advanced, camp.Production,
+                "the higher-tier trap wins when daily output is tied");
+            return 0;
+        });
         yield return Int("stationed NPC prefers its lowest-value inventory food before storage", 0, () =>
         {
             var m = new StateManager(null!);

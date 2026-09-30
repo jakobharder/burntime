@@ -996,7 +996,9 @@ namespace Burntime.Remaster
 
         bool HasGroupMenuCommands() =>
             charOverlay.SelectedCharacter != null &&
-            (view.Player.Party.Count > 1 || charOverlay.SelectedCharacter != view.Player.Character);
+            (view.Player.Party.Count > 1 ||
+                !view.Location.IsCity &&
+                charOverlay.SelectedCharacter != view.Player.Character);
 
         void AddGroupMenuLines(Action<GuiString, Action> addLine)
         {
@@ -1008,7 +1010,10 @@ namespace Burntime.Remaster
                     addLine("@burn?356", OnMenuAll);
             }
 
-            if (charOverlay.SelectedCharacter != view.Player.Character)
+            // Cities do not support follower placement. Keep their menu limited
+            // to the same group-selection command shown for the boss.
+            if (!view.Location.IsCity &&
+                charOverlay.SelectedCharacter != view.Player.Character)
             {
                 bool inParty = view.Player.Party.Contains(charOverlay.SelectedCharacter);
                 if (!inParty && view.Player.Party.Count < Logic.Group.MAX_PEOPLE)

@@ -1,5 +1,12 @@
 ﻿# Burntime Changelog
 
+## [Unreleased]
+
+- Improved water source bar to show capacity and reserver above daily
+- Automatically select traps after camp creation
+- Fixed previous game leaking into a new game
+- Fixed cities allowing camp creation
+
 ## 1.2 (2026-09-27)
 
 ### 1.2.1

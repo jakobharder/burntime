@@ -78,9 +78,9 @@ For that I can fix
 you up properly. (+|E HP)
 
 
-
-
-
+|F/|C
++|D days
+|F/6
 
 
 
