@@ -2,11 +2,12 @@
 
 ## [Unreleased]
 
+- Added touch input
 - Improved water source bar to show capacity and reserver above daily
+- Show name of clicked entrance or NPC
 - Automatically select traps after camp creation
 - Fixed previous game leaking into a new game
 - Fixed cities allowing camp creation
-- Added pulsating labels for mouse and touch targets on location maps
 
 ## 1.2 (2026-09-27)
 

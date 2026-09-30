@@ -33,6 +33,8 @@ sealed class MapViewOverlayTouch : IMapViewOverlay, IMapViewEntranceOverlay
     readonly List<MapViewHoverTextEntry> hoverEntries = new();
 
     bool isVisible = true;
+    public bool ShowFightTargets { get; set; }
+
     public bool IsVisible
     {
         get => isVisible;
@@ -158,9 +160,11 @@ sealed class MapViewOverlayTouch : IMapViewOverlay, IMapViewEntranceOverlay
 
         foreach (Character candidate in location.Characters)
         {
+            float distance = (candidate.Position - character.Position).Length;
+            bool isFightTarget = candidate.Player != player;
             if (candidate != character && !candidate.IsDead &&
                 (!candidate.IsPlayerCharacter || !candidate.Player.IsDead) &&
-                (candidate.Position - character.Position).Length < CharacterRange)
+                ShouldShowCharacter(distance, isFightTarget, ShowFightTargets))
             {
                 visibleObjects.Add(candidate);
             }
@@ -203,6 +207,10 @@ sealed class MapViewOverlayTouch : IMapViewOverlay, IMapViewEntranceOverlay
         }
         hoverText.SetAdditionalInfo(hoverEntries);
     }
+
+    internal static bool ShouldShowCharacter(float distance, bool isFightTarget,
+        bool showFightTargets) =>
+        distance < CharacterRange || showFightTargets && isFightTarget;
 
     MapViewHoverInfo CreateEntranceInfo(int number, PixelColor? color = null)
     {

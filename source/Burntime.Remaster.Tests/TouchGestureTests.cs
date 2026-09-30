@@ -95,6 +95,18 @@ static class TouchGestureTests
                 "pulse repeats without drifting");
             return 0;
         });
+        yield return Int("touch fight mode keeps distant rival names visible", 0, () =>
+        {
+            Equal(false, MapViewOverlayTouch.ShouldShowCharacter(100, true, false),
+                "distant rival is hidden outside fight mode");
+            Equal(true, MapViewOverlayTouch.ShouldShowCharacter(100, true, true),
+                "distant rival remains visible in fight mode");
+            Equal(false, MapViewOverlayTouch.ShouldShowCharacter(100, false, true),
+                "distant friendly character stays hidden");
+            Equal(true, MapViewOverlayTouch.ShouldShowCharacter(20, false, true),
+                "nearby friendly character remains visible");
+            return 0;
+        });
         yield return Int("fixed item targets keep bounds and topmost overlap priority", 0, () =>
         {
             var app = new Module();

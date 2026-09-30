@@ -626,6 +626,9 @@ namespace Burntime.Remaster
         {
             nearbyAction.IsVisible = app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad;
             touch.IsVisible = app.LastInputMode == InputMode.Touch;
+            touch.ShowFightTargets = app.LastInputMode == InputMode.Touch &&
+                interactionMode == LocationInteractionMode.Fight &&
+                !view.Location.IsCity;
             if (app.LastInputMode is not (InputMode.Mouse or InputMode.Touch))
                 hoverInfo.ClearTarget();
         }
