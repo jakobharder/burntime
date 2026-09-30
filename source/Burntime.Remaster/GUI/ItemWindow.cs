@@ -128,7 +128,7 @@ namespace Burntime.Remaster.GUI
             return false;
         }
 
-        public bool IsTouchSelected => Parent is ItemGridWindow grid && grid.IsFocused(this);
+        public bool IsTouchSelected => Parent is ItemGridWindow grid && grid.IsTouchFocused(this);
 
         public override bool OnTouchTap(Vector2 position)
         {

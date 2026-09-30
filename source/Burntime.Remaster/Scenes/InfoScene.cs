@@ -46,8 +46,11 @@ namespace Burntime.Remaster.Scenes
         bool productionTooltipDismissed;
         const int StorageRowHeight = 38;
         static readonly Rect StorageBounds = new(105, 103, 106, 72);
+        static readonly Rect ProductionBounds = new(225, 105, 32, 32);
         float touchScrollPixels;
         readonly KineticScroll touchMomentum = new();
+        bool productionTouchSelected;
+        bool productionSwipeHandled;
 
         public InfoScene(Module App)
             : base(App)
@@ -226,6 +229,8 @@ namespace Burntime.Remaster.Scenes
             int city = classic.InfoCity;
             Location loc = classic.Game.World.Locations[city];
             productionTooltipDismissed = false;
+            productionTouchSelected = false;
+            productionSwipeHandled = false;
 
             Music = loc.Danger?.Type switch
             {
@@ -302,20 +307,72 @@ namespace Burntime.Remaster.Scenes
 
         public override bool OnTouchScroll(Vector2 position, Vector2 delta)
         {
-            if (!StorageBounds.PointInside(position))
+            if (StorageBounds.PointInside(position))
+            {
+                HideStorageTooltip();
+                productionTouchSelected = false;
+                productionTooltip.Hide();
+                touchMomentum.Stop();
+                ApplyTouchScroll(-delta.y);
+                return true;
+            }
+
+            if (!ProductionBounds.PointInside(position) ||
+                System.Math.Abs(delta.x) <= System.Math.Abs(delta.y))
                 return false;
-            touchMomentum.Stop();
-            ApplyTouchScroll(-delta.y);
+
+            HideStorageTooltip();
+            productionTouchSelected = true;
+            productionTooltipDismissed = false;
+            if (!productionSwipeHandled)
+            {
+                productionSwipeHandled = true;
+                if (delta.x < 0)
+                    NextProduction();
+                else
+                    PreviousProduction();
+            }
             return true;
         }
 
-        public override void OnTouchScrollEnd(Vector2 position, Vector2f velocity) =>
-            touchMomentum.Release(-velocity.y);
+        public override void OnTouchScrollEnd(Vector2 position, Vector2f velocity)
+        {
+            if (StorageBounds.PointInside(position))
+                touchMomentum.Release(-velocity.y);
+            if (ProductionBounds.PointInside(position))
+                productionSwipeHandled = false;
+        }
 
         public override void OnTouchPress(Vector2 position)
         {
             if (StorageBounds.PointInside(position))
                 touchMomentum.Stop();
+            if (ProductionBounds.PointInside(position))
+                productionSwipeHandled = false;
+        }
+
+        public override bool OnTouchTap(Vector2 position)
+        {
+            if (ProductionBounds.PointInside(position) && production.ItemID != "")
+            {
+                HideStorageTooltip();
+                productionTouchSelected = true;
+                productionTooltipDismissed = false;
+                return true;
+            }
+
+            if (StorageBounds.PointInside(position))
+            {
+                productionTouchSelected = false;
+                productionTooltip.Hide();
+            }
+            return false;
+        }
+
+        void HideStorageTooltip()
+        {
+            grid.ClearFocus();
+            itemTooltip.Window.Hide();
         }
 
         void ApplyTouchScroll(float pixels)
@@ -335,7 +392,7 @@ namespace Burntime.Remaster.Scenes
         void UpdateProductionTooltip()
         {
             bool show = !productionTooltipDismissed && production.ItemID != "" &&
-                (app.LastInputMode == InputMode.Touch ? production.IsTouchSelected :
+                (app.LastInputMode == InputMode.Touch ? productionTouchSelected :
                     production.IsMouseHovered || app.LastInputMode != InputMode.Mouse);
             if (!show)
             {

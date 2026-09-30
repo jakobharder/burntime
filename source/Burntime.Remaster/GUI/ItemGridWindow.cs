@@ -264,6 +264,9 @@ namespace Burntime.Remaster.GUI
         internal bool IsFocused(ItemWindow item) =>
             IsValidFocusIndex(focusIndex) && ReferenceEquals(itemWindows[focusIndex], item);
 
+        internal bool IsTouchFocused(ItemWindow item) =>
+            mouseFocusActive && IsFocused(item);
+
         public void ResetFocus()
         {
             ClearFocus();
@@ -418,7 +421,7 @@ namespace Burntime.Remaster.GUI
 
         public Item? FocusedItem => app.LastInputMode switch
         {
-            InputMode.Touch => FocusedItemAtIndex,
+            InputMode.Touch when mouseFocusActive => FocusedItemAtIndex,
             InputMode.Mouse when mouseFocusActive => FocusedItemAtIndex,
             InputMode.Keyboard or InputMode.Gamepad when FocusVisible =>
                 FocusedItemAtIndex,
