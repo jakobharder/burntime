@@ -46,16 +46,41 @@ static class TouchGestureTests
             Equal(lower, Pick(new(65, 54)), "nearest lower in overlap");
             Equal(upper, Pick(new(65, 47)), "exact target wins over expanded neighbor");
             Equal(new Vector2(40, 8), upper.Size, "visual size unchanged");
+            int pressCount = 0;
+            int releaseCount = 0;
+            bool releaseCancelled = false;
+            upper.TouchPressed += () => pressCount++;
+            upper.TouchReleased += cancelled =>
+            {
+                releaseCount++;
+                releaseCancelled = cancelled;
+            };
+            upper.OnTouchPress(Vector2.Zero);
             upper.OnTouchPress(Vector2.Zero);
             Equal(true, upper.IsTouchPressed, "touch down highlights button");
+            Equal(1, pressCount, "duplicate dispatch publishes one touch down");
             typeof(Container).GetMethod("TouchRelease",
                 BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(root,
                 new object[] { new Vector2(120, 120), true });
             Equal(false, upper.IsTouchPressed, "cancelled touch clears highlight");
+            Equal(1, releaseCount, "touch release is published once");
+            Equal(true, releaseCancelled, "touch release preserves cancellation");
             lower.IsEnabled = false;
             Equal<Window?>(null, Pick(new(65, 66)), "disabled target ignored");
             root.Hide();
             Equal<Window?>(null, Pick(new(65, 34)), "hidden parent ignored");
+            return 0;
+        });
+        yield return Int("face selection wraps in both directions and skips portraits in use", 0, () =>
+        {
+            Equal(0, FaceWindow.NextFaceId(5, 1, 5, new HashSet<int>()),
+                "forward selection wraps to first face");
+            Equal(5, FaceWindow.NextFaceId(0, -1, 5, new HashSet<int>()),
+                "backward selection wraps to last face");
+            Equal(1, FaceWindow.NextFaceId(5, 1, 5, new HashSet<int> { 0 }),
+                "wrapped selection skips other player's face");
+            Equal(5, FaceWindow.NextFaceId(1, -1, 5, new HashSet<int> { 0 }),
+                "reverse selection skips other player's face");
             return 0;
         });
         yield return Int("fixed item targets keep bounds and topmost overlap priority", 0, () =>

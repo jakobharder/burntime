@@ -14,6 +14,8 @@ public class Button : Window
     public bool IsHover { get; private set; }
     public bool IsKeyboardSelected { get; set; }
     public bool IsTouchPressed { get; private set; }
+    public event Action? TouchPressed;
+    public event Action<bool>? TouchReleased;
 
     private bool _isEnabled = true;
     public bool IsEnabled
@@ -218,12 +220,23 @@ public class Button : Window
 
     public override void OnTouchPress(Vector2 position)
     {
-        if (IsEnabled)
-            IsTouchPressed = true;
+        // Expanded touch targets can dispatch the press through both the
+        // container and the captured target. Only publish the transition once.
+        if (!IsEnabled || IsTouchPressed)
+            return;
+
+        IsTouchPressed = true;
+        TouchPressed?.Invoke();
     }
 
-    public override void OnTouchRelease(Vector2 position, bool cancelled) =>
+    public override void OnTouchRelease(Vector2 position, bool cancelled)
+    {
+        if (!IsTouchPressed)
+            return;
+
         IsTouchPressed = false;
+        TouchReleased?.Invoke(cancelled);
+    }
 
     public override bool OnMouseClick(Vector2 Position, MouseButton Button)
     {

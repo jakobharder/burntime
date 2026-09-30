@@ -71,25 +71,48 @@ namespace Burntime.Remaster
 
         public int MaxFaceID = 1;
 
+        public void MoveFace(int direction)
+        {
+            if (DisplayOnly || direction == 0 || MaxFaceID < 0)
+                return;
+
+            var unavailable = new HashSet<int>();
+            if (Parent != null)
+            {
+                foreach (Window window in Parent.Windows.GetGroup(Group))
+                {
+                    if (window is FaceWindow face && !ReferenceEquals(face, this))
+                        unavailable.Add(face.FaceID);
+                }
+            }
+
+            FaceID = NextFaceId(faceID, direction, MaxFaceID, unavailable);
+        }
+
+        internal static int NextFaceId(int current, int direction, int maximum,
+            ISet<int> unavailable)
+        {
+            direction = System.Math.Sign(direction);
+            int faceCount = maximum + 1;
+            int candidate = current;
+            for (int i = 0; i < faceCount; i++)
+            {
+                candidate = (candidate + direction + faceCount) % faceCount;
+                if (!unavailable.Contains(candidate))
+                    return candidate;
+            }
+            return current;
+        }
+
         public override bool OnMouseClick(Vector2 Position, MouseButton Button)
         {
             if (DisplayOnly)
                 return false;
 
             if (Button == MouseButton.Left)
-            {
-                int id = faceID + 1;
-                if (id > MaxFaceID)
-                    id = MaxFaceID;
-                FaceID = id;
-            }
+                MoveFace(1);
             else if (Button == MouseButton.Right)
-            {
-                int id = faceID - 1;
-                if (id < 0)
-                    id = 0;
-                FaceID = id;
-            }
+                MoveFace(-1);
 
             return true;
         }

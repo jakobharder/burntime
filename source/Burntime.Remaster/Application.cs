@@ -1,5 +1,6 @@
 ﻿using Burntime.Remaster.Logic;
 using Burntime.Framework;
+using Burntime.Remaster.Logic.Generation;
 using Burntime.Platform;
 using Burntime.Platform.Graphics;
 using Burntime.Platform.IO;
@@ -37,7 +38,8 @@ namespace Burntime.Remaster
             StringComparer.OrdinalIgnoreCase)
         {
             "music", "map_music", "fullscreen", "output_filtering", "newgfx", "language",
-            "controller_glyphs", "prompts"
+            "controller_glyphs", "prompts", "mode_difficulty", "mode_rules",
+            "mode_opponent"
         };
 
         public GamepadBindings GamepadBindings { get; } = new();
@@ -108,6 +110,8 @@ namespace Burntime.Remaster
         public LanguageMode LanguageSelection { get; private set; } = LanguageMode.Auto;
         public UIHintVisibilityMode UIHintVisibility { get; private set; } = UIHintVisibilityMode.Full;
         public bool ShowUIHints => UIHintVisibility != UIHintVisibilityMode.Hide;
+        public NewGamePreferences NewGameDefaults { get; private set; } =
+            NewGamePreferences.Default;
 
         public override void Start()
         {
@@ -143,7 +147,7 @@ namespace Burntime.Remaster
             bool removedKeyboardMappings = UserSettings.RemoveSection("keyboard");
             bool removedGamepadMappings = UserSettings.RemoveSection("gamepad");
             bool removedObsoleteRootSettings = false;
-            ConfigSection rootUserSettings = UserSettings[""];
+            ConfigSection rootUserSettings = UserSettings.GetSection("", true);
             string[] obsoleteRootSettings = rootUserSettings.Values
                 .Select(setting => setting.Key)
                 .Where(setting => !PersistedRootUserSettings.Contains(setting))
@@ -153,8 +157,11 @@ namespace Burntime.Remaster
             bool normalizedRootSettings = false;
             foreach (string setting in PersistedRootUserSettings)
                 normalizedRootSettings |= rootUserSettings.NormalizeSingleValue(setting);
+            NewGameDefaults = NewGamePreferences.Load(rootUserSettings);
+            bool normalizedNewGamePreferences =
+                NewGameDefaults.Store(rootUserSettings);
             if (removedKeyboardMappings || removedGamepadMappings || removedObsoleteRootSettings ||
-                normalizedRootSettings)
+                normalizedRootSettings || normalizedNewGamePreferences)
                 UserSettings.Save("user.txt");
             Engine.ControllerGlyphMode = ParseControllerGlyphMode(
                 UserSettings[""].GetString("controller_glyphs"));
@@ -255,7 +262,23 @@ namespace Burntime.Remaster
             UserSettings[""].Set("language", FormatLanguageMode(LanguageSelection));
             UserSettings[""].Set("controller_glyphs", FormatControllerGlyphMode(Engine.ControllerGlyphMode));
             UserSettings[""].Set("prompts", (int)UIHintVisibility);
+            NewGameDefaults.Store(UserSettings[""]);
             UserSettings.Save("user.txt");
+        }
+
+        public void RememberNewGamePreferences(int difficulty, RuleSet rules,
+            AiProfile ai)
+        {
+            NewGameDefaults = new NewGamePreferences(
+                System.Math.Clamp(difficulty, 1, 3),
+                rules == RuleSet.Classic ? RuleSet.Classic : RuleSet.Extended,
+                ai switch
+                {
+                    AiProfile.Amiga => AiProfile.Amiga,
+                    AiProfile.None => AiProfile.None,
+                    _ => AiProfile.Modern
+                });
+            SaveUserSettings();
         }
 
         public void CycleControllerGlyphMode()

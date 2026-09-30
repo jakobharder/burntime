@@ -39,6 +39,7 @@ public sealed class ManualWindow : Container
     }
 
     sealed record ManualEntry(ManualEntryKind Kind, string Payload, int LineCount);
+    sealed record ManualPageLayout(ManualEntry[] Entries, int TotalLineCount);
 
     readonly GuiFont _titleFont;
     readonly GuiFont _textFont;
@@ -56,6 +57,7 @@ public sealed class ManualWindow : Container
     int _page;
     int _hoveredPage = -1;
     readonly int[] _textScroll;
+    readonly ManualPageLayout?[] _pageLayouts;
     float _touchScrollPixels;
     readonly KineticScroll _touchMomentum = new();
     const float ScrollRepeatDelay = 0.3f;
@@ -70,6 +72,7 @@ public sealed class ManualWindow : Container
     {
         _setupNotes = setupNotes;
         _textScroll = new int[PageCount];
+        _pageLayouts = new ManualPageLayout?[PageCount];
         Size = new Vector2(300, hostSize.y);
         Position = new Vector2((hostSize.x - Size.x) / 2, 0);
         // Map HUD elements reach layer 60. Keep the complete modal above them.
@@ -199,21 +202,15 @@ public sealed class ManualWindow : Container
 
     void RenderTextPage(RenderTarget target)
     {
-        string[] lines = _setupNotes
-            ? (_page == 0 ? SetupPatchNotes.Read() :
-                app.ResourceManager.GetStrings($"setupnotes?s{_page}"))
-            : app.ResourceManager.GetStrings($"manual?s{_page}");
-        lines = ManualTextLayout.Wrap(lines, Size.x - 30,
-            _textFont.GetWidth, _titleFont.GetWidth);
-        List<ManualEntry> entries = BuildEntries(lines);
-        int totalLineCount = entries.Sum(entry => entry.LineCount);
+        ManualPageLayout layout = GetPageLayout(_page);
+        int totalLineCount = layout.TotalLineCount;
         int maximum = System.Math.Max(0, totalLineCount - VisibleLineCount);
         _textScroll[_page] = System.Math.Clamp(_textScroll[_page], 0, maximum);
 
         RenderTarget content = target.GetSubBuffer(new Rect(10, 24,
             Size.x - 20, ContentHeight));
         int line = 0;
-        foreach (ManualEntry entry in entries)
+        foreach (ManualEntry entry in layout.Entries)
         {
             int entryStart = line;
             int entryEnd = entryStart + entry.LineCount;
@@ -226,6 +223,24 @@ public sealed class ManualWindow : Container
         }
         RenderScrollBar(target, _textScroll[_page], maximum,
             VisibleLineCount, totalLineCount);
+    }
+
+    ManualPageLayout GetPageLayout(int page)
+    {
+        if (_pageLayouts[page] is ManualPageLayout cached)
+            return cached;
+
+        string[] lines = _setupNotes
+            ? (page == 0 ? SetupPatchNotes.Read() :
+                app.ResourceManager.GetStrings($"setupnotes?s{page}"))
+            : app.ResourceManager.GetStrings($"manual?s{page}");
+        lines = ManualTextLayout.Wrap(lines, Size.x - 30,
+            _textFont.GetWidth, _titleFont.GetWidth);
+        ManualEntry[] entries = BuildEntries(lines).ToArray();
+        var layout = new ManualPageLayout(entries,
+            entries.Sum(entry => entry.LineCount));
+        _pageLayouts[page] = layout;
+        return layout;
     }
 
     List<ManualEntry> BuildEntries(string[] lines)
@@ -898,16 +913,8 @@ public sealed class ManualWindow : Container
     }
 
     int MaximumTextScroll()
-    {
-        string[] lines = _setupNotes
-            ? (_page == 0 ? SetupPatchNotes.Read() :
-                app.ResourceManager.GetStrings($"setupnotes?s{_page}"))
-            : app.ResourceManager.GetStrings($"manual?s{_page}");
-        lines = ManualTextLayout.Wrap(lines, Size.x - 30,
-            _textFont.GetWidth, _titleFont.GetWidth);
-        return System.Math.Max(0,
-            BuildEntries(lines).Sum(entry => entry.LineCount) - VisibleLineCount);
-    }
+        => System.Math.Max(0,
+            GetPageLayout(_page).TotalLineCount - VisibleLineCount);
 
     bool MoveTextScroll(int direction)
     {
