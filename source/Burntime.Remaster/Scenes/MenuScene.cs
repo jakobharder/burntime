@@ -328,7 +328,8 @@ public class MenuScene : Scene
             Table = conversionTable
         };
 
-        playerSwitch.Prompts.Add(InputPattern.HorizontalPaging, "@prompts?0", IsEnabled);
+        playerSwitch.Prompts.Add(InputPattern.HorizontalPaging, "@prompts?0",
+            () => IsEnabled() && app.LastInputMode != InputMode.Touch);
         playerSwitch.Prompts.Add(new InputPrompt(InputAction.Secondary, "@prompts?1")
         {
             KeyboardPattern = InputPattern.VerticalPaging,
