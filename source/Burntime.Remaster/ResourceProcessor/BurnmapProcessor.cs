@@ -24,7 +24,10 @@ class BurnmapProcessor : IDataProcessor
         MapData data = new MapData();
 
         Burntime.Platform.IO.File file = Burntime.Platform.IO.FileSystem.GetFile(id.File);
-        BinaryReader reader = new BinaryReader(file);
+        if (file is null)
+            return null;
+        using Stream mapStream = file.Stream;
+        using BinaryReader reader = new BinaryReader(file);
         if (reader.ReadString() != "Burntime Map")
             return null;
         String ver = reader.ReadString();

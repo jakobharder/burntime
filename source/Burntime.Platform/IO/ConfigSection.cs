@@ -55,7 +55,7 @@ public class ConfigSection
 
     internal bool Save(Stream stream)
     {
-        StreamWriter writer = new StreamWriter(stream);
+        using StreamWriter writer = new(stream, leaveOpen: true);
 
         Dictionary<string, int> multilineCounter = new Dictionary<string,int>();
 
