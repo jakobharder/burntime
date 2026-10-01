@@ -15,6 +15,7 @@ internal sealed class IosSmokeTestRunner(string outputDirectory) : IVisualTestRu
     BurntimeClassic? app;
     int index = -1, readyFrames;
     bool advance = true, complete;
+    readonly bool saveOnly = Environment.GetEnvironmentVariable("BURNTIME_IOS_SMOKE_SAVE_ONLY") == "1";
     readonly System.Diagnostics.Stopwatch deadline = System.Diagnostics.Stopwatch.StartNew();
 
     void Finish(string result)
@@ -69,6 +70,17 @@ internal sealed class IosSmokeTestRunner(string outputDirectory) : IVisualTestRu
         if (++readyFrames < 10) return;
         try
         {
+            // Reload replaces the session, so the focused serialization run ends here.
+            if (saveOnly && Scenes[index] == "map")
+            {
+                if (!scenes!.SaveAndReload("saves/ios-initial-test.sav"))
+                {
+                    Finish("FAIL: initial save/load round trip failed");
+                    return;
+                }
+                Finish("PASS: new game, map, save and reload");
+                return;
+            }
             if (index + 1 == Scenes.Length)
             {
                 if (!scenes!.SaveAndReload("saves/ios-test.sav"))

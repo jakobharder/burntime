@@ -9,8 +9,8 @@
     <SupportedOSPlatformVersion>15.0</SupportedOSPlatformVersion>
     <ApplicationId>org.burntime.remastered.dev</ApplicationId>
     <AppIcon>AppIcon</AppIcon>
-    <!-- Personal-device prototype: retain the reflection-based game/save schema. -->
-    <TrimMode>copy</TrimMode>
+    <!-- Trim unused SDK APIs; preserve the reflection-based game/save schema below. -->
+    <TrimMode>partial</TrimMode>
     <!-- AOT-compile assemblies; retain interpreter support for dynamic code. -->
     <MtouchInterpreter>-all</MtouchInterpreter>
     <!-- Keep personal-device rebuilds practical without LLVM's extra optimization pass. -->
@@ -39,7 +39,9 @@
     <TrimmerRootAssembly Include="Burntime.Framework" />
     <TrimmerRootAssembly Include="Burntime.Platform" />
     <TrimmerRootAssembly Include="BurnGfx" />
-    <TrimmerRootAssembly Include="MonoGame.Framework" />
+    <TrimmerRootAssembly Include="System.Runtime.Serialization.Formatters" />
+    <!-- MonoGame contains unused microphone/media APIs that must not reach distribution. -->
+    <TrimmableAssembly Include="MonoGame.Framework" />
     <PackageReference Include="MonoGame.Framework.iOS" Version="3.8.5" />
     <PackageReference Include="NVorbis" Version="0.10.4" />
     <PackageReference Include="System.Runtime.Serialization.Formatters" Version="10.0.10" />

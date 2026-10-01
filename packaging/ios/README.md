@@ -3,6 +3,9 @@
 Landscape iPad app sharing the desktop game and renderer. Steamworks is excluded.
 Run commands from the repository root.
 
+Partial trimming removes unused SDK and MonoGame APIs. Game assemblies and the
+save formatter are preserved for reflection-based resources and save compatibility.
+
 ## Requirements
 
 - .NET SDK from `global.json`, Xcode 26.2 with iOS support.
@@ -86,6 +89,7 @@ SIMCTL_CHILD_BURNTIME_IOS_SMOKE_TEST=1 xcrun simctl launch --console-pty \
 Look for `PASS` or `FAIL`. Logs are in `Documents/.config/BurntimeSmokeTest` inside
 the app data container; ordinary game logs use `Documents/.config/Burntime`.
 Omit the environment variable for normal play.
+Add `SIMCTL_CHILD_BURNTIME_IOS_SMOKE_SAVE_ONLY=1` for a focused save/load check.
 
 Before release, check on an iPad:
 
