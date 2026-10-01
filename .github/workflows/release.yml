@@ -6,6 +6,9 @@ on:
       - "v*"
 
 jobs:
+  ios:
+    uses: ./.github/workflows/ios.yml
+
   windows:
     runs-on: windows-latest
     steps:
@@ -171,7 +174,7 @@ jobs:
           if-no-files-found: error
 
   release:
-    needs: [windows, macos, linux]
+    needs: [windows, macos, linux, ios]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -189,6 +192,12 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: linux-release
+          path: release
+
+      - name: Download iPad release
+        uses: actions/download-artifact@v4
+        with:
+          name: ios-release
           path: release
 
       - name: Create draft release

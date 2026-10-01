@@ -14,6 +14,31 @@ static class TouchGestureTests
 {
     internal static IEnumerable<Case<int>> Cases()
     {
+        yield return Int("background and multi-contact cancellation discard pending hold release", 0, () =>
+        {
+            var app = new Module { Scenes = new() };
+            var manager = new SceneManager(app);
+            var stack = (Stack<Window>)typeof(SceneManager).GetField("modalStack",
+                BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(manager)!;
+            int cancellations = 0;
+            int activations = 0;
+            var menu = new HoldCancellationProbe(app, cancelled =>
+            {
+                if (cancelled) cancellations++;
+                else activations++;
+                stack.Clear();
+            });
+            stack.Push(menu);
+            manager.QueueTouchGesture(new(TouchGestureKind.HoldEnd, Vector2.Zero,
+                Vector2.Zero, Vector2.Zero), manager.TouchInputContext);
+            manager.ClearTouchGestures();
+            Equal(0, cancellations, "UI thread only requests cancellation");
+            typeof(SceneManager).GetMethod("Process", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .Invoke(manager, new object[] { 0f });
+            Equal(1, cancellations, "game thread cancels the held menu");
+            Equal(0, activations, "queued release never executes a command");
+            return 0;
+        });
         yield return Int("touch labels win taps and overlapping entrance markers choose the nearest", 0, () =>
         {
             TouchEntranceTarget[] targets = [
@@ -127,8 +152,8 @@ static class TouchGestureTests
             var app = new Module();
             Equal(TouchGlyph.Tap, InputControlDisplay.Resolve(app, InputMode.Touch,
                 InputAction.Primary).Parts[0].Touch, "primary action uses tap");
-            Equal(TouchGlyph.Tap, InputControlDisplay.Resolve(app, InputMode.Touch,
-                InputAction.Action).Parts[0].Touch, "action uses tap");
+            Equal(TouchGlyph.LongPress, InputControlDisplay.Resolve(app, InputMode.Touch,
+                InputAction.Action).Parts[0].Touch, "action uses long press");
             Equal(TouchGlyph.LongPress, InputControlDisplay.Resolve(app, InputMode.Touch,
                 InputAction.Secondary).Parts[0].Touch, "secondary action uses long press");
             Equal(TouchGlyph.SwipeHorizontal, InputControlDisplay.ResolvePattern(app,
@@ -319,6 +344,12 @@ static class TouchGestureTests
     {
         public Vector2 Dragged;
         public override void OnTouchDrag(Vector2 delta) => Dragged += delta;
+    }
+
+    sealed class HoldCancellationProbe(Module module, System.Action<bool> end) : Window(module)
+    {
+        public override bool ContinuesTouchHold => true;
+        public override void OnTouchHoldEnd(Vector2 position, bool cancelled) => end(cancelled);
     }
 
     sealed class FixedTarget(Module module) : Window(module)

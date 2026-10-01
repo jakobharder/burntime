@@ -246,14 +246,15 @@ namespace Burntime.Framework
         Window? touchTarget;
         Vector2 touchPosition;
         bool touchPressActive;
+        int touchCancellationPending;
 
         public void QueueTouchGesture(TouchGesture gesture, object? context) =>
             touchGestures.Enqueue((gesture, context));
 
         public void ClearTouchGestures()
         {
-            CancelTouchPress();
             touchGestures.Clear();
+            System.Threading.Interlocked.Exchange(ref touchCancellationPending, 1);
         }
 
         void CancelTouchPress()
@@ -275,6 +276,12 @@ namespace Burntime.Framework
 
         internal void Process(float Elapsed)
         {
+            if (System.Threading.Interlocked.Exchange(ref touchCancellationPending, 0) != 0)
+            {
+                Window? cancelledHandle = InputWindow;
+                cancelledHandle?.OnTouchHoldEnd(touchPosition - cancelledHandle.PositionOnScreen, cancelled: true);
+                CancelTouchPress();
+            }
             Window handle = InputWindow;
             if (handle != null)
             {

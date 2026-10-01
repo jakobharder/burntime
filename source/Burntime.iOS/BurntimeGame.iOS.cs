@@ -32,8 +32,7 @@ public partial class BurntimeGame
     void CancelTouch()
     {
         if (touchId.HasValue)
-            _burntimeApp?.SceneManager?.QueueTouchGesture(
-                new(TouchGestureKind.Cancel, default, default, default), touchContext);
+            _burntimeApp?.SceneManager?.ClearTouchGestures();
         touchRecognizer.Cancel();
         touchId = null;
         suppressTouchesUntilReleased = true;

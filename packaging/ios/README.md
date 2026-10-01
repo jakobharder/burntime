@@ -126,3 +126,80 @@ The normal profile/log is under `Documents/.config/Burntime`.
 
 The automated smoke test does not verify physical touch accuracy, scrolling,
 audio interruptions, or performance on the iPad. Test these on-device.
+
+## iPad-only releases
+
+The app declares only device family 2 (iPad). iPhone support can be added later
+by expanding `UIDeviceFamily` to `[1, 2]` and uploading an update to the same
+App Store app. Avoid removing device support after a public release.
+
+A hold menu cancels when the app loses activation or a second contact appears.
+All contacts must lift before another gesture can start. Cancellation closes the
+menu without executing the highlighted entry, including when activation changes
+before the release event reaches the game thread.
+
+## Build on GitHub, sign locally
+
+`.github/workflows/ios.yml` builds unsigned physical-device bundles on pull
+requests and manual runs. The tag release workflow also includes this artifact
+in its draft release. CI uses Xcode 26.2, .NET 10.0.400, and iOS workload set
+10.0.101.1; upgrade these together. No signing secrets are stored in GitHub.
+
+The release bundle ID defaults to `org.burntime.remastered`, separate from the
+existing personal test app (`org.burntime.remastered.dev`). Register the release
+ID in your Apple Developer account and App Store Connect before distribution.
+To use another ID, set `IOS_APPLICATION_ID` before building. Do not rename a
+compiled bundle during signing. Production and development IDs have separate
+save containers.
+
+Build the same unsigned artifact locally:
+
+```sh
+./packaging/ios/package.sh
+```
+
+The ZIP contains `Payload/Burntime.app`, available dSYM symbols, and `commit.txt`.
+It cannot be installed until signed. Keep the ZIP for crash symbolication.
+The script refuses to replace an existing artifact; move it aside before rebuilding.
+
+After publishing the GitHub release, download and verify its checksum:
+
+```sh
+./packaging/ios/download-release.sh v1.1-rc8
+```
+
+For a draft release, download the `ios-release` workflow artifact from GitHub
+Actions instead (or use `gh release download` while authenticated). Keep both
+the ZIP and its checksum together.
+
+Sign a copy on your Mac using a certificate already in Keychain and an exported
+provisioning profile for the exact bundle ID:
+
+```sh
+IOS_SIGN_IDENTITY="Apple Distribution: Your Name (TEAMID)" \
+IOS_PROVISION_PROFILE="/absolute/path/Burntime-AppStore.mobileprovision" \
+  ./packaging/ios/sign-release.sh v1.1-rc8
+```
+
+You can pass an unsigned ZIP path instead of a tag. The signer checks profile
+expiry, the bundle ID, and iPad device family; embeds the profile; signs nested
+native code and the app; verifies signatures; and creates
+`Burntime-iPad-arm64-signed.ipa` beside the original ZIP. The original remains
+unchanged. The output is never overwritten. Use an App Store distribution
+profile and Apple Distribution certificate for TestFlight/App Store, or a
+matching development/ad-hoc profile and certificate for registered-device testing.
+
+Upload the distribution IPA using Apple's Transporter app, then select the build
+in App Store Connect for TestFlight or App Review. iOS apps do **not** use the
+macOS Developer ID/notarytool/stapling process. App Store upload validation and
+review are separate from local signing. A successful signature does not confirm
+App Store acceptance, privacy declarations, or entitlement compliance.
+
+Before release, verify:
+
+- Hold a map context menu, slide over an entry, add a second finger, then release:
+  the menu closes and no command executes. Lift both fingers before trying again.
+- Repeat while backgrounding/locking the iPad, then resume: no menu or action remains.
+- Test cancellation before the hold threshold, during map drags, and on HUD buttons.
+- Test a normal hold/release on both maps, release outside, and repeated gestures.
+- Update over an existing app with the same bundle ID and check save/load.
