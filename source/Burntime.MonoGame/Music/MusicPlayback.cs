@@ -459,17 +459,19 @@ public sealed class MusicPlayback : IMusic
 
     public void PlaySound(string fileName)
     {
-        if (!Enabled)
-            return;
-
-        Music.LoopableSong? sound = Music.LoopableSong.FromFileName(fileName);
-        if (sound is null)
-            return;
-
-        sound.Volume = 1;
-        sound.Play();
         lock (this)
+        {
+            if (!Enabled || _suspended)
+                return;
+
+            Music.LoopableSong? sound = Music.LoopableSong.FromFileName(fileName);
+            if (sound is null)
+                return;
+
+            sound.Volume = 1;
+            sound.Play();
             _sounds.Add(sound);
+        }
     }
 
     public void Stop()
