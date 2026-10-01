@@ -30,12 +30,10 @@ jobs:
           dotnet-version: "10.0.400"
       - name: Install matching iOS workload
         run: dotnet workload install ios --version 10.0.101.1
-      - name: Build unsigned iPad release
-        run: bash ./packaging/ios/package.sh
-      - uses: actions/upload-artifact@v4
-        with:
-          name: ios-release
-          path: |
-            artifacts/ios-arm64/Burntime-iPad-arm64-unsigned.zip
-            artifacts/ios-arm64/Burntime-iPad-arm64-unsigned.zip.sha256
-          if-no-files-found: error
+      - name: Validate iPad simulator build
+        run: >-
+          dotnet build source/Burntime.iOS/Burntime.iOS.csproj
+          -c Debug -r iossimulator-arm64
+          -p:MtouchInterpreter=all
+          -p:EnableCodeSigning=false -p:BuildIpa=false
+          --disable-build-servers --maxcpucount:1

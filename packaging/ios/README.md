@@ -24,12 +24,8 @@ available dSYM symbols, and commit ID. Keep it for crash symbolication.
 The bundle ID defaults to `org.burntime`; override it with `IOS_APPLICATION_ID`.
 The bundle ID must match the registered App ID and provisioning profile.
 
-GitHub Actions also builds unsigned bundles; download the `ios-release` artifact
-or a published release:
-
-```sh
-./packaging/ios/download-release.sh YOUR_RELEASE_TAG
-```
+GitHub Actions only validates Debug simulator builds on PRs and manual runs.
+Build release bundles locally from the release tag using the command above.
 
 Sign locally with a certificate in Keychain and a matching profile:
 
