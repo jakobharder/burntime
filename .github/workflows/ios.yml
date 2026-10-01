@@ -31,7 +31,7 @@ jobs:
       - name: Install matching iOS workload
         run: dotnet workload install ios --version 10.0.101.1
       - name: Build unsigned iPad release
-        run: ./packaging/ios/package.sh
+        run: bash ./packaging/ios/package.sh
       - uses: actions/upload-artifact@v4
         with:
           name: ios-release
