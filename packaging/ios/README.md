@@ -16,12 +16,12 @@ are missing after installation.
 ## Build and sign a release
 
 ```sh
-IOS_APPLICATION_ID=org.burntime ./packaging/ios/package.sh
+./packaging/ios/package.sh
 ```
 
 Creates `artifacts/ios-arm64/Burntime-iPad-arm64-unsigned.zip` with the app,
 available dSYM symbols, and commit ID. Keep it for crash symbolication.
-Without `IOS_APPLICATION_ID`, the bundle ID defaults to `org.burntime.remastered`.
+The bundle ID defaults to `org.burntime`; override it with `IOS_APPLICATION_ID`.
 The bundle ID must match the registered App ID and provisioning profile.
 
 GitHub Actions also builds unsigned bundles; download the `ios-release` artifact

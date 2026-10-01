@@ -10,7 +10,7 @@ asset="$output/Burntime-iPad-arm64-unsigned.zip"
 mkdir -p "$output"
 dotnet build source/Burntime.iOS/Burntime.iOS.csproj -c Release -r ios-arm64 \
   -p:EnableCodeSigning=false -p:BuildIpa=false \
-  -p:ApplicationId="${IOS_APPLICATION_ID:-org.burntime.remastered}" \
+  -p:ApplicationId="${IOS_APPLICATION_ID:-org.burntime}" \
   -p:NoDSymUtil=false
 build_dir="$repo_root/source/Burntime.iOS/bin/Release/net10.0-ios/ios-arm64"
 work_root="$(mktemp -d "${TMPDIR:-/tmp}/burntime-ios-package.XXXXXX")"
