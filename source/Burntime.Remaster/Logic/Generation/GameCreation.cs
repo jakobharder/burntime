@@ -593,7 +593,7 @@ namespace Burntime.Remaster.Logic.Generation
             }
             catch (Exception exception)
             {
-                Log.Warning($"Could not save game '{filename}': {exception.Message}");
+                Log.Warning($"Could not save game '{filename}': {exception}");
                 return false;
             }
             finally

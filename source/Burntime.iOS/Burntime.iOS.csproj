@@ -40,6 +40,8 @@
     <TrimmerRootAssembly Include="Burntime.Platform" />
     <TrimmerRootAssembly Include="BurnGfx" />
     <TrimmerRootAssembly Include="System.Runtime.Serialization.Formatters" />
+    <!-- BinaryFormatter dynamically loads this facade for legacy save types. -->
+    <TrimmerRootAssembly Include="mscorlib" />
     <!-- MonoGame contains unused microphone/media APIs that must not reach distribution. -->
     <TrimmableAssembly Include="MonoGame.Framework" />
     <PackageReference Include="MonoGame.Framework.iOS" Version="3.8.5" />

@@ -22,7 +22,8 @@ are missing after installation.
 ./packaging/ios/package.sh
 ```
 
-Creates `artifacts/ios-arm64/Burntime-iPad-arm64-unsigned.zip` with the app,
+Performs a clean device build, then creates
+`artifacts/ios-arm64/Burntime-iPad-arm64-unsigned.zip` with the app,
 available dSYM symbols, and commit ID. Keep it for crash symbolication.
 The bundle ID defaults to `org.burntime`; override it with `IOS_APPLICATION_ID`.
 The bundle ID must match the registered App ID and provisioning profile.
