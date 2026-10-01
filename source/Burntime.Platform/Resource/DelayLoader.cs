@@ -13,9 +13,11 @@ public class DelayLoader
     readonly List<ISprite> _loadingQueue;
     readonly Thread _thread;
     readonly AutoResetEvent _loadingRequested;
+    readonly object _loadSync = new();
 
     bool _started;
     volatile bool _stopLoader;
+    volatile bool _suspended;
 
     public bool IsLoading
     {
@@ -66,47 +68,42 @@ public class DelayLoader
             _loadingQueue.Clear();
     }
 
+    public void SetSuspended(bool suspended)
+    {
+        // Prevent another load from starting before waiting for the current one.
+        _suspended = suspended;
+        lock (_loadSync) { }
+        _loadingRequested.Set();
+    }
+
     void RunThread()
     {
         Thread.CurrentThread.Name = "DelayLoader";
 
         while (!_stopLoader)
         {
-            ISprite? nextToLoad = null;
-            lock (_loadingQueue)
-                nextToLoad = _loadingQueue.FirstOrDefault();
-
-            if (nextToLoad is not null)
+            lock (_loadSync)
             {
-                //if (engine.SafeMode)
-                //{
-                //    try
-                //    {
-                //        if (!engine.crashed)
-                //        {
-                //            resourceManager.Reload(toLoad_[0], ResourceLoadType.Now);
-                //            toLoad_.RemoveAt(0);
-                //        }
-                //    }
-                //    catch
-                //    {
-                //        engine.crashed = true;
-                //    }
-                //}
-                //else
+                ISprite? nextToLoad = null;
+                if (!_suspended && !_stopLoader)
+                {
+                    lock (_loadingQueue)
+                        nextToLoad = _loadingQueue.FirstOrDefault();
+                }
+
+                if (nextToLoad is not null)
                 {
                     _resourceManager.Reload(nextToLoad, ResourceLoadType.Now);
 
                     lock (_loadingQueue)
                     {
-                        // queue may have been cleared in the meantime
-                        if (_loadingQueue.Count > 0)
-                            _loadingQueue.RemoveAt(0);
+                        // Reset may have removed this entry while it was loading.
+                        _loadingQueue.Remove(nextToLoad);
                     }
                 }
             }
 
-            if (!IsLoading)
+            if (_suspended || !IsLoading)
             {
                 // queue is empty, wait for new arrivals
                 _loadingRequested.WaitOne(200, true);

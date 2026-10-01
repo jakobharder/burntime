@@ -20,6 +20,7 @@ public partial class BurntimeGame
     {
         if (!active) QueueMobileSettingsSave();
         _mobileActive = active;
+        ResourceManager?.SetSuspended(!active);
         CancelTouch();
         _burntimeApp?.SceneManager?.ClearTouchGestures();
         Music.SetSuspended(!active);

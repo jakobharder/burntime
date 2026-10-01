@@ -54,6 +54,8 @@ public abstract class ResourceManagerBase : IResourceManager
         delayLoader.Run();
     }
 
+    public void SetSuspended(bool suspended) => delayLoader.SetSuspended(suspended);
+
     public void Dispose()
     {
         if (Interlocked.Exchange(ref disposeStarted, 1) != 0)
