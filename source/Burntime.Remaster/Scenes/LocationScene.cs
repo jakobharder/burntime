@@ -109,8 +109,6 @@ namespace Burntime.Remaster
             Size = app.Engine.Resolution.Game;
 
             view = new MapView(this, App);
-            view.SetViewport(new Vector2(16, 0),
-                new Vector2(Size.x - 32, Size.y - 40));
             view.MouseClickEvent += OnMouseClickMap;
             view.Overlays.Add(new Maps.MapViewOverlayDroppedItems(App));
             view.Overlays.Add(charOverlay = new Maps.MapViewOverlayCharacters(App));
@@ -139,6 +137,7 @@ namespace Burntime.Remaster
             menu.ExternalPromptLayer = cursorAni.Layer - 2;
 
             gui = new MainUiOriginalWindow(App);
+            gui.SetMapRenderArea(view, Size);
             gui.OpenInventory = OnMenuInventory;
             gui.Layer += 60;
             Windows += gui;
@@ -223,7 +222,7 @@ namespace Burntime.Remaster
         }
 
         internal static Vector2 TouchModeIndicatorPosition(Vector2 sceneSize) =>
-            new(16, sceneSize.y - 18);
+            new(OperatingSystem.IsIOS() ? 0 : 16, sceneSize.y - 18);
 
         private void View_ContextMenu(Vector2 position, MouseButton button)
         {
