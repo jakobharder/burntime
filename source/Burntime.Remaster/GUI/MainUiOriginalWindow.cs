@@ -13,6 +13,7 @@ namespace Burntime.Remaster
 {
     public abstract class IMapGuiWindow : Container
     {
+        public Action? OpenInventory { get; set; }
         public IMapGuiWindow(Module App)
             : base(App)
         {
@@ -65,7 +66,8 @@ namespace Burntime.Remaster
             {
                 Position = new Vector2(Size.x / 2 - 31, Size.y - 56),
                 FaceID = 0,
-                DisplayOnly = true
+                DisplayOnly = true,
+                TouchAction = () => OpenInventory?.Invoke()
             };
             _playerFace.Layer++;
         }

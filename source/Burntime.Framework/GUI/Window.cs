@@ -219,6 +219,9 @@ public class Window
         visible && Boundings.PointInside(position) && OnTouchLongPress(position - Position);
 
     public virtual bool OnTouchLongPress(Vector2 position) => false;
+    public virtual bool ContinuesTouchHold => false;
+    public virtual void OnTouchHoldMove(Vector2 position) { }
+    public virtual void OnTouchHoldEnd(Vector2 position, bool cancelled) { }
 
     internal virtual bool TouchDrag(Vector2 origin, Vector2 delta)
     {

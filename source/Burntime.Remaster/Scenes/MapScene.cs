@@ -69,6 +69,7 @@ namespace Burntime.Remaster
             BurntimeClassic classic = app as BurntimeClassic;
 
             gui = classic.NewGui ? new MainUiLeftWindow(App) : new MainUiOriginalWindow(App);
+            gui.OpenInventory = OnMenuInventory;
 
             view = new ClassicMapView(this, App);
             gui.SetMapRenderArea(view, Size);
@@ -162,7 +163,8 @@ namespace Burntime.Remaster
             if (!_infoMode && TryShowLocationInfo(view.HitTestEntrance(position)))
                 return;
 
-            ShowContextMenu(position, app.LastInputMode == InputMode.Mouse);
+            ShowContextMenu(position, app.LastInputMode == InputMode.Mouse,
+                heldTouch: app.LastInputMode == InputMode.Touch);
         }
 
         bool TryShowLocationInfo(int locationNumber)
@@ -237,11 +239,11 @@ namespace Burntime.Remaster
             _dialog.Show();
         }
 
-        void ShowContextMenu(Vector2 position, bool openedByMouse)
+        void ShowContextMenu(Vector2 position, bool openedByMouse, bool heldTouch = false)
         {
             _menuOpenedByMouse = openedByMouse;
             ConfigureMenu(openedByMouse);
-            menu.Show(position, view.Boundings, openedByMouse);
+            menu.Show(position, view.Boundings, openedByMouse, heldTouch);
         }
 
         void ConfigureMenu(bool includeInteractionMode)

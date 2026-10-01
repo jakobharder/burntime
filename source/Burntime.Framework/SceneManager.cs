@@ -284,8 +284,10 @@ namespace Burntime.Framework
 
                 while (touchGestures.TryDequeue(out var touch))
                 {
-                    if (!ReferenceEquals(touch.Context, TouchInputContext) || !ReferenceEquals(handle, InputWindow))
+                    handle = InputWindow;
+                    if (handle == null || !ReferenceEquals(touch.Context, TouchInputContext))
                         continue;
+                    parentPos = handle.PositionOnScreen - handle.Position;
                     app.LastInputMode = InputMode.Touch;
                     var gesture = touch.Gesture;
                     if (gesture.Kind == TouchGestureKind.Press)
@@ -339,6 +341,7 @@ namespace Burntime.Framework
                     if (gesture.Kind == TouchGestureKind.Cancel)
                     {
                         touchPosition = gesture.Position;
+                        handle.OnTouchHoldEnd(gesture.Position - handle.PositionOnScreen, cancelled: true);
                         if (touchPressActive)
                             handle.TouchRelease(gesture.Position - parentPos, cancelled: true);
                         touchTarget = null;
@@ -347,6 +350,10 @@ namespace Burntime.Framework
                     }
                     if (gesture.Kind is TouchGestureKind.HoldMove or TouchGestureKind.HoldEnd)
                     {
+                        if (gesture.Kind == TouchGestureKind.HoldMove)
+                            handle.OnTouchHoldMove(gesture.Position - handle.PositionOnScreen);
+                        else
+                            handle.OnTouchHoldEnd(gesture.Position - handle.PositionOnScreen, cancelled: false);
                         if (gesture.Kind == TouchGestureKind.HoldEnd)
                         {
                             touchPosition = gesture.Position;
@@ -455,7 +462,8 @@ namespace Burntime.Framework
         internal void PushModalStack(Window window)
         {
             CancelTouchPress();
-            touchInputContext = new object();
+            if (!window.ContinuesTouchHold)
+                touchInputContext = new object();
             Window handle = null;
 
             if (modalStack.Count > 0)

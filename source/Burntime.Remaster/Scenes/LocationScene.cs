@@ -39,6 +39,24 @@ namespace Burntime.Remaster
 
     public class LocationScene : Scene, IMapEntranceHandler, IInteractionHandler, ILogicNotifycationHandler, IMapNavigationScene
     {
+        sealed class TouchModeIndicator : Image
+        {
+            readonly Action toggle;
+            public TouchModeIndicator(Module app, Action toggle) : base(app) => this.toggle = toggle;
+            public override bool IsTouchTarget => true;
+            public override int MinimumTouchTargetSize => TouchHitTest.MinimumSize;
+            public override bool OnTouchTap(Vector2 position)
+            {
+                toggle();
+                return true;
+            }
+            public override bool OnMouseClick(Vector2 position, MouseButton button)
+            {
+                if (button == MouseButton.Left) toggle();
+                return true;
+            }
+        }
+
         enum LocationInteractionMode
         {
             Auto,
@@ -121,6 +139,7 @@ namespace Burntime.Remaster
             menu.ExternalPromptLayer = cursorAni.Layer - 2;
 
             gui = new MainUiOriginalWindow(App);
+            gui.OpenInventory = OnMenuInventory;
             gui.Layer += 60;
             Windows += gui;
 
@@ -185,7 +204,7 @@ namespace Burntime.Remaster
 
         Image CreateTouchModeIndicator(string background)
         {
-            Image indicator = new(app)
+            Image indicator = new TouchModeIndicator(app, ToggleTalkFightMode)
             {
                 Background = background,
                 VerticalAlignment = PositionAlignment.Right
@@ -199,7 +218,7 @@ namespace Burntime.Remaster
         void UpdateTouchModeIndicatorPosition()
         {
             Vector2 position = TouchModeIndicatorPosition(Size);
-            touchTalkAni.Position = position;
+            touchTalkAni.Position = position - new Vector2(0, 10);
             touchFightAni.Position = position;
         }
 
@@ -1070,7 +1089,8 @@ namespace Burntime.Remaster
             AddLine("@manualui?5", manualWindow.Open);
             AddLine("@burn?357", OnMenuTurn, new(InputAction.NextTurn) { Hold = true });
 
-            menu.Show(position, view.Boundings, openedByMouse);
+            menu.Show(position, view.Boundings, openedByMouse,
+                heldTouch: openedByMouse && app.LastInputMode == InputMode.Touch);
         }
 
         bool HasGroupMenuCommands() =>

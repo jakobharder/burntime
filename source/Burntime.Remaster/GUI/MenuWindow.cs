@@ -94,8 +94,10 @@ namespace Burntime.Remaster.GUI
             _menuEntries.Clear();
         }
 
-        public void Show(Vector2 Position, Nullable<Rect> Boundings, bool openedByMouse = false)
+        public void Show(Vector2 Position, Nullable<Rect> Boundings, bool openedByMouse = false,
+            bool heldTouch = false)
         {
+            _heldTouch = heldTouch;
             _openedByMouse = openedByMouse;
             this.Position = Position;
             Size = new Vector2(MENU_WIDTH, 10 + MIDDLE_HEIGHT * _menuEntries.Count);
@@ -126,6 +128,33 @@ namespace Burntime.Remaster.GUI
         int _touchPressedIndex = -1;
         int _touchActivationIndex = -1;
         bool _touchReleasePending;
+        bool _heldTouch;
+        public override bool ContinuesTouchHold => _heldTouch;
+
+        public override void OnTouchHoldMove(Vector2 position)
+        {
+            if (!_heldTouch) return;
+            _focusIndex = GetHeldEntryAt(position);
+        }
+
+        public override void OnTouchHoldEnd(Vector2 position, bool cancelled)
+        {
+            if (!_heldTouch) return;
+            _heldTouch = false;
+            int index = cancelled ? -1 : GetHeldEntryAt(position);
+            if (index >= 0)
+                Execute(index);
+            else
+                Hide();
+        }
+
+        int GetHeldEntryAt(Vector2 position)
+        {
+            if (position.x < 0 || position.x >= Size.x || position.y < TOP_HEIGHT)
+                return -1;
+            int index = (position.y - TOP_HEIGHT) / MIDDLE_HEIGHT;
+            return index < _menuEntries.Count ? index : -1;
+        }
 
         public override bool PreserveMouseModeForDirectionalInput => _openedByMouse;
 
@@ -245,6 +274,7 @@ namespace Burntime.Remaster.GUI
 
         public override bool OnMouseMove(Vector2 Position)
         {
+            if (_heldTouch) return true;
             if (!_mouseHasLeft && (Position - _lastMousePosition).Length <= 1)
                 return true;
 
