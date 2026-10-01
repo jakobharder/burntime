@@ -101,7 +101,11 @@ namespace Burntime.Remaster.Scenes
                 InputPromptColorScheme.Hud);
             exitButton.Prompts.Add(InputAction.Back, "",
                 new Vector2(exitButton.Size.x + 2, -2));
-            actionPrompt = actionButton.Prompts.Add(InputAction.Action, "",
+            actionPrompt = actionButton.Prompts.Add(new InputPrompt(InputAction.Action, "")
+            {
+                MouseControl = MouseButton.None,
+                TouchControl = TouchControl.None
+            },
                 new Vector2(actionButton.Size.x + 2, -2));
             Prompts.Add(InputPattern.HorizontalPaging, "@prompts?16",
                 () => inventory.PageCount > 1);
