@@ -231,9 +231,16 @@ namespace Burntime.Remaster.GUI
         public override void OnMouseLeave()
         {
             mouseHasLeft = true;
-            ClearMouseFocus();
+            // Touch focus is a persistent selection rather than transient hover.
+            // Keep it while a modal temporarily takes input so the tooltip can
+            // return when the modal closes.
+            if (ShouldClearFocusOnPointerLeave(app.LastInputMode))
+                ClearMouseFocus();
             base.OnMouseLeave();
         }
+
+        internal static bool ShouldClearFocusOnPointerLeave(InputMode inputMode) =>
+            inputMode != InputMode.Touch;
 
         void ClearMouseFocus()
         {

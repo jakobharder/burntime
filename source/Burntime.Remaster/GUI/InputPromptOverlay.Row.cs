@@ -120,7 +120,8 @@ sealed partial class InputPromptOverlay
             if (app is BurntimeClassic classic && !classic.ShowUIHints)
                 return;
 
-            if (app.LastInputMode is not (InputMode.Mouse or InputMode.Keyboard or InputMode.Gamepad))
+            if (app.LastInputMode is not (InputMode.Mouse or InputMode.Keyboard or
+                InputMode.Gamepad or InputMode.Touch))
                 return;
 
             if (_inputMode != app.LastInputMode || _language != app.Language ||

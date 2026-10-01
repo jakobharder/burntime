@@ -360,6 +360,10 @@ namespace Burntime.Framework
                     if (gesture.Kind == TouchGestureKind.LongPress)
                     {
                         touchPosition = gesture.Position;
+                        // Keep tooltip holds pressed until the finger is released.
+                        // These buttons have no secondary action to dispatch.
+                        if (touchTarget is Button)
+                            continue;
                         if (touchPressActive)
                             handle.TouchRelease(gesture.Position - parentPos, cancelled: true);
                         touchTarget = null;

@@ -149,7 +149,8 @@ namespace Burntime.Remaster
                 manualWindow.IsVisible);
             Prompts.Add(new InputPrompt(InputAction.Back, "...")
             {
-                MouseControl = MouseButton.Right
+                MouseControl = MouseButton.Right,
+                TouchControl = TouchControl.LongPress
             }, CanShowActionsMenuPrompt);
             view.Prompts.AddDynamic(InputAction.Primary,
                 GetDirectInteractionPrompt,
@@ -197,10 +198,13 @@ namespace Burntime.Remaster
 
         void UpdateTouchModeIndicatorPosition()
         {
-            Vector2 position = new(16, Size.y - 2);
+            Vector2 position = TouchModeIndicatorPosition(Size);
             touchTalkAni.Position = position;
             touchFightAni.Position = position;
         }
+
+        internal static Vector2 TouchModeIndicatorPosition(Vector2 sceneSize) =>
+            new(16, sceneSize.y - 18);
 
         private void View_ContextMenu(Vector2 position, MouseButton button)
         {
@@ -635,7 +639,7 @@ namespace Burntime.Remaster
 
         GuiString? GetDirectInteractionPrompt()
         {
-            if (app.LastInputMode == InputMode.Mouse)
+            if (app.LastInputMode is InputMode.Mouse or InputMode.Touch)
             {
                 if (view.ActiveEntrance >= 0 &&
                     interactionMode != LocationInteractionMode.Fight)
@@ -692,7 +696,7 @@ namespace Burntime.Remaster
             if (combatRecovery > 0 || combatEncounter != null && !combatEncounter.IsComplete)
                 return false;
 
-            if (app.LastInputMode == InputMode.Mouse)
+            if (app.LastInputMode is InputMode.Mouse or InputMode.Touch)
             {
                 return (interactionMode is LocationInteractionMode.Auto or
                         LocationInteractionMode.Fight) &&

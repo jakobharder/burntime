@@ -240,6 +240,7 @@ public class Button : Window
 
     public override bool OnMouseClick(Vector2 Position, MouseButton Button)
     {
+        if (Button != MouseButton.Left) return true;
         if (!IsEnabled) return true;
 
         return OnButtonClick();

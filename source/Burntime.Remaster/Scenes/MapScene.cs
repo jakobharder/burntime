@@ -125,7 +125,8 @@ namespace Burntime.Remaster
                 _manualWindow.IsVisible);
             Prompts.Add(new InputPrompt(InputAction.Back, "...")
             {
-                MouseControl = MouseButton.Right
+                MouseControl = MouseButton.Right,
+                TouchControl = TouchControl.LongPress
             });
             view.Prompts.AddDynamic(
                 () => GetLocationInfoPrompt(MouseButton.Left),
@@ -559,7 +560,8 @@ namespace Burntime.Remaster
                 return false;
             if (app.LastInputMode == InputMode.Mouse && _infoMode)
                 return false;
-            return (app.LastInputMode == InputMode.Mouse || IsPromptNavigationInput) &&
+            return (app.LastInputMode is InputMode.Mouse or InputMode.Touch ||
+                IsPromptNavigationInput) &&
                 view.ActiveEntrance ==
                     (app.GameState as ClassicGame).World.ActivePlayerObj.Location.Id;
         }
@@ -571,7 +573,8 @@ namespace Burntime.Remaster
                 return false;
             ClassicGame game = app.GameState as ClassicGame;
             Logic.Player player = game.World.ActivePlayerObj;
-            return (app.LastInputMode == InputMode.Mouse || IsPromptNavigationInput) &&
+            return (app.LastInputMode is InputMode.Mouse or InputMode.Touch ||
+                IsPromptNavigationInput) &&
                 view.ActiveEntrance != player.Location.Id &&
                 player.Location.Neighbors.Contains(PromptLocation) &&
                 player.CanTravel(player.Location, PromptLocation);
@@ -588,6 +591,11 @@ namespace Burntime.Remaster
                     ? MouseButton.Left
                     : MouseButton.Right;
                 if (mouseButton != expectedButton)
+                    return false;
+            }
+            else if (app.LastInputMode == InputMode.Touch)
+            {
+                if (mouseButton != MouseButton.Right)
                     return false;
             }
             else if (!IsPromptNavigationInput)

@@ -127,7 +127,10 @@ class TraderScene : Scene
         acceptButton.Prompts.Add(InputAction.Action, "",
             new Vector2(acceptButton.Size.x + 2, -2));
 
-        Prompts.Add(InputPattern.HorizontalPaging, "@prompts?30",
+        Prompts.Add(new InputPrompt(InputPattern.HorizontalPaging, "@prompts?30")
+        {
+            TouchPattern = InputPattern.VerticalPaging
+        },
             () => inventory.PageCount > 1);
 
         PositionElements();

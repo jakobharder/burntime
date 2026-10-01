@@ -13,6 +13,13 @@ public enum InputPattern
     VerticalPaging
 }
 
+public enum TouchControl
+{
+    None = 0,
+    Tap,
+    LongPress
+}
+
 public enum InputPromptPosition
 {
     Primary,
@@ -26,9 +33,11 @@ public readonly record struct InputPrompt
     public InputPattern Pattern { get; }
     public GuiString Label { get; }
     public InputPattern? KeyboardPattern { get; init; }
+    public InputPattern? TouchPattern { get; init; }
     public Key? KeyboardControl { get; init; }
     public GamepadControl? GamepadControl { get; init; }
     public MouseButton? MouseControl { get; init; }
+    public TouchControl? TouchControl { get; init; }
     public bool ShowInMouseMode { get; init; }
 
     public InputPrompt(InputAction action, GuiString label)
@@ -50,13 +59,17 @@ public readonly record struct InputPrompt
         Pattern == other.Pattern &&
         Label?.ID == other.Label?.ID &&
         KeyboardPattern == other.KeyboardPattern &&
+        TouchPattern == other.TouchPattern &&
         Nullable.Equals(KeyboardControl, other.KeyboardControl) &&
         GamepadControl == other.GamepadControl &&
         MouseControl == other.MouseControl &&
+        TouchControl == other.TouchControl &&
         ShowInMouseMode == other.ShowInMouseMode;
 
-    public override int GetHashCode() => HashCode.Combine(Action, Pattern,
-        Label?.ID, KeyboardPattern, KeyboardControl, GamepadControl, MouseControl, ShowInMouseMode);
+    public override int GetHashCode() => HashCode.Combine(
+        HashCode.Combine(Action, Pattern, Label?.ID, KeyboardPattern,
+            KeyboardControl, GamepadControl, MouseControl, ShowInMouseMode),
+        TouchPattern, TouchControl);
 
     public MouseButton? EffectiveMouseControl => MouseControl ??
         DefaultMouseControl(Action);
@@ -257,8 +270,6 @@ public sealed class InputPromptController
 
     public InputPromptLayout Resolve()
     {
-        if (_app.LastInputMode == InputMode.Touch)
-            return new InputPromptLayout([], [], []);
         bool mouseInput = _app.LastInputMode == InputMode.Mouse;
         List<InputPrompt> scenePrompts = [];
         Dictionary<InputPromptPosition, List<ContextCandidate>> candidates = [];

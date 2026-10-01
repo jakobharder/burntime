@@ -107,6 +107,54 @@ static class TouchGestureTests
                 "nearby friendly character remains visible");
             return 0;
         });
+        yield return Int("touch item selection survives modal focus changes", 0, () =>
+        {
+            Equal(false, ItemGridWindow.ShouldClearFocusOnPointerLeave(InputMode.Touch),
+                "touch selection remains available after closing a modal");
+            Equal(true, ItemGridWindow.ShouldClearFocusOnPointerLeave(InputMode.Mouse),
+                "mouse hover still clears when leaving the grid");
+            return 0;
+        });
+        yield return Int("location touch mode indicator clears the prompt row", 0, () =>
+        {
+            Equal(new Vector2(16, 382),
+                LocationScene.TouchModeIndicatorPosition(new Vector2(640, 400)),
+                "mode animation is raised into the HUD");
+            return 0;
+        });
+        yield return Int("touch prompts resolve to gesture glyphs", 0, () =>
+        {
+            var app = new Module();
+            Equal(TouchGlyph.Tap, InputControlDisplay.Resolve(app, InputMode.Touch,
+                InputAction.Primary).Parts[0].Touch, "primary action uses tap");
+            Equal(TouchGlyph.Tap, InputControlDisplay.Resolve(app, InputMode.Touch,
+                InputAction.Action).Parts[0].Touch, "action uses tap");
+            Equal(TouchGlyph.LongPress, InputControlDisplay.Resolve(app, InputMode.Touch,
+                InputAction.Secondary).Parts[0].Touch, "secondary action uses long press");
+            Equal(TouchGlyph.SwipeHorizontal, InputControlDisplay.ResolvePattern(app,
+                InputMode.Touch, InputPattern.HorizontalPaging).Parts[0].Touch,
+                "horizontal paging uses horizontal swipe");
+            Equal(TouchGlyph.SwipeVertical, InputControlDisplay.ResolvePattern(app,
+                InputMode.Touch, InputPattern.VerticalPaging).Parts[0].Touch,
+                "vertical paging uses vertical swipe");
+            Equal(true, InputControlDisplay.Resolve(app, InputMode.Touch,
+                InputAction.Back).IsEmpty, "unmapped touch action stays hidden");
+            var overridden = new InputPrompt(InputAction.Back, "...")
+            {
+                TouchControl = TouchControl.LongPress
+            };
+            Equal(TouchGlyph.LongPress, InputControlDisplay.Resolve(app,
+                InputMode.Touch, overridden).Parts[0].Touch,
+                "prompt can override an action's touch gesture");
+            var verticalTouchPaging = new InputPrompt(InputPattern.HorizontalPaging, "Page")
+            {
+                TouchPattern = InputPattern.VerticalPaging
+            };
+            Equal(TouchGlyph.SwipeVertical, InputControlDisplay.Resolve(app,
+                InputMode.Touch, verticalTouchPaging).Parts[0].Touch,
+                "prompt can override its touch navigation pattern");
+            return 0;
+        });
         yield return Int("fixed item targets keep bounds and topmost overlap priority", 0, () =>
         {
             var app = new Module();

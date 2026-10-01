@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 - Added touch input
+- Added touch gesture prompts to maps and item tooltips
 - Improved water source bar to show capacity and reserver above daily
 - Show name of clicked entrance or NPC
 - Automatically select traps after camp creation
