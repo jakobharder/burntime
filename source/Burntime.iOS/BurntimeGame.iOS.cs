@@ -16,6 +16,25 @@ public partial class BurntimeGame
     readonly object settingsSaveSync = new();
     nint settingsBackgroundTask = UIApplication.BackgroundTaskInvalid;
     bool suppressTouchesUntilReleased;
+    readonly object mobileFrameSync = new();
+    int memoryPressurePending;
+
+    public void QueueMemoryPressureCleanup() => Interlocked.Exchange(ref memoryPressurePending, 1);
+
+    void HandleMemoryPressure()
+    {
+        // Texture disposal belongs on the graphics thread while the app is active.
+        if (!_mobileActive || !IsActive ||
+            Interlocked.Exchange(ref memoryPressurePending, 0) == 0)
+            return;
+
+        lock (mobileFrameSync)
+        {
+            ResourceManager.SetSuspended(true);
+            try { ResourceManager.ReleaseCachedResources(); }
+            finally { ResourceManager.SetSuspended(false); }
+        }
+    }
     public void SetMobileActive(bool active)
     {
         if (!active) QueueMobileSettingsSave();
