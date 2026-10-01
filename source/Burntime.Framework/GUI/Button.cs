@@ -6,17 +6,31 @@ namespace Burntime.Framework.GUI;
 
 public class Button : Window
 {
+    public override int MinimumTouchTargetSize => TouchHitTest.MinimumSize;
+    public override bool IsTouchTarget => IsEnabled;
     public VerticalTextAlignment TextVerticalAlign = VerticalTextAlignment.Default;
     public TextAlignment TextHorizontalAlign = TextAlignment.Default;
 
     public bool IsHover { get; private set; }
     public bool IsKeyboardSelected { get; set; }
+    public bool IsTouchPressed { get; private set; }
+    public event Action? TouchPressed;
+    public event Action<bool>? TouchReleased;
 
     private bool _isEnabled = true;
     public bool IsEnabled
     {
         get => _isEnabled;
-        set { _isEnabled = value; if (_isEnabled == false) { IsHover = false; IsKeyboardSelected = false; } }
+        set
+        {
+            _isEnabled = value;
+            if (!_isEnabled)
+            {
+                IsHover = false;
+                IsKeyboardSelected = false;
+                IsTouchPressed = false;
+            }
+        }
     }
 
     public CommandEvent? Command;
@@ -107,7 +121,8 @@ public class Button : Window
     private string _lastLanguage = string.Empty;
     public override void OnRender(RenderTarget Target)
     {
-        bool isHighlighted = IsHover || IsKeyboardSelected;
+        bool isHighlighted = IsTouchPressed ||
+            app.LastInputMode != InputMode.Touch && (IsHover || IsKeyboardSelected);
 
         if (IsTextOnly && _lastLanguage != app.Language)
         {
@@ -203,8 +218,29 @@ public class Button : Window
         IsHover = false;
     }
 
+    public override void OnTouchPress(Vector2 position)
+    {
+        // Expanded touch targets can dispatch the press through both the
+        // container and the captured target. Only publish the transition once.
+        if (!IsEnabled || IsTouchPressed)
+            return;
+
+        IsTouchPressed = true;
+        TouchPressed?.Invoke();
+    }
+
+    public override void OnTouchRelease(Vector2 position, bool cancelled)
+    {
+        if (!IsTouchPressed)
+            return;
+
+        IsTouchPressed = false;
+        TouchReleased?.Invoke(cancelled);
+    }
+
     public override bool OnMouseClick(Vector2 Position, MouseButton Button)
     {
+        if (Button != MouseButton.Left) return true;
         if (!IsEnabled) return true;
 
         return OnButtonClick();

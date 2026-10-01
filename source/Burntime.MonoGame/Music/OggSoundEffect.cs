@@ -7,7 +7,7 @@ namespace Burntime.MonoGame;
 
 public static class OggSoundEffect
 {
-    const float FadeSeconds = 0.2f;
+    internal const float FadeSeconds = 0.2f;
 
     public static SoundEffect FromStream(Stream fileStream)
     {
@@ -35,7 +35,7 @@ public static class OggSoundEffect
         return byteData;
     }
 
-    static void CastBuffer(float[] inBuffer, byte[] outBuffer, int length)
+    internal static void CastBuffer(float[] inBuffer, byte[] outBuffer, int length)
     {
         for (int i = 0; i < length; i++)
         {
@@ -43,9 +43,8 @@ public static class OggSoundEffect
             if (temp > short.MaxValue) temp = short.MaxValue;
             else if (temp < short.MinValue) temp = short.MinValue;
 
-            var bytes = BitConverter.GetBytes(temp);
-            outBuffer[i * 2] = bytes[0];
-            outBuffer[i * 2 + 1] = bytes[1];
+            outBuffer[i * 2] = (byte)temp;
+            outBuffer[i * 2 + 1] = (byte)(temp >> 8);
         }
     }
 

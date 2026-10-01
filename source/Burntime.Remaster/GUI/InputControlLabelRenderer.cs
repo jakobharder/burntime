@@ -28,6 +28,7 @@ sealed class InputControlLabelRenderer
     readonly GuiImage[][] _glyphs = new GuiImage[4][];
     readonly GuiImage[] _keyboardGlyphs =
         new GuiImage[KeyboardAtlasColumns * KeyboardAtlasRows];
+    readonly GuiImage[] _touchGlyphs = new GuiImage[4];
     readonly GuiImage _holdGlyph;
 
     // Callers laying out a full prompt row can keep the original glyph size
@@ -59,6 +60,9 @@ sealed class InputControlLabelRenderer
         for (int i = 0; i < _keyboardGlyphs.Length; i++)
             _keyboardGlyphs[i] =
                 $"pngsheet@gfx/ui/input_glyphs_keyboard.png?{i}?{GlyphSourceSize}x{GlyphSourceSize}";
+        for (int i = 0; i < _touchGlyphs.Length; i++)
+            _touchGlyphs[i] =
+                $"pngsheet@gfx/ui/touch_glyphs.png?{i}?{GlyphSourceSize}x{GlyphSourceSize}";
     }
 
     public int Measure(InputControlLabel control, string label = "", string prefix = "",
@@ -108,6 +112,10 @@ sealed class InputControlLabelRenderer
             if (part.Keyboard != KeyboardGlyph.None)
             {
                 glyph = _keyboardGlyphs[GetKeyboardAtlasIndex(part.Keyboard)];
+            }
+            else if (part.Touch != TouchGlyph.None)
+            {
+                glyph = _touchGlyphs[(int)part.Touch - 1];
             }
             else
             {

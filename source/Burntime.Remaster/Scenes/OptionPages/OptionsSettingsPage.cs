@@ -127,7 +127,7 @@ internal class OptionsSettingsPage : Container
 
     void UpdateFocus()
     {
-        bool keyboardFocus = HasFocus && app.LastInputMode != InputMode.Mouse;
+        bool keyboardFocus = HasFocus && app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad;
         if (HasFocus && !keyboardFocus)
             _focusIndex = Array.FindIndex(_buttons, button => button.IsEnabled && button.IsHover);
 

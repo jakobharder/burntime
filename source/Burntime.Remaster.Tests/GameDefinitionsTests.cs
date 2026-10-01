@@ -8,6 +8,7 @@ using Burntime.Remaster.AI;
 using Burntime.Remaster.Logic;
 using Burntime.Remaster.Logic.Generation;
 using Burntime.Remaster.Logic.Rules;
+using Burntime.Platform.IO;
 
 namespace Burntime.Remaster.Tests;
 
@@ -33,6 +34,39 @@ static class GameDefinitionsTests
             () => (int)GameDefinitions.ParseAi(null));
         yield return Int("numeric undefined AI fallback", (int)AiProfile.Modern,
             () => (int)GameDefinitions.ParseAi("99"));
+        yield return Int("new game preferences default to level one extended remaster", 0, () =>
+        {
+            ConfigFile config = new();
+            NewGamePreferences preferences = NewGamePreferences.Load(
+                config.GetSection("", true));
+            Equal(1, preferences.Difficulty, "default difficulty");
+            Equal(RuleSet.Extended, preferences.Rules, "default rules");
+            Equal(AiProfile.Modern, preferences.Ai, "default AI");
+            return 0;
+        });
+        yield return Int("new game preferences load supported values", 0, () =>
+        {
+            ConfigFile config = new();
+            ConfigSection settings = config.GetSection("", true);
+            settings.Set("mode_difficulty", 3);
+            settings.Set("mode_rules", "classic");
+            settings.Set("mode_opponent", "amiga");
+            NewGamePreferences preferences = NewGamePreferences.Load(settings);
+            Equal(3, preferences.Difficulty, "stored difficulty");
+            Equal(RuleSet.Classic, preferences.Rules, "stored rules");
+            Equal(AiProfile.Amiga, preferences.Ai, "stored AI");
+            return 0;
+        });
+        yield return Int("new game preferences store canonical user settings", 0, () =>
+        {
+            ConfigFile config = new();
+            ConfigSection settings = config.GetSection("", true);
+            NewGamePreferences.Default.Store(settings);
+            Equal("1", settings.GetString("mode_difficulty"), "difficulty text");
+            Equal("extended", settings.GetString("mode_rules"), "rules text");
+            Equal("remaster", settings.GetString("mode_opponent"), "AI text");
+            return 0;
+        });
     }
 
     internal static IEnumerable<Case<int>> RuleRegistryCases()

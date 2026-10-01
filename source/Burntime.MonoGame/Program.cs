@@ -8,6 +8,18 @@ if (args.Contains("--visual-test"))
     return;
 }
 
+if (Burntime.MonoGame.LocationSoakRunner.IsRequested(args))
+{
+    Environment.ExitCode = Burntime.MonoGame.LocationSoakRunner.Run(args);
+    return;
+}
+
+if (Burntime.MonoGame.UiSoakRunner.IsRequested(args))
+{
+    Environment.ExitCode = Burntime.MonoGame.UiSoakRunner.Run(args);
+    return;
+}
+
 #if !(DEBUG)
     AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(CustomExceptionHandler.OnThreadException);
 #endif

@@ -8,12 +8,19 @@ namespace Burntime.Platform.Resource;
 
 public class DelayLoader
 {
+    static readonly TimeSpan StopTimeout = TimeSpan.FromSeconds(5);
     readonly IResourceManager _resourceManager;
     readonly List<ISprite> _loadingQueue;
     readonly Thread _thread;
     readonly AutoResetEvent _loadingRequested;
 
-    public bool IsLoading => _loadingQueue.Count > 0;
+    bool _started;
+    volatile bool _stopLoader;
+
+    public bool IsLoading
+    {
+        get { lock (_loadingQueue) return _loadingQueue.Count > 0; }
+    }
 
     public DelayLoader(IResourceManager resourceManager)
     {
@@ -31,6 +38,8 @@ public class DelayLoader
     {
         lock (_loadingQueue)
         {
+            if (_stopLoader)
+                return;
             if (_loadingQueue.Contains(Sprite))
                 return;
             _loadingQueue.Add(Sprite);
@@ -41,8 +50,14 @@ public class DelayLoader
 
     public void Run()
     {
-        _stopLoader = false;
-        _thread.Start();
+        lock (_loadingQueue)
+        {
+            if (_started)
+                return;
+            _stopLoader = false;
+            _started = true;
+            _thread.Start();
+        }
     }
 
     public void Reset()
@@ -91,7 +106,7 @@ public class DelayLoader
                 }
             }
 
-            if (_loadingQueue.Count == 0)
+            if (!IsLoading)
             {
                 // queue is empty, wait for new arrivals
                 _loadingRequested.WaitOne(200, true);
@@ -99,10 +114,12 @@ public class DelayLoader
         }
     }
 
-    bool _stopLoader = false;
-    public void Stop()
+    public bool Stop()
     {
         _stopLoader = true;
         _loadingRequested.Set();
+        if (!_started || _thread == Thread.CurrentThread)
+            return true;
+        return _thread.Join(StopTimeout);
     }
 }

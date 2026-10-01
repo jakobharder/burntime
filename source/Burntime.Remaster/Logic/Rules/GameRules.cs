@@ -116,10 +116,8 @@ internal sealed class GameRules
             return;
         }
 
-        if (payment?.FoodValue != 0)
-            recruit.Food = Math.Min(recruit.MaxFood, recruit.Food + payment.FoodValue);
-        if (recruit.Food < difficulty)
-            recruit.Food = difficulty;
+        recruit.Food = InitializeRecruitFood(recruit.Food, recruit.MaxFood,
+            payment, difficulty);
 
         (int minimum, int maximum) = game.World.Difficulty switch
         {
@@ -128,6 +126,14 @@ internal sealed class GameRules
             _ => (0, 2)
         };
         recruit.Water = Burntime.Platform.Math.Random.Next(minimum, maximum + 1);
+    }
+
+    internal static int InitializeRecruitFood(int food, int maxFood,
+        Item? payment, int difficulty)
+    {
+        if (payment is not null && payment.FoodValue != 0)
+            food = Math.Min(maxFood, food + payment.FoodValue);
+        return Math.Max(food, difficulty);
     }
 
     public void InitializeTraderInventory(Trader trader)

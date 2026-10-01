@@ -31,6 +31,7 @@ namespace Burntime.Framework.GUI
 
         public override bool OnMouseClick(Burntime.Platform.Vector2 Position, Burntime.Platform.MouseButton Button)
         {
+            if (Button != Burntime.Platform.MouseButton.Left) return true;
             _isDown = !_isDown;
             if (_isDown)
                 OnSwitchDown();

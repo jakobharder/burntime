@@ -153,6 +153,62 @@ public class Container : Window
         base.Update(elapsed);
     }
 
+    internal override Window? FindTouchTarget(Vector2 screenPosition)
+    {
+        if (!visible) return null;
+        Window? target = null;
+        for (int i = windows.Count - 1; i >= 0; i--)
+            target = TouchHitTest.Prefer(target, windows[i].FindTouchTarget(screenPosition), screenPosition);
+        return TouchHitTest.Prefer(target, base.FindTouchTarget(screenPosition), screenPosition);
+    }
+
+    internal override bool TouchPress(Vector2 position)
+    {
+        if (!visible || !Boundings.PointInside(position)) return false;
+        OnTouchPress(position - Position);
+        foreach (Window window in windows)
+            if (window.TouchPress(position - Position)) return true;
+        return true;
+    }
+
+    internal override void TouchRelease(Vector2 position, bool cancelled)
+    {
+        foreach (Window window in windows)
+            window.TouchRelease(position - Position, cancelled);
+        base.TouchRelease(position, cancelled);
+    }
+
+    internal override bool TouchLongPress(Vector2 position)
+    {
+        if (!visible) return false;
+        for (int i = windows.Count - 1; i >= 0; i--)
+            if (windows[i].TouchLongPress(position - Position)) return true;
+        return base.TouchLongPress(position);
+    }
+
+    internal override bool TouchDrag(Vector2 origin, Vector2 delta)
+    {
+        if (!visible) return false;
+        if (Boundings.PointInside(origin) && OnTouchScroll(origin - Position, delta))
+            return true;
+        foreach (Window window in windows)
+            if (window.TouchDrag(origin - Position, delta)) return true;
+        return base.TouchDrag(origin, delta);
+    }
+
+    internal override bool TouchDragEnd(Vector2 origin, Vector2 delta, Vector2f velocity)
+    {
+        if (!visible) return false;
+        if (Boundings.PointInside(origin) && OnTouchScroll(origin - Position, delta))
+        {
+            OnTouchScrollEnd(origin - Position, velocity);
+            return true;
+        }
+        foreach (Window window in windows)
+            if (window.TouchDragEnd(origin - Position, delta, velocity)) return true;
+        return base.TouchDragEnd(origin, delta, velocity);
+    }
+
     internal override bool MouseClick(Vector2 Position, MouseButton Button)
     {
         if (!visible)

@@ -31,6 +31,9 @@ namespace Burntime.Remaster
         bool openedInMouseMode;
         bool directionalFocusActive;
         bool resumePlaylistMusic;
+        int touchPressedChoice = -1;
+        int touchActivationChoice = -1;
+        bool touchReleasePending;
 
         public override bool PreserveMouseModeForDirectionalInput => openedInMouseMode;
 
@@ -150,7 +153,16 @@ namespace Burntime.Remaster
 
         public override bool OnMouseClick(Vector2 position, MouseButton button)
         {
-            int clickedChoice = ChoiceAt(position);
+            int clickedChoice;
+            if (app.LastInputMode == InputMode.Touch && touchReleasePending)
+            {
+                clickedChoice = touchActivationChoice;
+                touchReleasePending = false;
+            }
+            else
+                clickedChoice = app.LastInputMode == InputMode.Touch
+                    ? TouchChoiceAt(position)
+                    : ChoiceAt(position);
             if (clickedChoice == 0 && dialogmode == 0)
             {
                 AdvanceText();
@@ -159,6 +171,25 @@ namespace Burntime.Remaster
                 SelectChoice(clickedChoice);
 
             return true;
+        }
+
+        public override void OnTouchPress(Vector2 position)
+        {
+            touchPressedChoice = TouchChoiceAt(position);
+            touchActivationChoice = -1;
+            touchReleasePending = false;
+            focusChoiceIndex = touchPressedChoice;
+        }
+
+        public override void OnTouchRelease(Vector2 position, bool cancelled)
+        {
+            int releasedChoice = cancelled ? -1 : TouchChoiceAt(position);
+            touchActivationChoice = releasedChoice == touchPressedChoice
+                ? releasedChoice
+                : -1;
+            touchReleasePending = !cancelled;
+            focusChoiceIndex = touchActivationChoice;
+            touchPressedChoice = -1;
         }
 
         public override bool OnInputAction(InputAction action)
@@ -347,9 +378,44 @@ namespace Burntime.Remaster
             return -1;
         }
 
+        int TouchChoiceAt(Vector2 position)
+        {
+            TextHelper text = new(app, "burn");
+            int selected = -1;
+            float distance = float.MaxValue;
+
+            void Consider(int choice, string line, int y)
+            {
+                if (string.IsNullOrEmpty(line))
+                    return;
+                Rect bounds = TouchHitTest.Expand(
+                    new Rect(55, y, fontText.GetWidth(line), 10),
+                    TouchHitTest.MinimumSize);
+                float candidateDistance = (bounds.Center - position).Length;
+                if (bounds.PointInside(position) && candidateDistance < distance)
+                {
+                    selected = choice;
+                    distance = candidateDistance;
+                }
+            }
+
+            if (dialogmode == 0)
+                Consider(0, text[499], 85);
+            else if (dialogmode == 1)
+                for (int i = 0; i < conversation.Choices.Length; i++)
+                    Consider(i, conversation.Choices[i].Text, 63 + 11 * i);
+
+            return selected;
+        }
+
         void ResetFocus()
         {
-            focusChoiceIndex = openedInMouseMode && !directionalFocusActive
+            touchPressedChoice = -1;
+            touchActivationChoice = -1;
+            touchReleasePending = false;
+            focusChoiceIndex = app.LastInputMode == InputMode.Touch
+                ? -1
+                : openedInMouseMode && !directionalFocusActive
                 ? ChoiceAt(lastMousePosition)
                 : dialogmode == 0 ? 0 : FirstVisibleChoice();
         }

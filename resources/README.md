@@ -4,7 +4,6 @@ Burntime is a remaster and expansion of Max Design's 1993 strategy game 'Burntim
 It recreates the original game with remastered graphics and modern platform support, while also adding new and expanded gameplay.
 
 - [Project on GitHub](https://github.com/jakobharder/burntime)
-- [Burntime.org Forum](http://www.burntime.org)
 
 ## Get Latest Version
 

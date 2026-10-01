@@ -62,8 +62,4 @@ MonoGame, NVorbis and StbImageSharp
 Pixel-art scaling: xBR-lv2 by Hyllian
 Input glyphs adapted from Kenney's Input Prompts (CC0).
 See the bundled third-party notices for license details.
-
-#COMMUNITY
-github.com/jakobharder/burntime
-burntime.org
 }#

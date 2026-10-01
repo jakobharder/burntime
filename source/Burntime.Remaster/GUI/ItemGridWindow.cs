@@ -26,6 +26,7 @@ namespace Burntime.Remaster.GUI
         int focusIndex = -1;
         Vector2? lastFocusPosition;
         public bool FocusVisible { get; set; }
+        public bool ActivateOnFirstTouch { get; set; }
         public PixelColor? BackgroundColor { get; set; }
         public event Action<ItemGridWindow> MouseFocusChanged;
         public event Action<ItemGridWindow, Vector2> FocusEmptied;
@@ -159,12 +160,13 @@ namespace Burntime.Remaster.GUI
             }
 
             bool showUIHints = app is not BurntimeClassic classic || classic.ShowUIHints;
-            if ((FocusVisible || showUIHints && mouseFocusActive) &&
+            bool touchFocus = app.LastInputMode == InputMode.Touch && mouseFocusActive;
+            if ((touchFocus || FocusVisible || showUIHints && mouseFocusActive) &&
                 IsValidFocusIndex(focusIndex))
             {
                 Target.Layer += 5;
                 Vector2 itemPosition = itemWindows[focusIndex].Position;
-                if (showUIHints)
+                if (showUIHints || touchFocus)
                     Target.DrawSprite(itemPosition, focusSprite);
                 else
                 {
@@ -229,9 +231,16 @@ namespace Burntime.Remaster.GUI
         public override void OnMouseLeave()
         {
             mouseHasLeft = true;
-            ClearMouseFocus();
+            // Touch focus is a persistent selection rather than transient hover.
+            // Keep it while a modal temporarily takes input so the tooltip can
+            // return when the modal closes.
+            if (ShouldClearFocusOnPointerLeave(app.LastInputMode))
+                ClearMouseFocus();
             base.OnMouseLeave();
         }
+
+        internal static bool ShouldClearFocusOnPointerLeave(InputMode inputMode) =>
+            inputMode != InputMode.Touch;
 
         void ClearMouseFocus()
         {
@@ -240,9 +249,9 @@ namespace Burntime.Remaster.GUI
             mouseFocusHideRemaining = 0;
         }
 
-        internal void FocusFromMouseClick(int index)
+        internal void FocusItem(int index)
         {
-            if (!UnifiedSelection || !IsValidFocusIndex(index))
+            if ((!UnifiedSelection && app.LastInputMode != InputMode.Touch) || !IsValidFocusIndex(index))
                 return;
 
             mouseFocusActive = true;
@@ -251,6 +260,19 @@ namespace Burntime.Remaster.GUI
             focusIndex = index;
             MouseFocusChanged?.Invoke(this);
         }
+
+        internal bool FocusItem(ItemWindow item)
+        {
+            bool wasFocused = IsFocused(item);
+            FocusItem(Array.IndexOf(itemWindows, item));
+            return wasFocused;
+        }
+
+        internal bool IsFocused(ItemWindow item) =>
+            IsValidFocusIndex(focusIndex) && ReferenceEquals(itemWindows[focusIndex], item);
+
+        internal bool IsTouchFocused(ItemWindow item) =>
+            mouseFocusActive && IsFocused(item);
 
         public void ResetFocus()
         {
@@ -406,6 +428,7 @@ namespace Burntime.Remaster.GUI
 
         public Item? FocusedItem => app.LastInputMode switch
         {
+            InputMode.Touch when mouseFocusActive => FocusedItemAtIndex,
             InputMode.Mouse when mouseFocusActive => FocusedItemAtIndex,
             InputMode.Keyboard or InputMode.Gamepad when FocusVisible =>
                 FocusedItemAtIndex,

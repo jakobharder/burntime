@@ -191,6 +191,66 @@ public class Window
     }
 
     // internal message handling
+    public virtual int MinimumTouchTargetSize => 0;
+    public virtual bool IsTouchTarget => false;
+
+    internal virtual Window? FindTouchTarget(Vector2 screenPosition) =>
+        visible && IsTouchTarget && TouchHitTest.Expand(TouchHitTest.Bounds(this), MinimumTouchTargetSize).PointInside(screenPosition)
+            ? this : null;
+
+    // A scene can consume a tap before any child acts (for example, switching sides).
+    public virtual bool OnTouchTap(Vector2 position) => false;
+
+    internal virtual bool TouchPress(Vector2 position)
+    {
+        if (!visible || !Boundings.PointInside(position)) return false;
+        OnTouchPress(position - Position);
+        return true;
+    }
+
+    public virtual void OnTouchPress(Vector2 position) { }
+
+    internal virtual void TouchRelease(Vector2 position, bool cancelled) =>
+        OnTouchRelease(position - Position, cancelled);
+
+    public virtual void OnTouchRelease(Vector2 position, bool cancelled) { }
+
+    internal virtual bool TouchLongPress(Vector2 position) =>
+        visible && Boundings.PointInside(position) && OnTouchLongPress(position - Position);
+
+    public virtual bool OnTouchLongPress(Vector2 position) => false;
+    public virtual bool ContinuesTouchHold => false;
+    public virtual void OnTouchHoldMove(Vector2 position) { }
+    public virtual void OnTouchHoldEnd(Vector2 position, bool cancelled) { }
+
+    internal virtual bool TouchDrag(Vector2 origin, Vector2 delta)
+    {
+        if (!visible || !Boundings.PointInside(origin)) return false;
+        OnTouchDrag(delta);
+        return true;
+    }
+
+    public virtual void OnTouchDrag(Vector2 delta) { }
+
+    internal virtual bool TouchDragEnd(Vector2 origin, Vector2 delta, Vector2f velocity)
+    {
+        if (!visible || !Boundings.PointInside(origin)) return false;
+        if (delta != Vector2.Zero)
+            OnTouchDrag(delta);
+        OnTouchDragEnd(velocity);
+        return true;
+    }
+
+    public virtual void OnTouchDragEnd(Vector2f velocity) { }
+
+    // Scrollable containers get first refusal before their buttons consume a drag.
+    public virtual bool OnTouchScroll(Vector2 position, Vector2 delta) => false;
+
+    // Called when a scrollable container consumed the final drag delta. This is
+    // separate from OnTouchDragEnd because the original touch target may be one
+    // of the container's child controls.
+    public virtual void OnTouchScrollEnd(Vector2 position, Vector2f velocity) { }
+
     internal virtual bool MouseClick(Vector2 position, MouseButton button)
     {
         if (!visible)

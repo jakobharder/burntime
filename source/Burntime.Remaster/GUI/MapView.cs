@@ -139,10 +139,13 @@ public class MapView : Window
 
     public int ActiveEntrance
     {
-        get { return entrance; }
+        get => HoveredObject is EntranceObject entrance ? entrance.Number : -1;
+        set => HoveredObject = map != null && value >= 0 && value < map.Entrances.Length
+            ? new EntranceObject(map.Entrances[value], value)
+            : null;
     }
 
-    public IMapObject HoveredObject { get; private set; }
+    public IMapObject? HoveredObject { get; set; }
 
     public override void OnRender(RenderTarget Target)
     {
@@ -210,6 +213,8 @@ public class MapView : Window
 
         foreach (Maps.IMapViewOverlay overlay in overlays)
         {
+            if (!overlay.IsVisible)
+                continue;
             Target.Layer++;
             overlay.RenderOverlay(Target, offset, Size);
         }
@@ -251,17 +256,7 @@ public class MapView : Window
                 border = Vector2f.Zero;
         }
 
-        bool found = false;
-        for (int i = 0; i < map.Entrances.Length; i++)
-        {
-            if (map.Entrances[i].Area.PointInside(position - (Vector2)this._position))
-            {
-                entrance = i;
-                found = true;
-            }
-        }
-        if (!found)
-            entrance = -1;
+        entrance = HitTestEntrance(position);
 
         mousePosition = position - ScrollPosition;
 
@@ -295,6 +290,8 @@ public class MapView : Window
     public override void OnActivate()
     {
         _rightClickMove = null;
+        _touchPanVelocity = Vector2f.Zero;
+        _suppressTouchAction = false;
 
         base.OnActivate();
     }
@@ -319,6 +316,8 @@ public class MapView : Window
         if (!Boundings.PointInside(position + Position))
             return false;
 
+        entrance = HitTestEntrance(position);
+
         if (entrance != -1 && handler != null)
             if (handler.OnClickEntrance(entrance, button))
                 return true;
@@ -326,6 +325,8 @@ public class MapView : Window
         IMapObject mostTopObj = null;
         foreach (Maps.IMapViewOverlay overlay in overlays)
         {
+            if (!overlay.IsVisible)
+                continue;
             IMapObject obj = overlay.GetObjectAt(position - ScrollPosition);
             if (obj != null)
                 mostTopObj = obj;
@@ -347,7 +348,93 @@ public class MapView : Window
         return false;
     }
 
+    public Action<int>? TouchLocationSecondary { get; set; }
+
+    public int HitTestEntrance(Vector2 position)
+    {
+        for (int i = overlays.Count - 1; i >= 0; i--)
+        {
+            Maps.IMapViewOverlay overlay = overlays[i];
+            if (!overlay.IsVisible)
+                continue;
+
+            if (overlay is Maps.IMapViewEntranceOverlay entranceOverlay)
+            {
+                int entrance = entranceOverlay.HitTestEntrance(position,
+                    ScrollPosition, Size);
+                if (entrance >= 0)
+                    return entrance;
+            }
+        }
+
+        if (map != null)
+        {
+            for (int i = map.Entrances.Length - 1; i >= 0; i--)
+                if (map.Entrances[i].Area.PointInside(position - ScrollPosition))
+                    return i;
+        }
+
+        return -1;
+    }
+
+    public override bool OnTouchLongPress(Vector2 position)
+    {
+        if (_suppressTouchAction)
+        {
+            _suppressTouchAction = false;
+            return true;
+        }
+        if (!Enabled || TouchLocationSecondary == null) return false;
+        int entranceNumber = HitTestEntrance(position);
+        if (entranceNumber >= 0)
+        {
+            TouchLocationSecondary(entranceNumber);
+            return true;
+        }
+        return false;
+    }
+
     float _moveTotal;
+    Vector2f _touchPanVelocity;
+    bool _suppressTouchAction;
+    const float TouchPanMaximumSpeed = 500;
+    const float TouchPanStopSpeed = 4;
+    const float TouchPanHalfLife = 0.15f;
+
+    public override void OnTouchDrag(Vector2 delta)
+    {
+        if (!Enabled) return;
+        _suppressTouchAction = false;
+        _touchPanVelocity = Vector2f.Zero;
+        _position += (Vector2f)delta;
+        ConstrainPosition();
+        Scroll?.Invoke(this, new MapScrollArgs(_position));
+    }
+
+    public override void OnTouchDragEnd(Vector2f velocity)
+    {
+        if (!Enabled) return;
+        if (velocity.Length > TouchPanMaximumSpeed)
+        {
+            velocity.Normalize();
+            velocity *= TouchPanMaximumSpeed;
+        }
+        _touchPanVelocity = velocity;
+    }
+
+    public override void OnTouchPress(Vector2 position)
+    {
+        _suppressTouchAction = _touchPanVelocity != Vector2f.Zero;
+        _touchPanVelocity = Vector2f.Zero;
+    }
+
+    public override bool OnTouchTap(Vector2 position)
+    {
+        if (!_suppressTouchAction) return false;
+        _suppressTouchAction = false;
+        return true;
+    }
+
     Vector2? _rightClickMove = null;
     public override bool OnMouseDown(Vector2 position, MouseButton button)
     {
@@ -381,6 +468,26 @@ public class MapView : Window
             }
         }
 
+        if (cameraPanInputDown)
+            _touchPanVelocity = Vector2f.Zero;
+
+        if (_touchPanVelocity != Vector2f.Zero)
+        {
+            Vector2f proposedPosition = _position + _touchPanVelocity * Elapsed;
+            _position = proposedPosition;
+            ConstrainPosition();
+            if (_position.x != proposedPosition.x)
+                _touchPanVelocity.x = 0;
+            if (_position.y != proposedPosition.y)
+                _touchPanVelocity.y = 0;
+
+            float decay = (float)System.Math.Pow(0.5, Elapsed / TouchPanHalfLife);
+            _touchPanVelocity *= decay;
+            if (_touchPanVelocity.Length < TouchPanStopSpeed)
+                _touchPanVelocity = Vector2f.Zero;
+            positionChanged = true;
+        }
+
         if (mouseInputVisible && !cameraPanInputDown &&
             !_rightClickMove.HasValue && border != Vector2f.Zero)
         {
@@ -395,12 +502,16 @@ public class MapView : Window
         if (handler != null)
         {
             ClassicGame game = app.GameState as ClassicGame;
-            HoveredObject = null;
+            if (mouseInputVisible)
+                HoveredObject = null;
             game.World.ActiveLocationObj.Hover = null;
             game.World.ActiveLocationObj.HoverCharacter = null;
 
             foreach (Maps.IMapViewOverlay overlay in overlays)
             {
+                if (!overlay.IsVisible)
+                    continue;
+
                 if (mouseInputVisible)
                 {
                     overlay.MouseMoveOverlay(mousePosition);
@@ -412,21 +523,26 @@ public class MapView : Window
             }
 
             if (mouseInputVisible && entrance != -1)
+                HoveredObject = new EntranceObject(map.Entrances[entrance], entrance);
+
+            int activeEntrance = ActiveEntrance;
+            if (activeEntrance != -1)
             {
+                PixelColor entranceColor = ClassicColors.LightGray;
                 if (game.MainMapView)
                 {
-                    Burntime.Data.BurnGfx.MapEntrance e = game.World.Map.Entrances[entrance];
-                    game.World.ActiveLocationObj.Hover = new MapViewHoverInfo(app.ResourceManager.GetString(e.TitleId), e.Area.Center, ClassicColors.LightGray)
+                    Burntime.Data.BurnGfx.MapEntrance e = game.World.Map.Entrances[activeEntrance];
+                    game.World.ActiveLocationObj.Hover = new MapViewHoverInfo(app.ResourceManager.GetString(e.TitleId), e.Area.Center, entranceColor)
                     {
-                        WorldLocation = game.World.Locations[entrance]
+                        WorldLocation = game.World.Locations[activeEntrance]
                     };
                 }
-                else if (entrance < game.World.ActiveLocationObj.Rooms.Count)
+                else if (activeEntrance < game.World.ActiveLocationObj.Rooms.Count)
                 {
                     Location location = game.World.ActiveLocationObj;
                     game.World.ActiveLocationObj.Hover = location.AreEntrancesBlockedFor(game.World.ActivePlayerObj)
-                        ? new MapViewHoverInfo(app.ResourceManager.GetString("newburn?103"), location.Map.Entrances[entrance].Area.Center, ClassicColors.LightGray, location.Rooms[entrance])
-                        : new MapViewHoverInfo(location.Rooms[entrance], app.ResourceManager, ClassicColors.LightGray);
+                        ? new MapViewHoverInfo(app.ResourceManager.GetString("newburn?103"), location.Map.Entrances[activeEntrance].Area.Center, entranceColor, location.Rooms[activeEntrance])
+                        : new MapViewHoverInfo(location.Rooms[activeEntrance], app.ResourceManager, entranceColor);
                 }
             }
         }
@@ -436,6 +552,7 @@ public class MapView : Window
 
     public void CenterTo(Vector2 centerTo)
     {
+        _touchPanVelocity = Vector2f.Zero;
         _position = -centerTo + (Boundings.Size / 2);
         ConstrainPosition();
         Scroll?.Invoke(this, new MapScrollArgs(_position));
@@ -495,6 +612,7 @@ public class MapView : Window
         if (map is null)
             return;
 
+        _touchPanVelocity = Vector2f.Zero;
         _position -= (Vector2f)direction * elapsed * scrollSpeed;
         ConstrainPosition();
         Scroll?.Invoke(this, new MapScrollArgs(_position));

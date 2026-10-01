@@ -83,13 +83,17 @@ namespace Burntime.Remaster.Scenes
             dialog.Hide();
             dialog.Layer += 55;
             dialog.WindowHide += new EventHandler(dialog_WindowHide);
+            dialog.WindowShow += (_, _) => itemTooltip.Window.Hide();
 
             Windows += new InputPromptOverlay(app, Prompts,
                 InputPromptColorScheme.Hud);
             Prompts.SuppressWhen(() => dialog.IsVisible);
             exitButton.Prompts.Add(InputAction.Back, "",
                 new Vector2(exitButton.Size.x + 2, -2));
-            Prompts.Add(InputPattern.HorizontalPaging, "@prompts?30",
+            Prompts.Add(new InputPrompt(InputPattern.HorizontalPaging, "@prompts?30")
+            {
+                TouchPattern = InputPattern.VerticalPaging
+            },
                 () => inventory.PageCount > 1);
         }
 

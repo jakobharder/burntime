@@ -39,7 +39,12 @@ internal class OptionsGiveUpPage : Container
             IsTextOnly = true
         };
 
-        _buttons = new[] { _buttonRestart, _buttonQuit };
+        if (OperatingSystem.IsIOS())
+        {
+            _buttonQuit.Hide();
+            _buttons = new[] { _buttonRestart };
+        }
+        else _buttons = new[] { _buttonRestart, _buttonQuit };
     }
 
     public void SetKeyboardActive(bool active, bool resetFocus = false)
@@ -60,7 +65,7 @@ internal class OptionsGiveUpPage : Container
 
     void UpdateFocus()
     {
-        bool keyboardFocus = HasFocus && app.LastInputMode != InputMode.Mouse;
+        bool keyboardFocus = HasFocus && app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad;
         if (HasFocus && !keyboardFocus)
             _focusIndex = Array.FindIndex(_buttons, button => button.IsEnabled && button.IsHover);
 

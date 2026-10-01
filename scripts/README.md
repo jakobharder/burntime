@@ -36,6 +36,34 @@ scripts/ai-simulate.sh --load-save old.sav --turns 25 --save-at-end continued.sa
 
 ## Tests
 
+### Location-map soak test
+
+Run the real rendered location scene with accelerated deterministic activity:
+
+```sh
+scripts/location-soak.sh artifacts/location-soak/seed-101 --minutes=60 --seed=101 --speed=64
+```
+
+The fixture cycles mouse, keyboard, gamepad, and touch behavior while moving a
+player group and repeatedly initiating combat against dogs, mutants, traders,
+and human NPCs. It writes `report.txt`, `resources.log`, and `error.txt` on
+failure. Seeds are reproducible. `--speed` controls simulation steps per rendered
+frame (1-64); lower values more closely reproduce real-time rendering cadence.
+
+### Cross-scene UI soak test
+
+Fuzz ordinary scenes and item interfaces without gameplay-value assertions:
+
+```sh
+scripts/ui-soak.sh artifacts/ui-soak/seed-101 --minutes=30 --seed=101 --speed=32
+```
+
+This runner discovers selectable item types and visible controls at runtime,
+then cycles semantic keyboard/gamepad actions, mouse hover/clicks, and touch
+gestures across location, map, inventory, room, trader, service, information,
+statistics, and options scenes. Content changes do not require expected-value
+updates. A failure writes the exception and the last 256 actions to `error.txt`.
+
 ### Save-game compatibility
 
 Place historical save fixtures below `tests/savegames`, grouped by release, and run:

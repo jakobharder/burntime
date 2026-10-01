@@ -13,6 +13,7 @@ public sealed class MusicPlayback : IMusic
 
     const float TransitionStep = 0.1f;
     const int TransitionInterval = 20;
+    static readonly TimeSpan StopTimeout = TimeSpan.FromSeconds(5);
 
     readonly List<string> _playlist = new();
     readonly List<string> _mapPlaylist = new();
@@ -38,7 +39,27 @@ public sealed class MusicPlayback : IMusic
     PlaybackRequest? _pendingRequest;
     float _transitionVolume = 1;
     Thread? _musicThread;
-    bool _requestStop;
+    bool _suspended;
+
+    public void SetSuspended(bool suspended)
+    {
+        lock (this)
+        {
+            if (_suspended == suspended) return;
+            _suspended = suspended;
+            if (suspended)
+            {
+                _music?.Pause();
+                foreach (var sound in _sounds) sound.Pause();
+            }
+            else
+            {
+                _music?.Resume();
+                foreach (var sound in _sounds) sound.Resume();
+            }
+        }
+    }
+    volatile bool _requestStop;
 
     public bool Enabled { get; set; }
     public string? Playing { get; private set; }
@@ -474,17 +495,27 @@ public sealed class MusicPlayback : IMusic
     public void RunThread()
     {
         _requestStop = false;
-        _musicThread = new Thread(new ThreadStart(MusicThread));
+        _musicThread = new Thread(new ThreadStart(MusicThread))
+        {
+            IsBackground = true,
+            Name = "MusicPlayback"
+        };
         _musicThread.Start();
     }
 
     public void StopThread()
     {
-        if (_musicThread != null)
+        Thread? thread = _musicThread;
+        if (thread != null)
         {
             _requestStop = true;
-            _musicThread.Join();
-            _musicThread = null;
+            if (thread == Thread.CurrentThread || thread.Join(StopTimeout))
+                _musicThread = null;
+            else
+            {
+                Log.Warning("Timed out stopping the music thread.");
+                return;
+            }
         }
 
         lock (this)
@@ -615,6 +646,7 @@ public sealed class MusicPlayback : IMusic
 #warning THREADING lock playlist
             lock (this)
             {
+                if (_suspended) continue;
                 for (int i = _sounds.Count - 1; i >= 0; i--)
                 {
                     if (_sounds[i].IsPlaying)

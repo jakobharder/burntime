@@ -1,8 +1,11 @@
 ﻿# Burntime Changelog
 
-## [Unreleased]
+## 1.3-rc1 (2026-10-01)
 
+- Added touch controls and iPad support
 - Improved water source bar to show capacity and reserver above daily
+- Show name of clicked entrance or NPC
+- Improved info scene trap tooltip
 - Automatically select traps after camp creation
 - Fixed previous game leaking into a new game
 - Fixed cities allowing camp creation

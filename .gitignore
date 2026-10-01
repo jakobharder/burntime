@@ -6,6 +6,10 @@ source/packages/
 launchSettings.json
 .DS_Store
 artifacts/
+*.mobileprovision
+*.p12
+*.pfx
+*.certSigningRequest
 bindebug
 *~lock~
 __pycache__

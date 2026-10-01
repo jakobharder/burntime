@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-ios</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Burntime</AssemblyName>
+    <RootNamespace>Burntime</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <SupportedOSPlatformVersion>15.0</SupportedOSPlatformVersion>
+    <ApplicationId>org.burntime.remastered.dev</ApplicationId>
+    <AppIcon>AppIcon</AppIcon>
+    <!-- Personal-device prototype: retain the reflection-based game/save schema. -->
+    <TrimMode>copy</TrimMode>
+    <!-- AOT-compile assemblies; retain interpreter support for dynamic code. -->
+    <MtouchInterpreter>-all</MtouchInterpreter>
+    <!-- Keep personal-device rebuilds practical without LLVM's extra optimization pass. -->
+    <MtouchUseLlvm>false</MtouchUseLlvm>
+    <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
+    <CodesignKey Condition="'$(RuntimeIdentifier)' == 'ios-arm64'">Apple Development</CodesignKey>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GetBundleDisplayVersionCommand>sh &quot;$(MSBuildProjectDirectory)/get-bundle-version.sh&quot; display</GetBundleDisplayVersionCommand>
+    <GetBundleBuildVersionCommand>sh &quot;$(MSBuildProjectDirectory)/get-bundle-version.sh&quot; build</GetBundleBuildVersionCommand>
+  </PropertyGroup>
+  <Target Name="SetGitVersion" BeforeTargets="InitializeSourceControlInformation;_CompileAppManifestInputs">
+    <Exec Command="$(GetBundleDisplayVersionCommand)" ConsoleToMSBuild="True" IgnoreExitCode="False">
+      <Output PropertyName="ApplicationDisplayVersion" TaskParameter="ConsoleOutput" />
+    </Exec>
+    <Exec Command="$(GetBundleBuildVersionCommand)" ConsoleToMSBuild="True" IgnoreExitCode="False">
+      <Output PropertyName="ApplicationVersion" TaskParameter="ConsoleOutput" />
+    </Exec>
+    <PropertyGroup>
+      <Version>$(ApplicationDisplayVersion)</Version>
+    </PropertyGroup>
+  </Target>
+  <ItemGroup>
+    <TrimmerRootAssembly Include="Burntime" />
+    <TrimmerRootAssembly Include="Burntime.Game" />
+    <TrimmerRootAssembly Include="Burntime.Framework" />
+    <TrimmerRootAssembly Include="Burntime.Platform" />
+    <TrimmerRootAssembly Include="BurnGfx" />
+    <TrimmerRootAssembly Include="MonoGame.Framework" />
+    <PackageReference Include="MonoGame.Framework.iOS" Version="3.8.5" />
+    <PackageReference Include="NVorbis" Version="0.10.4" />
+    <PackageReference Include="System.Runtime.Serialization.Formatters" Version="10.0.10" />
+    <ProjectReference Include="../Burntime.Remaster/Burntime.Remaster.csproj" />
+    <ProjectReference Include="../Burntime.BurnGfx/Burntime.BurnGfx.csproj" />
+    <Compile Include="../Burntime.MonoGame/BurntimeGame.cs" Link="Engine/BurntimeGame.cs" />
+    <Compile Include="../Burntime.MonoGame/GameThread.cs" Link="Engine/GameThread.cs" />
+    <Compile Include="../Burntime.MonoGame/ForcedInputGlyphProvider.cs" Link="Engine/ForcedInputGlyphProvider.cs" />
+    <Compile Include="../Burntime.MonoGame/Music/**/*.cs" Link="Engine/Music/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="../Burntime.MonoGame/Graphics/**/*.cs" Link="Engine/Graphics/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="../Burntime.MonoGame/Resource/ResourceManager.cs" Link="Engine/ResourceManager.cs" />
+    <BundleResource Include="../../resources/game/**/*" LogicalName="game/%(RecursiveDir)%(Filename)%(Extension)" />
+    <BundleResource Include="../../resources/licenses/**/*" LogicalName="licenses/%(RecursiveDir)%(Filename)%(Extension)" />
+    <BundleResource Include="../../resources/*.txt" LogicalName="%(Filename)%(Extension)" />
+    <InterfaceDefinition Include="LaunchScreen.storyboard" />
+  </ItemGroup>
+</Project>

@@ -43,15 +43,11 @@ namespace Burntime
                 writer.WriteLine("trace:");
                 writer.Write(e.StackTrace);
                 writer.WriteLine();
-
-                writer.Flush();
-                writer.Close();
             };
 
             try
             {
-                if (Platform.Log.File is not null)
-                    log(Platform.Log.File, exception);
+                Platform.Log.Write(writer => log(writer, exception));
             }
             catch { }
 

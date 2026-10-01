@@ -94,8 +94,10 @@ namespace Burntime.Remaster.GUI
             _menuEntries.Clear();
         }
 
-        public void Show(Vector2 Position, Nullable<Rect> Boundings, bool openedByMouse = false)
+        public void Show(Vector2 Position, Nullable<Rect> Boundings, bool openedByMouse = false,
+            bool heldTouch = false)
         {
+            _heldTouch = heldTouch;
             _openedByMouse = openedByMouse;
             this.Position = Position;
             Size = new Vector2(MENU_WIDTH, 10 + MIDDLE_HEIGHT * _menuEntries.Count);
@@ -105,9 +107,15 @@ namespace Burntime.Remaster.GUI
                 MoveInside(Boundings.Value);
 
             _lastMousePosition = app.DeviceManager.Mouse.Position - PositionOnScreen;
-            _mouseSelectionEnabled = openedByMouse;
+            bool touchInput = app.LastInputMode == InputMode.Touch;
+            _mouseSelectionEnabled = openedByMouse && !touchInput;
             _mouseHasLeft = false;
-            _focusIndex = openedByMouse ? GetEntryAt(_lastMousePosition) : _menuEntries.Count > 0 ? 0 : -1;
+            _focusIndex = touchInput ? -1 : openedByMouse
+                ? GetEntryAt(_lastMousePosition)
+                : _menuEntries.Count > 0 ? 0 : -1;
+            _touchPressedIndex = -1;
+            _touchActivationIndex = -1;
+            _touchReleasePending = false;
 
             Show();
         }
@@ -117,6 +125,36 @@ namespace Burntime.Remaster.GUI
         bool _mouseSelectionEnabled;
         bool _mouseHasLeft;
         bool _openedByMouse;
+        int _touchPressedIndex = -1;
+        int _touchActivationIndex = -1;
+        bool _touchReleasePending;
+        bool _heldTouch;
+        public override bool ContinuesTouchHold => _heldTouch;
+
+        public override void OnTouchHoldMove(Vector2 position)
+        {
+            if (!_heldTouch) return;
+            _focusIndex = GetHeldEntryAt(position);
+        }
+
+        public override void OnTouchHoldEnd(Vector2 position, bool cancelled)
+        {
+            if (!_heldTouch) return;
+            _heldTouch = false;
+            int index = cancelled ? -1 : GetHeldEntryAt(position);
+            if (index >= 0)
+                Execute(index);
+            else
+                Hide();
+        }
+
+        int GetHeldEntryAt(Vector2 position)
+        {
+            if (position.x < 0 || position.x >= Size.x || position.y < TOP_HEIGHT)
+                return -1;
+            int index = (position.y - TOP_HEIGHT) / MIDDLE_HEIGHT;
+            return index < _menuEntries.Count ? index : -1;
+        }
 
         public override bool PreserveMouseModeForDirectionalInput => _openedByMouse;
 
@@ -135,11 +173,11 @@ namespace Burntime.Remaster.GUI
                 firstLineControl = InputControlDisplay.Resolve(app,
                     app.LastInputMode, FirstLineAction);
             }
-            InputMode shortcutInputMode = app.LastInputMode == InputMode.Gamepad
-                ? InputMode.Gamepad
-                : InputMode.Keyboard;
-            bool showShortcuts = app is not BurntimeClassic promptOwner ||
-                promptOwner.ShowUIHints;
+            InputMode shortcutInputMode = app.LastInputMode == InputMode.Mouse
+                ? InputMode.Keyboard
+                : app.LastInputMode;
+            bool showShortcuts = app.LastInputMode != InputMode.Touch &&
+                (app is not BurntimeClassic promptOwner || promptOwner.ShowUIHints);
 
             if (showShortcuts && _menuEntries.Exists(
                 entry => entry.Shortcut.Action != InputAction.None))
@@ -236,6 +274,7 @@ namespace Burntime.Remaster.GUI
 
         public override bool OnMouseMove(Vector2 Position)
         {
+            if (_heldTouch) return true;
             if (!_mouseHasLeft && (Position - _lastMousePosition).Length <= 1)
                 return true;
 
@@ -272,6 +311,14 @@ namespace Burntime.Remaster.GUI
 
         public override bool OnMouseClick(Vector2 Position, MouseButton Button)
         {
+            if (app.LastInputMode == InputMode.Touch)
+            {
+                _mouseSelectionEnabled = true;
+                _focusIndex = _touchReleasePending
+                    ? _touchActivationIndex
+                    : GetTouchEntryAt(Position);
+                _touchReleasePending = false;
+            }
             if (Boundings.PointInside(this.Position + Position))
             {
                 if (_focusIndex >= 0 && _focusIndex < _menuEntries.Count && Button == MouseButton.Left)
@@ -285,6 +332,44 @@ namespace Burntime.Remaster.GUI
                 Hide();
 
             return true;
+        }
+
+        public override void OnTouchPress(Vector2 position)
+        {
+            _touchPressedIndex = GetTouchEntryAt(position);
+            _touchActivationIndex = -1;
+            _touchReleasePending = false;
+            _focusIndex = _touchPressedIndex;
+        }
+
+        public override void OnTouchRelease(Vector2 position, bool cancelled)
+        {
+            int releasedIndex = cancelled ? -1 : GetTouchEntryAt(position);
+            _touchActivationIndex = releasedIndex == _touchPressedIndex
+                ? releasedIndex
+                : -1;
+            _touchReleasePending = !cancelled;
+            _focusIndex = _touchActivationIndex;
+            _touchPressedIndex = -1;
+        }
+
+        int GetTouchEntryAt(Vector2 position)
+        {
+            int selected = -1;
+            float distance = float.MaxValue;
+            for (int i = 0; i < _menuEntries.Count; i++)
+            {
+                int width = _defaultFont.GetWidth(_menuEntries[i].Text);
+                var bounds = new Rect(MENU_CONTENT_WIDTH / 2 - width / 2,
+                    TOP_HEIGHT + i * MIDDLE_HEIGHT, width, MIDDLE_HEIGHT);
+                float candidateDistance = (bounds.Center - position).Length;
+                if (TouchHitTest.Expand(bounds, TouchHitTest.MinimumSize).PointInside(position) && candidateDistance < distance)
+                {
+                    selected = i;
+                    distance = candidateDistance;
+                }
+            }
+            return selected;
         }
 
         public override bool OnInputAction(InputAction action)

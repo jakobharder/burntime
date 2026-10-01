@@ -46,6 +46,7 @@ public class Toggle : Button
 
     public override bool OnMouseClick(Platform.Vector2 Position, Platform.MouseButton Button)
     {
+        if (Button != Platform.MouseButton.Left) return true;
         NextState();
         return true;
     }

@@ -7,8 +7,9 @@ namespace Burntime.MonoGame;
 
 internal class GameThread
 {
+    static readonly TimeSpan StopTimeout = TimeSpan.FromSeconds(5);
     readonly ManualResetEventSlim _stopRequested = new(false);
-    Thread _renderThread;
+    Thread? _renderThread;
     string _threadName;
     int _framesPerSecond;
     Action<GameTime> _call;
@@ -29,12 +30,15 @@ internal class GameThread
 
     public void Stop()
     {
-        if (_renderThread is null)
+        Thread? thread = _renderThread;
+        if (thread is null)
             return;
 
         _stopRequested.Set();
-        _renderThread.Join();
-        _renderThread = null;
+        if (thread == Thread.CurrentThread || thread.Join(StopTimeout))
+            _renderThread = null;
+        else
+            Log.Warning($"Timed out stopping {thread.Name ?? "game thread"}.");
     }
 
     void WorkerThread()

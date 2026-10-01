@@ -86,7 +86,7 @@ internal class OptionsSavesPage : Container
     readonly Button _delete;
     readonly Button _hintText;
 
-    int VisibleSaveCount => app.IsNewGfx ? 7 : 6;
+    int VisibleSaveCount => app.SmallDeviceUi ? 6 : app.IsNewGfx ? 7 : 6;
     const int LIST_X = 38;
     const int LIST_Y = 58;
     // The action strip spans x=40..160. Rows begin at x=38, so 122 reaches
@@ -125,12 +125,15 @@ internal class OptionsSavesPage : Container
     public OptionsSavesPage(Module app, OptionFonts fonts) : base(app)
     {
         _fonts = fonts;
+        string rowFontName = app.SmallDeviceUi
+            ? BurntimeClassic.FontName
+            : "font-small.txt";
         _rowFonts = new OptionFonts
         {
-            Disabled = new GuiFont("font-small.txt", ClassicColors.OptionsDisabled) { Borders = TextBorders.None },
-            Green = new GuiFont("font-small.txt", ClassicColors.OptionsGreen) { Borders = TextBorders.None },
-            Blue = new GuiFont("font-small.txt", ClassicColors.OptionsBlueHover) { Borders = TextBorders.None },
-            Orange = new GuiFont("font-small.txt", ClassicColors.OptionsRedHover) { Borders = TextBorders.None }
+            Disabled = new GuiFont(rowFontName, ClassicColors.OptionsDisabled) { Borders = TextBorders.None },
+            Green = new GuiFont(rowFontName, ClassicColors.OptionsGreen) { Borders = TextBorders.None },
+            Blue = new GuiFont(rowFontName, ClassicColors.OptionsBlueHover) { Borders = TextBorders.None },
+            Orange = new GuiFont(rowFontName, ClassicColors.OptionsRedHover) { Borders = TextBorders.None }
         };
         _saveRows = new SaveRowButton[7];
         Size = new Vector2(320, 200);
@@ -246,9 +249,52 @@ internal class OptionsSavesPage : Container
         return true;
     }
 
+    float _touchScrollPixels;
+    readonly KineticScroll _touchMomentum = new();
+    public override bool OnTouchScroll(Vector2 position, Vector2 delta)
+    {
+        if (!new Rect(LIST_X, LIST_Y, LIST_WIDTH + SCROLLBAR_WIDTH + 2,
+                VisibleSaveCount * RowHeight).PointInside(position))
+            return false;
+        _touchMomentum.Stop();
+        ApplyTouchScroll(-delta.y);
+        return true;
+    }
+
+    public override void OnTouchScrollEnd(Vector2 position, Vector2f velocity) =>
+        _touchMomentum.Release(-velocity.y);
+
+    public override void OnTouchPress(Vector2 position)
+    {
+        if (new Rect(LIST_X, LIST_Y, LIST_WIDTH + SCROLLBAR_WIDTH + 2,
+                VisibleSaveCount * RowHeight).PointInside(position))
+            _touchMomentum.Stop();
+    }
+
+    void ApplyTouchScroll(float pixels)
+    {
+        _touchScrollPixels += pixels;
+        int rowHeight = System.Math.Max(1, RowHeight);
+        int rows = (int)(_touchScrollPixels / rowHeight);
+        if (rows == 0)
+            return;
+
+        _touchScrollPixels -= rows * rowHeight;
+        if (!ScrollList(rows))
+        {
+            _touchScrollPixels = 0;
+            _touchMomentum.Stop();
+        }
+    }
+
     public void SetKeyboardActive(bool active, bool resetFocus = false)
     {
         HasFocus = active;
+        if (!active || resetFocus)
+        {
+            _touchMomentum.Stop();
+            _touchScrollPixels = 0;
+        }
         if (resetFocus)
         {
             _keyboardArea = KeyboardArea.Slots;
@@ -262,7 +308,7 @@ internal class OptionsSavesPage : Container
 
     void UpdateKeyboardFocus()
     {
-        bool keyboardFocus = HasFocus && app.LastInputMode != InputMode.Mouse;
+        bool keyboardFocus = HasFocus && app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad;
         for (int i = 0; i < _saveRows.Length; i++)
         {
             int entryIndex = _scrollOffset + i;
@@ -447,6 +493,7 @@ internal class OptionsSavesPage : Container
 
     public override void OnUpdate(float elapsed)
     {
+        ApplyTouchScroll(_touchMomentum.Update(elapsed));
         RefreshRowLayout();
         UpdateMetadataPreload();
         UpdateKeyboardFocus();
@@ -461,7 +508,7 @@ internal class OptionsSavesPage : Container
             _keyboardArea = hoveredAction >= 0 ? KeyboardArea.Actions : KeyboardArea.Slots;
         }
 
-        bool keyboardPreview = app.LastInputMode != InputMode.Mouse && HasFocus &&
+        bool keyboardPreview = app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad && HasFocus &&
             _keyboardArea == KeyboardArea.Slots;
         int previewEntry = hoveredEntry >= 0
             ? hoveredEntry
@@ -754,7 +801,7 @@ internal class OptionsSavesPage : Container
         if (focusedFile is not null)
             _saveFocusIndex = FindEntry(focusedFile);
 
-        if (HasFocus && app.LastInputMode != InputMode.Mouse)
+        if (HasFocus && app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad)
             EnsureFocusVisible();
         else
             _scrollOffset = System.Math.Clamp(scrollOffset, 0,

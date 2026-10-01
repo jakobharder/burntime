@@ -24,7 +24,7 @@ It recreates the original game with remastered graphics and modern platform supp
 ## Notes
 
 - Recent changes: [Changelog.md](./resources/Changelog.md)
-- Issues &amp; requests: [GitHub issues](https://github.com/jakobharder/burntime/issues) or [Burntime.org (German forum)](https://www.burntime.org/forum/viewtopic.php?t=323)
+- Issues &amp; requests: [GitHub issues](https://github.com/jakobharder/burntime/issues) or [Steam Community](https://steamcommunity.com/app/3269080/discussions/)
 
 ## Development
 

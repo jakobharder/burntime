@@ -13,6 +13,7 @@ namespace Burntime.Remaster
 {
     public abstract class IMapGuiWindow : Container
     {
+        public Action? OpenInventory { get; set; }
         public IMapGuiWindow(Module App)
             : base(App)
         {
@@ -65,7 +66,8 @@ namespace Burntime.Remaster
             {
                 Position = new Vector2(Size.x / 2 - 31, Size.y - 56),
                 FaceID = 0,
-                DisplayOnly = true
+                DisplayOnly = true,
+                TouchAction = () => OpenInventory?.Invoke()
             };
             _playerFace.Layer++;
         }
@@ -82,16 +84,20 @@ namespace Burntime.Remaster
 
         public override void SetMapRenderArea(MapView mapView, Vector2 size)
         {
-            mapView.SetViewport(new Vector2(16, 0),
-                new Vector2(size.x - 32, size.y - 40));
+            int sideMargin = OperatingSystem.IsIOS() ? 0 : 16;
+            mapView.SetViewport(new Vector2(sideMargin, 0),
+                new Vector2(size.x - sideMargin * 2, size.y - 40));
         }
 
         public override void OnRender(RenderTarget Target)
         {
             base.OnRender(Target);
 
-            Target.RenderRect(new Vector2(0, 0), new Vector2(16, Size.y - 40), new PixelColor(0, 0, 0));
-            Target.RenderRect(new Vector2(Size.x - 16, 0), new Vector2(17, Size.y - 40), new PixelColor(0, 0, 0));
+            if (!OperatingSystem.IsIOS())
+            {
+                Target.RenderRect(new Vector2(0, 0), new Vector2(16, Size.y - 40), new PixelColor(0, 0, 0));
+                Target.RenderRect(new Vector2(Size.x - 16, 0), new Vector2(17, Size.y - 40), new PixelColor(0, 0, 0));
+            }
             Target.RenderRect(new Vector2(0, Size.y - 40), new Vector2(Size.x + 1, 41), new PixelColor(0, 0, 0));
 
             Target.Layer++;

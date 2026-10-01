@@ -17,4 +17,9 @@ namespace Burntime.Remaster.Maps
         bool IsVisible { get; set; }
         IMapObject GetObjectAt(Vector2 position);
     }
+
+    public interface IMapViewEntranceOverlay
+    {
+        int HitTestEntrance(Vector2 position, Vector2 offset, Vector2 size);
+    }
 }

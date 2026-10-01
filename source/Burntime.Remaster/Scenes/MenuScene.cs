@@ -55,6 +55,10 @@ public class MenuScene : Scene
     readonly TooltipWindow _gameModeTooltip;
     readonly TooltipWindow _difficultyTooltip;
     readonly GuiFont _setupTooltipFont;
+    SetupSelection? _touchTooltipSelection;
+    bool _touchTooltipHeld;
+    float _touchTooltipRemaining;
+    const float TouchTooltipDuration = 4f;
     Burntime.Platform.IO.ConfigFile conversionTable;
     readonly string[] _playerNames;
 
@@ -185,6 +189,7 @@ public class MenuScene : Scene
             Prompts = { { InputAction.Primary, "@prompts?4" } }
         };
         Windows += _exitButton;
+        if (OperatingSystem.IsIOS()) _exitButton.Hide();
 
         Windows += new InputPromptOverlay(app, Prompts,
             InputPromptColorScheme.Default);
@@ -299,6 +304,10 @@ public class MenuScene : Scene
         };
         _aiTooltip.Hide();
 
+        BindTouchSetupTooltip(Difficulty, SetupSelection.Difficulty);
+        BindTouchSetupTooltip(GameMode, SetupSelection.GameMode);
+        BindTouchSetupTooltip(AiPlayers, SetupSelection.AiPlayers);
+
     }
 
     NameWindow CreatePlayer(int player, Vector2 position, Action command)
@@ -319,7 +328,8 @@ public class MenuScene : Scene
             Table = conversionTable
         };
 
-        playerSwitch.Prompts.Add(InputPattern.HorizontalPaging, "@prompts?0", IsEnabled);
+        playerSwitch.Prompts.Add(InputPattern.HorizontalPaging, "@prompts?0",
+            () => IsEnabled() && app.LastInputMode != InputMode.Touch);
         playerSwitch.Prompts.Add(new InputPrompt(InputAction.Secondary, "@prompts?1")
         {
             KeyboardPattern = InputPattern.VerticalPaging,
@@ -534,6 +544,14 @@ public class MenuScene : Scene
         return base.OnMouseDown(position, button);
     }
 
+    public override void OnTouchPress(Vector2 position)
+    {
+        // A setup toggle will establish a new preview after the scene receives
+        // this notification. Any other touch simply dismisses the old preview.
+        DismissTouchSetupTooltip();
+        base.OnTouchPress(position);
+    }
+
     public override InputAction ResolveInputAction(InputAction action) =>
         action == InputAction.Options ? action : base.ResolveInputAction(action);
 
@@ -644,7 +662,7 @@ public class MenuScene : Scene
 
     void UpdateSetupSelection()
     {
-        bool showSelection = app.LastInputMode != InputMode.Mouse;
+        bool showSelection = app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad;
         PlayerOneSwitch.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.Player && _currentPlayer == 0;
         PlayerTwoSwitch.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.Player && _currentPlayer == 1;
         _loadButton.IsKeyboardSelected = showSelection && _setupSelection == SetupSelection.Load;
@@ -684,6 +702,7 @@ public class MenuScene : Scene
     public override void OnUpdate(float elapsed)
     {
         UpdateSetupSelection();
+        UpdateTouchSetupTooltip(elapsed);
         bool showUIHints = app is not BurntimeClassic classic || classic.ShowUIHints;
         GuiFont? legacyTooltipFont = showUIHints ? null : _setupTooltipFont;
         Difficulty.ToolTipFont = legacyTooltipFont;
@@ -703,7 +722,8 @@ public class MenuScene : Scene
 
     void UpdateDifficultyTooltip()
     {
-        bool show = Difficulty.IsHover || Difficulty.IsKeyboardSelected;
+        bool show = ShouldShowSetupTooltip(Difficulty,
+            SetupSelection.Difficulty);
         if (!show)
         {
             if (_difficultyTooltip.IsVisible)
@@ -716,7 +736,8 @@ public class MenuScene : Scene
 
     void UpdateGameModeTooltip()
     {
-        bool show = GameMode.IsHover || GameMode.IsKeyboardSelected;
+        bool show = ShouldShowSetupTooltip(GameMode,
+            SetupSelection.GameMode);
         if (!show)
         {
             if (_gameModeTooltip.IsVisible)
@@ -729,7 +750,8 @@ public class MenuScene : Scene
 
     void UpdateAiTooltip()
     {
-        bool show = AiPlayers.IsHover || AiPlayers.IsKeyboardSelected;
+        bool show = ShouldShowSetupTooltip(AiPlayers,
+            SetupSelection.AiPlayers);
         if (!show)
         {
             _aiTooltip.Hide();
@@ -743,6 +765,61 @@ public class MenuScene : Scene
             _ => 0
         };
         SetSetupTooltip(_aiTooltip, section);
+    }
+
+    bool ShouldShowSetupTooltip(Button button, SetupSelection selection) =>
+        app.LastInputMode == InputMode.Touch
+            ? _touchTooltipSelection == selection
+            : button.IsHover || button.IsKeyboardSelected;
+
+    void BindTouchSetupTooltip(Button button, SetupSelection selection)
+    {
+        button.TouchPressed += () =>
+        {
+            _touchTooltipSelection = selection;
+            _touchTooltipHeld = true;
+            _touchTooltipRemaining = TouchTooltipDuration;
+        };
+        button.TouchReleased += cancelled =>
+        {
+            if (_touchTooltipSelection != selection)
+                return;
+            if (cancelled)
+            {
+                DismissTouchSetupTooltip();
+                return;
+            }
+
+            _touchTooltipHeld = false;
+            _touchTooltipRemaining = TouchTooltipDuration;
+        };
+    }
+
+    void UpdateTouchSetupTooltip(float elapsed)
+    {
+        if (_touchTooltipSelection is null)
+            return;
+        if (app.LastInputMode != InputMode.Touch)
+        {
+            DismissTouchSetupTooltip();
+            return;
+        }
+        if (_touchTooltipHeld)
+            return;
+
+        _touchTooltipRemaining -= elapsed;
+        if (_touchTooltipRemaining <= 0)
+            DismissTouchSetupTooltip();
+    }
+
+    void DismissTouchSetupTooltip()
+    {
+        _touchTooltipSelection = null;
+        _touchTooltipHeld = false;
+        _touchTooltipRemaining = 0;
+        _aiTooltip.Hide();
+        _gameModeTooltip.Hide();
+        _difficultyTooltip.Hide();
     }
 
     void SetSetupTooltip(TooltipWindow tooltip, int section)
@@ -911,16 +988,7 @@ public class MenuScene : Scene
             return;
 
         FaceWindow face = _currentPlayer == 0 ? PlayerOneFace : PlayerTwoFace;
-        FaceWindow otherFace = _currentPlayer == 0 ? PlayerTwoFace : PlayerOneFace;
-        int candidate = face.FaceID;
-
-        do
-        {
-            candidate = (candidate + direction + MAX_SETUP_FACE_ID + 1) % (MAX_SETUP_FACE_ID + 1);
-        }
-        while (candidate == otherFace.FaceID);
-
-        face.FaceID = candidate;
+        face.MoveFace(direction);
     }
 
     private string GetRandomName(params string?[] excludedNames)
@@ -973,6 +1041,9 @@ public class MenuScene : Scene
             }
         };
 
+        BurntimeClassic.Instance.RememberNewGamePreferences(
+            Info.Difficulty + 1, Info.Rules, Info.AI);
+
         creation.CreateNewGame(Info);
 
         app.SceneManager.SetScene("WaitScene");
@@ -995,9 +1066,15 @@ public class MenuScene : Scene
         PlayerOneSwitch.SetAutomaticName("");
         PlayerTwoSwitch.IsDown = false;
         PlayerTwoSwitch.SetAutomaticName("");
-        Difficulty.State = 0;
-        GameMode.State = 0;
-        AiPlayers.State = 0;
+        NewGamePreferences preferences = BurntimeClassic.Instance.NewGameDefaults;
+        Difficulty.State = preferences.Difficulty - 1;
+        GameMode.State = preferences.Rules == RuleSet.Classic ? 1 : 0;
+        AiPlayers.State = preferences.Ai switch
+        {
+            AiProfile.Amiga => 1,
+            AiProfile.None => 2,
+            _ => 0
+        };
         SetCurrentPlayerEnabled(true);
         SelectStart();
     }

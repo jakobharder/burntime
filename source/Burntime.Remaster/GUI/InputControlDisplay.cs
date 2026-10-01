@@ -17,12 +17,28 @@ enum KeyboardGlyph
     Count
 }
 
-readonly record struct InputControlPart(string Text, InputGlyph Glyph, KeyboardGlyph Keyboard)
+enum TouchGlyph
 {
-    public bool HasGlyph => Glyph != InputGlyph.None || Keyboard != KeyboardGlyph.None;
-    public InputControlPart(string text) : this(text, InputGlyph.None, KeyboardGlyph.None) { }
-    public InputControlPart(InputGlyph glyph) : this(string.Empty, glyph, KeyboardGlyph.None) { }
-    public InputControlPart(KeyboardGlyph glyph) : this(string.Empty, InputGlyph.None, glyph) { }
+    None = 0,
+    Tap,
+    LongPress,
+    SwipeHorizontal,
+    SwipeVertical
+}
+
+readonly record struct InputControlPart(string Text, InputGlyph Glyph, KeyboardGlyph Keyboard,
+    TouchGlyph Touch)
+{
+    public bool HasGlyph => Glyph != InputGlyph.None || Keyboard != KeyboardGlyph.None ||
+        Touch != TouchGlyph.None;
+    public InputControlPart(string text) : this(text, InputGlyph.None, KeyboardGlyph.None,
+        TouchGlyph.None) { }
+    public InputControlPart(InputGlyph glyph) : this(string.Empty, glyph, KeyboardGlyph.None,
+        TouchGlyph.None) { }
+    public InputControlPart(KeyboardGlyph glyph) : this(string.Empty, InputGlyph.None, glyph,
+        TouchGlyph.None) { }
+    public InputControlPart(TouchGlyph glyph) : this(string.Empty, InputGlyph.None,
+        KeyboardGlyph.None, glyph) { }
 }
 
 sealed class InputControlLabel
@@ -92,6 +108,16 @@ static class InputControlDisplay
                 _ => InputControlLabel.Empty
             };
 
+        if (inputMode == InputMode.Touch)
+            return pattern switch
+            {
+                InputPattern.HorizontalNavigation or InputPattern.HorizontalPaging =>
+                    new InputControlLabel(new InputControlPart(TouchGlyph.SwipeHorizontal)),
+                InputPattern.VerticalPaging =>
+                    new InputControlLabel(new InputControlPart(TouchGlyph.SwipeVertical)),
+                _ => InputControlLabel.Empty
+            };
+
         return InputControlLabel.Empty;
     }
 
@@ -101,9 +127,13 @@ static class InputControlDisplay
         if (prompt is not InputPrompt value)
             return InputControlLabel.Empty;
 
-        InputPattern pattern = inputMode is InputMode.Keyboard or InputMode.Mouse
-            ? value.KeyboardPattern ?? value.Pattern
-            : value.Pattern;
+        InputPattern pattern = inputMode switch
+        {
+            InputMode.Keyboard or InputMode.Mouse =>
+                value.KeyboardPattern ?? value.Pattern,
+            InputMode.Touch => value.TouchPattern ?? value.Pattern,
+            _ => value.Pattern
+        };
         if (pattern != InputPattern.None)
             return ResolvePattern(app, inputMode, pattern);
 
@@ -112,7 +142,8 @@ static class InputControlDisplay
                 ? preferredPrimaryKeyboardControl
                 : null);
         return Resolve(app, inputMode, value.Action, keyboardControl,
-            value.GamepadControl, value.EffectiveMouseControl);
+            value.GamepadControl, value.EffectiveMouseControl,
+            value.TouchControl);
     }
 
     static InputControlLabel KeyboardPair(KeyboardGlyph first, KeyboardGlyph second,
@@ -174,7 +205,7 @@ static class InputControlDisplay
 
     public static InputControlLabel Resolve(Module app, InputMode inputMode, InputAction action,
         Key? preferredKeyboardControl = null, GamepadControl? preferredGamepadControl = null,
-        MouseButton? mouseControl = null)
+        MouseButton? mouseControl = null, TouchControl? touchControl = null)
     {
         if (inputMode == InputMode.Mouse)
         {
@@ -219,6 +250,25 @@ static class InputControlDisplay
             string? labelOverride = glyphProvider.GetLabelOverride(control);
             return glyph == InputGlyph.None
                 ? FromText(labelOverride ?? Format(app, control, glyphProvider.LabelStyle))
+                : new InputControlLabel(new InputControlPart(glyph));
+        }
+
+        if (inputMode == InputMode.Touch)
+        {
+            TouchGlyph glyph = touchControl switch
+            {
+                TouchControl.Tap => TouchGlyph.Tap,
+                TouchControl.LongPress => TouchGlyph.LongPress,
+                TouchControl.None => TouchGlyph.None,
+                _ => action switch
+                {
+                    InputAction.Primary => TouchGlyph.Tap,
+                    InputAction.Secondary or InputAction.Action => TouchGlyph.LongPress,
+                    _ => TouchGlyph.None
+                }
+            };
+            return glyph == TouchGlyph.None
+                ? InputControlLabel.Empty
                 : new InputControlLabel(new InputControlPart(glyph));
         }
 

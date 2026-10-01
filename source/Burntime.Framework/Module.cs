@@ -231,6 +231,10 @@ namespace Burntime.Framework
         }
 
         public virtual bool IsNewGfx { get; set; } = true;
+        // Host-selected layout policy for physically small displays. Keep this
+        // independent of input mode: a phone remains small with a controller,
+        // while a touch-capable desktop does not become one.
+        public virtual bool SmallDeviceUi { get; set; }
         public virtual string Language
         {
             get => FileSystem.LocalizationCode;

@@ -44,6 +44,13 @@ namespace Burntime.Remaster.Scenes
         const int ProductionTooltipNextIndex = 75;
         const int ProductionTooltipAutomaticIndex = 76;
         bool productionTooltipDismissed;
+        const int StorageRowHeight = 38;
+        static readonly Rect StorageBounds = new(105, 103, 106, 72);
+        static readonly Rect ProductionBounds = new(225, 105, 32, 32);
+        float touchScrollPixels;
+        readonly KineticScroll touchMomentum = new();
+        bool productionTouchSelected;
+        bool productionSwipeHandled;
 
         public InfoScene(Module App)
             : base(App)
@@ -222,6 +229,8 @@ namespace Burntime.Remaster.Scenes
             int city = classic.InfoCity;
             Location loc = classic.Game.World.Locations[city];
             productionTooltipDismissed = false;
+            productionTouchSelected = false;
+            productionSwipeHandled = false;
 
             Music = loc.Danger?.Type switch
             {
@@ -275,20 +284,116 @@ namespace Burntime.Remaster.Scenes
 
 
             offset = 0;
+            touchScrollPixels = 0;
+            touchMomentum.Stop();
             RefreshItems();
             UpdateCampNPCs();
         }
 
         public override void OnUpdate(float elapsed)
         {
+            ApplyTouchScroll(touchMomentum.Update(elapsed));
             UpdateProductionTooltip();
             itemTooltip.Update();
+        }
+
+        public override bool OnMouseWheel(Vector2 position, int delta)
+        {
+            if (!StorageBounds.PointInside(position))
+                return false;
+            MoveItemOffset(-System.Math.Sign(delta));
+            return true;
+        }
+
+        public override bool OnTouchScroll(Vector2 position, Vector2 delta)
+        {
+            if (StorageBounds.PointInside(position))
+            {
+                HideStorageTooltip();
+                productionTouchSelected = false;
+                productionTooltip.Hide();
+                touchMomentum.Stop();
+                ApplyTouchScroll(-delta.y);
+                return true;
+            }
+
+            if (!ProductionBounds.PointInside(position) ||
+                System.Math.Abs(delta.x) <= System.Math.Abs(delta.y))
+                return false;
+
+            HideStorageTooltip();
+            productionTouchSelected = true;
+            productionTooltipDismissed = false;
+            if (!productionSwipeHandled)
+            {
+                productionSwipeHandled = true;
+                if (delta.x < 0)
+                    NextProduction();
+                else
+                    PreviousProduction();
+            }
+            return true;
+        }
+
+        public override void OnTouchScrollEnd(Vector2 position, Vector2f velocity)
+        {
+            if (StorageBounds.PointInside(position))
+                touchMomentum.Release(-velocity.y);
+            if (ProductionBounds.PointInside(position))
+                productionSwipeHandled = false;
+        }
+
+        public override void OnTouchPress(Vector2 position)
+        {
+            if (StorageBounds.PointInside(position))
+                touchMomentum.Stop();
+            if (ProductionBounds.PointInside(position))
+                productionSwipeHandled = false;
+        }
+
+        public override bool OnTouchTap(Vector2 position)
+        {
+            if (ProductionBounds.PointInside(position) && production.ItemID != "")
+            {
+                HideStorageTooltip();
+                productionTouchSelected = true;
+                productionTooltipDismissed = false;
+                return true;
+            }
+
+            if (StorageBounds.PointInside(position))
+            {
+                productionTouchSelected = false;
+                productionTooltip.Hide();
+            }
+            return false;
+        }
+
+        void HideStorageTooltip()
+        {
+            grid.ClearFocus();
+            itemTooltip.Window.Hide();
+        }
+
+        void ApplyTouchScroll(float pixels)
+        {
+            touchScrollPixels += pixels;
+            int rows = (int)(touchScrollPixels / StorageRowHeight);
+            if (rows == 0)
+                return;
+            touchScrollPixels -= rows * StorageRowHeight;
+            if (!MoveItemOffset(rows))
+            {
+                touchScrollPixels = 0;
+                touchMomentum.Stop();
+            }
         }
 
         void UpdateProductionTooltip()
         {
             bool show = !productionTooltipDismissed && production.ItemID != "" &&
-                (production.IsMouseHovered || app.LastInputMode != InputMode.Mouse);
+                (app.LastInputMode == InputMode.Touch ? productionTouchSelected :
+                    production.IsMouseHovered || app.LastInputMode != InputMode.Mouse);
             if (!show)
             {
                 if (productionTooltip.IsVisible)
@@ -305,7 +410,7 @@ namespace Burntime.Remaster.Scenes
             }
 
             Production[] allowedProductions = location.ValidProductions.ToArray();
-            string[] entries = allowedProductions.Select(production =>
+            string FormatProductionEntry(Production production, string title)
             {
                 string[] tools = location.Rooms.SelectMany(room => room.Items)
                     .Concat(production.AllowInventory
@@ -322,18 +427,21 @@ namespace Burntime.Remaster.Scenes
                     : app.ResourceManager.GetString("tooltip",
                         ProductionTooltipNoneIndex);
                 TextHelper entryText = new(app, "tooltip");
-                entryText.AddArgument("{product}", production.Produce.Title);
+                entryText.AddArgument("{product}", title);
                 entryText.AddArgument("{tools}", toolList);
                 return entryText.Get(ProductionTooltipEntryIndex);
-            })
-                .Where(line => line.Length > 0)
-                .ToArray();
+            }
+            string autoEntry = FormatProductionEntry(location.GetAutomaticFoodProduction() ?? location.Production,
+                app.ResourceManager.GetString("tooltip", ProductionTooltipAutomaticIndex));
+            string[] entries = new[] { autoEntry }.Concat(allowedProductions.Select(
+                entry => FormatProductionEntry(entry, entry.Produce.Title))).ToArray();
             productionTooltip.Header = app.ResourceManager.GetString("tooltip",
                 ProductionTooltipHeaderIndex);
             productionTooltip.Text = string.Join('\n', entries);
-            productionTooltip.Status = location.IsProductionAutomatic
-                ? app.ResourceManager.GetString("tooltip", ProductionTooltipAutomaticIndex)
-                : null;
+            int selectedProduction = Array.IndexOf(allowedProductions, location.Production);
+            productionTooltip.HighlightedTextLine = location.IsProductionAutomatic
+                ? 0 : selectedProduction < 0 ? -1 : selectedProduction + 1;
+            productionTooltip.Status = null;
             if (app.LastInputMode == InputMode.Mouse)
             {
                 productionTooltip.Prompt = new InputPrompt(
@@ -480,26 +588,23 @@ namespace Burntime.Remaster.Scenes
 
         void OnButtonListUp()
         {
-            if (items.Count <= 1)
-                return;
-
-            offset--;
-            if (offset < 0)
-                offset = 0;
-
-            RefreshItems();
+            MoveItemOffset(-1);
         }
 
         void OnButtonListDown()
         {
-            if (items.Count <= 1)
-                return;
+            MoveItemOffset(1);
+        }
 
-            offset++;
-            if (offset > items.Count - 2)
-                offset = items.Count - 2;
-
+        bool MoveItemOffset(int direction)
+        {
+            int newOffset = System.Math.Clamp(offset + direction, 0,
+                System.Math.Max(0, items.Count - 2));
+            if (newOffset == offset)
+                return false;
+            offset = newOffset;
             RefreshItems();
+            return true;
         }
 
         void NextProduction()

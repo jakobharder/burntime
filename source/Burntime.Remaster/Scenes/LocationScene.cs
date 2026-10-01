@@ -16,8 +16,47 @@ using Burntime.Remaster.Maps;
 
 namespace Burntime.Remaster
 {
+    internal sealed class ManualMovementInputGate
+    {
+        bool waitingForNeutral;
+
+        public void ProtectAutomaticMovement(bool movementInputDown) =>
+            waitingForNeutral = movementInputDown;
+
+        public bool Suppress(bool movementInputDown)
+        {
+            if (!waitingForNeutral)
+                return false;
+            if (movementInputDown)
+                return true;
+
+            waitingForNeutral = false;
+            return false;
+        }
+
+        public void Reset() => waitingForNeutral = false;
+    }
+
     public class LocationScene : Scene, IMapEntranceHandler, IInteractionHandler, ILogicNotifycationHandler, IMapNavigationScene
     {
+        sealed class TouchModeIndicator : Image
+        {
+            readonly Action toggle;
+            public TouchModeIndicator(Module app, Action toggle) : base(app) => this.toggle = toggle;
+            public override bool IsTouchTarget => true;
+            public override int MinimumTouchTargetSize => TouchHitTest.MinimumSize;
+            public override bool OnTouchTap(Vector2 position)
+            {
+                toggle();
+                return true;
+            }
+            public override bool OnMouseClick(Vector2 position, MouseButton button)
+            {
+                if (button == MouseButton.Left) toggle();
+                return true;
+            }
+        }
+
         enum LocationInteractionMode
         {
             Auto,
@@ -38,14 +77,18 @@ namespace Burntime.Remaster
         MainUiOriginalWindow gui;
         MenuWindow menu;
         Image cursorAni;
+        Image touchTalkAni;
+        Image touchFightAni;
         DialogWindow dialog;
         InputPromptHandle previousCharacterPrompt;
         InputPromptHandle nextCharacterPrompt;
         InputPromptHandle groupActionsPrompt;
         Maps.MapViewOverlayHoverText hoverInfo;
         Maps.MapViewOverlayNearbyAction nearbyAction;
+        MapViewOverlayTouch touch;
         Maps.MapViewOverlayCharacters charOverlay;
         Character manuallyMovedCharacter;
+        readonly ManualMovementInputGate manualMovementInputGate = new();
         float nextTurnHoldTime;
         bool nextTurnTriggered;
         bool cameraPanActive;
@@ -66,13 +109,12 @@ namespace Burntime.Remaster
             Size = app.Engine.Resolution.Game;
 
             view = new MapView(this, App);
-            view.SetViewport(new Vector2(16, 0),
-                new Vector2(Size.x - 32, Size.y - 40));
             view.MouseClickEvent += OnMouseClickMap;
             view.Overlays.Add(new Maps.MapViewOverlayDroppedItems(App));
             view.Overlays.Add(charOverlay = new Maps.MapViewOverlayCharacters(App));
             view.Overlays.Add(hoverInfo = new Maps.MapViewOverlayHoverText(App));
-            view.Overlays.Add(nearbyAction = new Maps.MapViewOverlayNearbyAction(App, hoverInfo));
+            view.Overlays.Add(nearbyAction = new Maps.MapViewOverlayNearbyAction(App, view));
+            view.Overlays.Add(touch = new MapViewOverlayTouch(App, view, hoverInfo));
             view.ClickObject += new EventHandler<ObjectArgs>(view_ClickObject);
             view.Scroll += new EventHandler<MapScrollArgs>(view_Scroll);
             view.ContextMenu += View_ContextMenu;
@@ -95,8 +137,16 @@ namespace Burntime.Remaster
             menu.ExternalPromptLayer = cursorAni.Layer - 2;
 
             gui = new MainUiOriginalWindow(App);
+            gui.SetMapRenderArea(view, Size);
+            gui.OpenInventory = OnMenuInventory;
             gui.Layer += 60;
             Windows += gui;
+
+            touchTalkAni = CreateTouchModeIndicator("burngfxani@munt.raw?10-13");
+            Windows += touchTalkAni;
+            touchFightAni = CreateTouchModeIndicator("burngfxani@munt.raw?14-17");
+            Windows += touchFightAni;
+            UpdateTouchModeIndicatorPosition();
 
             dialog = new DialogWindow(app);
             //dialog.Position = new Vector2(33, 20);
@@ -117,7 +167,8 @@ namespace Burntime.Remaster
                 manualWindow.IsVisible);
             Prompts.Add(new InputPrompt(InputAction.Back, "...")
             {
-                MouseControl = MouseButton.Right
+                MouseControl = MouseButton.Right,
+                TouchControl = TouchControl.LongPress
             }, CanShowActionsMenuPrompt);
             view.Prompts.AddDynamic(InputAction.Primary,
                 GetDirectInteractionPrompt,
@@ -150,6 +201,29 @@ namespace Burntime.Remaster
             UpdateCharacterPromptPositions();
         }
 
+        Image CreateTouchModeIndicator(string background)
+        {
+            Image indicator = new TouchModeIndicator(app, ToggleTalkFightMode)
+            {
+                Background = background,
+                VerticalAlignment = PositionAlignment.Right
+            };
+            indicator.Background.Animation.Progressive = false;
+            indicator.Layer += 61;
+            indicator.Hide();
+            return indicator;
+        }
+
+        void UpdateTouchModeIndicatorPosition()
+        {
+            Vector2 position = TouchModeIndicatorPosition(Size);
+            touchTalkAni.Position = position - new Vector2(0, 10);
+            touchFightAni.Position = position;
+        }
+
+        internal static Vector2 TouchModeIndicatorPosition(Vector2 sceneSize) =>
+            new(OperatingSystem.IsIOS() ? 0 : 16, sceneSize.y - 18);
+
         private void View_ContextMenu(Vector2 position, MouseButton button)
         {
             if (IsAutoFightTarget(view.HoveredObject))
@@ -168,6 +242,7 @@ namespace Burntime.Remaster
                 new Vector2(0, 10);
             app.MouseBoundings = view.Boundings;
             UpdateCharacterPromptPositions();
+            UpdateTouchModeIndicatorPosition();
         }
 
         void dialog_WindowShow(object sender, EventArgs e)
@@ -225,8 +300,11 @@ namespace Burntime.Remaster
                 return;
 
             // only if not player owned
-            if (view.Player != targetCharacter.Player)
-                TryAttack(charOverlay.SelectedCharacter, targetCharacter);
+            if (view.Player != targetCharacter.Player &&
+                TryAttack(charOverlay.SelectedCharacter, targetCharacter))
+            {
+                SelectInteractionTarget(targetCharacter);
+            }
         }
 
         bool TryAttack(Character attacker, Character defender)
@@ -246,6 +324,7 @@ namespace Burntime.Remaster
 
         void ClickCharacter(Character clickedCharacter)
         {
+            touch.ClearDestination();
             // select if player owned char in group or location
             if (clickedCharacter.Player == view.Player)
             {
@@ -281,109 +360,51 @@ namespace Burntime.Remaster
 
         public override bool OnInputAction(InputAction action)
         {
-            if (action == InputAction.NextTurn)
-                return true;
+            UpdateOverlayVisibility();
 
-            if (action == InputAction.Back)
+            switch (action)
             {
-                ShowActionsMenu(view.Boundings.Center,
-                    app.LastInputMode == InputMode.Mouse);
-                return true;
-            }
-
-            if (action == InputAction.WorldMap)
-            {
-                OnMenuMap();
-                return true;
-            }
-
-            if (action == InputAction.Options)
-            {
-                app.SceneManager.SetScene("OptionsScene");
-                return true;
-            }
-
-            if (action == InputAction.Statistics)
-            {
-                app.SceneManager.SetScene("StatisticsScene");
-                return true;
-            }
-
-            if (action == InputAction.Inventory)
-            {
-                OnMenuInventory();
-                return true;
-            }
-
-            if (action == InputAction.LocationInfo)
-            {
-                OnMenuInfo();
-                return true;
-            }
-
-            if (action == InputAction.LeftArea || action == InputAction.RightArea)
-            {
-                if (app.LastInputMode == InputMode.Gamepad)
-                {
-                    if (characterCycleLatched || characterCycleDebounce > 0)
-                        return true;
-
-                    characterCycleLatched = true;
-                    characterCycleDebounce = CHARACTER_CYCLE_DEBOUNCE_TIME;
-                }
-                SelectAdjacentGroupCharacter(action == InputAction.LeftArea ? -1 : 1);
-                return true;
-            }
-
-            if (action == InputAction.PreviousTarget || action == InputAction.NextTarget)
-            {
-                if (app.LastInputMode == InputMode.Mouse)
-                    app.LastInputMode = InputMode.Keyboard;
-                nearbyAction.CycleTarget(action == InputAction.PreviousTarget ? -1 : 1);
-                return true;
-            }
-
-            if (action == InputAction.Action)
-            {
-                if (app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad &&
-                    CanShowFightPrompt() &&
-                    nearbyAction.Object is Character target)
-                {
-                    AttackCharacter(target);
-                }
-                return true;
-            }
-
-            if (action == InputAction.Secondary)
-            {
-                ShowGroupMenu(view.Boundings.Center, false);
-                return true;
-            }
-
-            if (action == InputAction.ToggleInteractionMode)
-            {
-                if (!view.Location.IsCity)
-                    ToggleTalkFightMode();
-                return true;
-            }
-
-            bool directionalInputActive = app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad;
-
-            if (directionalInputActive && action == InputAction.Primary && nearbyAction.EntranceNumber != -1)
-            {
-                if (interactionMode == LocationInteractionMode.Fight)
-                    OnMenuSpeak();
-                OnClickEntrance(nearbyAction.EntranceNumber, MouseButton.Left);
-                return true;
-            }
-
-            if (directionalInputActive && action == InputAction.Primary && nearbyAction.Object != null)
-            {
-                if (interactionMode == LocationInteractionMode.Fight)
-                    OnMenuSpeak();
-                view_ClickObject(view, new ObjectArgs(nearbyAction.Object,
-                    nearbyAction.Object.MapPosition + view.ScrollPosition, MouseButton.Left));
-                return true;
+                case InputAction.NextTurn:
+                    return true;
+                case InputAction.Back:
+                    ShowActionsMenu(view.Boundings.Center,
+                        app.LastInputMode == InputMode.Mouse);
+                    return true;
+                case InputAction.WorldMap:
+                    OnMenuMap();
+                    return true;
+                case InputAction.Options:
+                    app.SceneManager.SetScene("OptionsScene");
+                    return true;
+                case InputAction.Statistics:
+                    app.SceneManager.SetScene("StatisticsScene");
+                    return true;
+                case InputAction.Inventory:
+                    OnMenuInventory();
+                    return true;
+                case InputAction.LocationInfo:
+                    OnMenuInfo();
+                    return true;
+                case InputAction.LeftArea:
+                case InputAction.RightArea:
+                    CycleCharacter(action);
+                    return true;
+                case InputAction.PreviousTarget:
+                case InputAction.NextTarget:
+                    CycleTarget(action);
+                    return true;
+                case InputAction.Action:
+                    TryAttackHoveredCharacter();
+                    return true;
+                case InputAction.Primary:
+                    return ActivateHoveredObject();
+                case InputAction.Secondary:
+                    ShowGroupMenu(view.Boundings.Center, false);
+                    return true;
+                case InputAction.ToggleInteractionMode:
+                    if (!view.Location.IsCity)
+                        ToggleTalkFightMode();
+                    return true;
             }
 
             if (StartsAutomaticCameraFollow(action))
@@ -395,23 +416,70 @@ namespace Burntime.Remaster
                 return true;
             }
 
-            Vector2 direction = action switch
-            {
-                InputAction.PanCameraUp => new Vector2(0, -1),
-                InputAction.PanCameraDown => new Vector2(0, 1),
-                InputAction.PanCameraLeft => new Vector2(-1, 0),
-                InputAction.PanCameraRight => new Vector2(1, 0),
-                _ => Vector2.Zero
-            };
-            if (direction != Vector2.Zero)
-                return true;
+            return IsCameraPanAction(action);
+        }
 
-            return false;
+        void CycleCharacter(InputAction action)
+        {
+            if (app.LastInputMode == InputMode.Gamepad)
+            {
+                if (characterCycleLatched || characterCycleDebounce > 0)
+                    return;
+
+                characterCycleLatched = true;
+                characterCycleDebounce = CHARACTER_CYCLE_DEBOUNCE_TIME;
+            }
+
+            SelectAdjacentGroupCharacter(action == InputAction.LeftArea ? -1 : 1);
+        }
+
+        void CycleTarget(InputAction action)
+        {
+            if (app.LastInputMode == InputMode.Mouse)
+                app.LastInputMode = InputMode.Keyboard;
+            nearbyAction.CycleTarget(action == InputAction.PreviousTarget ? -1 : 1);
+        }
+
+        void TryAttackHoveredCharacter()
+        {
+            if (app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad &&
+                CanShowFightPrompt() &&
+                view.HoveredObject is Character target)
+            {
+                AttackCharacter(target);
+            }
+        }
+
+        bool ActivateHoveredObject()
+        {
+            if (app.LastInputMode is not (InputMode.Keyboard or InputMode.Gamepad))
+                return false;
+
+            if (view.ActiveEntrance >= 0)
+            {
+                if (interactionMode == LocationInteractionMode.Fight)
+                    OnMenuSpeak();
+                OnClickEntrance(view.ActiveEntrance, MouseButton.Left);
+                return true;
+            }
+
+            if (view.HoveredObject is not { } hoveredObject)
+                return false;
+
+            if (interactionMode == LocationInteractionMode.Fight)
+                OnMenuSpeak();
+            view_ClickObject(view, new ObjectArgs(hoveredObject,
+                hoveredObject.MapPosition + view.ScrollPosition, MouseButton.Left));
+            return true;
         }
 
         internal static bool StartsAutomaticCameraFollow(InputAction action) =>
             action is InputAction.MoveUp or InputAction.MoveDown or
                 InputAction.MoveLeft or InputAction.MoveRight;
+
+        static bool IsCameraPanAction(InputAction action) =>
+            action is InputAction.PanCameraUp or InputAction.PanCameraDown or
+                InputAction.PanCameraLeft or InputAction.PanCameraRight;
 
         public override bool OnHeldInputAction(InputAction action, float elapsed)
         {
@@ -451,6 +519,17 @@ namespace Burntime.Remaster
             app.Engine.Xbr2IndividualLayer = gui.Layer;
             UpdateInteractionCursor();
 
+            bool showTouchTalk = app.LastInputMode == InputMode.Touch &&
+                interactionMode == LocationInteractionMode.Talk &&
+                !dialog.IsVisible && !manualWindow.IsVisible;
+            bool showTouchFight = app.LastInputMode == InputMode.Touch &&
+                interactionMode == LocationInteractionMode.Fight &&
+                !dialog.IsVisible && !manualWindow.IsVisible;
+            if (touchTalkAni.IsVisible != showTouchTalk)
+                touchTalkAni.IsVisible = showTouchTalk;
+            if (touchFightAni.IsVisible != showTouchFight)
+                touchFightAni.IsVisible = showTouchFight;
+
             bool showInteractionMode = app.MouseInputVisible && !dialog.IsVisible &&
                 !manualWindow.IsVisible &&
                 ShouldShowMouseInteractionCursor();
@@ -478,7 +557,8 @@ namespace Burntime.Remaster
 
             if (interactionMode == LocationInteractionMode.Fight)
             {
-                if (view.ActiveEntrance >= 0 || view.HoveredObject is DroppedItem)
+                if (view.ActiveEntrance >= 0 ||
+                    view.HoveredObject is DroppedItem)
                     return false;
 
                 return view.HoveredObject is not Character character ||
@@ -507,6 +587,7 @@ namespace Burntime.Remaster
 
         public override void OnUpdate(float Elapsed)
         {
+            UpdateOverlayVisibility();
             characterCycleDebounce = System.Math.Max(0, characterCycleDebounce - Elapsed);
             if (characterCycleLatched &&
                 !app.IsInputActionDown(InputAction.LeftArea) &&
@@ -517,7 +598,8 @@ namespace Burntime.Remaster
 
             ResetNextTurnHoldIfReleased();
             UpdateCameraPan(Elapsed);
-            hoverInfo.ShowAllEntrances = app.IsInputActionDown(InputAction.ShowEntrances);
+            hoverInfo.ShowAllEntrances = app.LastInputMode != InputMode.Touch &&
+                app.IsInputActionDown(InputAction.ShowEntrances);
 
             ClassicGame game = app.GameState as ClassicGame;
             Character selectedCharacter = game.World.ActivePlayerObj.SelectedCharacter;
@@ -539,6 +621,7 @@ namespace Burntime.Remaster
             {
                 combatEncounter = null;
                 combatRecovery = 0.75f;
+                touch.ClearDestination();
             }
 
             if (app.MouseInputVisible)
@@ -549,8 +632,6 @@ namespace Burntime.Remaster
                     selectedCharacter.Position, Elapsed);
             else if (manualMovementActive && charOverlay.SelectedCharacter != null)
                 view.FollowWithinMiddleThird(charOverlay.SelectedCharacter.Position, Elapsed);
-
-            SyncGamepadCursor();
 
             if (game.World.Time <= 0 || game.World.ActivePlayerObj.IsDead)
             {
@@ -563,9 +644,20 @@ namespace Burntime.Remaster
                 view.Player.SelectGroup(view.Player.Party);
         }
 
+        void UpdateOverlayVisibility()
+        {
+            nearbyAction.IsVisible = app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad;
+            touch.IsVisible = app.LastInputMode == InputMode.Touch;
+            touch.ShowFightTargets = app.LastInputMode == InputMode.Touch &&
+                interactionMode == LocationInteractionMode.Fight &&
+                !view.Location.IsCity;
+            if (app.LastInputMode is not (InputMode.Mouse or InputMode.Touch))
+                hoverInfo.ClearTarget();
+        }
+
         GuiString? GetDirectInteractionPrompt()
         {
-            if (app.LastInputMode == InputMode.Mouse)
+            if (app.LastInputMode is InputMode.Mouse or InputMode.Touch)
             {
                 if (view.ActiveEntrance >= 0 &&
                     interactionMode != LocationInteractionMode.Fight)
@@ -588,11 +680,11 @@ namespace Burntime.Remaster
 
             if (app.LastInputMode is not (InputMode.Keyboard or InputMode.Gamepad))
                 return null;
-            if (nearbyAction.EntranceNumber != -1)
+            if (view.ActiveEntrance >= 0)
                 return "@prompts?26";
-            if (nearbyAction.Object is DroppedItem)
+            if (view.HoveredObject is DroppedItem)
                 return "@prompts?23";
-            if (nearbyAction.Object is Character primaryTarget)
+            if (view.HoveredObject is Character primaryTarget)
             {
                 if (primaryTarget.Player == view.Player)
                     return "@prompts?31";
@@ -622,7 +714,7 @@ namespace Burntime.Remaster
             if (combatRecovery > 0 || combatEncounter != null && !combatEncounter.IsComplete)
                 return false;
 
-            if (app.LastInputMode == InputMode.Mouse)
+            if (app.LastInputMode is InputMode.Mouse or InputMode.Touch)
             {
                 return (interactionMode is LocationInteractionMode.Auto or
                         LocationInteractionMode.Fight) &&
@@ -630,7 +722,7 @@ namespace Burntime.Remaster
                     CanFightCharacter(hoveredCharacter);
             }
             return app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad &&
-                nearbyAction.Object is Character target && CanFightCharacter(target);
+                view.HoveredObject is Character target && CanFightCharacter(target);
         }
 
         bool CanShowActionsMenuPrompt() =>
@@ -715,22 +807,8 @@ namespace Burntime.Remaster
             else
                 view.Player.SelectCharacter(target);
 
-            nearbyAction.AnnounceCharacter(target, CHARACTER_NAME_ANNOUNCEMENT_TIME);
+            hoverInfo.AnnounceCharacter(target, CHARACTER_NAME_ANNOUNCEMENT_TIME);
             followSelectedCharacter = true;
-        }
-
-        void SyncGamepadCursor()
-        {
-            if (app.MouseInputVisible)
-                return;
-
-            Vector2? mapPosition = nearbyAction.Position;
-            if (!mapPosition.HasValue && charOverlay.SelectedCharacter != null)
-                mapPosition = charOverlay.SelectedCharacter.Position;
-            if (!mapPosition.HasValue)
-                return;
-
-            app.DeviceManager.MouseMove(view.Boundings.Position + view.ScrollPosition + mapPosition.Value);
         }
 
         void ResetNextTurnHoldIfReleased()
@@ -779,8 +857,10 @@ namespace Burntime.Remaster
                 return false;
 
             Vector2 direction = Vector2.Zero;
+            bool movementInputDown = false;
             foreach (InputAction action in app.InputManager.ActionsDown)
             {
+                movementInputDown |= StartsAutomaticCameraFollow(action);
                 direction += action switch
                 {
                     InputAction.MoveUp => new Vector2(0, -1),
@@ -790,6 +870,9 @@ namespace Burntime.Remaster
                     _ => Vector2.Zero
                 };
             }
+
+            if (manualMovementInputGate.Suppress(movementInputDown))
+                return false;
 
             if (manuallyMovedCharacter != null && manuallyMovedCharacter != selectedCharacter)
             {
@@ -839,8 +922,18 @@ namespace Burntime.Remaster
             character.Path.MoveTo = character.Position;
         }
 
+        void ProtectAutomaticMovementFromHeldInput()
+        {
+            bool movementInputDown = app.InputManager.ActionsDown
+                .Any(StartsAutomaticCameraFollow);
+            manualMovementInputGate.ProtectAutomaticMovement(movementInputDown);
+            manuallyMovedCharacter = null;
+        }
+
         protected override void OnActivateScene(object parameter)
         {
+            touch.Reset();
+            hoverInfo.ClearTarget();
             interactionMode = LocationInteractionMode.Talk;
             combatEncounter?.Cancel();
             combatEncounter = null;
@@ -850,6 +943,7 @@ namespace Burntime.Remaster
             followSelectedCharacter = false;
             characterCycleLatched = false;
             characterCycleDebounce = 0;
+            manualMovementInputGate.Reset();
 
             app.RenderMouse = false;
             app.MouseBoundings = view.Boundings;
@@ -915,10 +1009,13 @@ namespace Burntime.Remaster
 
         protected override void OnInactivateScene()
         {
+            touch.Reset();
+            hoverInfo.ClearTarget();
             combatEncounter?.Cancel();
             combatEncounter = null;
             view.Player?.SelectedCharacter?.CancelAction();
             manuallyMovedCharacter = null;
+            manualMovementInputGate.Reset();
             app.RenderMouse = true;
             app.MouseBoundings = null;
             app.GameState.Container.RemoveNotifycationHandler(this);
@@ -991,7 +1088,8 @@ namespace Burntime.Remaster
             AddLine("@manualui?5", manualWindow.Open);
             AddLine("@burn?357", OnMenuTurn, new(InputAction.NextTurn) { Hold = true });
 
-            menu.Show(position, view.Boundings, openedByMouse);
+            menu.Show(position, view.Boundings, openedByMouse,
+                heldTouch: openedByMouse && app.LastInputMode == InputMode.Touch);
         }
 
         bool HasGroupMenuCommands() =>
@@ -1242,16 +1340,20 @@ namespace Burntime.Remaster
 
             EntranceObject entranceObject = new EntranceObject(entrance, Number);
             combatEncounter?.CancelOffense();
+            ProtectAutomaticMovementFromHeldInput();
             EnsureAutomaticPath(charOverlay.SelectedCharacter);
-            charOverlay.SelectedCharacter.Mind.MoveToObject(new InteractionObject(entranceObject,
-                loc.Rooms[Number].EntryCondition, this));
+            var interaction = new InteractionObject(entranceObject, loc.Rooms[Number].EntryCondition, this);
+            charOverlay.SelectedCharacter.Mind.MoveToObject(interaction);
+            SelectInteractionTarget(entranceObject);
 
             return true;
         }
 
         public void OnMouseClickMap(Vector2 position, MouseButton button)
         {
+            touch.ClearDestination();
             combatEncounter?.CancelOffense();
+            ProtectAutomaticMovementFromHeldInput();
             EnsureAutomaticPath(charOverlay.SelectedCharacter);
             charOverlay.SelectedCharacter.Mind.MoveToObject(null);
             charOverlay.SelectedCharacter.Path.MoveTo = position;
@@ -1259,12 +1361,24 @@ namespace Burntime.Remaster
 
         void MoveCharacter(IMapObject obj)
         {
+            touch.ClearDestination();
+            ProtectAutomaticMovementFromHeldInput();
             EnsureAutomaticPath(charOverlay.SelectedCharacter);
             charOverlay.SelectedCharacter.Mind.MoveToObject(new InteractionObject(obj, this));
+            SelectInteractionTarget(obj);
+        }
+
+        void SelectInteractionTarget(IMapObject target)
+        {
+            if (app.LastInputMode == InputMode.Touch)
+                touch.SelectDestination(target, charOverlay.SelectedCharacter);
+            else if (app.LastInputMode == InputMode.Mouse)
+                hoverInfo.SelectTarget(target, charOverlay.SelectedCharacter);
         }
 
         bool IInteractionHandler.HandleInteraction(IMapObject obj, Character actor)
         {
+            touch.ClearDestination();
             if (actor.IsDead)
                 return false;
 

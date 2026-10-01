@@ -37,7 +37,8 @@ namespace Burntime.Remaster
             {
                 Position = new Vector2(0, 0),
                 FaceID = 0,
-                DisplayOnly = true
+                DisplayOnly = true,
+                TouchAction = () => OpenInventory?.Invoke()
             };
 
             Windows += nameField = new(app, "gfx/ui/progress_glass.png", "gfx/ui/progress_glass.png")

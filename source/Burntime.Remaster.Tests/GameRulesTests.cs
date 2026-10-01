@@ -179,5 +179,12 @@ static class GameRulesTests
                 }
                 return 0;
             });
+
+        yield return Int("extended unpaid recruit initializes without an item", 0, () =>
+        {
+            Equal(1, GameRules.InitializeRecruitFood(0, 9, payment: null,
+                difficulty: 1), "difficulty minimum food without payment");
+            return 0;
+        });
     }
 }

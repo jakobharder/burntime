@@ -32,6 +32,10 @@ class TraderScene : Scene
     readonly ItemGridTooltip itemTooltip;
     KeyboardArea keyboardArea;
     Vector2? keyboardMousePosition;
+    Vector2? horizontalSwipeOrigin;
+    float horizontalSwipeResetRemaining;
+
+    const float TouchSwipeResetDelay = 0.15f;
 
     public TraderScene(Module App)
         : base(App)
@@ -45,6 +49,7 @@ class TraderScene : Scene
         inventory.RightClickItemEvent += OnRightClickItemInventory;
         inventory.Grid.MouseFocusChanged += OnMouseFocusChanged;
         inventory.Grid.FocusEmptied += OnFocusEmptied;
+        inventory.Grid.ActivateOnFirstTouch = true;
         AddTradeGridPrompts(inventory.Grid, playerSide: true);
         Windows += inventory;
 
@@ -54,6 +59,7 @@ class TraderScene : Scene
         inventoryTrader.RightClickItemEvent += OnRightClickItemTrader;
         inventoryTrader.Grid.MouseFocusChanged += OnMouseFocusChanged;
         inventoryTrader.Grid.FocusEmptied += OnFocusEmptied;
+        inventoryTrader.Grid.ActivateOnFirstTouch = true;
         AddTradeGridPrompts(inventoryTrader.Grid, playerSide: false);
         Windows += inventoryTrader;
 
@@ -79,6 +85,7 @@ class TraderScene : Scene
         inventoryTrader.Grid.Mask = exchangeTop.Grid;
         exchangeTop.LeftClickItemEvent += OnLeftClickItemTrader;
         exchangeTop.Grid.MouseFocusChanged += OnMouseFocusChanged;
+        exchangeTop.Grid.ActivateOnFirstTouch = true;
         AddTradeGridPrompts(exchangeTop.Grid, playerSide: false);
         Windows += exchangeTop;
 
@@ -86,6 +93,7 @@ class TraderScene : Scene
         inventory.Grid.Mask = exchangeBottom.Grid;
         exchangeBottom.LeftClickItemEvent += OnLeftClickItemInventory;
         exchangeBottom.Grid.MouseFocusChanged += OnMouseFocusChanged;
+        exchangeBottom.Grid.ActivateOnFirstTouch = true;
         AddTradeGridPrompts(exchangeBottom.Grid, playerSide: true);
         Windows += exchangeBottom;
 
@@ -119,7 +127,10 @@ class TraderScene : Scene
         acceptButton.Prompts.Add(InputAction.Action, "",
             new Vector2(acceptButton.Size.x + 2, -2));
 
-        Prompts.Add(InputPattern.HorizontalPaging, "@prompts?30",
+        Prompts.Add(new InputPrompt(InputPattern.HorizontalPaging, "@prompts?30")
+        {
+            TouchPattern = InputPattern.VerticalPaging
+        },
             () => inventory.PageCount > 1);
 
         PositionElements();
@@ -197,7 +208,12 @@ class TraderScene : Scene
         PositionElements();
     }
 
-    public override void OnUpdate(float elapsed) => itemTooltip.Update();
+    public override void OnUpdate(float elapsed)
+    {
+        itemTooltip.Update();
+        if (horizontalSwipeOrigin.HasValue && (horizontalSwipeResetRemaining -= elapsed) <= 0)
+            horizontalSwipeOrigin = null;
+    }
 
     public override void OnRender(RenderTarget Target)
     {
@@ -217,6 +233,40 @@ class TraderScene : Scene
         return base.OnMouseMove(position);
     }
 
+    public override bool OnTouchTap(Vector2 position)
+    {
+        if (app.Engine.Resolution.Game.x >= 450 || !new Rect(Vector2.Zero, Size).PointInside(position))
+            return false;
+        bool exchangeSide = side == InventorySide.Left ? position.x >= 195 : position.x < 125;
+        if (!exchangeSide) return false;
+        keyboardMousePosition = null;
+        keyboardArea = side == InventorySide.Left ? KeyboardArea.Trader : KeyboardArea.Player;
+        PositionElements(position, side == InventorySide.Left ? InventorySide.Right : InventorySide.Left);
+        return true;
+    }
+
+    public override bool OnTouchScroll(Vector2 position, Vector2 delta)
+    {
+        if (System.Math.Abs(delta.x) <= System.Math.Abs(delta.y))
+            return false;
+
+        // Drag gestures arrive as a stream of deltas. Act once per swipe so a
+        // single finger movement cannot repeatedly switch the visible side.
+        bool alreadyHandled = horizontalSwipeOrigin.HasValue && horizontalSwipeOrigin.Value == position;
+        horizontalSwipeOrigin = position;
+        horizontalSwipeResetRemaining = TouchSwipeResetDelay;
+        if (alreadyHandled)
+            return true;
+
+        keyboardMousePosition = null;
+        InventorySide requestedSide = delta.x < 0 ? InventorySide.Right : InventorySide.Left;
+        keyboardArea = requestedSide == InventorySide.Right
+            ? KeyboardArea.Trader
+            : KeyboardArea.Player;
+        PositionElements(requestedSide: requestedSide);
+        return true;
+    }
+
     protected override void OnActivateScene(object parameter)
     {
         BurntimeClassic classic = app as BurntimeClassic;
@@ -230,6 +280,7 @@ class TraderScene : Scene
         temporarySpace.Clear();
 
         side = InventorySide.None;
+        horizontalSwipeOrigin = null;
         keyboardArea = KeyboardArea.Trader;
         inventory.Grid.ClearFocus();
         inventoryTrader.Grid.ClearFocus();
@@ -241,6 +292,9 @@ class TraderScene : Scene
 
     void OnMouseFocusChanged(ItemGridWindow focusedGrid)
     {
+        if (app.LastInputMode == InputMode.Touch &&
+            (focusedGrid == exchangeTop.Grid || focusedGrid == exchangeBottom.Grid))
+            return;
         keyboardArea = focusedGrid == inventoryTrader.Grid || focusedGrid == exchangeTop.Grid
             ? KeyboardArea.Trader
             : focusedGrid == temporarySpace
