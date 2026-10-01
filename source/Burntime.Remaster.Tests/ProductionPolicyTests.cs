@@ -229,6 +229,9 @@ static class ProductionPolicyTests
 
             camp.SelectProduction(snakes);
             room.Items.Add(m.Create<Item>(ratTrap.Type));
+            Equal(rats, camp.GetAutomaticFoodProduction(), "automatic preview chooses the better traps");
+            Equal(snakes, camp.Production, "preview does not change the current production");
+            Equal(false, camp.IsProductionAutomatic, "preview preserves manual mode");
             camp.RefreshFoodProductionSelection();
             Equal(snakes, camp.Production, "manual selection remains pinned while productive");
 

@@ -410,7 +410,7 @@ namespace Burntime.Remaster.Scenes
             }
 
             Production[] allowedProductions = location.ValidProductions.ToArray();
-            string[] entries = allowedProductions.Select(production =>
+            string FormatProductionEntry(Production production, string title)
             {
                 string[] tools = location.Rooms.SelectMany(room => room.Items)
                     .Concat(production.AllowInventory
@@ -427,18 +427,21 @@ namespace Burntime.Remaster.Scenes
                     : app.ResourceManager.GetString("tooltip",
                         ProductionTooltipNoneIndex);
                 TextHelper entryText = new(app, "tooltip");
-                entryText.AddArgument("{product}", production.Produce.Title);
+                entryText.AddArgument("{product}", title);
                 entryText.AddArgument("{tools}", toolList);
                 return entryText.Get(ProductionTooltipEntryIndex);
-            })
-                .Where(line => line.Length > 0)
-                .ToArray();
+            }
+            string autoEntry = FormatProductionEntry(location.GetAutomaticFoodProduction() ?? location.Production,
+                app.ResourceManager.GetString("tooltip", ProductionTooltipAutomaticIndex));
+            string[] entries = new[] { autoEntry }.Concat(allowedProductions.Select(
+                entry => FormatProductionEntry(entry, entry.Produce.Title))).ToArray();
             productionTooltip.Header = app.ResourceManager.GetString("tooltip",
                 ProductionTooltipHeaderIndex);
             productionTooltip.Text = string.Join('\n', entries);
-            productionTooltip.Status = location.IsProductionAutomatic
-                ? app.ResourceManager.GetString("tooltip", ProductionTooltipAutomaticIndex)
-                : null;
+            int selectedProduction = Array.IndexOf(allowedProductions, location.Production);
+            productionTooltip.HighlightedTextLine = location.IsProductionAutomatic
+                ? 0 : selectedProduction < 0 ? -1 : selectedProduction + 1;
+            productionTooltip.Status = null;
             if (app.LastInputMode == InputMode.Mouse)
             {
                 productionTooltip.Prompt = new InputPrompt(

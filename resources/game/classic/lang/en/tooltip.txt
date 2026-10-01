@@ -74,7 +74,7 @@ Check materials
 Needs ammunition
 Previous
 Next
-Automatic
+Auto
 Active trap
 }#
 Reports remote camps and hazards}

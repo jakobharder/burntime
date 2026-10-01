@@ -2,10 +2,10 @@
 
 ## [Unreleased]
 
-- Added touch input
-- Added touch gesture prompts to maps and item tooltips
+- Added touch and iOS support
 - Improved water source bar to show capacity and reserver above daily
 - Show name of clicked entrance or NPC
+- Improved info scene trap tooltip
 - Automatically select traps after camp creation
 - Fixed previous game leaking into a new game
 - Fixed cities allowing camp creation

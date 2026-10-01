@@ -368,19 +368,27 @@ public class Location : StateObject, IUpdateable, ITurnable
         if (info.FoodPerDay > 0 && onlyIfCurrentProducesNothing)
             return info;
 
+        Production = GetAutomaticFoodProduction();
+        return GetFoodProductionRate();
+    }
+
+    public Production? GetAutomaticFoodProduction()
+    {
+        Production? selected = Production;
+        var info = GetFoodProductionRate();
         foreach (var production in ValidProductions)
         {
             var candidate = GetFoodProductionRate(production);
             if (candidate.FoodPerDay > info.FoodPerDay ||
                 candidate.FoodPerDay == info.FoodPerDay && candidate.FoodPerDay > 0 &&
-                (Production == null || production.ID > Production.ID))
+                (selected == null || production.ID > selected.ID))
             {
-                Production = production;
+                selected = production;
                 info = candidate;
             }
         }
 
-        return info;
+        return selected;
     }
 
     public Production.Rate RefreshFoodProductionSelection()

@@ -74,7 +74,7 @@ Material prüfen
 Munition benötigt
 Zurück
 Weiter
-Automatisch
+Auto
 Aktive Falle
 }#
 Meldet entfernte Lager und Gefahren}

@@ -32,6 +32,7 @@ public sealed class TooltipWindow : Window
     public GuiString? Header { get; set; }
     public GuiFont HeaderFont { get; set; }
     public GuiString? Text { get; set; }
+    public int HighlightedTextLine { get; set; } = -1;
     public InputPrompt? Prompt { get; set; }
     public bool StackPrompts { get; set; }
     public bool StatusReplacesSecondaryPrompt { get; set; }
@@ -157,8 +158,18 @@ public sealed class TooltipWindow : Window
 
         if (text.Length > 0)
         {
-            _textFont.DrawText(target, new Vector2(HorizontalPadding, y), text,
-                TextAlignment.Left, VerticalTextAlignment.Top);
+            if (HighlightedTextLine < 0)
+                _textFont.DrawText(target, new Vector2(HorizontalPadding, y), text,
+                    TextAlignment.Left, VerticalTextAlignment.Top);
+            else
+            {
+                string[] lines = text.Split('\n');
+                int advance = app.IsNewGfx ? _textFont.LineHeight : 10;
+                for (int i = 0; i < lines.Length; i++)
+                    (i == HighlightedTextLine ? _statusFont : _textFont).DrawText(target,
+                        new Vector2(HorizontalPadding, y + i * advance), lines[i],
+                        TextAlignment.Left, VerticalTextAlignment.Top);
+            }
             y += TextHeight(text);
         }
 
