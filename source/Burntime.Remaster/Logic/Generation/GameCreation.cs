@@ -141,6 +141,9 @@ namespace Burntime.Remaster.Logic.Generation
             // place items
             game.RuleBook.PopulateInitialItems(game, settings, gamdat);
 
+            // Append custom residents after original item ownership indices have been resolved.
+            new LocationPopulationCreator().Create(game, gamdat, app.ResourceManager);
+
             // Player-owned starting state belongs to the controlling rules or AI profile.
             InitializeStartingPlayers(game, gamdat);
 
