@@ -77,7 +77,7 @@ Weiter
 Auto
 Aktive Falle
 }#
-Meldet entfernte Lager und Gefahren}
+Erkundet Nachbarlager. Verbindet Lager mit Funkgerät.}
 Der Mensch lebt nicht vom Brot allein.}
 Hunde und Mutanten meiden den Träger.}
 Kann auf Reisen Munition aufspüren.}

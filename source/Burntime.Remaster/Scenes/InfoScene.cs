@@ -25,9 +25,9 @@ namespace Burntime.Remaster.Scenes
         int[] itemCount = new int[2];
         int productionID;
 
-        int fighter;
-        int technicians;
-        int doctors;
+        readonly List<Character> fighters = new();
+        readonly List<Character> technicians = new();
+        readonly List<Character> doctors = new();
 
         GuiImage fighterImage;
         GuiImage technicianImage;
@@ -93,7 +93,7 @@ namespace Burntime.Remaster.Scenes
             Windows += image;
 
             danger = new Image(App);
-            danger.Position = new Vector2(224, 27);
+            danger.Position = new Vector2(244, 27);
             Windows += danger;
 
             production = new ItemWindow(App);
@@ -171,7 +171,7 @@ namespace Burntime.Remaster.Scenes
             int max = System.Math.Max(font.GetWidth(txt[396]), font.GetWidth(txt[397]));
             max = System.Math.Max(font.GetWidth(txt[398]), max);
 
-            RenderNPCLine(target, new Vector2(110 + max, 29), fighter, fighterImage);
+            RenderNPCLine(target, new Vector2(110 + max, 29), fighters, fighterImage);
             RenderNPCLine(target, new Vector2(110 + max, 47), technicians, technicianImage);
             RenderNPCLine(target, new Vector2(110 + max, 65), doctors, doctorImage);
 
@@ -193,7 +193,7 @@ namespace Burntime.Remaster.Scenes
             DrawProductionText(target, new Vector2(263, 152), waterText[80], waterText[81]);
 
             if (loc.Danger != null)
-                font.DrawText(target, new Vector2(251, 68), loc.Danger.InfoString, TextAlignment.Center, VerticalTextAlignment.Top);
+                font.DrawText(target, new Vector2(246, 68), loc.Danger.InfoString, TextAlignment.Left, VerticalTextAlignment.Top);
 
         }
 
@@ -208,14 +208,26 @@ namespace Burntime.Remaster.Scenes
                 VerticalTextAlignment.Top);
         }
 
-        private void RenderNPCLine(RenderTarget target, Vector2 position, int npcCount, ISprite image)
+        private void RenderNPCLine(RenderTarget target, Vector2 position, IReadOnlyList<Character> npcs, ISprite image)
         {
             target.Layer += 2;
 
-            for (int i = 0; i < npcCount; i++)
+            BurntimeClassic classic = (BurntimeClassic)app;
+            bool showNpcDetails = RadioIntel.CanSeeHealth(classic.Game.World.ActivePlayerObj,
+                classic.Game.World.Locations[classic.InfoCity]);
+            foreach (Character npc in npcs)
             {
                 target.DrawSprite(position, image);
-                position.x += 18;
+                if (showNpcDetails)
+                {
+                    int experience = classic.Game.RuleBook.GetExperienceTier(npc.Experience) + 1;
+                    int health = System.Math.Clamp(
+                        (System.Math.Clamp(npc.Health, 1, 100) * 7 + 99) / 100, 1, 7);
+                    font.DrawText(target, new Vector2(position.x + image.Width, position.y + 8),
+                        $"~d{experience}~r{health}",
+                        TextAlignment.Left, VerticalTextAlignment.Center);
+                }
+                position.x += showNpcDetails ? 24 : 18;
             }
 
             target.Layer -= 2;
@@ -497,9 +509,9 @@ namespace Burntime.Remaster.Scenes
 
         private void UpdateCampNPCs()
         {
-            fighter = 0;
-            technicians = 0;
-            doctors = 0;
+            fighters.Clear();
+            technicians.Clear();
+            doctors.Clear();
 
             BurntimeClassic classic = app as BurntimeClassic;
             int city = classic.InfoCity;
@@ -510,13 +522,13 @@ namespace Burntime.Remaster.Scenes
                 switch (npc.Class)
                 {
                     case CharClass.Technician:
-                        technicians ++;
+                        technicians.Add(npc);
                         break;
                     case CharClass.Doctor:
-                        doctors ++;
+                        doctors.Add(npc);
                         break;
                     case CharClass.Mercenary:
-                        fighter ++;
+                        fighters.Add(npc);
                         break;
                     default:
                         Burntime.Platform.Log.Warning("info screen: unknown npc class");

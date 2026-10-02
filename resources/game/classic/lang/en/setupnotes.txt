@@ -22,7 +22,7 @@ Notes
 
 #EXTENDED: ITEMS
 - Clothing: 5-25% damage reduction
-- Radio: remote camp hazards, defenders and production
+- Radio: Radios scout neighboring camps. Two radios let you check a distant camp’s defenders and scout its neighbors. Carry one or use your current camp’s stored radio to receive reports.
 - Metal detector: 1% ammunition discovery chance per travel day
 - Bible: no food or water use while stationary; normal consumption on trips
 - Skull / bones: carrier ignored by dogs and mutants

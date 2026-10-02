@@ -134,7 +134,6 @@ class=nodrop utility
 burngfx=22
 function=remote_intel
 trader_world_group=two_way_radio
-trader_world_limit=4
 
 [item_broken_pump]
 class=pump_parts
@@ -155,8 +154,8 @@ trader_world_limit=4
 [item_defective_two_way_radio]
 class=repairable rare
 burngfx=26
+value=105
 trader_world_group=two_way_radio
-trader_world_limit=4
 
 [item_electrical_odds_and_ends]
 class=material rare
