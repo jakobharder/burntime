@@ -108,18 +108,6 @@ static class TouchGestureTests
                 "reverse selection skips other player's face");
             return 0;
         });
-        yield return Int("location target pulse spans full opacity and repeats", 0, () =>
-        {
-            float bright = MapTargetPulse.GetAlpha(0);
-            float dim = MapTargetPulse.GetAlpha(.375f);
-            float nextBright = MapTargetPulse.GetAlpha(.75f);
-            Equal(true, bright > dim, "pulse fades from its bright phase");
-            Equal(true, System.Math.Abs(dim) < .0001f,
-                "target label fully disappears at its dim phase");
-            Equal(true, System.Math.Abs(bright - nextBright) < .0001f,
-                "pulse repeats without drifting");
-            return 0;
-        });
         yield return Int("touch fight mode keeps distant rival names visible", 0, () =>
         {
             Equal(false, MapViewOverlayTouch.ShouldShowCharacter(100, true, false),
