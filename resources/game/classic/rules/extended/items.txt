@@ -262,6 +262,7 @@ burngfx=50
 [item_bible]
 class=utility rare
 burngfx=51
+value=144
 function=resting_sustenance
 trader_world_group=bible
 trader_world_limit=2
@@ -273,6 +274,7 @@ burngfx=52
 [item_leather_jacket]
 class=protection
 burngfx=53
+value=96
 defense=20
 
 [item_tires]
@@ -282,6 +284,7 @@ burngfx=54
 [item_steel_helmet]
 class=protection
 burngfx=55
+value=120
 defense=25
 
 [item_sweater]
@@ -292,6 +295,7 @@ defense=5
 [item_pants]
 class=protection
 burngfx=57
+value=60
 defense=10
 
 [item_dogshit]

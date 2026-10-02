@@ -6,7 +6,7 @@
 - Improved water source bar to show capacity and reserver above daily
 - Rival camp report with radio is now limited to neighboring locations
 - Info scene now shows camp NPC health when a radio is stored (two radios needed)
-- More traders have radio related pieces
+- Rebalanced trader stock (especially radio pieces, clothing)
 - Show name of clicked entrance or NPC
 - Improved info scene trap tooltip
 - Automatically select traps after camp creation
