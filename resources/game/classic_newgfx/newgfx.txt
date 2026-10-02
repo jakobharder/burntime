@@ -99,6 +99,8 @@ pngsheet@gfx/ui/start_buttons.png?2?64x24=pngsheet@gfx/start_buttons.png?2?121x5
 pngsheet@gfx/ui/start_buttons.png?3?64x24=pngsheet@gfx/start_buttons.png?3?121x54
 sta.ani?8=pngsheet@gfx/start_flags.png?0?90x54
 sta.ani?9=pngsheet@gfx/start_flags.png?1?90x54
+gfx/flag_black.png=pngsheet@gfx/start_flags.png?2?90x54
+gfx/flag_blue.png=pngsheet@gfx/start_flags.png?3?90x54
 
 ges_00.ani=pngani@gfx/faces/geometry_true/ges_00.png
 ges_01.ani=pngani@gfx/faces/geometry_true/ges_01.png

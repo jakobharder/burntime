@@ -28,8 +28,8 @@ namespace Burntime.Remaster.Logic.Generation
     {
         Green = 0,
         Red,
-        Gray,
-        Blue
+        Blue,
+        Black
     }
 
     readonly record struct TraderAssortmentSetting(string ItemId, int Rate)
@@ -174,8 +174,8 @@ namespace Burntime.Remaster.Logic.Generation
             PixelColor[] colors = new PixelColor[4] {
                 new PixelColor(0, 208, 0),
                 new PixelColor(240, 64, 56),
-                new PixelColor(0, 0, 0),    // not used
-                new PixelColor(0, 0, 0)};   // not used
+                new PixelColor(128, 128, 208),
+                new PixelColor(208, 208, 208)};
 
             PixelColor[] colorsdark = new PixelColor[4] {
                 new PixelColor(0, 132, 0),
@@ -226,13 +226,6 @@ namespace Burntime.Remaster.Logic.Generation
                 app.Server.AddAI(client);
             }
 
-            game.World.Players[0].Color = colors[(int)Info.ColorOne];
-            game.World.Players[0].ColorDark = colorsdark[(int)Info.ColorOne];
-            game.World.Players[0].IconID = Info.ColorOne == BurntimePlayerColor.Green ? 0 : 1;
-            game.World.Players[0].BodyColorSet = Info.ColorOne == BurntimePlayerColor.Green ? 2 : 0;
-            game.World.Players[0].Character.Body = Helper.GetCharacterBody(3, game.World.Players[0].BodyColorSet);
-            game.World.Players[0].Flag = app.ResourceManager.GetData(Info.ColorOne == BurntimePlayerColor.Green ? "burngfxani@syst.raw?0-3" : "burngfxani@syst.raw?8-11");
-
             if (Info.NameTwo != "" && Info.NameTwo != null)
             {
                 game.World.Players[1].Name = Info.NameTwo;
@@ -247,15 +240,23 @@ namespace Burntime.Remaster.Logic.Generation
             else
                 app.Server.AddAI(new AI.AiPlayer(app, 1, container));
 
-            game.World.Players[1].Color = colors[(int)Info.ColorTwo];
-            game.World.Players[1].ColorDark = colorsdark[(int)Info.ColorTwo];
-            game.World.Players[1].IconID = Info.ColorTwo == BurntimePlayerColor.Green ? 0 : 1;
-            game.World.Players[1].BodyColorSet = Info.ColorTwo == BurntimePlayerColor.Green ? 2 : 0;
-            game.World.Players[1].Character.Body = Helper.GetCharacterBody(3, game.World.Players[1].BodyColorSet);
-            game.World.Players[1].Flag = app.ResourceManager.GetData(Info.ColorTwo == BurntimePlayerColor.Green ? "burngfxani@syst.raw?0-3" : "burngfxani@syst.raw?8-11");
-
-            game.World.Players[2].BodyColorSet = -1;
-            game.World.Players[3].BodyColorSet = 1;
+            BurntimePlayerColor[] assignedColors = PlayerColorSetup.Assign(Info.ColorOne, Info.ColorTwo);
+            for (int i = 0; i < game.World.Players.Count; i++)
+            {
+                var player = game.World.Players[i];
+                var color = assignedColors[i];
+                player.Color = colors[(int)color];
+                player.ColorDark = colorsdark[(int)color];
+                player.IconID = PlayerColorSetup.IconId(color);
+                player.BodyColorSet = PlayerColorSetup.BodyColorSet(color);
+                // Blue has no recruit recoloring set; retain its original boss appearance.
+                player.Character.Body = player.BodyColorSet < 0
+                    ? Helper.GetCharacterBody(3, Helper.GetColorFromSpriteId(gamdat.Characters[2].SpriteId))
+                    : Helper.GetCharacterBody(3, player.BodyColorSet);
+                int flag = PlayerColorSetup.FlagId(color);
+                player.Flag = app.ResourceManager.GetData($"burngfxani@syst.raw?{flag}-{flag + 3}");
+                player.Flag.Object.Animation.Progressive = false;
+            }
 
             app.Server.AddAI(new AI.AiPlayer(app, 2, container));
             app.Server.AddAI(new AI.AiPlayer(app, 3, container));

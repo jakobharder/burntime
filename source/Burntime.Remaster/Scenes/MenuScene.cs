@@ -42,8 +42,8 @@ public class MenuScene : Scene
     Toggle Difficulty;
     Toggle GameMode;
     Toggle AiPlayers;
-    Radio Color;
-    readonly Radio _otherColor;
+    readonly Toggle[] _colorChoices = new Toggle[2];
+    readonly BurntimePlayerColor[] _playerColors = { BurntimePlayerColor.Green, BurntimePlayerColor.Red };
     int _currentPlayer;
     SetupSelection _setupSelection;
     readonly Button _loadButton;
@@ -218,25 +218,18 @@ public class MenuScene : Scene
         PlayerOneSwitch.TextInputDeactivated += () => FillEmptyName(PlayerOneSwitch, PlayerTwoSwitch);
         PlayerTwoSwitch.TextInputDeactivated += () => FillEmptyName(PlayerTwoSwitch, PlayerOneSwitch);
 
-        // color
-        Radio radio = new Radio(app);
-        radio.Position = new Vector2(45, 121);
-        radio.Image = "sta.ani?8";
-        radio.DownImage = "sta.ani?9";
-        radio.Mode = RadioMode.Round;
-        radio.Group = 2;
-        Color = radio;
-        Windows += radio;
-        _otherColor = new Radio(app)
+        // Each player's flag cycles independently; choosing an occupied color swaps the pair.
+        for (int i = 0; i < _colorChoices.Length; i++)
         {
-            IsDown = true,
-            Position = new Vector2(237, 121),
-            Image = "sta.ani?8",
-            DownImage = "sta.ani?9",
-            Mode = RadioMode.Round,
-            Group = 2
-        };
-        Windows += _otherColor;
+            int player = i;
+            var choice = new Toggle(app) { Position = new Vector2(i == 0 ? 45 : 237, 121) };
+            foreach (string imageId in new[] { "sta.ani?8", "sta.ani?9", "gfx/flag_blue.png", "gfx/flag_black.png" })
+                choice.AddState(null, imageId, imageId, imageId, null);
+            choice.State = (int)_playerColors[i];
+            choice.Command += new CommandHandler((Action)(() => SelectPlayerColor(player)));
+            _colorChoices[i] = choice;
+            Windows += choice;
+        }
 
         // difficulty
         Difficulty = new(app)
@@ -509,7 +502,7 @@ public class MenuScene : Scene
                 return true;
             case InputAction.Secondary:
                 if (_setupSelection == SetupSelection.Player && CurrentPlayerEnabled)
-                    TogglePlayerColors();
+                    CyclePlayerColor();
                 return true;
             case InputAction.MoveUp:
                 MoveSetupSelectionUp();
@@ -921,12 +914,18 @@ public class MenuScene : Scene
         UpdateSetupSelection();
     }
 
-    void TogglePlayerColors()
+    void CyclePlayerColor()
     {
-        if (Color.IsDown)
-            _otherColor.IsDown = true;
-        else
-            Color.IsDown = true;
+        _colorChoices[_currentPlayer].NextState();
+    }
+
+    void SelectPlayerColor(int player)
+    {
+        int other = 1 - player;
+        var selected = (BurntimePlayerColor)_colorChoices[player].State;
+        _playerColors[other] = PlayerColorSetup.OtherSelection(_playerColors[player], selected, _playerColors[other]);
+        _playerColors[player] = selected;
+        _colorChoices[other].State = (int)_playerColors[other];
     }
 
     void MoveSetupSelectionHorizontal(int direction)
@@ -1026,8 +1025,8 @@ public class MenuScene : Scene
             FaceOne = PlayerOneFace.FaceID,
             FaceTwo = PlayerTwoFace.FaceID,
             Difficulty = Difficulty.State,
-            ColorOne = Color.IsDown ? BurntimePlayerColor.Red : BurntimePlayerColor.Green,
-            ColorTwo = Color.IsDown ? BurntimePlayerColor.Green : BurntimePlayerColor.Red,
+            ColorOne = _playerColors[0],
+            ColorTwo = _playerColors[1],
             Rules = GameMode.State switch
             {
                 1 => RuleSet.Classic,

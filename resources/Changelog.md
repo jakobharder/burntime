@@ -8,6 +8,7 @@
 - Info scene now shows camp NPC health when a radio is stored (two radios needed)
 - Rebalanced trader stock (especially radio pieces, clothing)
 - New Village has now dogs and NPCs
+- Added gray and blue as playable colors
 - Show name of clicked entrance or NPC
 - Improved info scene trap tooltip
 - Automatically select traps after camp creation

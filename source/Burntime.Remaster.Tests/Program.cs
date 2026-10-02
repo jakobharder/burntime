@@ -56,6 +56,7 @@ static class Program
         Run("extended strategic damage", TableCombatTests.ExtendedStrategicDamageCases());
         Run("item generation ranges", GameSettingsTests.ItemGenerationCases());
         Run("profile parsing", GameDefinitionsTests.ProfileParsingCases());
+        Run("player flag choices", GameDefinitionsTests.PlayerColorCases());
         Run("rule registry", GameDefinitionsTests.RuleRegistryCases());
         Run("manual text layout", ManualTextLayoutTests.Cases());
         Run("setup patch notes", SetupPatchNotesTests.Cases());
