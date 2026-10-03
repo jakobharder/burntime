@@ -404,7 +404,7 @@ Water: |C D.}
 Food:  |D D.}
 Day |A}
 |A has departed from us}
-available:}
+Resources}
 Water:}
 |E REM}
 |C}

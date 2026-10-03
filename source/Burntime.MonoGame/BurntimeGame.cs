@@ -441,6 +441,8 @@ namespace Burntime.MonoGame
             _gameThread.Start((Platform.GameTime gameTime) =>
             {
 #if IOS
+                lock (mobileFrameSync)
+                {
                 PersistMobileSettings();
                 if (!_mobileActive) return;
 #endif
@@ -458,6 +460,9 @@ namespace Burntime.MonoGame
                         $"Tex {ResourceManager.TextureMemoryUsage / (1024.0 * 1024.0):0.0} MB"),
                     TextAlignment.Left, VerticalTextAlignment.Top);
                 RenderDevice.End();
+#if IOS
+                }
+#endif
             }, framesPerSecond: TargetFramesPerSecond);
         }
 
@@ -891,6 +896,7 @@ namespace Burntime.MonoGame
                 return;
             }
 #if IOS
+            HandleMemoryPressure();
             HandleTouchInput();
 #else
             lock (_inputGlyphSync)

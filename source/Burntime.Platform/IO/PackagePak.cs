@@ -23,7 +23,6 @@ class PackagePak : IPackage
 {
     PakHeader header;
     Dictionary<string, PakFileInfo> dicFiles;
-    FileStream stream;
     string path;
     string name;
     int basePos;
@@ -59,16 +58,15 @@ class PackagePak : IPackage
 
     public void Close()
     {
-        if (stream != null)
-            stream.Close();
+        // Archive handles are scoped to indexing and individual resource reads.
     }
 
     void process(string path)
     {
         try
         {
-            stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-            BinaryReader reader = new BinaryReader(stream);
+            using FileStream stream = new(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            using BinaryReader reader = new(stream);
             
             header.FileCount = reader.ReadInt32();
             header.Version = reader.ReadInt32();
@@ -102,14 +100,14 @@ class PackagePak : IPackage
         if (mode != FileOpenMode.Read)
             throw new InvalidOperationException();
 
-        // lock to only one thread at a time
-        lock (this)
+        try
         {
             if (!dicFiles.ContainsKey(filePath.PathWithoutPackage))
                 return null;
 
             PakFileInfo info = dicFiles[filePath.PathWithoutPackage];
 
+            using FileStream stream = new(path, FileMode.Open, FileAccess.Read, FileShare.Read);
             MemoryStream fileInMemory = new MemoryStream();
             stream.Seek(info.Position + basePos, SeekOrigin.Begin);
 
@@ -118,15 +116,23 @@ class PackagePak : IPackage
             while (remaining > 0)
             {
                 int copy = System.Math.Min(buf.Length, remaining);
-                remaining -= copy;
-
-                stream.Read(buf, 0, copy);
-                fileInMemory.Write(buf, 0, copy);
+                int read = stream.Read(buf, 0, copy);
+                if (read == 0)
+                {
+                    fileInMemory.Dispose();
+                    return null;
+                }
+                remaining -= read;
+                fileInMemory.Write(buf, 0, read);
             }
 
             fileInMemory.Seek(0, SeekOrigin.Begin);
 
             return new File(fileInMemory, info.Name);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            return null;
         }
     }
 

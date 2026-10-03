@@ -380,32 +380,14 @@ namespace Burntime.Remaster
 
         int TouchChoiceAt(Vector2 position)
         {
-            TextHelper text = new(app, "burn");
-            int selected = -1;
-            float distance = float.MaxValue;
-
-            void Consider(int choice, string line, int y)
-            {
-                if (string.IsNullOrEmpty(line))
-                    return;
-                Rect bounds = TouchHitTest.Expand(
-                    new Rect(55, y, fontText.GetWidth(line), 10),
-                    TouchHitTest.MinimumSize);
-                float candidateDistance = (bounds.Center - position).Length;
-                if (bounds.PointInside(position) && candidateDistance < distance)
-                {
-                    selected = choice;
-                    distance = candidateDistance;
-                }
-            }
-
             if (dialogmode == 0)
-                Consider(0, text[499], 85);
-            else if (dialogmode == 1)
-                for (int i = 0; i < conversation.Choices.Length; i++)
-                    Consider(i, conversation.Choices[i].Text, 63 + 11 * i);
-
-            return selected;
+                return GUI.TouchChoiceRows.HitTest(position, 55, FrameSize.x - 24,
+                    85, 10, 11, 1, _ => true);
+            if (dialogmode == 1)
+                return GUI.TouchChoiceRows.HitTest(position, 55, FrameSize.x - 24,
+                    63, 10, 11, conversation.Choices.Length,
+                    i => !string.IsNullOrEmpty(conversation.Choices[i].Text));
+            return -1;
         }
 
         void ResetFocus()

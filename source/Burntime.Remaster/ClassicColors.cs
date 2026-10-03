@@ -11,6 +11,7 @@ public static class ClassicColors
     public static readonly PixelColor HudTextHover = new(144, 160, 212); // #90A0D4 — Light periwinkle blue
     public static readonly PixelColor HudTextAccent = new(240, 120, 32); // #F07820 — Vivid orange
     public static readonly PixelColor HudWarning = new(252, 180, 56); // #FCB438 — Amber
+    public static readonly PixelColor MapTargetText = new(184, 184, 184); // #B8B8B8 — Neutral gray
 
     public static readonly PixelColor MenuText = new(108, 116, 168); // #6C74A8 — Slate blue
     public static readonly PixelColor MenuTextHover = new(240, 64, 56); // #F04038 — Coral red

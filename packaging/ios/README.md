@@ -3,6 +3,9 @@
 Landscape iPad app sharing the desktop game and renderer. Steamworks is excluded.
 Run commands from the repository root.
 
+Partial trimming removes unused SDK and MonoGame APIs. Game assemblies and the
+save formatter are preserved for reflection-based resources and save compatibility.
+
 ## Requirements
 
 - .NET SDK from `global.json`, Xcode 26.2 with iOS support.
@@ -19,7 +22,8 @@ are missing after installation.
 ./packaging/ios/package.sh
 ```
 
-Creates `artifacts/ios-arm64/Burntime-iPad-arm64-unsigned.zip` with the app,
+Performs a clean device build, then creates
+`artifacts/ios-arm64/Burntime-iPad-arm64-unsigned.zip` with the app,
 available dSYM symbols, and commit ID. Keep it for crash symbolication.
 The bundle ID defaults to `org.burntime`; override it with `IOS_APPLICATION_ID`.
 The bundle ID must match the registered App ID and provisioning profile.
@@ -86,6 +90,7 @@ SIMCTL_CHILD_BURNTIME_IOS_SMOKE_TEST=1 xcrun simctl launch --console-pty \
 Look for `PASS` or `FAIL`. Logs are in `Documents/.config/BurntimeSmokeTest` inside
 the app data container; ordinary game logs use `Documents/.config/Burntime`.
 Omit the environment variable for normal play.
+Add `SIMCTL_CHILD_BURNTIME_IOS_SMOKE_SAVE_ONLY=1` for a focused save/load check.
 
 Before release, check on an iPad:
 

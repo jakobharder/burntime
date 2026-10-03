@@ -16,6 +16,35 @@ using static Program;
 
 static class GameDefinitionsTests
 {
+    internal static IEnumerable<Case<int>> PlayerColorCases()
+    {
+        foreach (var first in Enum.GetValues<BurntimePlayerColor>())
+        foreach (var second in Enum.GetValues<BurntimePlayerColor>())
+            yield return Int($"player colors {first}/{second}", 0, () =>
+            {
+                var assigned = PlayerColorSetup.Assign(first, second);
+                Equal(first, assigned[0], "first player's choice");
+                if (first != second) Equal(second, assigned[1], "second player's choice");
+                Equal(4, assigned.Distinct().Count(), "all four players have distinct colors");
+                Equal(4, assigned.Select(PlayerColorSetup.FlagId).Distinct().Count(), "distinct world flags");
+                Equal(4, assigned.Select(PlayerColorSetup.IconId).Distinct().Count(), "distinct map icons");
+                var other = PlayerColorSetup.OtherSelection(first, second, second);
+                Equal(first, other, "choosing the other player's color swaps it");
+                return 0;
+            });
+
+        yield return Int("default player colors preserve original assets", 0, () =>
+        {
+            var colors = PlayerColorSetup.Assign(BurntimePlayerColor.Green, BurntimePlayerColor.Red);
+            Equal("0,8,12,4", string.Join(',', colors.Select(PlayerColorSetup.FlagId)), "original animated flag offsets");
+            Equal("0,1,3,2", string.Join(',', colors.Select(PlayerColorSetup.IconId)), "original icon order");
+            Equal("2,0,-1,1", string.Join(',', colors.Select(PlayerColorSetup.BodyColorSet)), "original recruit palettes");
+            Equal(BurntimePlayerColor.Red, PlayerColorSetup.OtherSelection(BurntimePlayerColor.Green,
+                BurntimePlayerColor.Black, BurntimePlayerColor.Red), "unoccupied choice preserves other player");
+            return 0;
+        });
+    }
+
     internal static IEnumerable<Case<int>> ProfileParsingCases()
     {
         yield return Int("DOS rules case-insensitive", (int)RuleSet.Dos,

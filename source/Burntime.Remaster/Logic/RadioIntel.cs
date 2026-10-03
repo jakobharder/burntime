@@ -22,9 +22,30 @@ internal static class RadioIntel
         player.Party.Any(character => !character.IsDead &&
             character.HasItemFunction(ItemFunction.RemoteIntel));
 
-    internal static bool IsAvailable(Player player, Location location) =>
-        HasRadio(player) && !location.IsCity && location != player.Location &&
-        location.Player != player;
+    internal static bool HasStoredRadio(Location location) =>
+        location.Rooms.Any(room => room.Items.Any(item =>
+            item.Type.HasFunction(ItemFunction.RemoteIntel)));
+
+    internal static bool HasAccess(Player player) =>
+        HasRadio(player) || (player.Location != null && HasStoredRadio(player.Location));
+
+    internal static bool CanSeeHealth(Player player, Location location) =>
+        location == player.Location ||
+        (location.Player == player && HasAccess(player) && HasStoredRadio(location));
+
+    internal static bool IsAvailable(Player player, Location location)
+    {
+        if (!HasAccess(player) || location.IsCity || location == player.Location ||
+            location.Player == player)
+            return false;
+
+        if (player.Location != null && player.Location.Neighbors.Contains(location))
+            return true;
+
+        ClassicGame? game = player.Container.Root as ClassicGame;
+        return game?.World?.Locations.Any(station => station.Player == player &&
+            HasStoredRadio(station) && station.Neighbors.Contains(location)) == true;
+    }
 
     internal static RadioReport Create(ClassicGame game, Player viewer, Location location)
     {

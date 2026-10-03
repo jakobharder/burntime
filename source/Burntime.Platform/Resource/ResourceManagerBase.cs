@@ -54,6 +54,15 @@ public abstract class ResourceManagerBase : IResourceManager
         delayLoader.Run();
     }
 
+    public void SetSuspended(bool suspended) => delayLoader.SetSuspended(suspended);
+
+    // Caller must pause the loader and prevent concurrent scene processing.
+    public void ReleaseCachedResources()
+    {
+        delayLoader.Reset();
+        ReleaseAll();
+    }
+
     public void Dispose()
     {
         if (Interlocked.Exchange(ref disposeStarted, 1) != 0)

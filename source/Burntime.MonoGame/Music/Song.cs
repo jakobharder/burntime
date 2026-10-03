@@ -3,6 +3,7 @@ using Burntime.Platform.IO;
 using Microsoft.Xna.Framework.Audio;
 using NVorbis;
 using System;
+using System.IO;
 
 namespace Burntime.MonoGame.Music;
 
@@ -48,28 +49,62 @@ internal class LoopableSong : IDisposable
         Burntime.Platform.IO.File? intro = null, bool repeat = false,
         bool fade = false)
     {
-        _loopReader = new VorbisReader(loop.Stream, true);
-        if (intro is not null)
+        Stream loopSource = loop.Stream;
+        Stream? introSource = intro?.Stream;
+        try
         {
-            _introReader = new VorbisReader(intro.Stream, true);
-            if (_introReader.SampleRate != _loopReader.SampleRate ||
-                _introReader.Channels != _loopReader.Channels)
+            _loopReader = OpenReader(loopSource);
+            if (intro is not null)
             {
-                DisposeReaders();
-                return;
+                _introReader = OpenReader(introSource!);
+                if (_introReader.SampleRate != _loopReader.SampleRate ||
+                    _introReader.Channels != _loopReader.Channels)
+                {
+                    DisposeReaders();
+                    return;
+                }
+            }
+
+            _activeReader = _introReader ?? _loopReader;
+            _loopEnabled = repeat;
+            _fadeAtEnd = fade && !repeat;
+
+            int sampleCount = _loopReader.SampleRate * BufferMilliseconds / 1000 *
+                _loopReader.Channels;
+            _sampleBuffer = new float[sampleCount];
+            _pcmBuffer = new byte[sampleCount * sizeof(short)];
+            _music = new DynamicSoundEffectInstance(_loopReader.SampleRate,
+                _loopReader.Channels == 2 ? AudioChannels.Stereo : AudioChannels.Mono);
+        }
+        catch (Exception error)
+        {
+            Dispose();
+            loopSource.Dispose();
+            introSource?.Dispose();
+            Log.Warning("Could not load audio: " + error.Message);
+        }
+    }
+
+    static VorbisReader OpenReader(Stream source)
+    {
+        // iOS must not retain archive or loose-file sharing locks on suspension.
+        // Keep compressed audio in memory; PCM decoding still uses bounded buffers.
+        if (OperatingSystem.IsIOS() && source is not MemoryStream)
+        {
+            MemoryStream compressed = new();
+            try
+            {
+                using (source) source.CopyTo(compressed);
+                compressed.Position = 0;
+                return new VorbisReader(compressed, true);
+            }
+            catch
+            {
+                compressed.Dispose();
+                throw;
             }
         }
-
-        _activeReader = _introReader ?? _loopReader;
-        _loopEnabled = repeat;
-        _fadeAtEnd = fade && !repeat;
-
-        int sampleCount = _loopReader.SampleRate * BufferMilliseconds / 1000 *
-            _loopReader.Channels;
-        _sampleBuffer = new float[sampleCount];
-        _pcmBuffer = new byte[sampleCount * sizeof(short)];
-        _music = new DynamicSoundEffectInstance(_loopReader.SampleRate,
-            _loopReader.Channels == 2 ? AudioChannels.Stereo : AudioChannels.Mono);
+        return new VorbisReader(source, true);
     }
 
     void FillBuffers()

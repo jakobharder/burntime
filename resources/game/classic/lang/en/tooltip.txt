@@ -77,7 +77,7 @@ Next
 Auto
 Active trap
 }#
-Reports remote camps and hazards}
+Scouts nearby camps. Links radio-equipped camps.}
 Man does not live by bread alone.}
 Dogs and mutants avoid attacking the carrier.}
 May uncover ammunition while travelling.}

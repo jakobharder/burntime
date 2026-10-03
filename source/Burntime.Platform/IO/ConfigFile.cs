@@ -10,9 +10,8 @@ public class ConfigFile
         File file = FileSystem.GetFile(name);
         if (file == null)
             return false;
-        bool result = Open(file.Stream);
-        file.Close();
-        return result;
+        using Stream stream = file.Stream;
+        return Open(stream);
     }
 
     public bool Open(Stream stream)
@@ -20,11 +19,12 @@ public class ConfigFile
         if (stream == null)
             return false;
 
+        using Stream ownedStream = stream;
         sections.Clear();
         order.Clear();
         ConfigSectionTemplate currentTemplate = new ConfigSectionTemplate();
 
-        var reader = new StreamReader(stream);
+        using var reader = new StreamReader(stream);
         string? line;
         while (null != (line = reader.ReadLine()))
         {
@@ -55,7 +55,6 @@ public class ConfigFile
         sections.Add(currentTemplate.Name.ToLower(), last);
         order.Add(last);
 
-        stream.Close();
         return true;
     }
 
@@ -65,9 +64,8 @@ public class ConfigFile
         if (file == null)
             return false; 
 
-        bool result = Save(file.Stream);
-        file.Close();
-        return result;
+        using Stream stream = file.Stream;
+        return Save(stream);
     }
 
     public bool Save(Stream stream)
@@ -75,16 +73,15 @@ public class ConfigFile
         if (stream == null)
             return false;
 
+        using Stream ownedStream = stream;
         foreach (ConfigSection section in order)
         {
             if (!section.Save(stream))
             {
-                stream.Close();
                 return false;
             }
         }
 
-        stream.Close();
         return true;
     }
 

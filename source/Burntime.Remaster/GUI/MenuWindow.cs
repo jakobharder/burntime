@@ -355,21 +355,9 @@ namespace Burntime.Remaster.GUI
 
         int GetTouchEntryAt(Vector2 position)
         {
-            int selected = -1;
-            float distance = float.MaxValue;
-            for (int i = 0; i < _menuEntries.Count; i++)
-            {
-                int width = _defaultFont.GetWidth(_menuEntries[i].Text);
-                var bounds = new Rect(MENU_CONTENT_WIDTH / 2 - width / 2,
-                    TOP_HEIGHT + i * MIDDLE_HEIGHT, width, MIDDLE_HEIGHT);
-                float candidateDistance = (bounds.Center - position).Length;
-                if (TouchHitTest.Expand(bounds, TouchHitTest.MinimumSize).PointInside(position) && candidateDistance < distance)
-                {
-                    selected = i;
-                    distance = candidateDistance;
-                }
-            }
-            return selected;
+            return TouchChoiceRows.HitTest(position, 0, MENU_CONTENT_WIDTH,
+                TOP_HEIGHT, MIDDLE_HEIGHT, MIDDLE_HEIGHT, _menuEntries.Count,
+                i => !string.IsNullOrEmpty(_menuEntries[i].Text));
         }
 
         public override bool OnInputAction(InputAction action)

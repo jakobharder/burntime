@@ -124,7 +124,11 @@ class TraderScene : Scene
             InputPromptColorScheme.Hud);
         exitButton.Prompts.Add(InputAction.Back, "",
             new Vector2(exitButton.Size.x + 2, -2));
-        acceptButton.Prompts.Add(InputAction.Action, "",
+        acceptButton.Prompts.Add(new InputPrompt(InputAction.Action, "")
+        {
+            MouseControl = MouseButton.None,
+            TouchControl = TouchControl.None
+        },
             new Vector2(acceptButton.Size.x + 2, -2));
 
         Prompts.Add(new InputPrompt(InputPattern.HorizontalPaging, "@prompts?30")

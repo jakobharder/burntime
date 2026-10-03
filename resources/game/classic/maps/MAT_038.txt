@@ -13,6 +13,33 @@ available_products = 1
 ways = 8
 way_lengths = 3
 
+initial_ground_items = item_meat
+initial_room_items = item_bottle item_wire
+
+[resident0]
+class = Dog
+position = 116x380
+
+[resident1]
+class = Dog
+position = 528x224
+
+[resident2]
+class = Dog
+position = 487x404
+
+[resident3]
+class = Technician
+name = newburn?93
+dialog = 39
+position = 180x300
+
+[resident4]
+class = Mercenary
+name = newburn?94
+dialog = 54
+position = 430x280
+
 [room0]
 type = normal
 title = burn?661
@@ -42,4 +69,3 @@ image = raum_1.pac
 type = normal
 title = burn?661
 image = raum_1.pac
-

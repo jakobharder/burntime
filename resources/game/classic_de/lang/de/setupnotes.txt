@@ -22,7 +22,7 @@ Hinweise
 
 #EXTENDED: GEGENSTÄNDE
 - Kleidung: 5-25% weniger Schaden
-- Funkgerät: Gefahren, Verteidiger und Produktion entfernter Lager
+- Funkgerät: Funkgeräte erkunden Nachbarlager. Zwei Geräte zeigen die Verteidiger eines entfernten Lagers und erkunden dessen Nachbarlager. Zum Empfang genügt ein Gerät in der Gruppe oder im aktuellen Lager.
 - Metalldetektor: 1% Chance auf Munitionsfund pro Reisetag
 - Bibel: kein Nahrungs- oder Wasserverbrauch am Standort; normaler Verbrauch auf Reisen
 - Schädel / Knochen: Träger von Hunden und Mutanten ignoriert

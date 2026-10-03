@@ -54,7 +54,6 @@ class MapViewOverlayHoverText : IMapViewOverlay
     Character? announcedCharacter;
     MapViewHoverInfo? announcedCharacterInfo;
     float announcementRemaining;
-    float targetPulseTime;
     IMapObject? commandTarget;
     Character? commandOwner;
     Location? commandLocation;
@@ -94,7 +93,6 @@ class MapViewOverlayHoverText : IMapViewOverlay
         commandTarget = target;
         commandOwner = owner;
         commandLocation = mapState;
-        targetPulseTime = 0;
     }
 
     public void ClearTarget()
@@ -113,8 +111,6 @@ class MapViewOverlayHoverText : IMapViewOverlay
         {
             if (mapState != commandLocation || player?.SelectedCharacter != commandOwner)
                 ClearTarget();
-            else
-                targetPulseTime += System.Math.Max(0, elapsed);
         }
 
         if (announcementRemaining > 0 && announcedCharacter != null &&
@@ -209,13 +205,12 @@ class MapViewOverlayHoverText : IMapViewOverlay
 
         if (targetInfo != null)
         {
-            float alpha = MapTargetPulse.GetAlpha(targetPulseTime);
             if (targetInfo.Character != null)
                 DrawCharacterText(textTarget, targetInfo,
-                    Offset - new Vector2(0, topMargin), alpha);
+                    Offset - new Vector2(0, topMargin), 1);
             else
                 DrawEntranceText(textTarget, targetInfo,
-                    Offset - new Vector2(0, topMargin), alpha,
+                    Offset - new Vector2(0, topMargin), 1,
                     showInventoryHint: mapState?.Player == player);
         }
 
@@ -250,14 +245,11 @@ class MapViewOverlayHoverText : IMapViewOverlay
             return player != null && mapState.AreEntrancesBlockedFor(player)
                 ? new MapViewHoverInfo(resMan.GetString("newburn?103"),
                     mapState.Map.Entrances[number].Area.Center,
-                    ClassicColors.LightGray, room)
-                : new MapViewHoverInfo(room, resMan, ClassicColors.LightGray);
+                    ClassicColors.MapTargetText, room)
+                : new MapViewHoverInfo(room, resMan, ClassicColors.MapTargetText);
         }
 
-        PixelColor color = commandTarget is Character character
-            ? GetCharacterColor(character)
-            : new PixelColor(180, 152, 112);
-        return new MapViewHoverInfo(commandTarget, resMan, color);
+        return new MapViewHoverInfo(commandTarget, resMan, ClassicColors.MapTargetText);
     }
 
     static bool IsSameTarget(MapViewHoverInfo hover, MapViewHoverInfo? target) =>
@@ -436,16 +428,5 @@ class MapViewOverlayHoverText : IMapViewOverlay
     public IMapObject GetObjectAt(Vector2 position)
     {
         return null;
-    }
-}
-
-internal static class MapTargetPulse
-{
-    const float Period = 0.75f;
-
-    internal static float GetAlpha(float elapsed)
-    {
-        float phase = elapsed / Period * 2 * System.MathF.PI;
-        return (System.MathF.Cos(phase) + 1) / 2;
     }
 }

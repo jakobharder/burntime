@@ -31,4 +31,5 @@ public sealed class AppDelegate : UIApplicationDelegate
 
     public override void OnResignActivation(UIApplication application) => game?.SetMobileActive(false);
     public override void OnActivated(UIApplication application) => game?.SetMobileActive(true);
+    public override void ReceiveMemoryWarning(UIApplication application) => game?.QueueMemoryPressureCleanup();
 }

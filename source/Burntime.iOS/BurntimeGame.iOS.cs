@@ -2,6 +2,7 @@ using Burntime.Framework;
 using Burntime.Platform;
 using Microsoft.Xna.Framework.Input.Touch;
 using System.Diagnostics;
+using UIKit;
 
 namespace Burntime.MonoGame;
 
@@ -12,11 +13,33 @@ public partial class BurntimeGame
     object? touchContext;
     volatile bool _mobileActive = true;
     int saveSettingsPending;
+    readonly object settingsSaveSync = new();
+    nint settingsBackgroundTask = UIApplication.BackgroundTaskInvalid;
     bool suppressTouchesUntilReleased;
+    readonly object mobileFrameSync = new();
+    int memoryPressurePending;
+
+    public void QueueMemoryPressureCleanup() => Interlocked.Exchange(ref memoryPressurePending, 1);
+
+    void HandleMemoryPressure()
+    {
+        // Texture disposal belongs on the graphics thread while the app is active.
+        if (!_mobileActive || !IsActive ||
+            Interlocked.Exchange(ref memoryPressurePending, 0) == 0)
+            return;
+
+        lock (mobileFrameSync)
+        {
+            ResourceManager.SetSuspended(true);
+            try { ResourceManager.ReleaseCachedResources(); }
+            finally { ResourceManager.SetSuspended(false); }
+        }
+    }
     public void SetMobileActive(bool active)
     {
-        if (!active) Interlocked.Exchange(ref saveSettingsPending, 1);
+        if (!active) QueueMobileSettingsSave();
         _mobileActive = active;
+        ResourceManager?.SetSuspended(!active);
         CancelTouch();
         _burntimeApp?.SceneManager?.ClearTouchGestures();
         Music.SetSuspended(!active);
@@ -24,9 +47,45 @@ public partial class BurntimeGame
 
     void PersistMobileSettings()
     {
-        if (Interlocked.Exchange(ref saveSettingsPending, 0) == 0) return;
-        try { _burntimeApp.SaveUserSettings(); }
-        catch (Exception error) { Log.Warning("Could not save settings: " + error.Message); }
+        lock (settingsSaveSync)
+        {
+            if (Interlocked.Exchange(ref saveSettingsPending, 0) == 0) return;
+            try { _burntimeApp.SaveUserSettings(); }
+            catch (Exception error) { Log.Warning("Could not save settings: " + error.Message); }
+            finally { EndSettingsBackgroundTask(); }
+        }
+    }
+
+    void QueueMobileSettingsSave()
+    {
+        lock (settingsSaveSync)
+        {
+            if (settingsBackgroundTask != UIApplication.BackgroundTaskInvalid)
+                return;
+
+            // Reserve execution time before publishing work to the game thread.
+            settingsBackgroundTask = UIApplication.SharedApplication.BeginBackgroundTask(
+                "Save Burntime settings", () =>
+                {
+                    lock (settingsSaveSync)
+                    {
+                        Interlocked.Exchange(ref saveSettingsPending, 0);
+                        EndSettingsBackgroundTask();
+                    }
+                });
+            if (settingsBackgroundTask != UIApplication.BackgroundTaskInvalid)
+                Interlocked.Exchange(ref saveSettingsPending, 1);
+        }
+    }
+
+    // Called under settingsSaveSync, after the settings stream has closed.
+    void EndSettingsBackgroundTask()
+    {
+        if (settingsBackgroundTask == UIApplication.BackgroundTaskInvalid)
+            return;
+        nint task = settingsBackgroundTask;
+        settingsBackgroundTask = UIApplication.BackgroundTaskInvalid;
+        UIApplication.SharedApplication.EndBackgroundTask(task);
     }
 
     void CancelTouch()
