@@ -286,7 +286,7 @@ namespace Burntime.Platform.Resource
                     Sprite.internalFrames[i] = Sprite.internalFrames[i] ?? new SpriteFrame();
 
                     lock (sprites)
-                        MemoryUsage += Sprite.internalFrames[i].LoadFromProcessor(loader);
+                        MemoryUsage += Sprite.internalFrames[i].LoadFromProcessor(loader, recolorRgb: id.RecolorRgb);
                     Sprite.internalFrames[i].Resolution = Sprite.internalFrames[0].Resolution;
                 }
             }
@@ -298,7 +298,7 @@ namespace Burntime.Platform.Resource
                     Sprite.Animation.FrameCount = 1;
                 }
                 lock (sprites)
-                    MemoryUsage += Sprite.internalFrames[0].LoadFromProcessor(loader);
+                    MemoryUsage += Sprite.internalFrames[0].LoadFromProcessor(loader, recolorRgb: id.RecolorRgb);
             }
 
             _engine.DecreaseLoadingCount();

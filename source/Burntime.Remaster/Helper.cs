@@ -5,12 +5,20 @@ namespace Burntime.Remaster
 {
     class Helper
     {
+        internal const int GrayBodyColorSet = 3;
+        internal const uint GrayClothingRgb = 0xd4d4d4;
         static public DataID<ISprite> GetCharacterBody(int body, int colorSet)
         {
-            int sprite = GetBodyId(body, colorSet);
-            if (sprite < 0)
-                sprite = 0;
-            return BurntimeClassic.Instance.ResourceManager.GetData("burngfxani@syssze.raw?" + sprite + "-" + (sprite + 15), ResourceLoadType.LinkOnly);
+            string id = GetCharacterBodyResource(body, colorSet);
+            return BurntimeClassic.Instance.ResourceManager.GetData(id, ResourceLoadType.LinkOnly);
+        }
+
+        internal static string GetCharacterBodyResource(int body, int colorSet)
+        {
+            int sprite = GetBodyId(body, colorSet == GrayBodyColorSet ? 2 : colorSet);
+            if (sprite < 0) sprite = 0;
+            return $"burngfxani@syssze.raw?{sprite}-{sprite + 15}" +
+                (colorSet == GrayBodyColorSet ? "?;recolor=d4d4d4" : "");
         }
 
         static public int GetBodyId(int body, int color)

@@ -58,8 +58,6 @@ namespace Burntime.Remaster.Logic
         [NonSerialized]
         bool wasInTalkingDistance;
         [NonSerialized]
-        float movementElapsed;
-        [NonSerialized]
         float fleeTimeRemaining;
         [NonSerialized]
         Vector2 fleeDestination;
@@ -82,6 +80,42 @@ namespace Burntime.Remaster.Logic
         // Vertical facing covers 65 degrees to either side of the vertical axis,
         // leaving a 25-degree cone around each horizontal direction.
         const float VERTICAL_FACING_MIN_SLOPE = 0.46630767f; // tan(25 degrees)
+
+        internal static bool IsSouthEastWalkingDirection(Vector2f direction)
+        {
+            const float minSlope = 0.41421356f; // tan(22.5 degrees)
+            return direction.x > 0 && direction.y > 0 &&
+                direction.y >= direction.x * minSlope &&
+                direction.x >= direction.y * minSlope;
+        }
+
+        [NonSerialized]
+        bool idleFacingChosen;
+        [NonSerialized]
+        int idleFacing;
+
+        internal int UpdateIdleFacing(bool directionalSheet, int walkingFrame = -1)
+        {
+            if (!directionalSheet)
+                return 0;
+            if (walkingFrame >= 8 && walkingFrame <= 39)
+            {
+                // Walking cycles follow the same direction order as idle poses.
+                idleFacing = (walkingFrame - 8) / 4;
+                idleFacingChosen = true;
+            }
+            return idleFacingChosen ? idleFacing : 2;
+        }
+
+        bool UsesNewCharacterGraphics => Platform.Graphics.CharacterGraphicsOptions.Enabled &&
+            BurntimeClassic.Instance?.IsNewGfx == true &&
+            Helper.GetColorFromSpriteId(new ResourceID(Body.Name).Index) != 0;
+
+        internal bool UsesDirectionalIdleSheet => UsesNewCharacterGraphics &&
+            Class is CharClass.Boss or CharClass.Doctor or CharClass.Mercenary;
+
+        bool UsesExtendedCharacterSheet => UsesNewCharacterGraphics &&
+            (UsesDirectionalIdleSheet || new ResourceID(Body.Name).Index == 256);
 
         internal bool IsFleeing => fleeTimeRemaining > 0;
         internal bool IsHeldForCombat => combatHold;
@@ -167,6 +201,26 @@ namespace Burntime.Remaster.Logic
             get { return body; }
             set { body = value; if (body.Object != null && body.Object.Animation != null) body.Object.Animation.Progressive = false; }
         }
+
+        bool UsesSharedDeathAnimation => IsDead && UsesNewCharacterGraphics &&
+            Class is CharClass.Boss or CharClass.Doctor or CharClass.Mercenary or CharClass.Dog;
+
+        public DataID<Platform.Graphics.ISprite> RenderBody
+        {
+            get
+            {
+                if (!UsesSharedDeathAnimation)
+                    return Body;
+                int row = Class == CharClass.Dog ? 2 : 0;
+                DataID<Platform.Graphics.ISprite> deathBody = BurntimeClassic.Instance.ResourceManager.GetData(
+                    $"pngsheet@gfx/char_death.png?{row * 4}-{row * 4 + 3}?36x42");
+                deathBody.Object.Animation.Progressive = false;
+                return deathBody;
+            }
+        }
+
+        // Older saves can resume a five-step death timer; hold the fourth image at its end.
+        public int RenderAnimation => UsesSharedDeathAnimation ? System.Math.Min(ani.Frame, 3) : Animation;
 
         public int SetBodyId
         {
@@ -256,7 +310,8 @@ namespace Burntime.Remaster.Logic
             SetBodyId = Helper.GetSetBodyId(Class);
             if (SetBodyId >= 0 && body.Object is not null)
             {
-                body = Helper.GetCharacterBody(SetBodyId, Helper.GetColorFromSpriteId(body.Object.ID.Index));
+                body = Helper.GetCharacterBody(SetBodyId, Player != null ? Player.CharacterBodyColorSet : new ResourceID(body.Name).RecolorRgb == Helper.GrayClothingRgb
+                    ? Helper.GrayBodyColorSet : Helper.GetColorFromSpriteId(new ResourceID(body.Name).Index));
                 if (body.Object.Animation is not null)
                     body.Object.Animation.Progressive = false;
             }
@@ -268,6 +323,8 @@ namespace Burntime.Remaster.Logic
             get { return hireItems; }
             set { hireItems = value; }
         }
+
+        public Vector2f RenderPosition => Path?.GetRenderPosition(Position) ?? Position;
 
         public Vector2 Position
         {
@@ -409,9 +466,9 @@ namespace Burntime.Remaster.Logic
             boss.Party.Add(this);
             Player = boss;
 
-            if (SetBodyId != -1 && boss.BodyColorSet != -1)
+            if (SetBodyId != -1 && boss.CharacterBodyColorSet != -1)
             {
-                Body = Helper.GetCharacterBody(SetBodyId, boss.BodyColorSet);
+                Body = Helper.GetCharacterBody(SetBodyId, boss.CharacterBodyColorSet);
             }
 
             Item hireItem = null;
@@ -960,7 +1017,7 @@ namespace Burntime.Remaster.Logic
 
             if (IsDead)
             {
-                animation = 12 + ani.Frame;
+                animation = (UsesExtendedCharacterSheet ? 34 : 12) + ani.Frame;
 
                 if (ani.End)
                 {
@@ -1009,7 +1066,6 @@ namespace Burntime.Remaster.Logic
                 !isActiveGroup && !isPlayerControlled)
                 Path.Speed = 0;
 
-            Vector2 old = new Vector2(position);
 
             // process dangers (only if hired)
             if (Player != null && Root.RuleBook.ApplyContinuousHazard(this, elapsed))
@@ -1055,66 +1111,82 @@ namespace Burntime.Remaster.Logic
             if (loc == null)
                 loc = Player.Location;
 
-            float pathElapsed = elapsed;
-            if (Path.Speed <= 0)
-            {
-                movementElapsed = 0;
-                pathElapsed = 0;
-            }
-            else if (Path.Speed < WALK_SPEED)
-            {
-                movementElapsed += elapsed;
-                if (Path.Speed * movementElapsed < 1)
-                    pathElapsed = 0;
-                else
-                {
-                    pathElapsed = movementElapsed;
-                    movementElapsed = 0;
-                }
-            }
-            else
-                movementElapsed = 0;
-
-            position = pathElapsed > 0
-                ? Path.Process(loc.Map.Mask, Position, pathElapsed)
+            position = Path.Speed > 0
+                ? Path.Process(loc.Map.Mask, Position, elapsed)
                 : Position;
 
-            Vector2f dir = position - old;
-            if (dir == Vector2f.Zero && pathElapsed == 0 && movementElapsed > 0 && Path.MoveTo != Position)
-                dir = Path.MoveTo - Position;
-            if (pathElapsed > 0 && Path.MovementDirection != Vector2f.Zero)
-                dir = Path.MovementDirection;
+            Vector2f dir = Path.MovementDirection;
+            if (Path.Speed <= 0)
+                dir = Vector2f.Zero;
             if (System.Math.Abs(dir.x) > 0.01f || System.Math.Abs(dir.y) > 0.01f)
             {
                 bool faceVertical = System.Math.Abs(dir.y) >=
                     System.Math.Abs(dir.x) * VERTICAL_FACING_MIN_SLOPE;
-                if (faceVertical && dir.y < 0) // up
+                bool extendedCharacterSheet = UsesExtendedCharacterSheet;
+                bool useDiagonalAnimations = extendedCharacterSheet;
+                bool southEastPrototype = useDiagonalAnimations && IsSouthEastWalkingDirection(dir);
+                int walkingFrameCount = extendedCharacterSheet ? 4 : 2;
+                ani.Speed = 10.0f;
+                if (ani.FrameCount != walkingFrameCount)
                 {
-                    Animation = 8 + ani.Frame;
+                    ani.FrameCount = walkingFrameCount;
+                    ani.Frame = 0;
+                }
+                bool northEastPrototype = useDiagonalAnimations &&
+                    IsSouthEastWalkingDirection(new Vector2f(dir.x, -dir.y));
+                bool northWestPrototype = useDiagonalAnimations &&
+                    IsSouthEastWalkingDirection(new Vector2f(-dir.x, -dir.y));
+                bool southWestPrototype = useDiagonalAnimations &&
+                    IsSouthEastWalkingDirection(new Vector2f(-dir.x, dir.y));
+                if (northWestPrototype)
+                {
+                    Animation = (UsesDirectionalIdleSheet ? 36 : 30) + ani.Frame;
+                }
+                else if (southWestPrototype)
+                {
+                    Animation = (UsesDirectionalIdleSheet ? 32 : 26) + ani.Frame;
+                }
+                else if (northEastPrototype)
+                {
+                    Animation = (UsesDirectionalIdleSheet ? 28 : 22) + ani.Frame;
+                }
+                else if (southEastPrototype)
+                {
+                    Animation = (UsesDirectionalIdleSheet ? 24 : 18) + ani.Frame;
+                }
+                else if (faceVertical && dir.y < 0) // up
+                {
+                    Animation = (UsesDirectionalIdleSheet ? 20 : extendedCharacterSheet ? 14 : 8) + ani.Frame;
                 }
                 else if (faceVertical && dir.y > 0) // down
                 {
-                    Animation = 6 + ani.Frame;
+                    Animation = (UsesDirectionalIdleSheet ? 16 : extendedCharacterSheet ? 10 : 6) + ani.Frame;
                 }
                 else
                 {
                     if (dir.x < 0) // left
                     {
-                        Animation = 4 + ani.Frame;
+                        Animation = (UsesDirectionalIdleSheet ? 12 : extendedCharacterSheet ? 6 : 4) + ani.Frame;
                     }
                     else if (dir.x > 0) // right
                     {
-                        Animation = 2 + ani.Frame;
+                        Animation = (UsesDirectionalIdleSheet ? 8 : 2) + ani.Frame;
                     }
                 }
+                UpdateIdleFacing(UsesDirectionalIdleSheet, nextAnimation);
             }
             else
-                Animation = 0;
+            {
+                Animation = UpdateIdleFacing(UsesDirectionalIdleSheet);
+                if (UsesDirectionalIdleSheet)
+                    animation = nextAnimation;
+            }
 
             // A new walking direction must take effect immediately. Debouncing
             // it can retain the previous facing while the character moves away.
-            if (nextAnimation >= 2 && nextAnimation <= 9 &&
-                animation / 2 != nextAnimation / 2)
+            if (UsesExtendedCharacterSheet && nextAnimation >= 2 && nextAnimation <= (UsesDirectionalIdleSheet ? 39 : 33) ||
+                nextAnimation >= 2 && nextAnimation <= 11 &&
+                (animation >= 16 || animation / 2 != nextAnimation / 2))
                 animation = nextAnimation;
 
             if (!aniDelay.IsIn && Animation != nextAnimation)

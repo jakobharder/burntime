@@ -2,6 +2,8 @@
 using Burntime;
 using System;
 
+Burntime.Platform.Graphics.CharacterGraphicsOptions.Configure(args);
+
 if (args.Contains("--visual-test"))
 {
     Environment.ExitCode = Burntime.MonoGame.VisualTestRunner.Run(args);

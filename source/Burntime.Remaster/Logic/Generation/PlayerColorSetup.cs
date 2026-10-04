@@ -36,8 +36,8 @@ internal static class PlayerColorSetup
     internal static int BodyColorSet(BurntimePlayerColor color) => color switch
     {
         BurntimePlayerColor.Red => 0,
-        BurntimePlayerColor.Blue => -1,
-        BurntimePlayerColor.Black => 1,
+        BurntimePlayerColor.Blue => 1,
+        BurntimePlayerColor.Black => Helper.GrayBodyColorSet,
         _ => 2
     };
 }

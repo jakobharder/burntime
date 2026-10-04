@@ -249,10 +249,7 @@ namespace Burntime.Remaster.Logic.Generation
                 player.ColorDark = colorsdark[(int)color];
                 player.IconID = PlayerColorSetup.IconId(color);
                 player.BodyColorSet = PlayerColorSetup.BodyColorSet(color);
-                // Blue has no recruit recoloring set; retain its original boss appearance.
-                player.Character.Body = player.BodyColorSet < 0
-                    ? Helper.GetCharacterBody(3, Helper.GetColorFromSpriteId(gamdat.Characters[2].SpriteId))
-                    : Helper.GetCharacterBody(3, player.BodyColorSet);
+                player.Character.Body = Helper.GetCharacterBody(3, player.BodyColorSet);
                 int flag = PlayerColorSetup.FlagId(color);
                 player.Flag = app.ResourceManager.GetData($"burngfxani@syst.raw?{flag}-{flag + 3}");
                 player.Flag.Object.Animation.Progressive = false;

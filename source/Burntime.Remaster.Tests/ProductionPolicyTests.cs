@@ -47,6 +47,36 @@ static class ProductionPolicyTests
             return 0;
         });
 
+        yield return Int("slow paths retain subpixel render positions", 0, () =>
+        {
+            var mask = new Burntime.Data.BurnGfx.PathMask(20, 20, 8);
+            for (int y = 0; y < 20; y++)
+                for (int x = 0; x < 20; x++)
+                    mask[x, y] = true;
+            var path = new Burntime.Remaster.PathFinding.SimplePath();
+            var start = new Burntime.Platform.Vector2(32, 32);
+            path.Speed = 23.1f;
+            path.MoveTo = new Burntime.Platform.Vector2(100, 100);
+            var raster = start;
+            for (int i = 1; i <= 20; i++)
+            {
+                raster = path.Process(mask, raster, 0.016f);
+                var rendered = path.GetRenderPosition(raster);
+                float expected = 32 + i * 23.1f * 0.016f / MathF.Sqrt(2);
+                Equal(true, MathF.Abs(rendered.x - expected) < 0.0001f,
+                    "fractional progress survives repeated raster positions");
+                Equal(true, MathF.Abs(rendered.y - expected) < 0.0001f,
+                    "diagonal components remain synchronized");
+            }
+            var teleported = new Burntime.Platform.Vector2(80, 80);
+            Equal((Burntime.Platform.Vector2f)teleported,
+                path.GetRenderPosition(teleported), "external position changes render immediately");
+            path.Stop(raster);
+            Equal((Burntime.Platform.Vector2f)raster, path.GetRenderPosition(raster),
+                "stopping synchronizes the render position");
+            return 0;
+        });
+
         yield return Int("unwalkable positions recover only on scene entry", 0, () =>
         {
             var m = new StateManager(null!);
