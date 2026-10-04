@@ -9,7 +9,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Burntime.MonoGame;
 
-internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = false, string? storeMode = null) : IVisualTestRunner
+internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = false, string? storeMode = null, string language = "en") : IVisualTestRunner
 {
     public string OutputDirectory { get; } = outputDirectory;
     readonly string[] names = storeMode != null ? VisualTestScenes.StoreNames :
@@ -26,11 +26,14 @@ internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = 
 
     public static int RunStoreCapture(string[] args)
     {
-        if (args.Length != 3 || args[0] != "--store-capture" || args[1] is not ("ipad" or "steam"))
+        if (args.Length is < 3 or > 4 || args[0] != "--store-capture" ||
+            args[1] is not ("ipad" or "steam" or "macos") ||
+            args.Length == 4 && args[3] is not ("--language=en" or "--language=de"))
         {
-            Console.Error.WriteLine("Usage: Burntime --store-capture ipad|steam OUTPUT_DIRECTORY");
+            Console.Error.WriteLine("Usage: Burntime --store-capture ipad|steam|macos OUTPUT_DIRECTORY [--language=en|--language=de]");
             return 2;
         }
+        string captureLanguage = args.Length == 4 && args[3] == "--language=de" ? "de" : "en";
         string output = Path.GetFullPath(args[2]);
         Directory.CreateDirectory(output);
         if (VisualTestScenes.StoreNames.Any(name => System.IO.File.Exists(Path.Combine(output, name + ".png"))))
@@ -41,10 +44,14 @@ internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = 
         FileSystem.UserFolderOverride = Path.Combine(output, "user");
         Directory.CreateDirectory(FileSystem.UserFolderOverride);
         System.IO.File.WriteAllText(Path.Combine(FileSystem.UserFolderOverride, "user.txt"),
-            "newgfx=true\nprompts=0\nlanguage=en\nfullscreen=false\nmusic=off\nmap_music=none\ncontroller_glyphs=steam\n");
-        var size = args[1] == "ipad" ? new Burntime.Platform.Vector2(2752, 2064) :
-            new Burntime.Platform.Vector2(1920, 1080);
-        VisualTestRunner runner = new(output, storeMode: args[1]);
+            $"newgfx=true\nprompts=0\nlanguage={captureLanguage}\nfullscreen=false\nmusic=off\nmap_music=none\ncontroller_glyphs=steam\n");
+        var size = args[1] switch
+        {
+            "ipad" => new Burntime.Platform.Vector2(2752, 2064),
+            "macos" => new Burntime.Platform.Vector2(2560, 1600),
+            _ => new Burntime.Platform.Vector2(1920, 1080)
+        };
+        VisualTestRunner runner = new(output, storeMode: args[1], language: captureLanguage);
         try
         {
             using BurntimeGame game = new(disableShaders: args[1] == "ipad",
@@ -127,7 +134,8 @@ internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = 
             index++;
             Log.Info($"VISUAL SCENARIO: {names[index]}");
             if (storeMode == null) scenes.Open(names[index]);
-            else scenes.OpenStoreCapture(names[index], storeMode == "ipad" ? InputMode.Touch : InputMode.Gamepad);
+            else scenes.OpenStoreCapture(names[index], storeMode == "ipad" ? InputMode.Touch :
+                storeMode == "macos" ? InputMode.Mouse : InputMode.Gamepad);
             nextScene = false;
             readyFrames = 0;
             animationFrames = names[index] == "menu" ? 60 : 0;
@@ -189,10 +197,12 @@ internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = 
                 JsonSerializer.Serialize(captured));
             if (storeMode != null)
                 System.IO.File.WriteAllText(Path.Combine(OutputDirectory, "manifest.json"),
-                    JsonSerializer.Serialize(new { mode = storeMode, boss = "Jakob", seed = 123,
+                    JsonSerializer.Serialize(new { mode = storeMode, language, boss = "Jakob", seed = 123,
                         width, height, city = scenes!.CaptureCityName, day = 42,
-                        input = storeMode == "ipad" ? "touch" : "gamepad",
-                        glyphs = storeMode == "ipad" ? "touch" : "steam",
+                        scenarioDays = VisualTestScenes.StoreNames.ToDictionary(
+                            name => name, name => name == "01-city" ? 45 : 42),
+                        input = storeMode == "ipad" ? "touch" : storeMode == "macos" ? "mouse" : "gamepad",
+                        glyphs = storeMode == "ipad" ? "touch" : storeMode == "macos" ? "mouse" : "steam",
                         renderer = game.OutputFiltering.ToString(), campaign = scenes.StoreCaptureState,
                         captured }, new JsonSerializerOptions { WriteIndented = true }));
             game.Exit();

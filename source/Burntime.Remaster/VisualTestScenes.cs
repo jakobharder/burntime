@@ -81,6 +81,7 @@ public sealed class VisualTestScenes(BurntimeClassic app, string bossName = "Vis
         var sana = world.Locations[1];
         var city = world.Locations[13]; // Antella.
         CaptureCityName = app.ResourceManager.GetString("burn?" + city.Id);
+        world.Day = name == "01-city" ? 45 : 42;
         var destination = name == "01-city" ? city : sana;
         boss.Location = destination;
         boss.Character.Position = destination.EntryPoint;
@@ -116,10 +117,24 @@ public sealed class VisualTestScenes(BurntimeClassic app, string bossName = "Vis
                 }
             }
             view.CenterTo(center);
+            if (inputMode == InputMode.Mouse)
+            {
+                app.DeviceManager.MouseMove(entrance.Area.Center + view.ScrollPosition + view.Position);
+                app.Process(0);
+            }
         }
         else if (name == "03-world-map")
         {
             app.SetScene("MapScene");
+            if (inputMode == InputMode.Mouse)
+            {
+                app.Process(0);
+                var scene = ReadPrivate<Scene>(app.SceneManager, "activeScene");
+                var view = Descendants(scene).OfType<MapView>().First();
+                app.DeviceManager.MouseMove(view.Map.Entrances[sana.Id].Area.Center +
+                    view.ScrollPosition + view.PositionOnScreen);
+                app.Process(0);
+            }
         }
         else if (name == "04-trader")
         {
@@ -140,6 +155,12 @@ public sealed class VisualTestScenes(BurntimeClassic app, string bossName = "Vis
             traderInventory.Grid.LeftClickItemEvent.Execute(traderInventory.Grid[2]); // Canteen.
             if (inputMode == InputMode.Gamepad) Press(InputAction.MoveRight);
             traderInventory.Grid.FocusItem(3); // Spring: Needed for ??? (an undiscovered trap recipe).
+            if (inputMode == InputMode.Mouse)
+            {
+                var spring = ReadPrivate<ItemWindow[]>(traderInventory.Grid, "itemWindows")[3];
+                app.DeviceManager.MouseMove(spring.PositionOnScreen + spring.Size / 2);
+                app.Process(0);
+            }
         }
         app.LastInputMode = inputMode;
     }

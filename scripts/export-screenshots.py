@@ -10,7 +10,8 @@ from PIL import Image
 def export(source: Path, destination: Path) -> None:
     manifest = json.loads((source / "manifest.json").read_text())
     names = json.loads((source / "captures.json").read_text())
-    expected = (2752, 2064) if manifest["mode"] == "ipad" else (1920, 1080)
+    expected = {"ipad": (2752, 2064), "steam": (1920, 1080),
+                "macos": (2560, 1600)}[manifest["mode"]]
     if len(names) != 4 or len(set(names)) != 4:
         raise ValueError("Incomplete or duplicate capture scenarios.")
     warnings = [line for line in (source / "resources.log").read_text().splitlines()

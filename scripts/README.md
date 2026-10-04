@@ -4,7 +4,7 @@
 
 ## Store screenshots
 
-Capture the same deterministic campaign with iPad touch controls and Steam controller glyphs:
+Capture the same deterministic campaign with iPad touch controls, Steam controller glyphs, and macOS mouse input:
 
 ```sh
 # Once, if the visual-test Python environment is not installed:
@@ -14,18 +14,22 @@ scripts/capture-screenshots.sh
 # Or capture one mode, optionally choosing a fresh output directory:
 scripts/capture-screenshots.sh ipad artifacts/screenshots/ipad-review
 scripts/capture-screenshots.sh steam artifacts/screenshots/steam-review
+scripts/capture-screenshots.sh macos artifacts/screenshots/macos-review
+# German versions of all modes (English is the default):
+scripts/capture-screenshots.sh all artifacts/screenshots/german-review de
 ```
 
 This runs the macOS/desktop MonoGame renderer and requires a graphical desktop.
 It does not require a simulator, attached controller, Steam client, or a player save.
 iPad uses 2752x2064 landscape, touch prompts, and the iOS shader-free output path.
 Steam uses 1920x1080, gamepad prompts, and forced Steam controller glyphs.
+macOS uses 2560x1600 with mouse input and entrance hover hints.
 Each mode captures Antella, Sana beside an owned room with two rats and a rat
 trap, a progressed world map retaining that camp's stock and production, and a
 trader screen offering Jakob's meat, rags, and bones. A spring is focused to
 show the undiscovered construction recipe tooltip ("Needed for ???").
 
-The campaign uses seed 123, Extended rules, no AI workers, boss Jakob, day 42,
+The campaign uses seed 123, Extended rules, no AI workers, boss Jakob, day 42 (day 45 in the city),
 fixed camp ownership, and fixed inventories. Scene time stays frozen, while
 loading, GPU uploads, and fades finish before capture. Profiles are isolated in
 the output folder. Existing screenshots are never overwritten.
