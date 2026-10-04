@@ -1,4 +1,4 @@
-# Privacy Policy - Burntime Remastered
+# Privacy Policy
 
 Last updated: 4 October 2026
 
@@ -10,11 +10,11 @@ Saved games, settings, and logs stay on your device and can be removed by deleti
 If you contact the developer for support, the information you provide is used to respond to your request.
 Please do not include personal information in public GitHub issues.
 
-Contact: [burntime@mailbox.org](mailto:burntime@mailbox.org)
+Contact: [burntime(at)mailbox.org](mailto:burntime@mailbox.org)
 
 ---
 
-# Datenschutzerklärung - Burntime Remastered
+# Datenschutzerklärung
 
 Zuletzt aktualisiert: 4. Oktober 2026
 
@@ -25,4 +25,4 @@ Spielstände, Einstellungen und Protokolle bleiben auf deinem Gerät und lassen 
 
 Wenn du den Entwickler für Support kontaktierst, werden die von dir bereitgestellten Informationen verwendet, um deine Anfrage zu beantworten. Bitte veröffentliche keine personenbezogenen Informationen in öffentlichen GitHub-Issues.
 
-Kontakt: [burntime@mailbox.org](mailto:burntime@mailbox.org)
+Kontakt: [burntime(at)mailbox.org](mailto:burntime@mailbox.org)

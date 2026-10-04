@@ -19,7 +19,7 @@ public sealed class VisualTestScenes(BurntimeClassic app, string bossName = "Vis
     [
         "menu", "setup-versus-original", "setup-credits", "options", "map", "manual", "location", "inventory", "room",
         "trader", "doctor", "pub", "restaurant", "info", "statistics",
-        "church", "map-return", "construction-undiscovered", "construction-discovered", "mouse-location-hints"
+        "church", "map-return", "construction-undiscovered", "construction-discovered", "mouse-location-hints", "setup-privacy", "options-privacy"
     ];
 
     public static readonly string[] TouchNames =
@@ -233,6 +233,13 @@ public sealed class VisualTestScenes(BurntimeClassic app, string bossName = "Vis
 
         switch (name)
         {
+            case "setup-privacy":
+            case "options-privacy":
+                app.SetScene(name == "setup-privacy" ? "MenuScene" : "OptionsScene");
+                app.Process(0);
+                var privacyScene = ReadPrivate<Scene>(app.SceneManager, "activeScene");
+                ReadPrivate<ManualWindow>(privacyScene, name == "setup-privacy" ? "_setupNotes" : "_privacyWindow").OpenPrivacyPolicy();
+                break;
             case "menu": app.SetScene("MenuScene"); break;
             case "setup-notes":
                 // Reach the new button through the normal setup focus order.
