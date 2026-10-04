@@ -40,6 +40,9 @@ def main():
         if source_root.exists():
             shutil.rmtree(source_root)
         shutil.copytree(ROOT / 'source', source_root / 'source', ignore=shutil.ignore_patterns('bin', 'obj', '.DS_Store'))
+        # The game project embeds the changelog from outside the source tree.
+        (source_root / 'resources').mkdir(exist_ok=True)
+        shutil.copy2(ROOT / 'resources/Changelog.md', source_root / 'resources/Changelog.md')
         if mutation == 'no-production-upgrades':
             disable_method(source_root / AI / 'Camps/CampManagement.cs', 'InstallProductionFromPool')
             disable_method(source_root / AI / 'Camps/CampManagement.cs', 'ConstructForCamp')
@@ -51,7 +54,7 @@ def main():
             disable_method(source_root / AI / 'Core/AiTurnController.cs', 'UseLocalWaterSource')
             path = source_root / AI / 'Core/AiState.cs'
             source = path.read_text(encoding='utf-8-sig')
-            source, count = re.subn(r'internal bool CanCollectLocalLoot => Player.Group\s*.*?;',
+            source, count = re.subn(r'internal bool CanCollectLocalLoot => Player\.(?:Party|Group)\s*.*?;',
                                    'internal bool CanCollectLocalLoot => false;', source, flags=re.S)
             if count != 1:
                 raise RuntimeError('Missing collection mutation target')

@@ -135,6 +135,16 @@ namespace Burntime.Remaster.Logic
         public PixelColor ColorDark;
         public int BodyColorSet;
         public int IconID;
+
+        // Icons identify player colors in existing saves independently of the old body mapping.
+        public int CharacterBodyColorSet => IconID switch
+        {
+            0 => 2,
+            1 => 0,
+            2 => Helper.GrayBodyColorSet,
+            3 => 1,
+            _ => BodyColorSet
+        };
         StateLink<Location> city;
         public StateLinkList<Fog> Fogs;
 

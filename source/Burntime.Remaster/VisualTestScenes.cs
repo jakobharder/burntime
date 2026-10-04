@@ -17,7 +17,7 @@ public sealed class VisualTestScenes(BurntimeClassic app)
 {
     public static readonly string[] Names =
     [
-        "menu", "setup-notes", "setup-versus-original", "setup-credits", "options", "map", "manual", "location", "inventory", "room",
+        "menu", "setup-versus-original", "setup-credits", "options", "map", "manual", "location", "inventory", "room",
         "trader", "doctor", "pub", "restaurant", "info", "statistics",
         "church", "map-return", "construction-undiscovered", "construction-discovered"
     ];
@@ -100,6 +100,8 @@ public sealed class VisualTestScenes(BurntimeClassic app)
                 Press(InputAction.Primary);
                 break;
             case "setup-versus-original":
+                // Exercise opening patch notes without capturing changing changelog content.
+                Open("setup-notes");
                 Press(InputAction.Back);
                 // Retain coverage of the physical Ctrl and gamepad shortcuts.
                 app.DeviceManager.VKeyPress(SystemKey.Ctrl);

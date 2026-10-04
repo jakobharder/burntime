@@ -42,6 +42,11 @@ namespace Burntime.Remaster.PathFinding
             MovementDirection = Vector2f.Zero;
         }
 
+        public Vector2f GetRenderPosition(Vector2 rasterPosition) =>
+            precisePositionInitialized && (Vector2)precisePosition == rasterPosition
+                ? precisePosition
+                : rasterPosition;
+
         protected Vector2f BeginMovement(Vector2 rasterPosition)
         {
             if (!precisePositionInitialized || (Vector2)precisePosition != rasterPosition)

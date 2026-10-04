@@ -1,14 +1,14 @@
 ﻿# Burntime Changelog
 
-## 1.3-rc1 (2026-10-01)
+## 1.3 (2026-10-04)
 
 - Added touch controls and iPad support
-- Improved water source bar to show capacity and reserver above daily
+- Improved water source bar to show capacity and reserve above daily
 - Rival camp report with radio is now limited to neighboring locations
 - Info scene now shows camp NPC health when a radio is stored (two radios needed)
 - Rebalanced trader stock (especially radio pieces, clothing)
 - New Village has now dogs and NPCs
-- Added gray and blue as playable colors
+- Added gray and blue as playable colors; including new gray body colors
 - Show name of clicked entrance or NPC
 - Improved info scene trap tooltip
 - Automatically select traps after camp creation

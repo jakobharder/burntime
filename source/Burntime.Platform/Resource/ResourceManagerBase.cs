@@ -333,9 +333,26 @@ public abstract class ResourceManagerBase : IResourceManager
         {
             foreach (var section in replacementSnapshot[replacementIndex].GetAllSections())
             {
-                var replacedId = GetReplacementID(id, section);
+                if (section.GetBool("experimental_characters", false) &&
+                    !Graphics.CharacterGraphicsOptions.Enabled)
+                    continue;
+
+                ResourceID lookupId = id;
+                if (id.RecolorRgb.HasValue)
+                {
+                    string plainId = id.ToString().Split(';')[0];
+                    lookupId = new ResourceID(plainId.TrimEnd('?'));
+                }
+                var replacedId = GetReplacementID(lookupId, section);
                 if (replacedId is not null)
                 {
+                    if (id.RecolorRgb.HasValue)
+                    {
+                        string replacementId = replacedId.ToString().Split(';')[0];
+                        string separator = replacementId.Count(c => c == '?') < 2 ? "?;" : ";";
+                        replacedId = new ResourceID(replacementId + separator +
+                            $"recolor={id.RecolorRgb.Value:x6}");
+                    }
                     var scale = section.GetVector2f("sprite_scale", Vector2f.One);
                     var factor = (scale != Vector2f.Zero) ? Vector2f.One / scale : 1;
                     return new ScaledResourceId(replacedId, factor);

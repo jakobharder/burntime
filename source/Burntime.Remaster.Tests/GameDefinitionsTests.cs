@@ -38,7 +38,7 @@ static class GameDefinitionsTests
             var colors = PlayerColorSetup.Assign(BurntimePlayerColor.Green, BurntimePlayerColor.Red);
             Equal("0,8,12,4", string.Join(',', colors.Select(PlayerColorSetup.FlagId)), "original animated flag offsets");
             Equal("0,1,3,2", string.Join(',', colors.Select(PlayerColorSetup.IconId)), "original icon order");
-            Equal("2,0,-1,1", string.Join(',', colors.Select(PlayerColorSetup.BodyColorSet)), "original recruit palettes");
+            Equal("2,0,1,3", string.Join(',', colors.Select(PlayerColorSetup.BodyColorSet)), "original recruit palettes");
             Equal(BurntimePlayerColor.Red, PlayerColorSetup.OtherSelection(BurntimePlayerColor.Green,
                 BurntimePlayerColor.Black, BurntimePlayerColor.Red), "unoccupied choice preserves other player");
             return 0;

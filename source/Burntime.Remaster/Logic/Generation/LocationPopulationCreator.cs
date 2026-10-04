@@ -14,8 +14,12 @@ internal sealed class LocationPopulationCreator
     {
         foreach (Location location in game.World.Locations)
         {
+            string configPath = $"maps/mat_{location.Id + 1:D3}.txt";
+            if (!FileSystem.ExistsFile(configPath))
+                continue;
+
             var config = new ConfigFile();
-            if (!config.Open($"maps/mat_{location.Id + 1:D3}.txt"))
+            if (!config.Open(configPath))
                 continue;
 
             foreach (var section in config.GetAllSections().Where(s => s.Name.StartsWith("resident")))

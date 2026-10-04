@@ -12,6 +12,7 @@ namespace Burntime.Platform.Resource
         public string File { get; init; }
         public int Index { get; init; }
         public string Custom { get; init; }
+        public uint? RecolorRgb { get; init; }
         public int EndIndex { get; init; }
         public bool IndexProvided { get; init; }
         public bool HasMultipleFrames => EndIndex != Index && IndexProvided;
@@ -40,7 +41,15 @@ namespace Burntime.Platform.Resource
                 path = split[0];
                 if (split.Length == 3)
                 {
-                    Custom = split[2];
+                    string[] options = split[2].Split(';');
+                    Custom = options[0];
+                    foreach (string option in options)
+                    {
+                        if (option.StartsWith("recolor=") && option.Length == 14 &&
+                            uint.TryParse(option.Substring(8), System.Globalization.NumberStyles.HexNumber,
+                                System.Globalization.CultureInfo.InvariantCulture, out uint rgb))
+                            RecolorRgb = rgb;
+                    }
                 }
 
                 split = split[1].Split(new Char[] { '-' });

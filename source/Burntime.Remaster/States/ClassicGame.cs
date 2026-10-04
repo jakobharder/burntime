@@ -186,7 +186,8 @@ namespace Burntime.Remaster
             if (World.Locations.Count > 37)
             {
                 var config = new Burntime.Platform.IO.ConfigFile();
-                if (config.Open("maps/mat_038.txt"))
+                if (Burntime.Platform.IO.FileSystem.ExistsFile("maps/mat_038.txt") &&
+                    config.Open("maps/mat_038.txt"))
                     LocationCreator.ApplyEnvironment(World.Locations[37], config, ResourceManager);
                 if (World.Locations[37].Rooms.Count > 3)
                     World.Locations[37].Rooms[3].IsWaterSource = true;

@@ -112,7 +112,7 @@ namespace Burntime.Remaster.Maps
                 {
                     foreach (Character chr in characters)
                     {
-                        Vector2 pos = chr.Position + offset;
+                        Vector2f pos = chr.RenderPosition + offset;
                         if (chr is Dog)
                         {
 #warning TODO don't hardcode
@@ -124,7 +124,7 @@ namespace Burntime.Remaster.Maps
                             pos.x -= 8;
                             pos.y -= 4;
                         }
-                        target.DrawSprite(pos, _shadow);
+                        target.DrawSpriteF(pos, _shadow, 1);
                     }
                 }
 
@@ -133,17 +133,17 @@ namespace Burntime.Remaster.Maps
 
                 foreach (Character chr in characters)
                 {
-                    Vector2 pos = chr.Position + offset;
+                    Vector2f pos = chr.RenderPosition + offset;
                     // align character sprite to bottom center
-                    pos.x -= chr.Body.Object.Width / 2;
-                    pos.y -= chr.Body.Object.Height;
+                    pos.x -= chr.RenderBody.Object.Width / 2;
+                    pos.y -= chr.RenderBody.Object.Height;
 
-                    if (!chr.IsDead && SelectedCharacter == chr && chr.Animation == 0)
-                        chr.Body.Object.Animation.Frame = ani.Frame;
+                    if (!chr.IsDead && !chr.UsesDirectionalIdleSheet && SelectedCharacter == chr && chr.Animation == 0)
+                        chr.RenderBody.Object.Animation.Frame = ani.Frame;
                     else
-                        chr.Body.Object.Animation.Frame = chr.Animation;
-                    target.Layer = layer + (chr.Position.y / mapHeight);
-                    target.DrawSprite(pos, chr.Body);
+                        chr.RenderBody.Object.Animation.Frame = chr.RenderAnimation;
+                    target.Layer = layer + (chr.RenderPosition.y / mapHeight);
+                    target.DrawSpriteF(pos, chr.RenderBody, 1);
 
                     if (debugRender)
                     {
@@ -170,7 +170,7 @@ namespace Burntime.Remaster.Maps
                     continue;
                 Vector2 distance = chr.Position - position;
                 // align to bottom center
-                distance.y -= chr.Body.Object.Height / 2;
+                distance.y -= chr.RenderBody.Object.Height / 2;
 
                 if (distance.Length < 10)
                     obj = chr;
@@ -182,7 +182,7 @@ namespace Burntime.Remaster.Maps
                 {
                     Vector2 distance = _currentPlayer.Party[i].Position - position;
                     // align to bottom center
-                    distance.y -= _currentPlayer.Party[i].Body.Object.Height / 2;
+                    distance.y -= _currentPlayer.Party[i].RenderBody.Object.Height / 2;
 
                     if (distance.Length < 10)
                         obj = _currentPlayer.Party[i];

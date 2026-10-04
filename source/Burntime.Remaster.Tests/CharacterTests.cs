@@ -15,6 +15,40 @@ using static Program;
 
 static class CharacterTests
 {
+    internal static IEnumerable<Case<bool>> SouthEastDirectionCases()
+    {
+        yield return new("southeast diagonal", true, () => Character.IsSouthEastWalkingDirection(new(1, 1)));
+        yield return new("mostly east stays east", false, () => Character.IsSouthEastWalkingDirection(new(1, 0.3f)));
+        yield return new("mostly south stays south", false, () => Character.IsSouthEastWalkingDirection(new(0.3f, 1)));
+        yield return new("east edge of southeast sector", true, () => Character.IsSouthEastWalkingDirection(new(1, 0.42f)));
+        yield return new("south edge of southeast sector", true, () => Character.IsSouthEastWalkingDirection(new(0.42f, 1)));
+        yield return new("southwest stays southwest", false, () => Character.IsSouthEastWalkingDirection(new(-1, 1)));
+        yield return new("northeast stays northeast", false, () => Character.IsSouthEastWalkingDirection(new(1, -1)));
+        yield return new("standing stays idle", false, () => Character.IsSouthEastWalkingDirection(new(0, 0)));
+    }
+
+    internal static IEnumerable<Case<int>> IdleFacingCases()
+    {
+        yield return Int("directional idle retains the last walking direction", 0, () =>
+        {
+            var character = new Character();
+            Equal(2, character.UpdateIdleFacing(true), "initial idle faces south");
+            for (int direction = 0; direction < 8; direction++)
+            {
+                for (int frame = 0; frame < 4; frame++)
+                {
+                    character.UpdateIdleFacing(true, 8 + direction * 4 + frame);
+                    for (int tick = 0; tick < 10; tick++)
+                        Equal(direction, character.UpdateIdleFacing(true),
+                            "every walking frame leads to the matching stable idle pose");
+                }
+            }
+            Equal(0, character.UpdateIdleFacing(false),
+                "classic and older sheets retain the original idle frame");
+            return 0;
+        });
+    }
+
     internal static IEnumerable<Case<int>> DoctorLocalityCases()
     {
         yield return Int("doctor benefits stay with the patient's group", 0, () =>

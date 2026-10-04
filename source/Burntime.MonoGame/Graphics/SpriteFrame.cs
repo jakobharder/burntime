@@ -24,7 +24,7 @@ public class SpriteFrame : Platform.Graphics.GenericSpriteFrame<Texture2D>
     {
     }
 
-    public int LoadFromProcessor(ISpriteProcessor loader, bool keepSystemCopy = false)
+    public int LoadFromProcessor(ISpriteProcessor loader, bool keepSystemCopy = false, uint? recolorRgb = null)
     {
         const int PIXEL_BYTES = 4;
         _keepSystemCopy = keepSystemCopy;
@@ -45,6 +45,9 @@ public class SpriteFrame : Platform.Graphics.GenericSpriteFrame<Texture2D>
                     (_systemCopy[(y * _textureSize.x + x) * PIXEL_BYTES + 0], _systemCopy[(y * _textureSize.x + x) * PIXEL_BYTES + 2]);
             }
         }
+
+        if (recolorRgb.HasValue)
+            Platform.Graphics.GreenClothingRecolor.Apply(_systemCopy, recolorRgb.Value);
 
         Size = loader.Size;
         TimeStamp = Stopwatch.GetTimestamp();

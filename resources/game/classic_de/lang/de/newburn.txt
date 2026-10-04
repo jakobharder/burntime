@@ -30,7 +30,7 @@ Neues Spiel starten
 Jukebox
 Musik AMIGA
 Musik DOS
-Musik REMASTER
+Musik DOS
 Hilft um hohe Stellen zu erreichen.
 WA. {w}+{tw} NG. {f}+{tf}}
 |A Orte|#1 Ort|#keine Orte
