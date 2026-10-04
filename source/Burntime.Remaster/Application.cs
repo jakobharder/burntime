@@ -42,6 +42,9 @@ namespace Burntime.Remaster
             "mode_opponent"
         };
 
+        // Runtime layout override for platform-faithful desktop captures.
+        public bool IpadLayout { get; set; } = OperatingSystem.IsIOS();
+
         public GamepadBindings GamepadBindings { get; } = new();
         public KeyboardBindings KeyboardBindings { get; } = new();
         internal AutosaveManager Autosaves { get; }

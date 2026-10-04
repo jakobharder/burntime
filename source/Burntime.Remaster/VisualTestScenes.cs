@@ -13,13 +13,13 @@ using System.Reflection;
 namespace Burntime.Remaster;
 
 // Runtime-only fixtures: no changes to the save-game schema.
-public sealed class VisualTestScenes(BurntimeClassic app)
+public sealed class VisualTestScenes(BurntimeClassic app, string bossName = "Visual Test")
 {
     public static readonly string[] Names =
     [
         "menu", "setup-versus-original", "setup-credits", "options", "map", "manual", "location", "inventory", "room",
         "trader", "doctor", "pub", "restaurant", "info", "statistics",
-        "church", "map-return", "construction-undiscovered", "construction-discovered"
+        "church", "map-return", "construction-undiscovered", "construction-discovered", "mouse-location-hints"
     ];
 
     public static readonly string[] TouchNames =
@@ -29,6 +29,148 @@ public sealed class VisualTestScenes(BurntimeClassic app)
     ];
 
     bool gameCreated;
+    public static readonly string[] StoreNames = ["01-city", "02-sana", "03-world-map", "04-trader"];
+    public string CaptureCityName { get; private set; } = "";
+    int storeRoomIndex;
+    public object StoreCaptureState
+    {
+        get
+        {
+            var camp = app.Game.World.Locations[1];
+            return new
+            {
+                camp = "Sana", room = storeRoomIndex, owner = camp.Player?.Name,
+                rats = camp.Rooms[storeRoomIndex].Items.Count(item => item.ID == "item_rats"),
+                ratTraps = camp.Rooms[storeRoomIndex].Items.Count(item => item.ID == "item_rat_trap"),
+                foodPerDay = camp.GetFoodProductionRate().FoodPerDay,
+                offer = new[] { "item_meat", "item_rags", "item_bones" },
+                focusedMaterial = "item_spring"
+            };
+        }
+    }
+
+    // A seeded, in-memory campaign shared by store captures on every platform.
+    // No save schema or player profile is changed, and no simulation workers run.
+    public void OpenStoreCapture(string name, InputMode inputMode)
+    {
+        if (!gameCreated)
+        {
+            Open("map");
+            app.Game.World.Day = 42;
+            var player = app.Game.World.ActivePlayerObj;
+            foreach (int id in new[] { 0, 1, 3, 4, 5, 6, 14, 15 })
+            {
+                var camp = app.Game.World.Locations[id];
+                if (!camp.IsCity) camp.Player = player;
+            }
+            FillStoreItems(app.SelectedCharacter.Items,
+                ["item_meat", "item_rags", "item_bones", "item_knife", "item_water_bottle", "item_wire"]);
+            var sanaCamp = app.Game.World.Locations[1];
+            storeRoomIndex = Array.FindIndex(sanaCamp.Map.Entrances, entrance => entrance.RoomType == RoomType.Normal);
+            FillStoreItems(sanaCamp.Rooms[storeRoomIndex].Items, ["item_rats", "item_rats", "item_rat_trap"]);
+            // A stationed survivor operates the trap; the stock and production persist on the map.
+            var survivor = sanaCamp.Characters.First(character => character.IsHuman && !character.IsTrader);
+            survivor.Player = player;
+            sanaCamp.SelectProduction(app.Game.ItemTypes["item_rat_trap"].Production);
+            Log.Info($"STORE Sana owner={sanaCamp.Player?.Name}, room={storeRoomIndex}, stock={sanaCamp.Rooms[storeRoomIndex].Items.Count}, capacity={sanaCamp.Rooms[storeRoomIndex].Items.MaxCount}, rate={sanaCamp.GetFoodProductionRate().FoodPerDay}");
+        }
+        app.LastInputMode = inputMode;
+        app.RenderMouse = false;
+        var world = app.Game.World;
+        var boss = world.ActivePlayerObj;
+        var sana = world.Locations[1];
+        var city = world.Locations[13]; // Antella.
+        CaptureCityName = app.ResourceManager.GetString("burn?" + city.Id);
+        world.Day = name == "01-city" ? 45 : 42;
+        var destination = name == "01-city" ? city : sana;
+        boss.Location = destination;
+        boss.Character.Position = destination.EntryPoint;
+        boss.Character.Path.Stop(boss.Character.Position);
+        boss.RefreshScrollPosition = true;
+
+        if (name is "01-city" or "02-sana")
+        {
+            app.SetScene("LocationScene");
+            app.Process(0);
+            var scene = ReadPrivate<Scene>(app.SceneManager, "activeScene");
+            var view = Descendants(scene).OfType<MapView>().First();
+            var entrances = view.Map.Entrances;
+            var entrance = name == "02-sana" ? entrances[storeRoomIndex] :
+                entrances.First(e => e.RoomType == RoomType.Trader);
+            // Stay within interaction range, with the boss clear of the entrance marker.
+            boss.Character.Position = new Vector2(entrance.Area.Right + 10, entrance.Area.Bottom + 8);
+            boss.Character.Path.Stop(boss.Character.Position);
+            var center = boss.Character.Position + new Vector2(0, -25);
+            app.Process(0);
+            if (inputMode == InputMode.Touch)
+                ReadPrivate<Maps.MapViewOverlayTouch>(scene, "touch").UpdateOverlay(app.Game, .3f);
+            if (inputMode == InputMode.Gamepad && name == "01-city")
+            {
+                var nearby = ReadPrivate<Maps.MapViewOverlayNearbyAction>(scene, "nearbyAction");
+                nearby.UpdateOverlay(app.Game, 0);
+                int traderEntrance = Array.IndexOf(entrances, entrance);
+                for (int attempt = 0; attempt < 32; attempt++)
+                {
+                    if (view.HoveredObject is Maps.EntranceObject selected && selected.Number == traderEntrance)
+                        break;
+                    nearby.CycleTarget(1);
+                }
+            }
+            view.CenterTo(center);
+            if (inputMode == InputMode.Mouse)
+            {
+                app.DeviceManager.MouseMove(entrance.Area.Center + view.ScrollPosition + view.Position);
+                app.Process(0);
+            }
+        }
+        else if (name == "03-world-map")
+        {
+            app.SetScene("MapScene");
+            if (inputMode == InputMode.Mouse)
+            {
+                app.Process(0);
+                var scene = ReadPrivate<Scene>(app.SceneManager, "activeScene");
+                var view = Descendants(scene).OfType<MapView>().First();
+                app.DeviceManager.MouseMove(view.Map.Entrances[sana.Id].Area.Center +
+                    view.ScrollPosition + view.PositionOnScreen);
+                app.Process(0);
+            }
+        }
+        else if (name == "04-trader")
+        {
+            var trader = world.Traders.OrderBy(t => t.TraderId).First();
+            FillStoreItems(trader.Items,
+                ["item_meat", "item_water_bottle", "item_empty_canteen", "item_spring", "item_rope", "item_screws"]);
+            world.ActiveTraderObj = trader;
+            app.SetScene("TraderScene");
+            app.Process(0);
+            var scene = ReadPrivate<Scene>(app.SceneManager, "activeScene");
+            var playerInventory = ReadPrivate<InventoryWindow>(scene, "inventory");
+            var traderInventory = ReadPrivate<InventoryWindow>(scene, "inventoryTrader");
+            // Use the same selection commands as the live UI; leave the trade uncommitted.
+            playerInventory.Grid.LeftClickItemEvent.Execute(playerInventory.Grid[0]); // Meat.
+            playerInventory.Grid.LeftClickItemEvent.Execute(playerInventory.Grid[1]); // Rags.
+            playerInventory.Grid.LeftClickItemEvent.Execute(playerInventory.Grid[2]); // Bones.
+            traderInventory.Grid.LeftClickItemEvent.Execute(traderInventory.Grid[1]); // Water.
+            traderInventory.Grid.LeftClickItemEvent.Execute(traderInventory.Grid[2]); // Canteen.
+            if (inputMode == InputMode.Gamepad) Press(InputAction.MoveRight);
+            traderInventory.Grid.FocusItem(3); // Spring: Needed for ??? (an undiscovered trap recipe).
+            if (inputMode == InputMode.Mouse)
+            {
+                var spring = ReadPrivate<ItemWindow[]>(traderInventory.Grid, "itemWindows")[3];
+                app.DeviceManager.MouseMove(spring.PositionOnScreen + spring.Size / 2);
+                app.Process(0);
+            }
+        }
+        app.LastInputMode = inputMode;
+    }
+
+    void FillStoreItems(ItemList items, string[] ids)
+    {
+        items.Clear();
+        foreach (string id in ids)
+            items.Add(app.Game.Container.Create<Item>(app.Game.ItemTypes[id]));
+    }
     public bool SaveAndReload(string path)
     {
         var creation = new GameCreation(app);
@@ -79,7 +221,7 @@ public sealed class VisualTestScenes(BurntimeClassic app)
             Platform.Math.SetRandomSeed(123);
             new GameCreation(app).CreateNewGame(new NewGameInfo
             {
-                NameOne = "Visual Test", NameTwo = "", FaceOne = 0, FaceTwo = -1,
+                NameOne = bossName, NameTwo = "", FaceOne = 0, FaceTwo = -1,
                 ColorOne = BurntimePlayerColor.Green, ColorTwo = BurntimePlayerColor.Red,
                 Difficulty = 1, Rules = RuleSet.Extended, AI = AiProfile.None
             }, startServer: false);
@@ -128,6 +270,27 @@ public sealed class VisualTestScenes(BurntimeClassic app)
             case "map-return":
                 app.SetScene("MapScene");
                 Press(InputAction.MoveLeft); // Select a neighboring camp to show travel time.
+                break;
+            case "mouse-location-hints":
+                Open("location");
+                var hintLocation = app.Game.World.ActiveLocationObj;
+                var hintRoom = hintLocation.Rooms[0];
+                hintLocation.Player = app.Game.World.ActivePlayerObj;
+                hintRoom.Items.Clear();
+                hintRoom.Items.Add(app.Game.Container.Create<Item>(app.Game.ItemTypes["item_knife"]));
+                hintRoom.Items.Add(app.Game.Container.Create<Item>(app.Game.ItemTypes["item_maggots"]));
+                hintLocation.Production = app.Game.ItemTypes["item_knife"].Production;
+                if (hintLocation.GetFoodProductionRate().FoodPerDay <= 0)
+                    throw new InvalidOperationException("Mouse hint fixture requires active food production.");
+                app.LastInputMode = InputMode.Mouse;
+                app.Process(0);
+                var hintScene = ReadPrivate<Scene>(app.SceneManager, "activeScene");
+                var hintView = Descendants(hintScene).OfType<MapView>().First();
+                hintView.CenterTo(hintRoom.MapArea.Center);
+                app.DeviceManager.MouseMove(hintRoom.MapArea.Center + hintView.ScrollPosition + hintView.Position);
+                app.Process(0);
+                if (hintLocation.Hover?.Room != hintRoom)
+                    throw new InvalidOperationException("Mouse did not hover the food production room.");
                 break;
             case "location":
                 Press(InputAction.Back); // Close the field manual before leaving the map.

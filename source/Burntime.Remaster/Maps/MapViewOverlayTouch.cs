@@ -149,7 +149,8 @@ sealed class MapViewOverlayTouch : IMapViewOverlay, IMapViewEntranceOverlay
             MapViewHoverInfo info = CreateEntranceInfo(i);
             entranceInfo[i] = info;
             if (i != Destination && opacity[i] > .05f)
-                hoverEntries.Add(new MapViewHoverTextEntry(info, opacity[i]));
+                hoverEntries.Add(new MapViewHoverTextEntry(info, opacity[i],
+                    ShowInventoryHint: location.Player == player));
         }
 
 

@@ -216,13 +216,13 @@ namespace Burntime.Remaster
 
         void UpdateTouchModeIndicatorPosition()
         {
-            Vector2 position = TouchModeIndicatorPosition(Size);
+            Vector2 position = TouchModeIndicatorPosition(Size, ((BurntimeClassic)app).IpadLayout);
             touchTalkAni.Position = position - new Vector2(0, 10);
             touchFightAni.Position = position;
         }
 
-        internal static Vector2 TouchModeIndicatorPosition(Vector2 sceneSize) =>
-            new(OperatingSystem.IsIOS() ? 0 : 16, sceneSize.y - 18);
+        internal static Vector2 TouchModeIndicatorPosition(Vector2 sceneSize, bool ipadLayout = false) =>
+            new(ipadLayout || OperatingSystem.IsIOS() ? 0 : 16, sceneSize.y - 18);
 
         private void View_ContextMenu(Vector2 position, MouseButton button)
         {
