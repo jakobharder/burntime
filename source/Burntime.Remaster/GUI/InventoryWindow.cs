@@ -109,6 +109,11 @@ namespace Burntime.Remaster.GUI
 
         public override void OnUpdate(float elapsed)
         {
+            // Delayed loading can leave the constructor with zero background dimensions.
+            // Keep touch bounds aligned with the loaded panel, including graphics changes.
+            if (back.IsLoaded)
+                Size = back.Size + basePos;
+
             if (touchSwipeOrigin.HasValue && (touchSwipeResetRemaining -= elapsed) <= 0)
                 touchSwipeOrigin = null;
             base.OnUpdate(elapsed);

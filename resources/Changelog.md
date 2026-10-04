@@ -1,6 +1,6 @@
 ﻿# Burntime Changelog
 
-## 1.3-rc1 (2026-10-01)
+## 1.3 (2026-10-04)
 
 - Added touch controls and iPad support
 - Improved water source bar to show capacity and reserve above daily

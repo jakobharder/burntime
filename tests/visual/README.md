@@ -87,7 +87,7 @@ Captured pixels are made opaque without changing their RGB values: the backbuffe
 has already composited translucent UI, so PNG viewers must not blend it a second time.
 
 `source/Burntime.Remaster/VisualTestScenes.cs` contains the ordered, deliberately
-fixture list: menu in keyboard mode, all three setup-notes pages, options, world map, field manual, location, inventory, room, trader,
+fixture list: menu in keyboard mode, the setup comparison and credits pages, options, world map, field manual, location, inventory, room, trader,
 doctor, pub, restaurant, information, statistics, church, and return to the map.
 Both world-map fixtures press Left once after activation to select a neighboring
 camp and display travel time. Options opens the settings page. Doctor offers a snake with patient health at 30, pub offers an empty
@@ -141,8 +141,10 @@ with the originals, and credits. Patch Notes reads the embedded
 copy to maintain. The small renderer supports the changelog's headings and bullets
 and wraps text to the manual width. Patch notes currently use the changelog's English.
 
-The setup-notes fixture selects NOTES with Down/Down/Left and activates it with Primary.
-The following fixture also exercises physical Ctrl and gamepad View input.
+The setup comparison fixture selects NOTES with Down/Down/Left and activates it
+with Primary, then exercises physical Ctrl and gamepad View input. Patch Notes
+is opened for navigation coverage but excluded from screenshot baselines because
+its changelog content changes with each release.
 
 Newgfx captures use production xBR2 by default, including the smaller setup-notes
 body font. The viewport is 455x237 logical pixels, with an 853x533 internal target,
