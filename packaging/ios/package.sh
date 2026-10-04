@@ -10,6 +10,10 @@ asset="$output/Burntime-iPad-arm64-unsigned.zip"
 mkdir -p "$output"
 # AOT modules and bundled managed assemblies must come from the same build.
 # Clean the device outputs to avoid stale bundle copies after trimming changes.
+# Clean resolves runtime assets but does not restore them itself.
+dotnet restore source/Burntime.iOS/Burntime.iOS.csproj -r ios-arm64 \
+  -p:Configuration=Release -p:EnableCodeSigning=false \
+  -p:ApplicationId="${IOS_APPLICATION_ID:-org.burntime}"
 dotnet clean source/Burntime.iOS/Burntime.iOS.csproj -c Release -r ios-arm64 \
   -p:EnableCodeSigning=false --disable-build-servers --maxcpucount:1
 dotnet build source/Burntime.iOS/Burntime.iOS.csproj -c Release -r ios-arm64 \

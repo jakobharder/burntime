@@ -4,6 +4,12 @@ using System;
 
 Burntime.Platform.Graphics.CharacterGraphicsOptions.Configure(args);
 
+if (args.Contains("--store-capture"))
+{
+    Environment.ExitCode = Burntime.MonoGame.VisualTestRunner.RunStoreCapture(args);
+    return;
+}
+
 if (args.Contains("--visual-test"))
 {
     Environment.ExitCode = Burntime.MonoGame.VisualTestRunner.Run(args);

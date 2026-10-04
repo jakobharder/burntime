@@ -84,7 +84,7 @@ namespace Burntime.Remaster
 
         public override void SetMapRenderArea(MapView mapView, Vector2 size)
         {
-            int sideMargin = OperatingSystem.IsIOS() ? 0 : 16;
+            int sideMargin = ((BurntimeClassic)app).IpadLayout ? 0 : 16;
             mapView.SetViewport(new Vector2(sideMargin, 0),
                 new Vector2(size.x - sideMargin * 2, size.y - 40));
         }
@@ -93,7 +93,7 @@ namespace Burntime.Remaster
         {
             base.OnRender(Target);
 
-            if (!OperatingSystem.IsIOS())
+            if (!((BurntimeClassic)app).IpadLayout)
             {
                 Target.RenderRect(new Vector2(0, 0), new Vector2(16, Size.y - 40), new PixelColor(0, 0, 0));
                 Target.RenderRect(new Vector2(Size.x - 16, 0), new Vector2(17, Size.y - 40), new PixelColor(0, 0, 0));

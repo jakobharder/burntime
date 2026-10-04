@@ -146,6 +146,10 @@ with Primary, then exercises physical Ctrl and gamepad View input. Patch Notes
 is opened for navigation coverage but excluded from screenshot baselines because
 its changelog content changes with each release.
 
+`mouse-location-hints` sends mouse movement through the normal input dispatcher
+over an owned room containing food and a production tool. It verifies room hover
+and active production before capturing the food bar and production indicator.
+
 Newgfx captures use production xBR2 by default, including the smaller setup-notes
 body font. The viewport is 455x237 logical pixels, with an 853x533 internal target,
 a 1706x1066 xBR2 pass, and 1280x800 output. Older point-filtered newgfx baselines

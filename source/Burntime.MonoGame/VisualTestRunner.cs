@@ -9,10 +9,11 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Burntime.MonoGame;
 
-internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = false) : IVisualTestRunner
+internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = false, string? storeMode = null) : IVisualTestRunner
 {
     public string OutputDirectory { get; } = outputDirectory;
-    readonly string[] names = touchOnly ? VisualTestScenes.TouchNames : VisualTestScenes.Names;
+    readonly string[] names = storeMode != null ? VisualTestScenes.StoreNames :
+        touchOnly ? VisualTestScenes.TouchNames : VisualTestScenes.Names;
     readonly List<string> captured = [];
     readonly Stopwatch deadline = Stopwatch.StartNew();
     VisualTestScenes? scenes;
@@ -22,6 +23,46 @@ internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = 
     int animationFrames;
     bool advanceAnimation;
     public bool Complete { get; private set; }
+
+    public static int RunStoreCapture(string[] args)
+    {
+        if (args.Length != 3 || args[0] != "--store-capture" || args[1] is not ("ipad" or "steam"))
+        {
+            Console.Error.WriteLine("Usage: Burntime --store-capture ipad|steam OUTPUT_DIRECTORY");
+            return 2;
+        }
+        string output = Path.GetFullPath(args[2]);
+        Directory.CreateDirectory(output);
+        if (VisualTestScenes.StoreNames.Any(name => System.IO.File.Exists(Path.Combine(output, name + ".png"))))
+        {
+            Console.Error.WriteLine("Use a fresh output directory; store captures are never overwritten.");
+            return 2;
+        }
+        FileSystem.UserFolderOverride = Path.Combine(output, "user");
+        Directory.CreateDirectory(FileSystem.UserFolderOverride);
+        System.IO.File.WriteAllText(Path.Combine(FileSystem.UserFolderOverride, "user.txt"),
+            "newgfx=true\nprompts=0\nlanguage=en\nfullscreen=false\nmusic=off\nmap_music=none\ncontroller_glyphs=steam\n");
+        var size = args[1] == "ipad" ? new Burntime.Platform.Vector2(2752, 2064) :
+            new Burntime.Platform.Vector2(1920, 1080);
+        VisualTestRunner runner = new(output, storeMode: args[1]);
+        try
+        {
+            using BurntimeGame game = new(disableShaders: args[1] == "ipad",
+                windowSizeOverride: new Burntime.Platform.Vector2(960, 720));
+            game.CaptureSize = size;
+            game.EmulateIpadLayout = args[1] == "ipad";
+            game.VisualTest = runner;
+            game.Run();
+            return runner.Complete ? 0 : 1;
+        }
+        catch (Exception exception)
+        {
+            System.IO.File.WriteAllText(Path.Combine(output, "error.txt"), exception.ToString());
+            Console.Error.WriteLine(exception);
+            return 1;
+        }
+        finally { FileSystem.UserFolderOverride = null; }
+    }
 
     public static int Run(string[] args)
     {
@@ -79,13 +120,14 @@ internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = 
             app.VersionLabel = "visual-test";
             app.LastInputMode = InputMode.Keyboard;
             app.Process(0); // normal startup initializes the module and first scene
-            scenes = new(app);
+            scenes = new(app, storeMode == null ? "Visual Test" : "Jakob");
         }
         if (nextScene)
         {
             index++;
             Log.Info($"VISUAL SCENARIO: {names[index]}");
-            scenes.Open(names[index]);
+            if (storeMode == null) scenes.Open(names[index]);
+            else scenes.OpenStoreCapture(names[index], storeMode == "ipad" ? InputMode.Touch : InputMode.Gamepad);
             nextScene = false;
             readyFrames = 0;
             animationFrames = names[index] == "menu" ? 60 : 0;
@@ -123,9 +165,11 @@ internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = 
             return;
         }
         var presentation = game.GraphicsDevice.PresentationParameters;
-        int width = presentation.BackBufferWidth, height = presentation.BackBufferHeight;
+        int width = game.CaptureTarget?.Width ?? presentation.BackBufferWidth,
+            height = game.CaptureTarget?.Height ?? presentation.BackBufferHeight;
         Color[] pixels = new Color[width * height];
-        game.GraphicsDevice.GetBackBufferData(pixels);
+        if (game.CaptureTarget != null) game.CaptureTarget.GetData(pixels);
+        else game.GraphicsDevice.GetBackBufferData(pixels);
         // The window presents the already-composited RGB values as opaque. Backbuffer
         // alpha contains blend-pass bookkeeping, not transparency for the screenshot.
         for (int i = 0; i < pixels.Length; i++)
@@ -143,6 +187,14 @@ internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = 
             Complete = true;
             System.IO.File.WriteAllText(Path.Combine(OutputDirectory, "captures.json"),
                 JsonSerializer.Serialize(captured));
+            if (storeMode != null)
+                System.IO.File.WriteAllText(Path.Combine(OutputDirectory, "manifest.json"),
+                    JsonSerializer.Serialize(new { mode = storeMode, boss = "Jakob", seed = 123,
+                        width, height, city = scenes!.CaptureCityName, day = 42,
+                        input = storeMode == "ipad" ? "touch" : "gamepad",
+                        glyphs = storeMode == "ipad" ? "touch" : "steam",
+                        renderer = game.OutputFiltering.ToString(), campaign = scenes.StoreCaptureState,
+                        captured }, new JsonSerializerOptions { WriteIndented = true }));
             game.Exit();
         }
     }

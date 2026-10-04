@@ -357,7 +357,7 @@ public class RenderDevice : IDisposable
     /// Render queued objects.
     /// </summary>
     /// <param name="elapsedSeconds"></param>
-    public void Render(float elapsedSeconds)
+    public void Render(float elapsedSeconds, RenderTarget2D? outputTarget = null)
     {
         const float PIXEL_CORRECTION = 0.0001f;
 
@@ -472,7 +472,7 @@ public class RenderDevice : IDisposable
 
         _spriteBatch.End();
 
-        _engine.GraphicsDevice.SetRenderTarget(null);
+        _engine.GraphicsDevice.SetRenderTarget(outputTarget);
         Texture2D presentationTexture = _intermediateTarget;
         if (_engine.OutputFiltering == OutputFiltering.SharpBilinear)
         {
@@ -494,7 +494,7 @@ public class RenderDevice : IDisposable
                     new Rectangle(0, 0, _sharpIntermediateTarget.Width,
                         _sharpIntermediateTarget.Height), Color.White);
                 _spriteBatch.End();
-                _engine.GraphicsDevice.SetRenderTarget(null);
+                _engine.GraphicsDevice.SetRenderTarget(outputTarget);
                 presentationTexture = _sharpIntermediateTarget;
             }
         }
@@ -573,7 +573,7 @@ public class RenderDevice : IDisposable
                 BlendOverlay.Render(_spriteBatch);
                 _spriteBatch.End();
             }
-            _engine.GraphicsDevice.SetRenderTarget(null);
+            _engine.GraphicsDevice.SetRenderTarget(outputTarget);
             presentationTexture = _sharpIntermediateTarget;
         }
 

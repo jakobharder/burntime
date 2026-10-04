@@ -2,6 +2,46 @@
 
 - Run commands from the repository root.
 
+## Store screenshots
+
+Capture the same deterministic campaign with iPad touch controls and Steam controller glyphs:
+
+```sh
+# Once, if the visual-test Python environment is not installed:
+python3 -m venv artifacts/visual-build/venv
+artifacts/visual-build/venv/bin/pip install -r tests/visual/requirements.txt
+scripts/capture-screenshots.sh
+# Or capture one mode, optionally choosing a fresh output directory:
+scripts/capture-screenshots.sh ipad artifacts/screenshots/ipad-review
+scripts/capture-screenshots.sh steam artifacts/screenshots/steam-review
+```
+
+This runs the macOS/desktop MonoGame renderer and requires a graphical desktop.
+It does not require a simulator, attached controller, Steam client, or a player save.
+iPad uses 2752x2064 landscape, touch prompts, and the iOS shader-free output path.
+Steam uses 1920x1080, gamepad prompts, and forced Steam controller glyphs.
+Each mode captures Antella, Sana beside an owned room with two rats and a rat
+trap, a progressed world map retaining that camp's stock and production, and a
+trader screen offering Jakob's meat, rags, and bones. A spring is focused to
+show the undiscovered construction recipe tooltip ("Needed for ???").
+
+The campaign uses seed 123, Extended rules, no AI workers, boss Jakob, day 42,
+fixed camp ownership, and fixed inventories. Scene time stays frozen, while
+loading, GPU uploads, and fades finish before capture. Profiles are isolated in
+the output folder. Existing screenshots are never overwritten.
+Each mode folder contains four RGB JPEGs at quality 90 with 4:4:4 chroma,
+plus `manifest.json`. Lossless PNG masters and diagnostic files remain in `raw/`
+for pixel comparisons. Export rejects incomplete captures, wrong dimensions,
+and resource warnings. The run folder records the source commit. `PYTHON` can
+select another Python interpreter with Pillow installed. These are desktop
+captures of platform layouts, so device checks remain a separate release step.
+
+After a build, invoke the private runner directly for repeatability checks:
+
+```sh
+dotnet bin/Release/Burntime.dll --store-capture ipad /tmp/burntime-ipad-repeat
+```
+
 ## Headless AI simulation
 
 Run a deterministic four-AI game without opening a window:

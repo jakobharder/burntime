@@ -40,6 +40,9 @@ namespace Burntime.MonoGame
 
         BurntimeClassic _burntimeApp;
         internal IVisualTestRunner? VisualTest { get; set; }
+        internal bool EmulateIpadLayout { get; set; }
+        internal Platform.Vector2? CaptureSize { get; set; }
+        internal RenderTarget2D? CaptureTarget { get; private set; }
         internal bool UseRemasteredGraphics => _burntimeApp?.IsNewGfx ?? true;
         internal void RefreshResourceReplacements() =>
             _burntimeApp?.RefreshResourceReplacements();
@@ -302,6 +305,7 @@ namespace Burntime.MonoGame
             Log.DebugOut = VisualTest != null || cfg["engine"].GetBool("debug");
 
             _burntimeApp = new();
+            _burntimeApp.IpadLayout |= EmulateIpadLayout;
             _burntimeApp.ChooseLanguageOnStart = _chooseLanguage;
             _burntimeApp.LastInputMode = OperatingSystem.IsIOS() ? InputMode.Touch
                 : IsSteamSession ? InputMode.Gamepad : InputMode.Mouse;
@@ -412,6 +416,7 @@ namespace Burntime.MonoGame
                     Window.ClientBounds.Height);
             }
 #endif
+            if (CaptureSize.HasValue) Resolution.Native = CaptureSize.Value;
             if (!initialize)
                 _burntimeApp.SceneManager.ResizeScene();
             MainTarget = new RenderTarget(this, new Rect(Platform.Vector2.Zero, Resolution.Game));
@@ -923,7 +928,12 @@ namespace Burntime.MonoGame
 
             if (ShowFps)
                 UpdateFpsCounter();
-            RenderDevice.Render(VisualTest != null ? 1f / 60 : (float)gameTime.ElapsedGameTime.TotalSeconds);
+            if (CaptureSize is Platform.Vector2 captureSize && CaptureTarget == null)
+                CaptureTarget = new RenderTarget2D(GraphicsDevice, captureSize.x, captureSize.y,
+                    false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+            RenderDevice.Render(VisualTest != null ? 1f / 60 : (float)gameTime.ElapsedGameTime.TotalSeconds,
+                CaptureTarget);
+            GraphicsDevice.SetRenderTarget(null);
             VisualTest?.Capture(this);
 
             base.Draw(gameTime);
@@ -974,7 +984,11 @@ namespace Burntime.MonoGame
             try
             {
                 if (disposing)
+                {
+                    CaptureTarget?.Dispose();
+                    CaptureTarget = null;
                     Shutdown();
+                }
             }
             finally
             {
