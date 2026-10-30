@@ -902,6 +902,7 @@ namespace Burntime.MonoGame
             }
 #if IOS
             HandleMemoryPressure();
+            HandleMobileMouseInput();
             HandleTouchInput();
 #else
             lock (_inputGlyphSync)
@@ -1007,6 +1008,8 @@ namespace Burntime.MonoGame
                 lock (_inputGlyphSync)
                     _steamInputGlyphs?.Dispose();
             });
+#else
+            ShutdownComponent("pointer input", () => mobileMouse?.Dispose());
 #endif
             ShutdownComponent("music", Music.StopThread);
             ShutdownComponent("game thread", _gameThread.Stop);

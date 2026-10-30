@@ -40,7 +40,35 @@ IOS_SIGN_IDENTITY="${IOS_SIGN_IDENTITY:-Apple Development}" \
 # installation. Opening the bare iOS .app is rejected as an executable format
 # error, even with a valid signature and profile.
 open -W "$output/Burntime-iPad-arm64-signed.ipa"
-open -b "$bundle_id"
+installed_app="$(python3 - "$output/Burntime-iPad-arm64-signed.ipa" "$bundle_id" <<'PY'
+import hashlib
+from pathlib import Path
+import plistlib
+import sys
+import zipfile
+
+with zipfile.ZipFile(sys.argv[1]) as archive:
+    expected = hashlib.sha256(archive.read("Payload/Burntime.app/Burntime")).digest()
+matches = []
+for directory in (Path("/Applications"), Path.home() / "Applications"):
+    for wrapper in directory.glob("*.app"):
+        for app in (wrapper / "Wrapper").glob("*.app"):
+            try:
+                info = plistlib.loads((app / "Info.plist").read_bytes())
+                if info.get("CFBundleIdentifier") != sys.argv[2]:
+                    continue
+                executable = app / info["CFBundleExecutable"]
+                if hashlib.sha256(executable.read_bytes()).digest() == expected:
+                    matches.append(wrapper)
+            except (OSError, ValueError, KeyError):
+                continue
+if not matches:
+    sys.exit("Could not locate the installed test build in Applications.")
+print(max(matches, key=lambda app: app.stat().st_mtime))
+PY
+)"
+printf '%s\n' "$installed_app" > "$output/installed-app-path.txt"
+open "$installed_app"
 echo "Installed and requested launch of the Release iPad app ($bundle_id)."
-echo "macOS names the installed app Burntime, adding a number if needed."
+echo "Installed app: $installed_app"
 echo "Signed IPA: $output/Burntime-iPad-arm64-signed.ipa"
