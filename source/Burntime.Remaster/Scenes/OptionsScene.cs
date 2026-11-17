@@ -34,6 +34,7 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
     readonly OptionsGiveUpPage _giveUpPage;
     readonly OptionsJukeboxPage _jukeboxPage;
     readonly Container _emptyPage;
+    readonly GUI.ManualWindow _privacyWindow;
 
     readonly GuiImage _optionsBulb;
     readonly Image _backgroundAni;
@@ -78,7 +79,7 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         _backgroundAni.IsVisible = !app.IsNewGfx;
 
         // menu buttons
-        _menuButtons = new Button[5];
+        _menuButtons = new Button[6];
 
         Windows += _menuButtons[0] = new Button(app, app.SceneManager.PreviousScene)
         {
@@ -126,6 +127,21 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
             Position = new Vector2(214, 148),
             IsTextOnly = true
         };
+
+        Windows += _privacyWindow = new GUI.ManualWindow(app, app.Engine.Resolution.Game, setupNotes: true)
+        {
+            IsVisible = false
+        };
+        Windows += _menuButtons[5] = new Button(app, _privacyWindow.OpenPrivacyPolicy)
+        {
+            Font = red,
+            HoverFont = hoverRed,
+            Text = "@newburn?83",
+            IsTextOnly = true,
+            HorizontalAlignment = PositionAlignment.Center,
+            VerticalAlignment = PositionAlignment.Right
+        };
+        PositionPrivacyControls();
 
         // radio cover
         Windows += _tabRail = new TabRailButton(app)
@@ -176,7 +192,7 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
             _tabsFocused = true;
         Container page = index switch
         {
-            0 => _emptyPage,
+            0 or 5 => _emptyPage,
             2 => _jukeboxPage,
             3 => _settingsPage,
             4 => _giveUpPage,
@@ -283,7 +299,9 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
 
             if (action == InputAction.Primary)
             {
-                if (_tabFocusIndex == 0)
+                if (_tabFocusIndex == 5)
+                    _privacyWindow.OpenPrivacyPolicy();
+                else if (_tabFocusIndex == 0)
                     app.SceneManager.PreviousScene();
                 else
                 {
@@ -373,11 +391,20 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         base.OnUpdate(elapsed);
     }
 
+    void PositionPrivacyControls()
+    {
+        var screen = app.Engine.Resolution.Game;
+        _menuButtons[5].Position = new Vector2(screen.x / 2 - Position.x, screen.y - Position.y - 6);
+        _privacyWindow.CenterIn(screen);
+        _privacyWindow.Position -= Position;
+    }
+
     public override void OnResizeScreen(bool reload = false)
     {
         base.OnResizeScreen(reload);
         Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
         _backgroundAni.IsVisible = !app.IsNewGfx;
+        PositionPrivacyControls();
     }
 
     protected override void OnActivateScene(object parameter)
@@ -406,7 +433,7 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
             position.y += 21 * 4;
 
         target.Layer++;
-        target.DrawSprite(position, _optionsBulb);
+        if (_menuIndex != 5) target.DrawSprite(position, _optionsBulb);
         target.Layer--;
 
         target.Layer += 10;

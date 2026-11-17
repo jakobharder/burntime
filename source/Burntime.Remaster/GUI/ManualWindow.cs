@@ -17,8 +17,8 @@ namespace Burntime.Remaster.GUI;
 public sealed class ManualWindow : Container
 {
     readonly bool _setupNotes;
-    int PageCount => _setupNotes ? 3 : 5;
-    int TabWidth => _setupNotes ? 93 : 56;
+    int PageCount => _setupNotes ? 4 : 5;
+    int TabWidth => _setupNotes ? 70 : 56;
     const int TabsLeft = 10;
     int TextLineHeight => _textFont.LineHeight;
     const int FooterHeight = 30;
@@ -142,6 +142,12 @@ public sealed class ManualWindow : Container
 
     }
 
+    public void OpenPrivacyPolicy()
+    {
+        Open();
+        _page = 3;
+    }
+
     public void Open()
     {
         _page = 0;
@@ -184,7 +190,7 @@ public sealed class ManualWindow : Container
                 i == _hoveredPage ? _titleFont : _mutedFont;
             font.DrawText(target,
                 new Vector2(TabsLeft + TabWidth * i + TabWidth / 2, 8),
-                _setupNotes ? app.ResourceManager.GetString($"setupnotes?{i}") : _uiText[i],
+                _setupNotes ? app.ResourceManager.GetString(i == 3 ? "newburn?83" : $"setupnotes?{i}") : _uiText[i],
                 TextAlignment.Center, VerticalTextAlignment.Top);
         }
 
@@ -231,7 +237,7 @@ public sealed class ManualWindow : Container
             return cached;
 
         string[] lines = _setupNotes
-            ? (page == 0 ? SetupPatchNotes.Read() :
+            ? (page == 3 ? PrivacyPolicy.Read() : page == 0 ? SetupPatchNotes.Read() :
                 app.ResourceManager.GetStrings($"setupnotes?s{page}"))
             : app.ResourceManager.GetStrings($"manual?s{page}");
         lines = ManualTextLayout.Wrap(lines, Size.x - 30,

@@ -18,6 +18,65 @@ public partial class BurntimeGame
     bool suppressTouchesUntilReleased;
     readonly object mobileFrameSync = new();
     int memoryPressurePending;
+    IosMouseInput? mobileMouse;
+    readonly System.Collections.Concurrent.ConcurrentQueue<IosMouseInput.Sample> pointerEvents = new();
+    ulong pointerButtons;
+    double pointerScroll;
+    readonly bool traceInput = Environment.GetEnvironmentVariable("BURNTIME_IOS_INPUT_TRACE") == "1";
+
+    void HandleMobileMouseInput()
+    {
+        mobileMouse ??= new IosMouseInput(Services.GetService<UIViewController>().View!, pointerEvents.Enqueue);
+        mobileMouse.PollButtons();
+        while (pointerEvents.TryDequeue(out var sample))
+        {
+            if (!_mobileActive || !IsActive || touchId.HasValue)
+            {
+                pointerButtons = 0;
+                DeviceManager.IsRightDown = false;
+                continue;
+            }
+            var point = mobileMouse.ToNormalized(sample.Position);
+            var position = new Vector2((int)((double)point.X * Resolution.Game.x),
+                (int)((double)point.Y * Resolution.Game.y));
+            if (traceInput) Log.Info($"Pointer {sample.Type} buttons={sample.Buttons}");
+            if (sample.Type is IosMouseInput.Kind.Cancel or IosMouseInput.Kind.Leave)
+            {
+                pointerButtons = 0;
+                DeviceManager.IsRightDown = false;
+                pointerScroll = 0;
+                DeviceManager.MouseLeave();
+                if (_burntimeApp.LastInputMode == InputMode.Mouse)
+                    _burntimeApp.LastInputMode = InputMode.Touch;
+                continue;
+            }
+            DeviceManager.MouseMove(position);
+            if (sample.Type == IosMouseInput.Kind.Move)
+                _burntimeApp.LastInputMode = InputMode.Mouse;
+            if (sample.Type == IosMouseInput.Kind.Buttons)
+            {
+                ForwardPointerButton(1, MouseButton.Left);
+                ForwardPointerButton(2, MouseButton.Right);
+                pointerButtons = sample.Buttons;
+                DeviceManager.IsRightDown = (pointerButtons & 2) != 0;
+            }
+            if (sample.Type == IosMouseInput.Kind.Scroll)
+            {
+                pointerScroll += sample.Scroll * 4;
+                int delta = (int)pointerScroll;
+                pointerScroll -= delta;
+                DeviceManager.MouseWheel(position, delta);
+            }
+
+            void ForwardPointerButton(ulong mask, MouseButton button)
+            {
+                bool wasDown = (pointerButtons & mask) != 0;
+                bool isDown = (sample.Buttons & mask) != 0;
+                if (isDown && !wasDown) DeviceManager.MouseDown(position, button);
+                if (!isDown && wasDown) DeviceManager.MouseClick(position, button);
+            }
+        }
+    }
 
     public void QueueMemoryPressureCleanup() => Interlocked.Exchange(ref memoryPressurePending, 1);
 
@@ -39,6 +98,16 @@ public partial class BurntimeGame
     {
         if (!active) QueueMobileSettingsSave();
         _mobileActive = active;
+        if (!active)
+        {
+            mobileMouse?.Reset();
+            pointerEvents.Clear();
+            pointerButtons = 0;
+            pointerScroll = 0;
+            if (DeviceManager != null) DeviceManager.IsRightDown = false;
+            if (_burntimeApp?.LastInputMode == InputMode.Mouse)
+                _burntimeApp.LastInputMode = InputMode.Touch;
+        }
         ResourceManager?.SetSuspended(!active);
         CancelTouch();
         _burntimeApp?.SceneManager?.ClearTouchGestures();
@@ -124,6 +193,7 @@ public partial class BurntimeGame
         TouchGesture? began = null;
         if (contact.State == TouchLocationState.Pressed)
         {
+            if (traceInput) Log.Info("Direct touch Press");
             _burntimeApp.LastInputMode = InputMode.Touch;
             touchId = contact.Id;
             touchContext = _burntimeApp.SceneManager.TouchInputContext;

@@ -14,6 +14,7 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="icon256.ico" />
+    <EmbeddedResource Include="../../docs/privacy-policy.md" LogicalName="Burntime.PrivacyPolicy" />
     <EmbeddedResource Include="../../resources/Changelog.md" LogicalName="Burntime.Changelog" />
   </ItemGroup>
 </Project>

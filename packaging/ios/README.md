@@ -76,6 +76,14 @@ deleting the app removes them. Versions come from the nearest Git tag and commit
 
 ## Testing
 
+### Apple silicon Mac
+
+```sh
+IOS_DEVELOPMENT_TEAM=YOUR_TEAM_ID ./packaging/ios/test-on-mac.sh
+```
+
+### iPad simulator
+
 With an iPad simulator booted:
 
 ```sh

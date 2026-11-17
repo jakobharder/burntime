@@ -301,6 +301,12 @@ public class MenuScene : Scene
         BindTouchSetupTooltip(GameMode, SetupSelection.GameMode);
         BindTouchSetupTooltip(AiPlayers, SetupSelection.AiPlayers);
 
+        // Reserve integer layers 1–5 for the background decoration and labels.
+        // Preserve higher layers used by portraits, dialogs and input prompts.
+        foreach (Window window in Windows)
+            if (window.Layer < Layer + 6)
+                window.Layer = Layer + 6;
+
     }
 
     NameWindow CreatePlayer(int player, Vector2 position, Action command)
@@ -382,7 +388,7 @@ public class MenuScene : Scene
         //target.DrawSprite(new Vector2(75, gameSize.y - 15 + offset.y), _copyright);
         //target.Layer -= 2;
 
-        target.Layer++;
+        target.Layer = Layer + 1;
 
         const int MARGIN = 3;
         const int MARGINX = 4;
@@ -400,28 +406,29 @@ public class MenuScene : Scene
         target.RenderRect(new Vector2(offset.x + gameSize.x - MARGINX, offset.y + MARGIN),
             new Vector2(MARGINX + 1, gameSize.y - MARGIN * 2), darken);
 
-        target.Layer++;
+        target.Layer = Layer + 2;
 
         target.DrawSprite(offset, _borderTl);
         target.DrawSprite(offset + new Vector2(0, gameSize.y - _borderBl.Height - 1), _borderBl);
 
-        target.Layer++;
+        target.Layer = Layer + 3;
 
         target.DrawSprite(offset + new Vector2(gameSize.x - _borderTr.Width, 0), _borderTr);
         target.DrawSprite(offset + new Vector2(gameSize.x - _borderBr.Width, gameSize.y - _borderBr.Height - 1), _borderBr);
 
-        target.Layer++;
+        target.Layer = Layer + 4;
 
         target.DrawSprite(new Vector2(-15, -2), _crack4);
         target.DrawSprite(new Vector2(204, 15), _crack5);
-
-        _playerFont.DrawText(target, new Vector2(67, 9), _playerOne, TextAlignment.Center, VerticalTextAlignment.Top);
-        _playerFont.DrawText(target, new Vector2(255, 9), _playerTwo, TextAlignment.Center, VerticalTextAlignment.Top);
 
         target.DrawSprite(new Vector2(0, gameSize.y - _crack1.Height) + offset, _crack1);
         target.DrawSprite(new Vector2(gameSize.x - _crack2.Width, 92) + offset, _crack2);
         target.DrawSprite(new Vector2(230, gameSize.y - _crack3.Height + offset.y), _crack3);
 
+        target.Layer = Layer + 5;
+        _playerFont.DrawText(target, new Vector2(67, 9), _playerOne, TextAlignment.Center, VerticalTextAlignment.Top);
+        _playerFont.DrawText(target, new Vector2(255, 9), _playerTwo, TextAlignment.Center, VerticalTextAlignment.Top);
+        target.Layer = Layer;
     }
 
     void OnPlayerOneClick()
