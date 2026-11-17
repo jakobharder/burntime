@@ -30,7 +30,7 @@ profile="$output/signing/Build/Products/Debug-iphoneos/SigningHelper.app/embedde
 # Use the same clean, trimmed, AOT Release packaging as the store build. Keep
 # the development bundle ID separate so testing cannot replace store saves.
 IOS_OUTPUT_DIRECTORY="$output" IOS_APPLICATION_ID="$bundle_id" \
-  ./packaging/ios/package.sh
+  bash ./packaging/ios/package.sh
 IOS_SIGN_IDENTITY="${IOS_SIGN_IDENTITY:-Apple Development}" \
   IOS_PROVISION_PROFILE="$profile" \
   bash ./packaging/ios/sign-release.sh "$output/Burntime-iPad-arm64-unsigned.zip"
