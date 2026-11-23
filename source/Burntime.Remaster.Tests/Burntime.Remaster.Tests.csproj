@@ -5,8 +5,10 @@
     <OutputType>Exe</OutputType>
     <AssemblyName>Burntime.Remaster.Tests</AssemblyName>
     <Nullable>enable</Nullable>
+    <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Burntime.Remaster\Burntime.Remaster.csproj" />
+    <PackageReference Include="System.Runtime.Serialization.Formatters" Version="10.0.10" />
   </ItemGroup>
 </Project>

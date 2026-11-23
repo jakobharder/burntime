@@ -147,6 +147,8 @@ namespace Burntime.Remaster.Logic.Generation
             // Player-owned starting state belongs to the controlling rules or AI profile.
             InitializeStartingPlayers(game, gamdat);
 
+            NpcNames.EnsureUnique(game, app.ResourceManager);
+
             // set trader
             LoadTrader(game, gamdat, definition.TraderPath);
 
