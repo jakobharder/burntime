@@ -1,0 +1,60 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-android</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>Burntime</AssemblyName>
+    <RootNamespace>Burntime</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <SupportedOSPlatformVersion>23.0</SupportedOSPlatformVersion>
+    <ApplicationId>org.burntime.remastered.dev</ApplicationId>
+    <ApplicationTitle>Burntime</ApplicationTitle>
+    <ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+    <ApplicationVersion>1</ApplicationVersion>
+    <AndroidPackageFormats>apk</AndroidPackageFormats>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">android-arm64</RuntimeIdentifier>
+    <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
+    <!-- Keep reflection-based resources and the legacy save schema available. -->
+    <TrimMode>partial</TrimMode>
+    <!-- The save loader uses dynamic code; retain the Mono runtime and its JIT. -->
+    <RunAOTCompilation>false</RunAOTCompilation>
+  </PropertyGroup>
+  <Target Name="SetGitVersion" BeforeTargets="PrepareForBuild;GetAssemblyVersion;_GenerateJavaStubs">
+    <Exec Command="sh &quot;$(MSBuildProjectDirectory)/../Burntime.iOS/get-bundle-version.sh&quot; display" ConsoleToMSBuild="true">
+      <Output PropertyName="ApplicationDisplayVersion" TaskParameter="ConsoleOutput" />
+    </Exec>
+    <Exec Command="sh &quot;$(MSBuildProjectDirectory)/../Burntime.iOS/get-bundle-version.sh&quot; build" ConsoleToMSBuild="true">
+      <Output PropertyName="ApplicationVersion" TaskParameter="ConsoleOutput" />
+    </Exec>
+    <PropertyGroup>
+      <Version>$(ApplicationDisplayVersion)</Version>
+      <!-- Android snapshots these during evaluation; refresh after resolving Git versions. -->
+      <_AndroidVersionName>$(ApplicationDisplayVersion)</_AndroidVersionName>
+      <_AndroidVersionCode>$(ApplicationVersion)</_AndroidVersionCode>
+    </PropertyGroup>
+  </Target>
+  <ItemGroup>
+    <TrimmerRootAssembly Include="Burntime" RootMode="All" />
+    <TrimmerRootAssembly Include="Burntime.Game" RootMode="All" />
+    <TrimmerRootAssembly Include="Burntime.Framework" RootMode="All" />
+    <TrimmerRootAssembly Include="Burntime.Platform" RootMode="All" />
+    <TrimmerRootAssembly Include="BurnGfx" RootMode="All" />
+    <TrimmerRootAssembly Include="System.Runtime.Serialization.Formatters" RootMode="All" />
+    <TrimmerRootAssembly Include="mscorlib" RootMode="All" />
+    <PackageReference Include="MonoGame.Framework.Android" Version="3.8.5" />
+    <PackageReference Include="NVorbis" Version="0.10.4" />
+    <PackageReference Include="System.Runtime.Serialization.Formatters" Version="10.0.10" />
+    <ProjectReference Include="../Burntime.Remaster/Burntime.Remaster.csproj" />
+    <ProjectReference Include="../Burntime.BurnGfx/Burntime.BurnGfx.csproj" />
+    <Compile Include="../Burntime.Mobile/*.cs" Link="Engine/Mobile/%(Filename)%(Extension)" />
+    <Compile Include="../Burntime.MonoGame/BurntimeGame.cs" Link="Engine/BurntimeGame.cs" />
+    <Compile Include="../Burntime.MonoGame/GameThread.cs" Link="Engine/GameThread.cs" />
+    <Compile Include="../Burntime.MonoGame/ForcedInputGlyphProvider.cs" Link="Engine/ForcedInputGlyphProvider.cs" />
+    <Compile Include="../Burntime.MonoGame/Music/**/*.cs" Link="Engine/Music/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="../Burntime.MonoGame/Graphics/**/*.cs" Link="Engine/Graphics/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="../Burntime.MonoGame/Resource/ResourceManager.cs" Link="Engine/ResourceManager.cs" />
+    <AndroidAsset Include="../../resources/game/**/*" Link="Assets/burntime/game/%(RecursiveDir)%(Filename)%(Extension)" />
+    <AndroidAsset Include="../../resources/licenses/**/*" Link="Assets/burntime/licenses/%(RecursiveDir)%(Filename)%(Extension)" />
+    <AndroidAsset Include="../../resources/*.txt" Link="Assets/burntime/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

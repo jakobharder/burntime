@@ -49,6 +49,7 @@
     <PackageReference Include="System.Runtime.Serialization.Formatters" Version="10.0.10" />
     <ProjectReference Include="../Burntime.Remaster/Burntime.Remaster.csproj" />
     <ProjectReference Include="../Burntime.BurnGfx/Burntime.BurnGfx.csproj" />
+    <Compile Include="../Burntime.Mobile/*.cs" Link="Engine/Mobile/%(Filename)%(Extension)" />
     <Compile Include="../Burntime.MonoGame/BurntimeGame.cs" Link="Engine/BurntimeGame.cs" />
     <Compile Include="../Burntime.MonoGame/GameThread.cs" Link="Engine/GameThread.cs" />
     <Compile Include="../Burntime.MonoGame/ForcedInputGlyphProvider.cs" Link="Engine/ForcedInputGlyphProvider.cs" />

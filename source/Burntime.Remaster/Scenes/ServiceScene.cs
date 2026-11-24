@@ -48,7 +48,7 @@ namespace Burntime.Remaster.Scenes
             doctorAnimation.Hide();
             Windows += doctorAnimation;
 
-            inventory = new InventoryWindow(app, InventorySide.Left);
+            inventory = new InventoryWindow(app, InventorySide.Left, compact: app.SmallDeviceUi);
             inventory.Position = new Vector2(2, 5);
             inventory.LeftClickItemEvent += OnLeftClickItemInventory;
             Windows += inventory;
@@ -73,8 +73,8 @@ namespace Burntime.Remaster.Scenes
 
             offer = new ItemGridWindow(app);
             offer.Position = new Vector2(160, 165);
-            offer.Spacing = new Vector2(4, 4);
-            offer.Grid = new Vector2(4, 1);
+            offer.Spacing = app.SmallDeviceUi ? new Vector2(0, 1) : new Vector2(4, 4);
+            offer.Grid = app.SmallDeviceUi ? new Vector2(1, 4) : new Vector2(4, 1);
             offer.LeftClickItemEvent += OnLeftClickItemOffer;
             offer.Prompts.HideInNewGfx = true;
             offer.Prompts.Add(InputAction.Primary, "@prompts?37",
@@ -85,7 +85,7 @@ namespace Burntime.Remaster.Scenes
             inventory.Grid.Prompts.Add(InputAction.Primary, "@prompts?36",
                 () => CanMoveFocusedItem(inventory.Grid));
 
-            itemTooltip = new ItemGridTooltip(app, () => inventory.ActiveCharacter);
+            itemTooltip = new ItemGridTooltip(app, () => inventory.ActiveCharacter, () => inventory);
             itemTooltip.AddGrid(inventory.Grid, ItemTooltipSide.Right,
                 _ => GetTransferTooltip(inventory.Grid, "@prompts?36"));
             itemTooltip.AddGrid(offer, ItemTooltipSide.Left,
@@ -98,7 +98,7 @@ namespace Burntime.Remaster.Scenes
             inventory.Grid.MouseFocusChanged += keyboardNavigation.FocusFromMouse;
             offer.MouseFocusChanged += keyboardNavigation.FocusFromMouse;
             Windows += new InputPromptOverlay(app, Prompts,
-                InputPromptColorScheme.Hud);
+                InputPromptColorScheme.Hud) { ScenePromptLeftMargin = app.SmallDeviceUi ? 88 : 6 };
             exitButton.Prompts.Add(InputAction.Back, "",
                 new Vector2(exitButton.Size.x + 2, -2));
             actionPrompt = actionButton.Prompts.Add(new InputPrompt(InputAction.Action, "")
@@ -107,8 +107,11 @@ namespace Burntime.Remaster.Scenes
                 TouchControl = TouchControl.None
             },
                 new Vector2(actionButton.Size.x + 2, -2));
-            Prompts.Add(InputPattern.HorizontalPaging, "@prompts?16",
-                () => inventory.PageCount > 1);
+            Prompts.Add(new InputPrompt(InputPattern.HorizontalPaging, "@prompts?16")
+            {
+                TouchPattern = app.SmallDeviceUi ? InputPattern.VerticalPaging : InputPattern.HorizontalPaging
+            }, () => inventory.PageCount > 1);
+            PositionElements();
         }
 
         ItemTooltipDetails GetTransferTooltip(ItemGridWindow source, GuiString label) =>
@@ -120,7 +123,30 @@ namespace Burntime.Remaster.Scenes
         public override void OnResizeScreen(bool reload = false)
         {
             base.OnResizeScreen(reload);
+            PositionElements();
+        }
+
+        void PositionElements()
+        {
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+            if (!app.SmallDeviceUi)
+                return;
+            inventory.Position = new Vector2(-Position.x, 7);
+            offer.Position = new Vector2(168, 3) - Position;
+            PositionFooter(exitButton, new Vector2(25, app.Engine.Resolution.Game.y / 2 + 56), 48);
+            PositionFooter(actionButton, new Vector2(324, app.Engine.Resolution.Game.y / 2 + 56), 86);
+        }
+
+        void PositionFooter(Button button, Vector2 screenPosition, int width)
+        {
+            button.IsTextOnly = false;
+            button.Layer = 20;
+            button.Position = screenPosition - Position;
+            button.TextHorizontalAlign = TextAlignment.Left;
+            button.TextVerticalAlign = VerticalTextAlignment.Center;
+            if (button == exitButton)
+                button.Text = app.ResourceManager.GetString("prompts?17");
+            button.Size = new Vector2(System.Math.Max(width, button.Font?.GetWidth(button.Text) ?? 0), 24);
         }
 
         protected override void OnActivateScene(object? parameter)
@@ -171,11 +197,18 @@ namespace Burntime.Remaster.Scenes
                     break;
             }
 
+            PositionElements();
             actionPrompt.UpdatePosition(new Vector2(actionButton.Size.x + 2, -2));
             actionButton.Show();
             serviceReady = true;
             if (serviceType == RoomType.Doctor)
                 UpdateDoctorOfferText();
+        }
+
+        public override bool OnTouchTap(Vector2 position)
+        {
+            itemTooltip.HandleTouchTap(position + PositionOnScreen);
+            return false;
         }
 
         public override bool OnInputAction(InputAction action) => keyboardNavigation.Handle(action);
@@ -195,7 +228,7 @@ namespace Burntime.Remaster.Scenes
                 return;
 
             int basex = 157 + 80;
-            int basey = 4;
+            int basey = app.SmallDeviceUi ? 8 - Position.y : 4;
             for (int i = 0; i < responseText.Length; i++)
                 font.DrawText(target, new Vector2(basex, basey + 9 * i),
                     responseText[i], TextAlignment.Center, VerticalTextAlignment.Top);

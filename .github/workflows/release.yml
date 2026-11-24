@@ -170,8 +170,16 @@ jobs:
           path: burntime-${{ github.ref_name }}-linux-x64.tar.gz
           if-no-files-found: error
 
+  android:
+    uses: ./.github/workflows/android.yml
+    secrets:
+      ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+      ANDROID_SIGNING_PASSWORD: ${{ secrets.ANDROID_SIGNING_PASSWORD }}
+    permissions:
+      contents: read
+
   release:
-    needs: [windows, macos, linux]
+    needs: [windows, macos, linux, android]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -189,6 +197,11 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: linux-release
+          path: release
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: Burntime-Android-arm64
           path: release
 
       - name: Create draft release

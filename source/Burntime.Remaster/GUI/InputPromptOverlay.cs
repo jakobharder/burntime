@@ -24,6 +24,8 @@ sealed partial class InputPromptOverlay : Container
     readonly InputPromptColorScheme _colors;
     readonly Row _sceneRow;
     readonly Row _contextRow;
+    public bool ScenePromptsOnRight { get; set; }
+    public int ScenePromptLeftMargin { get; set; } = 6;
     readonly Dictionary<InlineKey, Row> _inlineRows = [];
 
     readonly record struct InlineKey(int X, int Y,
@@ -57,14 +59,18 @@ sealed partial class InputPromptOverlay : Container
     void Refresh()
     {
         _sceneRow.AnchorToScreenBottomLeft();
+        _sceneRow.Position += new Vector2(ScenePromptLeftMargin - 6, 0);
         _contextRow.AnchorToScreenBottomRight();
 
         foreach (Row row in _inlineRows.Values)
             row.SetPrompts([]);
 
         InputPromptLayout layout = _controller.Resolve();
-        _sceneRow.SetPrompts(ToVisibleRowPrompts(layout.ScenePrompts));
-        _contextRow.SetPrompts(BuildContextPrompts(layout.ContextGroups));
+        RowPrompt[] scenePrompts = ToVisibleRowPrompts(layout.ScenePrompts);
+        RowPrompt[] contextPrompts = BuildContextPrompts(layout.ContextGroups);
+        _sceneRow.SetPrompts(ScenePromptsOnRight ? [] : scenePrompts);
+        _contextRow.SetPrompts(ScenePromptsOnRight
+            ? [.. contextPrompts, .. scenePrompts] : contextPrompts);
         RefreshInline(layout.InlinePrompts);
     }
 

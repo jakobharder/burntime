@@ -18,6 +18,9 @@ namespace Burntime.Remaster.Scenes
         GuiFont titleFont;
         GuiFont font;
         Image danger;
+        readonly GuiImage infoBackground;
+        readonly Button listUp, listDown;
+        readonly Image landscape, water;
         ItemWindow production;
         //String dangerText;
         ItemGridWindow grid;
@@ -44,9 +47,10 @@ namespace Burntime.Remaster.Scenes
         const int ProductionTooltipNextIndex = 75;
         const int ProductionTooltipAutomaticIndex = 76;
         bool productionTooltipDismissed;
-        const int StorageRowHeight = 38;
-        static readonly Rect StorageBounds = new(105, 103, 106, 72);
-        static readonly Rect ProductionBounds = new(225, 105, 32, 32);
+        int BoardOffsetX => app.SmallDeviceUi ? 3 : 0;
+        int StorageRowHeight => 32 + grid.Spacing.y;
+        Rect StorageBounds => new(grid.Position.x - 32, grid.Position.y - 2, 106, StorageRowHeight + 34);
+        Rect ProductionBounds => new(production.Position, new Vector2(32, 32));
         float touchScrollPixels;
         readonly KineticScroll touchMomentum = new();
         bool productionTouchSelected;
@@ -55,7 +59,7 @@ namespace Burntime.Remaster.Scenes
         public InfoScene(Module App)
             : base(App)
         {
-            Background = "info.pac";
+            Background = infoBackground = "info.pac";
             Music = "info";
             Size = new Vector2(320, 200);
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
@@ -68,29 +72,29 @@ namespace Burntime.Remaster.Scenes
             exitButton.HoverImage = "gfx/mapbuttonh.png";
             Windows += exitButton;
 
-            Button button = new Button(App);
-            button.Position = new Vector2(107, 122);
-            button.Command += OnButtonListUp;
-            button.HoverImage = "gfx/up.png";
-            Windows += button;
-            button = new Button(App);
-            button.Position = new Vector2(107, 141);
-            button.Command += OnButtonListDown;
-            button.HoverImage = "gfx/down.png";
-            Windows += button;
+            listUp = new Button(App);
+            listUp.Position = new Vector2(107, 122);
+            listUp.Command += OnButtonListUp;
+            listUp.HoverImage = "gfx/up.png";
+            Windows += listUp;
+            listDown = new Button(App);
+            listDown.Position = new Vector2(107, 141);
+            listDown.Command += OnButtonListDown;
+            listDown.HoverImage = "gfx/down.png";
+            Windows += listDown;
 
-            Image image = new Image(App);
-            image.Background = "inf.ani?0-2";
-            image.Background.Animation.Speed = 6.0f;
-            image.Position = new Vector2(4, 105);
-            Windows += image;
+            landscape = new Image(App);
+            landscape.Background = "inf.ani?0-2";
+            landscape.Background.Animation.Speed = 6.0f;
+            landscape.Position = new Vector2(4 + BoardOffsetX, 105);
+            Windows += landscape;
 
-            image = new Image(App);
-            image.Background = "inf.ani?4-6";
-            image.Background.Animation.Speed = 6;
-            image.Background.Animation.Progressive = false;
-            image.Position = new Vector2(229, 150);
-            Windows += image;
+            water = new Image(App);
+            water.Background = "inf.ani?4-6";
+            water.Background.Animation.Speed = 6;
+            water.Background.Animation.Progressive = false;
+            water.Position = new Vector2(229, 150);
+            Windows += water;
 
             danger = new Image(App);
             danger.Position = new Vector2(244, 27);
@@ -115,7 +119,7 @@ namespace Burntime.Remaster.Scenes
 
             grid = new ItemGridWindow(App);
             grid.Position = new Vector2(137, 105);
-            grid.Spacing = new Vector2(0, 6);
+            grid.Spacing = new Vector2(0, app.SmallDeviceUi ? 4 : 6);
             grid.Grid = new Vector2(1, 2);
             Windows += grid;
             itemTooltip = new ItemGridTooltip(app,
@@ -144,11 +148,57 @@ namespace Burntime.Remaster.Scenes
         {
             base.OnResizeScreen(reload);
 
-            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+            bool small = app.SmallDeviceUi;
+            Background = small ? null : infoBackground;
+            Size = new Vector2(320, small ? 160 : 200);
+            Position = (app.Engine.Resolution.Game - Size) / 2;
+            grid.Position = new Vector2(137 + BoardOffsetX, small ? 87 : 105);
+            production.Position = new Vector2(225 + BoardOffsetX, grid.Position.y);
+            productionTooltip.Position = production.Position + new Vector2(0, 32);
+            listUp.Position = new Vector2(107 + BoardOffsetX, small ? 104 : 122);
+            listDown.Position = new Vector2(107 + BoardOffsetX, small ? 121 : 141);
+            landscape.Position = new Vector2(4 + BoardOffsetX, 105);
+            water.Position = new Vector2(229 + BoardOffsetX, small ? 130 : 150);
+            danger.Position = new Vector2(244 + BoardOffsetX, small ? 21 : 27);
+            exitButton.Position = new Vector2(5, small ? 140 : 174);
+        }
+
+        void DrawCompactBackground(RenderTarget target)
+        {
+            ISprite sprite = infoBackground;
+            if (!sprite.Touch())
+                return;
+            Vector2 origin = (new Vector2(320, 200) - sprite.Size) / 2;
+            infoBackground.Draw(target, origin + new Vector2(BoardOffsetX, 0));
+            target.SelectSprite(sprite);
+            // Keep the title and storage holes at their original scale.
+            // Continue the paper and side frame beyond the bottom of the screen.
+            DrawStrip(0, 20, 0);
+            DrawStrip(38, 100, 20);
+            DrawStrip(140, 40, 120);
+
+            void DrawStrip(int sourceY, int height, int destinationY)
+            {
+                int top = (int)System.Math.Round((sourceY - origin.y) / sprite.Resolution.y);
+                int destinationTop = (int)System.Math.Round(destinationY / sprite.Resolution.y);
+                int destinationBottom = (int)System.Math.Round((destinationY + height) / sprite.Resolution.y);
+                // Only shorten the board; leave the surrounding landscape intact.
+                int left = (int)System.Math.Round((72 - origin.x) / sprite.Resolution.x);
+                int right = (int)System.Math.Round((320 - origin.x) / sprite.Resolution.x);
+                target.DrawSelectedSpriteF(new Vector2f(origin.x + left * sprite.Resolution.x + BoardOffsetX,
+                    destinationTop * sprite.Resolution.y),
+                    new Rect(left, top, right - left, destinationBottom - destinationTop), PixelColor.White);
+            }
         }
 
         public override void OnRender(RenderTarget target)
         {
+            bool small = app.SmallDeviceUi;
+            if (small)
+            {
+                DrawCompactBackground(target);
+                target = target.GetSubBuffer(new Rect(BoardOffsetX, 0, Size.x, Size.y));
+            }
             BurntimeClassic classic = app as BurntimeClassic;
             int city = classic.InfoCity;
 
@@ -159,41 +209,41 @@ namespace Burntime.Remaster.Scenes
             titleFont.DrawText(target, new Vector2(193, 7), loc.Title, TextAlignment.Center, VerticalTextAlignment.Top);
 
             if (itemCount[0] != -1)
-                font.DrawText(target, new Vector2(188, 120), itemCount[0].ToString());
+                font.DrawText(target, new Vector2(188, small ? 102 : 120), itemCount[0].ToString());
             if (itemCount[1] != -1)
-                font.DrawText(target, new Vector2(188, 160), itemCount[1].ToString());
+                font.DrawText(target, new Vector2(188, small ? 140 : 160), itemCount[1].ToString());
 
             // render npc info
-            font.DrawText(target, new Vector2(100, 33), txt[396], TextAlignment.Left, VerticalTextAlignment.Top);
-            font.DrawText(target, new Vector2(100, 51), txt[397], TextAlignment.Left, VerticalTextAlignment.Top);
-            font.DrawText(target, new Vector2(100, 69), txt[398], TextAlignment.Left, VerticalTextAlignment.Top);
+            font.DrawText(target, new Vector2(100, small ? 27 : 33), txt[396], TextAlignment.Left, VerticalTextAlignment.Top);
+            font.DrawText(target, new Vector2(100, small ? 45 : 51), txt[397], TextAlignment.Left, VerticalTextAlignment.Top);
+            font.DrawText(target, new Vector2(100, small ? 63 : 69), txt[398], TextAlignment.Left, VerticalTextAlignment.Top);
 
             int max = System.Math.Max(font.GetWidth(txt[396]), font.GetWidth(txt[397]));
             max = System.Math.Max(font.GetWidth(txt[398]), max);
 
-            RenderNPCLine(target, new Vector2(110 + max, 29), fighters, fighterImage);
-            RenderNPCLine(target, new Vector2(110 + max, 47), technicians, technicianImage);
-            RenderNPCLine(target, new Vector2(110 + max, 65), doctors, doctorImage);
+            RenderNPCLine(target, new Vector2(110 + max, small ? 23 : 29), fighters, fighterImage);
+            RenderNPCLine(target, new Vector2(110 + max, small ? 41 : 47), technicians, technicianImage);
+            RenderNPCLine(target, new Vector2(110 + max, small ? 59 : 65), doctors, doctorImage);
 
             // render resources
-            font.DrawText(target, new Vector2(137, 86), txt[399], TextAlignment.Left, VerticalTextAlignment.Top);
+            font.DrawText(target, new Vector2(137, small ? 79 : 86), txt[399], TextAlignment.Left, VerticalTextAlignment.Top);
 
-            font.DrawText(target, new Vector2(224, 86), txt[406], TextAlignment.Left, VerticalTextAlignment.Top);
+            font.DrawText(target, new Vector2(224, small ? 79 : 86), txt[406], TextAlignment.Left, VerticalTextAlignment.Top);
 
             Production.Rate production = loc.GetFoodProductionRate();
             TextHelper foodText = new(app, "newburn");
             foodText.AddArgument("|F", loc.GetCurrentProductionStockCount());
             foodText.AddArgument("|D", production.FoodPerDay);
-            DrawProductionText(target, new Vector2(263, 117), foodText[82], foodText[81]);
+            DrawProductionText(target, new Vector2(263, small ? 99 : 117), foodText[82], foodText[81]);
 
             TextHelper waterText = new(app, "newburn");
             waterText.AddArgument("|F", loc.Source.Reserve);
             waterText.AddArgument("|C", loc.Source.Capacity);
             waterText.AddArgument("|D", loc.Source.Water);
-            DrawProductionText(target, new Vector2(263, 152), waterText[80], waterText[81]);
+            DrawProductionText(target, new Vector2(263, small ? 132 : 152), waterText[80], waterText[81]);
 
             if (loc.Danger != null)
-                font.DrawText(target, new Vector2(246, 68), loc.Danger.InfoString, TextAlignment.Left, VerticalTextAlignment.Top);
+                font.DrawText(target, new Vector2(246, small ? 62 : 68), loc.Danger.InfoString, TextAlignment.Left, VerticalTextAlignment.Top);
 
         }
 

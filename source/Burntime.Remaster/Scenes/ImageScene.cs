@@ -4,6 +4,7 @@ using Burntime.Platform.Graphics;
 using Burntime.Platform.IO;
 using Burntime.Framework;
 using Burntime.Framework.GUI;
+using Burntime.Remaster.GUI;
 
 namespace Burntime.Remaster.Scenes
 {
@@ -21,6 +22,13 @@ namespace Burntime.Remaster.Scenes
         string subtitleArgumentValue = null;
         bool drawFrame;
         ImageSceneRequest request;
+        GuiImage originalImage;
+        GuiImage fittedImage;
+        Vector2 fittedScreen;
+        string[][] fittedSubtitles = Array.Empty<string[]>();
+        int subtitleBandHeight;
+        int subtitleTotalCount;
+        bool UseSmallLayout => app.SmallDeviceUi && !drawFrame;
 
         public ImageScene(Module App)
             : base(App)
@@ -32,7 +40,11 @@ namespace Burntime.Remaster.Scenes
         {
             request = parameter as ImageSceneRequest ?? throw new ArgumentException(
                 "ImageScene requires an ImageSceneRequest.", nameof(parameter));
-            Background = request.Resource;
+            Background = originalImage = request.Resource;
+            fittedImage = null;
+            fittedSubtitles = Array.Empty<string[]>();
+            subtitleBandHeight = 0;
+            subtitleTotalCount = 0;
             Size = new Vector2(320, 200);
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
             app.RenderMouse = false;
@@ -60,7 +72,7 @@ namespace Burntime.Remaster.Scenes
                 if (!string.IsNullOrEmpty(subtitleText))
                 {
                     subtitleFirst = subtitles.GetInt("first");
-                    subtitleCount = subtitles.GetInt("count");
+                    subtitleCount = subtitleTotalCount = subtitles.GetInt("count");
                     subtitleSpeed = subtitles.GetFloat("speed");
                     subtitlePosition = subtitles.GetVector2("position");
                     subtitleArgument = subtitles.GetString("argument");
@@ -85,9 +97,59 @@ namespace Burntime.Remaster.Scenes
         {
             base.OnResizeScreen(reload);
 
-            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
-
+            UpdateLayout();
         }
+
+        void UpdateLayout()
+        {
+            if (!UseSmallLayout)
+            {
+                if (originalImage != null)
+                    Background = originalImage;
+                Size = new Vector2(320, 200);
+                Position = (app.Engine.Resolution.Game - Size) / 2;
+                return;
+            }
+
+            Size = app.Engine.Resolution.Game;
+            Position = Vector2.Zero;
+            if (originalImage == null || !originalImage.IsLoaded ||
+                originalImage.Width <= 0 || originalImage.Height <= 0)
+                return;
+            if (fittedImage != null && fittedScreen == Size)
+            {
+                Background = fittedImage;
+                Size = fittedScreen;
+                return;
+            }
+
+            fittedSubtitles = new string[subtitleTotalCount][];
+            int maximumLines = 0;
+            if (subtitleTotalCount > 0)
+            {
+                TextHelper text = new(app, subtitleText);
+                if (!string.IsNullOrEmpty(subtitleArgument))
+                    text.AddArgument(subtitleArgument, subtitleArgumentValue);
+                for (int i = 0; i < subtitleTotalCount; i++)
+                {
+                    fittedSubtitles[i] = ManualTextLayout.Wrap(
+                        text[subtitleFirst + i].Split('\n'), System.Math.Max(1, Size.x - 12),
+                        subtitleFont.GetWidth, subtitleFont.GetWidth);
+                    maximumLines = System.Math.Max(maximumLines, fittedSubtitles[i].Length);
+                }
+            }
+            subtitleBandHeight = maximumLines > 0 ? maximumLines * subtitleFont.LineHeight + 8 : 0;
+            float scale = System.Math.Min((float)Size.x / originalImage.Width,
+                (float)System.Math.Max(1, Size.y - subtitleBandHeight) / originalImage.Height);
+            Background = fittedImage = originalImage.CloneScaled(System.Math.Min(1, scale));
+            Size = fittedScreen = app.Engine.Resolution.Game;
+        }
+
+        protected override Vector2 GetBackgroundPosition(Vector2 backgroundSize) =>
+            UseSmallLayout
+                ? new Vector2((Size.x - backgroundSize.x) / 2,
+                    (Size.y - subtitleBandHeight - backgroundSize.y) / 2)
+                : base.GetBackgroundPosition(backgroundSize);
 
         public override bool OnMouseClick(Vector2 Position, MouseButton Button)
         {
@@ -131,9 +193,11 @@ namespace Burntime.Remaster.Scenes
 
         public override void OnRender(RenderTarget target)
         {
+            if (UseSmallLayout)
+                UpdateLayout();
             base.OnRender(target);
 
-            if (drawFrame)
+            if (drawFrame && !UseSmallLayout)
             {
                 target.Layer = app.Engine.MaxLayers - 1;
 
@@ -153,6 +217,23 @@ namespace Burntime.Remaster.Scenes
             if (subtitleCount > 0)
             {
                 target.Layer = app.Engine.MaxLayers;
+                if (UseSmallLayout)
+                {
+                    int index = (int)subtitleLine;
+                    if (index < fittedSubtitles.Length)
+                    {
+                        target.RenderRect(new Vector2(0, Size.y - subtitleBandHeight),
+                            new Vector2(Size.x, subtitleBandHeight), PixelColor.Black);
+                        int y = Size.y - subtitleBandHeight + 4;
+                        foreach (string line in fittedSubtitles[index])
+                        {
+                            subtitleFont.DrawText(target, new Vector2(Size.x / 2, y), line,
+                                TextAlignment.Center, VerticalTextAlignment.Top);
+                            y += subtitleFont.LineHeight;
+                        }
+                    }
+                    return;
+                }
                 TextHelper text = new(app, subtitleText);
                 if (!string.IsNullOrEmpty(subtitleArgument))
                     text.AddArgument(subtitleArgument, subtitleArgumentValue);

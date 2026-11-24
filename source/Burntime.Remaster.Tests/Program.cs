@@ -40,6 +40,7 @@ static class Program
         Run("recruitment", RuleFormulasTests.RecruitmentCases());
         Run("doctor healing", RuleFormulasTests.DoctorCases());
         Run("configured rules", GameRulesTests.ConfiguredRuleCases());
+        Run("unique NPC names", NpcNameTests.Cases());
         Run("radio intelligence", RadioIntelTests.RadioCases());
         Run("item functions", ItemFunctionTests.FunctionCases());
         Run("restaurant and pub value", RuleFormulasTests.ServiceValueCases());
@@ -65,6 +66,7 @@ static class Program
         Run("setup patch notes", SetupPatchNotesTests.Cases());
         Run("resolution scaling", ResolutionTests.ResolutionCases());
         Run("touch gestures", TouchGestureTests.Cases());
+        Run("small-screen trader actions", TraderLayoutTests.Cases());
         Run("font indicators", FontIndicatorTests.IndicatorCases());
         Run("tooltip text substitution", TooltipTextTests.SubstitutionCases());
         Run("construction feedback", ConstructionFeedbackTests.AvailabilityCases());

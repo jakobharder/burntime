@@ -1,6 +1,6 @@
 # iOS Packaging
 
-Landscape iPad app sharing the desktop game and renderer. Steamworks is excluded.
+Landscape iPhone and iPad app sharing the desktop game and renderer. Steamworks is excluded.
 Run commands from the repository root.
 
 Partial trimming removes unused SDK and MonoGame APIs. Game assemblies and the
@@ -19,7 +19,7 @@ are missing after installation.
 ## Build and sign a release
 
 ```sh
-./packaging/ios/package.sh
+bash ./packaging/ios/package.sh
 ```
 
 Performs a clean device build, then creates
@@ -36,7 +36,7 @@ Sign locally with a certificate in Keychain and a matching profile:
 ```sh
 IOS_SIGN_IDENTITY="Apple Distribution: Your Name (TEAMID)" \
 IOS_PROVISION_PROFILE="/absolute/path/Burntime-AppStore.mobileprovision" \
-  ./packaging/ios/sign-release.sh artifacts/ios-arm64/Burntime-iPad-arm64-unsigned.zip
+  bash ./packaging/ios/sign-release.sh artifacts/ios-arm64/Burntime-iPad-arm64-unsigned.zip
 ```
 
 The signer also accepts a downloaded release tag. It validates the profile and
@@ -79,7 +79,7 @@ deleting the app removes them. Versions come from the nearest Git tag and commit
 ### Apple silicon Mac
 
 ```sh
-IOS_DEVELOPMENT_TEAM=YOUR_TEAM_ID ./packaging/ios/test-on-mac.sh
+IOS_DEVELOPMENT_TEAM=YOUR_TEAM_ID bash ./packaging/ios/test-on-mac.sh
 ```
 
 ### iPad simulator

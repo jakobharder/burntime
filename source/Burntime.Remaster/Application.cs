@@ -43,7 +43,7 @@ namespace Burntime.Remaster
         };
 
         // Runtime layout override for platform-faithful desktop captures.
-        public bool IpadLayout { get; set; } = OperatingSystem.IsIOS();
+        public bool IpadLayout { get; set; } = OperatingSystem.IsIOS() || OperatingSystem.IsAndroid();
 
         public GamepadBindings GamepadBindings { get; } = new();
         public KeyboardBindings KeyboardBindings { get; } = new();
@@ -377,7 +377,7 @@ namespace Burntime.Remaster
                 return OutputFiltering.Linear;
             if (Engine.ForceNearestPointOutputFiltering)
                 return OutputFiltering.NearestPoint;
-            if (Engine.DisableShaders)
+            if (SmallDeviceUi || Engine.DisableShaders)
                 return OutputFiltering.SharpBilinear;
 
             if (newGfx)

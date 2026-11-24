@@ -138,7 +138,10 @@ public sealed class TooltipWindow : Window
         if (app is BurntimeClassic classic && !classic.ShowUIHints)
             return;
 
-        target.RenderRect(Vector2.Zero, Size, BackgroundColor);
+        PixelColor background = BackgroundColor;
+        if (app.SmallDeviceUi)
+            background.a = 255;
+        target.RenderRect(Vector2.Zero, Size, background);
 
         string header = Header ?? string.Empty;
         string text = Text ?? string.Empty;

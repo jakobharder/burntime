@@ -235,6 +235,10 @@ public sealed class CharacterRespawn : StateObject
     static bool IsOrdinaryNpc(Character character) =>
         character.Class is CharClass.Mercenary or CharClass.Technician or CharClass.Doctor;
 
+    // Exclude the gas mask (10) and portraits used by mutants (20–22, 28–29).
+    static ReadOnlySpan<int> NpcRespawnFaces =>
+        [7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 23, 24, 25, 26, 27];
+
     bool RefreshIdentity(RespawnObject respawn)
     {
         RespawnObject? nameDonor = respawnList.FirstOrDefault(candidate =>
@@ -248,12 +252,9 @@ public sealed class CharacterRespawn : StateObject
         (character.NameId, nameDonor.Character.NameId) =
             (nameDonor.Character.NameId, character.NameId);
 
-        // Face 10 wears a gas mask, so neither replace it nor assign it randomly.
+        // Preserve the gas mask on NPCs who already have it.
         if (character.FaceID != 10)
-        {
-            int face = 7 + locationTurn % 21;
-            character.FaceID = face >= 10 ? face + 1 : face;
-        }
+            character.FaceID = NpcRespawnFaces[locationTurn % NpcRespawnFaces.Length];
 
         character.SetBodyId = Helper.GetSetBodyId(character.Class);
         if (character.SetBodyId >= 0)

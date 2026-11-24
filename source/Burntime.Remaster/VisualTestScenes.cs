@@ -471,7 +471,7 @@ public sealed class VisualTestScenes(BurntimeClassic app, string bossName = "Vis
             var traderInventory = ReadPrivate<InventoryWindow>(traderScene, "inventoryTrader");
             var traderExchange = ReadPrivate<ExchangeWindow>(traderScene, "exchangeTop");
             var playerExchange = ReadPrivate<ExchangeWindow>(traderScene, "exchangeBottom");
-            if (app.Engine.Resolution.Game.x < 450)
+            if (!app.SmallDeviceUi && app.Engine.Resolution.Game.x < 450)
             {
                 var point = traderScene.PositionOnScreen + traderScene.Size / 2;
                 Swipe(point, new Vector2(40, 0));

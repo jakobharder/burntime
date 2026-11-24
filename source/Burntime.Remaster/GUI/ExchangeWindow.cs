@@ -22,6 +22,9 @@ namespace Burntime.Remaster.GUI
         String title;
         GuiFont font;
         ExchangeResult exchangeResult;
+        readonly bool compact;
+        internal const int CompactHeight = 64;
+        internal const int CompactAreaHeight = 160;
 
         ItemGridWindow grid;
         public ItemGridWindow Grid
@@ -48,11 +51,19 @@ namespace Burntime.Remaster.GUI
         public ExchangeWindow(Module App)
             : base(App)
         {
-            Background = "inv.raw?1";
+            compact = App.SmallDeviceUi;
+            if (!compact)
+                Background = "inv.raw?1";
 
             grid = new ItemGridWindow(App);
             grid.Position = new Vector2(8, 19);
             grid.Spacing = new Vector2(4, 7);
+            if (compact)
+            {
+                Size = new Vector2(96, CompactHeight);
+                grid.Position = Vector2.Zero;
+                grid.Spacing = Vector2.Zero;
+            }
             grid.Grid = new Vector2(3, 2);
             grid.LeftClickItemEvent += OnLeftClickItem;
             grid.RightClickItemEvent += OnRightClickItem;
@@ -64,22 +75,23 @@ namespace Burntime.Remaster.GUI
 
         public override void OnRender(RenderTarget Target)
         {
-            font.DrawText(Target, new Vector2(63, 6), title, TextAlignment.Center, VerticalTextAlignment.Top);
-
-            Target.Layer++;
-
-            PixelColor color;
-            switch (exchangeResult)
+            if (compact)
             {
-                case ExchangeResult.Ok: color = ClassicColors.StatusSuccess; break;
-                case ExchangeResult.Ng: color = ClassicColors.StatusFailure; break;
-                default: color = ClassicColors.StatusInactive; break;
+                Target.RenderRect(Vector2.Zero, Size, new PixelColor(128, 0, 0, 0));
+                return;
             }
-
-            Target.RenderRect(new Vector2(10, 7), new Vector2(12, 5), color);
-
+            font.DrawText(Target, new Vector2(63, 6), title, TextAlignment.Center, VerticalTextAlignment.Top);
+            Target.Layer++;
+            Target.RenderRect(new Vector2(10, 7), new Vector2(12, 5), StatusColor);
             Target.Layer--;
         }
+
+        internal PixelColor StatusColor => exchangeResult switch
+        {
+            ExchangeResult.Ok => ClassicColors.StatusSuccess,
+            ExchangeResult.Ng => ClassicColors.StatusFailure,
+            _ => ClassicColors.StatusInactive
+        };
 
         void OnLeftClickItem(Framework.States.StateObject State)
         {

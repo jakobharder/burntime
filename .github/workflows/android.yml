@@ -1,0 +1,94 @@
+name: Android
+
+on:
+  workflow_call:
+    secrets:
+      ANDROID_SIGNING_KEYSTORE_BASE64:
+        required: true
+      ANDROID_SIGNING_PASSWORD:
+        required: true
+  push:
+    branches: [main]
+    paths:
+      - "source/**"
+      - "resources/**"
+      - "packaging/android/**"
+      - ".github/workflows/android.yml"
+      - "global.json"
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "source/**"
+      - "resources/**"
+      - "packaging/android/**"
+      - ".github/workflows/android.yml"
+      - "global.json"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.400"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: microsoft
+          java-version: "21"
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - name: Install matching Android workload
+        run: dotnet workload install android --version 10.0.101.1
+      - name: Install required SDK components
+        run: >-
+          dotnet build source/Burntime.Android/Burntime.Android.csproj
+          -t:InstallAndroidDependencies
+          -p:AcceptAndroidSdkLicenses=True
+      - name: Package pull-request APK
+        if: github.event_name == 'pull_request'
+        run: bash packaging/android/package.sh
+      - name: Package APK with permanent signing key
+        if: github.event_name != 'pull_request'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+          ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_PASSWORD }}
+          ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_PASSWORD }}
+        shell: bash
+        run: |
+          : "${KEYSTORE_BASE64:?Configure the ANDROID_SIGNING_KEYSTORE_BASE64 repository secret}"
+          : "${ANDROID_SIGNING_STORE_PASSWORD:?Configure the ANDROID_SIGNING_PASSWORD repository secret}"
+          umask 077
+          export ANDROID_SIGNING_KEYSTORE
+          ANDROID_SIGNING_KEYSTORE="$(mktemp "$RUNNER_TEMP/burntime-signing.XXXXXX")"
+          trap 'rm -f "$ANDROID_SIGNING_KEYSTORE"' EXIT
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$ANDROID_SIGNING_KEYSTORE"
+          unset KEYSTORE_BASE64
+          export ANDROID_SIGNING_KEY_ALIAS=burntime
+          bash packaging/android/package.sh
+      - name: Verify APK signature and contents
+        shell: bash
+        run: |
+          shopt -s nullglob
+          packages=(artifacts/android-arm64/*.apk)
+          [[ ${#packages[@]} -eq 1 ]] || { echo "Expected exactly one APK" >&2; exit 1; }
+          apk="${packages[0]}"
+          sdk="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          build_tools="$(find "$sdk/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          "$build_tools/apksigner" verify --verbose "$apk"
+          unzip -l "$apk" | awk '{print $4}' > "$RUNNER_TEMP/apk-files.txt"
+          grep -q '^assets/burntime/game/classic/settings.txt$' "$RUNNER_TEMP/apk-files.txt"
+          grep -q '^lib/arm64-v8a/' "$RUNNER_TEMP/apk-files.txt"
+          shasum -a 256 -c "$apk.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Burntime-Android-arm64
+          path: artifacts/android-arm64/*
+          if-no-files-found: error

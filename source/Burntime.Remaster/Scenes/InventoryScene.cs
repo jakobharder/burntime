@@ -52,7 +52,7 @@ namespace Burntime.Remaster.Scenes
             Size = new Vector2(320, 200);
             Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
 
-            inventory = new InventoryWindow(app, InventorySide.Left);
+            inventory = new InventoryWindow(app, InventorySide.Left, compact: app.SmallDeviceUi);
             inventory.Position = new Vector2(2, 5);
             inventory.LeftClickItemEvent += OnLeftClickItemInventory;
             inventory.RightClickItemEvent += OnRightClickItemInventory;
@@ -61,7 +61,7 @@ namespace Burntime.Remaster.Scenes
             AddGridPrompts(inventory.Grid, true);
             Windows += inventory;
 
-            itemTooltip = new ItemGridTooltip(app, () => inventory.ActiveCharacter);
+            itemTooltip = new ItemGridTooltip(app, () => inventory.ActiveCharacter, () => inventory);
             Windows += itemTooltip.Window;
 
             exitButton = new Button(app);
@@ -86,7 +86,7 @@ namespace Burntime.Remaster.Scenes
             dialog.WindowShow += (_, _) => itemTooltip.Window.Hide();
 
             Windows += new InputPromptOverlay(app, Prompts,
-                InputPromptColorScheme.Hud);
+                InputPromptColorScheme.Hud) { ScenePromptLeftMargin = app.SmallDeviceUi ? 88 : 6 };
             Prompts.SuppressWhen(() => dialog.IsVisible);
             exitButton.Prompts.Add(InputAction.Back, "",
                 new Vector2(exitButton.Size.x + 2, -2));
@@ -95,14 +95,37 @@ namespace Burntime.Remaster.Scenes
                 TouchPattern = InputPattern.VerticalPaging
             },
                 () => inventory.PageCount > 1);
+            PositionElements();
         }
 
         public override void OnResizeScreen(bool reload = false)
         {
             base.OnResizeScreen(reload);
 
-            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+            PositionElements();
             UpdateWaterSourceGridBackground();
+        }
+
+        void PositionElements()
+        {
+            Size = new Vector2(app.SmallDeviceUi ? 416 : 320, 200);
+            Position = (app.Engine.Resolution.Game - Size) / 2;
+            if (!app.SmallDeviceUi)
+                return;
+            inventory.Position = new Vector2(0, 7);
+            exitButton.IsTextOnly = false;
+            exitButton.Layer = 20;
+            exitButton.Position = new Vector2(25, app.Engine.Resolution.Game.y / 2 + 56) - Position;
+            exitButton.Text = app.ResourceManager.GetString("prompts?17");
+            exitButton.Size = new Vector2(System.Math.Max(48, exitButton.Font?.GetWidth(exitButton.Text) ?? 0), 24);
+            exitButton.TextHorizontalAlign = TextAlignment.Left;
+            exitButton.TextVerticalAlign = VerticalTextAlignment.Center;
+            if (grid != null)
+            {
+                bool water = ((BurntimeClassic)app).InventoryRoom?.IsWaterSource == true;
+                grid.Position = new Vector2(water ? 190 : 168,
+                    (water ? 66 : 0) - Position.y);
+            }
         }
 
         protected override Vector2 GetBackgroundPosition(Vector2 backgroundSize)
@@ -162,14 +185,20 @@ namespace Burntime.Remaster.Scenes
                 TextHelper txt = new TextHelper(app, "burn");
                 WaterSource source = classic.Game.World.ActiveLocationObj.Source;
                 txt.AddArgument("|C", source.Reserve);
-                waterSourceFont.DrawText(target, target.Size, txt[423]);
+                if (app.SmallDeviceUi)
+                    waterSourceFont.DrawText(target, new Vector2(400, 156 - Position.y), txt[423],
+                        TextAlignment.Right, VerticalTextAlignment.Bottom);
+                else
+                    waterSourceFont.DrawText(target, target.Size, txt[423]);
 
                 int capacity = source.Capacity;
                 int stored = System.Math.Min(source.Reserve, capacity);
                 int daily = source.Water;
                 int storedAtDailyRate = System.Math.Min(stored, daily);
                 int storedAboveDailyRate = System.Math.Max(0, stored - daily);
-                Vector2 bottom = target.Size - new Vector2(2, 10);
+                Vector2 bottom = app.SmallDeviceUi
+                    ? new Vector2(400, 144 - Position.y)
+                    : target.Size - new Vector2(2, 10);
 
                 // Capacity is the translucent background. Stored water overlays
                 // it, with the portion above one day's output shown more brightly.
@@ -326,9 +355,11 @@ namespace Burntime.Remaster.Scenes
         bool CanTransferSelectedItem(ItemGridWindow source)
         {
             Item? focusedItem = source.FocusedItem;
+            int roomCapacity = ((BurntimeClassic)app).InventoryRoom is { } room
+                ? (room.IsWaterSource ? 8 : 32) : grid?.MaxCount ?? 0;
             return focusedItem != null && grid != null &&
                 (source == inventory.Grid
-                    ? grid.Count < grid.MaxCount
+                    ? grid.Count < roomCapacity
                     : inventory.Grid.Count < inventory.Grid.MaxCount);
         }
 
@@ -423,7 +454,7 @@ namespace Burntime.Remaster.Scenes
 
         protected override void OnActivateScene(object parameter)
         {
-            leader = parameter as Character;
+            leader = parameter as Character ?? ((BurntimeClassic)app).SelectedCharacter;
             group = leader.GetGroup();
 
             BurntimeClassic classic = app as BurntimeClassic;
@@ -434,8 +465,6 @@ namespace Burntime.Remaster.Scenes
                 Background = "hint2.pac";
             else
                 Background = "raum_" + classic.InventoryBackground.ToString() + ".pac";
-            Size = new Vector2(320, 200);
-
             if (grid != null)
             {
                 Windows -= grid;
@@ -462,10 +491,12 @@ namespace Burntime.Remaster.Scenes
                 grid = new ItemGridWindow(app);
                 grid.UnifiedSelection = true;
                 grid.LockPositions = true;
-                grid.DoubleLayered = !classic.InventoryRoom.IsWaterSource;
+                grid.DoubleLayered = !classic.InventoryRoom.IsWaterSource && !app.SmallDeviceUi;
                 grid.Position = new Vector2(160, classic.InventoryRoom.IsWaterSource ? 128 : 20);
-                grid.Spacing = new Vector2(4, 4);
-                grid.Grid = new Vector2(4, classic.InventoryRoom.IsWaterSource ? 2 : 5);
+                grid.Spacing = app.SmallDeviceUi && !classic.InventoryRoom.IsWaterSource ? Vector2.Zero : new Vector2(4, 4);
+                // The room still holds 32 items; three positions in the touch layout remain unused.
+                grid.Grid = app.SmallDeviceUi && !classic.InventoryRoom.IsWaterSource
+                    ? new Vector2(7, 5) : new Vector2(4, classic.InventoryRoom.IsWaterSource ? 2 : 5);
                 UpdateWaterSourceGridBackground();
                 grid.Layer++;
                 grid.LeftClickItemEvent += OnLeftClickItemRoom;
@@ -494,7 +525,7 @@ namespace Burntime.Remaster.Scenes
                 grid.UnifiedSelection = true;
                 grid.Position = new Vector2(170, 10);
                 grid.Spacing = new Vector2(2, 2);
-                grid.Grid = new Vector2(4, 5);
+                grid.Grid = app.SmallDeviceUi ? new Vector2(5, 4) : new Vector2(4, 5);
                 grid.Layer++;
                 grid.LeftClickItemEvent += OnLeftClickItemRoom;
                 grid.RightClickItemEvent += OnRightClickItemRoom;
@@ -510,6 +541,7 @@ namespace Burntime.Remaster.Scenes
             else
                 Music = "room";
 
+            PositionElements();
             roomAreaActive = false;
             inventory.Grid.ClearFocus();
             grid?.ClearFocus();
@@ -545,6 +577,12 @@ namespace Burntime.Remaster.Scenes
 
             OnButtonExit();
             return true;
+        }
+
+        public override bool OnTouchTap(Vector2 position)
+        {
+            itemTooltip.HandleTouchTap(position + PositionOnScreen);
+            return false;
         }
 
         public override bool OnInputAction(InputAction action)
