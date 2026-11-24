@@ -1,6 +1,6 @@
 # iOS Packaging
 
-Landscape iPad app sharing the desktop game and renderer. Steamworks is excluded.
+Landscape iPhone and iPad app sharing the desktop game and renderer. Steamworks is excluded.
 Run commands from the repository root.
 
 Partial trimming removes unused SDK and MonoGame APIs. Game assemblies and the

@@ -73,7 +73,7 @@ namespace Burntime.MonoGame
         public MusicPlayback Music { get; } = new MusicPlayback();
         IMusic IEngine.Music => Music;
         readonly object _inputGlyphSync = new();
-#if !IOS
+#if !IOS && !ANDROID
         SteamInputGlyphProvider? _steamInputGlyphs;
 #endif
         volatile IInputGlyphProvider _inputGlyphs = TextInputGlyphProvider.Instance;
@@ -126,7 +126,7 @@ namespace Burntime.MonoGame
         bool _requestFullscreen = false;
         bool IsSteamSession => _emulateSteamMachine || _emulateSteamDeck ||
             IsGamescopeSession() || IsSteamDeck();
-        public bool SupportsFullscreenToggle => !OperatingSystem.IsIOS() && !IsSteamSession;
+        public bool SupportsFullscreenToggle => !OperatingSystem.IsIOS() && !OperatingSystem.IsAndroid() && !IsSteamSession;
         public bool IsFullscreen 
         {
             get => _isFullscreen;
@@ -179,14 +179,14 @@ namespace Burntime.MonoGame
         {
             lock (_inputGlyphSync)
             {
-#if !IOS
+#if !IOS && !ANDROID
                 _steamInputGlyphs?.Dispose();
                 _steamInputGlyphs = null;
 #endif
 
                 if (_controllerGlyphMode == ControllerGlyphMode.Auto)
                 {
-#if IOS
+#if IOS || ANDROID
                     _inputGlyphs = new ForcedInputGlyphProvider(GamepadLabelStyle.Xbox);
 #else
                     try
@@ -223,7 +223,7 @@ namespace Burntime.MonoGame
 
         string DetectAutomaticLanguage()
         {
-#if !IOS
+#if !IOS && !ANDROID
             string? steamLanguage;
             lock (_inputGlyphSync)
                 steamLanguage = _steamInputGlyphs?.CurrentGameLanguage;
@@ -265,7 +265,7 @@ namespace Burntime.MonoGame
             string logPath = "log.txt";
             if (VisualTest != null)
                 logPath = System.IO.Path.Combine(VisualTest.OutputDirectory, "resources.log");
-            else if (OperatingSystem.IsMacOS() || OperatingSystem.IsIOS())
+            else if (OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsAndroid())
             {
                 string logDirectory = System.IO.Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
@@ -287,13 +287,15 @@ namespace Burntime.MonoGame
                 Log.Info($"Window size override: {_windowSizeOverride.Value.x}x" +
                     $"{_windowSizeOverride.Value.y} windowed");
 
-#if !IOS
+#if !IOS && !ANDROID
             Window.Title = "Burntime " + BurntimeClassic.Version;
 #endif
 
             // Installed content lives next to the executable on every desktop platform.
 #if IOS
             FileSystem.BasePath = Foundation.NSBundle.MainBundle.ResourcePath;
+#elif ANDROID
+            FileSystem.BasePath = AndroidContentPath;
 #else
             FileSystem.BasePath = AppContext.BaseDirectory;
 #endif
@@ -309,13 +311,15 @@ namespace Burntime.MonoGame
             _burntimeApp.IpadLayout |= EmulateIpadLayout;
             _burntimeApp.SmallDeviceUi = EmulateSmallDeviceUi;
             _burntimeApp.ChooseLanguageOnStart = _chooseLanguage;
-            _burntimeApp.LastInputMode = OperatingSystem.IsIOS() ? InputMode.Touch
+            _burntimeApp.LastInputMode = (OperatingSystem.IsIOS() || OperatingSystem.IsAndroid()) ? InputMode.Touch
                 : IsSteamSession ? InputMode.Gamepad : InputMode.Mouse;
 #if IOS
             _burntimeApp.SmallDeviceUi |=
                 UIKit.UIDevice.CurrentDevice.UserInterfaceIdiom ==
                     UIKit.UIUserInterfaceIdiom.Phone &&
                 !Foundation.NSProcessInfo.ProcessInfo.IsiOSApplicationOnMac;
+#elif ANDROID
+            _burntimeApp.SmallDeviceUi |= AndroidSmallDeviceUi;
 #endif
 
             Resolution.RatioCorrection = _burntimeApp.RatioCorrection;
@@ -336,14 +340,14 @@ namespace Burntime.MonoGame
             _burntimeApp.Run();
 
             Log.Info("Start engine...");
-#if !IOS
+#if !IOS && !ANDROID
             Window.AllowUserResizing = true;
 #endif
             Window.ClientSizeChanged += OnResize;
             IsMouseVisible = false;
             ApplyGraphicsDeviceResolution(initialize: true);
 
-#if !IOS
+#if !IOS && !ANDROID
             Window.TextInput += Window_TextInput;
 #endif
             Music.RunThread();
@@ -363,7 +367,7 @@ namespace Burntime.MonoGame
             if ((!_initialized && !initialize) || _resizing) return;
 
             _resizing = true;
-#if IOS
+#if IOS || ANDROID
             var displayMode = GraphicsAdapter.DefaultAdapter.CurrentDisplayMode;
             _graphics.SupportedOrientations = DisplayOrientation.LandscapeLeft | DisplayOrientation.LandscapeRight;
             _graphics.PreferredBackBufferWidth = System.Math.Max(displayMode.Width, displayMode.Height);
@@ -448,7 +452,7 @@ namespace Burntime.MonoGame
             Log.Info("Start game thread...");
             _gameThread.Start((Platform.GameTime gameTime) =>
             {
-#if IOS
+#if IOS || ANDROID
                 lock (mobileFrameSync)
                 {
                 PersistMobileSettings();
@@ -468,7 +472,7 @@ namespace Burntime.MonoGame
                         $"Tex {ResourceManager.TextureMemoryUsage / (1024.0 * 1024.0):0.0} MB"),
                     TextAlignment.Left, VerticalTextAlignment.Top);
                 RenderDevice.End();
-#if IOS
+#if IOS || ANDROID
                 }
 #endif
             }, framesPerSecond: TargetFramesPerSecond);
@@ -903,10 +907,15 @@ namespace Burntime.MonoGame
                 base.Update(gameTime);
                 return;
             }
-#if IOS
+#if IOS || ANDROID
             HandleMemoryPressure();
+#if IOS
             HandleMobileMouseInput();
+#endif
             HandleTouchInput();
+#if ANDROID
+            HandleAndroidBack();
+#endif
 #else
             lock (_inputGlyphSync)
                 _steamInputGlyphs?.RunFrame();
@@ -1005,13 +1014,13 @@ namespace Burntime.MonoGame
             if (Interlocked.Exchange(ref _shutdownStarted, 1) != 0)
                 return;
 
-#if !IOS
+#if !IOS && !ANDROID
             ShutdownComponent("input glyphs", () =>
             {
                 lock (_inputGlyphSync)
                     _steamInputGlyphs?.Dispose();
             });
-#else
+#elif IOS
             ShutdownComponent("pointer input", () => mobileMouse?.Dispose());
 #endif
             ShutdownComponent("music", Music.StopThread);
@@ -1036,6 +1045,11 @@ namespace Burntime.MonoGame
 
         void IEngine.ExitApplication()
         {
+#if ANDROID
+            // Activity destruction also closes the module. Avoid backgrounding a
+            // replacement activity while the old host is being disposed.
+            if (Volatile.Read(ref _shutdownStarted) != 0) return;
+#endif
 #if !IOS
             Exit();
 #endif

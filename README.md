@@ -63,6 +63,9 @@ dotnet publish source/Burntime.MonoGame/Burntime.MonoGame.csproj -c Release -r <
 Use one of the following instead of `<platform>`:
 - `osx-arm64`, `osx-x64`, `linux-x64`, `win-x64`
 
+For mobile builds, see [Android APK packaging](packaging/android/README.md) and
+[iPhone/iPad packaging](packaging/ios/README.md).
+
 ## Credits
 
 Burntime is developed and maintained by Jakob Harder, with contributions from the community.

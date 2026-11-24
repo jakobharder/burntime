@@ -43,7 +43,7 @@ namespace Burntime.Remaster
         };
 
         // Runtime layout override for platform-faithful desktop captures.
-        public bool IpadLayout { get; set; } = OperatingSystem.IsIOS();
+        public bool IpadLayout { get; set; } = OperatingSystem.IsIOS() || OperatingSystem.IsAndroid();
 
         public GamepadBindings GamepadBindings { get; } = new();
         public KeyboardBindings KeyboardBindings { get; } = new();

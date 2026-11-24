@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-feature android:glEsVersion="0x00020000" android:required="true" />
+  <application android:label="Burntime" android:icon="@drawable/icon"
+               android:allowBackup="false" android:appCategory="game" android:enableOnBackInvokedCallback="true" android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen" />
+</manifest>

@@ -1,0 +1,65 @@
+name: Android
+
+on:
+  workflow_call:
+  push:
+    branches: [main]
+    paths:
+      - "source/**"
+      - "resources/**"
+      - "packaging/android/**"
+      - ".github/workflows/android.yml"
+      - "global.json"
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "source/**"
+      - "resources/**"
+      - "packaging/android/**"
+      - ".github/workflows/android.yml"
+      - "global.json"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.400"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: microsoft
+          java-version: "21"
+      - uses: android-actions/setup-android@v3
+      - name: Install matching Android workload
+        run: dotnet workload install android --version 10.0.101.1
+      - name: Install required SDK components
+        run: >-
+          dotnet build source/Burntime.Android/Burntime.Android.csproj
+          -t:InstallAndroidDependencies
+          -p:AcceptAndroidSdkLicenses=True
+      - name: Package development APK
+        run: bash packaging/android/package.sh
+      - name: Verify APK signature and contents
+        shell: bash
+        run: |
+          apk=artifacts/android-arm64/Burntime-Android-arm64-development.apk
+          sdk="${ANDROID_HOME:-$ANDROID_SDK_ROOT}"
+          build_tools="$(find "$sdk/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          "$build_tools/apksigner" verify --verbose "$apk"
+          unzip -l "$apk" | awk '{print $4}' > "$RUNNER_TEMP/apk-files.txt"
+          rg -q '^assets/burntime/game/classic/settings.txt$' "$RUNNER_TEMP/apk-files.txt"
+          rg -q '^lib/arm64-v8a/' "$RUNNER_TEMP/apk-files.txt"
+          shasum -a 256 -c "$apk.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Burntime-Android-arm64
+          path: artifacts/android-arm64/*
+          if-no-files-found: error

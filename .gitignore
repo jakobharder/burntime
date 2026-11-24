@@ -16,3 +16,5 @@ __pycache__
 .cache
 /packaging/steam/local.conf
 reverse-engineering
+*.keystore
+*.jks

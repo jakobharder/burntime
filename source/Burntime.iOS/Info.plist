@@ -5,7 +5,7 @@
   <key>CFBundleName</key><string>Burntime</string>
   <key>ITSAppUsesNonExemptEncryption</key><false/>
   <key>UIApplicationSupportsIndirectInputEvents</key><true/>
-  <key>UIDeviceFamily</key><array><integer>2</integer></array>
+  <key>UIDeviceFamily</key><array><integer>1</integer><integer>2</integer></array>
   <key>UISupportedInterfaceOrientations</key><array>
     <string>UIInterfaceOrientationLandscapeLeft</string>
     <string>UIInterfaceOrientationLandscapeRight</string>
