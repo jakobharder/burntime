@@ -172,6 +172,9 @@ jobs:
 
   android:
     uses: ./.github/workflows/android.yml
+    secrets:
+      ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+      ANDROID_SIGNING_PASSWORD: ${{ secrets.ANDROID_SIGNING_PASSWORD }}
     permissions:
       contents: read
 
