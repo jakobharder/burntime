@@ -84,8 +84,8 @@ jobs:
           build_tools="$(find "$sdk/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
           "$build_tools/apksigner" verify --verbose "$apk"
           unzip -l "$apk" | awk '{print $4}' > "$RUNNER_TEMP/apk-files.txt"
-          rg -q '^assets/burntime/game/classic/settings.txt$' "$RUNNER_TEMP/apk-files.txt"
-          rg -q '^lib/arm64-v8a/' "$RUNNER_TEMP/apk-files.txt"
+          grep -q '^assets/burntime/game/classic/settings.txt$' "$RUNNER_TEMP/apk-files.txt"
+          grep -q '^lib/arm64-v8a/' "$RUNNER_TEMP/apk-files.txt"
           shasum -a 256 -c "$apk.sha256"
       - uses: actions/upload-artifact@v4
         with:
