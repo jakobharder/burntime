@@ -110,6 +110,24 @@ namespace Burntime.Framework.GUI
             return clone;
         }
 
+        public GuiImage CloneScaled(float scale)
+        {
+            if (!float.IsFinite(scale) || scale <= 0)
+                scale = 1;
+            // Clone static sprites too: their resolution may be shared by other views.
+            GuiImage clone = new(sprite_.Clone());
+            clone.sprite_.Resolution = sprite_.Resolution * scale;
+            foreach (var layer in layers_)
+            {
+                ISprite sprite = layer.Sprite.Clone();
+                sprite.Resolution = layer.Sprite.Resolution * scale;
+                clone.layers_.Add((new Vector2(
+                    (int)System.Math.Round(layer.Position.x * scale),
+                    (int)System.Math.Round(layer.Position.y * scale)), sprite));
+            }
+            return clone;
+        }
+
         public void Touch()
         {
             sprite_.Touch();

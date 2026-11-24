@@ -58,7 +58,8 @@ namespace Burntime.Remaster.Scenes
         {
             base.OnResizeScreen(reload);
 
-            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+            Size = new Vector2(320, app.SmallDeviceUi ? 160 : 200);
+            Position = (app.Engine.Resolution.Game - Size) / 2;
         }
 
         public override void OnRender(RenderTarget Target)
@@ -66,13 +67,16 @@ namespace Burntime.Remaster.Scenes
             if (app.IsNewGfx)
             {
                 Vector2 gameSize = app.Engine.Resolution.Game;
-                gameSize.Max(_background.Size);
+                if (!app.SmallDeviceUi)
+                    gameSize.Max(_background.Size);
 
                 Vector2 offset = (app.Engine.Resolution.Game - _background.Size) / 2;
                 offset.Min(0);
                 offset -= Position;
                 Target.DrawSprite(offset, _background);
 
+                if (app.SmallDeviceUi)
+                    offset = -Position;
                 Target.Layer++;
                 Target.DrawSprite(gameSize - _rightBottom.Size + offset + Vector2.One, _rightBottom);
                 Target.DrawSprite(new Vector2(gameSize.x - _rightTop.Width + 1, 0) + offset, _rightTop);
@@ -99,6 +103,30 @@ namespace Burntime.Remaster.Scenes
             txt.AddArgument("|A", locations);
             txt.AddArgument("|I", controlledCities);
             txt.AddArgument("|K", cities);
+
+            if (app.SmallDeviceUi)
+            {
+                List<string> lines = new();
+                for (int i = 0; i < 16; i++)
+                    lines.Add(txt[569 + i]);
+                while (lines.Count > 0 && string.IsNullOrWhiteSpace(lines[0]))
+                    lines.RemoveAt(0);
+                while (lines.Count > 0 && string.IsNullOrWhiteSpace(lines[^1]))
+                    lines.RemoveAt(lines.Count - 1);
+                int height = 0;
+                foreach (string line in lines)
+                    height += string.IsNullOrWhiteSpace(line) ? 4 : 11;
+                if (lines.Count > 0)
+                    height += font.GetHeight() - 11;
+                y = (Size.y - height) / 2;
+                foreach (string line in lines)
+                {
+                    font.DrawText(Target, new Vector2(Size.x / 2, y), line,
+                        TextAlignment.Center, VerticalTextAlignment.Top);
+                    y += string.IsNullOrWhiteSpace(line) ? 4 : 11;
+                }
+                return;
+            }
 
             for (int i = 0; i < 16; i++)
             {
