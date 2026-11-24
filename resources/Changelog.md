@@ -1,5 +1,17 @@
 ﻿# Burntime Changelog
 
+## 1.3.1 (2026-11-24)
+
+- Added Android APK builds and iPhone support
+- Adapted layouts, scaling and tooltips for small screens
+- Added mouse support on iOS
+- Added an in-game privacy policy
+- Ensured unique localized NPC names in Extended mode
+- Fixed human NPCs respawning with mutant portraits
+- Fixed nearby entrance inventory hints in uncontrolled locations
+- Fixed game setup crack layers
+- Fixed reading game resources from read-only app bundles on macOS
+
 ## 1.3 (2026-10-04)
 
 - Added touch controls and iPad support
