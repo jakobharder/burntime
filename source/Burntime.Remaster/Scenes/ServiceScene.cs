@@ -85,7 +85,7 @@ namespace Burntime.Remaster.Scenes
             inventory.Grid.Prompts.Add(InputAction.Primary, "@prompts?36",
                 () => CanMoveFocusedItem(inventory.Grid));
 
-            itemTooltip = new ItemGridTooltip(app, () => inventory.ActiveCharacter);
+            itemTooltip = new ItemGridTooltip(app, () => inventory.ActiveCharacter, () => inventory);
             itemTooltip.AddGrid(inventory.Grid, ItemTooltipSide.Right,
                 _ => GetTransferTooltip(inventory.Grid, "@prompts?36"));
             itemTooltip.AddGrid(offer, ItemTooltipSide.Left,
@@ -203,6 +203,12 @@ namespace Burntime.Remaster.Scenes
             serviceReady = true;
             if (serviceType == RoomType.Doctor)
                 UpdateDoctorOfferText();
+        }
+
+        public override bool OnTouchTap(Vector2 position)
+        {
+            itemTooltip.HandleTouchTap(position + PositionOnScreen);
+            return false;
         }
 
         public override bool OnInputAction(InputAction action) => keyboardNavigation.Handle(action);

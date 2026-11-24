@@ -70,6 +70,10 @@ namespace Burntime.Remaster.GUI
 
         public int PageCount => pages.Count;
 
+        internal Rect HeaderBoundsOnScreen => new(
+            PositionOnScreen + new Vector2(0, basePos.y),
+            new Vector2(Size.x, grid.Position.y - basePos.y));
+
         public bool SelectAdjacentPage(int direction)
         {
             if (pages.Count <= 1)

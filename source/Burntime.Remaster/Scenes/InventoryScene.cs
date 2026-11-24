@@ -61,7 +61,7 @@ namespace Burntime.Remaster.Scenes
             AddGridPrompts(inventory.Grid, true);
             Windows += inventory;
 
-            itemTooltip = new ItemGridTooltip(app, () => inventory.ActiveCharacter);
+            itemTooltip = new ItemGridTooltip(app, () => inventory.ActiveCharacter, () => inventory);
             Windows += itemTooltip.Window;
 
             exitButton = new Button(app);
@@ -577,6 +577,12 @@ namespace Burntime.Remaster.Scenes
 
             OnButtonExit();
             return true;
+        }
+
+        public override bool OnTouchTap(Vector2 position)
+        {
+            itemTooltip.HandleTouchTap(position + PositionOnScreen);
+            return false;
         }
 
         public override bool OnInputAction(InputAction action)

@@ -33,6 +33,7 @@ internal sealed class ItemGridTooltip
     const int EquippedText = 92, PassiveText = 93;
     readonly Module app;
     readonly Func<Character?> viewer;
+    readonly Func<InventoryWindow>? touchInventory;
     readonly List<Source> sources = [];
     ItemGridWindow? lastMouseSource;
 
@@ -41,10 +42,11 @@ internal sealed class ItemGridTooltip
 
     public TooltipWindow Window { get; }
 
-    public ItemGridTooltip(Module app, Func<Character?> viewer)
+    public ItemGridTooltip(Module app, Func<Character?> viewer, Func<InventoryWindow>? touchInventory = null)
     {
         this.app = app;
         this.viewer = viewer;
+        this.touchInventory = touchInventory;
         Window = new TooltipWindow(app, neutralPalette: true)
         {
             VerticalAlignment = PositionAlignment.Left,
@@ -73,7 +75,31 @@ internal sealed class ItemGridTooltip
         Window.Hide();
     }
 
-    void OnMouseFocusChanged(ItemGridWindow grid) => lastMouseSource = grid;
+    void OnMouseFocusChanged(ItemGridWindow grid)
+    {
+        lastMouseSource = grid;
+        if (app.LastInputMode == InputMode.Touch)
+            foreach (Source source in sources)
+                if (source.Grid != grid)
+                    source.Grid.ClearFocus();
+    }
+
+    public void HandleTouchTap(Vector2 screenPosition)
+    {
+        if (app.LastInputMode != InputMode.Touch)
+            return;
+        foreach (Source source in sources)
+            if (IsVisible(source.Grid))
+                foreach (ItemWindow item in source.Grid.Windows.OfType<ItemWindow>())
+                    if (item.IsVisible && item.IsTouchTarget &&
+                        TouchHitTest.Expand(item.Boundings + (item.PositionOnScreen - item.Position), item.MinimumTouchTargetSize).PointInside(screenPosition))
+                        return;
+
+        foreach (Source source in sources)
+            source.Grid.ClearFocus();
+        lastMouseSource = null;
+        Window.Hide();
+    }
 
     public void Update()
     {
@@ -107,6 +133,14 @@ internal sealed class ItemGridTooltip
         int edgeX = grid.PositionOnScreen.x - parentPosition.x +
             (side == ItemTooltipSide.Right ? grid.Size.x : 0);
         Window.Position = new Vector2(edgeX, focus.Value.y - parentPosition.y - 16);
+        bool touch = app.LastInputMode == InputMode.Touch;
+        Window.StackPrompts = !(touch && touchInventory != null);
+        if (touch && touchInventory != null)
+        {
+            Rect header = touchInventory().HeaderBoundsOnScreen;
+            Window.HorizontalAlignment = PositionAlignment.Right;
+            Window.Position = new Vector2(header.Right, header.Top) - parentPosition;
+        }
         Window.Header = item.TooltipText;
         Window.Text = BuildItemFacts(item);
         ItemTooltipDetails details = source.Details?.Invoke(item) ?? default;

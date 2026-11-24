@@ -113,7 +113,7 @@ class TraderScene : Scene
         temporarySpace.Prompts.Add(InputAction.Primary, "@prompts?46");
         Windows += temporarySpace;
 
-        itemTooltip = new ItemGridTooltip(app, () => inventory.ActiveCharacter);
+        itemTooltip = new ItemGridTooltip(app, () => inventory.ActiveCharacter, () => inventory.IsVisible ? inventory : inventoryTrader);
         itemTooltip.AddGrid(inventory.Grid, details: _ => GetTradeTooltip(inventory.Grid, true));
         itemTooltip.AddGrid(inventoryTrader.Grid, details: _ => GetTradeTooltip(inventoryTrader.Grid, false));
         itemTooltip.AddGrid(exchangeTop.Grid, details: _ => GetTradeTooltip(exchangeTop.Grid, false));
@@ -279,6 +279,7 @@ class TraderScene : Scene
 
     public override bool OnTouchTap(Vector2 position)
     {
+        itemTooltip?.HandleTouchTap(position + PositionOnScreen);
         if (app.SmallDeviceUi || app.Engine.Resolution.Game.x >= 450 ||
             !new Rect(Vector2.Zero, Size).PointInside(position))
             return false;
