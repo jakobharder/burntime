@@ -33,6 +33,8 @@ public class MenuScene : Scene
 
     SpriteAnimation PlayerOneSlide;
     SpriteAnimation PlayerTwoSlide;
+    readonly Image _playerOneShutter;
+    readonly Image _playerTwoShutter;
     NameWindow PlayerOneSwitch;
     NameWindow PlayerTwoSwitch;
     bool UsePlayerOne = false;
@@ -132,16 +134,16 @@ public class MenuScene : Scene
         Windows += PlayerTwoFace;
 
         // face slides
-        Image image = new Image(app, "sta.ani?10-16");
-        image.Position = new Vector2(30, 26);
-        image.Layer += 10;
-        PlayerOneSlide = image.Background.Animation;
-        Windows += image;
-        image = new Image(app, "sta.ani?10-16");
-        image.Position = new Vector2(220, 26);
-        image.Layer += 10;
-        PlayerTwoSlide = image.Background.Animation;
-        Windows += image;
+        _playerOneShutter = new Image(app, "sta.ani?10-16");
+        _playerOneShutter.Position = new Vector2(30, 26);
+        _playerOneShutter.Layer += 10;
+        PlayerOneSlide = _playerOneShutter.Background.Animation;
+        Windows += _playerOneShutter;
+        _playerTwoShutter = new Image(app, "sta.ani?10-16");
+        _playerTwoShutter.Position = new Vector2(220, 26);
+        _playerTwoShutter.Layer += 10;
+        PlayerTwoSlide = _playerTwoShutter.Background.Animation;
+        Windows += _playerTwoShutter;
 
         PlayerOneSlide.Speed = 10;
         PlayerTwoSlide.Speed = 10;
@@ -307,6 +309,7 @@ public class MenuScene : Scene
             if (window.Layer < Layer + 6)
                 window.Layer = Layer + 6;
 
+        UpdateLayout();
     }
 
     NameWindow CreatePlayer(int player, Vector2 position, Action command)
@@ -350,7 +353,37 @@ public class MenuScene : Scene
     {
         base.OnResizeScreen(reload);
 
-        Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+        UpdateLayout();
+    }
+
+    void UpdateLayout()
+    {
+        bool small = app.SmallDeviceUi;
+        Size = small ? new Vector2(System.Math.Max(320, app.Engine.Resolution.Game.x), 160)
+            : new Vector2(320, 200);
+        Position = (app.Engine.Resolution.Game - Size) / 2;
+        int rightShift = Size.x - 320;
+        int middleShift = rightShift / 2;
+
+        PlayerTwoFace.Position = new Vector2(223 + rightShift, 28);
+        _playerTwoShutter.Position = new Vector2(220 + rightShift, 26);
+        PlayerTwoSwitch.Position = new Vector2(204 + rightShift, 92);
+        _colorChoices[1].Position = new Vector2(237 + rightShift, 121);
+        _loadButton.Position = new Vector2(131 + middleShift, 15);
+        _startButton.Position = new Vector2(131 + middleShift, 42);
+        _notesButton.Position = small ? new Vector2(Size.x / 2 - (_exitButton.IsVisible ? 41 : 18), 78)
+            : new Vector2(13, 163);
+        _exitButton.Position = small ? new Vector2(Size.x / 2 + 5, 78)
+            : new Vector2(271, 163);
+
+        int rowY = small ? 121 : 149;
+        Difficulty.Position = new Vector2(100 + middleShift, rowY);
+        GameMode.Position = new Vector2(145 + middleShift, rowY);
+        AiPlayers.Position = new Vector2(190 + middleShift, rowY);
+        _difficultyTooltip.Position = new Vector2(132 + middleShift, rowY - 4);
+        _gameModeTooltip.Position = new Vector2(161 + middleShift, rowY - 4);
+        _aiTooltip.Position = new Vector2(190 + middleShift, rowY - 4);
+        _setupNotes.CenterIn(Size);
     }
 
     public override void OnRender(RenderTarget target)
@@ -379,10 +412,19 @@ public class MenuScene : Scene
         }
 
         Vector2 gameSize = app.Engine.Resolution.Game;
-        gameSize.Max(Background.Size);
-        Vector2 offset = (app.Engine.Resolution.Game - Background.Size) / 2;
-        offset.Min(0);
-        offset -= Position;
+        Vector2 offset;
+        if (app.SmallDeviceUi)
+        {
+            offset = -Position;
+        }
+        else
+        {
+            gameSize.Max(Background.Size);
+            offset = (app.Engine.Resolution.Game - Background.Size) / 2;
+            offset.Min(0);
+            offset -= Position;
+        }
+        int rightShift = Size.x - 320;
 
         //target.Layer += 2;
         //target.DrawSprite(new Vector2(75, gameSize.y - 15 + offset.y), _copyright);
@@ -419,15 +461,15 @@ public class MenuScene : Scene
         target.Layer = Layer + 4;
 
         target.DrawSprite(new Vector2(-15, -2), _crack4);
-        target.DrawSprite(new Vector2(204, 15), _crack5);
+        target.DrawSprite(new Vector2(204 + rightShift, 15), _crack5);
 
         target.DrawSprite(new Vector2(0, gameSize.y - _crack1.Height) + offset, _crack1);
         target.DrawSprite(new Vector2(gameSize.x - _crack2.Width, 92) + offset, _crack2);
-        target.DrawSprite(new Vector2(230, gameSize.y - _crack3.Height + offset.y), _crack3);
+        target.DrawSprite(new Vector2(230 + rightShift, gameSize.y - _crack3.Height + offset.y), _crack3);
 
         target.Layer = Layer + 5;
         _playerFont.DrawText(target, new Vector2(67, 9), _playerOne, TextAlignment.Center, VerticalTextAlignment.Top);
-        _playerFont.DrawText(target, new Vector2(255, 9), _playerTwo, TextAlignment.Center, VerticalTextAlignment.Top);
+        _playerFont.DrawText(target, new Vector2(255 + rightShift, 9), _playerTwo, TextAlignment.Center, VerticalTextAlignment.Top);
         target.Layer = Layer;
     }
 
