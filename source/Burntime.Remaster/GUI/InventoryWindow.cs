@@ -31,6 +31,9 @@ namespace Burntime.Remaster.GUI
         }
 
         GuiImage back;
+        readonly bool compact;
+        internal PixelColor? StatusLight { get; set; }
+        internal const int CompactHeight = 136;
         List<InventoryPage> pages;
         int activePageIndex;
         InventoryPage activePage;
@@ -112,7 +115,7 @@ namespace Burntime.Remaster.GUI
             // Delayed loading can leave the constructor with zero background dimensions.
             // Keep touch bounds aligned with the loaded panel, including graphics changes.
             if (back.IsLoaded)
-                Size = back.Size + basePos;
+                Size = new Vector2(back.Width, compact ? CompactHeight : back.Height) + basePos;
 
             if (touchSwipeOrigin.HasValue && (touchSwipeResetRemaining -= elapsed) <= 0)
                 touchSwipeOrigin = null;
@@ -122,15 +125,16 @@ namespace Burntime.Remaster.GUI
         public LogicEvent LeftClickItemEvent;
         public LogicEvent RightClickItemEvent;
 
-        public InventoryWindow(Module App, InventorySide Side)
+        public InventoryWindow(Module App, InventorySide Side, bool compact = false)
             : base(App)
         {
             side = (Side == InventorySide.Right);
+            this.compact = compact;
 
             back = side ? "inv.raw?2" : "gfx/inventory_left.png";
 
             basePos = new Vector2(15, 15);
-            Size = new Vector2(back.Width, back.Height) + basePos;
+            Size = new Vector2(back.Width, compact ? CompactHeight : back.Height) + basePos;
 
             face = new FaceWindow(App);
             face.Position = side ? (basePos + new Vector2(67, 0)) : basePos;
@@ -152,9 +156,9 @@ namespace Burntime.Remaster.GUI
                 pageButtons[i] = new Button(App);
                 pageButtons[i].Image = "munt.raw?" + (5 + i);
                 if (side)
-                    pageButtons[i].Position = basePos + new Vector2(120 + 3 * i, 142 - 18 * i);
+                    pageButtons[i].Position = basePos + new Vector2(120 + 3 * i, (compact ? 112 : 142) - 18 * i);
                 else
-                    pageButtons[i].Position = basePos + new Vector2(-3 * i, 142 - 18 * i);
+                    pageButtons[i].Position = basePos + new Vector2(-3 * i, (compact ? 112 : 142) - 18 * i);
                 pageButtons[i].Hide();
                 pageButtons[i].Command += new CommandHandler(OnPage, i);
                 pageIndices[i] = i;
@@ -166,8 +170,8 @@ namespace Burntime.Remaster.GUI
             {
                 UnifiedSelection = true,
                 LockPositions = true,
-                Position = new Vector2(side ? 9 : 19, side ? 72 : 83) + basePos,
-                Spacing = new Vector2(4, side ? 16 : 5),
+                Position = new Vector2(side ? 9 : 19, compact ? 60 : side ? 72 : 83) + basePos,
+                Spacing = new Vector2(4, compact ? 5 : side ? 16 : 5),
                 Grid = new Vector2(3, 2),
                 Layer = Layer + Logic.Group.MAX_PEOPLE + 1
             };
@@ -284,13 +288,43 @@ namespace Burntime.Remaster.GUI
                     grid.Selection.Add(item);
         }
 
+        void DrawCompactBackground(RenderTarget target, Vector2 position)
+        {
+            ISprite sprite = back;
+            if (!sprite.Touch())
+                return;
+            target.SelectSprite(sprite);
+            // Keep the avatar and the two original slot rows at their original scale.
+            DrawStrip(0, 59, 0);
+            DrawStrip(side ? 71 : 82, 34, 59);
+            DrawStrip(side ? 110 : 116, 3, 93);
+            DrawStrip(119, 34, 96);
+            DrawStrip(154, 4, 130);
+            DrawStrip(158, 2, 134);
+
+            void DrawStrip(int sourceY, int height, int destinationY)
+            {
+                int top = (int)System.Math.Round(sourceY / sprite.Resolution.y);
+                // Match adjacent edges on the artwork's native pixel grid. Rounding
+                // each source strip independently can otherwise leave fractional gaps.
+                int destinationTop = (int)System.Math.Round(destinationY / sprite.Resolution.y);
+                int destinationBottom = (int)System.Math.Round((destinationY + height) / sprite.Resolution.y);
+                int width = (int)System.Math.Round(sprite.Width / sprite.Resolution.x);
+                target.DrawSelectedSpriteF(new Vector2f(position.x, position.y + destinationTop * sprite.Resolution.y),
+                    new Rect(new Vector2(0, top), new Vector2(width, destinationBottom - destinationTop)), PixelColor.White);
+            }
+        }
+
         public override void OnRender(RenderTarget Target)
         {
             var inventoryOffset = side ? new Vector2(3, -2) : new Vector2(-3, -3);
 
             for (int i = pages.Count - 1; i >= 0; i--)
             {
-                Target.DrawSprite(basePos + inventoryOffset * i, back);
+                if (compact)
+                    DrawCompactBackground(Target, basePos + inventoryOffset * i);
+                else
+                    Target.DrawSprite(basePos + inventoryOffset * i, back);
                 Target.Layer++;
             }
 
@@ -308,16 +342,17 @@ namespace Burntime.Remaster.GUI
                 ? combat.Minimum.ToString() : $"{combat.Minimum}-{combat.Maximum}";
             txt.AddArgument("{damage}", damage);
 
-            int fontSpacing = 10;
+            GuiFont headerFont = compact ? smallFont : font;
+            int fontSpacing = compact ? smallFont.GetHeight() + 1 : 10;
 
             Vector2 textPos = new Vector2();
-            textPos.x = basePos.x + (side ? 11 : 73);
-            textPos.y = basePos.y + 11;
-            font.DrawText(Target, textPos, txt[40 + (int)activePage.Character.Class], TextAlignment.Left, VerticalTextAlignment.Top);
+            textPos.x = basePos.x + (side ? (compact ? 9 : 11) : 73);
+            textPos.y = basePos.y + (compact ? 10 : 11);
+            headerFont.DrawText(Target, textPos, txt[40 + (int)activePage.Character.Class], TextAlignment.Left, VerticalTextAlignment.Top);
             textPos.y += fontSpacing;
-            font.DrawText(Target, textPos, txt[380], TextAlignment.Left, VerticalTextAlignment.Top);
+            headerFont.DrawText(Target, textPos, txt[380], TextAlignment.Left, VerticalTextAlignment.Top);
             textPos.y += fontSpacing;
-            font.DrawText(Target, textPos, txt[381], TextAlignment.Left, VerticalTextAlignment.Top);
+            headerFont.DrawText(Target, textPos, txt[381], TextAlignment.Left, VerticalTextAlignment.Top);
             textPos.y += fontSpacing;
 
             if (activePage.Character.Class != CharClass.Trader)
@@ -329,39 +364,45 @@ namespace Burntime.Remaster.GUI
                     food = food.Replace(" T", "T");
                     water = water.Replace(" T", "T");
                 }
-                font.DrawText(Target, textPos, food, TextAlignment.Left, VerticalTextAlignment.Top);
+                headerFont.DrawText(Target, textPos, food, TextAlignment.Left, VerticalTextAlignment.Top);
                 textPos.y += fontSpacing;
-                font.DrawText(Target, textPos, water, TextAlignment.Left, VerticalTextAlignment.Top);
-                textPos.y += fontSpacing;
-
-                GuiFont statsFont = app.IsNewGfx ? smallFont : font;
-                textPos.x = basePos.x + 73;
-                if (combat.Defense > 0)
-                    statsFont.DrawText(Target, textPos, app.IsNewGfx
-                        ? txt.Get("newburn?112") : $"Def: {combat.Defense}%", TextAlignment.Left, VerticalTextAlignment.Top);
-                textPos.x = basePos.x + 20;
-                statsFont.DrawText(Target, textPos, app.IsNewGfx || !(combat.Defense > 0)
-                    ? txt.Get("newburn?111") : $"Dmg: {damage}",
-                    TextAlignment.Left, VerticalTextAlignment.Top);
+                headerFont.DrawText(Target, textPos, water, TextAlignment.Left, VerticalTextAlignment.Top);
                 textPos.y += fontSpacing;
 
+                if (!compact)
                 {
-                    string text = "";
-                    foreach (string hazard in new[] { "gas", "radiation" })
+                    GuiFont statsFont = app.IsNewGfx ? smallFont : font;
+                    textPos.x = basePos.x + 73;
+                    if (combat.Defense > 0)
+                        statsFont.DrawText(Target, textPos, app.IsNewGfx
+                            ? txt.Get("newburn?112") : $"Def: {combat.Defense}%", TextAlignment.Left, VerticalTextAlignment.Top);
+                    textPos.x = basePos.x + 20;
+                    statsFont.DrawText(Target, textPos, app.IsNewGfx || !(combat.Defense > 0)
+                        ? txt.Get("newburn?111") : $"Dmg: {damage}",
+                        TextAlignment.Left, VerticalTextAlignment.Top);
+                    textPos.y += fontSpacing;
+
                     {
-                        float rate = activePage.Character.GetHazardProtectionRate(hazard);
-                        if (rate <= 0)
-                            continue;
-                        int label = hazard == "gas" ? 90 : app.IsNewGfx ? 92 : 91;
-                        if (text.Length > 0)
-                            text += "  ";
-                        text += app.ResourceManager.GetString($"newburn?{label}") +
-                            $": {(int)System.Math.Round(rate * 100)}%";
+                        string text = "";
+                        foreach (string hazard in new[] { "gas", "radiation" })
+                        {
+                            float rate = activePage.Character.GetHazardProtectionRate(hazard);
+                            if (rate <= 0)
+                                continue;
+                            int label = hazard == "gas" ? 90 : app.IsNewGfx ? 92 : 91;
+                            if (text.Length > 0)
+                                text += "  ";
+                            text += app.ResourceManager.GetString($"newburn?{label}") +
+                                $": {(int)System.Math.Round(rate * 100)}%";
+                        }
+                        statsFont.DrawText(Target, textPos, text, TextAlignment.Left, VerticalTextAlignment.Top);
                     }
-                    statsFont.DrawText(Target, textPos, text, TextAlignment.Left, VerticalTextAlignment.Top);
+                    textPos.y += fontSpacing;
                 }
-                textPos.y += fontSpacing;
             }
+
+            if (compact && StatusLight.HasValue)
+                Target.RenderRect(new Vector2(grid.Position.x, basePos.y + 50), new Vector2(12, 5), StatusLight.Value);
 
             pageName = "";
             for (int i = 0; i < pageButtons.Length; i++)

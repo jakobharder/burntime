@@ -36,6 +36,8 @@ class TraderScene : Scene
     float horizontalSwipeResetRemaining;
 
     const float TouchSwipeResetDelay = 0.15f;
+    const int SmallScreenTraderX = 252;
+    const int SmallScreenInventoryOffsetY = 2;
 
     public TraderScene(Module App)
         : base(App)
@@ -43,7 +45,7 @@ class TraderScene : Scene
         Background = "gfx/trader_background.png";
         Music = "trader";
 
-        inventory = new InventoryWindow(App, InventorySide.Left);
+        inventory = new InventoryWindow(App, InventorySide.Left, compact: App.SmallDeviceUi);
         inventory.Position = new Vector2(2, 5);
         inventory.LeftClickItemEvent += OnLeftClickItemInventory;
         inventory.RightClickItemEvent += OnRightClickItemInventory;
@@ -53,7 +55,7 @@ class TraderScene : Scene
         AddTradeGridPrompts(inventory.Grid, playerSide: true);
         Windows += inventory;
 
-        inventoryTrader = new InventoryWindow(App, InventorySide.Right);
+        inventoryTrader = new InventoryWindow(App, InventorySide.Right, compact: App.SmallDeviceUi);
         inventoryTrader.Position = new Vector2(154, 5);
         inventoryTrader.LeftClickItemEvent += OnLeftClickItemTrader;
         inventoryTrader.RightClickItemEvent += OnRightClickItemTrader;
@@ -77,6 +79,7 @@ class TraderScene : Scene
         acceptButton.Text = app.ResourceManager.GetString("burn?353");
         acceptButton.Font = new GuiFont(BurntimeClassic.FontName, ClassicColors.HudText);
         acceptButton.HoverFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.HudTextHover);
+        acceptButton.DisabledFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.OptionsDisabled);
         acceptButton.Command += OnButtonAccept;
         acceptButton.IsTextOnly = true;
         Windows += acceptButton;
@@ -99,8 +102,8 @@ class TraderScene : Scene
 
         temporarySpace = new ItemGridWindow(App);
         temporarySpace.Position = new Vector2(156, 0);
-        temporarySpace.Spacing = new Vector2(0, 1);
-        temporarySpace.Grid = new Vector2(1, 6);
+        temporarySpace.Spacing = new Vector2(0, App.SmallDeviceUi ? 0 : 1);
+        temporarySpace.Grid = App.SmallDeviceUi ? new Vector2(3, 1) : new Vector2(1, 6);
         temporarySpace.LeftClickItemEvent += OnClickTemporarySpace;
         temporarySpace.RightClickItemEvent += OnClickTemporarySpace;
         temporarySpace.UnifiedSelection = true;
@@ -121,7 +124,7 @@ class TraderScene : Scene
         Windows += itemTooltip.Window;
 
         Windows += new InputPromptOverlay(app, Prompts,
-            InputPromptColorScheme.Hud);
+            InputPromptColorScheme.Hud) { ScenePromptsOnRight = true };
         exitButton.Prompts.Add(InputAction.Back, "",
             new Vector2(exitButton.Size.x + 2, -2));
         acceptButton.Prompts.Add(new InputPrompt(InputAction.Action, "")
@@ -135,7 +138,7 @@ class TraderScene : Scene
         {
             TouchPattern = InputPattern.VerticalPaging
         },
-            () => inventory.PageCount > 1);
+            () => inventory.PageCount > 1 || inventoryTrader.PageCount > 1);
 
         PositionElements();
     }
@@ -143,6 +146,26 @@ class TraderScene : Scene
     Vector2 _lastPosition = Vector2.Zero;
     void PositionElements(Vector2? mousePosition = null, InventorySide? requestedSide = null)
     {
+        if (app.SmallDeviceUi)
+        {
+            Size = new Vector2(416, 200);
+            Position = (app.Engine.Resolution.Game - Size) / 2;
+            inventory.Position = new Vector2(0, 5 + SmallScreenInventoryOffsetY);
+            inventoryTrader.Position = new Vector2(SmallScreenTraderX, 5 + SmallScreenInventoryOffsetY);
+            inventory.Show();
+            inventoryTrader.Show();
+            temporarySpace.Show();
+            int top = (app.Engine.Resolution.Game.y - ExchangeWindow.CompactAreaHeight) / 2 - Position.y;
+            int middleX = (Size.x - exchangeTop.Size.x) / 2;
+            exchangeTop.Position = new Vector2(middleX, top);
+            temporarySpace.Position = new Vector2(middleX, top + ExchangeWindow.CompactHeight);
+            exchangeBottom.Position = new Vector2(middleX, temporarySpace.Position.y + temporarySpace.Size.y);
+            var bounds = SmallScreenActionBounds(app.Engine.Resolution.Game);
+            PositionSmallScreenAction(exitButton, bounds.Back);
+            PositionSmallScreenAction(acceptButton, bounds.Trade);
+            side = InventorySide.None;
+            return;
+        }
         if (app.Engine.Resolution.Game.x >= 450)
         {
             Size = new Vector2(470, 200);
@@ -205,6 +228,25 @@ class TraderScene : Scene
 
     }
 
+    internal static (Rect Back, Rect Trade) SmallScreenActionBounds(Vector2 viewport)
+    {
+        int left = (viewport.x - 416) / 2;
+        int y = viewport.y / 2 + 54 + SmallScreenInventoryOffsetY;
+        return (new Rect(new Vector2(left + 25, y), new Vector2(48, 24)),
+            new Rect(new Vector2(left + SmallScreenTraderX + 16, y), new Vector2(64, 24)));
+    }
+
+    void PositionSmallScreenAction(Button button, Rect bounds)
+    {
+        button.IsTextOnly = false;
+        button.Size = bounds.Size;
+        button.Position = bounds.Position - Position;
+        button.Text = button == exitButton ? "@prompts?17" : "@prompts?28";
+        button.TextHorizontalAlign = TextAlignment.Left;
+        button.TextVerticalAlign = VerticalTextAlignment.Center;
+        button.Show();
+    }
+
     public override void OnResizeScreen(bool reload = false)
     {
         base.OnResizeScreen(reload);
@@ -214,16 +256,14 @@ class TraderScene : Scene
 
     public override void OnUpdate(float elapsed)
     {
+        if (app.SmallDeviceUi)
+        {
+            acceptButton.IsEnabled = exchangeTop.ExchangeResult != ExchangeResult.Ng;
+            inventoryTrader.StatusLight = exchangeTop.StatusColor;
+        }
         itemTooltip.Update();
         if (horizontalSwipeOrigin.HasValue && (horizontalSwipeResetRemaining -= elapsed) <= 0)
             horizontalSwipeOrigin = null;
-    }
-
-    public override void OnRender(RenderTarget Target)
-    {
-        base.OnRender(Target);
-
-        BurntimeClassic classic = app as BurntimeClassic;
     }
 
     public override bool OnMouseMove(Vector2 position)
@@ -239,7 +279,8 @@ class TraderScene : Scene
 
     public override bool OnTouchTap(Vector2 position)
     {
-        if (app.Engine.Resolution.Game.x >= 450 || !new Rect(Vector2.Zero, Size).PointInside(position))
+        if (app.SmallDeviceUi || app.Engine.Resolution.Game.x >= 450 ||
+            !new Rect(Vector2.Zero, Size).PointInside(position))
             return false;
         bool exchangeSide = side == InventorySide.Left ? position.x >= 195 : position.x < 125;
         if (!exchangeSide) return false;
@@ -251,7 +292,7 @@ class TraderScene : Scene
 
     public override bool OnTouchScroll(Vector2 position, Vector2 delta)
     {
-        if (System.Math.Abs(delta.x) <= System.Math.Abs(delta.y))
+        if (app.SmallDeviceUi || System.Math.Abs(delta.x) <= System.Math.Abs(delta.y))
             return false;
 
         // Drag gestures arrive as a stream of deltas. Act once per swipe so a

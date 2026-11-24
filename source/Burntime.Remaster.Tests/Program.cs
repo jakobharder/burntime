@@ -66,6 +66,7 @@ static class Program
         Run("setup patch notes", SetupPatchNotesTests.Cases());
         Run("resolution scaling", ResolutionTests.ResolutionCases());
         Run("touch gestures", TouchGestureTests.Cases());
+        Run("small-screen trader actions", TraderLayoutTests.Cases());
         Run("font indicators", FontIndicatorTests.IndicatorCases());
         Run("tooltip text substitution", TooltipTextTests.SubstitutionCases());
         Run("construction feedback", ConstructionFeedbackTests.AvailabilityCases());
