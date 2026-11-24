@@ -51,9 +51,7 @@ namespace Burntime.Remaster.Scenes
         {
             timeout = new FadingHelper();
             Music = "intro";
-            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
-
-            Size = new Vector2(320, 200);
+            UpdateLayout();
             app.RenderMouse = false;
             CaptureAllMouseClicks = true;
 
@@ -99,7 +97,14 @@ namespace Burntime.Remaster.Scenes
         {
             base.OnResizeScreen(reload);
 
-            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+            UpdateLayout();
+        }
+
+        void UpdateLayout()
+        {
+            // The intro image occupies the upper 160 units of the original canvas.
+            Size = new Vector2(320, app.SmallDeviceUi ? 160 : 200);
+            Position = (app.Engine.Resolution.Game - Size) / 2;
         }
 
         private void PreloadAnimations()
