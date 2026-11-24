@@ -377,7 +377,7 @@ namespace Burntime.Remaster
                 return OutputFiltering.Linear;
             if (Engine.ForceNearestPointOutputFiltering)
                 return OutputFiltering.NearestPoint;
-            if (Engine.DisableShaders)
+            if (SmallDeviceUi || Engine.DisableShaders)
                 return OutputFiltering.SharpBilinear;
 
             if (newGfx)

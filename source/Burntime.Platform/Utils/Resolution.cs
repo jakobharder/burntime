@@ -62,11 +62,33 @@ public class Resolution
     }
     float? _outputScaleOverride;
 
+    // Phone layouts use a stable logical height independently of pixel density.
+    public int? FixedGameHeight
+    {
+        get => _fixedGameHeight;
+        set
+        {
+            _fixedGameHeight = value is > 0 ? value : null;
+            SelectBestGameResolution();
+        }
+    }
+    int? _fixedGameHeight;
+
     void SelectBestGameResolution()
     {
-        if (MinResolution.x == 0 || MaxResolution.x == 0 || Native.x == 0) return;
+        if (MinResolution.x == 0 || MaxResolution.x == 0 || Native.x == 0 || Native.y == 0) return;
 
         const int DOUBLED_RESOLUTION = 2;
+
+        Scale = DOUBLED_RESOLUTION * _ratioCorrection;
+        if (_fixedGameHeight is int height)
+        {
+            OutputScale = _native.y / (height * Scale.y);
+            BackBuffer = new Vector2((int)MathF.Round(_native.x / OutputScale),
+                (int)MathF.Round(height * Scale.y));
+            Game = new Vector2((int)MathF.Round(BackBuffer.x / Scale.x), height);
+            return;
+        }
 
         Vector2f min = (Vector2f)MinResolution * DOUBLED_RESOLUTION * _ratioCorrection;
         // Half-step output scales keep low-resolution displays near the same
@@ -80,7 +102,6 @@ public class Resolution
 
         BackBuffer = (Vector2f)_native / OutputScale;
 
-        Scale = DOUBLED_RESOLUTION * _ratioCorrection;
         Game = (Vector2f)BackBuffer / Scale;
     }
 }

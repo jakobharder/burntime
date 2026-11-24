@@ -41,6 +41,7 @@ namespace Burntime.MonoGame
         BurntimeClassic _burntimeApp;
         internal IVisualTestRunner? VisualTest { get; set; }
         internal bool EmulateIpadLayout { get; set; }
+        internal bool EmulateSmallDeviceUi { get; set; }
         internal Platform.Vector2? CaptureSize { get; set; }
         internal RenderTarget2D? CaptureTarget { get; private set; }
         internal bool UseRemasteredGraphics => _burntimeApp?.IsNewGfx ?? true;
@@ -306,11 +307,12 @@ namespace Burntime.MonoGame
 
             _burntimeApp = new();
             _burntimeApp.IpadLayout |= EmulateIpadLayout;
+            _burntimeApp.SmallDeviceUi = EmulateSmallDeviceUi;
             _burntimeApp.ChooseLanguageOnStart = _chooseLanguage;
             _burntimeApp.LastInputMode = OperatingSystem.IsIOS() ? InputMode.Touch
                 : IsSteamSession ? InputMode.Gamepad : InputMode.Mouse;
 #if IOS
-            _burntimeApp.SmallDeviceUi =
+            _burntimeApp.SmallDeviceUi |=
                 UIKit.UIDevice.CurrentDevice.UserInterfaceIdiom ==
                     UIKit.UIUserInterfaceIdiom.Phone &&
                 !Foundation.NSProcessInfo.ProcessInfo.IsiOSApplicationOnMac;
@@ -319,6 +321,7 @@ namespace Burntime.MonoGame
             Resolution.RatioCorrection = _burntimeApp.RatioCorrection;
             Resolution.MinResolution = _burntimeApp.MinResolution;
             Resolution.MaxResolution = _burntimeApp.MaxResolution;
+            Resolution.FixedGameHeight = _burntimeApp.SmallDeviceUi ? 160 : null;
             _burntimeApp.Engine = this;
             _burntimeApp.SceneManager = new SceneManager(_burntimeApp);
             _burntimeApp.DeviceManager = new DeviceManager(Resolution);
