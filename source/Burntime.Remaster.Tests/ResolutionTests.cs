@@ -14,6 +14,54 @@ static class ResolutionTests
 {
     internal static IEnumerable<Case<int>> ResolutionCases()
     {
+        foreach (Vector2 native in new[] { new Vector2(2340, 1080), new Vector2(1280, 720) })
+            yield return Int($"compact non-map canvas fits safe bounds at {native}", 0, () =>
+            {
+                Resolution resolution = CreateResolution(native);
+                resolution.FixedGameHeight = 160;
+                resolution.NativeSafeAreaInsets = new(132, 12, 30, 63);
+                Vector2 mapSize = resolution.Game;
+                resolution.MinimumSafeGameSize = new(416, 160);
+                Equal(true, resolution.SafeArea.Width >= 416, "all trade columns fit");
+                Equal(true, resolution.SafeArea.Height >= 160, "all trade rows and footers fit");
+                resolution.NativeSafeAreaInsets = new(30, 12, 132, 63);
+                Equal(true, resolution.SafeArea.Width >= 416 && resolution.SafeArea.Height >= 160,
+                    "safe content survives rotation");
+                resolution.MinimumSafeGameSize = Vector2.Zero;
+                Equal(mapSize, resolution.Game, "returning to a map restores its larger HUD scale");
+                return 0;
+            });
+
+        yield return Int("phone safe area rounds inward and follows rotation", 0, () =>
+        {
+            Resolution resolution = CreateResolution(new Vector2(2340, 1080));
+            resolution.FixedGameHeight = 160;
+            Vector2 fullViewport = resolution.Game;
+            Equal(fullViewport, resolution.SafeArea.Size, "no insets preserve the viewport");
+            resolution.NativeSafeAreaInsets = new(132, 12, 30, 63);
+            Equal(new Vector2(24, 2), resolution.SafeArea.Position, "round inset edges inward");
+            Equal(new Vector2(386, 148), resolution.SafeArea.Size, "exclude right and bottom obstructions");
+            resolution.NativeSafeAreaInsets = new(30, 12, 132, 63);
+            Equal(new Vector2(6, 2), resolution.SafeArea.Position, "rotated notch changes the origin");
+            Equal(new Vector2(386, 148), resolution.SafeArea.Size, "rotation retains usable size");
+            Equal(fullViewport, resolution.Game, "safe area does not shrink the map framebuffer");
+            resolution.Native = new Vector2(4680, 2160);
+            resolution.NativeSafeAreaInsets = new(60, 24, 264, 126);
+            Equal(new Vector2(6, 2), resolution.SafeArea.Position, "pixel density preserves logical margins");
+            return 0;
+        });
+
+        yield return Int("invalid safe-area geometry falls back to the full viewport", 0, () =>
+        {
+            Resolution resolution = CreateResolution(new Vector2(2340, 1080));
+            resolution.NativeSafeAreaInsets = new(2340, 0, 2340, 0);
+            Equal(resolution.Game, resolution.SafeArea.Size, "transient invalid geometry is ignored");
+            resolution.NativeSafeAreaInsets = new(-10, -10, -10, -10);
+            Equal(Vector2.Zero, resolution.SafeArea.Position, "negative insets are ignored");
+            Equal(resolution.Game, resolution.SafeArea.Size, "negative insets do not grow the viewport");
+            return 0;
+        });
+
         yield return Int("720p and 1440p retain the same logical viewport", 0, () =>
         {
             Resolution resolution720 = CreateResolution(new Vector2(1280, 720));

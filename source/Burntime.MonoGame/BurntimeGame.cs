@@ -34,7 +34,17 @@ namespace Burntime.MonoGame
         public float Layer { get; set; }
 
         public RenderDevice RenderDevice { get; private set; }
-        public RenderTarget MainTarget { get; private set; }
+        RenderTarget mainTarget;
+        public RenderTarget MainTarget
+        {
+            get
+            {
+                if (mainTarget == null || mainTarget.Size != Resolution.Game)
+                    mainTarget = new RenderTarget(this, new Rect(Platform.Vector2.Zero, Resolution.Game));
+                return mainTarget;
+            }
+            private set => mainTarget = value;
+        }
         public BlendOverlay BlendOverlay => RenderDevice?.BlendOverlay;
         BlendOverlayBase IEngine.BlendOverlay => RenderDevice?.BlendOverlay;
 
@@ -424,6 +434,9 @@ namespace Burntime.MonoGame
             }
 #endif
             if (CaptureSize.HasValue) Resolution.Native = CaptureSize.Value;
+#if IOS || ANDROID
+            UpdateMobileSafeArea(resize: false);
+#endif
             if (!initialize)
                 _burntimeApp.SceneManager.ResizeScene();
             MainTarget = new RenderTarget(this, new Rect(Platform.Vector2.Zero, Resolution.Game));
@@ -908,6 +921,7 @@ namespace Burntime.MonoGame
                 return;
             }
 #if IOS || ANDROID
+            UpdateMobileSafeArea();
             HandleMemoryPressure();
 #if IOS
             HandleMobileMouseInput();
