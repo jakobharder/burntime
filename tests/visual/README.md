@@ -11,6 +11,12 @@ dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- \
   --visual-test newgfx /tmp/burntime-touch-visual --touch
 ```
 
+For a full desktop capture pass with gamepad prompts and controller-specific
+scene updates, use `--gamepad` instead of `--touch`. This runs all ordinary scenes
+with Xbox glyphs; native Steam glyphs are also covered by
+`--store-capture steam OUTPUT_DIRECTORY`. The gamepad pass writes separate
+captures and does not compare them to the keyboard baseline images.
+
 Use `classic` instead of `newgfx` for the original graphics. These fixtures use
 an isolated game/profile and verify selection without travel, single-tap tooltips,
 second-tap primary actions and long-press secondary actions. Location fixtures also
@@ -82,7 +88,10 @@ advance at a fixed rate, and the wall-clock sprite loading fade is disabled.
 Real delayed resource loading stays active. The test drives scene updates and
 rendering on the graphics thread, then waits for loading and scene fades to
 finish and three complete settled frames before reading the final backbuffer.
-This includes classic's direct-to-framebuffer elements.
+This includes classic's direct-to-framebuffer elements. Ordinary modal dialogs
+are dismissed before fixtures force a scene change; the credits fixture retains
+its intentional setup-tab continuation. The terminal last-rival dialog is captured
+last in phone suites because dismissing it advances the game session.
 Captured pixels are made opaque without changing their RGB values: the backbuffer
 has already composited translucent UI, so PNG viewers must not blend it a second time.
 
@@ -181,12 +190,16 @@ actions. Visible controls, portraits, item grids, manuals, tooltips and menus
 are collected in `safe-area-errors.json` and make the run fail. The suite also
 covers water sources, all options pages, language selection, pause, last-rival
 choices, cutscenes and menus at opposite screen corners.
-Use `--scenario=NAME` to recapture one fixture and `--phone-16x9` to check a narrower phone.
+Use `--scenario=NAME` to recapture one fixture, or a comma-separated list such as
+`--scenario=hud-menu-world-party,hud-menu-local-solo` to replay a transition.
+Use `--phone-16x9` to check a narrower phone.
 The camp-info fixtures also assert that the complete noticeboard fits inside the safe area.
 
 The `hud-menu-*` fixtures exercise the compact HUD Menu button with one or two
 panels, party-member selection, outside dismissal and cancelled touch drags.
 They check enlarged row hit areas and reuse the existing menu and button artwork.
+HUD taps run after resource loading and layout settle, then the runner waits again
+before capturing the resulting UI.
 The `hud-mode-talk`, `hud-mode-fight` and `hud-mode-city` fixtures check the
 existing Talk/Fight icons, switching in both directions and city availability.
 

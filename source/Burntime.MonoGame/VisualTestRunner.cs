@@ -9,12 +9,15 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Burntime.MonoGame;
 
-internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = false, string? storeMode = null, string language = "en", bool safeAreaReview = false, string? scenario = null) : IVisualTestRunner
+internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = false, string? storeMode = null, string language = "en", bool safeAreaReview = false, string? scenario = null, bool gamepad = false) : IVisualTestRunner
 {
     public string OutputDirectory { get; } = outputDirectory;
-    readonly string[] names = scenario != null ? [scenario] : storeMode?.StartsWith("phone", StringComparison.Ordinal) == true ? VisualTestScenes.PhoneHudNames :
+    readonly string[] names = scenario != null ? scenario.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) : storeMode?.StartsWith("phone", StringComparison.Ordinal) == true ? VisualTestScenes.PhoneHudNames :
         storeMode != null ? VisualTestScenes.StoreNames :
-        touchOnly ? VisualTestScenes.TouchNames : safeAreaReview ? [.. VisualTestScenes.PhoneScreenNames, .. VisualTestScenes.HudMenuNames] : VisualTestScenes.Names;
+        touchOnly ? VisualTestScenes.TouchNames : safeAreaReview
+            // Closing the victory dialog advances the session; capture it last.
+            ? [.. VisualTestScenes.PhoneScreenNames.Where(name => name != "last-rival"), .. VisualTestScenes.HudMenuNames, "last-rival"]
+            : VisualTestScenes.Names;
     readonly List<string> captured = [];
     readonly List<string> safeAreaFailures = [];
     readonly Stopwatch deadline = Stopwatch.StartNew();
@@ -83,12 +86,12 @@ internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = 
     public static int Run(string[] args)
     {
         // Deliberately small private CLI; the Python script owns the user interface.
-        if (args.Length is < 3 or > 8 || args.Skip(3).Any(arg =>
+        if (args.Length is < 3 or > 8 || (args.Contains("--touch") && args.Contains("--gamepad")) || args.Skip(3).Any(arg =>
             !arg.StartsWith("--scenario=", StringComparison.Ordinal) &&
-            arg is not ("--native-filter" or "--language=en" or "--language=de" or "--touch" or "--phone-safe-left" or "--phone-safe-right" or "--phone-16x9")) || args[0] != "--visual-test" ||
+            arg is not ("--native-filter" or "--language=en" or "--language=de" or "--touch" or "--gamepad" or "--phone-safe-left" or "--phone-safe-right" or "--phone-16x9")) || args[0] != "--visual-test" ||
             args[1] is not ("classic" or "newgfx" or "classic-no-hints"))
         {
-            Console.Error.WriteLine("Usage: Burntime --visual-test classic|newgfx|classic-no-hints OUTPUT_DIRECTORY [--native-filter] [--language=en|--language=de] [--touch] [--phone-safe-left|--phone-safe-right] [--phone-16x9] [--scenario=NAME]");
+            Console.Error.WriteLine("Usage: Burntime --visual-test classic|newgfx|classic-no-hints OUTPUT_DIRECTORY [--native-filter] [--language=en|--language=de] [--touch|--gamepad] [--phone-safe-left|--phone-safe-right] [--phone-16x9] [--scenario=NAME]");
             return 2;
         }
         string output = Path.GetFullPath(args[2]);
@@ -103,7 +106,7 @@ internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = 
         Platform.Math.SetRandomSeed(123);
         bool phone = args.Contains("--phone-safe-left") || args.Contains("--phone-safe-right") || args.Contains("--phone-16x9");
         string? scenario = args.FirstOrDefault(arg => arg.StartsWith("--scenario=", StringComparison.Ordinal))?[11..];
-        VisualTestRunner runner = new(output, args.Contains("--touch"), safeAreaReview: phone, scenario: scenario);
+        VisualTestRunner runner = new(output, args.Contains("--touch"), safeAreaReview: phone, scenario: scenario, gamepad: args.Contains("--gamepad"));
         try
         {
             using BurntimeGame game = new(emulateSteamDeck: true, disableShaders: phone,
@@ -163,6 +166,9 @@ internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = 
             game.MainTarget.TotalElapsed = 0;
             deadline.Restart();
         }
+        // Keep fixture setup deterministic, then exercise controller-specific UI
+        // through the normal scene update/render paths for this optional pass.
+        if (gamepad) app.LastInputMode = InputMode.Gamepad;
         // Freeze scene time except for the menu's fixed, post-load animation warmup.
         // Resource requests, GPU uploads and ordinary scene updates still run every frame.
         float elapsed = advanceAnimation && animationFrames > 0 &&
@@ -190,6 +196,13 @@ internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = 
         if (animationFrames > 0)
         {
             advanceAnimation = true;
+            return;
+        }
+        if (scenes!.RunPendingCaptureAction())
+        {
+            // Hit tests must use the same settled layout the player sees.
+            readyFrames = 0;
+            deadline.Restart();
             return;
         }
         var presentation = game.GraphicsDevice.PresentationParameters;

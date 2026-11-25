@@ -41,6 +41,17 @@ public sealed class VisualTestScenes(BurntimeClassic app, string bossName = "Vis
         "hud-mode-talk", "hud-mode-fight", "hud-mode-city"
     ];
 
+    Action? pendingCaptureAction;
+
+    public bool RunPendingCaptureAction()
+    {
+        Action? action = pendingCaptureAction;
+        pendingCaptureAction = null;
+        if (action == null) return false;
+        action();
+        return true;
+    }
+
     void OpenHudModeCapture(string name)
     {
         OpenPhoneHudCapture("phone-location-touch-member");
@@ -54,26 +65,29 @@ public sealed class VisualTestScenes(BurntimeClassic app, string bossName = "Vis
         app.LastInputMode = InputMode.Touch;
         app.Process(0);
         var scene = (LocationScene)ReadPrivate<Scene>(app.SceneManager, "activeScene");
-        Button button = Descendants(scene).OfType<MainUiOriginalWindow>().Single().InteractionModeButton;
-        if (name.EndsWith("city"))
+        pendingCaptureAction = () =>
         {
-            if (button.IsVisible) throw new InvalidOperationException("Cities must not offer a fight toggle.");
-            return;
-        }
-        if (!button.IsVisible) throw new InvalidOperationException("The local HUD must show its interaction-mode button.");
-        var location = player.Location;
-        Vector2 point = button.PositionOnScreen + button.Size / 2;
-        Touch(TouchGestureKind.Tap, point, point);
-        if (ReadPrivate<object>(scene, "interactionMode").ToString() != "Fight")
-            throw new InvalidOperationException("The mode button must switch from Talk to Fight.");
-        if (name.EndsWith("talk"))
-        {
+            Button button = Descendants(scene).OfType<MainUiOriginalWindow>().Single().InteractionModeButton;
+            if (name.EndsWith("city"))
+            {
+                if (button.IsVisible) throw new InvalidOperationException("Cities must not offer a fight toggle.");
+                return;
+            }
+            if (!button.IsVisible) throw new InvalidOperationException("The local HUD must show its interaction-mode button.");
+            var location = player.Location;
+            Vector2 point = button.PositionOnScreen + button.Size / 2;
             Touch(TouchGestureKind.Tap, point, point);
-            if (ReadPrivate<object>(scene, "interactionMode").ToString() != "Talk")
-                throw new InvalidOperationException("The mode button must switch back from Fight to Talk.");
-        }
-        if (player.Location != location || Descendants(scene).OfType<MenuWindow>().Any(menu => menu.IsVisible))
-            throw new InvalidOperationException("The mode button must not open a menu or trigger map travel.");
+            if (ReadPrivate<object>(scene, "interactionMode").ToString() != "Fight")
+                throw new InvalidOperationException("The mode button must switch from Talk to Fight.");
+            if (name.EndsWith("talk"))
+            {
+                Touch(TouchGestureKind.Tap, point, point);
+                if (ReadPrivate<object>(scene, "interactionMode").ToString() != "Talk")
+                    throw new InvalidOperationException("The mode button must switch back from Fight to Talk.");
+            }
+            if (player.Location != location || Descendants(scene).OfType<MenuWindow>().Any(menu => menu.IsVisible))
+                throw new InvalidOperationException("The mode button must not open a menu or trigger map travel.");
+        };
     }
 
     void OpenHudMenuCapture(string name)
@@ -98,50 +112,55 @@ public sealed class VisualTestScenes(BurntimeClassic app, string bossName = "Vis
         app.LastInputMode = InputMode.Touch;
         app.Process(0);
         Scene scene = ReadPrivate<Scene>(app.SceneManager, "activeScene");
-        Button trigger = Descendants(scene).OfType<Button>().Single(button => button.Text?.ID == "@controls?22");
-        Vector2 origin = trigger.PositionOnScreen + trigger.Size / 2;
-        Touch(TouchGestureKind.Tap, origin, origin);
-        var popup = Descendants(scene).OfType<MenuWindow>().Single();
-        if (!popup.IsVisible || !popup.UsesTouchLayout || popup.ContinuesTouchHold)
-            throw new InvalidOperationException("The HUD button must open a persistent touch menu with one tap.");
-        app.Process(0);
-        if (!popup.IsVisible || popup.TouchPanelCount != (party ? 2 : 1) || popup.TouchRowHeight < 19)
-            throw new InvalidOperationException("HUD menu panels or touch row spacing are incorrect.");
-        Rect menuArea = Descendants(scene).OfType<MapView>().First().Boundings.Intersect(app.Engine.Resolution.SafeArea);
-        Vector2 centerOffset = popup.Boundings.Center - menuArea.Center;
-        if (System.Math.Abs(centerOffset.x) > 1 || System.Math.Abs(centerOffset.y) > 1)
-            throw new InvalidOperationException("HUD menu panels must be centered together in the safe map area.");
-        var entries = ReadPrivate<List<MenuItem>>(popup, "_menuEntries");
-        for (int i = 0; i < entries.Count; i++)
-            if (popup.TouchEntryAt(popup.TouchEntryBounds(i).Center) != i)
-                throw new InvalidOperationException("Every menu row must be directly tappable.");
-        if (name.EndsWith("select-member"))
+        pendingCaptureAction = () =>
         {
-            int index = ReadPrivate<int>(popup, "touchSectionStart") + 2;
-            Vector2 point = popup.PositionOnScreen + popup.TouchEntryBounds(index).Center;
-            Touch(TouchGestureKind.Tap, point, point);
-            if (popup.IsVisible || !player.SingleMode || player.SelectedCharacter != player.Party[1])
-                throw new InvalidOperationException("Touching a party member must select that member and close the menu.");
-        }
-        if (name.EndsWith("dismissed"))
-        {
-            var destination = player.Destination;
+            Button trigger = Descendants(scene).OfType<Button>().Single(button => button.Text?.ID == "@controls?22");
+            Vector2 origin = trigger.PositionOnScreen + trigger.Size / 2;
             Touch(TouchGestureKind.Tap, origin, origin);
-            if (popup.IsVisible || player.Destination != destination)
-                throw new InvalidOperationException("Outside tap must dismiss without activating the map or reopening the menu.");
-        }
-        if (name.EndsWith("drag-cancelled"))
-        {
-            Vector2 start = popup.PositionOnScreen + popup.TouchEntryBounds(0).Center;
-            Vector2 end = popup.PositionOnScreen + popup.TouchEntryBounds(1).Center;
-            app.SceneManager.QueueTouchGesture(new(TouchGestureKind.Press, start, start, default, touchTestTime += .1), app.SceneManager.TouchInputContext);
+            var popup = Descendants(scene).OfType<MenuWindow>().SingleOrDefault();
+            if (popup == null || !popup.IsVisible || !popup.UsesTouchLayout || popup.ContinuesTouchHold)
+                throw new InvalidOperationException("The HUD button must open a persistent touch menu with one tap. " +
+                    $"Fixture={name}, scene={scene.GetType().Name}, active={ReadPrivate<Scene>(app.SceneManager, "activeScene").GetType().Name}, point={origin}, modals=" +
+                    string.Join(",", ReadPrivate<Stack<Window>>(app.SceneManager, "modalStack").Select(window => window.GetType().Name)));
             app.Process(0);
-            app.SceneManager.QueueTouchGesture(new(TouchGestureKind.Tap, start, end, default, touchTestTime += .1), app.SceneManager.TouchInputContext);
-            app.Process(0);
-            if (!popup.IsVisible || ReadPrivate<Scene>(app.SceneManager, "activeScene") != scene)
-                throw new InvalidOperationException("Releasing on a different row must not execute either action.");
-        }
-        app.RenderMouse = false;
+            if (!popup.IsVisible || popup.TouchPanelCount != (party ? 2 : 1) || popup.TouchRowHeight < 19)
+                throw new InvalidOperationException("HUD menu panels or touch row spacing are incorrect.");
+            Rect menuArea = Descendants(scene).OfType<MapView>().First().Boundings.Intersect(app.Engine.Resolution.SafeArea);
+            Vector2 centerOffset = popup.Boundings.Center - menuArea.Center;
+            if (System.Math.Abs(centerOffset.x) > 1 || System.Math.Abs(centerOffset.y) > 1)
+                throw new InvalidOperationException("HUD menu panels must be centered together in the safe map area.");
+            var entries = ReadPrivate<List<MenuItem>>(popup, "_menuEntries");
+            for (int i = 0; i < entries.Count; i++)
+                if (popup.TouchEntryAt(popup.TouchEntryBounds(i).Center) != i)
+                    throw new InvalidOperationException("Every menu row must be directly tappable.");
+            if (name.EndsWith("select-member"))
+            {
+                int index = ReadPrivate<int>(popup, "touchSectionStart") + 2;
+                Vector2 point = popup.PositionOnScreen + popup.TouchEntryBounds(index).Center;
+                Touch(TouchGestureKind.Tap, point, point);
+                if (popup.IsVisible || !player.SingleMode || player.SelectedCharacter != player.Party[1])
+                    throw new InvalidOperationException("Touching a party member must select that member and close the menu.");
+            }
+            if (name.EndsWith("dismissed"))
+            {
+                var destination = player.Destination;
+                Touch(TouchGestureKind.Tap, origin, origin);
+                if (popup.IsVisible || player.Destination != destination)
+                    throw new InvalidOperationException("Outside tap must dismiss without activating the map or reopening the menu.");
+            }
+            if (name.EndsWith("drag-cancelled"))
+            {
+                Vector2 start = popup.PositionOnScreen + popup.TouchEntryBounds(0).Center;
+                Vector2 end = popup.PositionOnScreen + popup.TouchEntryBounds(1).Center;
+                app.SceneManager.QueueTouchGesture(new(TouchGestureKind.Press, start, start, default, touchTestTime += .1), app.SceneManager.TouchInputContext);
+                app.Process(0);
+                app.SceneManager.QueueTouchGesture(new(TouchGestureKind.Tap, start, end, default, touchTestTime += .1), app.SceneManager.TouchInputContext);
+                app.Process(0);
+                if (!popup.IsVisible || ReadPrivate<Scene>(app.SceneManager, "activeScene") != scene)
+                    throw new InvalidOperationException("Releasing on a different row must not execute either action.");
+            }
+            app.RenderMouse = false;
+        };
     }
 
     public string[] ValidateSafeScreenCapture(string name)
@@ -471,6 +490,18 @@ public sealed class VisualTestScenes(BurntimeClassic app, string bossName = "Vis
 
     public void Open(string name)
     {
+        pendingCaptureAction = null;
+        // Fixtures switch scenes directly; dismiss dialogs through their normal
+        // hide path so a modal from an earlier scene cannot intercept later input.
+        // Credits intentionally continues the preceding setup-notes tab capture.
+        var modals = ReadPrivate<Stack<Window>>(app.SceneManager, "modalStack");
+        if (name != "setup-credits" && modals.Count > 0)
+        {
+            foreach (Window modal in modals.ToArray())
+                modal.Hide();
+            app.SceneManager.ClearTouchGestures();
+            app.Process(0);
+        }
         if (name.StartsWith("hud-mode-", StringComparison.Ordinal))
         {
             OpenHudModeCapture(name);
@@ -592,7 +623,6 @@ public sealed class VisualTestScenes(BurntimeClassic app, string bossName = "Vis
                 app.SetScene("MapScene");
                 break;
             case "options":
-                Press(InputAction.Back); // Close setup notes before leaving the menu.
                 app.SetScene("OptionsScene");
                 Press(InputAction.RightArea); // Saves -> jukebox -> settings.
                 Press(InputAction.RightArea);
@@ -624,7 +654,6 @@ public sealed class VisualTestScenes(BurntimeClassic app, string bossName = "Vis
                     throw new InvalidOperationException("Mouse did not hover the food production room.");
                 break;
             case "location":
-                Press(InputAction.Back); // Close the field manual before leaving the map.
                 app.SetScene("LocationScene");
                 break;
             case "inventory":
