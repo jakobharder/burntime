@@ -166,8 +166,8 @@ namespace Burntime.Remaster.Scenes
             listDown.Position = new Vector2(107 + BoardOffsetX, small ? 121 : 141);
             landscape.Position = new Vector2(4 + BoardOffsetX, 105);
             landscape.IsVisible = !UseCompactArtwork;
-            listUp.Image = UseCompactArtwork ? "gfx/up.png" : null;
-            listDown.Image = UseCompactArtwork ? "gfx/down.png" : null;
+            listUp.Image = UseCompactArtwork ? (GuiImage)"gfx/up.png" : null;
+            listDown.Image = UseCompactArtwork ? (GuiImage)"gfx/down.png" : null;
             water.Position = new Vector2(229 + BoardOffsetX, small ? 130 : 150);
             danger.Position = new Vector2(244 + BoardOffsetX, small ? 21 : 27);
             exitButton.Position = new Vector2(5, small ? System.Math.Min(140, Size.y - System.Math.Max(20, exitButton.Size.y) - 2) : 174);

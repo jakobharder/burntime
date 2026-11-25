@@ -186,11 +186,18 @@ public sealed class ManualWindow : Container
     public override void OnRender(RenderTarget target)
     {
         PositionFooter();
-        // Only the content and controls are inset; the opaque panel reaches
-        // both physical screen edges, including below the home-indicator inset.
-        target.RenderRect(new Vector2(0, -PositionOnScreen.y),
-            new Vector2(Size.x, app.Engine.Resolution.Game.y), PixelColor.Black,
-            postFilter: true);
+        if (app.SmallDeviceUi)
+        {
+            // Keep the compact panel opaque beneath the screen-edge insets.
+            target.RenderRect(new Vector2(0, -PositionOnScreen.y),
+                new Vector2(Size.x, app.Engine.Resolution.Game.y), PixelColor.Black,
+                postFilter: true);
+        }
+        else
+        {
+            target.RenderRect(Vector2.Zero, Size, new PixelColor(176, 0, 0, 0),
+                postFilter: true);
+        }
         for (int i = 0; i < PageCount; i++)
         {
             GuiFont font = i == _page ? _selectedFont :
