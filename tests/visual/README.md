@@ -1,7 +1,7 @@
 # Rendered scene regression tests
 
 This suite runs the real MonoGame window and resource loader in separate classic,
-newgfx, and classic-no-hints processes. It requires .NET 10, a graphical desktop/OpenGL context,
+newgfx, classic-no-hints, and mobile processes. It requires .NET 10, a graphical desktop/OpenGL context,
 and Python with Pillow. It does not work with the headless simulation renderer.
 
 For isolated touch captures and input-dispatch assertions, run:
@@ -34,8 +34,8 @@ scripts/visual-test.sh
 
 Alternatively set `PYTHON` to an existing interpreter with Pillow installed.
 Use `--mode classic`, `--mode newgfx`, or `--mode classic-no-hints` for a smaller
-run, and `--skip-build` when the dedicated build is already current. The default
-is `--mode all` (all three variants); `--mode both` still runs classic and newgfx.
+run, `--mode mobile` for the eight phone baselines, and `--skip-build` when the dedicated build is already current. The default
+is `--mode all` (three desktop variants plus mobile); `--mode both` still runs classic and newgfx.
 `classic-no-hints` uses classic graphics and the normal Hide UI hints setting
 (`prompts=2`), disabling tooltip panels and input prompts. The other variants
 explicitly use Full hints (`prompts=0`).
@@ -52,7 +52,7 @@ terminated after four minutes; an unsettled scene times out after one minute.
 ## Baseline review
 
 Baselines live in `tests/visual/baselines/classic`, `newgfx`, and
-`classic-no-hints`. Missing baselines
+`classic-no-hints`, and `mobile`. Missing baselines
 are failures, including the first run: review the generated images before
 establishing the initial baseline. The test never rewrites baselines.
 
@@ -168,6 +168,25 @@ The tests still use keyboard prompts and fixed Xbox glyph settings, not live
 Steam Deck input detection, and desktop GPU captures are not hardware certification.
 Font descriptors define `line_height` in logical pixels; setup body text uses
 `font-small.txt`, while headings and controls retain the regular font.
+
+## Mobile screenshot baselines
+
+The default suite includes eight exact mobile comparisons: world map, local scene,
+inventory, trader, camp info, manual, options, and the local party menu. Run only
+these with `scripts/visual-test.sh --mode mobile`. Review and accept them through
+the same report workflow, using `--mode mobile` with `visual-accept.sh`.
+
+These use remastered graphics, English, touch controls, and a fixed 2340x1080
+landscape phone with left cutout insets (132 left, 12 top, 30 right, 63 bottom).
+Shaders are disabled as in the existing phone review suite. Fixture setup can
+navigate with keyboard actions, then `--touch-controls` keeps normal scene updates
+and rendering in touch mode; the party-menu fixture also dispatches a real tap.
+The eight images live in `tests/visual/baselines/mobile`. Safe-area assertion
+failures also fail comparisons and block baseline acceptance.
+
+Other phone sizes, cutout sides, and interaction sequences remain covered by the
+extended assertion suites below, without adding more baseline variants. All phone
+captures are desktop simulations, rather than captures from physical phones.
 
 ## Compact party HUD
 

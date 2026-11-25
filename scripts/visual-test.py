@@ -14,7 +14,16 @@ from PIL import Image, ImageChops
 ROOT = Path(__file__).resolve().parents[1]
 BUILD = ROOT / "artifacts/visual-build"
 BASELINES = ROOT / "tests/visual/baselines"
-MODES = ["classic", "newgfx", "classic-no-hints"]
+DESKTOP_MODES = ["classic", "newgfx", "classic-no-hints"]
+MODES = [*DESKTOP_MODES, "mobile"]
+MOBILE_SCENARIOS = ["map", "location", "inventory", "trader", "info", "manual", "options", "hud-menu-local-party"]
+
+
+def capture_arguments(mode, actual, native_filter=False):
+    if mode == "mobile":
+        return ["--visual-test", "newgfx", str(actual), "--phone-safe-left",
+                "--touch-controls", "--scenario=" + ",".join(MOBILE_SCENARIOS)]
+    return ["--visual-test", mode, str(actual)] + (["--native-filter"] if native_filter else [])
 
 
 def compare(actual, baseline, diff):
@@ -87,7 +96,7 @@ def run_tests(args):
         with (folder / "process.log").open("w") as log:
             try:
                 process = subprocess.run(["dotnet", str(BUILD / "app/Burntime.dll"),
-                                          "--visual-test", mode, str(actual)] + (["--native-filter"] if args.native_filter else []),
+                                          *capture_arguments(mode, actual, args.native_filter)],
                                          stdout=log, stderr=subprocess.STDOUT, timeout=240, cwd=ROOT)
                 if process.returncode:
                     errors.append(f"Game exited with code {process.returncode}; see process.log and actual/error.txt.")
@@ -110,6 +119,14 @@ def run_tests(args):
             expected = json.loads(manifest.read_text())
             if not expected or set(expected) != {image.stem for image in actual.glob("*.png")}:
                 errors.append("Capture manifest does not match the screenshots on disk.")
+        if mode == "mobile":
+            safe_errors = actual / "safe-area-errors.json"
+            if not safe_errors.exists():
+                errors.append("Safe-area validation results are missing.")
+            else:
+                errors.extend(json.loads(safe_errors.read_text()))
+            if manifest.exists() and json.loads(manifest.read_text()) != MOBILE_SCENARIOS:
+                errors.append("Mobile capture suite does not match its required scenarios.")
         cases = []
         # Also show partial captures after a crash or timeout.
         for image in sorted(actual.glob("*.png")):
