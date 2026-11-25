@@ -275,7 +275,12 @@ public class RenderDevice : IDisposable
     public void End()
     {
         lock (_renderQueue)
+        {
+            // Snapshots replace the whole scene. Retain only the newest pending
+            // frame if presentation stalls or runs more slowly than simulation.
+            _renderQueue.Clear();
             _renderQueue.Enqueue(current);
+        }
     }
 
     public void AddEntity(RenderEntity Entity)
