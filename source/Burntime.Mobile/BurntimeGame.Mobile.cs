@@ -19,8 +19,9 @@ public partial class BurntimeGame
 
     void UpdateMobileFrameRate()
     {
-        int framesPerSecond = VisualTest == null && _burntimeApp?.LastInputMode == InputMode.Touch
-            ? 30 : TargetFramesPerSecond;
+        int framesPerSecond = GameplayProfile?.FramesPerSecond ??
+            (VisualTest == null && _burntimeApp?.LastInputMode == InputMode.Touch
+                ? 30 : TargetFramesPerSecond);
         if (framesPerSecond == _targetFramesPerSecond) return;
 
         _targetFramesPerSecond = framesPerSecond;

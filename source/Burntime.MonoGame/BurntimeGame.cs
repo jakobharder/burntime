@@ -26,6 +26,7 @@ namespace Burntime.MonoGame
 
     public partial class BurntimeGame : Game, IEngine, ILoadingCounter
     {
+        internal GameplayProfile? GameplayProfile { get; } = GameplayProfile.Create();
         const int TargetFramesPerSecond = 60;
         int _targetFramesPerSecond = TargetFramesPerSecond;
 
@@ -181,7 +182,8 @@ namespace Burntime.MonoGame
             _graphics = new GraphicsDeviceManager(this);
             IsFixedTimeStep = true;
             InactiveSleepTime = TimeSpan.FromMilliseconds(100);
-            TargetElapsedTime = TimeSpan.FromSeconds(1.0 / TargetFramesPerSecond);
+            _targetFramesPerSecond = GameplayProfile?.FramesPerSecond ?? TargetFramesPerSecond;
+            TargetElapsedTime = TimeSpan.FromSeconds(1.0 / _targetFramesPerSecond);
             _graphics.SynchronizeWithVerticalRetrace = true;
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
@@ -275,7 +277,9 @@ namespace Burntime.MonoGame
         protected override void Initialize()
         {
             string logPath = "log.txt";
-            if (VisualTest != null)
+            if (GameplayProfile != null)
+                logPath = System.IO.Path.Combine(GameplayProfile.OutputDirectory, "resources.log");
+            else if (VisualTest != null)
                 logPath = System.IO.Path.Combine(VisualTest.OutputDirectory, "resources.log");
             else if (OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsAndroid())
             {
@@ -476,10 +480,14 @@ namespace Burntime.MonoGame
                 PersistMobileSettings();
                 if (!_mobileActive) return;
 #endif
+                GameplayProfile?.BeforeFrame(this, _burntimeApp);
+                var simulationSample = GameplayProfile?.Begin() ?? default;
                 _burntimeApp.Process(gameTime.Elapsed);
+                GameplayProfile?.End("simulation", simulationSample);
                 MainTarget.Elapsed = gameTime.Elapsed;
                 MainTarget.TotalElapsed += gameTime.Elapsed;
 
+                var commandsSample = GameplayProfile?.Begin() ?? default;
                 RenderDevice.Begin();
                 _burntimeApp.Render(MainTarget);
                 _fpsFont?.DrawText(MainTarget, new Platform.Vector2(2, 2),
@@ -490,6 +498,7 @@ namespace Burntime.MonoGame
                         $"Tex {ResourceManager.TextureMemoryUsage / (1024.0 * 1024.0):0.0} MB"),
                     TextAlignment.Left, VerticalTextAlignment.Top);
                 RenderDevice.End();
+                GameplayProfile?.End("scene_commands", commandsSample);
 #if IOS || ANDROID
                 }
 #endif
@@ -976,7 +985,9 @@ namespace Burntime.MonoGame
                 return;
             }
 
+            var prepareSample = GameplayProfile?.Begin() ?? default;
             RenderDevice.Update();
+            GameplayProfile?.End("render_prepare", prepareSample);
 
             base.Update(gameTime);
         }
@@ -990,12 +1001,22 @@ namespace Burntime.MonoGame
             if (CaptureSize is Platform.Vector2 captureSize && CaptureTarget == null)
                 CaptureTarget = new RenderTarget2D(GraphicsDevice, captureSize.x, captureSize.y,
                     false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+            var submitSample = GameplayProfile?.Begin() ?? default;
             RenderDevice.Render(VisualTest != null ? 1f / 60 : (float)gameTime.ElapsedGameTime.TotalSeconds,
                 CaptureTarget);
+            GameplayProfile?.End("render_submit", submitSample);
             GraphicsDevice.SetRenderTarget(null);
             VisualTest?.Capture(this);
+            GameplayProfile?.AfterDraw(this);
 
             base.Draw(gameTime);
+        }
+
+        protected override void EndDraw()
+        {
+            var sample = GameplayProfile?.Begin() ?? default;
+            base.EndDraw();
+            GameplayProfile?.End("presentation", sample);
         }
 
         void UpdateFpsCounter()
