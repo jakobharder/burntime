@@ -27,6 +27,7 @@ namespace Burntime.MonoGame
     public partial class BurntimeGame : Game, IEngine, ILoadingCounter
     {
         const int TargetFramesPerSecond = 60;
+        int _targetFramesPerSecond = TargetFramesPerSecond;
 
         public Resolution Resolution { get; } = new();
         public DeviceManager DeviceManager { get; set; }
@@ -333,6 +334,9 @@ namespace Burntime.MonoGame
             _burntimeApp.SmallDeviceUi |= AndroidSmallDeviceUi;
 #endif
 
+#if IOS || ANDROID
+            UpdateMobileFrameRate();
+#endif
             Resolution.RatioCorrection = _burntimeApp.RatioCorrection;
             Resolution.MinResolution = _burntimeApp.MinResolution;
             Resolution.MaxResolution = _burntimeApp.MaxResolution;
@@ -489,7 +493,7 @@ namespace Burntime.MonoGame
 #if IOS || ANDROID
                 }
 #endif
-            }, framesPerSecond: TargetFramesPerSecond
+            }, framesPerSecond: _targetFramesPerSecond
 #if IOS || ANDROID
                 , suspendedWork: () =>
                 {
@@ -951,6 +955,9 @@ namespace Burntime.MonoGame
 #endif
             HandleKeyboardInput();
             HandleGamePadInput();
+#if IOS || ANDROID
+            UpdateMobileFrameRate();
+#endif
             
             if (_requestFullscreen != _isFullscreen)
             {

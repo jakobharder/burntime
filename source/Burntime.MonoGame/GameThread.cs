@@ -14,7 +14,7 @@ internal class GameThread
     Action? _suspendedWork;
     Thread? _renderThread;
     string _threadName = "GameThread";
-    int _framesPerSecond;
+    volatile int _framesPerSecond;
     Action<GameTime> _call = _ => { };
 
     public void Start(Action<GameTime> call, string threadName = "GameThread", int framesPerSecond = 60,
@@ -47,6 +47,15 @@ internal class GameThread
             Log.Warning($"Timed out stopping {thread.Name ?? "game thread"}.");
     }
 
+    public void SetFrameRate(int framesPerSecond)
+    {
+        if (framesPerSecond <= 0 || framesPerSecond == _framesPerSecond)
+            return;
+
+        _framesPerSecond = framesPerSecond;
+        _scheduleChanged.Set();
+    }
+
     public void SetSuspended(bool suspended)
     {
         _suspended = suspended;
@@ -58,12 +67,22 @@ internal class GameThread
     {
         Thread.CurrentThread.Name = _threadName;
         GameTime gameTime = new();
-        double frameTicks = Stopwatch.Frequency / (double)_framesPerSecond;
+        int framesPerSecond = _framesPerSecond;
+        double frameTicks = Stopwatch.Frequency / (double)framesPerSecond;
         long previousFrame = Stopwatch.GetTimestamp();
         double nextFrame = previousFrame + frameTicks;
 
         while (!_stopRequested)
         {
+            int requestedFrameRate = _framesPerSecond;
+            if (requestedFrameRate != framesPerSecond)
+            {
+                framesPerSecond = requestedFrameRate;
+                frameTicks = Stopwatch.Frequency / (double)framesPerSecond;
+                // Preserve active simulation time when the input mode changes.
+                nextFrame = previousFrame + frameTicks;
+            }
+
             if (_suspended)
             {
                 _suspendedWork?.Invoke();
@@ -80,11 +99,7 @@ internal class GameThread
             if (remainingMilliseconds > 0)
             {
                 // Round up instead of spinning through the final milliseconds.
-                if (_scheduleChanged.WaitOne((int)System.Math.Ceiling(remainingMilliseconds)))
-                {
-                    previousFrame = Stopwatch.GetTimestamp();
-                    nextFrame = previousFrame + frameTicks;
-                }
+                _scheduleChanged.WaitOne((int)System.Math.Ceiling(remainingMilliseconds));
                 continue;
             }
 

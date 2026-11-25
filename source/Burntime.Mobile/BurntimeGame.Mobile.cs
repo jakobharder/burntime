@@ -17,6 +17,17 @@ public partial class BurntimeGame
     readonly object mobileFrameSync = new();
     int memoryPressurePending;
 
+    void UpdateMobileFrameRate()
+    {
+        int framesPerSecond = VisualTest == null && _burntimeApp?.LastInputMode == InputMode.Touch
+            ? 30 : TargetFramesPerSecond;
+        if (framesPerSecond == _targetFramesPerSecond) return;
+
+        _targetFramesPerSecond = framesPerSecond;
+        TargetElapsedTime = TimeSpan.FromSeconds(1.0 / framesPerSecond);
+        _gameThread.SetFrameRate(framesPerSecond);
+    }
+
     public void QueueMemoryPressureCleanup() => Interlocked.Exchange(ref memoryPressurePending, 1);
 
     void HandleMemoryPressure()

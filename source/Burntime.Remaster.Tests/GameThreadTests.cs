@@ -53,6 +53,50 @@ static class GameThreadTests
             return 0;
         });
 
+        yield return Int("frame rate changes preserve elapsed gameplay time", 0, () =>
+        {
+            using AutoResetEvent ready = new(false);
+            object sync = new();
+            GameThread worker = new();
+            int frames = 0;
+            double simulatedSeconds = 0;
+            try
+            {
+                worker.Start(time =>
+                {
+                    lock (sync)
+                    {
+                        frames++;
+                        simulatedSeconds += time.Elapsed;
+                    }
+                    ready.Set();
+                });
+                Equal(true, ready.WaitOne(2000), "worker starts");
+                double initialSimulation;
+                lock (sync) initialSimulation = simulatedSeconds;
+                Stopwatch clock = Stopwatch.StartNew();
+                foreach (int rate in new[] { 60, 30, 60 })
+                {
+                    worker.SetFrameRate(rate);
+                    int firstFrame;
+                    lock (sync) firstFrame = frames;
+                    Stopwatch sample = Stopwatch.StartNew();
+                    Thread.Sleep(1000);
+                    int lastFrame;
+                    lock (sync) lastFrame = frames;
+                    double actualRate = (lastFrame - firstFrame) / sample.Elapsed.TotalSeconds;
+                    Equal(true, actualRate > rate * 0.75 && actualRate < rate * 1.25,
+                        $"requested {rate} FPS, observed {actualRate:0.0}");
+                }
+                double simulation;
+                lock (sync) simulation = simulatedSeconds - initialSimulation;
+                Equal(true, System.Math.Abs(simulation - clock.Elapsed.TotalSeconds) < 0.15,
+                    "gameplay time follows wall time across frame rate changes");
+            }
+            finally { worker.Stop(); }
+            return 0;
+        });
+
         yield return Int("stop interrupts a long frame wait", 0, () =>
         {
             GameThread worker = new();
