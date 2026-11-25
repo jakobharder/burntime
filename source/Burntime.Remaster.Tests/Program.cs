@@ -72,6 +72,7 @@ static class Program
         Run("construction feedback", ConstructionFeedbackTests.AvailabilityCases());
         Run("log file lifetime", LogLifecycleTests.Cases());
         Run("game thread lifecycle", GameThreadTests.Cases());
+        Run("resource loader lifecycle", DelayLoaderTests.Cases());
 
         Console.WriteLine($"Rule formulas: {passed} passed, {failed} failed.");
         return failed == 0 ? 0 : 1;

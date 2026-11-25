@@ -47,6 +47,7 @@ public sealed class MusicPlayback : IMusic
         {
             if (_suspended == suspended) return;
             _suspended = suspended;
+            Monitor.PulseAll(this);
             if (suspended)
             {
                 _music?.Pause();
@@ -103,7 +104,11 @@ public sealed class MusicPlayback : IMusic
         if (!Enabled)
             return;
 
-        _playlist.Add(fileName);
+        lock (this)
+        {
+            _playlist.Add(fileName);
+            Monitor.PulseAll(this);
+        }
     }
 
     public void LoadSonglist(string fileName)
@@ -197,6 +202,7 @@ public sealed class MusicPlayback : IMusic
     {
         lock (this)
         {
+            Monitor.PulseAll(this);
             if (!Enabled)
             {
                 _rememberedMusic?.Dispose();
@@ -348,6 +354,7 @@ public sealed class MusicPlayback : IMusic
                 _playlist.Clear();
                 _pendingRequest = new(RequestKind.ResumePlaylist,
                     IsMapPlaylist: true);
+                Monitor.PulseAll(this);
                 return;
             }
 
@@ -388,6 +395,7 @@ public sealed class MusicPlayback : IMusic
         _playlist.Clear();
         _repeat = false;
         _playlist.Add(song);
+        Monitor.PulseAll(this);
         _isMapPlaylistPlayback = true;
     }
 
@@ -453,6 +461,7 @@ public sealed class MusicPlayback : IMusic
             return;
         }
         _pendingRequest = request;
+        Monitor.PulseAll(this);
     }
 
     public void PlayOnce(string fileName) => Play(fileName, false);
@@ -471,6 +480,7 @@ public sealed class MusicPlayback : IMusic
             sound.Volume = 1;
             sound.Play();
             _sounds.Add(sound);
+            Monitor.PulseAll(this);
         }
     }
 
@@ -480,6 +490,7 @@ public sealed class MusicPlayback : IMusic
         {
             _playlist.Clear();
             _pendingRequest = new(RequestKind.Stop);
+            Monitor.PulseAll(this);
         }
     }
 
@@ -510,7 +521,11 @@ public sealed class MusicPlayback : IMusic
         Thread? thread = _musicThread;
         if (thread != null)
         {
-            _requestStop = true;
+            lock (this)
+            {
+                _requestStop = true;
+                Monitor.PulseAll(this);
+            }
             if (thread == Thread.CurrentThread || thread.Join(StopTimeout))
                 _musicThread = null;
             else
@@ -643,11 +658,15 @@ public sealed class MusicPlayback : IMusic
     {
         while (!_requestStop)
         {
-            Thread.Sleep(TransitionInterval);
-
-#warning THREADING lock playlist
             lock (this)
             {
+                // Streaming buffers and fades need regular updates while playing.
+                // With no work (or while suspended), wait for a playback request.
+                bool idle = _music is null && !_pendingRequest.HasValue &&
+                    _playlist.Count == 0 && _sounds.Count == 0;
+                if (!_requestStop)
+                    Monitor.Wait(this, _suspended || idle ? Timeout.Infinite : TransitionInterval);
+                if (_requestStop) break;
                 if (_suspended) continue;
                 for (int i = _sounds.Count - 1; i >= 0; i--)
                 {

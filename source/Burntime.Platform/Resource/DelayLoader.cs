@@ -105,8 +105,8 @@ public class DelayLoader
 
             if (_suspended || !IsLoading)
             {
-                // queue is empty, wait for new arrivals
-                _loadingRequested.WaitOne(200, true);
+                // Enqueue, resume, and stop all signal this event.
+                _loadingRequested.WaitOne();
             }
         }
     }
