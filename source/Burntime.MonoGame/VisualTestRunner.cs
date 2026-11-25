@@ -12,7 +12,8 @@ namespace Burntime.MonoGame;
 internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = false, string? storeMode = null, string language = "en") : IVisualTestRunner
 {
     public string OutputDirectory { get; } = outputDirectory;
-    readonly string[] names = storeMode != null ? VisualTestScenes.StoreNames :
+    readonly string[] names = storeMode == "phone" ? VisualTestScenes.PhoneHudNames :
+        storeMode != null ? VisualTestScenes.StoreNames :
         touchOnly ? VisualTestScenes.TouchNames : VisualTestScenes.Names;
     readonly List<string> captured = [];
     readonly Stopwatch deadline = Stopwatch.StartNew();
@@ -27,16 +28,16 @@ internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = 
     public static int RunStoreCapture(string[] args)
     {
         if (args.Length is < 3 or > 4 || args[0] != "--store-capture" ||
-            args[1] is not ("ipad" or "steam" or "macos") ||
+            args[1] is not ("ipad" or "steam" or "macos" or "phone") ||
             args.Length == 4 && args[3] is not ("--language=en" or "--language=de"))
         {
-            Console.Error.WriteLine("Usage: Burntime --store-capture ipad|steam|macos OUTPUT_DIRECTORY [--language=en|--language=de]");
+            Console.Error.WriteLine("Usage: Burntime --store-capture ipad|steam|macos|phone OUTPUT_DIRECTORY [--language=en|--language=de]");
             return 2;
         }
         string captureLanguage = args.Length == 4 && args[3] == "--language=de" ? "de" : "en";
         string output = Path.GetFullPath(args[2]);
         Directory.CreateDirectory(output);
-        if (VisualTestScenes.StoreNames.Any(name => System.IO.File.Exists(Path.Combine(output, name + ".png"))))
+        if ((args[1] == "phone" ? VisualTestScenes.PhoneHudNames : VisualTestScenes.StoreNames).Any(name => System.IO.File.Exists(Path.Combine(output, name + ".png"))))
         {
             Console.Error.WriteLine("Use a fresh output directory; store captures are never overwritten.");
             return 2;
@@ -47,6 +48,7 @@ internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = 
             $"newgfx=true\nprompts=0\nlanguage={captureLanguage}\nfullscreen=false\nmusic=off\nmap_music=none\ncontroller_glyphs=steam\n");
         var size = args[1] switch
         {
+            "phone" => new Burntime.Platform.Vector2(2340, 1080),
             "ipad" => new Burntime.Platform.Vector2(2752, 2064),
             "macos" => new Burntime.Platform.Vector2(2560, 1600),
             _ => new Burntime.Platform.Vector2(1920, 1080)
@@ -54,10 +56,11 @@ internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = 
         VisualTestRunner runner = new(output, storeMode: args[1], language: captureLanguage);
         try
         {
-            using BurntimeGame game = new(disableShaders: args[1] == "ipad",
+            using BurntimeGame game = new(disableShaders: args[1] is "ipad" or "phone",
                 windowSizeOverride: new Burntime.Platform.Vector2(960, 720));
             game.CaptureSize = size;
-            game.EmulateIpadLayout = args[1] == "ipad";
+            game.EmulateIpadLayout = args[1] is "ipad" or "phone";
+            game.EmulateSmallDeviceUi = args[1] == "phone";
             game.VisualTest = runner;
             game.Run();
             return runner.Complete ? 0 : 1;
@@ -187,6 +190,7 @@ internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = 
         string name = names[index];
         using (var stream = System.IO.File.Create(Path.Combine(OutputDirectory, name + ".png")))
             image.SaveAsPng(stream, width, height);
+        if (storeMode == "phone") scenes!.ValidatePhoneHudCapture(name);
         captured.Add(name);
         Console.WriteLine($"Captured {name}");
         nextScene = true;
@@ -199,10 +203,10 @@ internal sealed class VisualTestRunner(string outputDirectory, bool touchOnly = 
                 System.IO.File.WriteAllText(Path.Combine(OutputDirectory, "manifest.json"),
                     JsonSerializer.Serialize(new { mode = storeMode, language, boss = "Jakob", seed = 123,
                         width, height, city = scenes!.CaptureCityName, day = 42,
-                        scenarioDays = VisualTestScenes.StoreNames.ToDictionary(
+                        scenarioDays = names.ToDictionary(
                             name => name, name => name == "01-city" ? 45 : 42),
-                        input = storeMode == "ipad" ? "touch" : storeMode == "macos" ? "mouse" : "gamepad",
-                        glyphs = storeMode == "ipad" ? "touch" : storeMode == "macos" ? "mouse" : "steam",
+                        input = storeMode == "phone" ? "mixed" : storeMode == "ipad" ? "touch" : storeMode == "macos" ? "mouse" : "gamepad",
+                        glyphs = storeMode == "phone" ? "touch/steam" : storeMode == "ipad" ? "touch" : storeMode == "macos" ? "mouse" : "steam",
                         renderer = game.OutputFiltering.ToString(), campaign = scenes.StoreCaptureState,
                         captured }, new JsonSerializerOptions { WriteIndented = true }));
             game.Exit();

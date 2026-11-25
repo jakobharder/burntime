@@ -159,3 +159,12 @@ The tests still use keyboard prompts and fixed Xbox glyph settings, not live
 Steam Deck input detection, and desktop GPU captures are not hardware certification.
 Font descriptors define `line_height` in logical pixels; setup body text uses
 `font-small.txt`, while headings and controls retain the regular font.
+
+## Compact party HUD
+
+Capture a three-person party on world and local maps, including touch/gamepad,
+member selection, supply warnings and group actions. Control bounds are checked:
+
+```sh
+dotnet bin/Release/Burntime.dll --store-capture phone /tmp/burntime-phone-hud
+```

@@ -30,6 +30,11 @@ public sealed class VisualTestScenes(BurntimeClassic app, string bossName = "Vis
 
     bool gameCreated;
     public static readonly string[] StoreNames = ["01-city", "02-sana", "03-world-map", "04-trader"];
+    public static readonly string[] PhoneHudNames =
+    [
+        "phone-map-touch-group", "phone-map-gamepad-group", "phone-map-gamepad-member",
+        "phone-location-touch-group", "phone-location-gamepad-member", "phone-location-gamepad-actions"
+    ];
     public string CaptureCityName { get; private set; } = "";
     int storeRoomIndex;
     public object StoreCaptureState
@@ -53,6 +58,11 @@ public sealed class VisualTestScenes(BurntimeClassic app, string bossName = "Vis
     // No save schema or player profile is changed, and no simulation workers run.
     public void OpenStoreCapture(string name, InputMode inputMode)
     {
+        if (name.StartsWith("phone-", StringComparison.Ordinal))
+        {
+            OpenPhoneHudCapture(name);
+            return;
+        }
         if (!gameCreated)
         {
             Open("map");
@@ -163,6 +173,119 @@ public sealed class VisualTestScenes(BurntimeClassic app, string bossName = "Vis
             }
         }
         app.LastInputMode = inputMode;
+    }
+
+    void OpenPhoneHudCapture(string name)
+    {
+        InputMode mode = name.Contains("-touch-") ? InputMode.Touch : InputMode.Gamepad;
+        OpenStoreCapture("03-world-map", mode);
+        var player = app.Game.World.ActivePlayerObj;
+        if (player.Party.Count == 1)
+        {
+            var recruits = app.Game.World.Locations.SelectMany(location => location.Characters)
+                .Where(character => (character.Class is CharClass.Mercenary or CharClass.Technician or CharClass.Doctor) &&
+                    !player.Party.Contains(character)).Take(2).ToArray();
+            foreach (var recruit in recruits)
+            {
+                recruit.Player = player;
+                recruit.Location = player.Location;
+                recruit.Position = player.Character.Position + new Vector2(12 * player.Party.Count, 0);
+                recruit.Path.Stop(recruit.Position);
+                player.Party.Add(recruit);
+            }
+        }
+        if (player.Party.Count != 3)
+            throw new InvalidOperationException("Phone HUD fixture requires a three-person party.");
+        for (int i = 0; i < player.Party.Count; i++)
+        {
+            var member = player.Party[i];
+            member.Health = i == 0 ? 73 : 42;
+            member.Food = 4;
+            member.Water = i == 2 ? 0 : 3;
+            member.Items.Clear();
+            member.Position = player.Character.Position + new Vector2(12 * i, 0);
+            member.Path.Stop(member.Position);
+        }
+        player.SelectGroup(player.Party);
+        app.Game.World.Time = .55f;
+        bool local = name.StartsWith("phone-location-", StringComparison.Ordinal);
+        app.SetScene(local ? "LocationScene" : "MapScene");
+        app.LastInputMode = mode;
+        app.Process(0);
+        if (name.EndsWith("-member") || name.EndsWith("-actions"))
+        {
+            app.Process(.2f); // Release the previous capture's controller-cycle debounce.
+            Press(InputAction.RightArea);
+            if (player.SelectedCharacter != player.Party[1])
+                throw new InvalidOperationException("Phone HUD fixture did not select the second party member.");
+        }
+        app.Game.World.Time = .55f;
+        var scene = ReadPrivate<Scene>(app.SceneManager, "activeScene");
+        var view = Descendants(scene).OfType<MapView>().First();
+        if (local)
+            view.CenterTo(player.Character.Position + new Vector2(0, -20));
+        else
+        {
+            int destination = player.Location.Neighbors.First(location => !location.IsCity).Id;
+            view.ActiveEntrance = destination;
+            view.CenterTo(view.Map.Entrances[destination].Area.Center);
+        }
+        app.Process(0);
+        if (mode == InputMode.Gamepad)
+        {
+            var inline = new InputPromptController(app, scene.Prompts).Resolve().InlinePrompts;
+            if (!inline.Any(entry => entry.Prompt.Action == InputAction.LeftArea) ||
+                !inline.Any(entry => entry.Prompt.Action == InputAction.RightArea) ||
+                local && !inline.Any(entry => entry.Prompt.Action == InputAction.Secondary))
+                throw new InvalidOperationException("Phone party selection/action prompts are missing.");
+            if (inline.Any(entry => entry.Position.x < 0 || entry.Position.x >= MainUiOriginalWindow.CompactWidth))
+                throw new InvalidOperationException("Phone party prompts are outside the HUD.");
+        }
+        if (name.EndsWith("-actions"))
+        {
+            Press(InputAction.Secondary);
+            if (!Descendants(scene).OfType<MenuWindow>().Any(window => window.IsVisible))
+                throw new InvalidOperationException("Party actions did not open in the phone HUD fixture.");
+        }
+        Log.Info($"PHONE HUD party={player.Party.Count}, single={player.SingleMode}, selected={player.SelectedCharacter.Name}, mode={mode}");
+    }
+
+    public void ValidatePhoneHudCapture(string name)
+    {
+        var scene = ReadPrivate<Scene>(app.SceneManager, "activeScene");
+        var view = Descendants(scene).OfType<MapView>().First();
+        if (view.Position.x != MainUiOriginalWindow.CompactWidth || view.Size.y != 160)
+            throw new InvalidOperationException("Phone party map does not fill the area beside the HUD.");
+        if (!name.EndsWith("-actions"))
+        {
+            var overlay = Descendants(scene).OfType<InputPromptOverlay>().First();
+            var context = ReadPrivate<Window>(overlay, "_contextRow");
+            if (ReadPrivate<bool>(context, "_hasVisiblePrompts") &&
+                context.Boundings.Left < MainUiOriginalWindow.CompactWidth)
+                throw new InvalidOperationException("Target-specific prompts must stay on the map.");
+            var globalRows = ReadPrivate<System.Collections.IEnumerable>(overlay, "_sidebarRows");
+            foreach (Window row in globalRows)
+                if (ReadPrivate<bool>(row, "_hasVisiblePrompts") &&
+                    (row.Boundings.Left < 0 || row.Boundings.Right > MainUiOriginalWindow.CompactWidth))
+                    throw new InvalidOperationException("Global prompts must stay inside the HUD.");
+        }
+        if (name.Contains("-gamepad-") && !name.EndsWith("-actions"))
+        {
+            var overlay = Descendants(scene).OfType<InputPromptOverlay>().First();
+            var rows = ReadPrivate<System.Collections.IDictionary>(overlay, "_inlineRows");
+            if (rows.Count < 2)
+                throw new InvalidOperationException("Phone party controls were not rendered.");
+            foreach (Window row in rows.Values)
+                if (row.Boundings.Left < 0 || row.Boundings.Right > MainUiOriginalWindow.CompactWidth ||
+                    row.Boundings.Top < 0 || row.Boundings.Bottom > MainUiOriginalWindow.CompactPartyPromptY)
+                    throw new InvalidOperationException("Phone party controls are clipped or outside their HUD row.");
+        }
+        if (name.EndsWith("-actions"))
+        {
+            var menu = Descendants(scene).OfType<MenuWindow>().First(window => window.IsVisible);
+            if (ReadPrivate<List<MenuItem>>(menu, "_menuEntries").Count != 3)
+                throw new InvalidOperationException("Party menu must show All, Dismiss and Stay there.");
+        }
     }
 
     void FillStoreItems(ItemList items, string[] ids)

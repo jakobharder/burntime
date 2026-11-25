@@ -27,6 +27,10 @@ namespace Burntime.Remaster
 
     public class MainUiOriginalWindow : IMapGuiWindow
     {
+        internal const int CompactWidth = 66;
+        internal const int CompactPartyPromptY = 59;
+        readonly GuiFont _compactFont;
+        readonly GuiFont _compactWarningFont;
         readonly GuiFont _standardFont;
         readonly GuiFont _warningFont;
         readonly GuiFont _promptFont;
@@ -45,6 +49,8 @@ namespace Burntime.Remaster
         {
             Size = app.Engine.Resolution.Game;
 
+            _compactFont = new GuiFont("font-small.txt", ClassicColors.HudText);
+            _compactWarningFont = new GuiFont("font-small.txt", ClassicColors.HudWarning);
             _standardFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.HudText);
             _playerFont = new GuiFont(BurntimeClassic.FontName, PixelColor.White);
             _warningFont = new GuiFont(BurntimeClassic.FontName, ClassicColors.HudWarning);
@@ -67,9 +73,11 @@ namespace Burntime.Remaster
                 Position = new Vector2(Size.x / 2 - 31, Size.y - 56),
                 FaceID = 0,
                 DisplayOnly = true,
-                TouchAction = () => OpenInventory?.Invoke()
+                TouchAction = () => OpenInventory?.Invoke(),
+                MaxDisplayWidth = app.SmallDeviceUi ? CompactWidth - 4 : 0
             };
             _playerFace.Layer++;
+            ApplyLayout();
         }
 
         public override void OnResizeScreen(bool reload = false)
@@ -77,13 +85,46 @@ namespace Burntime.Remaster
             base.OnResizeScreen(reload);
 
             Size = app.Engine.Resolution.Game;
+            ApplyLayout();
+        }
+
+        void ApplyLayout()
+        {
+            if (app.SmallDeviceUi)
+            {
+                _uiElement1.Hide();
+                _uiElement2.Hide();
+                _playerFace.Position = new Vector2(2, 2);
+                return;
+            }
+            _uiElement1.Show();
+            _uiElement2.Show();
             _uiElement1.Position = new Vector2(Size.x / 2 - 60, Size.y - 40);
             _uiElement2.Position = new Vector2(Size.x / 2 - 42, 0);
             _playerFace.Position = new Vector2(Size.x / 2 - 31, Size.y - 56);
         }
 
+        public override void OnUpdate(float elapsed)
+        {
+            base.OnUpdate(elapsed);
+            if (!app.SmallDeviceUi || app.GameState is not ClassicGame game || game.World.ActivePlayer < 0)
+                return;
+            Player player = game.World.ActivePlayerObj;
+            bool hasSelectionControls = (app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad) &&
+                (player.Party.Count > 1 || player.SelectedCharacter != null && !player.Party.Contains(player.SelectedCharacter));
+            int portraitWidth = hasSelectionControls ? 54 : CompactWidth - 4;
+            _playerFace.MaxDisplayWidth = portraitWidth;
+            _playerFace.Position = new Vector2((CompactWidth - portraitWidth) / 2, 2);
+        }
+
         public override void SetMapRenderArea(MapView mapView, Vector2 size)
         {
+            if (app.SmallDeviceUi)
+            {
+                mapView.SetViewport(new Vector2(CompactWidth, 0),
+                    new Vector2(System.Math.Max(1, size.x - CompactWidth), size.y));
+                return;
+            }
             int sideMargin = ((BurntimeClassic)app).IpadLayout ? 0 : 16;
             mapView.SetViewport(new Vector2(sideMargin, 0),
                 new Vector2(size.x - sideMargin * 2, size.y - 40));
@@ -92,6 +133,11 @@ namespace Burntime.Remaster
         public override void OnRender(RenderTarget Target)
         {
             base.OnRender(Target);
+            if (app.SmallDeviceUi)
+            {
+                RenderCompact(Target);
+                return;
+            }
 
             if (!((BurntimeClassic)app).IpadLayout)
             {
@@ -205,6 +251,74 @@ namespace Burntime.Remaster
                 var prompt = new Vector2(4, Size.y - 38);
                 _promptFont.DrawText(Target, prompt, PromptText, TextAlignment.Left, VerticalTextAlignment.Top);
             }
+        }
+
+        void RenderCompact(RenderTarget target)
+        {
+            target.RenderRect(Vector2.Zero, new Vector2(CompactWidth, Size.y), PixelColor.Black);
+            target.RenderRect(new Vector2(CompactWidth - 1, 0), new Vector2(1, Size.y),
+                new PixelColor(48, 48, 72));
+            target.Layer += 10;
+            ClassicGame game = (ClassicGame)app.GameState;
+            Player player = game.World.ActivePlayerObj;
+            Character selected = player.SelectedCharacter ?? player.Character;
+            const int left = 4;
+            const int width = CompactWidth - left * 2;
+            _playerFont.DrawText(target, new Vector2(CompactWidth / 2, 60),
+                FitText(_playerFont, selected.Name, width), TextAlignment.Center, VerticalTextAlignment.Top);
+
+            target.RenderRect(new Vector2(left - 1, 70), new Vector2(width + 2, 6),
+                new PixelColor(56, 56, 80));
+            target.RenderRect(new Vector2(left, 71),
+                new Vector2(width * System.Math.Clamp(selected.Health, 0, 100) / 100, 4),
+                new PixelColor(240, 64, 56));
+
+            var day = new TextHelper(app, "burn");
+            day.AddArgument("|A", game.World.Day);
+            _compactFont.DrawText(target, new Vector2(left, 84), day[404]);
+            if (player.Party.Count > 1)
+            {
+                int index = 0;
+                for (int i = 0; i < player.Party.Count; i++)
+                    if (player.Party[i] == selected) { index = i; break; }
+                _compactFont.DrawText(target, new Vector2(CompactWidth - left, 84),
+                    player.SingleMode ? $"{index + 1}/{player.Party.Count}"
+                        : $"{app.ResourceManager.GetString("burn?356")} {player.Party.Count}", TextAlignment.Right);
+            }
+            target.RenderRect(new Vector2(left, 90), new Vector2(width, 3), new PixelColor(40, 40, 56));
+            target.RenderRect(new Vector2(left, 90),
+                new Vector2((int)(System.Math.Clamp(game.World.Time, 0, 1) * width), 3),
+                new PixelColor(240, 64, 56));
+
+            var text = new TextHelper(app, "newburn");
+            int water = player.Party.GetLowestWaterWithInventory();
+            int food = player.Party.GetLowestFoodWithInventory();
+            string status = "";
+            bool warning = true;
+            if (water == 0) status = text[38];
+            else if (food == 0) status = text[39];
+            else if (ExpectedTravelDays > 0 && water < ExpectedTravelDays) status = text[38];
+            else if (ExpectedTravelDays > 0 && food < ExpectedTravelDays) status = text[39];
+            else if (game.World.ActiveLocationObj.Danger is { } danger)
+            {
+                status = danger.InfoString;
+                warning = player.Party.IsInDanger();
+            }
+            GuiFont statusFont = warning ? _compactWarningFont : _compactFont;
+            statusFont.DrawText(target, new Vector2(left, 102), FitText(statusFont, status, width));
+            if (ExpectedTravelDays > 0)
+            {
+                text.AddArgument("|J", ExpectedTravelDays);
+                _compactFont.DrawText(target, new Vector2(left, 113), FitText(_compactFont, text[104], width));
+            }
+        }
+
+        static string FitText(GuiFont font, string text, int width)
+        {
+            if (font.GetWidth(text) <= width) return text;
+            while (text.Length > 0 && font.GetWidth(text + "...") > width)
+                text = text[..^1];
+            return text + "...";
         }
 
         public override void UpdatePlayer()

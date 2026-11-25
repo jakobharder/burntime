@@ -117,7 +117,11 @@ namespace Burntime.Remaster
             Windows += _dialog;
 
             InputPromptOverlay promptOverlay = new(app, Prompts,
-                InputPromptColorScheme.Hud);
+                InputPromptColorScheme.Hud)
+            {
+                SidebarWidth = app.SmallDeviceUi ? MainUiOriginalWindow.CompactWidth : 0,
+                CompactInlinePrompts = app.SmallDeviceUi
+            };
             Windows += promptOverlay;
             Windows += _manualWindow = new ManualWindow(app, Size);
             _manualWindow.WindowShow += (_, _) => view.RequireMouseEdgeScrollReentry();
@@ -504,6 +508,12 @@ namespace Burntime.Remaster
             const int portraitWidth = 68;
             const int portraitGap = 2;
             const int bottomMargin = 6;
+            if (app.SmallDeviceUi)
+            {
+                _previousCharacterPrompt.UpdatePosition(new Vector2(22, MainUiOriginalWindow.CompactPartyPromptY));
+                _nextCharacterPrompt.UpdatePosition(new Vector2(44, MainUiOriginalWindow.CompactPartyPromptY));
+                return;
+            }
             int portraitLeft = app.Engine.Resolution.Game.x / 2 + portraitLeftOffset;
             int portraitRight = portraitLeft + portraitWidth;
             int baseline = app.Engine.Resolution.Game.y - bottomMargin;
