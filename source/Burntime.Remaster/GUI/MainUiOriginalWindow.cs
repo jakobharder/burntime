@@ -14,6 +14,7 @@ namespace Burntime.Remaster
     public abstract class IMapGuiWindow : Container
     {
         public Action? OpenInventory { get; set; }
+        public Action? OpenMenu { get; set; }
         public IMapGuiWindow(Module App)
             : base(App)
         {
@@ -27,6 +28,50 @@ namespace Burntime.Remaster
 
     public class MainUiOriginalWindow : IMapGuiWindow
     {
+        class CompactMenuButton : Button
+        {
+            public CompactMenuButton(Module app) : base(app) { }
+            public override void OnRender(RenderTarget target)
+            {
+                target.RenderRect(Vector2.Zero, Size,
+                    IsTouchPressed ? ClassicColors.HudText : new PixelColor(44, 44, 72));
+                base.OnRender(target);
+            }
+        }
+        sealed class CompactInteractionButton : CompactMenuButton
+        {
+            readonly GuiImage talk = "burngfxani@munt.raw?10-13";
+            readonly GuiImage fight = "burngfxani@munt.raw?14-17";
+            ISprite? talkIcon, fightIcon;
+            public bool Fighting { get; set; }
+
+            public CompactInteractionButton(Module app) : base(app) { }
+            public override void OnRender(RenderTarget target)
+            {
+                base.OnRender(target);
+                ISprite source = Fighting ? fight : talk;
+                if (!source.Touch()) return;
+                ISprite icon = Fighting ? fightIcon ??= source.Clone() : talkIcon ??= source.Clone();
+                icon.Resolution = Vector2f.One;
+                Rect artwork = new(Vector2.Zero, icon.Size);
+                if (app is BurntimeClassic { IsNewGfx: true })
+                {
+                    // Painted bounds of the existing first frames, excluding
+                    // the transparent right/bottom padding in their canvases.
+                    Rect painted = Fighting ? new Rect(2, 3, 20, 37) : new Rect(0, 0, 34, 16);
+                    if (painted.Right <= artwork.Right && painted.Bottom <= artwork.Bottom)
+                        artwork = painted;
+                }
+                Vector2f paintedSize = (Vector2f)artwork.Size * source.Resolution;
+                float scale = System.Math.Min(21f / System.Math.Max(1, paintedSize.x),
+                    21f / System.Math.Max(1, paintedSize.y));
+                icon.Resolution = source.Resolution * scale;
+                if (icon.Animation != null) icon.Animation.Progressive = false;
+                target.SelectSprite(icon);
+                target.DrawSelectedSpriteF(((Vector2f)Size - paintedSize * scale) / 2,
+                    artwork, PixelColor.White);
+            }
+        }
         internal const int CompactWidth = 66;
         internal const int CompactPartyPromptY = 59;
         readonly GuiFont _compactFont;
@@ -36,6 +81,10 @@ namespace Burntime.Remaster
         readonly GuiFont _promptFont;
         GuiFont _playerFont;
         readonly FaceWindow _playerFace;
+        readonly Button _menuButton;
+        readonly CompactInteractionButton _interactionButton;
+        bool hasInteractionMode;
+        internal Button InteractionModeButton => _interactionButton;
 
         public string PromptText { get; set; } = "";
 
@@ -77,6 +126,36 @@ namespace Burntime.Remaster
                 MaxDisplayWidth = app.SmallDeviceUi ? CompactWidth - 4 : 0
             };
             _playerFace.Layer++;
+            Windows += _menuButton = new CompactMenuButton(app)
+            {
+                Text = "@controls?22",
+                Font = new GuiFont(BurntimeClassic.FontName, ClassicColors.LightGray),
+                HoverFont = _promptFont,
+                Size = new Vector2(CompactWidth - 8, 25),
+                TextHorizontalAlign = TextAlignment.Center,
+                TextVerticalAlign = VerticalTextAlignment.Center,
+                InlinePromptsFollowText = true,
+                Command = new CommandHandler((Action)(() => OpenMenu?.Invoke()))
+            };
+            _menuButton.Prompts.Add(new InputPrompt(InputAction.Back, "")
+            {
+                MouseControl = MouseButton.None,
+                TouchControl = TouchControl.None
+            }, Vector2.Zero, () => !_interactionButton.IsVisible, showBackground: false);
+            Windows += _interactionButton = new CompactInteractionButton(app)
+            {
+                Size = new Vector2(25, 25),
+                IsVisible = false
+            };
+            ApplyLayout();
+        }
+
+        public void SetInteractionMode(bool available, bool fighting, Action toggle)
+        {
+            _interactionButton.Fighting = fighting;
+            if (hasInteractionMode == available) return;
+            hasInteractionMode = available;
+            _interactionButton.Command = new CommandHandler(toggle);
             ApplyLayout();
         }
 
@@ -90,8 +169,16 @@ namespace Burntime.Remaster
 
         void ApplyLayout()
         {
+            _menuButton.IsVisible = app.SmallDeviceUi;
+            _interactionButton.IsVisible = app.SmallDeviceUi && hasInteractionMode;
             if (app.SmallDeviceUi)
             {
+                Rect safe = app.Engine.Resolution.SafeArea;
+                Position = safe.Position;
+                Size = safe.Size;
+                _menuButton.Size = new Vector2(hasInteractionMode ? 30 : CompactWidth - 8, 25);
+                _menuButton.Position = new Vector2(hasInteractionMode ? 32 : 4, Size.y - 27);
+                _interactionButton.Position = new Vector2(4, Size.y - 27);
                 _uiElement1.Hide();
                 _uiElement2.Hide();
                 _playerFace.Position = new Vector2(2, 2);
@@ -107,6 +194,7 @@ namespace Burntime.Remaster
         public override void OnUpdate(float elapsed)
         {
             base.OnUpdate(elapsed);
+            _menuButton.IsKeyboardSelected = app.LastInputMode is InputMode.Keyboard or InputMode.Gamepad;
             if (!app.SmallDeviceUi || app.GameState is not ClassicGame game || game.World.ActivePlayer < 0)
                 return;
             Player player = game.World.ActivePlayerObj;
@@ -121,8 +209,9 @@ namespace Burntime.Remaster
         {
             if (app.SmallDeviceUi)
             {
-                mapView.SetViewport(new Vector2(CompactWidth, 0),
-                    new Vector2(System.Math.Max(1, size.x - CompactWidth), size.y));
+                int left = app.Engine.Resolution.SafeArea.Left + CompactWidth;
+                mapView.SetViewport(new Vector2(left, 0),
+                    new Vector2(System.Math.Max(1, size.x - left), size.y));
                 return;
             }
             int sideMargin = ((BurntimeClassic)app).IpadLayout ? 0 : 16;
@@ -255,8 +344,9 @@ namespace Burntime.Remaster
 
         void RenderCompact(RenderTarget target)
         {
-            target.RenderRect(Vector2.Zero, new Vector2(CompactWidth, Size.y), PixelColor.Black);
-            target.RenderRect(new Vector2(CompactWidth - 1, 0), new Vector2(1, Size.y),
+            int fullHeight = app.Engine.Resolution.Game.y;
+            target.RenderRect(-Position, new Vector2(Position.x + CompactWidth, fullHeight), PixelColor.Black);
+            target.RenderRect(new Vector2(CompactWidth - 1, -Position.y), new Vector2(1, fullHeight),
                 new PixelColor(48, 48, 72));
             target.Layer += 10;
             ClassicGame game = (ClassicGame)app.GameState;

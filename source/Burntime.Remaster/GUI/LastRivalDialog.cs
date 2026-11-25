@@ -22,7 +22,7 @@ internal sealed class LastRivalDialog : DialogWindow
     {
         ClassicGame game = classic.Game;
         winner = player;
-        Position = (Parent.Size - Size) / 2;
+        CenterInSafeArea();
         TextHelper text = new(classic, "last_rival");
         text.AddArgument("{total}", game.World.Locations.Count(location => location.IsCity));
         Conversation conversation = new()
@@ -43,7 +43,13 @@ internal sealed class LastRivalDialog : DialogWindow
     {
         base.OnResizeScreen(reload);
         if (Parent != null)
-            Position = (Parent.Size - Size) / 2;
+            CenterInSafeArea();
+    }
+
+    void CenterInSafeArea()
+    {
+        var safe = app.Engine.Resolution.SafeArea;
+        Position = safe.Position + (safe.Size - Size) / 2 - Parent.PositionOnScreen;
     }
 
     void ResolveChoice()

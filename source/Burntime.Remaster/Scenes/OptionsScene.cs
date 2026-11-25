@@ -61,7 +61,7 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         Background = "opti.pac";
         Size = new Vector2(320, 200);
         Music = "radio";
-        Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+        Position = app.Engine.Resolution.SafeArea.Position + (app.Engine.Resolution.SafeArea.Size - new Vector2(320, 200)) / 2;
 
         disabled = new GuiFont(BurntimeClassic.FontName, ClassicColors.OptionsDisabled) { Borders = TextBorders.None };
         red = new GuiFont(BurntimeClassic.FontName, ClassicColors.OptionsRed) { Borders = TextBorders.None };
@@ -394,7 +394,8 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
     void PositionPrivacyControls()
     {
         var screen = app.Engine.Resolution.Game;
-        _menuButtons[5].Position = new Vector2(screen.x / 2 - Position.x, screen.y - Position.y - 6);
+        Rect safe = app.Engine.Resolution.SafeArea;
+        _menuButtons[5].Position = new Vector2(safe.Center.x - Position.x, safe.Bottom - Position.y - 6);
         _privacyWindow.CenterIn(screen);
         _privacyWindow.Position -= Position;
     }
@@ -402,7 +403,7 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
     public override void OnResizeScreen(bool reload = false)
     {
         base.OnResizeScreen(reload);
-        Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+        Position = app.Engine.Resolution.SafeArea.Position + (app.Engine.Resolution.SafeArea.Size - new Vector2(320, 200)) / 2;
         _backgroundAni.IsVisible = !app.IsNewGfx;
         PositionPrivacyControls();
     }
@@ -437,7 +438,7 @@ public class OptionsScene : Scene, IMapMusicInterruptionScene
         target.Layer--;
 
         target.Layer += 10;
-        red.DrawText(target, new Vector2(6, 6) - target.ScreenOffset,
+        red.DrawText(target, app.Engine.Resolution.SafeArea.Position + new Vector2(6, 6) - target.ScreenOffset,
             ((BurntimeClassic)app).VersionLabel, TextAlignment.Left, VerticalTextAlignment.Top);
         target.Layer -= 10;
 

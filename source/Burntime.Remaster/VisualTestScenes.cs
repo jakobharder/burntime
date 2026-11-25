@@ -28,6 +28,152 @@ public sealed class VisualTestScenes(BurntimeClassic app, string bossName = "Vis
         "touch-item-secondary", "touch-item-primary", "touch-trader-left", "touch-trader-right"
     ];
 
+    public static readonly string[] PhoneScreenNames =
+    [
+        .. Names, "water-source", "options-saves", "options-jukebox", "options-give-up",
+        "language", "pause", "last-rival", "cutscene", "menu-edge-top", "menu-edge-bottom"
+    ];
+
+    public static readonly string[] HudMenuNames =
+    [
+        "hud-menu-world-solo", "hud-menu-world-party", "hud-menu-local-solo", "hud-menu-local-party",
+        "hud-menu-local-city", "hud-menu-select-member", "hud-menu-dismissed", "hud-menu-drag-cancelled",
+        "hud-mode-talk", "hud-mode-fight", "hud-mode-city"
+    ];
+
+    void OpenHudModeCapture(string name)
+    {
+        OpenPhoneHudCapture("phone-location-touch-member");
+        var player = app.Game.World.ActivePlayerObj;
+        if (name.EndsWith("city"))
+        {
+            player.Location = app.Game.World.Locations.First(location => location.IsCity);
+            player.Character.Position = player.Location.EntryPoint;
+            app.SetScene("LocationScene");
+        }
+        app.LastInputMode = InputMode.Touch;
+        app.Process(0);
+        var scene = (LocationScene)ReadPrivate<Scene>(app.SceneManager, "activeScene");
+        Button button = Descendants(scene).OfType<MainUiOriginalWindow>().Single().InteractionModeButton;
+        if (name.EndsWith("city"))
+        {
+            if (button.IsVisible) throw new InvalidOperationException("Cities must not offer a fight toggle.");
+            return;
+        }
+        if (!button.IsVisible) throw new InvalidOperationException("The local HUD must show its interaction-mode button.");
+        var location = player.Location;
+        Vector2 point = button.PositionOnScreen + button.Size / 2;
+        Touch(TouchGestureKind.Tap, point, point);
+        if (ReadPrivate<object>(scene, "interactionMode").ToString() != "Fight")
+            throw new InvalidOperationException("The mode button must switch from Talk to Fight.");
+        if (name.EndsWith("talk"))
+        {
+            Touch(TouchGestureKind.Tap, point, point);
+            if (ReadPrivate<object>(scene, "interactionMode").ToString() != "Talk")
+                throw new InvalidOperationException("The mode button must switch back from Fight to Talk.");
+        }
+        if (player.Location != location || Descendants(scene).OfType<MenuWindow>().Any(menu => menu.IsVisible))
+            throw new InvalidOperationException("The mode button must not open a menu or trigger map travel.");
+    }
+
+    void OpenHudMenuCapture(string name)
+    {
+        bool local = name.Contains("local") || name.EndsWith("drag-cancelled");
+        bool party = name.Contains("party") || name.EndsWith("select-member") || name.EndsWith("drag-cancelled");
+        if (party) OpenPhoneHudCapture(local ? "phone-location-gamepad-member" : "phone-map-touch-group");
+        else Open(local ? "location" : "map");
+        var player = app.Game.World.ActivePlayerObj;
+        if (!party)
+        {
+            foreach (var member in player.Party.Where(member => member != player.Character).ToArray())
+                player.Party.Remove(member);
+            player.SelectGroup(player.Party);
+        }
+        if (name.EndsWith("city"))
+        {
+            player.Location = app.Game.World.Locations.First(location => location.IsCity);
+            player.Character.Position = player.Location.EntryPoint;
+            app.SetScene("LocationScene");
+        }
+        app.LastInputMode = InputMode.Touch;
+        app.Process(0);
+        Scene scene = ReadPrivate<Scene>(app.SceneManager, "activeScene");
+        Button trigger = Descendants(scene).OfType<Button>().Single(button => button.Text?.ID == "@controls?22");
+        Vector2 origin = trigger.PositionOnScreen + trigger.Size / 2;
+        Touch(TouchGestureKind.Tap, origin, origin);
+        var popup = Descendants(scene).OfType<MenuWindow>().Single();
+        if (!popup.IsVisible || !popup.UsesTouchLayout || popup.ContinuesTouchHold)
+            throw new InvalidOperationException("The HUD button must open a persistent touch menu with one tap.");
+        app.Process(0);
+        if (!popup.IsVisible || popup.TouchPanelCount != (party ? 2 : 1) || popup.TouchRowHeight < 19)
+            throw new InvalidOperationException("HUD menu panels or touch row spacing are incorrect.");
+        Rect menuArea = Descendants(scene).OfType<MapView>().First().Boundings.Intersect(app.Engine.Resolution.SafeArea);
+        Vector2 centerOffset = popup.Boundings.Center - menuArea.Center;
+        if (System.Math.Abs(centerOffset.x) > 1 || System.Math.Abs(centerOffset.y) > 1)
+            throw new InvalidOperationException("HUD menu panels must be centered together in the safe map area.");
+        var entries = ReadPrivate<List<MenuItem>>(popup, "_menuEntries");
+        for (int i = 0; i < entries.Count; i++)
+            if (popup.TouchEntryAt(popup.TouchEntryBounds(i).Center) != i)
+                throw new InvalidOperationException("Every menu row must be directly tappable.");
+        if (name.EndsWith("select-member"))
+        {
+            int index = ReadPrivate<int>(popup, "touchSectionStart") + 2;
+            Vector2 point = popup.PositionOnScreen + popup.TouchEntryBounds(index).Center;
+            Touch(TouchGestureKind.Tap, point, point);
+            if (popup.IsVisible || !player.SingleMode || player.SelectedCharacter != player.Party[1])
+                throw new InvalidOperationException("Touching a party member must select that member and close the menu.");
+        }
+        if (name.EndsWith("dismissed"))
+        {
+            var destination = player.Destination;
+            Touch(TouchGestureKind.Tap, origin, origin);
+            if (popup.IsVisible || player.Destination != destination)
+                throw new InvalidOperationException("Outside tap must dismiss without activating the map or reopening the menu.");
+        }
+        if (name.EndsWith("drag-cancelled"))
+        {
+            Vector2 start = popup.PositionOnScreen + popup.TouchEntryBounds(0).Center;
+            Vector2 end = popup.PositionOnScreen + popup.TouchEntryBounds(1).Center;
+            app.SceneManager.QueueTouchGesture(new(TouchGestureKind.Press, start, start, default, touchTestTime += .1), app.SceneManager.TouchInputContext);
+            app.Process(0);
+            app.SceneManager.QueueTouchGesture(new(TouchGestureKind.Tap, start, end, default, touchTestTime += .1), app.SceneManager.TouchInputContext);
+            app.Process(0);
+            if (!popup.IsVisible || ReadPrivate<Scene>(app.SceneManager, "activeScene") != scene)
+                throw new InvalidOperationException("Releasing on a different row must not execute either action.");
+        }
+        app.RenderMouse = false;
+    }
+
+    public string[] ValidateSafeScreenCapture(string name)
+    {
+        Scene scene = ReadPrivate<Scene>(app.SceneManager, "activeScene");
+        Rect safe = app.Engine.Resolution.SafeArea;
+        List<string> issues = [];
+        if (app.SmallDeviceUi && app.IsNewGfx && scene is Scenes.InfoScene campInfo)
+        {
+            Rect board = campInfo.CompactBoardBoundsOnScreen;
+            if (board.Left < safe.Left || board.Top < safe.Top || board.Right > safe.Right || board.Bottom > safe.Bottom)
+                issues.Add($"{name}: the camp noticeboard is outside the safe area.");
+        }
+        foreach (Window window in Descendants(scene))
+        {
+            bool visible = true;
+            for (Window? parent = window; parent != null; parent = parent.Parent)
+                visible &= parent.IsVisible;
+            if (!visible || window.Size.x <= 0 || window.Size.y <= 0 ||
+                window is not (Button or FaceWindow or ItemGridWindow or ManualWindow or TooltipWindow or MenuWindow) &&
+                window.Parent is not InputPromptOverlay)
+                continue;
+            // The tab rail is decorative; its individual buttons are checked.
+            if (window.GetType().Name == "TabRailButton") continue;
+            Rect bounds = window.Boundings + (window.Parent?.PositionOnScreen ?? Vector2.Zero);
+            if (window is MenuWindow menu) bounds.Right += menu.PromptOverflowWidth;
+            if (bounds.Left < safe.Left || bounds.Top < safe.Top || bounds.Right > safe.Right || bounds.Bottom > safe.Bottom)
+                issues.Add($"{name}: {window.GetType().Name} at {bounds.Left},{bounds.Top}–{bounds.Right},{bounds.Bottom} exceeds safe area {safe.Left},{safe.Top}–{safe.Right},{safe.Bottom}.");
+        }
+        return issues.ToArray();
+    }
+
     bool gameCreated;
     public static readonly string[] StoreNames = ["01-city", "02-sana", "03-world-map", "04-trader"];
     public static readonly string[] PhoneHudNames =
@@ -238,7 +384,8 @@ public sealed class VisualTestScenes(BurntimeClassic app, string bossName = "Vis
                 !inline.Any(entry => entry.Prompt.Action == InputAction.RightArea) ||
                 local && !inline.Any(entry => entry.Prompt.Action == InputAction.Secondary))
                 throw new InvalidOperationException("Phone party selection/action prompts are missing.");
-            if (inline.Any(entry => entry.Position.x < 0 || entry.Position.x >= MainUiOriginalWindow.CompactWidth))
+            if (inline.Any(entry => entry.Position.x < app.Engine.Resolution.SafeArea.Left ||
+                entry.Position.x >= app.Engine.Resolution.SafeArea.Left + MainUiOriginalWindow.CompactWidth))
                 throw new InvalidOperationException("Phone party prompts are outside the HUD.");
         }
         if (name.EndsWith("-actions"))
@@ -254,31 +401,47 @@ public sealed class VisualTestScenes(BurntimeClassic app, string bossName = "Vis
     {
         var scene = ReadPrivate<Scene>(app.SceneManager, "activeScene");
         var view = Descendants(scene).OfType<MapView>().First();
-        if (view.Position.x != MainUiOriginalWindow.CompactWidth || view.Size.y != 160)
+        Rect safe = app.Engine.Resolution.SafeArea;
+        int hudRight = safe.Left + MainUiOriginalWindow.CompactWidth;
+        if (view.Position.x != hudRight || view.Position.y != 0 || view.Size.y != 160 ||
+            view.Position.x + view.Size.x != app.Engine.Resolution.Game.x)
             throw new InvalidOperationException("Phone party map does not fill the area beside the HUD.");
+        var portrait = Descendants(scene).OfType<FaceWindow>().First();
+        if (portrait.PositionOnScreen.x < safe.Left || portrait.PositionOnScreen.y < safe.Top ||
+            portrait.PositionOnScreen.x + portrait.Size.x > hudRight ||
+            portrait.PositionOnScreen.y + portrait.Size.y > safe.Bottom)
+            throw new InvalidOperationException("Phone portrait is outside the safe HUD area.");
         if (!name.EndsWith("-actions"))
         {
             var overlay = Descendants(scene).OfType<InputPromptOverlay>().First();
             var context = ReadPrivate<Window>(overlay, "_contextRow");
             if (ReadPrivate<bool>(context, "_hasVisiblePrompts") &&
-                context.Boundings.Left < MainUiOriginalWindow.CompactWidth)
+                (context.Boundings.Left < hudRight || context.Boundings.Right > safe.Right ||
+                 context.Boundings.Bottom > safe.Bottom))
                 throw new InvalidOperationException("Target-specific prompts must stay on the map.");
             var globalRows = ReadPrivate<System.Collections.IEnumerable>(overlay, "_sidebarRows");
             foreach (Window row in globalRows)
                 if (ReadPrivate<bool>(row, "_hasVisiblePrompts") &&
-                    (row.Boundings.Left < 0 || row.Boundings.Right > MainUiOriginalWindow.CompactWidth))
+                    (row.Boundings.Left < safe.Left || row.Boundings.Right > hudRight ||
+                     row.Boundings.Top < safe.Top || row.Boundings.Bottom > safe.Bottom))
                     throw new InvalidOperationException("Global prompts must stay inside the HUD.");
         }
         if (name.Contains("-gamepad-") && !name.EndsWith("-actions"))
         {
             var overlay = Descendants(scene).OfType<InputPromptOverlay>().First();
             var rows = ReadPrivate<System.Collections.IDictionary>(overlay, "_inlineRows");
-            if (rows.Count < 2)
-                throw new InvalidOperationException("Phone party controls were not rendered.");
+            int partyRows = 0;
             foreach (Window row in rows.Values)
-                if (row.Boundings.Left < 0 || row.Boundings.Right > MainUiOriginalWindow.CompactWidth ||
-                    row.Boundings.Top < 0 || row.Boundings.Bottom > MainUiOriginalWindow.CompactPartyPromptY)
+            {
+                if (row.Boundings.Left < safe.Left || row.Boundings.Right > hudRight || row.Boundings.Bottom > safe.Bottom)
+                    throw new InvalidOperationException("Phone HUD inline prompts are outside safe bounds.");
+                if (row.Boundings.Top >= safe.Top + MainUiOriginalWindow.CompactPartyPromptY) continue;
+                partyRows++;
+                if (row.Boundings.Top < safe.Top || row.Boundings.Bottom > safe.Top + MainUiOriginalWindow.CompactPartyPromptY)
                     throw new InvalidOperationException("Phone party controls are clipped or outside their HUD row.");
+            }
+            if (partyRows < 2)
+                throw new InvalidOperationException("Phone party controls were not rendered.");
         }
         if (name.EndsWith("-actions"))
         {
@@ -308,6 +471,16 @@ public sealed class VisualTestScenes(BurntimeClassic app, string bossName = "Vis
 
     public void Open(string name)
     {
+        if (name.StartsWith("hud-mode-", StringComparison.Ordinal))
+        {
+            OpenHudModeCapture(name);
+            return;
+        }
+        if (name.StartsWith("hud-menu-", StringComparison.Ordinal))
+        {
+            OpenHudMenuCapture(name);
+            return;
+        }
         if (name.StartsWith("touch-"))
         {
             OpenTouchFixture(name);
@@ -364,6 +537,34 @@ public sealed class VisualTestScenes(BurntimeClassic app, string bossName = "Vis
                 ReadPrivate<ManualWindow>(privacyScene, name == "setup-privacy" ? "_setupNotes" : "_privacyWindow").OpenPrivacyPolicy();
                 break;
             case "menu": app.SetScene("MenuScene"); break;
+            case "menu-edge-top":
+            case "menu-edge-bottom":
+                Open("map");
+                app.Process(0);
+                Scene edgeScene = ReadPrivate<Scene>(app.SceneManager, "activeScene");
+                edgeScene.GetType().GetMethod("ShowContextMenu", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(edgeScene, [name == "menu-edge-top" ? Vector2.Zero : app.Engine.Resolution.Game, false, false]);
+                break;
+            case "water-source":
+                var waterLocation = app.Game.World.Locations.First(location => location.Source != null && location.Rooms.Count > 0);
+                app.Game.World.ActivePlayerObj.Location = waterLocation;
+                app.InventoryRoom = waterLocation.Rooms[0];
+                app.InventoryRoom.IsWaterSource = true;
+                app.InventoryBackground = 0;
+                app.SetScene("InventoryScene", app.SelectedCharacter);
+                break;
+            case "options-saves":
+            case "options-jukebox":
+            case "options-give-up":
+                app.SetScene("OptionsScene");
+                app.Process(0);
+                ReadPrivate<ManualWindow>(ReadPrivate<Scene>(app.SceneManager, "activeScene"), "_privacyWindow").Hide();
+                if (name != "options-saves") Press(InputAction.RightArea);
+                if (name == "options-give-up") { Press(InputAction.RightArea); Press(InputAction.RightArea); }
+                break;
+            case "language": app.SetScene("LanguageScene"); break;
+            case "pause": app.SetScene("PauseScene"); break;
+            case "last-rival": app.SetScene("LastRivalScene"); break;
             case "setup-notes":
                 // Reach the new button through the normal setup focus order.
                 Press(InputAction.MoveDown);
@@ -509,8 +710,44 @@ public sealed class VisualTestScenes(BurntimeClassic app, string bossName = "Vis
                 app.InfoCity = app.Game.World.ActiveLocationObj.Id;
                 app.SetScene("InfoScene");
                 break;
+            case "camp-info-overview":
+            case "camp-info-production":
+            case "camp-info-storage":
+                OpenStoreCapture("03-world-map", InputMode.Gamepad);
+                var infoCamp = app.Game.World.Locations[1];
+                var infoOwner = app.Game.World.ActivePlayerObj;
+                infoCamp.Player = infoOwner;
+                int infoRoom = Array.FindIndex(infoCamp.Map.Entrances, entrance => entrance.RoomType == RoomType.Normal);
+                FillStoreItems(infoCamp.Rooms[infoRoom].Items,
+                    ["item_rats", "item_rats", "item_rat_trap", "item_meat", "item_wire", "item_bones"]);
+                infoCamp.SelectProduction(app.Game.ItemTypes["item_rat_trap"].Production);
+                foreach (CharClass role in new[] { CharClass.Mercenary, CharClass.Technician, CharClass.Doctor })
+                {
+                    var staff = app.Game.World.Locations.SelectMany(location => location.Characters)
+                        .Where(character => character.Class == role && !infoOwner.Party.Contains(character))
+                        .Take(5).ToArray();
+                    foreach (var character in staff)
+                    {
+                        character.Player = infoOwner;
+                        character.Location = infoCamp;
+                        character.Health = 75;
+                    }
+                }
+                app.InfoCity = infoCamp.Id;
+                app.SetScene("InfoScene");
+                app.Process(0);
+                if (name != "camp-info-production") Press(InputAction.Primary);
+                if (name == "camp-info-storage")
+                {
+                    var infoScene = ReadPrivate<Scene>(app.SceneManager, "activeScene");
+                    var infoGrid = ReadPrivate<ItemGridWindow>(infoScene, "grid");
+                    infoGrid.FocusVisible = true;
+                    infoGrid.FocusItem(0);
+                }
+                break;
             case "statistics": app.SetScene("StatisticsScene"); break;
             case "church": app.SetImageScene("scenes/church.txt"); break;
+            case "cutscene": app.SetImageScene("scenes/film_05.txt"); break;
             default: throw new ArgumentException($"Unknown visual scenario: {name}");
         }
         app.RenderMouse = false;
@@ -650,8 +887,10 @@ public sealed class VisualTestScenes(BurntimeClassic app, string bossName = "Vis
             if (name == "touch-map-menu")
             {
                 Vector2? empty = null;
-                for (int y = 8; y < view.Size.y && empty == null; y += 8)
-                    for (int x = 8; x < view.Size.x; x += 8)
+                // Exercise the map itself, away from edge overlays and their
+                // expanded touch targets on compact layouts.
+                for (int y = 32; y < view.Size.y - 16 && empty == null; y += 8)
+                    for (int x = 32; x < view.Size.x - 16; x += 8)
                         if (view.HitTestEntrance(new Vector2(x, y)) < 0)
                         {
                             empty = new Vector2(x, y);

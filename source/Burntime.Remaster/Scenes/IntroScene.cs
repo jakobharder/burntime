@@ -104,7 +104,7 @@ namespace Burntime.Remaster.Scenes
         {
             // The intro image occupies the upper 160 units of the original canvas.
             Size = new Vector2(320, app.SmallDeviceUi ? 160 : 200);
-            Position = (app.Engine.Resolution.Game - Size) / 2;
+            Position = app.Engine.Resolution.SafeArea.Position + (app.Engine.Resolution.SafeArea.Size - Size) / 2;
         }
 
         private void PreloadAnimations()

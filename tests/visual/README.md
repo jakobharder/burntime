@@ -168,3 +168,29 @@ member selection, supply warnings and group actions. Control bounds are checked:
 ```sh
 dotnet bin/Release/Burntime.dll --store-capture phone /tmp/burntime-phone-hud
 ```
+
+Use `phone-safe-left` and `phone-safe-right` for simulated cutouts on either
+landscape edge, plus top and home-indicator insets. These check portrait, party
+and global controls and map prompts against safe bounds while the map stays
+edge-to-edge. Insets and safe bounds are recorded in `manifest.json`.
+
+For the full screen suite, add `--phone-safe-left` or `--phone-safe-right` to
+`--visual-test newgfx OUTPUT_DIRECTORY`. Add `--touch` for touch menus and item
+actions. Visible controls, portraits, item grids, manuals, tooltips and menus
+(including external shortcut glyphs) are checked against safe bounds; failures
+are collected in `safe-area-errors.json` and make the run fail. The suite also
+covers water sources, all options pages, language selection, pause, last-rival
+choices, cutscenes and menus at opposite screen corners.
+Use `--scenario=NAME` to recapture one fixture and `--phone-16x9` to check a narrower phone.
+The camp-info fixtures also assert that the complete noticeboard fits inside the safe area.
+
+The `hud-menu-*` fixtures exercise the compact HUD Menu button with one or two
+panels, party-member selection, outside dismissal and cancelled touch drags.
+They check enlarged row hit areas and reuse the existing menu and button artwork.
+The `hud-mode-talk`, `hud-mode-fight` and `hud-mode-city` fixtures check the
+existing Talk/Fight icons, switching in both directions and city availability.
+
+Maps keep their 160-unit logical height. Other compact scenes reserve enough
+safe space for a 320x160 canvas, or 416x160 for inventory, trading and services.
+On narrow or notched displays this reduces their output scale enough to fit
+all item slots and controls without clipping.

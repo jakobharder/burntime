@@ -359,9 +359,9 @@ public class MenuScene : Scene
     void UpdateLayout()
     {
         bool small = app.SmallDeviceUi;
-        Size = small ? new Vector2(System.Math.Max(320, app.Engine.Resolution.Game.x), 160)
+        Size = small ? new Vector2(System.Math.Max(320, app.Engine.Resolution.SafeArea.Width), 160)
             : new Vector2(320, 200);
-        Position = (app.Engine.Resolution.Game - Size) / 2;
+        Position = app.Engine.Resolution.SafeArea.Position + (app.Engine.Resolution.SafeArea.Size - Size) / 2;
         int rightShift = Size.x - 320;
         int middleShift = rightShift / 2;
 

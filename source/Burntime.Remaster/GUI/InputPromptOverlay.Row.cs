@@ -81,7 +81,8 @@ sealed partial class InputPromptOverlay
         public void AnchorToScreenBottomRight(int margin = 6)
         {
             Vector2 parentPosition = Parent?.PositionOnScreen ?? Vector2.Zero;
-            Position = app.Engine.Resolution.Game - parentPosition - margin;
+            Rect safe = app.Engine.Resolution.SafeArea;
+            Position = new Vector2(safe.Right, safe.Bottom) - parentPosition - margin;
         }
 
         public void AnchorToScreenBottomLeft(int margin = 6)
@@ -89,8 +90,9 @@ sealed partial class InputPromptOverlay
             Vector2 parentPosition = Parent?.PositionOnScreen ?? Vector2.Zero;
             HorizontalAlignment = PositionAlignment.Left;
             VerticalAlignment = PositionAlignment.Right;
-            Position = new Vector2(margin - parentPosition.x,
-                app.Engine.Resolution.Game.y - parentPosition.y - margin);
+            Rect safe = app.Engine.Resolution.SafeArea;
+            Position = new Vector2(safe.Left + margin - parentPosition.x,
+                safe.Bottom - parentPosition.y - margin);
         }
 
         public void SetPrompts(params RowPrompt[] prompts)

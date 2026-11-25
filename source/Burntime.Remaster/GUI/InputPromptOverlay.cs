@@ -101,13 +101,14 @@ sealed partial class InputPromptOverlay : Container
             Windows += row;
             _sidebarRows.Add(row);
         }
-        int bottom = Size.y - 3;
+        Rect safe = app.Engine.Resolution.SafeArea;
+        int bottom = safe.Bottom - 3;
         for (int i = _sidebarRows.Count - 1; i >= 0; i--)
         {
             Row row = _sidebarRows[i];
             row.SetPrompts(i < prompts.Length ? [prompts[i]] : []);
             if (i >= prompts.Length || row.Size.x == 0) continue;
-            row.Position = new Vector2(System.Math.Max(4, SidebarWidth - row.Size.x - 4), bottom);
+            row.Position = new Vector2(safe.Left + System.Math.Max(4, SidebarWidth - row.Size.x - 4), bottom);
             bottom -= row.Size.y + 1;
         }
     }
@@ -191,6 +192,9 @@ sealed partial class InputPromptOverlay : Container
             Vector2 scenePosition = Parent?.PositionOnScreen ?? Vector2.Zero;
             row.Position = scenePosition + new Vector2(key.X, key.Y);
             row.SetPrompts(prompts.ToArray());
+            // Inline prompts may extend beyond their button's own bounds.
+            Vector2 alignmentOffset = row.Boundings.Position - row.Position;
+            row.MoveInside(app.Engine.Resolution.SafeArea - alignmentOffset);
         }
     }
 }

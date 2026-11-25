@@ -12,6 +12,8 @@ namespace Burntime.Remaster.Scenes;
 
 class TraderScene : Scene
 {
+        public override Vector2 MinimumSafeGameSize => new(416, 160);
+
     public override bool UseDiagonalGamepadNavigation => true;
 
     enum KeyboardArea
@@ -149,27 +151,29 @@ class TraderScene : Scene
         if (app.SmallDeviceUi)
         {
             Size = new Vector2(416, 200);
-            Position = (app.Engine.Resolution.Game - Size) / 2;
-            inventory.Position = new Vector2(0, 5 + SmallScreenInventoryOffsetY);
-            inventoryTrader.Position = new Vector2(SmallScreenTraderX, 5 + SmallScreenInventoryOffsetY);
+            Position = app.Engine.Resolution.SafeArea.Position + (app.Engine.Resolution.SafeArea.Size - Size) / 2;
+            Rect safe = app.Engine.Resolution.SafeArea;
+            int inventoryY = safe.Top + (safe.Height - 160) / 2 - 13 - Position.y;
+            inventory.Position = new Vector2(0, inventoryY);
+            inventoryTrader.Position = new Vector2(SmallScreenTraderX, inventoryY);
             inventory.Show();
             inventoryTrader.Show();
             temporarySpace.Show();
-            int top = (app.Engine.Resolution.Game.y - ExchangeWindow.CompactAreaHeight) / 2 - Position.y;
+            int top = safe.Top + (safe.Height - ExchangeWindow.CompactAreaHeight) / 2 - Position.y;
             int middleX = (Size.x - exchangeTop.Size.x) / 2;
             exchangeTop.Position = new Vector2(middleX, top);
             temporarySpace.Position = new Vector2(middleX, top + ExchangeWindow.CompactHeight);
             exchangeBottom.Position = new Vector2(middleX, temporarySpace.Position.y + temporarySpace.Size.y);
-            var bounds = SmallScreenActionBounds(app.Engine.Resolution.Game);
-            PositionSmallScreenAction(exitButton, bounds.Back);
-            PositionSmallScreenAction(acceptButton, bounds.Trade);
+            var bounds = SmallScreenActionBounds(safe.Size);
+            PositionSmallScreenAction(exitButton, bounds.Back + safe.Position);
+            PositionSmallScreenAction(acceptButton, bounds.Trade + safe.Position);
             side = InventorySide.None;
             return;
         }
         if (app.Engine.Resolution.Game.x >= 450)
         {
             Size = new Vector2(470, 200);
-            Position = (app.Engine.Resolution.Game - Size) / 2;
+            Position = app.Engine.Resolution.SafeArea.Position + (app.Engine.Resolution.SafeArea.Size - Size) / 2;
 
             inventory.Show();
             exitButton.Show();
@@ -187,7 +191,7 @@ class TraderScene : Scene
         else
         {
             Size = new Vector2(320, 200);
-            Position = (app.Engine.Resolution.Game - Size) / 2;
+            Position = app.Engine.Resolution.SafeArea.Position + (app.Engine.Resolution.SafeArea.Size - Size) / 2;
 
             acceptButton.Position = new Vector2(170, 183);
             inventoryTrader.Position = new Vector2(154, 5);
@@ -239,6 +243,7 @@ class TraderScene : Scene
     void PositionSmallScreenAction(Button button, Rect bounds)
     {
         button.IsTextOnly = false;
+            button.InlinePromptsFollowText = app.SmallDeviceUi;
         button.Size = bounds.Size;
         button.Position = bounds.Position - Position;
         button.Text = button == exitButton ? "@prompts?17" : "@prompts?28";

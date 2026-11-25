@@ -19,7 +19,7 @@ namespace Burntime.Remaster.Scenes
             : base(App)
         {
             Size = new Burntime.Platform.Vector2(320, 200);
-            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+            Position = app.Engine.Resolution.SafeArea.Position + (app.Engine.Resolution.SafeArea.Size - new Vector2(320, 200)) / 2;
 
             //Background = new SpriteImage(App, "blz.pac");
             font = new GuiFont(BurntimeClassic.FontName, new PixelColor(255, 255, 255));
@@ -30,7 +30,7 @@ namespace Burntime.Remaster.Scenes
         {
             base.OnResizeScreen(reload);
 
-            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+            Position = app.Engine.Resolution.SafeArea.Position + (app.Engine.Resolution.SafeArea.Size - new Vector2(320, 200)) / 2;
         }
 
         public override void OnRender(RenderTarget Target)

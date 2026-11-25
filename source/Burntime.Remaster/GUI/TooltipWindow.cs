@@ -268,6 +268,7 @@ public sealed class TooltipWindow : Window
 
         Vector2 alignmentOffset = Boundings.Position - Position;
         Vector2 screenPosition = -Parent.PositionOnScreen - alignmentOffset;
-        MoveInside(new Rect(screenPosition, app.Engine.Resolution.Game));
+        Rect safe = app.Engine.Resolution.SafeArea;
+        MoveInside(new Rect(screenPosition + safe.Position, safe.Size));
     }
 }

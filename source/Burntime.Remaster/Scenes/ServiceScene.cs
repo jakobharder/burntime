@@ -10,6 +10,8 @@ namespace Burntime.Remaster.Scenes
 {
     class ServiceScene : Scene
     {
+        public override Vector2 MinimumSafeGameSize => new(416, 160);
+
         public override bool UseDiagonalGamepadNavigation => true;
 
         readonly InventoryWindow inventory;
@@ -37,7 +39,7 @@ namespace Burntime.Remaster.Scenes
         public ServiceScene(Module app)
             : base(app)
         {
-            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+            Position = app.Engine.Resolution.SafeArea.Position + (app.Engine.Resolution.SafeArea.Size - new Vector2(320, 200)) / 2;
 
             doctorAnimation = new Image(app);
             doctorAnimation.Position = new Vector2(211, 65);
@@ -128,18 +130,21 @@ namespace Burntime.Remaster.Scenes
 
         void PositionElements()
         {
-            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+            Position = app.Engine.Resolution.SafeArea.Position + (app.Engine.Resolution.SafeArea.Size - new Vector2(320, 200)) / 2;
             if (!app.SmallDeviceUi)
                 return;
-            inventory.Position = new Vector2(-Position.x, 7);
-            offer.Position = new Vector2(168, 3) - Position;
-            PositionFooter(exitButton, new Vector2(25, app.Engine.Resolution.Game.y / 2 + 56), 48);
-            PositionFooter(actionButton, new Vector2(324, app.Engine.Resolution.Game.y / 2 + 56), 86);
+            Rect safe = app.Engine.Resolution.SafeArea;
+            Vector2 origin = safe.Position + (safe.Size - new Vector2(416, 160)) / 2;
+            inventory.Position = origin + new Vector2(0, -13) - Position;
+            offer.Position = origin + new Vector2(168, 3) - Position;
+            PositionFooter(exitButton, origin + new Vector2(25, 136), 48);
+            PositionFooter(actionButton, origin + new Vector2(324, 136), 86);
         }
 
         void PositionFooter(Button button, Vector2 screenPosition, int width)
         {
             button.IsTextOnly = false;
+            button.InlinePromptsFollowText = app.SmallDeviceUi;
             button.Layer = 20;
             button.Position = screenPosition - Position;
             button.TextHorizontalAlign = TextAlignment.Left;
@@ -228,7 +233,7 @@ namespace Burntime.Remaster.Scenes
                 return;
 
             int basex = 157 + 80;
-            int basey = app.SmallDeviceUi ? 8 - Position.y : 4;
+            int basey = app.SmallDeviceUi ? app.Engine.Resolution.SafeArea.Top + 8 - Position.y : 4;
             for (int i = 0; i < responseText.Length; i++)
                 font.DrawText(target, new Vector2(basex, basey + 9 * i),
                     responseText[i], TextAlignment.Center, VerticalTextAlignment.Top);

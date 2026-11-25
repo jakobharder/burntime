@@ -39,6 +39,8 @@ namespace Burntime.Remaster
 
     public class LocationScene : Scene, IMapEntranceHandler, IInteractionHandler, ILogicNotifycationHandler, IMapNavigationScene
     {
+        public override Vector2 MinimumSafeGameSize => Vector2.Zero;
+
         sealed class TouchModeIndicator : Image
         {
             readonly Action toggle;
@@ -139,6 +141,7 @@ namespace Burntime.Remaster
             gui = new MainUiOriginalWindow(App);
             gui.SetMapRenderArea(view, Size);
             gui.OpenInventory = OnMenuInventory;
+            gui.OpenMenu = () => ShowActionsMenu(view.Boundings.Intersect(app.Engine.Resolution.SafeArea).Center, false);
             gui.Layer += 60;
             Windows += gui;
 
@@ -173,7 +176,7 @@ namespace Burntime.Remaster
             {
                 MouseControl = MouseButton.Right,
                 TouchControl = TouchControl.LongPress
-            }, CanShowActionsMenuPrompt);
+            }, () => !app.SmallDeviceUi && CanShowActionsMenuPrompt());
             view.Prompts.AddDynamic(InputAction.Primary,
                 GetDirectInteractionPrompt,
                 "@prompts?26", "@prompts?23", "@prompts?41",
@@ -220,7 +223,8 @@ namespace Burntime.Remaster
 
         void UpdateTouchModeIndicatorPosition()
         {
-            Vector2 position = TouchModeIndicatorPosition(Size, ((BurntimeClassic)app).IpadLayout);
+            Rect safe = app.Engine.Resolution.SafeArea;
+            Vector2 position = safe.Position + TouchModeIndicatorPosition(safe.Size, ((BurntimeClassic)app).IpadLayout);
             touchTalkAni.Position = position - new Vector2(0, 10);
             touchFightAni.Position = position;
         }
@@ -246,6 +250,7 @@ namespace Burntime.Remaster
                 new Vector2(0, 10);
             app.MouseBoundings = view.Boundings;
             UpdateCharacterPromptPositions();
+            menu.UpdatePlacementBounds(view.Boundings);
             UpdateTouchModeIndicatorPosition();
         }
 
@@ -523,10 +528,10 @@ namespace Burntime.Remaster
             app.Engine.Xbr2IndividualLayer = gui.Layer;
             UpdateInteractionCursor();
 
-            bool showTouchTalk = app.LastInputMode == InputMode.Touch &&
+            bool showTouchTalk = !app.SmallDeviceUi && app.LastInputMode == InputMode.Touch &&
                 interactionMode == LocationInteractionMode.Talk &&
                 !dialog.IsVisible && !manualWindow.IsVisible;
-            bool showTouchFight = app.LastInputMode == InputMode.Touch &&
+            bool showTouchFight = !app.SmallDeviceUi && app.LastInputMode == InputMode.Touch &&
                 interactionMode == LocationInteractionMode.Fight &&
                 !dialog.IsVisible && !manualWindow.IsVisible;
             if (touchTalkAni.IsVisible != showTouchTalk)
@@ -591,6 +596,8 @@ namespace Burntime.Remaster
 
         public override void OnUpdate(float Elapsed)
         {
+            gui.SetInteractionMode(!view.Location.IsCity && interactionMode != LocationInteractionMode.Auto,
+                interactionMode == LocationInteractionMode.Fight, ToggleTalkFightMode);
             UpdateOverlayVisibility();
             characterCycleDebounce = System.Math.Max(0, characterCycleDebounce - Elapsed);
             if (characterCycleLatched &&
@@ -758,8 +765,8 @@ namespace Burntime.Remaster
             const int bottomMargin = 6;
             if (app.SmallDeviceUi)
             {
-                previousCharacterPrompt.UpdatePosition(new Vector2(22, MainUiOriginalWindow.CompactPartyPromptY));
-                Vector2 compactNextPosition = new(30, MainUiOriginalWindow.CompactPartyPromptY);
+                previousCharacterPrompt.UpdatePosition(app.Engine.Resolution.SafeArea.Position + new Vector2(22, MainUiOriginalWindow.CompactPartyPromptY));
+                Vector2 compactNextPosition = app.Engine.Resolution.SafeArea.Position + new Vector2(30, MainUiOriginalWindow.CompactPartyPromptY);
                 nextCharacterPrompt.UpdatePosition(compactNextPosition);
                 groupActionsPrompt.UpdatePosition(compactNextPosition);
                 return;
@@ -1035,6 +1042,9 @@ namespace Burntime.Remaster
 
         void ShowActionsMenu(Vector2 position, bool openedByMouse)
         {
+            // Touch gets a persistent popup with a separate group panel.
+            // Mouse retains the original combined context-menu ordering.
+            openedByMouse &= app.LastInputMode != InputMode.Touch;
             groupMenuOpen = false;
             menu.FirstLineAction = InputAction.None;
             menu.Clear();
@@ -1046,7 +1056,7 @@ namespace Burntime.Remaster
             }
 
             // 0: interaction mode
-            if (!view.Location.IsCity && openedByMouse)
+            if (!view.Location.IsCity && (openedByMouse || !app.SmallDeviceUi && app.LastInputMode == InputMode.Touch))
             {
                 if (interactionMode == LocationInteractionMode.Fight)
                     AddLine("@burn?350", OnMenuSpeak, new(InputAction.ToggleInteractionMode));
@@ -1099,6 +1109,12 @@ namespace Burntime.Remaster
                 new(InputAction.Options));
             AddLine("@manualui?5", manualWindow.Open);
             AddLine("@burn?357", OnMenuTurn, new(InputAction.NextTurn) { Hold = true });
+
+            if (app.LastInputMode == InputMode.Touch && HasGroupMenuCommands())
+            {
+                menu.BeginTouchGroup();
+                AddGroupMenuLines((text, command) => AddLine(text, command));
+            }
 
             menu.Show(position, view.Boundings, openedByMouse,
                 heldTouch: openedByMouse && app.LastInputMode == InputMode.Touch);

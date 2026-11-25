@@ -41,7 +41,7 @@ namespace Burntime.Remaster.Scenes
             //Background = "blz.pac";
             Size = new Vector2(320, 200);
             Music = "score";
-            Position = (app.Engine.Resolution.Game - Size) / 2;
+            Position = app.Engine.Resolution.SafeArea.Position + (app.Engine.Resolution.SafeArea.Size - Size) / 2;
             font = new GuiFont(BurntimeClassic.FontName, ClassicColors.LightGray, new PixelColor(92, 92, 96));
             CaptureAllMouseClicks = true;
 
@@ -59,7 +59,7 @@ namespace Burntime.Remaster.Scenes
             base.OnResizeScreen(reload);
 
             Size = new Vector2(320, app.SmallDeviceUi ? 160 : 200);
-            Position = (app.Engine.Resolution.Game - Size) / 2;
+            Position = app.Engine.Resolution.SafeArea.Position + (app.Engine.Resolution.SafeArea.Size - Size) / 2;
         }
 
         public override void OnRender(RenderTarget Target)

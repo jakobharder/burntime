@@ -13,6 +13,8 @@ namespace Burntime.Remaster.Scenes
 {
     class InventoryScene : Scene
     {
+        public override Vector2 MinimumSafeGameSize => new(416, 160);
+
         const int NeedsTechnicianTextIndex = 47;
         const int PlaceInRoomTextIndex = 48;
         const int UnsuitableCampTextIndex = 49;
@@ -50,7 +52,7 @@ namespace Burntime.Remaster.Scenes
         {
             Background = "hint2.pac";
             Size = new Vector2(320, 200);
-            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+            Position = app.Engine.Resolution.SafeArea.Position + (app.Engine.Resolution.SafeArea.Size - new Vector2(320, 200)) / 2;
 
             inventory = new InventoryWindow(app, InventorySide.Left, compact: app.SmallDeviceUi);
             inventory.Position = new Vector2(2, 5);
@@ -109,13 +111,16 @@ namespace Burntime.Remaster.Scenes
         void PositionElements()
         {
             Size = new Vector2(app.SmallDeviceUi ? 416 : 320, 200);
-            Position = (app.Engine.Resolution.Game - Size) / 2;
+            Position = app.Engine.Resolution.SafeArea.Position + (app.Engine.Resolution.SafeArea.Size - Size) / 2;
             if (!app.SmallDeviceUi)
                 return;
-            inventory.Position = new Vector2(0, 7);
+            Rect safe = app.Engine.Resolution.SafeArea;
+            Vector2 origin = safe.Position + (safe.Size - new Vector2(416, 160)) / 2;
+            inventory.Position = origin + new Vector2(0, -13) - Position;
             exitButton.IsTextOnly = false;
+            exitButton.InlinePromptsFollowText = app.SmallDeviceUi;
             exitButton.Layer = 20;
-            exitButton.Position = new Vector2(25, app.Engine.Resolution.Game.y / 2 + 56) - Position;
+            exitButton.Position = origin + new Vector2(25, 136) - Position;
             exitButton.Text = app.ResourceManager.GetString("prompts?17");
             exitButton.Size = new Vector2(System.Math.Max(48, exitButton.Font?.GetWidth(exitButton.Text) ?? 0), 24);
             exitButton.TextHorizontalAlign = TextAlignment.Left;
@@ -124,7 +129,7 @@ namespace Burntime.Remaster.Scenes
             {
                 bool water = ((BurntimeClassic)app).InventoryRoom?.IsWaterSource == true;
                 grid.Position = new Vector2(water ? 190 : 168,
-                    (water ? 66 : 0) - Position.y);
+                    origin.y + (water ? 66 : 0) - Position.y);
             }
         }
 
@@ -186,7 +191,7 @@ namespace Burntime.Remaster.Scenes
                 WaterSource source = classic.Game.World.ActiveLocationObj.Source;
                 txt.AddArgument("|C", source.Reserve);
                 if (app.SmallDeviceUi)
-                    waterSourceFont.DrawText(target, new Vector2(400, 156 - Position.y), txt[423],
+                    waterSourceFont.DrawText(target, new Vector2(400, app.Engine.Resolution.SafeArea.Bottom - 4 - Position.y), txt[423],
                         TextAlignment.Right, VerticalTextAlignment.Bottom);
                 else
                     waterSourceFont.DrawText(target, target.Size, txt[423]);
@@ -197,7 +202,7 @@ namespace Burntime.Remaster.Scenes
                 int storedAtDailyRate = System.Math.Min(stored, daily);
                 int storedAboveDailyRate = System.Math.Max(0, stored - daily);
                 Vector2 bottom = app.SmallDeviceUi
-                    ? new Vector2(400, 144 - Position.y)
+                    ? new Vector2(400, app.Engine.Resolution.SafeArea.Bottom - 16 - Position.y)
                     : target.Size - new Vector2(2, 10);
 
                 // Capacity is the translucent background. Stored water overlays
