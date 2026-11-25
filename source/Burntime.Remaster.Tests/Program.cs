@@ -71,6 +71,7 @@ static class Program
         Run("tooltip text substitution", TooltipTextTests.SubstitutionCases());
         Run("construction feedback", ConstructionFeedbackTests.AvailabilityCases());
         Run("log file lifetime", LogLifecycleTests.Cases());
+        Run("game thread lifecycle", GameThreadTests.Cases());
 
         Console.WriteLine($"Rule formulas: {passed} passed, {failed} failed.");
         return failed == 0 ? 0 : 1;

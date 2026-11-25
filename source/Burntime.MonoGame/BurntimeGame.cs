@@ -179,6 +179,7 @@ namespace Burntime.MonoGame
             ShowFps = showFps;
             _graphics = new GraphicsDeviceManager(this);
             IsFixedTimeStep = true;
+            InactiveSleepTime = TimeSpan.FromMilliseconds(100);
             TargetElapsedTime = TimeSpan.FromSeconds(1.0 / TargetFramesPerSecond);
             _graphics.SynchronizeWithVerticalRetrace = true;
             Content.RootDirectory = "Content";
@@ -488,7 +489,20 @@ namespace Burntime.MonoGame
 #if IOS || ANDROID
                 }
 #endif
-            }, framesPerSecond: TargetFramesPerSecond);
+            }, framesPerSecond: TargetFramesPerSecond
+#if IOS || ANDROID
+                , suspendedWork: () =>
+                {
+                    lock (mobileFrameSync)
+                        PersistMobileSettings();
+                }
+#endif
+            );
+#if IOS || ANDROID
+            _gameThread.SetSuspended(!_mobileActive);
+#else
+            _gameThread.SetSuspended(!IsActive);
+#endif
         }
 
         bool _leftClicked = false;
@@ -944,6 +958,17 @@ namespace Burntime.MonoGame
                 ApplyGraphicsDeviceResolution(initialize: false, resetWindowSize: true);
             }
 
+            if (!IsActive
+#if IOS || ANDROID
+                || !_mobileActive
+#endif
+            )
+            {
+                SuppressDraw();
+                base.Update(gameTime);
+                return;
+            }
+
             RenderDevice.Update();
 
             base.Update(gameTime);
@@ -993,6 +1018,26 @@ namespace Burntime.MonoGame
                 _previousMousePosition = new Point(center.x, center.y);
             }
         }
+
+#if !IOS && !ANDROID
+        protected override void OnActivated(object sender, EventArgs args)
+        {
+            base.OnActivated(sender, args);
+            if (VisualTest != null) return;
+            ResourceManager?.SetSuspended(false);
+            Music.SetSuspended(false);
+            _gameThread.SetSuspended(false);
+        }
+
+        protected override void OnDeactivated(object sender, EventArgs args)
+        {
+            base.OnDeactivated(sender, args);
+            if (VisualTest != null) return;
+            _gameThread.SetSuspended(true);
+            ResourceManager?.SetSuspended(true);
+            Music.SetSuspended(true);
+        }
+#endif
 
         protected override void OnExiting(object sender, ExitingEventArgs args)
         {

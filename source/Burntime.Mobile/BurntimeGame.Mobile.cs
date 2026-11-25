@@ -51,6 +51,7 @@ public partial class BurntimeGame
 #endif
         }
         _mobileActive = active;
+        _gameThread.SetSuspended(!active);
         if (!active)
         {
 #if IOS

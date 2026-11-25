@@ -8,13 +8,17 @@ namespace Burntime.MonoGame;
 internal class GameThread
 {
     static readonly TimeSpan StopTimeout = TimeSpan.FromSeconds(5);
-    readonly ManualResetEventSlim _stopRequested = new(false);
+    readonly AutoResetEvent _scheduleChanged = new(false);
+    volatile bool _stopRequested;
+    volatile bool _suspended;
+    Action? _suspendedWork;
     Thread? _renderThread;
-    string _threadName;
+    string _threadName = "GameThread";
     int _framesPerSecond;
-    Action<GameTime> _call;
+    Action<GameTime> _call = _ => { };
 
-    public void Start(Action<GameTime> call, string threadName = "GameThread", int framesPerSecond = 60)
+    public void Start(Action<GameTime> call, string threadName = "GameThread", int framesPerSecond = 60,
+        Action? suspendedWork = null)
     {
         if (framesPerSecond <= 0)
             throw new ArgumentOutOfRangeException(nameof(framesPerSecond));
@@ -23,7 +27,8 @@ internal class GameThread
         _framesPerSecond = framesPerSecond;
         _call = call;
 
-        _stopRequested.Reset();
+        _suspendedWork = suspendedWork;
+        _stopRequested = false;
         _renderThread = new Thread(new ThreadStart(WorkerThread)) { IsBackground = true };
         _renderThread.Start();
     }
@@ -34,11 +39,19 @@ internal class GameThread
         if (thread is null)
             return;
 
-        _stopRequested.Set();
+        _stopRequested = true;
+        _scheduleChanged.Set();
         if (thread == Thread.CurrentThread || thread.Join(StopTimeout))
             _renderThread = null;
         else
             Log.Warning($"Timed out stopping {thread.Name ?? "game thread"}.");
+    }
+
+    public void SetSuspended(bool suspended)
+    {
+        _suspended = suspended;
+        // Also wakes an already suspended worker to finish newly queued settings saves.
+        _scheduleChanged.Set();
     }
 
     void WorkerThread()
@@ -49,10 +62,31 @@ internal class GameThread
         long previousFrame = Stopwatch.GetTimestamp();
         double nextFrame = previousFrame + frameTicks;
 
-        while (!_stopRequested.IsSet)
+        while (!_stopRequested)
         {
-            if (!WaitUntil(nextFrame))
-                break;
+            if (_suspended)
+            {
+                _suspendedWork?.Invoke();
+                if (_stopRequested) break;
+                _scheduleChanged.WaitOne();
+                // Background time must not advance the simulation on resume.
+                previousFrame = Stopwatch.GetTimestamp();
+                nextFrame = previousFrame + frameTicks;
+                continue;
+            }
+
+            double remainingMilliseconds =
+                (nextFrame - Stopwatch.GetTimestamp()) * 1000.0 / Stopwatch.Frequency;
+            if (remainingMilliseconds > 0)
+            {
+                // Round up instead of spinning through the final milliseconds.
+                if (_scheduleChanged.WaitOne((int)System.Math.Ceiling(remainingMilliseconds)))
+                {
+                    previousFrame = Stopwatch.GetTimestamp();
+                    nextFrame = previousFrame + frameTicks;
+                }
+                continue;
+            }
 
             long now = Stopwatch.GetTimestamp();
             gameTime.Elapsed = (now - previousFrame) / (float)Stopwatch.Frequency;
@@ -64,28 +98,5 @@ internal class GameThread
             if (completed >= nextFrame)
                 nextFrame = completed + frameTicks;
         }
-    }
-
-    bool WaitUntil(double targetTicks)
-    {
-        while (!_stopRequested.IsSet)
-        {
-            double remainingMilliseconds =
-                (targetTicks - Stopwatch.GetTimestamp()) * 1000.0 / Stopwatch.Frequency;
-            if (remainingMilliseconds <= 0)
-                return true;
-
-            if (remainingMilliseconds > 2)
-            {
-                if (_stopRequested.Wait((int)remainingMilliseconds - 1))
-                    return false;
-            }
-            else
-            {
-                Thread.SpinWait(64);
-            }
-        }
-
-        return false;
     }
 }
