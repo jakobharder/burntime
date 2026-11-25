@@ -15,10 +15,17 @@ namespace Burntime.Remaster.Scenes
 {
     class InfoScene : Scene
     {
+        public override Vector2 MinimumSafeGameSize => app.IsNewGfx ? new(336, 160) : base.MinimumSafeGameSize;
         GuiFont titleFont;
         GuiFont font;
         Image danger;
         readonly GuiImage infoBackground;
+        GuiImage? compactArtwork;
+        ISprite? fittedCompactArtwork;
+        // Pixel bounds of the board in info_compact.png; scenery outside is overscan.
+        static readonly Rect CompactArtworkBoard = new(609, 165, 566, 575);
+        bool UseCompactArtwork => app.SmallDeviceUi && app.IsNewGfx;
+        internal Rect CompactBoardBoundsOnScreen => new(PositionOnScreen + new Vector2(64, 0), new Vector2(264, 160));
         readonly Button listUp, listDown;
         readonly Image landscape, water;
         ItemWindow production;
@@ -47,7 +54,7 @@ namespace Burntime.Remaster.Scenes
         const int ProductionTooltipNextIndex = 75;
         const int ProductionTooltipAutomaticIndex = 76;
         bool productionTooltipDismissed;
-        int BoardOffsetX => app.SmallDeviceUi ? 3 : 0;
+        int BoardOffsetX => app.SmallDeviceUi && !UseCompactArtwork ? 3 : 0;
         int StorageRowHeight => 32 + grid.Spacing.y;
         Rect StorageBounds => new(grid.Position.x - 32, grid.Position.y - 2, 106, StorageRowHeight + 34);
         Rect ProductionBounds => new(production.Position, new Vector2(32, 32));
@@ -62,7 +69,7 @@ namespace Burntime.Remaster.Scenes
             Background = infoBackground = "info.pac";
             Music = "info";
             Size = new Vector2(320, 200);
-            Position = (app.Engine.Resolution.Game - new Vector2(320, 200)) / 2;
+            Position = app.Engine.Resolution.SafeArea.Position + (app.Engine.Resolution.SafeArea.Size - new Vector2(320, 200)) / 2;
 
             exitButton = new Button(App);
             exitButton.Position = new Vector2(5, 174);
@@ -151,20 +158,40 @@ namespace Burntime.Remaster.Scenes
             bool small = app.SmallDeviceUi;
             Background = small ? null : infoBackground;
             Size = new Vector2(320, small ? 160 : 200);
-            Position = (app.Engine.Resolution.Game - Size) / 2;
+            Position = app.Engine.Resolution.SafeArea.Position + (app.Engine.Resolution.SafeArea.Size - Size) / 2;
             grid.Position = new Vector2(137 + BoardOffsetX, small ? 87 : 105);
             production.Position = new Vector2(225 + BoardOffsetX, grid.Position.y);
             productionTooltip.Position = production.Position + new Vector2(0, 32);
             listUp.Position = new Vector2(107 + BoardOffsetX, small ? 104 : 122);
             listDown.Position = new Vector2(107 + BoardOffsetX, small ? 121 : 141);
             landscape.Position = new Vector2(4 + BoardOffsetX, 105);
+            landscape.IsVisible = !UseCompactArtwork;
+            listUp.Image = UseCompactArtwork ? "gfx/up.png" : null;
+            listDown.Image = UseCompactArtwork ? "gfx/down.png" : null;
             water.Position = new Vector2(229 + BoardOffsetX, small ? 130 : 150);
             danger.Position = new Vector2(244 + BoardOffsetX, small ? 21 : 27);
-            exitButton.Position = new Vector2(5, small ? 140 : 174);
+            exitButton.Position = new Vector2(5, small ? System.Math.Min(140, Size.y - System.Math.Max(20, exitButton.Size.y) - 2) : 174);
         }
 
         void DrawCompactBackground(RenderTarget target)
         {
+            if (UseCompactArtwork && Burntime.Platform.IO.FileSystem.ExistsFile("gfx/backgrounds/info_compact.png"))
+            {
+                compactArtwork ??= "gfx/backgrounds/info_compact.png";
+                ISprite source = compactArtwork;
+                if (source.Touch())
+                {
+                    fittedCompactArtwork ??= source.Clone();
+                    Vector2f scale = new(264f / CompactArtworkBoard.Width, 160f / CompactArtworkBoard.Height);
+                    fittedCompactArtwork.Resolution = scale;
+                    // Align the intact board with the content, letting only the
+                    // expendable wall/landscape extend beyond the framebuffer.
+                    target.DrawSprite(
+                        new Vector2(64 - (int)System.Math.Round(CompactArtworkBoard.Left * scale.x),
+                            -(int)System.Math.Round(CompactArtworkBoard.Top * scale.y)), fittedCompactArtwork);
+                    return;
+                }
+            }
             ISprite sprite = infoBackground;
             if (!sprite.Touch())
                 return;
@@ -206,7 +233,7 @@ namespace Burntime.Remaster.Scenes
 
             Location loc = classic.Game.World.Locations[city];
 
-            titleFont.DrawText(target, new Vector2(193, 7), loc.Title, TextAlignment.Center, VerticalTextAlignment.Top);
+            titleFont.DrawText(target, new Vector2(UseCompactArtwork ? 198 : 193, 7), loc.Title, TextAlignment.Center, VerticalTextAlignment.Top);
 
             if (itemCount[0] != -1)
                 font.DrawText(target, new Vector2(188, small ? 102 : 120), itemCount[0].ToString());
