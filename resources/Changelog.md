@@ -1,6 +1,14 @@
 ﻿# Burntime Changelog
 
-## 1.3.1 (2026-11-24)
+## 1.3 (2026-10-04)
+
+### 1.3.2 (2026-11-25)
+
+- Fixed Android startup and resume initialization
+- Improved mobile performance
+- Improved phone layouts around display cutouts and home indicators
+
+### 1.3.1 (2026-11-24)
 
 - Added Android APK builds and iPhone support
 - Adapted layouts, scaling and tooltips for small screens
@@ -12,7 +20,7 @@
 - Fixed game setup crack layers
 - Fixed reading game resources from read-only app bundles on macOS
 
-## 1.3 (2026-10-04)
+## Changes
 
 - Added touch controls and iPad support
 - Improved water source bar to show capacity and reserve above daily
