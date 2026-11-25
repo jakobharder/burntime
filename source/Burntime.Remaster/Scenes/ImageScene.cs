@@ -28,7 +28,7 @@ namespace Burntime.Remaster.Scenes
         string[][] fittedSubtitles = Array.Empty<string[]>();
         int subtitleBandHeight;
         int subtitleTotalCount;
-        bool UseSmallLayout => app.SmallDeviceUi && !drawFrame;
+        bool UseSmallLayout => app.SmallDeviceUi;
 
         public ImageScene(Module App)
             : base(App)
@@ -111,8 +111,8 @@ namespace Burntime.Remaster.Scenes
                 return;
             }
 
-            Size = app.Engine.Resolution.Game;
-            Position = Vector2.Zero;
+            Size = app.Engine.Resolution.SafeArea.Size;
+            Position = app.Engine.Resolution.SafeArea.Position;
             if (originalImage == null || !originalImage.IsLoaded ||
                 originalImage.Width <= 0 || originalImage.Height <= 0)
                 return;
@@ -142,7 +142,7 @@ namespace Burntime.Remaster.Scenes
             float scale = System.Math.Min((float)Size.x / originalImage.Width,
                 (float)System.Math.Max(1, Size.y - subtitleBandHeight) / originalImage.Height);
             Background = fittedImage = originalImage.CloneScaled(System.Math.Min(1, scale));
-            Size = fittedScreen = app.Engine.Resolution.Game;
+            Size = fittedScreen = app.Engine.Resolution.SafeArea.Size;
         }
 
         protected override Vector2 GetBackgroundPosition(Vector2 backgroundSize) =>

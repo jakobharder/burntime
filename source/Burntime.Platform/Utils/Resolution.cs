@@ -1,7 +1,42 @@
 ﻿namespace Burntime.Platform.Utils;
 
+public readonly record struct SafeAreaInsets(int Left, int Top, int Right, int Bottom);
+
 public class Resolution
 {
+    Vector2 minimumSafeGameSize;
+    public Vector2 MinimumSafeGameSize
+    {
+        get => minimumSafeGameSize;
+        set { minimumSafeGameSize = value; SelectBestGameResolution(); }
+    }
+
+    SafeAreaInsets nativeSafeAreaInsets;
+    // Insets are relative to the actual game view, in backbuffer pixels.
+    public SafeAreaInsets NativeSafeAreaInsets
+    {
+        get => nativeSafeAreaInsets;
+        set { nativeSafeAreaInsets = value; SelectBestGameResolution(); }
+    }
+
+    public Rect SafeArea
+    {
+        get
+        {
+            int left = Inset(NativeSafeAreaInsets.Left, Native.x, Game.x);
+            int top = Inset(NativeSafeAreaInsets.Top, Native.y, Game.y);
+            int right = Inset(NativeSafeAreaInsets.Right, Native.x, Game.x);
+            int bottom = Inset(NativeSafeAreaInsets.Bottom, Native.y, Game.y);
+            // Invalid or transient platform geometry must not collapse the UI.
+            if (left + right >= Game.x || top + bottom >= Game.y)
+                return new Rect(Vector2.Zero, Game);
+            return new Rect(left, top, Game.x - left - right, Game.y - top - bottom);
+        }
+    }
+
+    static int Inset(int pixels, int native, int logical) => native <= 0 ? 0 :
+        (int)System.Math.Ceiling(System.Math.Clamp(pixels, 0, native) * (double)logical / native);
+
     public Vector2 Native
     {
         get => _native;
@@ -83,6 +118,17 @@ public class Resolution
         Scale = DOUBLED_RESOLUTION * _ratioCorrection;
         if (_fixedGameHeight is int height)
         {
+            // Fixed-size inventory/trade canvases must fit inside the usable
+            // screen, including on narrow phones. Map scenes leave this unset.
+            int usableWidth = _native.x - System.Math.Max(0, NativeSafeAreaInsets.Left) - System.Math.Max(0, NativeSafeAreaInsets.Right);
+            int usableHeight = _native.y - System.Math.Max(0, NativeSafeAreaInsets.Top) - System.Math.Max(0, NativeSafeAreaInsets.Bottom);
+            if (usableWidth > 0 && usableHeight > 0 && minimumSafeGameSize.x > 0 && minimumSafeGameSize.y > 0)
+            {
+                double outputScale = System.Math.Min(usableWidth / (minimumSafeGameSize.x * (double)Scale.x),
+                    usableHeight / (minimumSafeGameSize.y * (double)Scale.y));
+                // A spare logical pixel covers inward rounding of both edges.
+                height = System.Math.Max(height, (int)System.Math.Ceiling(_native.y / (outputScale * Scale.y)) + 1);
+            }
             OutputScale = _native.y / (height * Scale.y);
             BackBuffer = new Vector2((int)MathF.Round(_native.x / OutputScale),
                 (int)MathF.Round(height * Scale.y));

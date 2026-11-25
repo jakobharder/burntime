@@ -116,8 +116,12 @@ public sealed class ManualWindow : Container
     }
     public void CenterIn(Vector2 hostSize)
     {
-        Size = new Vector2(300, hostSize.y);
-        Position = new Vector2((hostSize.x - Size.x) / 2, 0);
+        Vector2 origin = hostSize == app.Engine.Resolution.Game
+            ? Vector2.Zero : Parent?.PositionOnScreen ?? Vector2.Zero;
+        Rect bounds = new Rect(Vector2.Zero, hostSize)
+            .Intersect(app.Engine.Resolution.SafeArea - origin);
+        Size = new Vector2(System.Math.Min(300, bounds.Width), bounds.Height);
+        Position = bounds.Position + new Vector2((bounds.Width - Size.x) / 2, 0);
         PositionFooter();
     }
 
@@ -182,8 +186,18 @@ public sealed class ManualWindow : Container
     public override void OnRender(RenderTarget target)
     {
         PositionFooter();
-        target.RenderRect(Vector2.Zero, Size, new PixelColor(176, 0, 0, 0),
-            postFilter: true);
+        if (app.SmallDeviceUi)
+        {
+            // Keep the compact panel opaque beneath the screen-edge insets.
+            target.RenderRect(new Vector2(0, -PositionOnScreen.y),
+                new Vector2(Size.x, app.Engine.Resolution.Game.y), PixelColor.Black,
+                postFilter: true);
+        }
+        else
+        {
+            target.RenderRect(Vector2.Zero, Size, new PixelColor(176, 0, 0, 0),
+                postFilter: true);
+        }
         for (int i = 0; i < PageCount; i++)
         {
             GuiFont font = i == _page ? _selectedFont :

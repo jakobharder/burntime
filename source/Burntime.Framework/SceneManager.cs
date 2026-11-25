@@ -500,6 +500,7 @@ namespace Burntime.Framework
 
         public void ResizeScene(bool reload = false)
         {
+            activeScene?.UpdateSafeAreaResolution();
             activeScene?.OnResizeScreen(reload);
         }
     }

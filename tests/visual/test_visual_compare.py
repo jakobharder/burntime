@@ -4,6 +4,7 @@ from pathlib import Path
 import tempfile
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 from PIL import Image
 
@@ -30,6 +31,32 @@ class VisualComparisonTests(unittest.TestCase):
             self.assertTrue(diff.exists())
             image.resize((3, 2)).save(actual)
             self.assertEqual("size-mismatch", visual.compare(actual, baseline, diff)["status"])
+
+    def test_mobile_safe_area_failure_blocks_acceptance(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            args = SimpleNamespace(skip_build=True, output=root / "run", mode="mobile",
+                                   native_filter=False, baselines=root / "baselines")
+
+            def capture(command, **kwargs):
+                self.assertIn("--phone-safe-left", command)
+                self.assertIn("--touch-controls", command)
+                actual = Path(command[4])
+                names = visual.MOBILE_SCENARIOS
+                for name in names:
+                    Image.new("RGB", (2, 2)).save(actual / (name + ".png"))
+                (actual / "captures.json").write_text(json.dumps(names))
+                (actual / "resources.log").write_text("")
+                (actual / "safe-area-errors.json").write_text(json.dumps(["info: outside safe area"]))
+                return SimpleNamespace(returncode=0)
+
+            with patch.object(visual.subprocess, "run", side_effect=capture):
+                self.assertEqual(1, visual.run_tests(args))
+            results = json.loads((args.output / "results.json").read_text())
+            self.assertIn("info: outside safe area", results["mobile"]["errors"])
+            with self.assertRaises(ValueError):
+                visual.accept(SimpleNamespace(run=args.output, mode="mobile", all=True,
+                                              baselines=args.baselines))
 
     def test_accept_requires_clean_run_and_selects_only_requested_image(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -11,6 +11,21 @@ namespace Burntime.Remaster
     class FaceWindow : Image
     {
         public Action? TouchAction { get; set; }
+        public int MaxDisplayWidth { get; set; }
+        GuiImage? unscaledFace;
+        int appliedDisplayWidth = -1;
+
+        public override void OnRender(Burntime.Platform.Graphics.RenderTarget target)
+        {
+            if (unscaledFace is { IsLoaded: true } image && appliedDisplayWidth != MaxDisplayWidth)
+            {
+                Background = MaxDisplayWidth > 0 && image.Width > MaxDisplayWidth
+                    ? image.CloneScaled((float)MaxDisplayWidth / image.Width) : image;
+                appliedDisplayWidth = MaxDisplayWidth;
+                OnSpriteLoaded();
+            }
+            base.OnRender(target);
+        }
         public override bool IsTouchTarget => !DisplayOnly ||
             app.LastInputMode == InputMode.Touch && TouchAction != null;
         public override int MinimumTouchTargetSize => TouchHitTest.MinimumSize;
@@ -48,7 +63,11 @@ namespace Burntime.Remaster
         void RefreshFace()
         {
             if (faceID >= 0)
+            {
                 Background = "ges_" + faceID.ToString("D2") + ".ani";
+                unscaledFace = Background;
+                appliedDisplayWidth = -1;
+            }
         }
 
         int CheckSameFace(int NewFaceID)

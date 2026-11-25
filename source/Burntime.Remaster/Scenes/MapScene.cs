@@ -13,6 +13,8 @@ namespace Burntime.Remaster
 {
     public class MapScene : Scene, IMapEntranceHandler, IMapNavigationScene
     {
+        public override Vector2 MinimumSafeGameSize => Vector2.Zero;
+
         public override bool UseDiagonalGamepadNavigation => true;
         protected override bool UseGamepadDPadNavigation => false;
 
@@ -70,6 +72,7 @@ namespace Burntime.Remaster
 
             gui = classic.NewGui ? new MainUiLeftWindow(App) : new MainUiOriginalWindow(App);
             gui.OpenInventory = OnMenuInventory;
+            gui.OpenMenu = () => ShowContextMenu(view.Boundings.Intersect(app.Engine.Resolution.SafeArea).Center, false);
 
             view = new ClassicMapView(this, App);
             gui.SetMapRenderArea(view, Size);
@@ -117,7 +120,11 @@ namespace Burntime.Remaster
             Windows += _dialog;
 
             InputPromptOverlay promptOverlay = new(app, Prompts,
-                InputPromptColorScheme.Hud);
+                InputPromptColorScheme.Hud)
+            {
+                SidebarWidth = app.SmallDeviceUi ? MainUiOriginalWindow.CompactWidth : 0,
+                CompactInlinePrompts = app.SmallDeviceUi
+            };
             Windows += promptOverlay;
             Windows += _manualWindow = new ManualWindow(app, Size);
             _manualWindow.WindowShow += (_, _) => view.RequireMouseEdgeScrollReentry();
@@ -128,7 +135,7 @@ namespace Burntime.Remaster
             {
                 MouseControl = MouseButton.Right,
                 TouchControl = TouchControl.LongPress
-            });
+            }, () => !app.SmallDeviceUi);
             view.Prompts.AddDynamic(
                 () => GetLocationInfoPrompt(MouseButton.Left),
                 LocationInfoPrompt("@prompts?27", MouseButton.Left),
@@ -243,6 +250,26 @@ namespace Burntime.Remaster
         {
             _menuOpenedByMouse = openedByMouse;
             ConfigureMenu(openedByMouse);
+            if (app.LastInputMode == InputMode.Touch)
+            {
+                Player player = ((ClassicGame)app.GameState).World.ActivePlayerObj;
+                if (player.Party.Count > 1)
+                {
+                    menu.BeginTouchGroup();
+                    menu.AddLine("@burn?356", new CommandHandler((Action)(() => { player.SelectGroup(player.Party); gui.UpdatePlayer(); })));
+                    foreach (Character member in player.Party)
+                    {
+                        Character selected = member;
+                        menu.AddLine(member.Name, new CommandHandler((Action)(() =>
+                        {
+                            player.SelectGroup(player.Party);
+                            if (selected == player.Character) player.SelectGroup(selected);
+                            else player.SelectCharacter(selected);
+                            gui.UpdatePlayer();
+                        })));
+                    }
+                }
+            }
             menu.Show(position, view.Boundings, openedByMouse, heldTouch);
         }
 
@@ -314,6 +341,7 @@ namespace Burntime.Remaster
             _manualWindow?.CenterIn(Size);
             gui.SetMapRenderArea(view, Size);
             app.MouseBoundings = view.Boundings;
+            menu.UpdatePlacementBounds(view.Boundings);
             UpdateCharacterPromptPositions();
         }
 
@@ -504,6 +532,12 @@ namespace Burntime.Remaster
             const int portraitWidth = 68;
             const int portraitGap = 2;
             const int bottomMargin = 6;
+            if (app.SmallDeviceUi)
+            {
+                _previousCharacterPrompt.UpdatePosition(app.Engine.Resolution.SafeArea.Position + new Vector2(22, MainUiOriginalWindow.CompactPartyPromptY));
+                _nextCharacterPrompt.UpdatePosition(app.Engine.Resolution.SafeArea.Position + new Vector2(44, MainUiOriginalWindow.CompactPartyPromptY));
+                return;
+            }
             int portraitLeft = app.Engine.Resolution.Game.x / 2 + portraitLeftOffset;
             int portraitRight = portraitLeft + portraitWidth;
             int baseline = app.Engine.Resolution.Game.y - bottomMargin;

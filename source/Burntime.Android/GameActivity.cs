@@ -14,6 +14,7 @@ namespace Burntime.Android;
 public sealed class GameActivity : AndroidGameActivity
 {
     BurntimeGame? game;
+    bool gameStarted;
     bool resumed;
     string? preparedContentPath;
     bool startupFailed;
@@ -31,6 +32,13 @@ public sealed class GameActivity : AndroidGameActivity
         SetContentView(new TextView(this) { Text = "Loading Burntime…", Gravity = GravityFlags.Center });
         try
         {
+            // MonoGame subscribes to AndroidGameActivity.Resumed in its game
+            // constructor. Construct before yielding so it receives the first
+            // OnResume while assets load; otherwise its view can stay stopped.
+            game = new BurntimeGame(disableShaders: true)
+            {
+                AndroidSmallDeviceUi = (Resources?.Configuration?.SmallestScreenWidthDp ?? 0) < 600
+            };
             // Android recreates this activity for screen-size changes. That rebuilds
             // scenes whose compact layout is selected when they are constructed.
             string contentPath = await Task.Run(() => BundledAssets.Prepare(this, loadingCancellation.Token));
@@ -47,17 +55,14 @@ public sealed class GameActivity : AndroidGameActivity
 
     void StartGameWhenResumed()
     {
-        if (!resumed || game != null || preparedContentPath == null || startupFailed ||
+        if (!resumed || game == null || gameStarted || preparedContentPath == null || startupFailed ||
             loadingCancellation.IsCancellationRequested || IsFinishing || IsDestroyed) return;
         try
         {
-            game = new BurntimeGame(disableShaders: true)
-            {
-                AndroidContentPath = preparedContentPath,
-                AndroidSmallDeviceUi = (Resources?.Configuration?.SmallestScreenWidthDp ?? 0) < 600
-            };
+            game.AndroidContentPath = preparedContentPath;
             game.SetMobileActive(resumed);
             SetContentView(game.Services.GetService<View>()!);
+            gameStarted = true;
             game.Run();
         }
         catch (Exception error) { ShowStartupFailure(error); }
@@ -103,8 +108,8 @@ public sealed class GameActivity : AndroidGameActivity
 
     void HandleBack()
     {
-        if (game == null) Finish();
-        else game.QueueAndroidBack();
+        if (!gameStarted) Finish();
+        else game?.QueueAndroidBack();
     }
 
     [System.Runtime.Versioning.SupportedOSPlatform("android33.0")]

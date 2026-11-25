@@ -1,7 +1,7 @@
 # Rendered scene regression tests
 
 This suite runs the real MonoGame window and resource loader in separate classic,
-newgfx, and classic-no-hints processes. It requires .NET 10, a graphical desktop/OpenGL context,
+newgfx, classic-no-hints, and mobile processes. It requires .NET 10, a graphical desktop/OpenGL context,
 and Python with Pillow. It does not work with the headless simulation renderer.
 
 For isolated touch captures and input-dispatch assertions, run:
@@ -10,6 +10,12 @@ For isolated touch captures and input-dispatch assertions, run:
 dotnet run --project source/Burntime.MonoGame/Burntime.MonoGame.csproj -- \
   --visual-test newgfx /tmp/burntime-touch-visual --touch
 ```
+
+For a full desktop capture pass with gamepad prompts and controller-specific
+scene updates, use `--gamepad` instead of `--touch`. This runs all ordinary scenes
+with Xbox glyphs; native Steam glyphs are also covered by
+`--store-capture steam OUTPUT_DIRECTORY`. The gamepad pass writes separate
+captures and does not compare them to the keyboard baseline images.
 
 Use `classic` instead of `newgfx` for the original graphics. These fixtures use
 an isolated game/profile and verify selection without travel, single-tap tooltips,
@@ -28,8 +34,8 @@ scripts/visual-test.sh
 
 Alternatively set `PYTHON` to an existing interpreter with Pillow installed.
 Use `--mode classic`, `--mode newgfx`, or `--mode classic-no-hints` for a smaller
-run, and `--skip-build` when the dedicated build is already current. The default
-is `--mode all` (all three variants); `--mode both` still runs classic and newgfx.
+run, `--mode mobile` for the eight phone baselines, and `--skip-build` when the dedicated build is already current. The default
+is `--mode all` (three desktop variants plus mobile); `--mode both` still runs classic and newgfx.
 `classic-no-hints` uses classic graphics and the normal Hide UI hints setting
 (`prompts=2`), disabling tooltip panels and input prompts. The other variants
 explicitly use Full hints (`prompts=0`).
@@ -46,7 +52,7 @@ terminated after four minutes; an unsettled scene times out after one minute.
 ## Baseline review
 
 Baselines live in `tests/visual/baselines/classic`, `newgfx`, and
-`classic-no-hints`. Missing baselines
+`classic-no-hints`, and `mobile`. Missing baselines
 are failures, including the first run: review the generated images before
 establishing the initial baseline. The test never rewrites baselines.
 
@@ -82,7 +88,10 @@ advance at a fixed rate, and the wall-clock sprite loading fade is disabled.
 Real delayed resource loading stays active. The test drives scene updates and
 rendering on the graphics thread, then waits for loading and scene fades to
 finish and three complete settled frames before reading the final backbuffer.
-This includes classic's direct-to-framebuffer elements.
+This includes classic's direct-to-framebuffer elements. Ordinary modal dialogs
+are dismissed before fixtures force a scene change; the credits fixture retains
+its intentional setup-tab continuation. The terminal last-rival dialog is captured
+last in phone suites because dismissing it advances the game session.
 Captured pixels are made opaque without changing their RGB values: the backbuffer
 has already composited translucent UI, so PNG viewers must not blend it a second time.
 
@@ -159,3 +168,61 @@ The tests still use keyboard prompts and fixed Xbox glyph settings, not live
 Steam Deck input detection, and desktop GPU captures are not hardware certification.
 Font descriptors define `line_height` in logical pixels; setup body text uses
 `font-small.txt`, while headings and controls retain the regular font.
+
+## Mobile screenshot baselines
+
+The default suite includes eight exact mobile comparisons: world map, local scene,
+inventory, trader, camp info, manual, options, and the local party menu. Run only
+these with `scripts/visual-test.sh --mode mobile`. Review and accept them through
+the same report workflow, using `--mode mobile` with `visual-accept.sh`.
+
+These use remastered graphics, English, touch controls, and a fixed 2340x1080
+landscape phone with left cutout insets (132 left, 12 top, 30 right, 63 bottom).
+Shaders are disabled as in the existing phone review suite. Fixture setup can
+navigate with keyboard actions, then `--touch-controls` keeps normal scene updates
+and rendering in touch mode; the party-menu fixture also dispatches a real tap.
+The eight images live in `tests/visual/baselines/mobile`. Safe-area assertion
+failures also fail comparisons and block baseline acceptance.
+
+Other phone sizes, cutout sides, and interaction sequences remain covered by the
+extended assertion suites below, without adding more baseline variants. All phone
+captures are desktop simulations, rather than captures from physical phones.
+
+## Compact party HUD
+
+Capture a three-person party on world and local maps, including touch/gamepad,
+member selection, supply warnings and group actions. Control bounds are checked:
+
+```sh
+dotnet bin/Release/Burntime.dll --store-capture phone /tmp/burntime-phone-hud
+```
+
+Use `phone-safe-left` and `phone-safe-right` for simulated cutouts on either
+landscape edge, plus top and home-indicator insets. These check portrait, party
+and global controls and map prompts against safe bounds while the map stays
+edge-to-edge. Insets and safe bounds are recorded in `manifest.json`.
+
+For the full screen suite, add `--phone-safe-left` or `--phone-safe-right` to
+`--visual-test newgfx OUTPUT_DIRECTORY`. Add `--touch` for touch menus and item
+actions. Visible controls, portraits, item grids, manuals, tooltips and menus
+(including external shortcut glyphs) are checked against safe bounds; failures
+are collected in `safe-area-errors.json` and make the run fail. The suite also
+covers water sources, all options pages, language selection, pause, last-rival
+choices, cutscenes and menus at opposite screen corners.
+Use `--scenario=NAME` to recapture one fixture, or a comma-separated list such as
+`--scenario=hud-menu-world-party,hud-menu-local-solo` to replay a transition.
+Use `--phone-16x9` to check a narrower phone.
+The camp-info fixtures also assert that the complete noticeboard fits inside the safe area.
+
+The `hud-menu-*` fixtures exercise the compact HUD Menu button with one or two
+panels, party-member selection, outside dismissal and cancelled touch drags.
+They check enlarged row hit areas and reuse the existing menu and button artwork.
+HUD taps run after resource loading and layout settle, then the runner waits again
+before capturing the resulting UI.
+The `hud-mode-talk`, `hud-mode-fight` and `hud-mode-city` fixtures check the
+existing Talk/Fight icons, switching in both directions and city availability.
+
+Maps keep their 160-unit logical height. Other compact scenes reserve enough
+safe space for a 320x160 canvas, or 416x160 for inventory, trading and services.
+On narrow or notched displays this reduces their output scale enough to fit
+all item slots and controls without clipping.

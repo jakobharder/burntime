@@ -16,7 +16,7 @@ namespace Burntime.Remaster.GUI
         public InputShortcut Shortcut;
     }
 
-    public class MenuWindow : Window
+    public partial class MenuWindow : Window
     {
         public Func<InputAction, bool>? ShortcutAction { get; set; }
         public Func<InputAction, float, bool>? HeldShortcutAction { get; set; }
@@ -92,6 +92,34 @@ namespace Burntime.Remaster.GUI
         public void Clear()
         {
             _menuEntries.Clear();
+            touchSectionStart = -1;
+        }
+
+        Rect? placementBounds;
+        internal void UpdatePlacementBounds(Rect bounds)
+        {
+            placementBounds = bounds;
+            FitInsideSafeArea();
+        }
+        internal int PromptOverflowWidth => !touchLayout && app.LastInputMode != InputMode.Touch &&
+            (app is not BurntimeClassic owner || owner.ShowUIHints) &&
+            _menuEntries.Exists(entry => entry.Shortcut.Action != InputAction.None)
+                ? 3 + _defaultControlRenderer.HoldGlyphWidth : 0;
+
+        void FitInsideSafeArea()
+        {
+            Rect safe = app.Engine.Resolution.SafeArea - (Parent?.PositionOnScreen ?? Vector2.Zero);
+            if (placementBounds.HasValue) safe = placementBounds.Value.Intersect(safe);
+            // Shortcut glyphs are drawn beside the menu, outside its hit box.
+            safe.Right -= PromptOverflowWidth;
+            MoveInside(safe);
+        }
+
+        public override void OnUpdate(float elapsed)
+        {
+            base.OnUpdate(elapsed);
+            if (touchLayout) LayoutTouchPanels();
+            FitInsideSafeArea();
         }
 
         public void Show(Vector2 Position, Nullable<Rect> Boundings, bool openedByMouse = false,
@@ -100,11 +128,12 @@ namespace Burntime.Remaster.GUI
             _heldTouch = heldTouch;
             _openedByMouse = openedByMouse;
             this.Position = Position;
-            Size = new Vector2(MENU_WIDTH, 10 + MIDDLE_HEIGHT * _menuEntries.Count);
-            this.Position -= new Vector2(MENU_CONTENT_WIDTH, Size.y) / 2;
-
-            if (Boundings.HasValue)
-                MoveInside(Boundings.Value);
+            placementBounds = Boundings;
+            touchLayout = app.LastInputMode == InputMode.Touch;
+            if (touchLayout) LayoutTouchPanels();
+            else Size = new Vector2(MENU_WIDTH, 10 + MIDDLE_HEIGHT * _menuEntries.Count);
+            this.Position -= Size / 2;
+            FitInsideSafeArea();
 
             _lastMousePosition = app.DeviceManager.Mouse.Position - PositionOnScreen;
             bool touchInput = app.LastInputMode == InputMode.Touch;
@@ -150,6 +179,7 @@ namespace Burntime.Remaster.GUI
 
         int GetHeldEntryAt(Vector2 position)
         {
+            if (touchLayout) return TouchEntryAt(position);
             if (position.x < 0 || position.x >= Size.x || position.y < TOP_HEIGHT)
                 return -1;
             int index = (position.y - TOP_HEIGHT) / MIDDLE_HEIGHT;
@@ -163,6 +193,11 @@ namespace Burntime.Remaster.GUI
 
         public override void OnRender(RenderTarget target)
         {
+            if (touchLayout)
+            {
+                RenderTouchPanels(target);
+                return;
+            }
             target.DrawSprite(Vector2.Zero, _topElement);
 
             InputControlLabel firstLineControl = InputControlLabel.Empty;
@@ -289,6 +324,7 @@ namespace Burntime.Remaster.GUI
         {
             if (!_mouseSelectionEnabled)
                 return -1;
+            if (touchLayout) return TouchEntryAt(position);
 
             int itemtop = position.y - TOP_HEIGHT;
             int itemleft = position.x;
@@ -318,6 +354,11 @@ namespace Burntime.Remaster.GUI
                     ? _touchActivationIndex
                     : GetTouchEntryAt(Position);
                 _touchReleasePending = false;
+                if (touchLayout && _focusIndex < 0)
+                {
+                    if (TouchEntryAt(Position) < 0) Hide();
+                    return true;
+                }
             }
             if (Boundings.PointInside(this.Position + Position))
             {
@@ -355,6 +396,7 @@ namespace Burntime.Remaster.GUI
 
         int GetTouchEntryAt(Vector2 position)
         {
+            if (touchLayout) return TouchEntryAt(position);
             return TouchChoiceRows.HitTest(position, 0, MENU_CONTENT_WIDTH,
                 TOP_HEIGHT, MIDDLE_HEIGHT, MIDDLE_HEIGHT, _menuEntries.Count,
                 i => !string.IsNullOrEmpty(_menuEntries[i].Text));
@@ -362,6 +404,13 @@ namespace Burntime.Remaster.GUI
 
         public override bool OnInputAction(InputAction action)
         {
+            if (touchLayout && TouchPanelCount == 2 && (action.IsLeft() || action.IsRight()))
+            {
+                int row = _focusIndex >= touchSectionStart ? _focusIndex - touchSectionStart : System.Math.Max(0, _focusIndex);
+                _focusIndex = action.IsRight() ? touchSectionStart + System.Math.Min(row, _menuEntries.Count - touchSectionStart - 1)
+                    : System.Math.Min(row, touchSectionStart - 1);
+                return true;
+            }
             if (action == InputAction.Back)
             {
                 Hide();

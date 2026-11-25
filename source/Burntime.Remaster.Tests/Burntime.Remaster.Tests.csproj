@@ -8,6 +8,7 @@
     <EnableUnsafeBinaryFormatterSerialization>true</EnableUnsafeBinaryFormatterSerialization>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../Burntime.MonoGame/GameThread.cs" Link="Engine/GameThread.cs" />
     <ProjectReference Include="..\Burntime.Remaster\Burntime.Remaster.csproj" />
     <PackageReference Include="System.Runtime.Serialization.Formatters" Version="10.0.10" />
   </ItemGroup>

@@ -275,7 +275,12 @@ public class RenderDevice : IDisposable
     public void End()
     {
         lock (_renderQueue)
+        {
+            // Snapshots replace the whole scene. Retain only the newest pending
+            // frame if presentation stalls or runs more slowly than simulation.
+            _renderQueue.Clear();
             _renderQueue.Enqueue(current);
+        }
     }
 
     public void AddEntity(RenderEntity Entity)
@@ -376,6 +381,7 @@ public class RenderDevice : IDisposable
             ? Matrix.CreateScale(new Vector3(intermediateScale.x + PIXEL_CORRECTION,
                 intermediateScale.y + PIXEL_CORRECTION, 1))
             : Matrix.Identity;
+        var sortSample = _engine.GameplayProfile?.Begin() ?? default;
         List<SpriteEntity> orderedSprites = (_renderEntities ?? new RenderEntityQueue())
             .OfType<SpriteEntity>()
             .Where(sprite => useRemasteredGraphics || !sprite.DirectToFramebuffer)
@@ -397,6 +403,9 @@ public class RenderDevice : IDisposable
         }
         if (deferredSpriteIndex < 0)
             deferredSpriteIndex = orderedSprites.Count;
+        _engine.GameplayProfile?.End("sprite_sort", sortSample);
+        _engine.GameplayProfile?.CountFrame(_renderEntities?.Count ?? 0);
+        var sceneSample = _engine.GameplayProfile?.Begin() ?? default;
 
         //SlimDX.Matrix lineMatrix = SlimDX.Matrix.AffineTransformation2D(1, new SlimDX.Vector2(), 0, new SlimDX.Vector2());
         //// TODO engine scale
@@ -472,6 +481,8 @@ public class RenderDevice : IDisposable
 
         _spriteBatch.End();
 
+        _engine.GameplayProfile?.End("scene_gpu_commands", sceneSample);
+        var scalingSample = _engine.GameplayProfile?.Begin() ?? default;
         _engine.GraphicsDevice.SetRenderTarget(outputTarget);
         Texture2D presentationTexture = _intermediateTarget;
         if (_engine.OutputFiltering == OutputFiltering.SharpBilinear)
@@ -648,6 +659,7 @@ public class RenderDevice : IDisposable
             }
             _spriteBatch.End();
         }
+        _engine.GameplayProfile?.End("output_scaling", scalingSample);
     }
 
     void EnsureIntermediateTarget(bool useRemasteredGraphics)

@@ -6,6 +6,23 @@ namespace Burntime.Framework.GUI;
 
 public class Button : Window
 {
+    // Resolve inline prompt anchors after text, localization and hit-box sizing.
+    public bool InlinePromptsFollowText { get; set; }
+
+    internal Vector2 InlinePromptPosition
+    {
+        get
+        {
+            int textWidth = Font != null && Text != null ? Font.GetWidth(Text) : 0;
+            int right = TextHorizontalAlign switch
+            {
+                TextAlignment.Left => textWidth,
+                TextAlignment.Right => Size.x,
+                _ => (Size.x + textWidth) / 2
+            };
+            return new Vector2(right + 2, Size.y / 2);
+        }
+    }
     public override int MinimumTouchTargetSize => TouchHitTest.MinimumSize;
     public override bool IsTouchTarget => IsEnabled;
     public VerticalTextAlignment TextVerticalAlign = VerticalTextAlignment.Default;

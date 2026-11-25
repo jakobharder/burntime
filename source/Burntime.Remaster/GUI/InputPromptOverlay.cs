@@ -24,6 +24,9 @@ sealed partial class InputPromptOverlay : Container
     readonly InputPromptColorScheme _colors;
     readonly Row _sceneRow;
     readonly Row _contextRow;
+    readonly List<Row> _sidebarRows = [];
+    public int SidebarWidth { get; set; }
+    public bool CompactInlinePrompts { get; set; }
     public bool ScenePromptsOnRight { get; set; }
     public int ScenePromptLeftMargin { get; set; } = 6;
     readonly Dictionary<InlineKey, Row> _inlineRows = [];
@@ -68,10 +71,46 @@ sealed partial class InputPromptOverlay : Container
         InputPromptLayout layout = _controller.Resolve();
         RowPrompt[] scenePrompts = ToVisibleRowPrompts(layout.ScenePrompts);
         RowPrompt[] contextPrompts = BuildContextPrompts(layout.ContextGroups);
-        _sceneRow.SetPrompts(ScenePromptsOnRight ? [] : scenePrompts);
-        _contextRow.SetPrompts(ScenePromptsOnRight
-            ? [.. contextPrompts, .. scenePrompts] : contextPrompts);
+        if (SidebarWidth > 0)
+        {
+            _sceneRow.SetPrompts([]);
+            _contextRow.SetPrompts(contextPrompts);
+            RefreshSidebar(scenePrompts);
+        }
+        else
+        {
+            foreach (Row row in _sidebarRows) row.SetPrompts([]);
+            _sceneRow.SetPrompts(ScenePromptsOnRight ? [] : scenePrompts);
+            _contextRow.SetPrompts(ScenePromptsOnRight
+                ? [.. contextPrompts, .. scenePrompts] : contextPrompts);
+        }
         RefreshInline(layout.InlinePrompts);
+    }
+
+    void RefreshSidebar(RowPrompt[] prompts)
+    {
+        while (_sidebarRows.Count < prompts.Length)
+        {
+            var row = new Row(app, _colors, _controller.PreferredPrimaryKeyboardControl, smallFont: true)
+            {
+                HorizontalAlignment = PositionAlignment.Left,
+                VerticalAlignment = PositionAlignment.Right,
+                HorizontalPadding = 0,
+                ShowBackground = false
+            };
+            Windows += row;
+            _sidebarRows.Add(row);
+        }
+        Rect safe = app.Engine.Resolution.SafeArea;
+        int bottom = safe.Bottom - 3;
+        for (int i = _sidebarRows.Count - 1; i >= 0; i--)
+        {
+            Row row = _sidebarRows[i];
+            row.SetPrompts(i < prompts.Length ? [prompts[i]] : []);
+            if (i >= prompts.Length || row.Size.x == 0) continue;
+            row.Position = new Vector2(safe.Left + System.Math.Max(4, SidebarWidth - row.Size.x - 4), bottom);
+            bottom -= row.Size.y + 1;
+        }
     }
 
     static RowPrompt[] ToVisibleRowPrompts(IReadOnlyList<InputPrompt> prompts)
@@ -138,7 +177,7 @@ sealed partial class InputPromptOverlay : Container
             if (!_inlineRows.TryGetValue(key, out Row? row))
             {
                 row = new Row(app, _colors,
-                    _controller.PreferredPrimaryKeyboardControl)
+                    _controller.PreferredPrimaryKeyboardControl, smallFont: CompactInlinePrompts)
                 {
                     HorizontalAlignment = key.HorizontalAlignment,
                     VerticalAlignment = key.VerticalAlignment,
@@ -153,6 +192,9 @@ sealed partial class InputPromptOverlay : Container
             Vector2 scenePosition = Parent?.PositionOnScreen ?? Vector2.Zero;
             row.Position = scenePosition + new Vector2(key.X, key.Y);
             row.SetPrompts(prompts.ToArray());
+            // Inline prompts may extend beyond their button's own bounds.
+            Vector2 alignmentOffset = row.Boundings.Position - row.Position;
+            row.MoveInside(app.Engine.Resolution.SafeArea - alignmentOffset);
         }
     }
 }

@@ -18,6 +18,12 @@ public interface ISceneTransitionBridge { }
 
 public abstract class Scene : Container
 {
+    public virtual Vector2 MinimumSafeGameSize => new(320, 160);
+
+    internal void UpdateSafeAreaResolution()
+    {
+        app.Engine.Resolution.MinimumSafeGameSize = app.SmallDeviceUi ? MinimumSafeGameSize : Vector2.Zero;
+    }
     public virtual bool UseCardinalGamepadMovement => false;
     public virtual bool UseDiagonalGamepadNavigation => false;
     public virtual Key PreferredPrimaryKeyboardControl => new(' ');
@@ -35,6 +41,7 @@ public abstract class Scene : Container
 
     internal void ActivateScene(object? parameter = null)
     {
+        UpdateSafeAreaResolution();
         OnResizeScreen();
         OnActivateScene(parameter);
 

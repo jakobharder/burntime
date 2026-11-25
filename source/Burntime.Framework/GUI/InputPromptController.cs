@@ -383,10 +383,13 @@ public sealed class InputPromptController
                 if (mouseInput && prompt.Value.MouseControl is null or MouseButton.None)
                     continue;
 
+                bool followText = window is Button { InlinePromptsFollowText: true };
+                Vector2 anchor = followText ? ((Button)window).InlinePromptPosition : entry.Position!.Value;
                 prompts.Add(new InputPromptInlineEntry(prompt.Value,
-                    ownerPosition + entry.Position!.Value,
-                    entry.HorizontalAlignment, entry.VerticalAlignment,
-                    entry.ShowBackground, entry.HorizontalPadding, entry.Separator));
+                    ownerPosition + anchor,
+                    followText ? PositionAlignment.Left : entry.HorizontalAlignment,
+                    followText ? PositionAlignment.Center : entry.VerticalAlignment,
+                    entry.ShowBackground, followText ? 0 : entry.HorizontalPadding, entry.Separator));
             }
         }
 

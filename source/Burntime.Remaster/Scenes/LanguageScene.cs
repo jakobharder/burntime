@@ -80,6 +80,9 @@ internal class LanguageScene : Scene
     {
         base.OnResizeScreen(reload);
         Size = app.Engine.Resolution.Game;
+        Vector2 center = app.Engine.Resolution.SafeArea.Center;
+        _german.Position = center + new Vector2(-5, -10);
+        _english.Position = center + new Vector2(5, -10);
     }
 
     void UpdateSelection()
